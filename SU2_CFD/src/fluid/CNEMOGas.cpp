@@ -53,9 +53,6 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
 }
 
-CNEMOGas::~CNEMOGas(){}
-
-
 void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve){
 
   su2double denom;

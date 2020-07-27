@@ -1,5 +1,5 @@
 /*!
- * \file CEulerSolver.hpp
+ * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
  * \version 7.0.3 "Blackbird"
@@ -1303,7 +1303,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = false; //(config->GetKind_Solver() == NEMO_RANS) || (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS);
+  bool turbulent          = false;
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
 
@@ -2564,7 +2564,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
                                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, *Mass_Frac, Velocity2, soundspeed;
+  su2double Density, Pressure, Temperature, Temperature_ve, Energy, *Velocity, Velocity2, soundspeed;
   su2double Gas_Constant = config->GetGas_ConstantND();
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -2587,7 +2587,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 //   so all flow variables can be imposed at the inlet.
 //   First, retrieve the specified values for the primitive variables. ---*/
 //  //ASSUME TVE = T for the time being
-//  Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag);
+//  auto Mass_Frac      = config->GetInlet_MassFrac(Marker_Tag);
 //  Temperature    = config->GetInlet_Temperature(Marker_Tag);
 //  Pressure       = config->GetInlet_Pressure(Marker_Tag);
 //  Velocity       = config->GetInlet_Velocity(Marker_Tag);
@@ -2912,7 +2912,7 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
                      (config->GetFSI_Simulation()));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  bool turbulent     = false; //(config->GetKind_Solver() == NEMO_RANS) || (config->GetKind_Solver() == DISC_ADJ_NEMO_RANS);
+  bool turbulent     = false;
 
   string UnstExt, text_line;
   ifstream restart_file;

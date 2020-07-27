@@ -969,9 +969,9 @@ public:
    * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
-                  su2double *val_normal, su2double *l, su2double *m,
-                  su2double **val_p_tensor) ;
+  void GetPMatrix(const su2double *U, const su2double *V, const su2double *val_dPdU,
+                  const su2double *val_normal, const su2double *l, const su2double *m,
+                  su2double **val_p_tensor) const;
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1101,9 +1101,9 @@ public:
    * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
-                     su2double *val_normal, su2double *l, su2double *m,
-                     su2double **val_invp_tensor) ;
+  void GetPMatrix_inv(const su2double *U, const su2double *V, const su2double *val_dPdU,
+                     const su2double *val_normal, const su2double *l, const su2double *m,
+                     su2double **val_invp_tensor) const;
 
   /*!
    * \brief Compute viscous residual and jacobian.
@@ -1445,30 +1445,6 @@ public:
    * \param[in] n: order of matrix V
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
-
-  /*!
-   * \brief Set variable indexes for NEMO solver.
-   */
-
- // inline void SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
- // 
- // inline void SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
- // 
- // inline void SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
- // 
- // inline void SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
- // 
- // inline void SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
- // 
- // inline void SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
- // 
- // inline void SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
- // 
- // inline void SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
- // 
- // inline void SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
- // 
- // inline void SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
   
   inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
   

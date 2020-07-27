@@ -5527,14 +5527,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
-      case NEMO_EULER: //case DISC_ADJ_NEMO_EULER:
+      case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }
         break;
-      case NEMO_NAVIER_STOKES: //case DISC_ADJ_NEMO_NAVIER_STOKES:
+      case NEMO_NAVIER_STOKES: 
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){  
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
@@ -5585,7 +5585,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
-          (Kind_Solver == NEMO_NAVIER_STOKES)/* || (Kind_Solver == NEMO_RANS)*/)
+          (Kind_Solver == NEMO_NAVIER_STOKES))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -6026,7 +6026,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == NEMO_EULER)     || (Kind_Solver == NEMO_NAVIER_STOKES)     || //(Kind_Solver == NEMO_RANS) ||
+        (Kind_Solver == NEMO_EULER)     || (Kind_Solver == NEMO_NAVIER_STOKES)     ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
@@ -6235,10 +6235,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == NEMO_NAVIER_STOKES) || //|| (Kind_Solver == NEMO_RANS) ||
+        (Kind_Solver == NEMO_NAVIER_STOKES) ||
         (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
-        //(Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)||
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -8550,7 +8549,7 @@ su2double* CConfig::GetInlet_Velocity(string val_marker) {
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
 }
 
-su2double* CConfig::GetInlet_MassFrac(string val_marker) {
+const su2double* CConfig::GetInlet_MassFrac(string val_marker) const {
   unsigned short iMarker_Supersonic_Inlet;
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
@@ -8831,8 +8830,6 @@ su2double CConfig::GetIsothermal_Temperature(string val_marker) const {
   return Isothermal_Temperature[iMarker_Isothermal];
 }
 
-/* Missing equivalent for NEMO solver isothermal catalytic and isothermal non-catalytic wall*/
-
 su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   unsigned short iMarker_HeatFlux = 0;
 
@@ -8843,8 +8840,6 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
 
   return Heat_Flux[iMarker_HeatFlux];
 }
-
-/* Missing equivalent for NEMO solver heat-flux catalytic and heat-flux non-catalytic wall*/
 
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
   unsigned short WallFunction = NO_WALL_FUNCTION;

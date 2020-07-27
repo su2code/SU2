@@ -45,8 +45,6 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){}
 
 vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){}
 
-su2double CMutationTCLib::GetGamma(){}
-
 vector<su2double>& CMutationTCLib::GetMixtureEnergies(){}
 
 vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){}

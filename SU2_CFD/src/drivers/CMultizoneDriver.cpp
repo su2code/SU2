@@ -79,7 +79,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       fluid_zone = true;
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: //case NEMO_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;  
     case FEM_ELASTICITY:
@@ -262,13 +262,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              config_container[iZone], TimeIter);
     }
     if ((config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) /*
-        (config_container[iZone]->GetKind_Solver() ==  NEMO_RANS)*/ ) {
+        (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES)) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
     if ((config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) /*
-        (config_container[iZone]->GetKind_Solver() ==  NEMO_RANS)*/ ) {
+        (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES)) {
         if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
     }
 

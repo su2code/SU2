@@ -3691,8 +3691,7 @@ public:
    */
   bool GetNEMOProblem(void) const {
     switch (Kind_Solver) {
-      case NEMO_EULER : case NEMO_NAVIER_STOKES: //case NEMO_RANS:
-      //case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES:
+      case NEMO_EULER : case NEMO_NAVIER_STOKES:
         return true;
       default:
         return false;
@@ -6477,7 +6476,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The inlet mass fraction vector - NEMO only.
    */
-  su2double* GetInlet_MassFrac(string val_index);
+  const su2double* GetInlet_MassFrac(string val_index) const;
 
   /*!
    * \brief Get the total pressure at an inlet boundary.

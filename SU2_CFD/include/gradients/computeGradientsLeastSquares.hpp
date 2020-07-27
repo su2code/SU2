@@ -81,11 +81,8 @@ void computeGradientsLeastSquares(CSolver* solver,
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
 
-    for (size_t iVar = varBegin; iVar < varEnd; ++iVar){
-
-      AD::SetPreaccIn(field(iPoint,iVar));    
-
-    }
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      AD::SetPreaccIn(field(iPoint,iVar));
 
     /*--- Clear gradient and Rmatrix. ---*/
 

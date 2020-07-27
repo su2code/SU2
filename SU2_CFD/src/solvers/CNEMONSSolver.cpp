@@ -299,6 +299,13 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  CConfig *config,
                                                  unsigned short val_marker) {
 
+  /*CGarbacz: READ THIS
+  /*-----------------------------------------------------------------------------------------------------*/
+  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
+  su2double CConfig::GetWall_HeatFlux(string val_marker)
+  but for HeatFluxNonCatalytic_Wall */
+  /*-----------------------------------------------------------------------------------------------------*/
+
   /*--- Call standard "HeatFlux" wall to apply no-slip & energy b.c.'s ---*/
   BC_HeatFlux_Wall(geometry, solution_container, conv_numerics,
                    sour_numerics, config, val_marker);
@@ -398,6 +405,13 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
                                               CNumerics *sour_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) {
+
+    /*CGarbacz: READ THIS
+  /*-----------------------------------------------------------------------------------------------------*/
+  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
+  su2double CConfig::GetWall_HeatFlux(string val_marker)
+  but for HeatFluxCatalytic_Wall */
+  /*-----------------------------------------------------------------------------------------------------*/
 
   /*--- Local variables ---*/
   bool implicit, catalytic;
@@ -689,6 +703,13 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    CConfig *config,
                                                    unsigned short val_marker) {
 
+  /*CGarbacz: READ THIS
+  /*-----------------------------------------------------------------------------------------------------*/
+  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
+  su2double CConfig::GetIsothermal_Temperature(string val_marker)
+  but for IsothermalNonCatalytic_Wall */
+  /*-----------------------------------------------------------------------------------------------------*/
+
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
   BC_Isothermal_Wall(geometry, solution_container, conv_numerics,
                      sour_numerics, config, val_marker);
@@ -701,6 +722,13 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CNumerics *sour_numerics,
                                                 CConfig *config,
                                                 unsigned short val_marker) {
+
+  /*CGarbacz: READ THIS
+  /*-----------------------------------------------------------------------------------------------------*/
+  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
+  su2double CConfig::GetIsothermal_Temperature(string val_marker)
+  but for IsothermalCatalytic_Wall */
+  /*-----------------------------------------------------------------------------------------------------*/
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
   BC_Isothermal_Wall(geometry, solution_container, conv_numerics,

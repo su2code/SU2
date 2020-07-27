@@ -87,11 +87,6 @@ public:
   CNEMOGas(const CConfig* config);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CNEMOGas(void);
-
-  /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] rhos - Species partial densities.
    * \param[in] T    - Translational/Rotational temperature.
@@ -111,62 +106,57 @@ public:
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvTraRot(){}
+  virtual vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
    * \brief Get species V-E specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvVibEle(){}
-
-  /*!
-   * \brief Get specific heat ratio.
-   */
-  virtual su2double GetGamma(){}
+  virtual vector<su2double>& GetSpeciesCvVibEle() = 0;
   
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
    */
-  virtual vector<su2double>& GetMixtureEnergies(){}
+  virtual vector<su2double>& GetMixtureEnergies() = 0;
   
   /*!
    * \brief Get species net production rates.
    */
-  virtual vector<su2double>& GetNetProductionRates(){}
+  virtual vector<su2double>& GetNetProductionRates() = 0;
   
   /*!
    * \brief Get vibrational energy source term.
    */
-  virtual su2double GetEveSourceTerm(){}
+  virtual su2double GetEveSourceTerm() { return 0; }
 
   /*!
    * \brief Get vector of species V-E energy.
    */
-  virtual vector<su2double>& GetSpeciesEve(su2double val_T){}
+  virtual vector<su2double>& GetSpeciesEve(su2double val_T) = 0;
   
   /*!
    * \brief Get species enthalpies.
    */
-  virtual vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
+  virtual vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves) = 0;
   
   /*!
    * \brief Get species diffusion coefficients.
    */
-  virtual vector<su2double>& GetDiffusionCoeff(){}
+  virtual vector<su2double>& GetDiffusionCoeff() = 0;
   
   /*!
    * \brief Get viscosity.
    */
-  virtual su2double GetViscosity(){}
+  virtual su2double GetViscosity() { return 0; }
   
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
-  virtual vector<su2double>& GetThermalConductivities(){}
+  virtual vector<su2double>& GetThermalConductivities() = 0;
   
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
+  virtual vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
   
   /*!
    * \brief Get speed of sound.

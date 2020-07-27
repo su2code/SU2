@@ -102,11 +102,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   m = new su2double [nDim] ();
 
   Dissipation_ij = 1.0;
-
-  //if ((config->GetKind_Solver() == NEMO_EULER)                 ||
-  //    (config->GetKind_Solver() == NEMO_NAVIER_STOKES) ) { //         ||
-      //(config->GetKind_Solver() == DISC_ADJ_NEMO_EULER)        ||
-      //(config->GetKind_Solver() == DISC_ADJ_NEMO_NAVIER_STOKES) ) 
+ 
   if (config->GetNEMOProblem()){
 
     nSpecies = nVar - nDim - 2;
@@ -894,9 +890,9 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
 
 }
 
-void CNumerics::GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
-                           su2double *val_normal, su2double *l, su2double *m,
-                           su2double **val_p_tensor) {
+void CNumerics::GetPMatrix(const su2double *U, const su2double *V, const su2double *val_dPdU,
+                           const su2double *val_normal, const su2double *l, const su2double *m,
+                           su2double **val_p_tensor) const {
 
   // P matrix is equivalent to the L matrix in Gnoffo
   unsigned short iSpecies, iDim, iVar, jVar;
@@ -1156,9 +1152,9 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, const su2double *val
   }
 }
 
-void CNumerics::GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
-                               su2double *val_normal, su2double *l, su2double *m,
-                               su2double **val_invp_tensor) {
+void CNumerics::GetPMatrix_inv(const su2double *U, const su2double *V, const su2double *val_dPdU,
+                               const su2double *val_normal, const su2double *l, const su2double *m,
+                               su2double **val_invp_tensor) const {
 
   unsigned short iSpecies, jSpecies, iDim, iVar, jVar;
   su2double rho, a, a2, eve;
