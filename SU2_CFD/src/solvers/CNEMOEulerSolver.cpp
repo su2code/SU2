@@ -1917,7 +1917,19 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       }
     }
   }
+  delete [] Normal;
+  delete [] NormalArea;
+  delete [] Velocity_b;
+  delete [] Velocity_i;
   delete [] u;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_b[iVar];
+    delete [] DubDu[iVar];
+  }
+
+  delete [] Jacobian_b;
+  delete [] DubDu;
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
@@ -2372,6 +2384,37 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = 0.0;
       for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = 0.0;
 
+      /*--- Build the fictitious intlet state based on characteristics ---*/
+
+      /*--- Retrieve the specified back pressure for this outlet. ---*/
+      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
+      else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
+  
+      /*--- Non-dim. the inputs if necessary. ---*/
+      P_Exit = P_Exit/config->GetPressure_Ref();
+  
+      /*--- Check whether the flow is supersonic at the exit. The type
+       of boundary update depends on this. ---*/
+      Density = V_domain[RHO_INDEX];
+      Velocity2 = 0.0; Vn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[VEL_INDEX+iDim];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Vn += Velocity[iDim]*UnitaryNormal[iDim];
+      }
+      Energy      = U_domain[nVar-2]/Density;
+      Temperature = V_domain[T_INDEX];
+      Tve         = V_domain[TVE_INDEX];
+      Pressure    = V_domain[PRESS_INDEX];
+      SoundSpeed  = V_domain[A_INDEX];
+      Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
+  
+      /*--- Compute Species Concentrations ---*/
+      //Using partial pressures, maybe not
+      for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
+        Ys[iSpecies] = V_domain[iSpecies]/Density;
+      }        
+
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {
 
@@ -2390,37 +2433,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
          tangential velocity components, are extrapolated. The Temperatures
          (T and Tve) and species concentraition are also assumed to be extrapolated.
          ---*/
-
-        /*--- Build the fictitious intlet state based on characteristics ---*/
-
-        /*--- Retrieve the specified back pressure for this outlet. ---*/
-        if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
-        else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
-  
-        /*--- Non-dim. the inputs if necessary. ---*/
-        P_Exit = P_Exit/config->GetPressure_Ref();
-  
-        /*--- Check whether the flow is supersonic at the exit. The type
-         of boundary update depends on this. ---*/
-        Density = V_domain[RHO_INDEX];
-        Velocity2 = 0.0; Vn = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = V_domain[VEL_INDEX+iDim];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-          Vn += Velocity[iDim]*UnitaryNormal[iDim];
-        }
-        Energy      = U_domain[nVar-2]/Density;
-        Temperature = V_domain[T_INDEX];
-        Tve         = V_domain[TVE_INDEX];
-        Pressure    = V_domain[PRESS_INDEX];
-        SoundSpeed  = V_domain[A_INDEX];
-        Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
-  
-        /*--- Compute Species Concentrations ---*/
-        //Using partial pressures, maybe not
-        for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
-          Ys[iSpecies] = V_domain[iSpecies]/Density;
-        }
 
         Entropy = Pressure*pow(1.0/Density,Gamma);
         Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
