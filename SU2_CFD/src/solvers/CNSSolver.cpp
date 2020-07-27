@@ -376,7 +376,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Compute the wall shear stress from the wall model ---*/
 
-  if (wall_models){
+  if (wall_models && (iRKStep==0)){
     SU2_OMP_MASTER
     SetTauWallHeatFlux_WMLES1stPoint(geometry, solver_container, config, iRKStep);
     SU2_OMP_BARRIER
@@ -2840,38 +2840,36 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        su2double dirTan[3] = {0.0, 0.0, 0.0};
        for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = VelTang[iDim]/VelTangMod;
 
-       if (iRKStep == 0){
-         /* Compute the wall shear stress and heat flux vector using
-          the wall model. */
-         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-         WallModel->UpdateExchangeLocation(WallDistMod);
-         WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal,
-                                               Wall_HeatFlux, HeatFlux_Prescribed,
-                                               Wall_Temperature, Temperature_Prescribed,
-                                               GetFluidModel(), tauWall, qWall, ViscosityWall,
-                                               kOverCvWall);
+       /* Compute the wall shear stress and heat flux vector using
+        the wall model. */
+       su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+       WallModel->UpdateExchangeLocation(WallDistMod);
+       WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal,
+                                             Wall_HeatFlux, HeatFlux_Prescribed,
+                                             Wall_Temperature, Temperature_Prescribed,
+                                             GetFluidModel(), tauWall, qWall, ViscosityWall,
+                                             kOverCvWall);
 
-         /*--- Compute the non-dimensional values if necessary. ---*/
-         tauWall /= config->GetPressure_Ref();
-         qWall   /= (config->GetPressure_Ref() * config->GetVelocity_Ref());
-         ViscosityWall /= (config->GetPressure_Ref()/config->GetVelocity_Ref());
-         nodes->SetLaminarViscosity(iPoint, ViscosityWall);
+       /*--- Compute the non-dimensional values if necessary. ---*/
+       tauWall /= config->GetPressure_Ref();
+       qWall   /= (config->GetPressure_Ref() * config->GetVelocity_Ref());
+       ViscosityWall /= (config->GetPressure_Ref()/config->GetVelocity_Ref());
+       nodes->SetLaminarViscosity(iPoint, ViscosityWall);
 
-         /*--- Set tau wall value and flag for flux computation---*/
-         nodes->SetTauWall_Flag(iPoint,true);
-         nodes->SetTauWall(iPoint, tauWall);
+       /*--- Set tau wall value and flag for flux computation---*/
+       nodes->SetTauWall_Flag(iPoint,true);
+       nodes->SetTauWall(iPoint, tauWall);
 
-         /*--- Set tau wall projected to the flow direction for pos-processing only---*/
-         for(iDim = 0; iDim<nDim; iDim++)
-           nodes->SetTauWallDir(iPoint, iDim, tauWall*dirTan[iDim]);
+       /*--- Set tau wall projected to the flow direction for pos-processing only---*/
+       for(iDim = 0; iDim<nDim; iDim++)
+         nodes->SetTauWallDir(iPoint, iDim, tauWall*dirTan[iDim]);
 
-         /*--- Set tau wall value and heat flux for boundary conditions---*/
-         TauWall_WMLES[iMarker][iVertex] = tauWall;
-         HeatFlux_WMLES[iMarker][iVertex] = qWall;
-         for (iDim = 0; iDim < nDim; iDim++)
-           FlowDirTan_WMLES[iMarker][iVertex][iDim] = dirTan[iDim];
+       /*--- Set tau wall value and heat flux for boundary conditions---*/
+       TauWall_WMLES[iMarker][iVertex] = tauWall;
+       HeatFlux_WMLES[iMarker][iVertex] = qWall;
+       for (iDim = 0; iDim < nDim; iDim++)
+         FlowDirTan_WMLES[iMarker][iVertex][iDim] = dirTan[iDim];
 
-       }
      }
    }
  }
