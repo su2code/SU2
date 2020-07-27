@@ -646,7 +646,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
+void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) {
 
   /* Only apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
