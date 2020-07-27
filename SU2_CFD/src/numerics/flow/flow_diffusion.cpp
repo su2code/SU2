@@ -536,7 +536,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
   /*--- Jacobians wrt density and momentum ---*/
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    for (unsignd short iVar = 0; iVar < nVar-1; iVar++) {
+    for (unsigned short iVar = 0; iVar < nVar-1; iVar++) {
       Jacobian_i[iDim+1][iVar] = tau_jacobian_i[iDim][iVar];
       Jacobian_j[iDim+1][iVar] = tau_jacobian_j[iDim][iVar];
     }
