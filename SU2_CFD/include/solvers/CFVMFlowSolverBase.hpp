@@ -31,8 +31,6 @@
 #include "CSolver.hpp"
 #include "../variables/CNEMOEulerVariable.hpp"
 
-
-
 namespace detail {
 template <class VariableType>
 constexpr size_t flowSolMaxnVar() {

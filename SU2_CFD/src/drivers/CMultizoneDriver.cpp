@@ -261,15 +261,6 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
-    if ((config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES)) {
-        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
-    }
-    if ((config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-        (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES)) {
-        if(!fsi) solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][INST_0], config_container[iZone], TimeIter);
-    }
-
   }
 
 #ifdef HAVE_MPI
