@@ -160,13 +160,11 @@ protected:
    *
    * \param[in] val_PrimVar_i - Primitive variables at point i
    * \param[in] val_PrimVar_j - Primitive variables at point j
-   * \param[in] val_edge_vector - The vector between points i and j
    * \param[in] val_nPrimVar - The number of primitive variables
    */
   void CorrectGradient(su2double** GradPrimVar,
                        const su2double* val_PrimVar_i,
                        const su2double* val_PrimVar_j,
-                       const su2double* val_edge_vector,
                        const unsigned short val_nPrimVar);
 
   /*!

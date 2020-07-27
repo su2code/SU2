@@ -120,22 +120,21 @@ CAvgGrad_Base::~CAvgGrad_Base() {
 void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_PrimVar_i,
                                     const su2double* val_PrimVar_j,
-                                    const su2double* val_edge_vector,
                                     const unsigned short val_nPrimVar) {
   // for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
   //   Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
   //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  //     Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
+  //     Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
   //   }
   //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
   //     GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-  //                                (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / dist_ij_2;
+  //                                (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
   //   }
   // }
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
+      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
@@ -645,9 +644,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
-  if (correct_gradient) {
-    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector, nDim+1);
-  }
+  if (correct_gradient && dist_ij_2 != 0.0)
+    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, nDim+1);
 
   /*--- Wall shear stress values (wall functions) ---*/
 
@@ -665,8 +663,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-         Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
@@ -1000,9 +997,8 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
-  if (correct_gradient && dist_ij_2 != 0.0) {
-    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector, nVar);
-  }
+  if (correct_gradient && dist_ij_2 != 0.0)
+    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, nVar);
 
   /*--- Get projected flux tensor (viscous residual) ---*/
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
@@ -1274,7 +1270,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
-  su2double proj_vector_ij = 0.0;
+  proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -1313,9 +1309,8 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
-  if (correct_gradient && dist_ij_2 != 0.0) {
-    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector, nDim+1);
-  }
+  if (correct_gradient && dist_ij_2 != 0.0)
+    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, nDim+1);
 
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
