@@ -1,5 +1,5 @@
-/*!
- * \file CTurbSAVariable.hpp
+﻿/*!
+ * \file CNEMOTurbSAVariable.hpp
  * \brief Declaration of the variables of the SA turbulence model.
  * \author F. Palacios, T. Economon
  * \version 7.0.6 "Blackbird"
@@ -27,16 +27,16 @@
 
 #pragma once
 
-#include "CTurbVariable.hpp"
+#include "CNEMOTurbVariable.hpp"
 
 /*!
- * \class CTurbSAVariable
+ * \class CNEMOTurbSAVariable
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
 
-class CTurbSAVariable final : public CTurbVariable {
+class CNEMOTurbSAVariable final : public CNEMOTurbVariable {
 
 private:
   VectorType gamma_BC;         /*!< \brief Value of the intermittency for the BC trans. model. */
@@ -54,12 +54,12 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CNEMOTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSAVariable() override = default;
+  ~CNEMOTurbSAVariable() override = default;
 
   /*!
    * \brief Set the harmonic balance source term.

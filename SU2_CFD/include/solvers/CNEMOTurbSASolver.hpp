@@ -1,6 +1,6 @@
-/*!
- * \file CTurbSASolver.hpp
- * \brief Headers of the CTurbSASolver class
+﻿/*!
+ * \file CNEMOTurbSASolver.hpp
+ * \brief Headers of the CNEMOTurbSASolver class
  * \author A. Bueno.
  * \version 7.0.6 "Blackbird"
  *
@@ -28,16 +28,16 @@
 
 #pragma once
 
-#include "CTurbSolver.hpp"
+#include "CNEMOTurbSolver.hpp"
 
 /*!
- * \class CTurbSASolver
+ * \class CNEMOTurbSASolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
 
-class CTurbSASolver final : public CTurbSolver {
+class CNEMOTurbSASolver final : public CNEMOTurbSolver {
 private:
   su2double nu_tilde_Inf, nu_tilde_Engine, nu_tilde_ActDisk;
 
@@ -55,7 +55,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSASolver(void);
+  CNEMOTurbSASolver(void);
 
   /*!
    * \overload
@@ -64,12 +64,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] FluidModel
    */
-  CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
+  CNEMOTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver(void) override;
+  ~CNEMOTurbSASolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

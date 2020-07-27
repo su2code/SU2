@@ -1,5 +1,5 @@
-/*!
- * \file CTurbSSTVariable.cpp
+﻿/*!
+ * \file CNEMOTurbSSTVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
  * \version 7.0.6 "Blackbird"
@@ -26,11 +26,11 @@
  */
 
 
-#include "../../include/variables/CTurbSSTVariable.hpp"
+#include "../../include/variables/CNEMOTurbSSTVariable.hpp"
 
 
-CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
-  : CTurbVariable(npoint, ndim, nvar, config) {
+CNEMOTurbSSTVariable::CNEMOTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint, unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config)
+  : CNEMOTurbVariable(npoint, ndim, nvar, config) {
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
@@ -50,7 +50,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   muT.resize(nPoint) = mut;
 }
 
-void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
+void CNEMOTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
                                        su2double val_dist, su2double val_density) {
   su2double arg2, arg2A, arg2B, arg1;
 

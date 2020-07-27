@@ -1,5 +1,5 @@
-/*!
- * \file CTurbVariable.hpp
+﻿/*!
+ * \file CNEMOTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
  * \version 7.0.6 "Blackbird"
@@ -30,18 +30,22 @@
 #include "CVariable.hpp"
 
 /*!
- * \class CTurbVariable
+ * \class CNEMOTurbVariable
  * \brief Base class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-class CTurbVariable : public CVariable {
+class CNEMOTurbVariable : public CVariable {
 protected:
   VectorType muT;         /*!< \brief Eddy viscosity. */
   MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+
+  /*!< \brief Index definition for NEMO pritimive variables. */
+  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX, nSpecies;
 
 public:
   /*!
@@ -51,12 +55,12 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
+  CNEMOTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbVariable() override = default;
+  ~CNEMOTurbVariable() override = default;
 
   /*!
    * \brief Get the value of the eddy viscosity.

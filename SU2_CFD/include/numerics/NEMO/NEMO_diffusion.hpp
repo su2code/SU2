@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file NEMO_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation. The implementation is in NEMO_diffusion.cpp.
  * \author F. Palacios, T. Economon
@@ -34,7 +34,7 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S. Copeland, W. Maier
- * \version 6.2.0 "falcon"
+ * \version 7.0.5 "Blackbird"
  */
 class CAvgGrad_NEMO : public CNumerics {
 private:

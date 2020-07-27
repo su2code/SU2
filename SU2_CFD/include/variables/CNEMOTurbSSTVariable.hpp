@@ -1,5 +1,5 @@
-/*!
- * \file CTurbSSTVariable.hpp
+﻿/*!
+ * \file CNEMOTurbSSTVariable.hpp
  * \brief Declaration of the variables of the SST turbulence model.
  * \author F. Palacios, T. Economon
  * \version 7.0.6 "Blackbird"
@@ -27,16 +27,16 @@
 
 #pragma once
 
-#include "CTurbVariable.hpp"
+#include "CNEMOTurbVariable.hpp"
 
 /*!
- * \class CTurbSSTVariable
+ * \class CNEMOTurbSSTVariable
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
 
-class CTurbSSTVariable final : public CTurbVariable {
+class CNEMOTurbSSTVariable final : public CNEMOTurbVariable {
 protected:
   su2double sigma_om2;
   su2double beta_star;
@@ -56,13 +56,13 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint,
+  CNEMOTurbSSTVariable(su2double kine, su2double omega, su2double mut, unsigned long npoint,
                    unsigned long ndim, unsigned long nvar, const su2double* constants, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTVariable() override = default;
+  ~CNEMOTurbSSTVariable() override = default;
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

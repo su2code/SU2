@@ -1,6 +1,6 @@
-/*!
- * \file CTurbSolver.hpp
- * \brief Headers of the CTurbSolver class
+﻿/*!
+ * \file CNEMOTurbSolver.hpp
+ * \brief Headers of the CNEMOTurbSolver class
  * \author A. Bueno.
  * \version 7.0.6 "Blackbird"
  *
@@ -28,16 +28,16 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "../variables/CTurbVariable.hpp"
+#include "../variables/CNEMOTurbVariable.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
 /*!
- * \class CTurbSolver
+ * \class CNEMOTurbSolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
  */
-class CTurbSolver : public CSolver {
+class CNEMOTurbSolver : public CSolver {
 protected:
   enum : size_t {MAXNDIM = 3};         /*!< \brief Max number of space dimensions, used in some static arrays. */
   enum : size_t {MAXNVAR = 2};         /*!< \brief Max number of variables, used in some static arrays. */
@@ -77,7 +77,7 @@ protected:
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
    */
-  CTurbVariable* nodes = nullptr;
+  CNEMOTurbVariable* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -111,19 +111,19 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSolver(void);
+  CNEMOTurbSolver(void);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSolver(void) override;
+  ~CNEMOTurbSolver(void) override;
 
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CTurbSolver(CGeometry* geometry, CConfig *config);
+  CNEMOTurbSolver(CGeometry* geometry, CConfig *config);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.

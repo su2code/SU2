@@ -1,8 +1,8 @@
-/*!
+﻿/*!
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon, S.R. Copeland, W. Maier
- * \version 6.2.0 "Falcon"
+ * \version 7.0.5 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

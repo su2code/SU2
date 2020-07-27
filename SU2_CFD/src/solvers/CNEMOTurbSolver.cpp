@@ -1,6 +1,6 @@
-/*!
- * \file CTurbSolver.cpp
- * \brief Main subrotuines of CTurbSolver class
+﻿/*!
+ * \file CNEMOTurbSolver.cpp
+ * \brief Main subrotuines of CNEMOTurbSolver class
  * \author F. Palacios, A. Bueno
  * \version 7.0.6 "Blackbird"
  *
@@ -25,13 +25,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/solvers/CTurbSolver.hpp"
+#include "../../include/solvers/CNEMOTurbSolver.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
 
-CTurbSolver::CTurbSolver(void) : CSolver() { }
+CNEMOTurbSolver::CNEMOTurbSolver(void) : CSolver() { }
 
-CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
+CNEMOTurbSolver::CNEMOTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -72,7 +72,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 #endif
 }
 
-CTurbSolver::~CTurbSolver(void) {
+CNEMOTurbSolver::~CNEMOTurbSolver(void) {
 
   if (Inlet_TurbVars != nullptr) {
     for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -89,7 +89,7 @@ CTurbSolver::~CTurbSolver(void) {
   delete nodes;
 }
 
-void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+void CNEMOTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool muscl = config->GetMUSCL_Turb();
@@ -242,7 +242,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   }
 }
 
-void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+void CNEMOTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *numerics, CConfig *config) {
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
@@ -290,7 +290,7 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   }
 }
 
-void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
+void CNEMOTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -310,7 +310,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::BC_Sym_Plane(CGeometry      *geometry,
+void CNEMOTurbSolver::BC_Sym_Plane(CGeometry      *geometry,
                                CSolver        **solver_container,
                                CNumerics      *conv_numerics,
                                CNumerics      *visc_numerics,
@@ -321,7 +321,7 @@ void CTurbSolver::BC_Sym_Plane(CGeometry      *geometry,
 
 }
 
-void CTurbSolver::BC_Euler_Wall(CGeometry      *geometry,
+void CNEMOTurbSolver::BC_Euler_Wall(CGeometry      *geometry,
                                 CSolver        **solver_container,
                                 CNumerics      *conv_numerics,
                                 CNumerics      *visc_numerics,
@@ -332,7 +332,7 @@ void CTurbSolver::BC_Euler_Wall(CGeometry      *geometry,
 
 }
 
-void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNEMOTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -347,7 +347,7 @@ void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CN
   }
 }
 
-void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNEMOTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -363,7 +363,7 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
 }
 
 
-void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNEMOTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -387,7 +387,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
   }
 }
 
-void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+void CNEMOTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics *numerics, CConfig *config) {
 
   /*--- Complete residuals for periodic boundary conditions. We loop over
@@ -403,7 +403,7 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 
 }
 
-void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+void CNEMOTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config) {
 
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
@@ -508,7 +508,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNEMOTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -646,7 +646,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) {
+void CNEMOTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) {
 
   /* Only apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
@@ -703,7 +703,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const
 
 }
 
-void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+void CNEMOTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
   const bool sst_model = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
@@ -972,7 +972,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 }
 
 
-void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+void CNEMOTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
 

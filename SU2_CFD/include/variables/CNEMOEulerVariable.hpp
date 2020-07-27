@@ -1,8 +1,8 @@
 ﻿/*!
- * \file CEulerVariable.hpp
+ * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon, W. Maier, S.R. Copeland
- * \version 6.2.0 "Falcon"
+ * \version 7.0.5 "Blackbird"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

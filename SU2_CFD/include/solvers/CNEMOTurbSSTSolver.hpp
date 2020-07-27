@@ -1,6 +1,6 @@
-/*!
- * \file CTurbSSTSolver.hpp
- * \brief Headers of the CTurbSSTSolver class
+﻿/*!
+ * \file CNEMOTurbSSTSolver.hpp
+ * \brief Headers of the CNEMOTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
  * \version 7.0.6 "Blackbird"
  *
@@ -27,15 +27,15 @@
 
 #pragma once
 
-#include "CTurbSolver.hpp"
+#include "CNEMOTurbSolver.hpp"
 
 /*!
- * \class CTurbSSTSolver
+ * \class CNEMOTurbSSTSolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
  */
-class CTurbSSTSolver final : public CTurbSolver {
+class CNEMOTurbSSTSolver final : public CNEMOTurbSolver {
 private:
   su2double
   constants[10] = {0.0}, /*!< \brief Constants for the model. */
@@ -46,7 +46,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CTurbSSTSolver(void);
+  CNEMOTurbSSTSolver(void);
 
   /*!
    * \overload
@@ -54,12 +54,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  CNEMOTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void) override;
+  ~CNEMOTurbSSTSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.

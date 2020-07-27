@@ -1,5 +1,5 @@
-/*!
- * \file CTurbVariable.cpp
+﻿/*!
+ * \file CNEMOTurbVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
  * \version 7.0.6 "Blackbird"
@@ -26,11 +26,24 @@
  */
 
 
-#include "../../include/variables/CTurbVariable.hpp"
+#include "../../include/variables/CNEMOTurbVariable.hpp"
 
 
-CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+CNEMOTurbVariable::CNEMOTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+
+  /* --- Setting appropriate index information ---*/
+  nSpecies      = config->GetnSpecies();
+  RHOS_INDEX    = 0;
+  T_INDEX       = nSpecies;
+  TVE_INDEX     = nSpecies+1;
+  VEL_INDEX     = nSpecies+2;
+  P_INDEX       = nSpecies+nDim+2;
+  RHO_INDEX     = nSpecies+nDim+3;
+  H_INDEX       = nSpecies+nDim+4;
+  A_INDEX       = nSpecies+nDim+5;
+  RHOCVTR_INDEX = nSpecies+nDim+6;
+  RHOCVVE_INDEX = nSpecies+nDim+7;
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 

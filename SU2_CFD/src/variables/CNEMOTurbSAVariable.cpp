@@ -1,5 +1,5 @@
-/*!
- * \file CTurbSAVariable.cpp
+﻿/*!
+ * \file CNEMOTurbSAVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
  * \version 7.0.6 "Blackbird"
@@ -26,12 +26,12 @@
  */
 
 
-#include "../../include/variables/CTurbSAVariable.hpp"
+#include "../../include/variables/CNEMOTurbSAVariable.hpp"
 
 
-CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint,
+CNEMOTurbSAVariable::CNEMOTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint,
                                  unsigned long ndim, unsigned long nvar, CConfig *config) :
-                 CTurbVariable(npoint, ndim, nvar, config) {
+                 CNEMOTurbVariable(npoint, ndim, nvar, config) {
 
   Solution_Old = Solution = val_nu_tilde;
 
@@ -51,7 +51,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   Vortex_Tilting.resize(nPoint);
 }
 
-void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
+void CNEMOTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, const su2double* const* PrimGrad_Flow,
                                         const su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file ausmpwplus.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO. The implementation is in ausmpwplus.cpp.
  * \author F. Palacios, T. Economon
@@ -34,7 +34,7 @@
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, W.Maier
- * \version 6.2.0 "Falcon"
+ * \version 7.0.5 "Blackbird"
  */
 class CUpwAUSMPWplus_NEMO : public CNumerics {
 private:
