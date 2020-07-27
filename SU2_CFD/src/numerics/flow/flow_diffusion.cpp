@@ -545,7 +545,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
   /*--- Jacobian wrt energy --*/
 
   su2double contraction_i = 0, contraction_j = 0;
-  su2doublee proj_flux_vel_i = 0, proj_flux_vel_j = 0;
+  su2double proj_flux_vel_i = 0, proj_flux_vel_j = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     contraction_i += tau_jacobian_i[iDim][0]*val_Mean_PrimVar[iDim+1];
     contraction_j += tau_jacobian_j[iDim][0]*val_Mean_PrimVar[iDim+1];
