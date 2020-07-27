@@ -48,11 +48,12 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
       break;
 
     case SPACE_CENTERED:
-      if (iMesh != MESH_0) {
-        obj = new CLaxScheme<ViscousDecorator>(config, iMesh);
-        break;
-      }
-      switch (config.GetKind_Centered_Flow()) {
+      switch ((iMesh==MESH_0)? config.GetKind_Centered_Flow() : LAX) {
+        case NO_CENTERED:
+          break;
+        case LAX:
+          obj = new CLaxScheme<ViscousDecorator>(config, iMesh);
+          break;
         case JST:
           obj = new CJSTScheme<ViscousDecorator>(config, iMesh);
           break;
