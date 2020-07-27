@@ -533,144 +533,43 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
   const su2double factor_i = 0.5/V_i[nDim+2];
   const su2double factor_j = 0.5/V_j[nDim+2];
 
-  if (nDim == 2) {
+  /*--- Jacobians wrt density and momentum ---*/
 
-    Jacobian_i[1][0] = tau_jacobian_i[0][0];
-    Jacobian_i[1][1] = tau_jacobian_i[0][1];
-    Jacobian_i[1][2] = tau_jacobian_i[0][2];
-    Jacobian_i[2][0] = tau_jacobian_i[1][0];
-    Jacobian_i[2][1] = tau_jacobian_i[1][1];
-    Jacobian_i[2][2] = tau_jacobian_i[1][2];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsignd short iVar = 0; iVar < nVar-1; iVar++) {
+      Jacobian_i[iDim+1][iVar] = tau_jacobian_i[iDim][iVar];
+      Jacobian_j[iDim+1][iVar] = tau_jacobian_j[iDim][iVar];
+    }
+  }
 
-    Jacobian_j[1][0] = tau_jacobian_j[0][0];
-    Jacobian_j[1][1] = tau_jacobian_j[0][1];
-    Jacobian_j[1][2] = tau_jacobian_j[0][2];
-    Jacobian_j[2][0] = tau_jacobian_j[1][0];
-    Jacobian_j[2][1] = tau_jacobian_j[1][1];
-    Jacobian_j[2][2] = tau_jacobian_j[1][2];
-    
-    const su2double contraction_i = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
-                                    tau_jacobian_i[1][0]*val_Mean_PrimVar[2];
-    
-    Jacobian_i[3][0] = contraction_i + heat_flux_jac_i[0];
-    Jacobian_i[3][1] = tau_jacobian_i[0][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_i[0][2]*val_Mean_PrimVar[2]
-                     + heat_flux_jac_i[1];
-    Jacobian_i[3][2] = tau_jacobian_i[1][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_i[1][2]*val_Mean_PrimVar[2]
-                     + heat_flux_jac_i[2];
-    Jacobian_i[3][3] = heat_flux_jac_i[3];
-    
-    const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
-                                    tau_jacobian_j[1][0]*val_Mean_PrimVar[2];
-    
-    Jacobian_j[3][0] = contraction_j + heat_flux_jac_j[0];
-    Jacobian_j[3][1] = tau_jacobian_j[0][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_j[0][2]*val_Mean_PrimVar[2]
-                     + heat_flux_jac_j[1];
-    Jacobian_j[3][2] = tau_jacobian_j[1][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_j[1][2]*val_Mean_PrimVar[2]
-                     + heat_flux_jac_j[2];
-    Jacobian_j[3][3] = heat_flux_jac_j[3];
+  /*--- Jacobian wrt energy --*/
 
-    const su2double proj_flux_vel_i = val_Proj_Visc_Flux[1]*V_i[1] +
-                                      val_Proj_Visc_Flux[2]*V_i[2];
+  su2double contraction_i = 0, contraction_j = 0;
+  su2doublee proj_flux_vel_i = 0, proj_flux_vel_j = 0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    contraction_i += tau_jacobian_i[iDim][0]*val_Mean_PrimVar[iDim+1];
+    contraction_j += tau_jacobian_j[iDim][0]*val_Mean_PrimVar[iDim+1];
 
-    Jacobian_i[3][0] -= factor_i*proj_flux_vel_i;
-    Jacobian_i[3][1] += factor_i*val_Proj_Visc_Flux[1];
-    Jacobian_i[3][2] += factor_i*val_Proj_Visc_Flux[2];
+    proj_flux_vel_i += val_Proj_Visc_Flux[iDim+1]*V_i[iDim+1];
+    proj_flux_vel_j += val_Proj_Visc_Flux[iDim+1]*V_j[iDim+1];
 
-    const su2double proj_flux_vel_j = val_Proj_Visc_Flux[1]*V_j[1] +
-                                      val_Proj_Visc_Flux[2]*V_j[2];
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      Jacobian_i[nVar-1][iDim+1] += tau_jacobian_i[iDim][jDim+1]*val_Mean_PrimVar[jDim+1];
+      Jacobian_j[nVar-1][iDim+1] += tau_jacobian_j[iDim][jDim+1]*val_Mean_PrimVar[jDim+1];
+    }
+  }
 
-    Jacobian_j[3][0] -= factor_j*proj_flux_vel_j;
-    Jacobian_j[3][1] += factor_j*val_Proj_Visc_Flux[1];
-    Jacobian_j[3][2] += factor_j*val_Proj_Visc_Flux[2];
+  Jacobian_i[nVar-1][0] = contraction_i - factor_i*proj_flux_vel_i;
+  Jacobian_j[nVar-1][0] = contraction_j - factor_j*proj_flux_vel_j;
 
-  } else {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Jacobian_i[nVar-1][iDim+1] += factor_i*val_Proj_Visc_Flux[iDim+1];
+    Jacobian_j[nVar-1][iDim+1] += factor_j*val_Proj_Visc_Flux[iDim+1];
+  }
 
-    Jacobian_i[1][0] = tau_jacobian_i[0][0];
-    Jacobian_i[1][1] = tau_jacobian_i[0][1];
-    Jacobian_i[1][2] = tau_jacobian_i[0][2];
-    Jacobian_i[1][3] = tau_jacobian_i[0][3];
-    Jacobian_i[2][0] = tau_jacobian_i[1][0];
-    Jacobian_i[2][1] = tau_jacobian_i[1][1];
-    Jacobian_i[2][2] = tau_jacobian_i[1][2];
-    Jacobian_i[2][3] = tau_jacobian_i[1][3];
-    Jacobian_i[3][0] = tau_jacobian_i[2][0];
-    Jacobian_i[3][1] = tau_jacobian_i[2][1];
-    Jacobian_i[3][2] = tau_jacobian_i[2][2];
-    Jacobian_i[3][3] = tau_jacobian_i[2][3];
-
-    Jacobian_j[1][0] = tau_jacobian_j[0][0];
-    Jacobian_j[1][1] = tau_jacobian_j[0][1];
-    Jacobian_j[1][2] = tau_jacobian_j[0][2];
-    Jacobian_j[1][3] = tau_jacobian_j[0][3];
-    Jacobian_j[2][0] = tau_jacobian_j[1][0];
-    Jacobian_j[2][1] = tau_jacobian_j[1][1];
-    Jacobian_j[2][2] = tau_jacobian_j[1][2];
-    Jacobian_j[2][3] = tau_jacobian_j[1][3];
-    Jacobian_j[3][0] = tau_jacobian_j[2][0];
-    Jacobian_j[3][1] = tau_jacobian_j[2][1];
-    Jacobian_j[3][2] = tau_jacobian_j[2][2];
-    Jacobian_j[3][3] = tau_jacobian_j[2][3];
-    
-    const su2double contraction_i = tau_jacobian_i[0][0]*val_Mean_PrimVar[1] +
-                                    tau_jacobian_i[1][0]*val_Mean_PrimVar[2] +
-                                    tau_jacobian_i[2][0]*val_Mean_PrimVar[3];
-
-    Jacobian_i[4][0] = contraction_i + heat_flux_jac_i[0];
-    Jacobian_i[4][1] = tau_jacobian_i[0][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_i[0][2]*val_Mean_PrimVar[2]
-                     + tau_jacobian_i[0][3]*val_Mean_PrimVar[3]
-                     + heat_flux_jac_i[1];
-    Jacobian_i[4][2] = tau_jacobian_i[1][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_i[1][2]*val_Mean_PrimVar[2]
-                     + tau_jacobian_i[1][3]*val_Mean_PrimVar[3]
-                     + heat_flux_jac_i[2];
-    Jacobian_i[4][3] = tau_jacobian_i[2][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_i[2][2]*val_Mean_PrimVar[2]
-                     + tau_jacobian_i[2][3]*val_Mean_PrimVar[3]
-                     + heat_flux_jac_i[3];
-    Jacobian_i[4][4] = heat_flux_jac_i[4];
-    
-    const su2double contraction_j = tau_jacobian_j[0][0]*val_Mean_PrimVar[1] +
-                                    tau_jacobian_j[1][0]*val_Mean_PrimVar[2] +
-                                    tau_jacobian_j[2][0]*val_Mean_PrimVar[3];
-    
-    Jacobian_j[4][0] = contraction_j + heat_flux_jac_j[0];
-    Jacobian_j[4][1] = tau_jacobian_j[0][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_j[0][2]*val_Mean_PrimVar[2]
-                     + tau_jacobian_j[0][3]*val_Mean_PrimVar[3]
-                     + heat_flux_jac_j[1];
-    Jacobian_j[4][2] = tau_jacobian_j[1][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_j[1][2]*val_Mean_PrimVar[2]
-                     + tau_jacobian_j[1][3]*val_Mean_PrimVar[3]
-                     + heat_flux_jac_j[2];
-    Jacobian_j[4][3] = tau_jacobian_j[2][1]*val_Mean_PrimVar[1]
-                     + tau_jacobian_j[2][2]*val_Mean_PrimVar[2]
-                     + tau_jacobian_j[2][3]*val_Mean_PrimVar[3]
-                     + heat_flux_jac_j[3];
-    Jacobian_j[4][4] = heat_flux_jac_j[4];
-
-    const su2double proj_flux_vel_i = val_Proj_Visc_Flux[1]*V_i[1] +
-                                      val_Proj_Visc_Flux[2]*V_i[2] +
-                                      val_Proj_Visc_Flux[3]*V_i[3];
-
-    Jacobian_i[4][0] -= factor_i*proj_flux_vel_i;
-    Jacobian_i[4][1] += factor_i*val_Proj_Visc_Flux[1];
-    Jacobian_i[4][2] += factor_i*val_Proj_Visc_Flux[2];
-    Jacobian_i[4][3] += factor_i*val_Proj_Visc_Flux[3];
-
-    const su2double proj_flux_vel_j = val_Proj_Visc_Flux[1]*V_j[1] +
-                                      val_Proj_Visc_Flux[2]*V_j[2] +
-                                      val_Proj_Visc_Flux[3]*V_j[3];
-
-    Jacobian_j[4][0] -= factor_j*proj_flux_vel_j;
-    Jacobian_j[4][1] += factor_j*val_Proj_Visc_Flux[1];
-    Jacobian_j[4][2] += factor_j*val_Proj_Visc_Flux[2];
-    Jacobian_j[4][3] += factor_j*val_Proj_Visc_Flux[3];
-
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[nVar-1][iVar] += heat_flux_jac_i[iVar];
+    Jacobian_j[nVar-1][iVar] += heat_flux_jac_j[iVar];
   }
   
 }
@@ -942,7 +841,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     v2_i += V_i[iDim+1]*V_i[iDim+1];
     v2_j += V_j[iDim+1]*V_j[iDim+1];
   }
-  
+
   const su2double T_i = V_i[0],
                   T_j = V_j[0],
                   r_i = V_i[nDim+2],
