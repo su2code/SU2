@@ -566,9 +566,8 @@ CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config
 
 CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_nDim,
                                                              unsigned short val_nVar,
-                                                             CConfig        *config) : CNumerics(val_nDim,
-                                                                                                 val_nVar,
-                                                                                                 config) {
+                                                             CConfig        *config) :
+                               CSourceBase_Flow(val_nDim, val_nVar, config) {
 
   implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
@@ -586,11 +585,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
 }
 
-CSourceIncStreamwise_Periodic::~CSourceIncStreamwise_Periodic(void) { }
-
-void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
-                                                    su2double **Jacobian_i,
-                                                    CConfig   *config) {
+CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const CConfig *config) {
 
   delta_p             = config->GetStreamwise_Periodic_PressureDrop();
   massflow            = config->GetStreamwise_Periodic_MassFlow();
@@ -600,22 +595,22 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
   if (implicit) {
     for (iVar=0; iVar < nVar; iVar++)
       for (jVar=0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
+        jacobian[iVar][jVar] = 0.0;
   }
 
   // TK What in the case of variable density. Substract Freestream density i.e. hydrostatic pressure?
 
   /*--- No contribution in the continuity equation ---*/
-  val_residual[0] = 0.0;
+  residual[0] = 0.0;
 
   /*--- Compute the momentum equation source based on the prescribed (or computed if massflow) delta pressure ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     scalar_factor = ( delta_p/config->GetPressure_Ref() ) / norm2_translation * Streamwise_Coord_Vector[iDim]; // TK check if pres_ref is the same as force ref, TK the (0) is hardcoded! streamwise periodic has to be the first marker
-    val_residual[iDim+1] = -Volume * scalar_factor;
+    residual[iDim+1] = -Volume * scalar_factor;
   }
 
   /*--- Compute the periodic temperature contribution to the energy equation, if energy equation is considered ---*/
-  val_residual[nDim+1] = 0.0;
+  residual[nDim+1] = 0.0;
   if (energy && config->GetStreamwise_Periodic_Temperature()) {
 
     scalar_factor = integrated_heatflow * DensityInc_i / (massflow * norm2_translation);
@@ -625,9 +620,9 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
     for (iDim = 0; iDim < nDim; iDim++)
       dot_product += Streamwise_Coord_Vector[iDim] * V_i[iDim+1];
 
-    val_residual[nDim+1] = Volume * scalar_factor * dot_product;
+    residual[nDim+1] = Volume * scalar_factor * dot_product;
 
-    /*--- If a RANS turbulence model is used an additional source term, based on the eddy viscosity
+    /*--- If a RANS turbulence model ias used an additional source term, based on the eddy viscosity
           gradient is added. ---*/
     if(turbulent) {
 
@@ -639,15 +634,17 @@ void CSourceIncStreamwise_Periodic::ComputeResidual(su2double *val_residual,
       for (iDim = 0; iDim < nDim; iDim++)
         dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+5][iDim]; // gradient of eddy viscosity
 
-      val_residual[nDim+1] -= Volume * scalar_factor * dot_product;
+      residual[nDim+1] -= Volume * scalar_factor * dot_product;
     }//if turbulent
 
     /*--- Jacobian contribution of energy equation periodic source term ---*/
     if (implicit) {
       for (iDim = 0; iDim < nDim; iDim++)
-        Jacobian_i[nDim+1][iDim+1] = 0.0;//Volume * scalar_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
+        jacobian[nDim+1][iDim+1] = 0.0;//Volume * scalar_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
     }//if implicit
   }//if energy
+
+  return ResidualType<>(residual, jacobian, nullptr);
 
 }
 

@@ -301,7 +301,7 @@ public:
  * \author T. Kattmann
  * \version 6.1.0 "Falcon"
  */
-class CSourceIncStreamwise_Periodic : public CNumerics {
+class CSourceIncStreamwise_Periodic : public CSourceBase_Flow {
 private:
 
   bool implicit,  /*!< \brief Implicit calculation. */
@@ -332,19 +332,10 @@ public:
                                 CConfig        *config);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CSourceIncStreamwise_Periodic(void);
-
-  /*!
    * \brief Source term integration for a body force.
-   * \param[out] val_residual - Pointer to the residual vector.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual,
-                       su2double **Jacobian_i,
-                       CConfig   *config);
+  ResidualType<> ComputeResidual(const CConfig *config) override;
 
 };
 
