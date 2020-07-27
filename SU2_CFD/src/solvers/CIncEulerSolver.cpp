@@ -1502,13 +1502,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
 
       /*--- Compute the streamwise periodic source residual ---*/
-      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      auto residual = numerics->ComputeResidual(config);
 
       /*--- Add the source residual to the total ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
     }// for iPoint
 
