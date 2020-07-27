@@ -78,7 +78,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.669154, 1.393699, -0.709036, 208.023676] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals = [-4.668313, 1.396042, -0.709802, 208.677970] #last 4 lines
     sp_pinArray_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_2d_mf_hf.timeout   = 1600
     sp_pinArray_2d_mf_hf.tol       = 0.00001
@@ -104,6 +104,7 @@ def main():
     sp_pinArray_cht_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_mf_hf.timeout   = 1600
     sp_pinArray_cht_2d_mf_hf.tol       = 0.00001
+    sp_pinArray_cht_2d_mf_hf.multizone = True
     test_list.append(sp_pinArray_cht_2d_mf_hf)
 
     ##################################
