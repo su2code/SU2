@@ -182,7 +182,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   } else {
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
-        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + Mean_GradVel[iDim][jDim] )
+        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[iDim+1][jDim] + Mean_GradVel[jDim][iDim] )
                         - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   }
 }
@@ -482,7 +482,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[nVar-1][iDim] = heat_flux_vector[iDim];
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       Flux_Tensor[jDim+1][iDim]  = tau[jDim][iDim];
-      Flux_Tensor[nVar-1][iDim] += tau[jDim][iDim] * val_primvar[iDim+1];
+      Flux_Tensor[nVar-1][iDim] += tau[jDim][iDim] * val_primvar[jDim+1];
     }
   }
 
