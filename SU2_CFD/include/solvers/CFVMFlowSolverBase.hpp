@@ -29,29 +29,15 @@
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
-#include "../variables/CNEMOEulerVariable.hpp"
-
-namespace detail {
-template <class VariableType>
-constexpr size_t flowSolMaxnVar() {
-  return 12;
-}
-template<>
-constexpr size_t flowSolMaxnVar<CNEMOEulerVariable>() {
-  return 20;
-}
-} // namespace detail
 
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
  protected:
-  enum : size_t { MAXNDIM = 3 }; /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t {
-    MAXNVAR = detail::flowSolMaxnVar<VariableType>()
-  }; /*!< \brief Max number of variables, used in some static arrays. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
 
-  enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
-  enum : size_t { OMP_MIN_SIZE = 32 };  /*!< \brief Min chunk size for edge loops (max is color group size). */
+  static constexpr size_t OMP_MAX_SIZE = 512; /*!< \brief Max chunk size for light point loops. */
+  static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
