@@ -50,7 +50,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
   Mean_GradVel = new su2double* [nDim];
-  for (iDim = 0; iDim < Dim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     Mean_GradVel[iDim] = new su2double [nDim];
 
   tau_jacobian_i = new su2double* [nDim];
@@ -84,7 +84,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
 
   if (Mean_GradVel != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      delete [] Mean_GradVel[iVar];
+      delete [] Mean_GradVel[iDim];
     delete [] Mean_GradVel;
   }
 
@@ -161,6 +161,18 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
 
   /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
 
+  // if (using_uq){
+  //   for (iDim = 0 ; iDim < nDim; iDim++)
+  //     for (jDim = 0 ; jDim < nDim; jDim++)
+  //       tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+  //       - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
+
+  // } else {
+  //   for (iDim = 0 ; iDim < nDim; iDim++)
+  //     for (jDim = 0 ; jDim < nDim; jDim++)
+  //       tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+  //                       - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+  // }
   if (using_uq){
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
@@ -170,7 +182,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   } else {
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
-        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + Mean_GradVel[iDim][jDim] )
                         - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   }
 }
