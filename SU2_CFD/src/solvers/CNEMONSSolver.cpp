@@ -203,12 +203,12 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
   } //iEdge
 }
 
-void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
-                                     CSolver **solution_container,
-                                     CNumerics *conv_numerics,
-                                     CNumerics *sour_numerics,
-                                     CConfig *config,
-                                     unsigned short val_marker) {
+void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
+                                                 CSolver **solution_container,
+                                                 CNumerics *conv_numerics,
+                                                 CNumerics *sour_numerics,
+                                                 CConfig *config,
+                                                 unsigned short val_marker) {
 
   /*--- Local variables ---*/
   bool implicit;
@@ -292,111 +292,44 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   }
 }
 
-void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
-                                                 CSolver **solution_container,
-                                                 CNumerics *conv_numerics,
-                                                 CNumerics *sour_numerics,
-                                                 CConfig *config,
-                                                 unsigned short val_marker) {
+void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
+                                     CSolver **solution_container,
+                                     CNumerics *conv_numerics,
+                                     CNumerics *sour_numerics,
+                                     CConfig *config,
+                                     unsigned short val_marker) {
 
-  /*CGarbacz: READ THIS
-  /*-----------------------------------------------------------------------------------------------------*/
-  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
-  su2double CConfig::GetWall_HeatFlux(string val_marker)
-  but for HeatFluxNonCatalytic_Wall */
-  /*-----------------------------------------------------------------------------------------------------*/
+  string Marker_Tag, Catalytic_Tag;
+  unsigned short iMarker_HeatFlux, iMarker_Catalytic;
+  bool catalytic;
 
-  /*--- Call standard "HeatFlux" wall to apply no-slip & energy b.c.'s ---*/
-  BC_HeatFlux_Wall(geometry, solution_container, conv_numerics,
-                   sour_numerics, config, val_marker);
+  catalytic = false;
+  iMarker_Catalytic = 0;
 
-  //	/*--- Local variables ---*/
-  //  bool implicit;
-  //	unsigned short iDim, iSpecies, iVar;
-  //  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
-  //	unsigned long iVertex, iPoint;
-  //	double pcontrol;
-  //  su2double rho, Ys, eves, hs;
-  //	double *Normal, Area;
-  //  su2double *Ds, *V, *dYdn, SdYdn;
-  //  su2double **GradV, **GradY;
-  //
-  //  /*--- Assign booleans ---*/
-  //	implicit = (config->GetKind_TimeIntScheme_NEMO() == EULER_IMPLICIT);
-  //
-  //  /*--- Set "Proportional control" coefficient ---*/
-  //  pcontrol = 0.6;
-  //
-  //  /*--- Get the locations of the primitive variables ---*/
-  //  RHOS_INDEX = nodes->GetRhosIndex();
-  //  RHO_INDEX  = nodes->GetRhoIndex();
-  //  T_INDEX    = nodes->GetTIndex();
-  //  TVE_INDEX  = nodes->GetTveIndex();
-  //
-  //  /*--- Allocate arrays ---*/
-  //  dYdn = new su2double[nSpecies];
-  //  GradY = new su2double*[nSpecies];
-  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //    GradY[iSpecies] = new su2double[nDim];
-  //
-  //	/*--- Loop over all of the vertices on this boundary marker ---*/
-  //	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-  //		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-  //
-  //		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-  //		if (geometry->nodes->GetDomain()) {
-  //
-  //			/*--- Compute dual-grid area and boundary normal ---*/
-  //			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-  //			Area = 0.0;
-  //			for (iDim = 0; iDim < nDim; iDim++)
-  //				Area += Normal[iDim]*Normal[iDim];
-  //			Area = sqrt (Area);
-  //
-  //			/*--- Initialize the convective & viscous residuals to zero ---*/
-  //			for (iVar = 0; iVar < nVar; iVar++)
-  //				Res_Visc[iVar] = 0.0;
-  //
-  //      /*--- Get temperature gradient information ---*/
-  //      V = nodes->GetPrimVar();
-  //      GradV  = nodes->GetGradient_Primitive();
-  //
-  //      /*--- Rename for convenience ---*/
-  //      rho = V[RHO_INDEX];
-  //      Ds  = nodes->GetDiffusionCoeff();
-  //
-  //      /*--- Calculate normal derivative of mass fraction ---*/
-  //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-  //        Ys = V[RHOS_INDEX+iSpecies]/rho;
-  //        dYdn[iSpecies] = 0.0;
-  //        for (iDim = 0; iDim < nDim; iDim++)
-  //          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
-  //                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
-  //      }
-  //
-  //      /*--- Calculate supplementary quantities ---*/
-  //      SdYdn = 0.0;
-  //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
-  //
-  //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-  //        Ys   = V[RHOS_INDEX+iSpecies]/rho;
-  //        eves = nodes->CalcEve(config, V[TVE_INDEX], iSpecies);
-  //        hs   = nodes->CalcHs(config, V[T_INDEX], eves, iSpecies);
-  //        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
-  //        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
-  //        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
-  //      }
-  //
-  //			/*--- Viscous contribution to the residual at the wall ---*/
-  //      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-  //		}
-  //	}
-  //
-  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  //    delete [] GradY[iSpecies];
-  //  delete [] GradY;
-  //  delete [] dYdn;
+  Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  while( iMarker_Catalytic < config->GetnWall_Catalytic()){
+
+    Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
+
+    if (Marker_Tag == Catalytic_Tag){
+
+      catalytic = true;
+      BC_HeatFluxCatalytic_Wall(geometry, solution_container, conv_numerics,
+                                sour_numerics, config, val_marker);
+      break;
+
+    } else {
+
+      iMarker_Catalytic++;
+     
+    }
+  }
+
+  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+                                              sour_numerics, config, val_marker);
+
+  
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -406,12 +339,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned short val_marker) {
 
-    /*CGarbacz: READ THIS
-  /*-----------------------------------------------------------------------------------------------------*/
-  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
-  su2double CConfig::GetWall_HeatFlux(string val_marker)
-  but for HeatFluxCatalytic_Wall */
-  /*-----------------------------------------------------------------------------------------------------*/
+  SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational", CURRENT_FUNCTION);
 
   /*--- Local variables ---*/
   bool implicit, catalytic;
@@ -584,6 +512,41 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                        CConfig *config,
                                        unsigned short val_marker) {
 
+  string Marker_Tag, Catalytic_Tag;
+  unsigned short iMarker_Isothermal, iMarker_Catalytic;
+  bool catalytic;
+
+  catalytic = false;
+  iMarker_Catalytic = 0;
+
+  Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  while( iMarker_Catalytic < config->GetnWall_Catalytic()){
+
+    Catalytic_Tag = config->GetWall_Catalytic_TagBound(iMarker_Catalytic);
+
+    if (Marker_Tag == Catalytic_Tag){
+
+      catalytic = true;
+      BC_IsothermalCatalytic_Wall(geometry, solution_container, conv_numerics,
+                                  sour_numerics, config, val_marker);
+      break;
+    } else {
+      iMarker_Catalytic++;     
+    }
+  }
+
+  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+                                                sour_numerics, config, val_marker);
+}
+
+void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
+                                                   CSolver **solution_container,
+                                                   CNumerics *conv_numerics,
+                                                   CNumerics *sour_numerics,
+                                                   CConfig *config,
+                                                   unsigned short val_marker) {
+
   unsigned short iDim, iVar, jVar;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
@@ -696,26 +659,6 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   } 
 }
 
-void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
-                                                   CSolver **solution_container,
-                                                   CNumerics *conv_numerics,
-                                                   CNumerics *sour_numerics,
-                                                   CConfig *config,
-                                                   unsigned short val_marker) {
-
-  /*CGarbacz: READ THIS
-  /*-----------------------------------------------------------------------------------------------------*/
-  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
-  su2double CConfig::GetIsothermal_Temperature(string val_marker)
-  but for IsothermalNonCatalytic_Wall */
-  /*-----------------------------------------------------------------------------------------------------*/
-
-  /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
-  BC_Isothermal_Wall(geometry, solution_container, conv_numerics,
-                     sour_numerics, config, val_marker);
-
-}
-
 void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CSolver **solution_container,
                                                 CNumerics *conv_numerics,
@@ -723,16 +666,11 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CConfig *config,
                                                 unsigned short val_marker) {
 
-  /*CGarbacz: READ THIS
-  /*-----------------------------------------------------------------------------------------------------*/
-  /*If you are fixing this function, you will also need to define a function in CConfig class equivalent to
-  su2double CConfig::GetIsothermal_Temperature(string val_marker)
-  but for IsothermalCatalytic_Wall */
-  /*-----------------------------------------------------------------------------------------------------*/
+  SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational", CURRENT_FUNCTION);
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
-  BC_Isothermal_Wall(geometry, solution_container, conv_numerics,
-                     sour_numerics, config, val_marker);
+  BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+                                 sour_numerics, config, val_marker);
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
@@ -914,11 +852,11 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                CSolver **solution_container,
-                                CNumerics *conv_numerics,
-                                CNumerics *visc_numerics,
-                                CConfig *config,
-                                unsigned short val_marker) {
+                                            CSolver **solution_container,
+                                            CNumerics *conv_numerics,
+                                            CNumerics *visc_numerics,
+                                            CConfig *config,
+                                            unsigned short val_marker) {
 
 
   unsigned short iDim, jDim, iVar, jVar, iSpecies;

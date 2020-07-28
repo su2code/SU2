@@ -274,7 +274,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
  
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
-  cout << "cat: MAXNVAR=" << MAXNVAR << endl;
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CNEMOEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 

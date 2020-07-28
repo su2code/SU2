@@ -339,25 +339,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Enthalpy ---*/
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
-//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-// cout <<setprecision(10)<< "cat: val_eves["  << iSpecies << "]=" << val_eves[iSpecies] << endl;
-//   cout <<setprecision(10)<< "cat: val_cvves[" << iSpecies << "]=" << val_Cvves[iSpecies] << endl;
-//   cout <<setprecision(10)<< "cat: rhos[" << iSpecies << "]=" << V[RHOS_INDEX+iSpecies] << endl;
-//    
-//}
-//cout << "cat: rho=" << V[RHO_INDEX] << endl;
-//for (iDim = 0; iDim < nDim; iDim++)
-//  cout <<setprecision(10)<< "cat: Vel[" << iDim << "]=" << V[VEL_INDEX+iDim] << endl;
-//cout <<setprecision(10)<< "cat: T=" << V[T_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: Tve=" << V[TVE_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: rhoCvtr=" << V[RHOCVTR_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: rhoCvve=" << V[RHOCVVE_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: P=" << V[P_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: A=" << V[A_INDEX] << endl;
-//
-//   exit(0);
-//
-
   return nonPhys;
 }
 

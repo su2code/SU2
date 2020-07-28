@@ -209,11 +209,7 @@ private:
   nMarker_Outlet,                 /*!< \brief Number of outlet flow markers. */
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
-  nMarker_IsothermalCatalytic,    /*!< \brief Number of isothermal catalytic wall boundaries. */
-  nMarker_IsothermalNonCatalytic, /*!< \brief Number of isothermal non-catalytic wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
-  nMarker_HeatFluxCatalytic,      /*!< \brief Number of constant heat flux catalytic wall boundaries. */
-  nMarker_HeatFluxNonCatalytic,   /*!< \brief Number of constant heat flux non-catalytic wall boundaries. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,           /*!< \brief Number of nacelle inflow flow markers. */
   nMarker_Clamped,                /*!< \brief Number of clamped markers in the FEM. */
@@ -260,11 +256,7 @@ private:
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
   *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
-  *Marker_IsothermalCatalytic,    /*!< \brief Isothermal Catalytic wall markers. */
-  *Marker_IsothermalNonCatalytic, /*!< \brief Isothermal NonCatalytic wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
-  *Marker_HeatFluxCatalytic,      /*!< \brief Constant heat flux Catalytic wall markers. */
-  *Marker_HeatFluxNonCatalytic,   /*!< \brief Constant heat flux NonCatalytic wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
   *Marker_Clamped,                /*!< \brief Clamped markers. */
@@ -1154,12 +1146,15 @@ private:
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
   /* other NEMO configure options*/
-  unsigned short nSpecies;                  /*!< \brief No of species present in flow */
-  su2double *Gas_Composition;               /*!< \brief Initial mass fractions of flow [dimensionless] */
-  bool frozen;                              /*!< \brief Flag for determining if mixture is frozen. */
-  string GasModel;                          /*!< \brief Gas Model. */
-  bool ionization;                          /*!< \brief Flag for determining if free electron gas is in the mixture. */
-  su2double pnorm_heat;                     /*!< \brief pnorm for heat-flux. */
+  unsigned short nSpecies,                  /*!< \brief No of species present in flow */
+  nWall_Catalytic;                          /*!< \brief No of catalytic walls */
+  su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
+  pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
+  bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
+  ionization;                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  string GasModel,                          /*!< \brief Gas Model. */
+  *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
+  
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -3742,6 +3737,20 @@ public:
    * \return Index of transport coefficient model.
    */
   unsigned short GetKind_TransCoeffModel(void) const { return Kind_TransCoeffModel; }
+
+  /*!
+   * \brief Get the total number of heat flux markers.
+   * \return Total number of heat flux markers.
+   */
+  unsigned short GetnWall_Catalytic(void) const { return nWall_Catalytic; }
+
+  /*!
+   * \brief Get the name of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetWall_Catalytic_TagBound(unsigned short val_marker) const { return Wall_Catalytic[val_marker]; }
 
   /*!
    * \brief Fluid model that we are using.
