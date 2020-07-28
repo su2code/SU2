@@ -1,7 +1,7 @@
 /*!
  * \file msw.hpp
- * \brief Declaration of numerics classes for modified Steger-Warming scheme. The implementation is in msw.cpp.
- * \author F. Palacios, T. Economon
+ * \brief Declaration of numerics classes for modified Steger-Warming scheme.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../CNumerics.hpp"
+#include "../CNEMONumerics.hpp"
 
 /*!
  * \class CUpwMSW_NEMO
@@ -36,21 +36,17 @@
  * \author ADL Stanford
  * \version 6.1.0 "Falcon"
  */
-class CUpwMSW_NEMO : public CNumerics {
+class CUpwMSW_NEMO : public CNEMONumerics {
 private:
-    bool ionization, implicit;
     su2double *Diff_U;
-    su2double *u_i, *u_j, *ust_i, *ust_j;
+    su2double *ust_i, *ust_j;
     su2double *Fc_i, *Fc_j;
     su2double *Lambda_i, *Lambda_j;
-    su2double *rhos_i, *rhos_j, *rhosst_i, *rhosst_j;
+    su2double *rhosst_i, *rhosst_j;
     su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j;
     vector<su2double> eves_st_i, eves_st_j;
     su2double *dPdUst_i, *dPdUst_j;
     su2double **P_Tensor, **invP_Tensor;
-    unsigned short nPrimVar, nPrimVarGrad;
-
-    su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
 
 public:
 

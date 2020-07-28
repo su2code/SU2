@@ -1,7 +1,7 @@
 /*!
  * \file ausm.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
- * \author F. Palacios, T. Economon
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,18 +30,8 @@
 CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, 
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad, 
-                             CConfig *config) : CNumerics(val_nDim, val_nVar,
+                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
-
-  /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Define useful constants ---*/
-  nVar     = val_nVar;
-  nPrimVar = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
 
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
@@ -49,8 +39,6 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   dmRM   = new su2double [nVar];
   dpLP   = new su2double [nVar];
   dpRM   = new su2double [nVar];
-  daL    = new su2double [nVar];
-  daR    = new su2double [nVar];
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];
@@ -115,37 +103,6 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
-
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-//    cout << setprecision(10) << "cat: rhos_i[" << iSpecies << "]=" << rhos_i[iSpecies] << endl;
-//    cout << setprecision(10) << "cat: rhos_j[" << iSpecies << "]=" << rhos_j[iSpecies] << endl;
-//  }
-//  
-//  for (iDim = 0; iDim < nDim; iDim++){
-//    cout << setprecision(10) << "cat: u_i[" << iDim << "]=" << u_i[iDim] << endl;
-//    cout << setprecision(10) << "cat: u_j[" << iDim << "]=" << u_j[iDim] << endl;
-//  }
-//
-//  cout << setprecision(10) << "cat: P_i=" << P_i << endl;
-//  cout << setprecision(10) << "cat: P_j=" << P_j << endl;
-//  
-//  cout << setprecision(10) << "cat: h_i=" << h_i << endl;
-//  cout << setprecision(10) << "cat: h_j=" << h_j << endl;
-//  
-//  cout << setprecision(10) << "cat: a_i=" << a_i << endl;
-//  cout << setprecision(10) << "cat: a_j=" << a_j << endl;
-//  
-//  cout << setprecision(10) << "cat: rho_i=" << rho_i << endl;
-//  cout << setprecision(10) << "cat: rho_j=" << rho_j << endl;
-//  
-//  cout << setprecision(10) << "cat: eve_i=" << e_ve_i << endl;
-//  cout << setprecision(10) << "cat: eve_j=" << e_ve_j << endl;
-//  
-//  cout << setprecision(10) << "cat: rhoCvtr_i=" << rhoCvtr_i << endl;
-//  cout << setprecision(10) << "cat: rhoCvtr_j=" << rhoCvtr_j << endl;
-//  
-//  cout << setprecision(10) << "cat: rhoCvve_i=" << rhoCvve_i << endl;
-//  cout << setprecision(10) << "cat: rhoCvve_j=" << rhoCvve_j << endl;
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;

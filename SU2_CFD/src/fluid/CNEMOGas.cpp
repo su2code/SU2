@@ -1,7 +1,7 @@
 /*!
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
- * \author W. Maier, C. Garbacz
+ * \author C. Garbacz.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,8 +28,6 @@
 #include "../../include/fluid/CNEMOGas.hpp"
 
 CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
-
-
 
   nSpecies = config->GetnSpecies();
 

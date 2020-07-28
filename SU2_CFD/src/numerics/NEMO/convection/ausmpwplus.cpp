@@ -1,7 +1,7 @@
 /*!
  * \file ausmpwplus.cpp
- * \brief Implementations of the AUSM-family of schemes.
- * \author F. Palacios, T. Economon
+ * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,19 +31,8 @@ CUpwAUSMPWplus_NEMO::CUpwAUSMPWplus_NEMO(unsigned short val_nDim,
                                          unsigned short val_nVar,
                                          unsigned short val_nPrimVar,
                                          unsigned short val_nPrimVarGrad,
-                                         CConfig *config) : CNumerics(val_nDim,
-                                                                      val_nVar,
-                                                                      config) {
-
-  /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Define useful constants ---*/
-  nVar     = val_nVar;
-  nPrimVar = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
+                                         CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
+                                                          config) {
 
   FcL     = new su2double [nVar];
   FcR     = new su2double [nVar];
@@ -115,7 +104,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
 
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
 
-  unsigned short iDim, jDim, iVar, jVar, iSpecies, nHeavy, nEl;
+  unsigned short iDim, jDim, iVar, jVar, iSpecies;
   su2double rho_i, rho_j, rhoEve_i, rhoEve_j, P_i, P_j, h_i, h_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;

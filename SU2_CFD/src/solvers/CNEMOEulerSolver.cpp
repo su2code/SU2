@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 ﻿/*!
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
+=======
+/*!
+ * \file CNEMOEulerSolver.cpp
+ * \brief Headers of the CNEMOEulerSolver class
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
+>>>>>>> origin/feature_NEMO
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -274,7 +281,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
  
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
-  cout << "cat: MAXNVAR=" << MAXNVAR << endl;
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR))
     SU2_MPI::Error("Oops! The CNEMOEulerSolver static array sizes are not large enough.",CURRENT_FUNCTION);
 
@@ -291,6 +297,9 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
       delete [] LowMach_Precontioner[iVar];
     delete [] LowMach_Precontioner;
   }
+
+  delete node_infty;
+  delete FluidModel;
 }
 
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
@@ -904,9 +913,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       }   
       
       chk_err_i = nodes->Cons2PrimVar(Conserved_i, Primitive_i,
-                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i, FluidModel);
+                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
       chk_err_j = nodes->Cons2PrimVar(Conserved_j, Primitive_j,
-                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j, FluidModel);
+                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
       
        /*--- Check for physical solutions in the reconstructed values ---*/
       // Note: If non-physical, revert to first order

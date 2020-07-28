@@ -1152,10 +1152,6 @@ enum BC_TYPE {
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
-  HEAT_FLUX_NONCATALYTIC = 51, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
-  HEAT_FLUX_CATALYTIC= 52, /*!< \brief No-slip, constant heat flux, catalytic bc. */
-  ISOTHERMAL_NONCATALYTIC = 53, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
-  ISOTHERMAL_CATALYTIC = 54, /*!< \brief No-slip, constant temperature, catalytic bc. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
 };

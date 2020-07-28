@@ -1,8 +1,7 @@
 /*!
  * \file roe.hpp
- * \brief Delarations of numerics classes for Roe-type schemes in NEMO,
- *        implemented in roe.cpp.
- * \author F. Palacios, T. Economon
+ * \brief Delarations of numerics classes for Roe-type schemes in NEMO.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -28,7 +27,7 @@
 
 #pragma once
 
-#include "../../CNumerics.hpp"
+#include "../CNEMONumerics.hpp"
 
 /*!
  * \class CUpwRoe_NEMO
@@ -37,9 +36,8 @@
  * \author S. Copeland, W. Maier
  * \version 6.1.0 "Falcon"
  */
-class CUpwRoe_NEMO : public CNumerics {
+class CUpwRoe_NEMO : public CNEMONumerics {
 private:
-    bool implicit, ionization;
     su2double *Diff_U;
     su2double *RoeU, *RoeV;
     vector<su2double> roe_eves;
@@ -50,10 +48,7 @@ private:
     su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
     su2double Proj_ModJac_Tensor_ij, R;
     su2double *RoedPdU;
-    unsigned short nPrimVar, nPrimVarGrad;
-
-    su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
-
+    
 public:
 
   /*!

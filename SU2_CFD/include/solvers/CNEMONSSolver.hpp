@@ -1,7 +1,7 @@
 /*!
- * \file CEulerSolver.hpp
- * \brief Headers of the CEulerSolver class
- * \author F. Palacios, T. Economon
+ * \file CNEMONSSolver.hpp
+ * \brief Headers of the CNEMONSSolver class
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -133,7 +133,7 @@ public:
                                     CConfig *config, unsigned short val_marker);
 
   /*!
-   * \brief Impose the Navier-Stokes boundary condition (strong).
+   * \brief Generic implementation of the isothermal wall.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method for convective terms.
@@ -143,6 +143,18 @@ public:
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the Navier-Stokes boundary condition (strong).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -167,22 +179,6 @@ public:
    * \param[in] visc_numerics - Description of the numerical method for viscous terms.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
-                                      CSolver **solver_container,
-                                      CNumerics *conv_numerics,
-                                      CNumerics *visc_numerics,
-                                      CConfig *config,
-                                      unsigned short val_marker);
-
-  /*!
-   * \brief Impose the Navier-Stokes boundary condition (strong).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method for convective terms.
-   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
   */
   void BC_Smoluchowski_Maxwell(CGeometry *geometry,
                                CSolver **solution_container,
@@ -190,13 +186,6 @@ public:
                                CNumerics *visc_numerics,
                                CConfig *config,
                                unsigned short val_marker);
-
- // /*!
- //  * \brief Compute the viscous forces and all the addimensional coefficients.
- //  * \param[in] geometry - Geometrical definition of the problem.
- //  * \param[in] config - Definition of the particular problem.
- //  */
- // void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
    * \brief Compute the viscous residuals.

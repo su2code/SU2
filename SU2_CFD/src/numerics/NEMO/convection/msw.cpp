@@ -1,7 +1,7 @@
 /*!
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
- * \author F. Palacios, T. Economon
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -31,19 +31,8 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
                            unsigned short val_nVar,
                            unsigned short val_nPrimVar,
                            unsigned short val_nPrimVarGrad,
-                           CConfig *config) : CNumerics(val_nDim,
-                                                        val_nVar,
-                                                        config) {
-
-  /*--- Set booleans from CConfig settings ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Set iterator size ---*/
-  nVar         = val_nVar;
-  nPrimVar     = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim         = val_nDim;
-  nSpecies     = config->GetnSpecies();
+                           CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
+                                                          config) {
 
   /*--- Allocate arrays ---*/
   Diff_U   = new su2double [nVar];

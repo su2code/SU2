@@ -1,7 +1,7 @@
 /*!
  * \file ausmplusup2.cpp
- * \brief Implementations of the AUSM-family of schemes.
- * \author F. Palacios, T. Economon
+ * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,22 +30,15 @@
 CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                                            unsigned short val_nPrimVar,
                                            unsigned short val_nPrimVarGrad,
-                                           CConfig *config): CNumerics (val_nDim, val_nVar, config){
+                                           CConfig *config): CNEMONumerics (val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
+                                                          config){
 
 
   unsigned short iVar;
 
-  /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
   /*--- Define useful constants ---*/
   Kp       = 0.25;
   sigma    = 1.0;
-  nVar     = val_nVar;
-  nPrimVar = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
 
   /*--- Allocate data structures ---*/
   FcL    = new su2double [nVar];

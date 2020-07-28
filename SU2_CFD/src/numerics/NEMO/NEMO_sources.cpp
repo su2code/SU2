@@ -2,7 +2,7 @@
  * \file NEMO_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
- * \author F. Palacios, T. Economon
+ * \author C. Garbacz, W. Maier, S. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -32,21 +32,10 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
                            unsigned short val_nVar,
                            unsigned short val_nPrimVar,
                            unsigned short val_nPrimVarGrad,
-                           CConfig *config) : CNumerics(val_nDim,
-                                                        val_nVar,
-                                                        config) {
+                           CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
+                                                          config) {
 
   unsigned short iVar, iSpecies;
-
-  /*--- Assign booleans from CConfig ---*/
-  implicit   = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-
-  /*--- Define useful constants ---*/
-  nVar         = val_nVar;
-  nPrimVar     = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim         = val_nDim;
-  nSpecies     = config->GetnSpecies();
 
   /*--- Allocate arrays ---*/
   alphak = new int[nSpecies];
@@ -64,7 +53,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
     dYdr[iSpecies] = new su2double[nSpecies];
   }
 
-  residual = new su2double [nVar];
+  residual = new su2double[nVar];
 }
 
 CSource_NEMO::~CSource_NEMO(void) {
@@ -252,7 +241,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, iVar, jVar;
-  unsigned short nEv, nHeavy, nEl;
+  unsigned short nEv;
   su2double  P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N;
   vector<su2double> rhos;
 

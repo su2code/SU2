@@ -1,7 +1,7 @@
 /*!
  * \file NEMO_sources.hpp
- * \brief Delarations of numerics classes for source-term integration. The implementation is in NEMO_sources.cpp.
- * \author F. Palacios, T. Economon
+ * \brief Delarations of numerics classes for source-term integration.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../CNumerics.hpp"
+#include "CNEMONumerics.hpp"
 
 /*!
  * \class CSource_NEMO
@@ -36,10 +36,9 @@
  * \author S. Copeland, W. Maier
  * \version 6.1.0 "Falcon"
  */
-class CSource_NEMO : public CNumerics {
+class CSource_NEMO : public CNEMONumerics {
 private:
-  bool   implicit;
-  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
+ 
   int    *alphak, *betak;
   su2double *X; // Mole fraction
   su2double *Y, **dYdr; // Mass fraction

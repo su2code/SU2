@@ -1,25 +1,20 @@
 ﻿/*!
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
+<<<<<<< HEAD
  * \author F. Palacios, T. Economon, S.R. Copeland, W. Maier
  * \version 7.0.5 "Blackbird"
+=======
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \version 7.0.6 "Blackbird"
+>>>>>>> origin/feature_NEMO
  *
- * The current SU2 release has been coordinated by the
- * SU2 International Developers Society <www.su2devsociety.org>
- * with selected contributions from the open-source community.
+ * SU2 Project Website: https://su2code.github.io
  *
- * The main research teams contributing to the current release are:
- *  - Prof. Juan J. Alonso's group at Stanford University.
- *  - Prof. Piero Colonna's group at Delft University of Technology.
- *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *  - Prof. Rafael Palacios' group at Imperial College London.
- *  - Prof. Vincent Terrapon's group at the University of Liege.
- *  - Prof. Edwin van der Weide's group at the University of Twente.
- *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
+ * The SU2 Project is maintained by the SU2 Foundation 
+ * (http://su2foundation.org)
  *
- * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
- *                      Tim Albring, and the SU2 contributors.
+ * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -183,20 +178,22 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
   }
 }
 
-bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) {
+bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   bool nonPhys, bkup;
   unsigned short iVar;
 
+  fluidmodel = static_cast<CNEMOGas*>(FluidModel);
+
   /*--- Convert conserved to primitive variables ---*/
   nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                         dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
+                         dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
     bkup = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
-                        dTvedU[iPoint], eves[iPoint], Cvves[iPoint], fluidmodel);
+                        dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   SetVelocity2(iPoint);
@@ -207,7 +204,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) 
 bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
                                       su2double *val_dPdU, su2double *val_dTdU,
                                       su2double *val_dTvedU, su2double *val_eves,
-                                      su2double *val_Cvves, CNEMOGas *fluidmodel) {
+                                      su2double *val_Cvves) {
 
   bool nonPhys, errT, errTve;
   unsigned short iDim, iSpecies;
@@ -336,25 +333,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   /*--- Enthalpy ---*/
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
-
-//for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-// cout <<setprecision(10)<< "cat: val_eves["  << iSpecies << "]=" << val_eves[iSpecies] << endl;
-//   cout <<setprecision(10)<< "cat: val_cvves[" << iSpecies << "]=" << val_Cvves[iSpecies] << endl;
-//   cout <<setprecision(10)<< "cat: rhos[" << iSpecies << "]=" << V[RHOS_INDEX+iSpecies] << endl;
-//    
-//}
-//cout << "cat: rho=" << V[RHO_INDEX] << endl;
-//for (iDim = 0; iDim < nDim; iDim++)
-//  cout <<setprecision(10)<< "cat: Vel[" << iDim << "]=" << V[VEL_INDEX+iDim] << endl;
-//cout <<setprecision(10)<< "cat: T=" << V[T_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: Tve=" << V[TVE_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: rhoCvtr=" << V[RHOCVTR_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: rhoCvve=" << V[RHOCVVE_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: P=" << V[P_INDEX] << endl;
-//cout <<setprecision(10)<< "cat: A=" << V[A_INDEX] << endl;
-//
-//   exit(0);
-//
 
   return nonPhys;
 }
