@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../CNumerics.hpp"
+#include "../CNEMONumerics.hpp"
 
 /*!
  * \class CUpwAUSMPLUSUP2_NEMO
@@ -35,16 +35,12 @@
  * \ingroup ConvDiscr
  * \author Walter Maier, A. Sachedeva
  */
-class CUpwAUSMPLUSUP2_NEMO : public CNumerics {
+class CUpwAUSMPLUSUP2_NEMO : public CNEMONumerics {
 private:
-  bool implicit, ionization;
   su2double *FcL, *FcR, *FcLR;
   su2double *dmLP, *dmRM, *dpLP, *dpRM;
   su2double *daL, *daR;
-  su2double *rhos_i, *u_i;
-  su2double *rhos_j, *u_j;
-  su2double a_i, P_i, h_i, ProjVel_i;
-  su2double a_j, P_j, h_j, ProjVel_j;
+  su2double ProjVel_i, ProjVel_j;
   su2double sq_vel, Proj_ModJac_Tensor_ij;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
   su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
@@ -60,12 +56,8 @@ private:
   su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   su2double R;
   su2double *RoedPdU;
-  unsigned short nPrimVar, nPrimVarGrad;
-
-  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
 
 public:
-
 
   /*!
    * \brief Constructor of the class.

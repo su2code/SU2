@@ -225,24 +225,7 @@ protected:
 
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
-  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
-
-  /* Supporting data structures for NEMO solver */
-
-  unsigned short nSpecies; /*!< \brief Number of species present in plasma */
-  
-  su2double *dPdU_i, *dPdU_j;
-  su2double *dTdU_i, *dTdU_j;
-  su2double *dTvedU_i, *dTvedU_j;
-
-  vector<su2double> hs;
-  su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
- 
-  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
-
-  CNEMOGas *fluidmodel;
-  
+  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;  
 
 public:
   /*!
@@ -780,18 +763,7 @@ public:
   void GetInviscidProjFlux(const su2double *val_density, const su2double *val_velocity,
                            const su2double *val_pressure, const su2double *val_enthalpy,
                            const su2double *val_normal, su2double *val_Proj_Flux) const;
-
-  /*!
-   * \Overload
-   * \brief Compute the projected inviscid flux vector.
-   * \param[in] val_U - Pointer to the conserved variables.
-   * \param[in] val_V - Pointer to the primitive variables.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_Proj_Flux - Pointer to the projected flux.
-   */
-  void GetInviscidProjFlux(const su2double *val_U, const su2double *val_V,
-                           const su2double *val_normal, su2double *val_Proj_Flux);
-
+  
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
@@ -817,20 +789,6 @@ public:
   void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                           const su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor) const;
-
-  /*!
-   * \overload
-   * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
-   * \param[in] val_U - Vector conserved variables.
-   * \param[in] val_V - Vector of primitive variables.
-   * \param[in] val_dPdU - Vector of partial derivatives of pressure w.r.t. conserved vars.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_scale - Scale of the projection.
-   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
-   */
-  void GetInviscidProjJac(const su2double *val_U, const su2double *val_V, const su2double *val_dPdU,
-                          const su2double *val_normal, const su2double val_scale,
-                          su2double **val_Proj_Jac_Tensor);
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -954,22 +912,6 @@ public:
                   su2double **val_p_tensor) const;
 
   /*!
-   * \overload
-   * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] U - Vector of conserved variables (really only need rhoEve)
-   * \param[in] V - Vector of primitive variables
-   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] l - Tangential vector to face.
-   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-   */
-  void GetPMatrix(const su2double *U, const su2double *V, const su2double *val_dPdU,
-                  const su2double *val_normal, const su2double *l, const su2double *m,
-                  su2double **val_p_tensor) const;
-
-  /*!
    * \brief Computation of the matrix Rinv*Pe.
    * \param[in] Beta2 - A variable in used to define Pe matrix.
    * \param[in] val_enthalpy - value of the enthalpy.
@@ -1083,23 +1025,6 @@ public:
   void GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
                       const su2double *val_soundspeed, const su2double *val_normal,
                       su2double **val_invp_tensor) const;
-
-
-  /*!
-   * \overload
-   * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] U - Vector of conserved variables.
-   * \param[in] V - Vector of primitive variables.
-   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] l - Tangential vector to face.
-   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-   */
-  void GetPMatrix_inv(const su2double *U, const su2double *V, const su2double *val_dPdU,
-                     const su2double *val_normal, const su2double *l, const su2double *m,
-                     su2double **val_invp_tensor) const;
 
   /*!
    * \brief Compute viscous residual and jacobian.
@@ -1441,16 +1366,16 @@ public:
    * \param[in] n: order of matrix V
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
+
+  virtual inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       { } 
+        
+  virtual inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       { }   
   
-  inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
+  virtual inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { }  
   
-  inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
+  virtual inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          { }  
   
-  inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
-  
-  inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j) {eve_i = val_Eve_i; eve_j = val_Eve_j; }
-  
-  inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j) {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
+  virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }  
 
 };
 

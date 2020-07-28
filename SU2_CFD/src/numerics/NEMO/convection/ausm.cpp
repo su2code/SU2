@@ -30,7 +30,7 @@
 CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, 
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad, 
-                             CConfig *config) : CNumerics(val_nDim, val_nVar,
+                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
   /*--- Read configuration parameters ---*/

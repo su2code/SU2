@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../CNumerics.hpp"
+#include "../CNEMONumerics.hpp"
 
 /*!
  * \class CCentLax_NEMO
@@ -36,7 +36,7 @@
  * \author F. Palacios.
  * \version 2.0.6
  */
-class CCentLax_NEMO : public CNumerics {
+class CCentLax_NEMO : public CNEMONumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
@@ -48,11 +48,7 @@ private:
   su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eigenvalues. */
   su2double Phi_i, Phi_j, sc0, StretchingFactor; /*!< \brief Streching parameters. */
   su2double Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
-  //    su2double *dPdrhos, dPdrhoE, dPdrhoEve; /*!< \brief Partial derivative of pressure w.r.t. conserved quantities. */
-  bool implicit; /*!< \brief Implicit time integration. */
-  bool ionization;  /*!< \brief Charged species with the mixture. */
   bool stretching;
-  unsigned short nPrimVar, nPrimVarGrad;
 
 public:
 

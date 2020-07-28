@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../CNumerics.hpp"
+#include "CNEMONumerics.hpp"
 
 /*!
  * \class CSource_NEMO
@@ -36,10 +36,10 @@
  * \author S. Copeland, W. Maier
  * \version 6.1.0 "Falcon"
  */
-class CSource_NEMO : public CNumerics {
+class CSource_NEMO : public CNEMONumerics {
 private:
-  bool   implicit;
-  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
+ 
+  unsigned short nSpecies, nVar;
   int    *alphak, *betak;
   su2double *X; // Mole fraction
   su2double *Y, **dYdr; // Mass fraction

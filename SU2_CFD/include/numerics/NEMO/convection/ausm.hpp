@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../CNumerics.hpp"
+#include "../CNEMONumerics.hpp"
 
 /*!
  * \class CUpwAUSM_NEMO
@@ -36,20 +36,13 @@
  * \author F. Palacios, S.R. Copleland, W. Maier
  * \version 6.2.0 'Falcon'
  */
-class CUpwAUSM_NEMO : public CNumerics {
+class CUpwAUSM_NEMO : public CNEMONumerics {
 private:
-  bool implicit, ionization;
   su2double *FcL, *FcR, *FcLR;
   su2double *dmLP, *dmRM, *dpLP, *dpRM;
   su2double *daL, *daR;
-  su2double *rhos_i, *u_i;
-  su2double *rhos_j, *u_j;
-  su2double a_i, P_i, h_i, ProjVel_i;
-  su2double a_j, P_j, h_j, ProjVel_j;
+  su2double ProjVel_i, ProjVel_j;
   su2double sq_vel, Proj_ModJac_Tensor_ij;
-  unsigned short nPrimVar, nPrimVarGrad;
-
-  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
  
 public:
 
