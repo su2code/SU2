@@ -48,14 +48,10 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   Mean_GradPrimVar = new su2double* [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
-        
-  Mean_GradTurbVar = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Mean_GradTurbVar[iDim] = 0.;
-  }
 
-  // Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
-  // Proj_Mean_GradTurbVar_Edge = 0.0;
+  Mean_GradVel = new su2double* [nDim];
+  for (iDim = 0; iDim < Dim; iDim++)
+    Mean_GradVel[iDim] = new su2double [nDim];
 
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
@@ -85,10 +81,13 @@ CAvgGrad_Base::~CAvgGrad_Base() {
       delete [] Mean_GradPrimVar[iVar];
     delete [] Mean_GradPrimVar;
   }
-  
-  if (Mean_GradTurbVar != nullptr) delete [] Mean_GradTurbVar;
 
-  // delete [] Proj_Mean_GradPrimVar_Edge;
+  if (Mean_GradVel != nullptr) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] Mean_GradVel[iVar];
+    delete [] Mean_GradVel;
+  }
+
 
   if (tau_jacobian_i != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -153,9 +152,12 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   const su2double Density = val_primvar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 
+  // su2double div_vel = 0.0;
+  // for (iDim = 0 ; iDim < nDim; iDim++)
+  //   div_vel += val_gradprimvar[iDim+1][iDim];
   su2double div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += val_gradprimvar[iDim+1][iDim];
+    div_vel += Mean_GradVel[iDim][iDim];
 
   /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
 
@@ -203,15 +205,7 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
                                const su2double val_tau_wall) {
 
   unsigned short iDim, jDim;
-  su2double TauNormal, TauElem[3], TauTangent[3], Area, UnitNormal[3];
-
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += val_normal[iDim]*val_normal[iDim];
-  Area = sqrt(Area);
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = val_normal[iDim]/Area;
+  su2double TauNormal, TauElem[3], TauTangent[3];
 
   /*--- First, compute wall shear stress as the magnitude of the wall-tangential
    component of the shear stress tensor---*/
@@ -476,7 +470,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[nVar-1][iDim] = heat_flux_vector[iDim];
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       Flux_Tensor[jDim+1][iDim]  = tau[iDim][jDim];
-      Flux_Tensor[nVar-1][iDim] += tau[iDim][jDim]*val_primvar[jDim+1];
+      Flux_Tensor[nVar-1][iDim] += tau[iDim][jDim] * val_primvar[jDim+1];
     }
   }
 
@@ -613,6 +607,12 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   for (iVar = 0; iVar < nDim+1; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+    }
+  }
+
+  for (iVar = 0; iVar < nDim; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradVel[iVar][iDim] = Mean_GradPrimVar[iVar+1][iDim];
     }
   }
 

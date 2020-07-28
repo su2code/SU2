@@ -57,7 +57,7 @@ protected:
   *PrimVar_i = nullptr,
   *PrimVar_j = nullptr;                   /*!< \brief Primitives variables at point i and j. */
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
-  *Mean_GradTurbVar = nullptr,            /*!< \brief Mean value of the turbulent gradient. */
+  **Mean_GradVel= nullptr,                /*!< \brief Mean value of the velocity. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
@@ -66,9 +66,7 @@ protected:
   WallShearStress,                        /*!< \brief Wall shear stress at point i and j (without wall functions). */
   dist_ij_2 = 0.0,                              /*!< \brief Length of the edge and face, squared */
   proj_vector_ij = 0.0,                   /*!< \brief Vector used for projection of gradient correction. */
-  Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
-  *Proj_Mean_GradPrimVar_Edge = nullptr,  /*!< \brief Inner product of the Mean gradient and the edge vector. */
-  Proj_Mean_GradTurbVar_Edge;                  /*!< \brief Inner product of the Mean turbulent gradient and the edge vector. */
+  Edge_Vector[MAXNDIM] = {0.0};           /*!< \brief Vector from point i to point j. */
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
