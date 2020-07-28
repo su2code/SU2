@@ -2,7 +2,7 @@
  * \file NEMO_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
- * \author F. Palacios, T. Economon
+ * \author C. Garbacz, W. Maier, S. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

@@ -1,7 +1,7 @@
 /*!
  * \file NEMO_diffusion.hpp
- * \brief Delarations of numerics classes for viscous flux computation. The implementation is in NEMO_diffusion.cpp.
- * \author F. Palacios, T. Economon
+ * \brief Declarations of numerics classes for viscous flux computation.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

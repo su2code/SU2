@@ -1,7 +1,7 @@
 /*!
  * \file NEMO_sources.hpp
- * \brief Delarations of numerics classes for source-term integration. The implementation is in NEMO_sources.cpp.
- * \author F. Palacios, T. Economon
+ * \brief Delarations of numerics classes for source-term integration.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

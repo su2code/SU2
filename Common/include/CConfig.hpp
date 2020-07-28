@@ -1147,6 +1147,7 @@ private:
 
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
+  iWall_Catalytic,
   nWall_Catalytic;                          /*!< \brief No of catalytic walls */
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */

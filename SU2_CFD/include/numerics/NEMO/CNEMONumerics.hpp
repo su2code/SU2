@@ -1,7 +1,7 @@
 /*!
- * \file roe.hpp
- * \brief Delarations of numerics classes for Roe-type schemes in NEMO.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \file CNEMONumerics.hpp
+ * \brief Base class template for all NEMO numerical methods.
+ * \author C. Garbacz
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -30,29 +30,27 @@
 #include "../../CNumerics.hpp"
 
 /*!
- * \class CUpwRoe_NEMO
- * \brief Class for evaluating the Riemann problem using Roe's scheme for a two-temperature model.
+ * \class CUpwAUSM_NEMO
+ * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
- * \author S. Copeland, W. Maier
- * \version 6.1.0 "Falcon"
+ * \author F. Palacios, S.R. Copleland, W. Maier
+ * \version 6.2.0 'Falcon'
  */
-class CUpwRoe_NEMO : public CNumerics {
+class CUpwAUSM_NEMO : public CNumerics {
 private:
-    bool implicit, ionization;
-    su2double *Diff_U;
-    su2double *RoeU, *RoeV;
-    vector<su2double> roe_eves;
-    su2double *ProjFlux_i, *ProjFlux_j;
-    su2double *Lambda, *Epsilon;
-    su2double **P_Tensor, **invP_Tensor;
-    su2double RoeSoundSpeed;
-    su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-    su2double Proj_ModJac_Tensor_ij, R;
-    su2double *RoedPdU;
-    unsigned short nPrimVar, nPrimVarGrad;
+  bool implicit, ionization;
+  su2double *FcL, *FcR, *FcLR;
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
+  su2double *rhos_i, *u_i;
+  su2double *rhos_j, *u_j;
+  su2double a_i, P_i, h_i, ProjVel_i;
+  su2double a_j, P_j, h_j, ProjVel_j;
+  su2double sq_vel, Proj_ModJac_Tensor_ij;
+  unsigned short nPrimVar, nPrimVarGrad;
 
-    su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
-
+  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+ 
 public:
 
   /*!
@@ -61,19 +59,16 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-             unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-             CConfig *config);
+  CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwRoe_NEMO(void);
+  ~CUpwAUSM_NEMO(void);
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
    * \param[in] config - Definition of the particular problem.
    */
   ResidualType<> ComputeResidual(const CConfig* config) final;
-
 };

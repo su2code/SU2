@@ -1,7 +1,7 @@
 /*!
- * \file CEulerSolver.hpp
- * \brief Headers of the CEulerSolver class
- * \author F. Palacios, T. Economon
+ * \file CNEMONSSolver.hpp
+ * \brief Headers of the CNEMONSSolver class
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

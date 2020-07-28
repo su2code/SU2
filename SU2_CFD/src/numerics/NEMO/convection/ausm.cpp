@@ -1,7 +1,7 @@
 /*!
  * \file ausm.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
- * \author F. Palacios, T. Economon
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

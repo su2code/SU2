@@ -1,7 +1,7 @@
 /*!
  * \file msw.hpp
- * \brief Declaration of numerics classes for modified Steger-Warming scheme. The implementation is in msw.cpp.
- * \author F. Palacios, T. Economon
+ * \brief Declaration of numerics classes for modified Steger-Warming scheme.
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.5 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

@@ -1,7 +1,7 @@
 /*!
- * \file CEulerSolver.hpp
- * \brief Headers of the CEulerSolver class
- * \author F. Palacios, T. Economon
+ * \file CNEMONSSolver.cpp
+ * \brief Headers of the CNEMONSEulerSolver class
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
  * \version 7.0.3 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -29,7 +29,7 @@
 #include "../../include/solvers/CNEMONSSolver.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
-/*--- Explicit instantiation of the parent class of CEulerSolver,
+/*--- Explicit instantiation of the parent class of CNEMOEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
 template class CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>;
 
