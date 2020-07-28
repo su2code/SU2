@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CNEMOTurbSASolver.cpp
  * \brief Main subrotuines of CNEMOTurbSASolver class
- * \author F. Palacios, A. Bueno
+ * \author F. Palacios, A. Bueno, W. Maier
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include "../../include/solvers/CSolver.hpp"
 #include "../../include/solvers/CNEMOTurbSASolver.hpp"
 #include "../../include/variables/CNEMOTurbSAVariable.hpp"
 #include "../../../Common/include/omp_structure.hpp"
@@ -34,7 +34,7 @@
 CNEMOTurbSASolver::CNEMOTurbSASolver(void) : CNEMOTurbSolver() { }
 
 CNEMOTurbSASolver::CNEMOTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
-             : CTurbSolver(geometry, config) {
+             : CNEMOTurbSolver(geometry, config) {
 
   unsigned short iVar, nLineLets;
   unsigned long iPoint;
@@ -95,6 +95,7 @@ CNEMOTurbSASolver::CNEMOTurbSASolver(CGeometry *geometry, CConfig *config, unsig
 
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
+      //TODO THIS AINT RIGHT
       else if (nDim == 3) { nOutputVariables = 19; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
@@ -150,7 +151,7 @@ CNEMOTurbSASolver::CNEMOTurbSASolver(CGeometry *geometry, CConfig *config, unsig
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-  nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
+  nodes = new CNEMOTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -339,7 +340,8 @@ void CNEMOTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+  //TODO check if FIRST temer of SECOND term
+  CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Loop over all points. ---*/
 
@@ -484,17 +486,19 @@ void CNEMOTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    /*--- Allocate the value at the infinity ---*/
+    //TODO, not sure what auto does
+    auto V_infty = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+    auto U_infty = solver_container[FLOW_SOL]->GetNode_Infty()->GetSolution(0);
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto U_domain = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
       /*--- Grid Movement ---*/
 
@@ -502,6 +506,7 @@ void CNEMOTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetPrimitive(U_domain, U_infty);
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
@@ -538,6 +543,9 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    auto V_infty = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+    auto U_infty = solver_container[FLOW_SOL]->GetNode_Infty()->GetSolution(0);
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
@@ -548,17 +556,15 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
 
-      /*--- Allocate the value at the inlet ---*/
-
-      auto V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto U_domain = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
+      conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetPrimitive(U_domain, U_infty);
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       /*--- Load the inlet turbulence variable (uniform by default). ---*/
@@ -613,6 +619,7 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 void CNEMOTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -620,13 +627,13 @@ void CNEMOTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    /*--- Allocate the value at the outlet ---*/
+
+    auto V_outlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Allocate the value at the outlet ---*/
-
-      auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -692,6 +699,7 @@ void CNEMOTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 
 void CNEMOTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -700,13 +708,13 @@ void CNEMOTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_c
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    /*--- Allocate the value at the infinity ---*/
+
+    auto V_inflow = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_inflow = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -775,6 +783,7 @@ void CNEMOTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_c
 
 void CNEMOTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -782,6 +791,10 @@ void CNEMOTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Allocate the value at the infinity ---*/
+
+    auto V_exhaust = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
@@ -792,10 +805,6 @@ void CNEMOTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_
       su2double Normal[MAXNDIM] = {0.0};
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-      /*--- Allocate the value at the infinity ---*/
-
-      auto V_exhaust = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -864,6 +873,7 @@ void CNEMOTurbSASolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_c
 
 void CNEMOTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config,  val_marker, false);
 }
@@ -871,6 +881,7 @@ void CNEMOTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_
 void CNEMOTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -1003,6 +1014,8 @@ void CNEMOTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_contain
 void CNEMOTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
+
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -1094,6 +1107,8 @@ void CNEMOTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solv
 
 void CNEMOTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
@@ -1195,6 +1210,7 @@ void CNEMOTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_con
 
 void CNEMOTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;
@@ -1358,6 +1374,8 @@ void CNEMOTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **sol
 
 void CNEMOTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
+
+  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
 
   //  unsigned long iVertex, iPoint, jPoint;
   //  unsigned short iVar, iDim;

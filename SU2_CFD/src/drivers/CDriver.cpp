@@ -2064,7 +2064,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   }
 
   /*--- Solver definition for the turbulent model problem ---*/
-
+  //TODO Updat NEMO stuff around here
   if (turbulent) {
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/

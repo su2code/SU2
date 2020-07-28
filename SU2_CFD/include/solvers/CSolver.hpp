@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
@@ -159,7 +159,7 @@ private:
    This variable is to avoid two virtual functions calls per call i.e. CSolver::GetNodes() returns
    directly instead of calling GetBaseClassPointerToNodes() or doing something equivalent. ---*/
   CVariable* base_nodes;  /*!< \brief Pointer to CVariable to allow polymorphic access to solver nodes. */
-
+  CVariable* node_infty =nullptr;  /*!< \brief Pointer to CVariable to allow acces to NEMO solver node_infty */
 public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -187,6 +187,15 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CSolver(void);
+
+  /*!
+   * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.
+   * \return Nodes of the solver.
+   */
+  inline CVariable* GetNode_Infty() {
+    assert(node_infty!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return node_infty;
+  }
 
   /*!
    * \brief Allow outside access to the nodes of the solver, containing conservatives, primitives, etc.

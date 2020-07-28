@@ -43,7 +43,7 @@ CNEMOTurbSSTSolver::CNEMOTurbSSTSolver(CGeometry *geometry, CConfig *config, uns
   bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
-
+  //TODO, this needs updating
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
 

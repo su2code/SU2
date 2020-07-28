@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CVariable.hpp
  * \brief Declaration and inlines of the parent class for defining problem
           variables, function definitions in file <i>CVariable.cpp</i>.

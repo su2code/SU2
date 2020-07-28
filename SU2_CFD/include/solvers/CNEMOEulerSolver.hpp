@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author C. Garbacz, W. Maier, S.R. Copeland.
@@ -76,6 +76,16 @@ public:
      * \brief Destructor of the class.
      */
   ~CNEMOEulerSolver(void) override;
+
+
+  /*!
+   * \brief Allow outside access to the node_infty of the solver, containing conservatives, primitives, etc.
+   * \return Node_infty of the solver.
+   */
+  inline CNEMOEulerVariable* GetNode_Infty() {
+    assert(node_infty!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return node_infty;
+  }
 
   /*!
      * \brief Set the maximum value of the eigenvalue.

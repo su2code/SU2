@@ -1,15 +1,8 @@
-<<<<<<< HEAD
 ﻿/*!
- * \file CNEMOEulerSolver.hpp
- * \brief Headers of the CEulerSolver class
- * \author F. Palacios, T. Economon
-=======
-/*!
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author C. Garbacz, W. Maier, S.R. Copeland.
->>>>>>> origin/feature_NEMO
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
