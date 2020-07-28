@@ -54,8 +54,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
     Mean_GradTurbVar[iDim] = 0.;
   }
 
-  Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
-  Proj_Mean_GradTurbVar_Edge = 0.0;
+  // Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
+  // Proj_Mean_GradTurbVar_Edge = 0.0;
 
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
@@ -88,7 +88,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
   
   if (Mean_GradTurbVar != nullptr) delete [] Mean_GradTurbVar;
 
-  delete [] Proj_Mean_GradPrimVar_Edge;
+  // delete [] Proj_Mean_GradPrimVar_Edge;
 
   if (tau_jacobian_i != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -122,23 +122,23 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_PrimVar_j,
                                     const unsigned short val_nPrimVar) {
   // for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-  //   Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+  //   su2double GradPrimVar_Edge = 0.0, 
+  //             Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
   //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  //     Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+  //     GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
   //   }
   //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  //     GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-  //                                (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
+  //     GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
   //   }
   // }
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+    su2double GradPrimVar_Edge = 0.0, 
+              Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                 (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*Normal[iDim] / proj_vector_ij;
+      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Normal[iDim] / proj_vector_ij;
     }
   }
 }
@@ -166,7 +166,6 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
         - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
 
   } else {
-
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
