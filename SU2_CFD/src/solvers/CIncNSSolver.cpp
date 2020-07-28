@@ -167,7 +167,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
 
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-    if(rank==MASTER_NODE && false) cout << "NSPrepsocessing GetStreamwise_Periodic_Properties." << endl;
+    if(rank==MASTER_NODE && false) cout << "NSPreprocessing GetStreamwise_Periodic_Properties." << endl;
     GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
     /*--- Free allocated memory. ---*/

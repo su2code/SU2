@@ -299,9 +299,8 @@ public:
  * \brief Class for the source term integration of a streamwise periodic body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Kattmann
- * \version 6.1.0 "Falcon"
  */
-class CSourceIncStreamwise_Periodic : public CSourceBase_Flow {
+class CSourceIncStreamwise_Periodic final : public CSourceBase_Flow {
 private:
 
   bool implicit,  /*!< \brief Implicit calculation. */
@@ -323,6 +322,7 @@ private:
 public:
 
   /*!
+   * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -338,6 +338,45 @@ public:
   ResidualType<> ComputeResidual(const CConfig *config) override;
 
 };
+
+/*!
+ * \class CSourceIncStreamwisePeriodic_Outlet
+ * \brief Class for the outlet heat sink. Acts like a heatflux boundary on the outlet and not as a volume source.
+ * \ingroup SourceDiscr
+ * \author T. Kattmann
+ */
+class CSourceIncStreamwisePeriodic_Outlet : public CSourceBase_Flow {
+private:
+
+  su2double 
+  AxiFactor, /*!< brief Factor for axisymmetric simulations */
+  FaceArea, /*!< brief Boundary face area */
+  local_Massflow, /*!< brief massflow through that one boundary cell */
+  AreaAvgInletTemp; /*!< brief Area avg inlet Temp. Computed in GetStreamwise_Periodic_Properties */
+
+  unsigned short iDim, /*!< brief Counts over Dimensions. */
+                 iVar, jVar; /*!< brief Count over Variables. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncStreamwisePeriodic_Outlet(unsigned short val_nDim,
+                                      unsigned short val_nVar,
+                                      CConfig        *config);
+
+  /*!
+   * \brief Source term integration for boundary heat sink.
+   * \param[in] config - Definition of the particular problem.
+   */
+  ResidualType<> ComputeResidual(const CConfig *config) override;
+
+};
+
 
 /*!
  * \class CSourceRadiation

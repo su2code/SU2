@@ -648,6 +648,56 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
 }
 
+CSourceIncStreamwisePeriodic_Outlet::CSourceIncStreamwisePeriodic_Outlet(unsigned short val_nDim,
+                                                                         unsigned short val_nVar,
+                                                                         CConfig        *config) :
+                               CSourceBase_Flow(val_nDim, val_nVar, config) { }
+
+CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(const CConfig *config) {
+
+  for (iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
+
+  // Compute the residual contribution
+  if (config->GetAxisymmetric()) {
+    if (Coord_i[1] != 0.0)
+      AxiFactor = 2.0*PI_NUMBER*Coord_i[1];
+    else
+      AxiFactor = 1.0;
+  } else {
+    AxiFactor = 1.0;
+  }
+
+  /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
+  FaceArea = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(Normal[iDim] * AxiFactor, 2); }
+  FaceArea = sqrt(FaceArea);
+
+  //compute local massflow [kg/s]
+  local_Massflow = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    local_Massflow += Normal[iDim] * V_i[iDim+1] * DensityInc_i * AxiFactor;
+  }
+  
+  AreaAvgInletTemp = config->GetStreamwise_Periodic_InletTemperature();
+
+  // Massflow weighted heat sink, which takes out
+  // a) the integrated amount over the Heatflux marker
+  // b) a user provided quantity, especially the case for CHT cases
+  if (config->GetStreamwise_Periodic_OutletHeat() == 0.0) {
+    residual[nDim+1] -= abs(local_Massflow/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_IntegratedHeatFlow();
+  } else {
+    residual[nDim+1] -= abs(local_Massflow/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_OutletHeat() / config->GetHeat_Flux_Ref();
+  }
+
+  /////////////////////////////
+  // hdf fluid adaption TODO add description here!
+  // Force the area avg inlet Temp to match the Inc_Temperature_Init with additional residual condtribution
+  residual[nDim+1] += 0.5 * abs(local_Massflow) * SpecificHeat_i * (AreaAvgInletTemp - config->GetInc_Temperature_Init()/config->GetTemperature_Ref() );
+
+  return ResidualType<>(residual, jacobian, nullptr);
+
+}
+
 CSourceRadiation::CSourceRadiation(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
                   CSourceBase_Flow(val_nDim, val_nVar, config) {
 

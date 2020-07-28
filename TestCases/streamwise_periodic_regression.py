@@ -120,7 +120,7 @@ def main():
     sp_da_pinArray_2d_dp_hf_tp.su2_exec  = "parallel_computation.py -f"
     sp_da_pinArray_2d_dp_hf_tp.timeout   = 1600
     sp_da_pinArray_2d_dp_hf_tp.tol       = 0.00001
-    #test_list.append(sp_pinArray_2d_dp_hf_tp)
+    test_list.append(sp_pinArray_2d_dp_hf_tp)
     
     # 2D DA case cht pressure drop, heat obj function
     sp_da_pinArray_cht_2d_mf_hf           = TestCase('sp_pinArray_cht_2d_mf_hf')
@@ -131,7 +131,7 @@ def main():
     sp_da_pinArray_cht_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
     sp_da_pinArray_cht_2d_mf_hf.timeout   = 1600
     sp_da_pinArray_cht_2d_mf_hf.tol       = 0.00001
-    #test_list.append(sp_pinArray_cht_2d_mf_hf)
+    test_list.append(sp_pinArray_cht_2d_mf_hf)
 
     pass_list = [ test.run_test() for test in test_list ]
 

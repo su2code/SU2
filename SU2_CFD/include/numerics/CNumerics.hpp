@@ -78,6 +78,9 @@ protected:
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
+  SpecificHeat_i, /*!< \brief Specific heat at point j. */
+  SpecificHeat_j; /*!< \brief Specific heat at point j. */
+  su2double
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
@@ -524,6 +527,17 @@ public:
                                     su2double val_thermal_diffusivity_j) {
     Thermal_Diffusivity_i = val_thermal_diffusivity_i;
     Thermal_Diffusivity_j = val_thermal_diffusivity_j;
+  }
+
+  /*!
+   * \brief Set the specifc heat
+   * \param[in] val_specific_heat_i - Value of the specific heat at point i.
+   * \param[in] val_specific_heat_j - Value of the specific heat at point j.
+   */
+  inline void SetSpecificHeat(su2double val_specific_heat_i,
+                              su2double val_specific_heat_j) {
+    SpecificHeat_i = val_specific_heat_i;
+    SpecificHeat_j = val_specific_heat_j;
   }
 
   /*!

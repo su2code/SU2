@@ -1513,123 +1513,37 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }// for iPoint
 
     if(!streamwise_periodic_temperature && energy) {
-      //loop markers and find the "outlet marker"
-
-      //compute "outlet" area
-      su2double Area_Local = 0.0, 
-                Area_Global = 0.0,
-                MassFlow_Local,
-                Temperature_Local = 0.0,
-                Temperature_Global = 0.0,
-                FaceArea, 
-                AxiFactor;
-      
-      unsigned short Kind_Averaging=1, area=0, massflow=1;
-
-      vector<su2double> AreaNormal(nDim);
-    
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      
-        /*--- Only "inlet"/master periodic marker ---*/
-        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-            config->GetMarker_All_PerBound(iMarker) == 1) {
-
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-    
-            if (geometry->nodes->GetDomain(iPoint)) {
-              geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
-
-              if (axisymmetric) {
-                if (geometry->nodes->GetCoord(iPoint,1) != 0.0)
-                  AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint,1);
-                else
-                  AxiFactor = 1.0;
-              } else {
-                AxiFactor = 1.0;
-              }
-
-              /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
-              FaceArea = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
-              Area_Local += sqrt(FaceArea);
-              FaceArea = sqrt(FaceArea);
-              Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
-
-            } // if domain
-          } // loop vertices
-        } // loop periodic boundaries
-      } // loop MarkerAll
-
-      // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflow
-      SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&Temperature_Local, &Temperature_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      Temperature_Global /= Area_Global;
-      if(rank==MASTER_NODE && false) cout << "Source Res outlet area: " << Area_Global << endl << "Outlet Area Avg Temperature: " << Temperature_Global* config->GetTemperature_Ref() << endl;
+      CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
 
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
         /*--- Only "inlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
-            config->GetMarker_All_PerBound(iMarker) == 1) {
+            config->GetMarker_All_PerBound(iMarker) == 1) { // here it doesnt matter whether 1 or 2
             
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
     
             if (geometry->nodes->GetDomain(iPoint)) {
-              geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
-    
-              if (axisymmetric) {
-                if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
-                  AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
-                else
-                  AxiFactor = 1.0;
-              } else {
-                AxiFactor = 1.0;
-              }
-    
-              /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
-              FaceArea = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
-              FaceArea = sqrt(FaceArea);
-
-              //compute local massflow
-              MassFlow_Local = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) {
-                MassFlow_Local += AreaNormal[iDim] * nodes->GetVelocity(iPoint, iDim) * nodes->GetDensity(iPoint) * AxiFactor;
-              }
-
-              for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-              if(Kind_Averaging == area) {
-                if (config->GetStreamwise_Periodic_OutletHeat() == 0.0) {
-                  Residual[nDim+1] -= FaceArea/Area_Global * config->GetStreamwise_Periodic_IntegratedHeatFlow();
-                } else {
-                  Residual[nDim+1] -= FaceArea/Area_Global * config->GetStreamwise_Periodic_OutletHeat() / config->GetHeat_Flux_Ref();
-                }
-              } else if (Kind_Averaging == massflow) {
-                if (config->GetStreamwise_Periodic_OutletHeat() == 0.0) {
-                  Residual[nDim+1] -= abs(MassFlow_Local/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_IntegratedHeatFlow();
-                } else {
-                  Residual[nDim+1] -= abs(MassFlow_Local/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_OutletHeat() / config->GetHeat_Flux_Ref();
-                }
-              }
+              /*--- Set the specific heat ---*/
+              second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
+              /*--- Set the Point coordinates ---*/
+              second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),NULL);
+              /*--- Set the area normal ---*/
+              second_numerics->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal());
+              /*--- Load the primitive variables ---*/
+              second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+              /*--- Set incompressible density ---*/
+              second_numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
+              /*--- Compute the streamwise periodic source residual ---*/
+              auto residual = second_numerics->ComputeResidual(config);
 
               /*--- Add the source residual to the total ---*/
-              LinSysRes.AddBlock(iPoint, Residual);
-
-              /////////////////////////////
-              // hdf fluid adaption
-              for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-
-              Residual[nDim+1] = 0.5 * abs(MassFlow_Local) * nodes->GetSpecificHeatCp(iPoint) * (Temperature_Global - config->GetInc_Temperature_Init()/config->GetTemperature_Ref() );
-
-              LinSysRes.AddBlock(iPoint, Residual);
-
-
-            } // if domain
-          } // loop vertices
-        } // loop periodic boundaries
-      } // loop MarkerAll
+              LinSysRes.AddBlock(iPoint, residual);
+            }// if domain
+          }// for iVertex
+        }// if periodic inlet boundary
+      }// for iMarker
 
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
@@ -3896,10 +3810,59 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
     if (iMesh == MESH_0)
       config->SetStreamwise_Periodic_IntegratedHeatFlow(HeatFlow_Global);
 
-    //if (rank == MASTER_NODE) { cout << "HeatFlow_Global: " << HeatFlow_Global * config->GetHeat_Flux_Ref() << endl; }
-  } // if energy
+    // Compute area avg Temp of the inlet
+    su2double Area_Local = 0.0, 
+                Area_Global = 0.0,
+                MassFlow_Local,
+                Temperature_Local = 0.0,
+                Temperature_Global = 0.0,
+                FaceArea, 
+                AxiFactor;
+      
+      vector<su2double> AreaNormal(nDim);
 
-  //if (rank == MASTER_NODE) { cout << "------------------------------- New Routine End --------------------------" << endl; }
+      //loop markers and find the "outlet marker"
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+        /*--- Only "inlet"/master periodic marker, as I want to meet the specified inlet temperature ---*/
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
+            config->GetMarker_All_PerBound(iMarker) == 1) {
+
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    
+            if (geometry->nodes->GetDomain(iPoint)) {
+              geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal.data());
+
+              if (axisymmetric) {
+                if (geometry->nodes->GetCoord(iPoint,1) != 0.0)
+                  AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint,1);
+                else
+                  AxiFactor = 1.0;
+              } else {
+                AxiFactor = 1.0;
+              }
+
+              /*--- A = dot_prod(n_A*n_A), with n_A beeing the area-normal. ---*/
+              FaceArea = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) { FaceArea += pow(AreaNormal[iDim] * AxiFactor, 2); }
+              Area_Local += sqrt(FaceArea);
+              FaceArea = sqrt(FaceArea);
+              Temperature_Local += FaceArea * nodes->GetTemperature(iPoint);
+
+            } // if domain
+          } // loop vertices
+        } // loop periodic boundaries
+      } // loop MarkerAll
+
+      // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflow
+      SU2_MPI::Allreduce(&Area_Local, &Area_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&Temperature_Local, &Temperature_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      Temperature_Global /= Area_Global;
+      // What do I do with the temperature now from here on? The only way really is to pipe it through the config...
+      config->SetStreamwise_Periodic_InletTemperature(Temperature_Global);
+      cout << "Properties::Temperature_Global: " << Temperature_Global << endl;
+  } // if energy
 }
 
 

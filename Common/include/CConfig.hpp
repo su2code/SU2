@@ -1030,7 +1030,8 @@ private:
             Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
-            Streamwise_Periodic_OutletHeat;         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
+            Streamwise_Periodic_OutletHeat,         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
+            Streamwise_Periodic_InletTemperature;   /*!< /brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
   vector<su2double> Streamwise_Periodic_RefNode;    /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
 
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
@@ -5939,6 +5940,18 @@ public:
    * \return Heat value.
    */
   su2double GetStreamwise_Periodic_OutletHeat(void) const { return Streamwise_Periodic_OutletHeat; }
+
+  /*!
+   * \brief Set the value of the area avg periodic inlet Temperature.
+   * \param[in] Temp - area avg periodic inlet Temperature.
+   */
+  void SetStreamwise_Periodic_InletTemperature(su2double Temp) { Streamwise_Periodic_InletTemperature = Temp; }
+
+  /*!
+   * \brief Get the value of the area avg periodic inlet Temperature.
+   * \return Temperature value.
+   */
+  su2double GetStreamwise_Periodic_InletTemperature(void) const { return Streamwise_Periodic_InletTemperature; }
 
   /*!
    * \brief Get the value of the pressure delta from which body force vector is computed.
