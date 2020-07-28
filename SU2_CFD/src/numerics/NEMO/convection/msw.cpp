@@ -34,16 +34,6 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
                            CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
-  /*--- Set booleans from CConfig settings ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Set iterator size ---*/
-  nVar         = val_nVar;
-  nPrimVar     = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim         = val_nDim;
-  nSpecies     = config->GetnSpecies();
-
   /*--- Allocate arrays ---*/
   Diff_U   = new su2double [nVar];
   Fc_i	   = new su2double [nVar];

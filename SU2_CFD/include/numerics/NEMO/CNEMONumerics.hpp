@@ -45,7 +45,7 @@ public:
 
   su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
 
-  unsigned short nSpecies; /*!< \brief Number of species present in plasma */
+  unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
   
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;

@@ -35,13 +35,11 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
                              const CConfig* config) :
                              CNumerics(val_nDim, val_nVar, config) {
 
-    nSpecies = nVar - nDim - 2;
+    nSpecies     = nVar - nDim - 2;
+    nPrimVar     = val_nPrimVar;
+    nPrimVarGrad = val_nPrimVarGrad;
 
     hs.resize(nSpecies,0.0);
-
-    unsigned short nPrimVar     = nSpecies+nDim+8;
-    unsigned short nPrimVarGrad = nSpecies+nDim+8;
-    unsigned long nPoint = 1;
 
     RHOS_INDEX    = 0; 
     T_INDEX       = nSpecies;
@@ -52,7 +50,14 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     H_INDEX       = nSpecies+nDim+4;
     A_INDEX       = nSpecies+nDim+5;
     RHOCVTR_INDEX = nSpecies+nDim+6;
-    RHOCVVE_INDEX = nSpecies+nDim+7;   
+    RHOCVVE_INDEX = nSpecies+nDim+7;  
+
+    /*--- Read from CConfig ---*/
+    implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
+
+    ionization = config->GetIonization();
+    if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+    else            { nHeavy = nSpecies;   nEl = 0; }
 
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
@@ -228,15 +233,10 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   // and gradient GV = [GY1, ... , GYn, GT, GTve, ... ]
   // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
 
-  unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
+  unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
   su2double Ru, RuSI;
   su2double rho, T, Tve;
-
-   /*--- Read from CConfig ---*/
-  bool ionization = config->GetIonization();
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

@@ -33,16 +33,6 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                              CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
-  /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Define useful constants ---*/
-  nVar     = val_nVar;
-  nPrimVar = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
-
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
   dmLP   = new su2double [nVar];

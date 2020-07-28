@@ -36,17 +36,9 @@ CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned sho
 
   unsigned short iVar;
 
-  /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
   /*--- Define useful constants ---*/
   Kp       = 0.25;
   sigma    = 1.0;
-  nVar     = val_nVar;
-  nPrimVar = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
 
   /*--- Allocate data structures ---*/
   FcL    = new su2double [nVar];

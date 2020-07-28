@@ -35,16 +35,6 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   unsigned short iVar;
 
-  /*--- Read configuration parameters ---*/
-  implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Define useful constants ---*/
-  nVar         = val_nVar;
-  nPrimVar     = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim         = val_nDim;
-  nSpecies     = config->GetnSpecies();
-
   /*--- Allocate arrays ---*/
   Diff_U      = new su2double  [nVar];
   RoeU        = new su2double  [nVar];

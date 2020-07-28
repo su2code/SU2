@@ -64,6 +64,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   nDim = val_nDim;
   nVar = val_nVar;
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   Prandtl_Lam = config->GetPrandtl_Lam();

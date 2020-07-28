@@ -35,14 +35,6 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                              CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Rename for convenience ---*/
-  nDim         = val_nDim;
-  nVar         = val_nVar;
-  nPrimVar     = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-
   /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
   PrimVar_i    = new su2double [nPrimVar];
   PrimVar_j    = new su2double [nPrimVar];

@@ -39,7 +39,6 @@
 class CSource_NEMO : public CNEMONumerics {
 private:
  
-  unsigned short nSpecies, nVar;
   int    *alphak, *betak;
   su2double *X; // Mole fraction
   su2double *Y, **dYdr; // Mass fraction

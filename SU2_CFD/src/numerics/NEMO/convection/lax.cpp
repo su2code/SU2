@@ -34,16 +34,6 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
                              CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
-  /*--- Read configuration parameters ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  /*--- Define useful constants ---*/
-  nVar         = val_nVar;
-  nPrimVar     = val_nPrimVar;
-  nPrimVarGrad = val_nPrimVarGrad;
-  nDim         = val_nDim;
-  nSpecies     = config->GetnSpecies();
-
   /*--- Artifical dissipation part ---*/
   Param_p = 0.3;
   Param_Kappa_0 = config->GetKappa_1st_Flow();
