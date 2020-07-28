@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../CNumerics.hpp"
+#include "../NEMO/CNEMONumerics.hpp"
 
 /*!
  * \class CNEMOAvgGrad_Scalar
@@ -44,7 +44,7 @@
  * \ingroup ViscDiscr
  * \author C. Pederson, A. Bueno, and F. Palacios
  */
-class CNEMOAvgGrad_Scalar : public CNumerics {
+class CNEMOAvgGrad_Scalar : public CNEMONumerics {
 protected:
   su2double
   Edge_Vector[MAXNDIM] = {0.0},             /*!< \brief Vector from node i to node j. */
@@ -80,7 +80,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_gradient, const CConfig* config);
+                      unsigned short val_nPrimVar,
+                      unsigned short val_nPrimVarGrad,
+                      bool correct_gradient, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -126,7 +128,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_grad, const CConfig* config);
+                      unsigned short val_nPrimVar,
+                      unsigned short val_nPrimVarGrad,
+                      bool correct_gradient, const CConfig* config);
+
 };
 
 /*!
@@ -160,7 +165,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
-                      bool correct_grad, const CConfig* config);
+                          unsigned short val_nPrimVar,
+                          unsigned short val_nPrimVarGrad,
+                          bool correct_gradient, const CConfig* config);
+
 };
 
 /*!
@@ -200,7 +208,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                   const su2double* constants, bool correct_grad, const CConfig* config);
+                       unsigned short val_nPrimVar,
+                       unsigned short val_nPrimVarGrad,
+                       const su2double* constants, bool correct_grad,
+                       const CConfig* config);
 
   /*!
    * \brief Sets value of first blending function.

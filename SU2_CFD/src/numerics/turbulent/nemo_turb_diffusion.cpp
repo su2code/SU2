@@ -28,11 +28,12 @@
 
 #include "../../../include/numerics/turbulent/nemo_turb_diffusion.hpp"
 
-CNEMOAvgGrad_Scalar::CNEMOAvgGrad_Scalar(unsigned short val_nDim,
-                                 unsigned short val_nVar,
-                                 bool correct_grad,
-                                 const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config),
+CNEMOAvgGrad_Scalar::CNEMOAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
+                                         unsigned short val_nPrimVar,
+                                         unsigned short val_nPrimVarGrad,
+                                         bool correct_grad, const CConfig* config):
+                                         CNEMONumerics(val_nDim, val_nVar, val_nPrimVar,
+                                                       val_nPrimVarGrad, config),
   correct_gradient(correct_grad),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
@@ -81,20 +82,12 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
   }
   ExtraADPreaccIn();
 
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
+  //TODO ndim+7 update
+  AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
 
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
-
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
-  }
+  Density_i           = V_i[RHO_INDEX];       Density_j           = V_j[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];  Laminar_Viscosity_j = V_j[LAM_VISC_INDEX];
+  Eddy_Viscosity_i    = V_i[EDDY_VISC_INDEX]; Eddy_Viscosity_j    = V_j[EDDY_VISC_INDEX];
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -137,8 +130,11 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
 }
 
 CNEMOAvgGrad_TurbSA::CNEMOAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                                 bool correct_grad, const CConfig* config) :
-                 CNEMOAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
+                                         unsigned short val_nPrimVar,
+                                         unsigned short val_nPrimVarGrad,
+                                         bool correct_gradient, const CConfig* config) :
+                                         CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nPrimVar,val_nPrimVarGrad,
+                                                             correct_gradient, config) { }
 
 void CNEMOAvgGrad_TurbSA::ExtraADPreaccIn() { }
 
@@ -161,11 +157,12 @@ void CNEMOAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
 
 }
 
-CNEMOAvgGrad_TurbSA_Neg::CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim,
-                                         unsigned short val_nVar,
-                                         bool correct_grad,
-                                         const CConfig* config) :
-                     CNEMOAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
+CNEMOAvgGrad_TurbSA_Neg::CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                                                 unsigned short val_nPrimVar,
+                                                 unsigned short val_nPrimVarGrad,
+                                                 bool correct_gradient, const CConfig* config) :
+                                                 CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nPrimVar,val_nPrimVarGrad,
+                                                                     correct_gradient, config) { }
 
 void CNEMOAvgGrad_TurbSA_Neg::ExtraADPreaccIn() { }
 
@@ -201,12 +198,13 @@ void CNEMOAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
 
 }
 
-CNEMOAvgGrad_TurbSST::CNEMOAvgGrad_TurbSST(unsigned short val_nDim,
-                                   unsigned short val_nVar,
-                                   const su2double *constants,
-                                   bool correct_grad,
-                                   const CConfig* config) :
-  CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config),
+CNEMOAvgGrad_TurbSST::CNEMOAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                                           unsigned short val_nPrimVar,
+                                           unsigned short val_nPrimVarGrad,
+                                           const su2double* constants, bool correct_grad,
+                                           const CConfig* config) :
+                                           CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nPrimVar,val_nPrimVarGrad,
+                                                               correct_grad, config),
   sigma_k1(constants[0]),
   sigma_k2(constants[1]),
   sigma_om1(constants[2]),
@@ -224,18 +222,18 @@ void CNEMOAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
 
   /*--- Compute the blended constant for the viscous terms ---*/
-  sigma_kine_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-  sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  sigma_kine_i  = F1_i*sigma_k1  + (1.0 - F1_i)*sigma_k2;
+  sigma_kine_j  = F1_j*sigma_k1  + (1.0 - F1_j)*sigma_k2;
   sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
   sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
   /*--- Compute mean effective viscosity ---*/
-  diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
-  diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
+  diff_i_kine  = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
+  diff_j_kine  = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
   diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
   diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
 
-  su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
+  su2double diff_kine  = 0.5*(diff_i_kine  + diff_j_kine);
   su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
 
   Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];

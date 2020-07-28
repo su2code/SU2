@@ -28,10 +28,13 @@
 
 #include "../../../include/numerics/turbulent/nemo_turb_sources.hpp"
 
-CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim,
-                                       unsigned short val_nVar,
-                                       const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config),
+CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                                               unsigned short val_nPrimVar,
+                                               unsigned short val_nPrimVarGrad,
+                                               const CConfig* config):
+                                               CNEMONumerics(val_nDim, val_nVar,
+                                                             val_nPrimVar, val_nPrimVarGrad,
+                                                             config),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   rotating_frame(config->GetRotating_Frame())
 {
@@ -57,10 +60,13 @@ CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim,
 
 }
 
-CNEMOSourcePieceWise_TurbSA::CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim,
-                                                 unsigned short val_nVar,
-                                                 const CConfig* config) :
-                         CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) {
+CNEMOSourcePieceWise_TurbSA::CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                                                         unsigned short val_nPrimVar,
+                                                         unsigned short val_nPrimVarGrad,
+                                                         const CConfig* config):
+                                                         CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                                val_nPrimVar, val_nPrimVarGrad,
+                                                                                config){
 
   transition = (config->GetKind_Trans_Model() == BC);
 }
@@ -79,14 +85,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
   su2double vmag, rey, re_theta, re_theta_t, re_v;
   su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i = V_i[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -100,10 +100,11 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
   rey  = config->GetReynolds();
 
   if (nDim==2) {
-    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]);
+    vmag = sqrt(V_i[VEL_INDEX]*V_i[VEL_INDEX]+V_i[VEL_INDEX+1]*V_i[VEL_INDEX+1]);
   }
   else {
-    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]+V_i[3]*V_i[3]);
+    vmag = sqrt(V_i[VEL_INDEX]*V_i[VEL_INDEX]+V_i[VEL_INDEX+1]*V_i[VEL_INDEX+1]+
+                V_i[VEL_INDEX+2]*V_i[VEL_INDEX+2]);
   }
 
   /*--- Evaluate Omega ---*/
@@ -216,10 +217,13 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
 
 }
 
-CNEMOSourcePieceWise_TurbSA_COMP::CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim,
-                                                           unsigned short val_nVar,
-                                                           const CConfig* config) :
-                              CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config), c5(3.5) { }
+CNEMOSourcePieceWise_TurbSA_COMP::CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                                                   unsigned short val_nPrimVar,
+                                                                   unsigned short val_nPrimVarGrad,
+                                                                   const CConfig* config):
+                                                                   CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                                          val_nPrimVar, val_nPrimVarGrad,
+                                                                                          config), c5(3.5) { }
 
 CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_COMP::ComputeResidual(const CConfig* config) {
 
@@ -231,14 +235,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_COMP::ComputeResidual(cons
   //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i           = V_i[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -298,12 +296,12 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_COMP::ComputeResidual(cons
     Residual = Production - Destruction + CrossProduction;
 
     /*--- Compressibility Correction term ---*/
-    Pressure_i = V_i[nDim+1];
-    SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+    Pressure_i = V_i[P_INDEX];
+    SoundSpeed_i = V_i[A_INDEX];
     aux_cc=0;
     for(iDim=0;iDim<nDim;++iDim){
       for(jDim=0;jDim<nDim;++jDim){
-        aux_cc+=PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];}}
+        aux_cc+=PrimVar_Grad_i[VEL_INDEX+iDim][jDim]*PrimVar_Grad_i[VEL_INDEX+iDim][jDim];}}
     CompCorrection=c5*(TurbVar_i[0]*TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
     Residual -= CompCorrection;
@@ -336,10 +334,13 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_COMP::ComputeResidual(cons
 
 }
 
-CNEMOSourcePieceWise_TurbSA_E::CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim,
-                                                     unsigned short val_nVar,
-                                                     const CConfig* config) :
-                           CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+CNEMOSourcePieceWise_TurbSA_E::CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar,
+                                                             unsigned short val_nPrimVar,
+                                                             unsigned short val_nPrimVarGrad,
+                                                             const CConfig* config):
+                                                             CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                                    val_nPrimVar, val_nPrimVarGrad,
+                                                                                    config) { }
 
 CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E::ComputeResidual(const CConfig* config) {
 
@@ -353,14 +354,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E::ComputeResidual(const C
   //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i           = V_i[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -380,9 +375,9 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E::ComputeResidual(const C
   Sbar = 0.0;
   for(iDim=0;iDim<nDim;++iDim){
     for(jDim=0;jDim<nDim;++jDim){
-      Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
+      Sbar+= (PrimVar_Grad_i[VEL_INDEX+iDim][jDim]+PrimVar_Grad_i[VEL_INDEX+jDim][iDim])*(PrimVar_Grad_i[VEL_INDEX+iDim][jDim]);}}
   for(iDim=0;iDim<nDim;++iDim){
-    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[VEL_INDEX+iDim][iDim],2.0));}
 
   Omega= sqrt(max(Sbar,0.0));
 
@@ -463,10 +458,13 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E::ComputeResidual(const C
 
 }
 
-CNEMOSourcePieceWise_TurbSA_E_COMP::CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim,
-                                                               unsigned short val_nVar,
-                                                               const CConfig* config) :
-                                CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+CNEMOSourcePieceWise_TurbSA_E_COMP::CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                                                       unsigned short val_nPrimVar,
+                                                                       unsigned short val_nPrimVarGrad,
+                                                                       const CConfig* config):
+                                                                       CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                                              val_nPrimVar, val_nPrimVarGrad,
+                                                                                              config) { }
 
 CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const CConfig* config) {
 
@@ -480,14 +478,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(co
   //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
   //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i           = V_i[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -507,9 +499,9 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(co
   Sbar = 0.0;
   for(iDim=0;iDim<nDim;++iDim){
     for(jDim=0;jDim<nDim;++jDim){
-      Sbar+= (PrimVar_Grad_i[1+iDim][jDim]+PrimVar_Grad_i[1+jDim][iDim])*(PrimVar_Grad_i[1+iDim][jDim]);}}
+      Sbar+= (PrimVar_Grad_i[VEL_INDEX+iDim][jDim]+PrimVar_Grad_i[VEL_INDEX+jDim][iDim])*(PrimVar_Grad_i[VEL_INDEX+iDim][jDim]);}}
   for(iDim=0;iDim<nDim;++iDim){
-    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
+    Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[VEL_INDEX+iDim][iDim],2.0));}
 
   Omega= sqrt(max(Sbar,0.0));
 
@@ -564,12 +556,12 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(co
     Residual = Production - Destruction + CrossProduction;
 
     /*--- Compressibility Correction term ---*/
-    Pressure_i = V_i[nDim+1];
-    SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+    Pressure_i   = V_i[P_INDEX];
+    SoundSpeed_i = V_i[A_INDEX];
     aux_cc=0;
     for(iDim=0;iDim<nDim;++iDim){
         for(jDim=0;jDim<nDim;++jDim){
-            aux_cc+=PrimVar_Grad_i[1+iDim][jDim]*PrimVar_Grad_i[1+iDim][jDim];}}
+            aux_cc+=PrimVar_Grad_i[VEL_INDEX+iDim][jDim]*PrimVar_Grad_i[VEL_INDEX+iDim][jDim];}}
     CompCorrection=c5*(TurbVar_i[0]*TurbVar_i[0]/(SoundSpeed_i*SoundSpeed_i))*aux_cc*Volume;
 
     Residual -= CompCorrection;
@@ -603,10 +595,13 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(co
 
 }
 
-CNEMOSourcePieceWise_TurbSA_Neg::CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim,
-                                                         unsigned short val_nVar,
-                                                         const CConfig* config) :
-                             CNEMOSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+CNEMOSourcePieceWise_TurbSA_Neg::CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                                                                 unsigned short val_nPrimVar,
+                                                                 unsigned short val_nPrimVarGrad,
+                                                                 const CConfig* config):
+                                                                 CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                                        val_nPrimVar, val_nPrimVarGrad,
+                                                                                        config) { }
 
 CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_Neg::ComputeResidual(const CConfig* config) {
 
@@ -620,14 +615,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_Neg::ComputeResidual(const
 //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-  if (incompressible) {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-  }
+  Density_i           = V_i[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
 
   Residual        = 0.0;
   Production      = 0.0;
@@ -752,13 +741,16 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_Neg::ComputeResidual(const
 
 }
 
-CNEMOSourcePieceWise_TurbSST::CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim,
-                                                   unsigned short val_nVar,
-                                                   const su2double *constants,
-                                                   su2double val_kine_Inf,
-                                                   su2double val_omega_Inf,
-                                                   const CConfig* config) :
-                          CNumerics(val_nDim, val_nVar, config) {
+CNEMOSourcePieceWise_TurbSST::CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                                                           unsigned short val_nPrimVar,
+                                                           unsigned short val_nPrimVarGrad,
+                                                           const su2double *constants,
+                                                           su2double val_kine_Inf,
+                                                           su2double val_omega_Inf,
+                                                           const CConfig* config):
+                                                           CNEMONumerics(val_nDim, val_nVar,
+                                                                         val_nPrimVar, val_nPrimVarGrad,
+                                                                         config) {
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
@@ -801,20 +793,11 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSST::ComputeResidual(const CC
                                 Vorticity_i[1]*Vorticity_i[1] +
                                 Vorticity_i[2]*Vorticity_i[2]);
 
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6);
+  AD::SetPreaccIn(V_i, nDim+7);
 
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+7);
-
-    Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];
-  }
+  Density_i           = V_i[RHO_INDEX];
+  Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
+  Eddy_Viscosity_i    = V_i[EDDY_VISC_INDEX];
 
   Residual[0] = 0.0;       Residual[1] = 0.0;
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
@@ -831,7 +814,7 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSST::ComputeResidual(const CC
 
    diverg = 0.0;
    for (iDim = 0; iDim < nDim; iDim++)
-     diverg += PrimVar_Grad_i[iDim+1][iDim];
+     diverg += PrimVar_Grad_i[VEL_INDEX+iDim][iDim];
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -911,21 +894,21 @@ void CNEMOSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
     /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
 
   if (nDim == 3){
-    S_ij[0][0] = PrimVar_Grad_i[1][0];
-    S_ij[1][1] = PrimVar_Grad_i[2][1];
-    S_ij[2][2] = PrimVar_Grad_i[3][2];
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]);
-    S_ij[0][2] = 0.5 * (PrimVar_Grad_i[1][2] + PrimVar_Grad_i[3][0]);
-    S_ij[1][2] = 0.5 * (PrimVar_Grad_i[2][2] + PrimVar_Grad_i[3][1]);
+    S_ij[0][0] = PrimVar_Grad_i[VEL_INDEX][0];
+    S_ij[1][1] = PrimVar_Grad_i[VEL_INDEX+1][1];
+    S_ij[2][2] = PrimVar_Grad_i[VEL_INDEX+2][2];
+    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[VEL_INDEX][1]   + PrimVar_Grad_i[VEL_INDEX+1][0]);
+    S_ij[0][2] = 0.5 * (PrimVar_Grad_i[VEL_INDEX][2]   + PrimVar_Grad_i[VEL_INDEX+2][0]);
+    S_ij[1][2] = 0.5 * (PrimVar_Grad_i[VEL_INDEX+1][2] + PrimVar_Grad_i[VEL_INDEX+2][1]);
     S_ij[1][0] = S_ij[0][1];
     S_ij[2][1] = S_ij[1][2];
     S_ij[2][0] = S_ij[0][2];
   }
   else {
-    S_ij[0][0] = PrimVar_Grad_i[1][0];
-    S_ij[1][1] = PrimVar_Grad_i[2][1];
+    S_ij[0][0] = PrimVar_Grad_i[VEL_INDEX][0];
+    S_ij[1][1] = PrimVar_Grad_i[VEL_INDEX+1][1];
     S_ij[2][2] = 0.0;
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]);
+    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[VEL_INDEX][1] + PrimVar_Grad_i[VEL_INDEX+1][0]);
     S_ij[0][2] = 0.0;
     S_ij[1][2] = 0.0;
     S_ij[1][0] = S_ij[0][1];

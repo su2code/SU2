@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../CNumerics.hpp"
+#include "../NEMO/CNEMONumerics.hpp"
 
 /*!
  * \class CUpwScalar
@@ -44,7 +44,7 @@
  * \ingroup ConvDiscr
  * \author C. Pederson, A. Bueno., and A. Campos.
  */
-class CNEMOUpwScalar : public CNumerics {
+class CNEMOUpwScalar : public CNEMONumerics {
 protected:
   su2double
   q_ij = 0.0,                  /*!< \brief Projected velocity at the face. */
@@ -75,7 +75,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar,
+                 unsigned short val_nPrimVar,
+                 unsigned short val_nPrimVarGrad,
+                 const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -117,7 +120,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                     unsigned short val_nPrimVar,
+                     unsigned short val_nPrimVarGrad,
+                     const CConfig* config);
 
 };
 
@@ -147,6 +153,9 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                      unsigned short val_nPrimVar,
+                      unsigned short val_nPrimVarGrad,
+                      const CConfig* config);
 
 };

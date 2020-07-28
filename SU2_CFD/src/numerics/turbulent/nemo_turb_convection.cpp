@@ -28,10 +28,12 @@
 
 #include "../../../include/numerics/turbulent/nemo_turb_convection.hpp"
 
-CNEMOUpwScalar::CNEMOUpwScalar(unsigned short val_nDim,
-                       unsigned short val_nVar,
-                       const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config),
+CNEMOUpwScalar::CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar,
+                               unsigned short val_nPrimVar,
+                               unsigned short val_nPrimVarGrad,
+                               const CConfig* config) :
+                               CNEMONumerics(val_nDim, val_nVar, val_nPrimVar,
+                                             val_nPrimVarGrad, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
@@ -71,20 +73,20 @@ CNumerics::ResidualType<> CNEMOUpwScalar::ComputeResidual(const CConfig* config)
 
   ExtraADPreaccIn();
 
-  Density_i = V_i[nDim+2];
-  Density_j = V_j[nDim+2];
+  Density_i = V_i[RHO_INDEX];
+  Density_j = V_j[RHO_INDEX];
 
   q_ij = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
-      su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
+      su2double Velocity_i = V_i[VEL_INDEX+iDim] - GridVel_i[iDim];
+      su2double Velocity_j = V_j[VEL_INDEX+iDim] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+      q_ij += 0.5*(V_i[VEL_INDEX+iDim]+V_j[VEL_INDEX+iDim])*Normal[iDim];
     }
   }
 
@@ -100,12 +102,15 @@ CNumerics::ResidualType<> CNEMOUpwScalar::ComputeResidual(const CConfig* config)
 
 }
 
-CNEMOUpwSca_TurbSA::NEMOCUpwSca_TurbSA(unsigned short val_nDim,
-                               unsigned short val_nVar,
-                               const CConfig* config) :
-                CNEMOUpwScalar(val_nDim, val_nVar, config) { }
+CNEMOUpwSca_TurbSA::CNEMOUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                                       unsigned short val_nPrimVar,
+                                       unsigned short val_nPrimVarGrad,
+                                       const CConfig* config) :
+                                       CNEMOUpwScalar(val_nDim, val_nVar, val_nPrimVar,
+                                                      val_nPrimVarGrad, config) {}
 
 void CNEMOUpwSca_TurbSA::ExtraADPreaccIn() {
+  //TODO what is nDim+1
   AD::SetPreaccIn(V_i, nDim+1);
   AD::SetPreaccIn(V_j, nDim+1);
 }
@@ -120,12 +125,15 @@ void CNEMOUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
   }
 }
 
-CNEMOUpwSca_TurbSST::CNEMOUpwSca_TurbSST(unsigned short val_nDim,
-                                 unsigned short val_nVar,
-                                 const CConfig* config) :
-                 CNEMOUpwScalar(val_nDim, val_nVar, config) { }
+CNEMOUpwSca_TurbSST::CNEMOUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                                         unsigned short val_nPrimVar,
+                                         unsigned short val_nPrimVarGrad,
+                                         const CConfig* config) :
+                                         CNEMOUpwScalar(val_nDim, val_nVar, val_nPrimVar,
+                                                        val_nPrimVarGrad, config) {}
 
 void CNEMOUpwSca_TurbSST::ExtraADPreaccIn() {
+  //TODO what is nDim+3
   AD::SetPreaccIn(V_i, nDim+3);
   AD::SetPreaccIn(V_j, nDim+3);
 }

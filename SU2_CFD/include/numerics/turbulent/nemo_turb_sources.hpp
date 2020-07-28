@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../CNumerics.hpp"
+#include "../NEMO/CNEMONumerics.hpp"
 
 /*!
  * \class CNEMOSourcePieceWise_TurbSA
@@ -36,7 +36,7 @@
  * \ingroup SourceDiscr
  * \author A. Bueno.
  */
-class CNEMOSourceBase_TurbSA : public CNumerics {
+class CNEMOSourceBase_TurbSA : public CNEMONumerics {
 protected:
   su2double cv1_3;
   su2double k2;
@@ -68,7 +68,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                         unsigned short val_nPrimVar,
+                         unsigned short val_nPrimVarGrad,
+                         const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -139,7 +142,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                              unsigned short val_nPrimVar,
+                              unsigned short val_nPrimVarGrad,
+                              const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -174,7 +180,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                   unsigned short val_nPrimVar,
+                                   unsigned short val_nPrimVarGrad,
+                                   const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -208,7 +217,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar,
+                                unsigned short val_nPrimVar,
+                                unsigned short val_nPrimVarGrad,
+                                const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -243,7 +255,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                     unsigned short val_nPrimVar,
+                                     unsigned short val_nPrimVarGrad,
+                                     const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -274,8 +289,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
+  CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                                  unsigned short val_nPrimVar,
+                                  unsigned short val_nPrimVarGrad,
+                                  const CConfig* config);
   /*!
    * \brief Residual for source term integration.
    * \param[in] config - Definition of the particular problem.
@@ -291,7 +308,7 @@ public:
  * \ingroup SourceDiscr
  * \author A. Campos.
  */
-class CNEMOSourcePieceWise_TurbSST final : public CNumerics {
+class CNEMOSourcePieceWise_TurbSST final : public CNEMONumerics {
 private:
   su2double F1_i,
   F1_j,
@@ -349,8 +366,10 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNENOSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const su2double* constants,
-                           su2double val_kine_Inf, su2double val_omega_Inf, const CConfig* config);
+  CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                               unsigned short val_nPrimVar,unsigned short val_nPrimVarGrad,
+                               const su2double* constants, su2double val_kine_Inf,
+                               su2double val_omega_Inf, const CConfig* config);
 
   /*!
    * \brief Set the value of the first blending function.

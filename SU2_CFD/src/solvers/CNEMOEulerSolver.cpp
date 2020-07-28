@@ -2049,7 +2049,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  cout << "This dont work" << endl;
+  cout << "TODO This dont work" << endl;
   unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,

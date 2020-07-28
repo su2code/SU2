@@ -41,16 +41,18 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 
     hs.resize(nSpecies,0.0);
 
-    RHOS_INDEX    = 0; 
-    T_INDEX       = nSpecies;
-    TVE_INDEX     = nSpecies+1;
-    VEL_INDEX     = nSpecies+2;
-    P_INDEX       = nSpecies+nDim+2;
-    RHO_INDEX     = nSpecies+nDim+3;
-    H_INDEX       = nSpecies+nDim+4;
-    A_INDEX       = nSpecies+nDim+5;
-    RHOCVTR_INDEX = nSpecies+nDim+6;
-    RHOCVVE_INDEX = nSpecies+nDim+7;  
+    RHOS_INDEX     = 0;
+    T_INDEX        = nSpecies;
+    TVE_INDEX      = nSpecies+1;
+    VEL_INDEX      = nSpecies+2;
+    P_INDEX        = nSpecies+nDim+2;
+    RHO_INDEX      = nSpecies+nDim+3;
+    H_INDEX        = nSpecies+nDim+4;
+    A_INDEX        = nSpecies+nDim+5;
+    RHOCVTR_INDEX  = nSpecies+nDim+6;
+    RHOCVVE_INDEX  = nSpecies+nDim+7;
+    LAM_VISC_INDEX  = nSpecies+nDim+8;
+    EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
     implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
