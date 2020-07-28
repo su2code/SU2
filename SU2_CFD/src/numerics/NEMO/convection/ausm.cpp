@@ -49,8 +49,6 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   dmRM   = new su2double [nVar];
   dpLP   = new su2double [nVar];
   dpRM   = new su2double [nVar];
-  daL    = new su2double [nVar];
-  daR    = new su2double [nVar];
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];

@@ -291,6 +291,9 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
       delete [] LowMach_Precontioner[iVar];
     delete [] LowMach_Precontioner;
   }
+
+  delete node_infty;
+  delete FluidModel;
 }
 
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
@@ -904,9 +907,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       }   
       
       chk_err_i = nodes->Cons2PrimVar(Conserved_i, Primitive_i,
-                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i, FluidModel);
+                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
       chk_err_j = nodes->Cons2PrimVar(Conserved_j, Primitive_j,
-                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j, FluidModel);
+                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
       
        /*--- Check for physical solutions in the reconstructed values ---*/
       // Note: If non-physical, revert to first order

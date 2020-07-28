@@ -51,6 +51,8 @@ CNumerics::CNumerics(void) {
 
   using_uq = false;
 
+  nemo = false;
+
 }
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
@@ -102,51 +104,14 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   m = new su2double [nDim] ();
 
   Dissipation_ij = 1.0;
+
+  nemo = config->GetNEMOProblem();
  
-  if (config->GetNEMOProblem()){
+  if (nemo){
 
     nSpecies = nVar - nDim - 2;
 
     hs.resize(nSpecies,0.0);
-    Cvtr   = new su2double[nSpecies];
-    eve_i  = new su2double[nSpecies];  eve_j  = new su2double[nSpecies];
-    Cvve_i = new su2double[nSpecies];  Cvve_j = new su2double[nSpecies];
-    Ys_i   = new su2double[nSpecies];  Ys_j   = new su2double[nSpecies];
-    In     = new su2double[nSpecies];
-    dYdr_i = new su2double*[nSpecies]; dYdr_j = new su2double*[nSpecies];
-    dIdr_i = new su2double*[nSpecies]; dIdr_j = new su2double*[nSpecies];
-    dJdr_i = new su2double*[nSpecies]; dJdr_j = new su2double*[nSpecies];
-
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      dYdr_i[iSpecies] = new su2double[nSpecies];
-      dYdr_j[iSpecies] = new su2double[nSpecies];
-      dIdr_i[iSpecies] = new su2double[nSpecies];
-      dIdr_j[iSpecies] = new su2double[nSpecies];
-      dJdr_i[iSpecies] = new su2double[nSpecies];
-      dJdr_j[iSpecies] = new su2double[nSpecies];
-    }
-    dFdVi = new su2double*[nVar];
-    dFdVj = new su2double*[nVar];
-    dVdUi = new su2double*[nVar];
-    dVdUj = new su2double*[nVar];
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      dFdVi[iVar] = new su2double[nVar];
-      dFdVj[iVar] = new su2double[nVar];
-      dVdUi[iVar] = new su2double[nVar];
-      dVdUj[iVar] = new su2double[nVar];
-    }
-
-    Ys = new su2double[nSpecies];
-    dFdYi = new su2double *[nSpecies];
-    dFdYj = new su2double *[nSpecies];
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      dFdYi[iSpecies] = new su2double[nSpecies];
-      dFdYj[iSpecies] = new su2double[nSpecies];
-    }
-    sumdFdYih   = new su2double[nSpecies];
-    sumdFdYjh   = new su2double[nSpecies];
-    sumdFdYieve = new su2double[nSpecies];
-    sumdFdYjeve = new su2double[nSpecies];
 
     unsigned short nPrimVar     = nSpecies+nDim+8;
     unsigned short nPrimVarGrad = nSpecies+nDim+8;
@@ -173,7 +138,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
       fluidmodel = new CUserDefinedTCLib(config, nDim, false);
       break;
     }
-  
   }
 
   /* --- Initializing variables for the UQ methodology --- */
@@ -274,6 +238,7 @@ CNumerics::~CNumerics(void) {
     delete [] New_Coord;
   }
 
+  if(nemo) delete fluidmodel;
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, const su2double *val_velocity,

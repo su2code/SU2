@@ -76,6 +76,7 @@ protected:
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
 
+  CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
@@ -328,14 +329,14 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) override;
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
  /*!
   * \brief Set all the conserved variables.
   */
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                    su2double *val_Cvves, CNEMOGas *fluidmodel);
+                    su2double *val_Cvves);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/

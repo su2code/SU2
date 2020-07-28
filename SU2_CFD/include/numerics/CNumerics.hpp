@@ -215,7 +215,8 @@ protected:
 
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
-  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  bool using_uq,                  /*!< \brief Flag for UQ methodology  */
+  nemo;                           /*!< \brief Flag for NEMO problems  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -235,13 +236,8 @@ protected:
   su2double *dTvedU_i, *dTvedU_j;
 
   vector<su2double> hs;
-  su2double *Cvtr;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
-  su2double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
-  su2double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
-
-  su2double *Ys, **dFdVi, **dFdVj, **dFdYj, **dFdYi, **dVdUi, **dVdUj,
-  *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
+ 
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
 

@@ -38,7 +38,7 @@ constexpr size_t flowSolMaxnVar() {
 }
 template<>
 constexpr size_t flowSolMaxnVar<CNEMOEulerVariable>() {
-  return 15;
+  return 20;
 }
 } // namespace detail
 
