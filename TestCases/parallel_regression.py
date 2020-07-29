@@ -38,6 +38,58 @@ def main():
 
     test_list = []
 
+    #########################
+    ## NEMO solver ###
+    #########################
+
+    # Adiabatic thermal bath
+    thermalbath           = TestCase('thermalbath')
+    thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
+    thermalbath.cfg_file  = "thermalbath.cfg"
+    thermalbath.test_iter = 10
+    thermalbath.test_vals = [2.473627, 2.473627, -11.989166, -11.879331, -32.000000, 10.804939] 
+    thermalbath.su2_exec  = "mpirun -n 2 SU2_CFD"
+    thermalbath.timeout   = 1600
+    thermalbath.new_output = True
+    thermalbath.tol       = 0.00001
+    test_list.append(thermalbath)
+
+    # Adiabatic frozen thermal bath
+    thermalbath_frozen           = TestCase('thermalbath_frozen')
+    thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
+    thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
+    thermalbath_frozen.test_iter = 10
+    thermalbath_frozen.test_vals = [ -32.000000, -32.000000, -11.923595, -11.962329, -32.000000, 10.813864] 
+    thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
+    thermalbath_frozen.timeout   = 1600
+    thermalbath_frozen.new_output = True
+    thermalbath_frozen.tol       = 0.00001
+    test_list.append(thermalbath_frozen)
+
+    # Inviscid single wedge
+    invwedge           = TestCase('invwedge')
+    invwedge.cfg_dir   = "nonequilibrium/invwedge"
+    invwedge.cfg_file  = "invwedge.cfg"
+    invwedge.test_iter = 10
+    invwedge.test_vals = [ -0.954130, -1.478893, -16.737310, -17.063693, -17.010416, 2.374072, 1.733626, 5.401966, 0.955538]
+    invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
+    invwedge.timeout   = 1600
+    invwedge.new_output = True
+    invwedge.tol       = 0.00001
+    test_list.append(invwedge)
+
+    # Viscous single wedge
+    viscwedge           = TestCase('viscwedge')
+    viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
+    viscwedge.cfg_file  = "viscwedge.cfg"
+    viscwedge.test_iter = 10
+    viscwedge.test_vals = [-5.267324, -5.792087, -20.236749, -20.204632, -20.221054, -1.780516, -2.208251, 1.723062, -2.871713]
+    viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
+    viscwedge.timeout   = 1600
+    viscwedge.new_output = False
+    viscwedge.tol       = 0.00001
+    test_list.append(viscwedge)
+
     ##########################
     ### Compressible Euler ###
     ##########################
@@ -281,6 +333,17 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+
+    # PROPELLER VARIBLE LOAD
+    propeller_var_load           = TestCase('propeller_variable_load')
+    propeller_var_load.cfg_dir   = "rans/actuatordisk_variable_load"
+    propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
+    propeller_var_load.test_iter = 20
+    propeller_var_load.test_vals = [-1.839227, -4.535048, -0.000314, 0.169980] #last 4 columns
+    propeller_var_load.su2_exec  = "parallel_computation.py -f"
+    propeller_var_load.timeout   = 3200
+    propeller_var_load.tol       = 0.00001
+    test_list.append(propeller_var_load)
 
     #################################
     ## Compressible RANS Restart  ###

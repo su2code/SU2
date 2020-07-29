@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CVariable.hpp
  * \brief Declaration and inlines of the parent class for defining problem
           variables, function definitions in file <i>CVariable.cpp</i>.
@@ -37,6 +37,7 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../fluid/CFluidModel.hpp"
+#include "../fluid/CNEMOGas.hpp"
 #include "../../../Common/include/toolboxes/C2DContainer.hpp"
 
 
@@ -1416,6 +1417,13 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] fluidmodel - fluid model.
+   */
+  inline virtual bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) {return false;}
+
+  /*!
+   * \brief A virtual member.
    */
   inline virtual void SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {}
 
@@ -1937,7 +1945,7 @@ public:
    * \param[in] val_dim - Index of the dimension.
    * \param[in] val_value - Value of the gradient.
    */
-  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) {}
+  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.

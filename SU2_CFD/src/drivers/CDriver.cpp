@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
@@ -64,12 +64,23 @@
 #include "../../include/numerics/flow/convection/centered.hpp"
 #include "../../include/numerics/flow/flow_diffusion.hpp"
 #include "../../include/numerics/flow/flow_sources.hpp"
+#include "../../include/numerics/NEMO/convection/roe.hpp"
+#include "../../include/numerics/NEMO/convection/lax.hpp"
+#include "../../include/numerics/NEMO/convection/ausm.hpp"
+#include "../../include/numerics/NEMO/convection/ausmplusup2.hpp"
+#include "../../include/numerics/NEMO/convection/ausmpwplus.hpp"
+#include "../../include/numerics/NEMO/convection/msw.hpp"
+#include "../../include/numerics/NEMO/NEMO_diffusion.hpp"
+#include "../../include/numerics/NEMO/NEMO_sources.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_convection.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_diffusion.hpp"
 #include "../../include/numerics/continuous_adjoint/adj_sources.hpp"
 #include "../../include/numerics/turbulent/turb_convection.hpp"
 #include "../../include/numerics/turbulent/turb_diffusion.hpp"
 #include "../../include/numerics/turbulent/turb_sources.hpp"
+#include "../../include/numerics/turbulent/nemo_turb_convection.hpp"
+#include "../../include/numerics/turbulent/nemo_turb_diffusion.hpp"
+#include "../../include/numerics/turbulent/nemo_turb_sources.hpp"
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../include/numerics/elasticity/CFEANonlinearElasticity.hpp"
@@ -1070,7 +1081,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver, geometry, config);
+  Inlet_Preprocessing(solver, geometry, config); 
 
 }
 
@@ -1203,6 +1214,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
   bool euler, ns, turbulent,
+  NEMO_euler, NEMO_ns, NEMO_turbulent,
   adj_euler, adj_ns, adj_turb,
   heat, fem, fem_euler, fem_ns, fem_dg_flow,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
@@ -1210,9 +1222,10 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
 
   /*--- Initialize some useful booleans ---*/
 
-  euler            = false;  ns           = false;  turbulent   = false;
-  adj_euler        = false;  adj_ns       = false;  adj_turb    = false;
-  fem_euler        = false;  fem_ns       = false;  fem_dg_flow = false;
+  euler            = false;  ns           = false;  turbulent      = false;
+  NEMO_euler       = false;  NEMO_ns      = false;  NEMO_turbulent = false;
+  adj_euler        = false;  adj_ns       = false;  adj_turb       = false;
+  fem_euler        = false;  fem_ns       = false;  fem_dg_flow    = false;
   disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
   disc_adj_turb    = false;
@@ -1250,8 +1263,11 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : case INC_EULER: euler = true; break;
+    case NEMO_EULER : NEMO_euler = true; break;
     case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; heat = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_NAVIER_STOKES: NEMO_ns = true; break;
     case RANS : case INC_RANS: ns = true; turbulent = true; heat = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_RANS: NEMO_ns = true; turbulent = true; heat = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; break;
@@ -1262,8 +1278,11 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER: case DISC_ADJ_INC_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NEMO_EULER: NEMO_euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: ns = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_NEMO_NAVIER_STOKES: NEMO_ns = true; disc_adj = true; heat = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_NEMO_RANS: NEMO_ns = true; NEMO_turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
     case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
     case DISC_ADJ_FEM_RANS: fem_ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
@@ -1284,6 +1303,9 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   if (restart || restart_flow) {
     if (euler || ns) {
       SU2_OMP_PARALLEL_(if(solver[MESH_0][FLOW_SOL]->GetHasHybridParallel()))
+      solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
+    }
+    if (NEMO_euler || NEMO_ns) {
       solver[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
     }
     if (turbulent) {
@@ -1400,6 +1422,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   nVar_Template         = 0,
   nVar_Flow             = 0,
+  nVar_NEMO             = 0,
+  nPrimVar_NEMO         = 0,
+  nPrimVarGrad_NEMO     = 0,
   nVar_Trans            = 0,
   nVar_Turb             = 0,
   nVar_Adj_Flow         = 0,
@@ -1419,11 +1444,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS);
 
   /*--- Initialize some useful booleans ---*/
-  bool euler, ns, turbulent, adj_euler, adj_ns, adj_turb, fem_euler, fem_ns, fem_turbulent;
+  bool euler, ns, NEMO_euler, NEMO_ns, turbulent, NEMO_turbulent, adj_euler, adj_ns, adj_turb, fem_euler, fem_ns, fem_turbulent;
   bool spalart_allmaras, neg_spalart_allmaras, e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras, menter_sst;
   bool fem, heat, transition, template_solver;
 
-  euler = ns = turbulent = adj_euler = adj_ns = adj_turb = fem_euler = fem_ns = fem_turbulent = false;
+  euler = ns = NEMO_euler = NEMO_ns = NEMO_turbulent = turbulent = adj_euler = adj_ns = adj_turb = fem_euler = fem_ns = fem_turbulent = false;
   spalart_allmaras = neg_spalart_allmaras = e_spalart_allmaras = comp_spalart_allmaras = e_comp_spalart_allmaras = menter_sst = false;
   fem = heat = transition = template_solver = false;
 
@@ -1432,7 +1457,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case TEMPLATE_SOLVER:
       template_solver = true; break;
 
-    case EULER :
+    case EULER:
     case DISC_ADJ_EULER:
       euler = compressible = true; break;
 
@@ -1440,9 +1465,22 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     case DISC_ADJ_NAVIER_STOKES:
       ns = compressible = true; break;
 
+    case NEMO_EULER:
+    case DISC_ADJ_NEMO_EULER:
+      NEMO_euler = compressible = true; break;
+
+    case NEMO_NAVIER_STOKES:
+    case DISC_ADJ_NEMO_NAVIER_STOKES:
+      NEMO_ns = compressible = true; break;  
+
     case RANS:
     case DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
+      transition = (config->GetKind_Trans_Model() == LM); break;
+
+    case NEMO_RANS:
+    case DISC_ADJ_NEMO_RANS:
+      NEMO_ns = compressible = NEMO_turbulent = true;
       transition = (config->GetKind_Trans_Model() == LM); break;
 
     case INC_EULER:
@@ -1498,7 +1536,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Assign turbulence model booleans ---*/
 
-  if (turbulent || fem_turbulent)
+  if (turbulent || fem_turbulent ||  NEMO_turbulent)
     switch (config->GetKind_Turb_Model()) {
       case SA:        spalart_allmaras = true;        break;
       case SA_NEG:    neg_spalart_allmaras = true;    break;
@@ -1527,17 +1565,21 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Number of variables for direct problem ---*/
 
-  if (euler)        nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
-  if (ns)           nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
-  if (turbulent)    nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
-  if (transition)   nVar_Trans = solver[MESH_0][TRANS_SOL]->GetnVar();
+  if (euler)           nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
+  if (ns)              nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
+  if (NEMO_euler)      nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
+  if (NEMO_ns)         nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
+  if (turbulent)       nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
+  if (NEMO_turbulent)  nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
 
-  if (fem_euler)    nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
-  if (fem_ns)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
+  if (transition)      nVar_Trans = solver[MESH_0][TRANS_SOL]->GetnVar();
+
+  if (fem_euler)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
+  if (fem_ns)          nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
   //if (fem_turbulent)    nVar_Turb = solver_container[MESH_0][FEM_TURB_SOL]->GetnVar();
 
-  if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-  if (heat)     nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
+  if (fem)             nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
+  if (heat)            nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
 
   if (config->AddRadiation())    nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
@@ -1546,6 +1588,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (adj_euler)    nVar_Adj_Flow = solver[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)       nVar_Adj_Flow = solver[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)     nVar_Adj_Turb = solver[MESH_0][ADJTURB_SOL]->GetnVar();
+
+  /*--- Additional Variables required for NEMO solver ---*/
+
+  if (NEMO_euler || NEMO_ns) nPrimVar_NEMO     = solver[MESH_0][FLOW_SOL]->GetnPrimVar();
+  if (NEMO_euler || NEMO_ns) nPrimVarGrad_NEMO = solver[MESH_0][FLOW_SOL]->GetnPrimVarGrad();
 
   /*--- Definition of the Class for the numerical method: numerics_container[INSTANCE_LEVEL][MESH_LEVEL][EQUATION][EQ_TERM] ---*/
 
@@ -1866,6 +1913,109 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   }
 
+  /*--- Solver definition for the Potential, Euler, Navier-Stokes NEMO problems ---*/
+  if ((NEMO_euler) || (NEMO_ns)) {
+
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    switch (config->GetKind_ConvNumScheme_Flow()) {
+      case NO_CONVECTIVE :
+        SU2_OMP_MASTER
+        SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_FLOW option.", CURRENT_FUNCTION);
+        break;
+
+      case SPACE_CENTERED :
+        if (compressible) {
+          /*--- Compressible flow ---*/
+          switch (config->GetKind_Centered_Flow()) {
+            case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLax_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config); break;
+            default:
+            SU2_OMP_MASTER
+            SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
+            break;
+          }
+
+          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+            numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLax_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+
+          /*--- Definition of the boundary condition method ---*/
+          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+            numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        }
+        break;
+      case SPACE_UPWIND :
+        if (compressible) {
+          /*--- Compressible flow ---*/
+          switch (config->GetKind_Upwind_Flow()) {
+            case ROE:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwRoe_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwRoe_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
+            case AUSM:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSM_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
+            case AUSMPLUSUP2:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSUP2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSUP2_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
+            case MSW:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwMSW_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwMSW_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
+            case AUSMPWPLUS:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+                numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPWplus_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+              }
+              break;
+
+            default:
+              SU2_OMP_MASTER
+              SU2_MPI::Error("Invalid upwind scheme or not implemented.", CURRENT_FUNCTION);
+              break;
+          }
+
+        }
+        break;
+
+      default:
+        SU2_OMP_MASTER
+        SU2_MPI::Error("Invalid convective scheme for the NEMO Euler / Navier-Stokes equations.", CURRENT_FUNCTION);
+        break;
+    }
+
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    if (compressible) {
+
+      numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradCorrected_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGrad_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+
+      /*--- Definition of the boundary condition method ---*/
+      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGrad_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+    }
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+
+      numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSource_NEMO(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_NEMO, config);
+    }
+  }
+
   /*--- Riemann solver definition for the Euler, Navier-Stokes problems for the FEM discretization. ---*/
   if ((fem_euler) || (fem_ns)) {
 
@@ -1920,7 +2070,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   }
 
   /*--- Solver definition for the turbulent model problem ---*/
-
   if (turbulent) {
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
@@ -1984,6 +2133,73 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     }
   }
 
+  /*--- Solver definition for the turbulent model problem ---*/
+  if (NEMO_turbulent) {
+
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+
+    switch (config->GetKind_ConvNumScheme_Turb()) {
+      case NO_UPWIND:
+        SU2_OMP_MASTER
+        SU2_MPI::Error("Config file is missing the CONV_NUM_METHOD_TURB option.", CURRENT_FUNCTION);
+        break;
+      case SPACE_UPWIND :
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (spalart_allmaras || neg_spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras ) {
+            numerics[iMGlevel][TURB_SOL][conv_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+          }
+          else if (menter_sst) numerics[iMGlevel][TURB_SOL][conv_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_Turb,
+                                                                                                 nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        }
+        break;
+      default:
+        SU2_OMP_MASTER
+        SU2_MPI::Error("Invalid convective scheme for the turbulence equations.", CURRENT_FUNCTION);
+        break;
+    }
+
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras){
+        numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO,
+                                                                          nPrimVarGrad_NEMO, true, config);
+      }
+      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_Turb,nPrimVar_NEMO,
+                                                                                                           nPrimVarGrad_NEMO, true, config);
+      else if (menter_sst) numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO,
+                                                                                              constants, true, config);
+    }
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (e_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_E(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO,config);
+      else if (comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_COMP(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (e_comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_E_COMP(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (menter_sst) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSST(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, constants, kine_Inf, omega_Inf, config);
+      numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
+    }
+
+    /*--- Definition of the boundary condition method ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
+      }
+      else if (neg_spalart_allmaras) {
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
+      }
+      else if (menter_sst) {
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, constants,  false, config);
+      }
+    }
+  }
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
 
@@ -2797,8 +3013,9 @@ void CFluidDriver::StartSolver(){
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  }
 
   unsigned long Iter = 0;
   while ( Iter < Max_Iter ) {
@@ -2879,6 +3096,9 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
           (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
+          (config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
+          (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) ||
+          (config_container[iZone]->GetKind_Solver() ==  NEMO_RANS) ||
           (config_container[iZone]->GetKind_Solver() ==  RANS) ||
           (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
           (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
@@ -2888,7 +3108,6 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       }
     }
   }
-
 }
 
 void CFluidDriver::Run() {
@@ -2924,7 +3143,7 @@ void CFluidDriver::Run() {
   /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
 
   if (unsteady)
-    nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+    nIntIter = config_container[MESH_0]->GetnInner_Iter();
   else
     nIntIter = 1;
 
@@ -2962,6 +3181,10 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
       config_container[donorZone], config_container[targetZone]);
   if (config_container[targetZone]->GetKind_Solver() == RANS)
+    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
+  if (config_container[targetZone]->GetKind_Solver() == NEMO_RANS)
     interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
         config_container[donorZone], config_container[targetZone]);
@@ -3013,6 +3236,8 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
+      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
     case HEAT_EQUATION:
       StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
@@ -3020,6 +3245,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
     case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
@@ -3274,9 +3500,12 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case EULER: case NAVIER_STOKES: case RANS:
   case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+  case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
+    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+  case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 

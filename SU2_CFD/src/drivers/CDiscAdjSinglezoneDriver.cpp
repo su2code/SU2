@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
@@ -68,8 +68,10 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
   switch (config->GetKind_Solver()) {
 
-  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+    case DISC_ADJ_EULER:      case DISC_ADJ_NAVIER_STOKES:      case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER:  case DISC_ADJ_INC_NAVIER_STOKES:  case DISC_ADJ_INC_RANS:
+    case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
+
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -220,8 +222,10 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   switch(config->GetKind_Solver())
   {
-    case DISC_ADJ_EULER :     case DISC_ADJ_NAVIER_STOKES :     case DISC_ADJ_RANS :
-    case DISC_ADJ_INC_EULER : case DISC_ADJ_INC_NAVIER_STOKES : case DISC_ADJ_INC_RANS :
+    case DISC_ADJ_EULER :      case DISC_ADJ_NAVIER_STOKES :      case DISC_ADJ_RANS :
+    case DISC_ADJ_INC_EULER :  case DISC_ADJ_INC_NAVIER_STOKES :  case DISC_ADJ_INC_RANS :
+    case DISC_ADJ_NEMO_EULER : case DISC_ADJ_NEMO_NAVIER_STOKES : case DISC_ADJ_NEMO_RANS :
+
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
@@ -333,6 +337,8 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case DISC_ADJ_INC_EULER:       case DISC_ADJ_INC_NAVIER_STOKES:      case DISC_ADJ_INC_RANS:
   case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
   case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
+  case DISC_ADJ_NEMO_EULER:      case DISC_ADJ_NEMO_NAVIER_STOKES:     case DISC_ADJ_NEMO_RANS:
+
 
     solver[FLOW_SOL]->SetTotal_ComboObj(0.0);
 
@@ -451,6 +457,7 @@ void CDiscAdjSinglezoneDriver::Print_DirectResidual(unsigned short kind_recordin
     switch (config->GetKind_Solver()) {
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
     case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       cout << "log10[U(0)]: "   << log10(solver[FLOW_SOL]->GetRes_RMS(0))
