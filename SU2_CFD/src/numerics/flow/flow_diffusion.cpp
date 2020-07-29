@@ -133,7 +133,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
 
   proj_vector_ij = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    UnitEdge_Vector[iDim] = Edge_Vector/sqrt(dist_ij_2);
+    UnitEdge_Vector[iDim] = Edge_Vector[iDim]/sqrt(dist_ij_2);
     proj_vector_ij += UnitNormal[iDim]*UnitEdge_Vector[iDim];
   }
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
