@@ -2924,7 +2924,7 @@ void CFluidDriver::Run() {
   /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
 
   if (unsteady)
-    nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+    nIntIter = config_container[MESH_0]->GetnInner_Iter();
   else
     nIntIter = 1;
 
