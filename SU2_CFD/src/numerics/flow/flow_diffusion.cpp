@@ -49,10 +49,6 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
-  Mean_GradVel = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Mean_GradVel[iDim] = new su2double [nDim];
-
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -80,12 +76,6 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
       delete [] Mean_GradPrimVar[iVar];
     delete [] Mean_GradPrimVar;
-  }
-
-  if (Mean_GradVel != nullptr) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      delete [] Mean_GradVel[iDim];
-    delete [] Mean_GradVel;
   }
 
 
@@ -616,12 +606,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   for (iVar = 0; iVar < nDim+1; iVar++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
-    }
-  }
-
-  for (iVar = 0; iVar < nDim; iVar++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Mean_GradVel[iVar][iDim] = Mean_GradPrimVar[iVar+1][iDim];
     }
   }
 

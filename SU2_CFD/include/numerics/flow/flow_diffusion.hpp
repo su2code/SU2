@@ -57,7 +57,6 @@ protected:
   *PrimVar_i = nullptr,
   *PrimVar_j = nullptr;                   /*!< \brief Primitives variables at point i and j. */
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
-  **Mean_GradVel= nullptr,                /*!< \brief Mean value of the velocity. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
