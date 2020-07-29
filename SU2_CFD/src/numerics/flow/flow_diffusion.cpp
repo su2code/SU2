@@ -484,7 +484,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[nVar-1][iDim] = heat_flux_vector[iDim];
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       Flux_Tensor[jDim+1][iDim]  = tau[jDim][iDim];
-      Flux_Tensor[nVar-1][iDim] += tau[jDim][iDim] * val_primvar[jDim+1];
+      Flux_Tensor[nVar-1][iDim] += tau[iDim][jDim] * val_primvar[jDim+1];
     }
   }
 
