@@ -183,7 +183,8 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = total_viscosity*( val_gradprimvar[iDim+1][jDim] + Mean_GradVel[jDim][iDim] )
-                        - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+                        - TWO3*total_viscosity*(div_vel-Mean_GradVel[iDim][jDim]+val_gradprimvar[iDim][jDim])*delta[iDim][jDim]
+                        - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   }
 }
 
@@ -442,8 +443,8 @@ void CAvgGrad_Base::SetTauJacobian() {
       //                                     - 2./3.*Normal[jDim]*Normal[iDim] 
       //                                     + delta[iDim][jDim]*Area*Area);
     }
-    tau_jacobian_i[iDim][iDim+1] = -xi_i*(Area*Area);
-    tau_jacobian_j[iDim][iDim+1] =  xi_j*(Area*Area);
+    tau_jacobian_i[iDim][iDim+1] = -xi_i*(Area*Area/3.0);
+    tau_jacobian_j[iDim][iDim+1] =  xi_j*(Area*Area/3.0);
     // Jacobian w.r.t. density
     tau_jacobian_i[iDim][0] = 0;
     tau_jacobian_j[iDim][0] = 0;
@@ -484,7 +485,7 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
     Flux_Tensor[nVar-1][iDim] = heat_flux_vector[iDim];
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       Flux_Tensor[jDim+1][iDim]  = tau[jDim][iDim];
-      Flux_Tensor[nVar-1][iDim] += tau[iDim][jDim] * val_primvar[jDim+1];
+      Flux_Tensor[nVar-1][iDim] += tau[jDim][iDim] * val_primvar[jDim+1];
     }
   }
 
