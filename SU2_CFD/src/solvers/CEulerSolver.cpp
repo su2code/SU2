@@ -3203,79 +3203,39 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        // const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+        const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-        // su2double Project_Grad_i = -V_ij;
-        // su2double Project_Grad_j = -V_ij;
-
-        // for (iDim = 0; iDim < nDim; iDim++) {
-        //   Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-        //   Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        // }
-
-        // /*--- Blend upwind and centered differences ---*/
-
-        // Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-        // Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
-
-        // /*--- Edge-based limiters ---*/
-
-        // if (limiter) {
-        //   switch(config->GetKind_SlopeLimit_Flow()) {
-        //     case VAN_ALBADA_EDGE:
-        //       Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-        //       Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
-        //       break;
-        //     case PIPERNO:
-        //       Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-        //       Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
-        //       break;
-        //   }
-
-        //   /*--- Limit projection ---*/
-
-        //   Project_Grad_i *= Limiter_i[iVar];
-        //   Project_Grad_j *= Limiter_j[iVar];
-        // }
-
-        // Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-        // Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
-
-        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
+        su2double Project_Grad_i = -V_ij;
+        su2double Project_Grad_j = -V_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        }
 
-          const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+        /*--- Blend upwind and centered differences ---*/
 
-          su2double Grad_i = Vector_ij[iDim]*Gradient_i[iVar][iDim]-V_ij;
-          su2double Grad_j = Vector_ij[iDim]*Gradient_j[iVar][iDim]-V_ij;
+        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
 
-          /*--- Blend upwind and centered differences ---*/
+        /*--- Edge-based limiters ---*/
 
-          Grad_i = 0.5*((1.0-Kappa)*Grad_i + (1.0+Kappa)*V_ij);
-          Grad_j = 0.5*((1.0-Kappa)*Grad_j + (1.0+Kappa)*V_ij);
-
-          /*--- Edge-based limiters ---*/
-
-          if (limiter) {
-            switch(config->GetKind_SlopeLimit_Flow()) {
-              case VAN_ALBADA_EDGE:
-                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Grad_i, V_ij);
-                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Grad_j, V_ij);
-                break;
-              case PIPERNO:
-                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Grad_i, V_ij);
-                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Grad_j, V_ij);
-                break;
-            }
-
-            /*--- Limit projection ---*/
-
-            Grad_i *= Limiter_i[iVar];
-            Grad_j *= Limiter_j[iVar];
+        if (limiter) {
+          switch(config->GetKind_SlopeLimit_Flow()) {
+            case VAN_ALBADA_EDGE:
+              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+              break;
+            case PIPERNO:
+              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+              break;
           }
-          Project_Grad_i += Grad_i;
-          Project_Grad_j += Grad_j;
+
+          /*--- Limit projection ---*/
+
+          Project_Grad_i *= Limiter_i[iVar];
+          Project_Grad_j *= Limiter_j[iVar];
         }
 
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
