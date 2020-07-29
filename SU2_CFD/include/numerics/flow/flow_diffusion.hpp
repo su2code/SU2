@@ -64,9 +64,10 @@ protected:
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   WallShearStress,                        /*!< \brief Wall shear stress at point i and j (without wall functions). */
-  dist_ij_2 = 0.0,                              /*!< \brief Length of the edge and face, squared */
+  dist_ij_2 = 0.0,                        /*!< \brief Length of the edge and face, squared */
   proj_vector_ij = 0.0,                   /*!< \brief Vector used for projection of gradient correction. */
-  Edge_Vector[MAXNDIM] = {0.0};           /*!< \brief Vector from point i to point j. */
+  Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
+  UnitEdge_Vector[MAXNDIM] = {0.0};       /*!< \brief Unit vector from point i to point j. */
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */

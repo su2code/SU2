@@ -130,14 +130,20 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
   //     GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
   //   }
   // }
+
+  proj_vector_ij = 0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    UnitEdge_Vector[iDim] = Edge_Vector/sqrt(dist_ij_2);
+    proj_vector_ij += UnitNormal[iDim]*UnitEdge_Vector[iDim];
+  }
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
     su2double GradPrimVar_Edge = 0.0, 
-              Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
+              Delta = (val_PrimVar_j[iVar]-val_PrimVar_i[iVar])/sqrt(dist_ij_2);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*UnitEdge_Vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Normal[iDim] / proj_vector_ij;
+      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*UnitNormal[iDim] / proj_vector_ij;
     }
   }
 }
@@ -152,27 +158,12 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   const su2double Density = val_primvar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 
-  // su2double div_vel = 0.0;
-  // for (iDim = 0 ; iDim < nDim; iDim++)
-  //   div_vel += val_gradprimvar[iDim+1][iDim];
   su2double div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += Mean_GradVel[iDim][iDim];
+    div_vel += val_gradprimvar[iDim+1][iDim];
 
   /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
 
-  // if (using_uq){
-  //   for (iDim = 0 ; iDim < nDim; iDim++)
-  //     for (jDim = 0 ; jDim < nDim; jDim++)
-  //       tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-  //       - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
-
-  // } else {
-  //   for (iDim = 0 ; iDim < nDim; iDim++)
-  //     for (jDim = 0 ; jDim < nDim; jDim++)
-  //       tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-  //                       - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
-  // }
   if (using_uq){
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
@@ -182,9 +173,8 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   } else {
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
-        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[iDim+1][jDim] + Mean_GradVel[jDim][iDim] )
-                        - TWO3*total_viscosity*(div_vel-Mean_GradVel[iDim][jDim]+val_gradprimvar[iDim][jDim])*delta[iDim][jDim]
-                        - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+        tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+                        - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   }
 }
 
@@ -442,9 +432,13 @@ void CAvgGrad_Base::SetTauJacobian() {
       // tau_jacobian_j[iDim][jDim+1] =  xi_j*(Normal[iDim]*Normal[jDim] 
       //                                     - 2./3.*Normal[jDim]*Normal[iDim] 
       //                                     + delta[iDim][jDim]*Area*Area);
+      tau_jacobian_i[iDim][jDim+1] = -xi_i*(UnitNormal[iDim]*UnitNormal[jDim] 
+                                          - 2./3.*UnitNormal[jDim]*UnitNormal[iDim] 
+                                          + delta[iDim][jDim])*Area/sqrt(dist_ij_2);
+      tau_jacobian_j[iDim][jDim+1] =  xi_j*(UnitNormal[iDim]*UnitNormal[jDim] 
+                                          - 2./3.*UnitNormal[jDim]*UnitNormal[iDim] 
+                                          + delta[iDim][jDim])*Area/sqrt(dist_ij_2);
     }
-    tau_jacobian_i[iDim][iDim+1] = -xi_i*(Normal[iDim]*Normal[iDim]+Area*Area/3.0);
-    tau_jacobian_j[iDim][iDim+1] =  xi_j*(Normal[iDim]*Normal[iDim]+Area*Area/3.0);
     // Jacobian w.r.t. density
     tau_jacobian_i[iDim][0] = 0;
     tau_jacobian_j[iDim][0] = 0;
