@@ -3245,7 +3245,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         for (iDim = 0; iDim < nDim; iDim++) {
 
-          const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar])*Vector_ij[iDim]*Vector_ij[iDim]/Dist_ij;
+          const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
           su2double Grad_i = Vector_ij[iDim]*Gradient_i[iVar][iDim]-V_ij;
           su2double Grad_j = Vector_ij[iDim]*Gradient_j[iVar][iDim]-V_ij;
