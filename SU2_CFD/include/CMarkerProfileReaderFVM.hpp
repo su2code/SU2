@@ -1,9 +1,9 @@
-﻿/*!
+/*!
  * \file CMarkerProfileReaderFVM.hpp
  * \brief Header file for the class CMarkerProfileReaderFVM.
  *        The implementations are in the <i>CMarkerProfileReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>

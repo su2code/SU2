@@ -36,9 +36,6 @@
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CVariable {
-public:
-  static constexpr size_t MAXNVAR = 12;
-
 protected:
   VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType HB_Source;     /*!< \brief harmonic balance source term. */

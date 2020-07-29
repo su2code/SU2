@@ -39,7 +39,7 @@ CBaseMPIWrapper::Win CBaseMPIWrapper::winMinRankError;
 
 #ifdef HAVE_MPI
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
-MediTypes* mediTypes;
+//AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
 #include <medi/medi.cpp>
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 

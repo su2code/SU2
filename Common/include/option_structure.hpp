@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -95,8 +95,6 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -198,14 +196,7 @@ enum ENUM_MAIN_SOLVER {
   FEM_NAVIER_STOKES = 27,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 28,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30,
-  NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42,          /*!< \brief Definition of the NEMO Navier-Stokes solver. */
-  NEMO_RANS = 43,                    /*!< \brief Definition of the NEMO RANS solver. */
-  DISC_ADJ_NEMO_EULER = 44,          /*!< \brief Definition of the discrete adjoint NEMO Euler solver. */
-  DISC_ADJ_NEMO_RANS = 45,          /*!< \brief Definition of the discrete adjoint NEMO Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  DISC_ADJ_NEMO_NAVIER_STOKES = 46  /*!< \brief Definition of the discrete adjoint NEMO Navier-Stokes' solver. */
-
+  MULTIPHYSICS = 30
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -219,9 +210,6 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
   MakePair("FEM_RANS", FEM_RANS)
   MakePair("FEM_LES", FEM_LES)
-  MakePair("NEMO_EULER",NEMO_EULER)
-  MakePair("NEMO_NAVIER_STOKES",NEMO_NAVIER_STOKES)
-  MakePair("NEMO_RANS", NEMO_RANS)
   MakePair("ADJ_EULER", ADJ_EULER)
   MakePair("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
   MakePair("ADJ_RANS", ADJ_RANS )
@@ -547,9 +535,7 @@ enum ENUM_FLUIDMODEL {
   PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
   CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6,  /*!< \brief Inc. ideal gas, polynomial gas model. */
-  MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  USER_DEFINED_NONEQ = 8        /*!< \brief User defined gas model for nonequilibrium flow. */
+  INC_IDEAL_GAS_POLY = 6  /*!< \brief Inc. ideal gas, polynomial gas model. */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -559,46 +545,6 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("CONSTANT_DENSITY", CONSTANT_DENSITY)
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
-  MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("USER_DEFINED_NONEQ", USER_DEFINED_NONEQ)
-};
-
-/*!
- * \brief types of gas models
- */
-enum ENUM_GASMODEL {
-   NO_MODEL   = 0,
-   ARGON      = 1,
-   AIR7       = 2,
-   AIR21      = 3,
-   O2         = 4,
-   N2         = 5,
-   AIR5       = 6,
-   ARGON_SID  = 7,
-   ONESPECIES = 8
-};
-static const MapType<string, ENUM_GASMODEL> GasModel_Map = {
-MakePair("NONE", NO_MODEL)
-MakePair("ARGON", ARGON)
-MakePair("AIR-7", AIR7)
-MakePair("AIR-21", AIR21)
-MakePair("O2", O2)
-MakePair("N2", N2)
-MakePair("AIR-5", AIR5)
-MakePair("ARGON-SID",ARGON_SID)
-MakePair("ONESPECIES", ONESPECIES)
-};
-
-/*!
- * \brief types of coefficient transport model
- */
-enum ENUM_TRANSCOEFFMODEL {
-  WILKE      = 0,
-  GUPTAYOS   = 1
-};
-static const MapType<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
-MakePair("WILKE", WILKE)
-MakePair("GUPTA-YOS", GUPTAYOS)
 };
 
 /*!
@@ -792,8 +738,7 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
-  AUSMPLUSUP2 = 17,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS = 18            /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPLUSUP2 = 17            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
 };
 static const MapType<string, ENUM_UPWIND> Upwind_Map = {
   MakePair("NONE", NO_UPWIND)
@@ -802,7 +747,6 @@ static const MapType<string, ENUM_UPWIND> Upwind_Map = {
   MakePair("AUSM", AUSM)
   MakePair("AUSMPLUSUP", AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", AUSMPWPLUS)
   MakePair("SLAU", SLAU)
   MakePair("HLLC", HLLC)
   MakePair("SW", SW)
@@ -1152,7 +1096,6 @@ enum BC_TYPE {
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
-  SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
 };
 
@@ -1438,8 +1381,7 @@ enum ACTDISK_TYPE {
   NET_THRUST = 3,         /*!< \brief User specifies the Net thrust. */
   DRAG_MINUS_THRUST = 4,  /*!< \brief User specifies the D-T. */
   MASSFLOW = 5,           /*!< \brief User specifies the massflow. */
-  POWER = 6,              /*!< \brief User specifies the power. */
-  VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
+  POWER = 6               /*!< \brief User specifies the power. */
 };
 static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1448,7 +1390,6 @@ static const MapType<string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("DRAG_MINUS_THRUST", DRAG_MINUS_THRUST)
   MakePair("MASSFLOW", MASSFLOW)
   MakePair("POWER", POWER)
-  MakePair("VARIABLE_LOAD", VARIABLE_LOAD)
 };
 
 /*!
@@ -2172,8 +2113,7 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 29,   /*!< \brief Solution at time n-1. */
-  PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
+  SOLUTION_TIME_N1     = 29   /*!< \brief Solution at time n-1. */
 };
 
 /*!

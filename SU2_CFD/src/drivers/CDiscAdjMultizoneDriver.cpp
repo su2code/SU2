@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
@@ -65,7 +65,6 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
       switch (config_container[iZone]->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
           direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(EULER, config_container[iZone]);
           break;
         case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
@@ -88,7 +87,6 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
     switch (config_container[iZone]->GetKind_Solver()) {
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-      case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
         direct_output[iZone] = COutputFactory::CreateOutput(EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
@@ -411,9 +409,8 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:      case DISC_ADJ_NAVIER_STOKES:      case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER:  case DISC_ADJ_INC_NAVIER_STOKES:  case DISC_ADJ_INC_RANS:
-      case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
         if(Has_Deformation(iZone)) {
           solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
@@ -588,9 +585,8 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 
     switch (config_container[iZone]->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:      case DISC_ADJ_NAVIER_STOKES:
-      case DISC_ADJ_INC_EULER:  case DISC_ADJ_INC_NAVIER_STOKES:
-      case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES:
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES:
         cout << " Zone " << iZone << " (flow)       - log10[U(0)]    : "
              << log10(solvers[FLOW_SOL]->GetRes_RMS(0)) << endl;
         if (config_container[iZone]->AddRadiation()) {
@@ -652,9 +648,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
     switch (config->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:      case DISC_ADJ_NAVIER_STOKES:      case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER:  case DISC_ADJ_INC_NAVIER_STOKES:  case DISC_ADJ_INC_RANS:
-      case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+
         solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
         solvers[FLOW_SOL]->Friction_Forces(geometry, config);
@@ -689,8 +685,6 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
       switch (config->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
-
           // per-surface output to be added soon
           break;
         case HEAT_EQUATION: case DISC_ADJ_HEAT:
@@ -709,10 +703,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
     switch (config->GetKind_Solver()) {
 
-      case DISC_ADJ_EULER:      case DISC_ADJ_NAVIER_STOKES:      case DISC_ADJ_RANS:
-      case DISC_ADJ_INC_EULER:  case DISC_ADJ_INC_NAVIER_STOKES:  case DISC_ADJ_INC_RANS:
-      case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
-
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       {
         string FieldName;
 

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
@@ -79,9 +79,6 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       fluid_zone = true;
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
-      fluid_zone = true;
-      break;  
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
@@ -166,9 +163,8 @@ void CMultizoneDriver::StartSolver() {
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
-  }
 
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
@@ -261,6 +257,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
+
   }
 
 #ifdef HAVE_MPI
@@ -569,8 +566,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
       /*--- Aditional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == RANS ||
-          config_container[targetZone]->GetKind_Solver() == INC_RANS ||
-          config_container[targetZone]->GetKind_Solver() == NEMO_RANS)
+          config_container[targetZone]->GetKind_Solver() == INC_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
           solver_container[donorZone][INST_0][MESH_0][TURB_SOL],

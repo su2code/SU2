@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file COutputFactory.cpp
  * \brief Main subroutines for output solver information
  * \author T. Albring
@@ -32,7 +32,6 @@
 #include "../../include/output/CElasticityOutput.hpp"
 #include "../../include/output/CAdjElasticityOutput.hpp"
 #include "../../include/output/CFlowCompOutput.hpp"
-#include "../../include/output/CNEMOCompOutput.hpp"
 #include "../../include/output/CAdjFlowOutput.hpp"
 #include "../../include/output/CFlowCompFEMOutput.hpp"
 #include "../../include/output/CFlowIncOutput.hpp"
@@ -51,9 +50,6 @@ COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       output = new CFlowIncOutput(config, nDim);
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
-      output = new CNEMOCompOutput(config, nDim);
-      break;  
     case HEAT_EQUATION:
       output = new CHeatOutput(config, nDim);
       break;

@@ -1850,7 +1850,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
+void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
 
@@ -1862,8 +1862,9 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
                                           string val_marker,
-                                          const CGeometry *geometry,
-                                          const CConfig *config) const {
+                                          CGeometry *geometry,
+                                          CConfig *config) const {
+
   /*--- Local variables ---*/
 
   unsigned short iMarker, iDim;
@@ -1918,7 +1919,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 
 }
 
-void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;

@@ -64,9 +64,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
 
   /*--- Compute viscous residuals ---*/
+
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
 
   /*--- Compute source term residuals ---*/
+
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
@@ -169,9 +171,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         else {
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
-        break;
-      case SMOLUCHOWSKI_MAXWELL:
-        solver_container[MainSolver]->BC_Smoluchowski_Maxwell(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
     }
 

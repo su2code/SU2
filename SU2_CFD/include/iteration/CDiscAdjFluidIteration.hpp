@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CDiscAdjFluidIteration.hpp
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
@@ -47,9 +47,7 @@ class CDiscAdjFluidIteration : public CIteration {
    * \param[in] config - Definition of the particular problem.
    */
   explicit CDiscAdjFluidIteration(const CConfig *config) : CIteration(config),
-    turbulent(config->GetKind_Solver() == DISC_ADJ_RANS ||
-              config->GetKind_Solver() == DISC_ADJ_INC_RANS ||
-              config->GetKind_Solver() == DISC_ADJ_NEMO_RANS) {}
+    turbulent(config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS) {}
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

@@ -39,7 +39,6 @@
 #pragma once
 
 #include <type_traits>
-#include <cstdlib>
 
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)
