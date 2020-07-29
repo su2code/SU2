@@ -121,19 +121,14 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
   //   }
   // }
 
-  proj_vector_ij = 0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    UnitEdge_Vector[iDim] = Edge_Vector[iDim]/sqrt(dist_ij_2);
-    proj_vector_ij += UnitNormal[iDim]*UnitEdge_Vector[iDim];
-  }
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
     su2double GradPrimVar_Edge = 0.0, 
-              Delta = (val_PrimVar_j[iVar]-val_PrimVar_i[iVar])/sqrt(dist_ij_2);
+              Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*UnitEdge_Vector[iDim];
+      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*UnitNormal[iDim] / proj_vector_ij;
+      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Normal[iDim] / proj_vector_ij;
     }
   }
 }
@@ -611,7 +606,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
-  if (correct_gradient && dist_ij_2 != 0.0)
+  if (correct_gradient && dist_ij_2 != 0.0  && proj_vector_ij != 0.0)
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, nDim+1);
 
   /*--- Wall shear stress values (wall functions) ---*/
@@ -643,7 +638,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    if (correct_gradient && dist_ij_2 != 0.0) {
+    if (correct_gradient && dist_ij_2 != 0.0  && proj_vector_ij != 0.0) {
       SetTauJacobian();
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
     }
