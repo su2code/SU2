@@ -396,27 +396,27 @@ void CAvgGrad_Base::SetTauJacobian() {
   const su2double Density_i = V_i[nDim+2];
   const su2double Density_j = V_j[nDim+2];
   const su2double Viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
-  const su2double xi_i = WF_Factor*Viscosity/(Density_i*dist_ij_2);
-  const su2double xi_j = WF_Factor*Viscosity/(Density_j*dist_ij_2);
-  // const su2double xi_i = WF_Factor*Viscosity/(Density_i*proj_vector_ij);
-  // const su2double xi_j = WF_Factor*Viscosity/(Density_j*proj_vector_ij);
+  // const su2double xi_i = WF_Factor*Viscosity/(Density_i*dist_ij_2);
+  // const su2double xi_j = WF_Factor*Viscosity/(Density_j*dist_ij_2);
+  const su2double xi_i = WF_Factor*Viscosity/(Density_i*proj_vector_ij);
+  const su2double xi_j = WF_Factor*Viscosity/(Density_j*proj_vector_ij);
   // }
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       // Jacobian w.r.t. momentum
-      tau_jacobian_i[iDim][jDim+1] = -xi_i*(Edge_Vector[iDim]*Normal[jDim] 
-                                          - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
-                                          + delta[iDim][jDim]*proj_vector_ij);
-      tau_jacobian_j[iDim][jDim+1] =  xi_j*(Edge_Vector[iDim]*Normal[jDim] 
-                                          - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
-                                          + delta[iDim][jDim]*proj_vector_ij);
-      // tau_jacobian_i[iDim][jDim+1] = -xi_i*(Normal[iDim]*Normal[jDim] 
-      //                                     - 2./3.*Normal[jDim]*Normal[iDim] 
-      //                                     + delta[iDim][jDim]*Area*Area);
-      // tau_jacobian_j[iDim][jDim+1] =  xi_j*(Normal[iDim]*Normal[jDim] 
-      //                                     - 2./3.*Normal[jDim]*Normal[iDim] 
-      //                                     + delta[iDim][jDim]*Area*Area);
+      // tau_jacobian_i[iDim][jDim+1] = -xi_i*(Edge_Vector[iDim]*Normal[jDim] 
+      //                                     - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
+      //                                     + delta[iDim][jDim]*proj_vector_ij);
+      // tau_jacobian_j[iDim][jDim+1] =  xi_j*(Edge_Vector[iDim]*Normal[jDim] 
+      //                                     - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
+      //                                     + delta[iDim][jDim]*proj_vector_ij);
+      tau_jacobian_i[iDim][jDim+1] = -xi_i*(Normal[iDim]*Normal[jDim] 
+                                          - 2./3.*Normal[jDim]*Normal[iDim] 
+                                          + delta[iDim][jDim]*Area*Area);
+      tau_jacobian_j[iDim][jDim+1] =  xi_j*(Normal[iDim]*Normal[jDim] 
+                                          - 2./3.*Normal[jDim]*Normal[iDim] 
+                                          + delta[iDim][jDim]*Area*Area);
     }
     // Jacobian w.r.t. density
     tau_jacobian_i[iDim][0] = 0;
@@ -673,8 +673,8 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
-  const su2double conductivity_over_Rd = cpoR*heat_flux_factor*proj_vector_ij/dist_ij_2;
-  // const su2double conductivity_over_Rd = cpoR*heat_flux_factor*Area*Area/proj_vector_ij;
+  // const su2double conductivity_over_Rd = cpoR*heat_flux_factor*proj_vector_ij/dist_ij_2;
+  const su2double conductivity_over_Rd = cpoR*heat_flux_factor*Area*Area/proj_vector_ij;
 
   sqvel = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
