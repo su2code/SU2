@@ -155,9 +155,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
       Pressure_Recovered = nodes->GetSolution(iPoint, 0) - delta_p / norm2_translation * dot_product;
       nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
-      if (rank==MASTER_NODE && false) {
-        if (abs(Pressure_Recovered) > 1e-6) cout << "At iPoint: " << iPoint << " Pressure_Recovered " << Pressure_Recovered << endl;
-      }
 
       if (energy && InnerIter > 0) { //ExtIter > 0, hen egg problem
         Temperature_Recovered  = nodes->GetSolution(iPoint, nDim+1);
@@ -167,7 +164,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
 
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-    if(rank==MASTER_NODE && false) cout << "NSPreprocessing GetStreamwise_Periodic_Properties." << endl;
     GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
 
     /*--- Free allocated memory. ---*/

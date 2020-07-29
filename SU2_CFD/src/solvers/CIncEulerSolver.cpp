@@ -1494,17 +1494,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- If viscous, we need gradients for extra terms. ---*/
       if (viscous) {
-
         /*--- Gradient of the primitive variables ---*/
         numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), 
                                      NULL);
-
       }
 
-      /*--- Compute the streamwise periodic source residual ---*/
+      /*--- Compute the streamwise periodic source residual and add to the total ---*/
       auto residual = numerics->ComputeResidual(config);
-
-      /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Add the implicit Jacobian contribution ---*/
@@ -1520,26 +1516,32 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         /*--- Only "inlet"/donor periodic marker ---*/
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY &&
             config->GetMarker_All_PerBound(iMarker) == 1) { // here it doesnt matter whether 1 or 2
-            
+
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
     
             if (geometry->nodes->GetDomain(iPoint)) {
-              /*--- Set the specific heat ---*/
-              second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
-              /*--- Set the Point coordinates ---*/
-              second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),NULL);
-              /*--- Set the area normal ---*/
-              second_numerics->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal());
+
               /*--- Load the primitive variables ---*/
               second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
+
+              /*--- Set the specific heat ---*/
+              second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
+
+              /*--- Set the Point coordinates ---*/
+              second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),NULL);
+
+              /*--- Set the area normal ---*/
+              second_numerics->SetNormal(geometry->vertex[iMarker][iVertex]->GetNormal());
+
               /*--- Set incompressible density ---*/
               second_numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
-              /*--- Compute the streamwise periodic source residual ---*/
-              auto residual = second_numerics->ComputeResidual(config);
 
-              /*--- Add the source residual to the total ---*/
+              /*--- Compute the streamwise periodic source residual and add to the total ---*/
+              auto residual = second_numerics->ComputeResidual(config);
               LinSysRes.AddBlock(iPoint, residual);
+
             }// if domain
           }// for iVertex
         }// if periodic inlet boundary
@@ -3861,7 +3863,6 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
       Temperature_Global /= Area_Global;
       // What do I do with the temperature now from here on? The only way really is to pipe it through the config...
       config->SetStreamwise_Periodic_InletTemperature(Temperature_Global);
-      cout << "Properties::Temperature_Global: " << Temperature_Global << endl;
   } // if energy
 }
 
