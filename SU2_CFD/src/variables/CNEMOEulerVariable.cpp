@@ -175,7 +175,7 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
 
 bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  bool nonPhys, bkup;
+  bool nonPhys;
   unsigned short iVar;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
@@ -187,8 +187,6 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-    bkup = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint],
-                        dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   SetVelocity2(iPoint);
@@ -201,10 +199,10 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
                                       su2double *val_dTvedU, su2double *val_eves,
                                       su2double *val_Cvves) {
 
-  bool nonPhys, errT, errTve;
+  bool nonPhys;
   unsigned short iDim, iSpecies;
-  su2double rho, rhoE, rhoEve, rhoEve_min, rhoEve_max, RuSI, Ru,
-  sqvel, rhoCvtr, rhoCvve, Tve, Tmin, Tmax, Tvemin, Tvemax;
+  su2double rho, rhoE, rhoEve, rhoEve_min, rhoEve_max,
+  sqvel, rhoCvtr, rhoCvve, Tmin, Tmax, Tvemin, Tvemax;
   vector<su2double> rhos;
 
   rhos.resize(nSpecies,0.0);
@@ -215,16 +213,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   /*--- Set booleans ---*/
   nonPhys = false;
-  errT    = false;
-  errTve  = false;
 
   /*--- Set temperature clipping values ---*/
   Tmin   = 50.0; Tmax   = 8E4;
   Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Rename variables for convenience ---*/
-  RuSI   = UNIVERSAL_GAS_CONSTANT;    // Universal gas constant [J/(mol*K)]
-  Ru     = 1000.0*RuSI;               // Universal gas constant [J/(kmol*K)]
   rhoE   = U[nSpecies+nDim];          // Density * energy [J/m3]
   rhoEve = U[nSpecies+nDim+1];        // Density * energy_ve [J/m3]
 
@@ -234,13 +228,14 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[RHO_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (U[iSpecies] < 0.0) {
-      V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
+      V[RHOS_INDEX+iSpecies] = 1E-20;
       rhos[iSpecies]         = 1E-20;
-    //  nonPhys                = true;
-    } else
+      //nonPhys                = true;
+    } else {
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
       rhos[iSpecies]         = U[iSpecies];
+    }
     V[RHO_INDEX]            += U[iSpecies];
   }
 
@@ -264,11 +259,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   if (V[T_INDEX] < Tmin) {
     V[T_INDEX] = Tmin;
     nonPhys = true;
-    errT    = true;
   } else if (V[T_INDEX] > Tmax){
     V[T_INDEX] = Tmax;
     nonPhys = true;
-    errT    = true;
   }
   
   /*--- Vibrational-Electronic Temperature ---*/
@@ -283,11 +276,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     rhoEve_max += U[iSpecies] * eves_max[iSpecies];
   }
   if (rhoEve < rhoEve_min) {
-    errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemin;
   } else if (rhoEve > rhoEve_max) {
-    errTve       = true;
     nonPhys      = true;
     V[TVE_INDEX] = Tvemax;
   } else {

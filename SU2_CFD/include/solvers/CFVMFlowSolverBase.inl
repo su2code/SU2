@@ -1970,7 +1970,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
+  unsigned short T_INDEX, TVE_INDEX;
   su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, WallShearStress, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,

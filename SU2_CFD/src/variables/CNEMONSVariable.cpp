@@ -96,7 +96,7 @@ bool CNEMONSVariable::SetVorticity(void) {
 
 bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
-  bool nonPhys, bkup;
+  bool nonPhys;
   unsigned short iVar, iSpecies;
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
@@ -106,7 +106,6 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-    bkup = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   SetVelocity2(iPoint);

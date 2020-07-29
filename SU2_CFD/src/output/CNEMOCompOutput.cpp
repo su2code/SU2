@@ -549,7 +549,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0);
   }
-  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
+  //su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
   //SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
 
   if (config->GetKind_Solver() == NEMO_NAVIER_STOKES){
