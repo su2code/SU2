@@ -120,16 +120,6 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double* val_PrimVar_i,
                                     const su2double* val_PrimVar_j,
                                     const unsigned short val_nPrimVar) {
-  for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-    su2double GradPrimVar_Edge = 0.0, 
-              Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
-    }
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
-    }
-  }
   // for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
   //   su2double GradPrimVar_Edge = 0.0, 
   //             Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
@@ -137,9 +127,19 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
   //     GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
   //   }
   //   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  //     GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Normal[iDim] / proj_vector_ij;
+  //     GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
   //   }
   // }
+  for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
+    su2double GradPrimVar_Edge = 0.0, 
+              Delta = val_PrimVar_j[iVar]-val_PrimVar_i[iVar];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      GradPrimVar_Edge += GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Normal[iDim] / proj_vector_ij;
+    }
+  }
 }
 
 void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
