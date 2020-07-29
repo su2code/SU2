@@ -2187,16 +2187,16 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
-        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA(nDim, nVar_Turb, false, config);
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
       }
       else if (neg_spalart_allmaras) {
-        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, false, config);
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
       }
       else if (menter_sst) {
-        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, false, config);
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, constants,  false, config);
       }
     }
   }
