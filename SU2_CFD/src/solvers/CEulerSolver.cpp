@@ -3252,8 +3252,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           /*--- Blend upwind and centered differences ---*/
 
-          Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-          Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+          Grad_i = 0.5*((1.0-Kappa)*Grad_i + (1.0+Kappa)*V_ij);
+          Grad_j = 0.5*((1.0-Kappa)*Grad_j + (1.0+Kappa)*V_ij);
 
           /*--- Edge-based limiters ---*/
 
