@@ -3207,7 +3207,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
 
-        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel) < 0.0);
       }
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
