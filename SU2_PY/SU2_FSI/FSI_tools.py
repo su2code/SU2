@@ -68,16 +68,17 @@ def readConfig(ConfigFileName, voice, BreakCode = True):
         this_param = line[0].strip()
         this_value = line[1].strip()
         if this_param == voice:
+            sought_value = this_value
             break
     
     if BreakCode == True:
-       if not this_value:
+       if not sought_value:
            raise SystemExit(voice + ' is not present in ' + 'ConfigFileName')
     else:
-        if not this_value:
-           this_value = 'NO'
+        if not sought_value:
+           sought_value = 'NO'
         
-    return this_value
+    return sought_value
         
 
 def run_command(Command, Tool, Output, Output_file = '' ):
