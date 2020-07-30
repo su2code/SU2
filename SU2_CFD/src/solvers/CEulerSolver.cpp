@@ -3145,10 +3145,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
 
-        /*--- Blend upwind and centered differences ---*/
+        // /*--- Blend upwind and centered differences ---*/
 
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+        // Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+        // Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
 
         /*--- Edge-based limiters ---*/
 
@@ -3159,15 +3159,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
               Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
               break;
             case PIPERNO:
-              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, 2.0*V_ij);
-              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, 2.0*V_ij);
+              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
               break;
           }
 
-          /*--- Limit projection ---*/
+          // /*--- Limit projection ---*/
 
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          // Project_Grad_i *= Limiter_i[iVar];
+          // Project_Grad_j *= Limiter_j[iVar];
+
+          /*--- Blend upwind and centered differences ---*/
+
+        Project_Grad_i = 0.5*Limiter_i[iVar]*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+        Project_Grad_j = 0.5*Limiter_j[iVar]*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
         }
 
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
