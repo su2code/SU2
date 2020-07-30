@@ -66,7 +66,7 @@ void CCentLax_NEMO::ComputeResidual(su2double *val_resconv,
 
   unsigned short iDim, iSpecies, iVar;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
-  su2double ProjVel_i, ProjVel_j, RuSI, Ru;
+  su2double ProjVel_i, ProjVel_j;
 
   /*--- Calculate geometrical quantities ---*/
   Area = 0;
@@ -81,8 +81,6 @@ void CCentLax_NEMO::ComputeResidual(su2double *val_resconv,
   rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
   h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
   a_i   = V_i[A_INDEX];   a_j   = V_j[A_INDEX];
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
 
   /*--- Compute mean quantities for the variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)

@@ -1771,13 +1771,10 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   unsigned long iPoint, iVertex;
 
   su2double *Normal = nullptr, Area, UnitNormal[3], *NormalArea,
-  turb_ke,
   **Jacobian_b, **DubDu,
   rho, cs, P, rhoE, rhoEve, conc, *u, *dPdU;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
 
   /*--- Allocate arrays ---*/
   Normal     = new su2double[nDim];
@@ -1816,10 +1813,6 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Retrieve the pressure on the vertex ---*/
       P   = nodes->GetPressure(iPoint);
-
-      /*--- Compute the residual ---*/
-      turb_ke = 0.0;
-      if (tkeNeeded) turb_ke=solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0);
 
       /*--- Apply the flow-tangency b.c. to the convective flux ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -2026,6 +2019,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   su2double *Normal   = new su2double[nDim];
 
   su2double Spec_Density[config->GetnSpecies()];
+  nSpecies = config->GetnSpecies();
 
   RHO_INDEX = nodes->GetRhoIndex();
 

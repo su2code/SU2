@@ -104,15 +104,15 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
 
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
 
-  unsigned short iDim, jDim, iVar, jVar, iSpecies;
+  unsigned short iDim, iVar, iSpecies;
   su2double rho_i, rho_j, rhoEve_i, rhoEve_j, P_i, P_j, h_i, h_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j;
+  su2double rhoRi, rhoRj, RuSI, Ru;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
-  su2double fact, gam, dV2L, dV2R;
+  su2double gam;
 
   alpha = 3.0/16.0;
 

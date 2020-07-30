@@ -235,8 +235,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
-  su2double Ru, RuSI;
-  su2double rho, T, Tve;
+  su2double rho, T;
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -252,9 +251,6 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
-  Tve = val_primvar[TVE_INDEX];
-  RuSI= UNIVERSAL_GAS_CONSTANT;
-  Ru  = 1000.0*RuSI;
   V   = val_primvar;
   GV  = val_gradprimvar;
 
