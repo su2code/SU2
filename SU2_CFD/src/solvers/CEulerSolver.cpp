@@ -3166,8 +3166,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           /*--- Limit projection ---*/
 
-          Project_Grad_i *= min(Limiter_i[iVar],Limiter_j[iVar]);
-          Project_Grad_j *= min(Limiter_i[iVar],Limiter_j[iVar]);
+          Project_Grad_i *= Limiter_i[iVar];
+          Project_Grad_j *= Limiter_j[iVar];
         }
 
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
