@@ -230,10 +230,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   RoeDensity = R*Density_i;
   su2double sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    RoeVelocity[iDim] = (R*Velocity_i[iDim]+Velocity_j[iDim])/(R+1);
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
-  RoeEnthalpy = (R*Enthalpy_i+Enthalpy_j)/(R+1);
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
