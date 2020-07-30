@@ -3170,8 +3170,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Project_Grad_j *= Limiter_j[iVar];
         }
 
-        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i*(!geometry->node[iPoint]->GetSolidBoundary());
+        Primitive_j[iVar] = V_j[iVar] - Project_Grad_j*(!geometry->node[jPoint]->GetSolidBoundary());
       }
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
