@@ -3177,14 +3177,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
       if (!ideal_gas || low_mach_corr) {
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, tke_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, tke_j);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
       }
 
       /*--- Low-Mach number correction. ---*/
 
       if (low_mach_corr) {
-        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j, tke_i, tke_j);
+        LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
