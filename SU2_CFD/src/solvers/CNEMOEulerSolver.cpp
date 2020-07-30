@@ -83,6 +83,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+
     /*--- Read and store the restart metadata ---*/
     Read_SU2_Restart_Metadata(geometry, config, false, filename_);
 
