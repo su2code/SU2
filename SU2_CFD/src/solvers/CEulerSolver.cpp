@@ -3105,78 +3105,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     su2double tke_i = 0.0, tke_j = 0.0;
 
-    if (tkeNeeded) {
-      CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-
-      tke_i = turbNodes->GetPrimitive(iPoint,0);
-      tke_j = turbNodes->GetPrimitive(jPoint,0);
-
-      if (muscl) {
-        /*--- Reconstruct turbulence variables. ---*/
-
-        su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
-        }
-
-        auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-        auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
-
-        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-        if (limiter) {
-          Limiter_i = turbNodes->GetLimiter(iPoint);
-          Limiter_j = turbNodes->GetLimiter(jPoint);
-        }
-
-        const su2double Kappa = config->GetMUSCL_Kappa();
-
-        const su2double T_ij = 0.5*(tke_j - tke_i);
-
-        su2double Project_Grad_i = -T_ij;
-        su2double Project_Grad_j = -T_ij;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
-          Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
-        }
-
-        /*--- Blend upwind and centered differences ---*/
-
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
-
-        /*--- Edge-based limiters ---*/
-
-        if (limiter) {
-          switch(config->GetKind_SlopeLimit_Flow()) {
-            case VAN_ALBADA_EDGE:
-              Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-              Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
-              break;
-            case PIPERNO:
-              Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-              Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
-              break;
-          }
-
-          /*--- Limit projection ---*/
-
-          Project_Grad_i *= Limiter_i[0];
-          Project_Grad_j *= Limiter_j[0];
-        }
-
-        tke_i += Project_Grad_i;
-        tke_j -= Project_Grad_j;
-      }
-    }
-
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
-      if (tkeNeeded)
-        numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
     }
     else {
@@ -3274,21 +3206,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           sq_vel += pow(RoeVelocity, 2);
         }
         su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
-        su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
         neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
       }
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
-
-      if (tkeNeeded) {
-        bool neg_tke_i = (tke_i < 0.0);
-        bool neg_tke_j = (tke_j < 0.0);
-
-        bad_i = bad_i || neg_tke_i;
-        bad_j = bad_j || neg_tke_j;
-      }
 
       nodes->SetNon_Physical(iPoint, bad_i);
       nodes->SetNon_Physical(jPoint, bad_j);
@@ -3301,13 +3224,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
       numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
-
-      if (tkeNeeded) {
-        CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-        tke_i = (bad_i) ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
-        tke_j = (bad_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
-        numerics->SetTurbKineticEnergy(tke_i, tke_j);
-      }
 
       su2double ZeroVec[MAXNDIM+3] = {0.0};
       numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
@@ -3411,7 +3327,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
-                                                  su2double *primitive, su2double *secondary, su2double tke) {
+                                                  su2double *primitive, su2double *secondary) {
 
   su2double density = primitive[nDim+2];
   su2double pressure = primitive[nDim+1];
@@ -3423,7 +3339,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   fluidModel->SetTDState_Prho(pressure, density);
 
   primitive[0] = fluidModel->GetTemperature();
-  primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2 + tke;
+  primitive[nDim+3] = fluidModel->GetStaticEnergy() + primitive[nDim+1]/primitive[nDim+2] + 0.5*velocity2;
   primitive[nDim+4] = fluidModel->GetSoundSpeed();
   secondary[0] = fluidModel->GetdPdrho_e();
   secondary[1] = fluidModel->GetdPde_rho();
@@ -3431,7 +3347,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
 }
 
 void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned short nDim,
-                                              su2double *primitive_i, su2double *primitive_j, su2double tke_i, su2double tke_j) {
+                                              su2double *primitive_i, su2double *primitive_j) {
   unsigned short iDim;
 
   su2double velocity2_i = 0.0;
@@ -3461,10 +3377,10 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
   }
 
   fluidModel->SetEnergy_Prho(primitive_i[nDim+1], primitive_i[nDim+2]);
-  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i + tke_i;
+  primitive_i[nDim+3]= fluidModel->GetStaticEnergy() + primitive_i[nDim+1]/primitive_i[nDim+2] + 0.5*velocity2_i;
 
   fluidModel->SetEnergy_Prho(primitive_j[nDim+1], primitive_j[nDim+2]);
-  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j + tke_j;
+  primitive_j[nDim+3]= fluidModel->GetStaticEnergy() + primitive_j[nDim+1]/primitive_j[nDim+2] + 0.5*velocity2_j;
 
 }
 
