@@ -631,7 +631,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
        condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
 
-      nodes->SetVelocity_Old(iPoint,Vector); // TK Why _Old? Is there a solution copying directly afterwards?
+      nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);

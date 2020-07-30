@@ -224,6 +224,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
           Vn2        = Vn * Vn;
           Pressure   = solver->GetNodes()->GetPressure(iPoint);
+          /*--- Use recovered pressure here as pressure difference between in and outlet is zero otherwise  ---*/
           if(streamwise_periodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
           SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 

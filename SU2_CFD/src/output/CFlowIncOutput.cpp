@@ -493,11 +493,15 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
-  if(streamwise_periodic)
+  // Streamwise Periodicty
+  if(streamwise_periodic) {
     AddVolumeOutput("RECOVERED_PRESSURE", "Recovered_Pressure", "SOLUTION", "Recovered physical pressure");
-  if (heat && streamwise_periodic && streamwise_periodic_temperature)
-    AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
-  AddVolumeOutput("RANK", "rank", "SOLUTION", "rank of the MPI-partition");
+    if (heat && streamwise_periodic_temperature)
+      AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
+  }
+
+  // MPI-Rank
+  AddVolumeOutput("RANK", "Rank", "MPI", "Rank of the MPI-partition");
 
 }
 
@@ -527,14 +531,13 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));
   SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
-  if (nDim == 3){
+  if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
-    if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 4));
-  } else {
-    if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, 3));
+  if (heat) {
+    SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
+    if (streamwise_periodic && streamwise_periodic_temperature)
+      SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   }
-  if (heat && streamwise_periodic && streamwise_periodic_temperature)
-    SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   switch(config->GetKind_Turb_Model()){
@@ -682,8 +685,4 @@ bool CFlowIncOutput::SetUpdate_Averages(CConfig *config){
 
   return (config->GetTime_Marching() != STEADY && (curInnerIter == config->GetnInner_Iter() - 1 || convergence));
 
-}
-
-void WriteMetaData(CConfig *config) {
-  cout << "CFlowIncOutput::WriteMetaData" << endl;
 }

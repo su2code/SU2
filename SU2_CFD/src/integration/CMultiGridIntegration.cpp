@@ -202,7 +202,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
 
-      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh); // TK CIncEulerSolver::Postprocessing called from here
+      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
     }
 

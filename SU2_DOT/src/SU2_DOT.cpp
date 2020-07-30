@@ -292,11 +292,14 @@ int main(int argc, char *argv[]) {
     SetSensitivity_Files(geometry_container, config_container, nZone);
   }
 
-  su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()]; // move allocation outwards
   /*--- Initialize structure to store the gradient ---*/
+  su2double** Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+
   for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++) {
-    Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)] ();
+    /*--- Initialze to zero ---*/
+    Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)]();
   }
+
   ofstream Gradient_file;
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -305,7 +308,6 @@ int main(int argc, char *argv[]) {
 
       if (rank == MASTER_NODE)
         cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
-
 
       /*--- Definition of the Class for surface deformation ---*/
 
@@ -323,23 +325,22 @@ int main(int argc, char *argv[]) {
       else
         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
 
-
     }
+  } // for iZone
+
+  /*--- Write the gradient in a external file ---*/
+
+  if (rank == MASTER_NODE)
+    Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
+
+  /*--- Print gradients to screen and file ---*/
+
+  OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
+
+  for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+    delete [] Gradient[iDV];
   }
-
-      /*--- Write the gradient in a external file ---*/
-
-    if (rank == MASTER_NODE)
-      Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
-
-    /*--- Print gradients to screen and file ---*/
-
-    OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
-
-    for (auto iDV = 0u; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
-      delete [] Gradient[iDV];
-    }
-    delete [] Gradient;
+  delete [] Gradient;
 
   delete config;
   config = nullptr;

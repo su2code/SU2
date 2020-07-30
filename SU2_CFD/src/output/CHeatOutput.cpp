@@ -111,9 +111,9 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 
-    /// DESCRIPTION: Linear solver iterations
-  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
-  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  // Linear solver iterations
+  AddHistoryOutput("LINSOL_ITER",     "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes",  ScreenOutputFormat::FIXED,   "LINSOL", "Residual of the linear solver.");
 
 }
 
@@ -136,7 +136,7 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
   // MPI-Rank
-  AddVolumeOutput("RANK", "rank", "SOLUTION", "rank of the MPI-partition");
+  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
   
 }
 

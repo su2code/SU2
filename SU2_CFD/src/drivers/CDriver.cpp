@@ -1830,7 +1830,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         if (incompressible)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
         else
-
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBodyForce(nDim, nVar_Flow, config);
       }
       else if (incompressible && (config->GetKind_Streamwise_Periodic() != NONE)) {

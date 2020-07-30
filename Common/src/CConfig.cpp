@@ -4956,7 +4956,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
-  nMarker_All = nMarker_Max; // TK:: one of these is unecessary
+  nMarker_All = nMarker_Max;
 
   /*--- Allocate the memory (markers in each domain) ---*/
 

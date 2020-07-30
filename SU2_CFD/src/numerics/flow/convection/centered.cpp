@@ -615,7 +615,7 @@ CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
 }
 
 CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* config) {
-  //TK:: PReaccumulation missing!
+
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};

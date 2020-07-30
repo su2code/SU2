@@ -720,25 +720,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
 
-    //if restart restartbinary Write metadata
-    if(rank==MASTER_NODE && false) {
-      if(format==RESTART_ASCII || format==CSV || format==RESTART_BINARY) {
-        cout << "Writing metadata into restart file: " << fileName << endl;
-        ofstream restart_file;
-        if(format==RESTART_ASCII || format==CSV) {
-          fileName += CSU2FileWriter::fileExt;
-        } else if (format==RESTART_BINARY) {
-          fileName += CSU2BinaryFileWriter::fileExt;
-        }
-        restart_file.open(fileName.c_str(), ios::out | ios::app);
-        //open file
-        //WriteMetaDataBase(...) 
-        WriteMetaData(config);
-        restart_file << endl <<"TOBI= 27";
-        restart_file.close();
-      }//if format
-    }//if MASTER_NODE
-    
     /*--- Compute and store the bandwidth ---*/
 
     if (format == RESTART_BINARY){
@@ -1149,8 +1130,7 @@ void COutput::SetScreen_Output(CConfig *config) {
           PrintingToolbox::PrintScreenFixed(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::SCIENTIFIC:
-          // Line commented as it makes MARKER_ANALYZE screen output appear twice on the screen.
-          //PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
+          PrintingToolbox::PrintScreenScientific(out, historyOutputPerSurface_Map.at(RequestedField)[0].value, fieldWidth);
           break;
         case ScreenOutputFormat::PERCENT:
           PrintingToolbox::PrintScreenPercent(out, historyOutputPerSurface_Map[RequestedField][0].value, fieldWidth);

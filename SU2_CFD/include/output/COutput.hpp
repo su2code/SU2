@@ -251,12 +251,6 @@ public:
   COutput(CConfig *config, unsigned short nDim, bool femOutput);
 
   /*!
-   * \brief Write information to meta data file
-   * \param[in] config - Definition of the particular problem per zone.
-   */
-  virtual void WriteMetaData(CConfig *config){cout << "virtual void WriteMetaData" << endl;}
-
-  /*!
    * \brief Preprocess the volume output by setting the requested volume output fields.
    * \param[in] config - Definition of the particular problem.
    */

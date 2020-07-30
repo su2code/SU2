@@ -40,7 +40,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+6; //TK:: for periodic turb EddyMu
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+6; //TK:: for periodic turb EddyMu, TODO check that this is actually the case
 
   /*--- Allocate residual structures ---*/
 
