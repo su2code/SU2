@@ -3155,8 +3155,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Flow()) {
             case VAN_ALBADA_EDGE:
-              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, 2.0*V_ij);
-              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, 2.0*V_ij);
+              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, 0.5*V_ij);
+              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, 0.5*V_ij);
               break;
             case PIPERNO:
               Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
