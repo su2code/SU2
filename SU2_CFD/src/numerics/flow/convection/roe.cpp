@@ -294,7 +294,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
                             +Eddy_Viscosity_i+Eddy_Viscosity_j);
   su2double Re = RoeDensity*RoeSoundSpeed*Length/Viscosity;
-  su2double Psi = min(1.0, exp(1.0-500/Re));
+  su2double Psi = min(1.0, exp(1.0-Re/500));
   su2double LambdaRef = Psi*(fabs(ProjVelocity)+RoeSoundSpeed);
 
   for (iVar = 0; iVar < nVar; iVar++) {
