@@ -295,7 +295,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
                             +Eddy_Viscosity_i+Eddy_Viscosity_j);
   su2double Re = RoeDensity*RoeSoundSpeed*Length/Viscosity;
   su2double Psi = min(1.0, exp(1.0-500/Re));
-  su2double LambdaRef = Psi*RoeSoundSpeed;
+  su2double LambdaRef = Psi*(fabs(ProjVelocity)+RoeSoundSpeed);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     if (fabs(Lambda[iVar]) < 2.0*LambdaRef)
@@ -303,7 +303,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
     Lambda[iVar] = fabs(Lambda[iVar]);
   }
-  
+
   /*--- Reconstruct conservative variables ---*/
 
   Conservatives_i[0] = Density_i;
