@@ -281,28 +281,30 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-
-  /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-
-  // su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-
-  // for (iVar = 0; iVar < nVar; iVar++)
-  //   Lambda[iVar] = max(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
-
-  /*--- Eigenvalue limiting based on cell Reynolds ---*/
-  su2double Length = (Volume_i + Volume_j)/(2.0*Area);
-  su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
-                            +Eddy_Viscosity_i+Eddy_Viscosity_j);
+  
   su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-  su2double Re = RoeDensity*MaxLambda*Length/Viscosity;
-  su2double Psi = min(1.0, exp(1.0-100/Re));
-  su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*MaxLambda;
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    if (fabs(Lambda[iVar]) < 2.0*LambdaRef)
-      Lambda[iVar] = pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef;
+  if (config->GetCellReynolds_EntropyFix()) {
+    /*--- Eigenvalue limiting based on cell Reynolds ---*/
+    su2double Length = (Volume_i + Volume_j)/(2.0*Area);
+    su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
+                              +Eddy_Viscosity_i+Eddy_Viscosity_j);
+    su2double Re = RoeDensity*MaxLambda*Length/Viscosity;
+    su2double Psi = min(1.0, exp(1.0-100/Re));
+    su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*MaxLambda;
 
-    Lambda[iVar] = fabs(Lambda[iVar]);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      if (fabs(Lambda[iVar]) < 2.0*LambdaRef)
+        Lambda[iVar] = pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef;
+
+      Lambda[iVar] = fabs(Lambda[iVar]);
+    }
+  }
+
+  else {
+    /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      Lambda[iVar] = max(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
   }
 
   /*--- Reconstruct conservative variables ---*/

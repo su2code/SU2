@@ -3042,6 +3042,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous   = config->GetViscous();
+  const bool cell_re   = config->GetCellReynolds_EntropyFix()
 
   const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
                          (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
@@ -3247,7 +3248,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
     }
 
-    if (viscous) {
+    if (viscous && cell_re) {
       numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
                                     nodes->GetLaminarViscosity(jPoint));
       numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
