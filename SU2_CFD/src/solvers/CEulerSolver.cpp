@@ -7051,7 +7051,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
   unsigned long iVertex, iPoint;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
-       viscous  = config->GetViscous();
+       viscous  = config->GetViscous(),
+       cell_re  = config->GetCellReynolds_EntropyFix();
 
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
@@ -7192,6 +7193,15 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       if (tkeNeeded)
         conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
                                             solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+
+      if (viscous && cell_re) {
+        numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                      nodes->GetLaminarViscosity(iPoint));
+        numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                   nodes->GetEddyViscosity(iPoint));
+        numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
+                            geometry->node[iPoint]->GetVolume());
+      }
 
       /*--- Compute the residual using an upwind scheme. ---*/
 
@@ -7365,6 +7375,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
   bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
+  bool cell_re        = config->GetCellReynolds_EntropyFix();
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   su2double *Normal = new su2double[nDim];
@@ -7551,6 +7562,15 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       if (dynamic_grid) {
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
+      }
+
+      if (viscous && cell_re) {
+        conv_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                           nodes->GetLaminarViscosity(iPoint));
+        conv_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                        nodes->GetEddyViscosity(iPoint));
+        conv_numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
+                                 geometry->node[iPoint]->GetVolume());
       }
 
       /*--- Compute the convective residual using an upwind scheme ---*/
