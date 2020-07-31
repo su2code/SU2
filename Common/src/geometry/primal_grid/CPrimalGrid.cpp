@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrimalGrid.hpp"
+#include "../../../include/geometry/elements/CElement.hpp"
 
 unsigned short CPrimalGrid::nDim;
 
@@ -84,7 +85,7 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
     elements[1] = new CQUAD4();
   }
   su2double TotalArea = 0, *Area = new su2double[GetnFaces()];
-  for (iFace = 0; iFace < GetFaces(); iFace++) {
+  for (iFace = 0; iFace < GetnFaces(); iFace++) {
     if (nDim==3) {
       CElement* element = elements[GetnNodesFace(iFace)-3];
       for (iNode=0; iNode<GetnNodesFace(iFace); ++iNode) {
