@@ -295,7 +295,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
                             +Eddy_Viscosity_i+Eddy_Viscosity_j);
   su2double Re = RoeDensity*RoeSoundSpeed*Length/Viscosity;
   su2double Psi = min(1.0, exp(1.0-Re/500));
-  su2double LambdaRef = Psi*RoeSoundSpeed;
+  su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*RoeSoundSpeed;
 
   for (iVar = 0; iVar < nVar; iVar++) {
     if (fabs(Lambda[iVar]) < 2.0*LambdaRef)
