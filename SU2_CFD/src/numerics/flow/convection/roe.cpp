@@ -293,12 +293,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     su2double Psi = min(1.0, exp(1.0-100/Re));
     su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*MaxLambda;
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (fabs(Lambda[iVar]) < 2.0*LambdaRef)
-        Lambda[iVar] = pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef;
-
-      Lambda[iVar] = fabs(Lambda[iVar]);
-    }
+    for (iVar = 0; iVar < nVar; iVar++)
+      Lambda[iVar] = (fabs(Lambda[iVar]) < 2.0*LambdaRef)
+                   ? pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef
+                   : fabs(Lambda[iVar]);
   }
 
   else {
