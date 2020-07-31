@@ -7195,12 +7195,12 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                             solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
 
       if (viscous && cell_re) {
-        numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                      nodes->GetLaminarViscosity(iPoint));
-        numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                   nodes->GetEddyViscosity(iPoint));
-        numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
-                            geometry->node[iPoint]->GetVolume());
+        conv_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                           nodes->GetLaminarViscosity(iPoint));
+        conv_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                        nodes->GetEddyViscosity(iPoint));
+        conv_numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
+                                 geometry->node[iPoint]->GetVolume());
       }
 
       /*--- Compute the residual using an upwind scheme. ---*/
