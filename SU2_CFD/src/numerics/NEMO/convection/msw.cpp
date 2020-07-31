@@ -1,8 +1,8 @@
 /*!
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,8 +36,8 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
 
   /*--- Allocate arrays ---*/
   Diff_U   = new su2double [nVar];
-  Fc_i	   = new su2double [nVar];
-  Fc_j	   = new su2double [nVar];
+  Fc_i     = new su2double [nVar];
+  Fc_j     = new su2double [nVar];
   Lambda_i = new su2double [nVar];
   Lambda_j = new su2double [nVar];
 
@@ -45,8 +45,8 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   rhos_j   = new su2double [nSpecies];
   rhosst_i = new su2double [nSpecies];
   rhosst_j = new su2double [nSpecies];
-  u_i		   = new su2double [nDim];
-  u_j		   = new su2double [nDim];
+  u_i      = new su2double [nDim];
+  u_j      = new su2double [nDim];
   ust_i    = new su2double [nDim];
   ust_j    = new su2double [nDim];
   Vst_i    = new su2double [nPrimVar];
@@ -59,8 +59,8 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
   eves_st_i.resize(nSpecies,0.0);
   eves_st_j.resize(nSpecies,0.0);
   
-  P_Tensor		= new su2double* [nVar];
-  invP_Tensor	= new su2double* [nVar];
+  P_Tensor    = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar]    = new su2double [nVar];
     invP_Tensor[iVar] = new su2double [nVar];

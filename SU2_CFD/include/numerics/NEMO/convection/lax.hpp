@@ -1,8 +1,8 @@
 /*!
  * \file lax.hpp
  * \brief Declaration of numerics classes for Lax centered scheme.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CCentLax_NEMO
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
- * \author F. Palacios.
+ * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
  * \version 2.0.6
  */
 class CCentLax_NEMO : public CNEMONumerics {
@@ -52,29 +52,29 @@ private:
 
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimension of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentLax_NEMO(unsigned short val_nDim, unsigned short val_nVar,
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CCentLax_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                 unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
                 CConfig *config);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentLax_NEMO(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCentLax_NEMO(void);
 
-	/*!
-	 * \brief Compute the flow residual using a Lax method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+  /*!
+   * \brief Compute the flow residual using a Lax method.
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                          CConfig *config);
 };

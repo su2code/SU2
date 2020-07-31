@@ -1,8 +1,8 @@
 /*!
  * \file ausmplusup2.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSM+UP2.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author Walter Maier, A. Sachedeva, C. Garbacz.
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CUpwAUSMPLUSUP2_NEMO
  * \brief Class for solving an approximate Riemann AUSM+ -up2, Two-Temperature Model. https://doi.org/10.1016/j.jcp.2013.02.046
  * \ingroup ConvDiscr
- * \author Walter Maier, A. Sachedeva
+ * \author Walter Maier, A. Sachedeva, C. Garbacz
  */
 class CUpwAUSMPLUSUP2_NEMO : public CNEMONumerics {
 private:

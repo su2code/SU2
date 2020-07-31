@@ -33,8 +33,8 @@
  * \class CNEMONSVariable
  * \brief Main class for defining the variables of the NEMO Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
- * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 6.2.0
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \version 7.0.6
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:

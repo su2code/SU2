@@ -1,8 +1,8 @@
 /*!
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.3 "Blackbird"
+ * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

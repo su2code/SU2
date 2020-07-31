@@ -3,7 +3,7 @@
  * \brief Implementation of the base for NEMO numerics classes.
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
- * \author C. Garbacz.
+ * \author S.R. Copeland, W. Maier, C. Garbacz
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

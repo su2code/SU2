@@ -1,8 +1,8 @@
 /*!
  * \file lax.cpp
  * \brief Implementations of Lax centered scheme.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.3 "Blackbird"
+ * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

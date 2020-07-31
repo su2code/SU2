@@ -1,8 +1,8 @@
 /*!
  * \file CUserDefinedTCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
- * \author C. Garbacz, W. Maier.
- * \version 7.0.5 "Blackbird"
+ * \author C. Garbacz, W. Maier, S. R. Copeland
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,7 @@
 /*!
  * \derived class CUserDefinedTCLib
  * \brief Child class for user defined nonequilibrium gas model.
- * \author: C. Garbacz.
+ * \author: C. Garbacz, W. Maier, S. R. Copeland
  */
 class CUserDefinedTCLib : public CNEMOGas {
 

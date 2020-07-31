@@ -1,7 +1,7 @@
 /*!
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \author C. Garbacz, W. Maier, S.R. Copeland
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -282,7 +282,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     nonPhys      = true;
     V[TVE_INDEX] = Tvemax;
   } else {
-  	V[TVE_INDEX]   = T[1];
+    V[TVE_INDEX]   = T[1];
   }
 
   // Determine other properties of the mixture at the current state  
@@ -290,8 +290,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-  	val_eves[iSpecies]  = eves[iSpecies];
-  	val_Cvves[iSpecies] = cvves[iSpecies];
+    val_eves[iSpecies]  = eves[iSpecies];
+    val_Cvves[iSpecies] = cvves[iSpecies];
   }
 
   rhoCvtr = fluidmodel->GetrhoCvtr();
