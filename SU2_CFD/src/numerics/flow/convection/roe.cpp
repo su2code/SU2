@@ -282,21 +282,24 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
-  su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+  const su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
 
   if (config->GetCellReynolds_EntropyFix()) {
     /*--- Eigenvalue limiting based on cell Reynolds ---*/
-    su2double Length = (Volume_i + Volume_j)/(2.0*Area);
-    su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
-                              +Eddy_Viscosity_i+Eddy_Viscosity_j);
-    su2double Re = RoeDensity*MaxLambda*Length/Viscosity;
-    su2double Psi = min(1.0, exp(1.0-100/Re));
-    su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*MaxLambda;
+    su2double Psi = 1.0;
+    if (config->GetViscous()) {
+      const su2double Length = (Volume_i + Volume_j)/(2.0*Area);
+      const su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
+                                      +Eddy_Viscosity_i+Eddy_Viscosity_j);
+      const su2double Re = RoeDensity*MaxLambda*Length/Viscosity;
+      Psi = min(1.0, exp(1.0-100/Re));
+    }
+    const su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*MaxLambda;
 
     for (iVar = 0; iVar < nVar; iVar++)
       Lambda[iVar] = (fabs(Lambda[iVar]) < 2.0*LambdaRef)
-                   ? pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef
-                   : fabs(Lambda[iVar]);
+                   ? su2double(pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef)
+                   : su2double(fabs(Lambda[iVar]));
   }
 
   else {
