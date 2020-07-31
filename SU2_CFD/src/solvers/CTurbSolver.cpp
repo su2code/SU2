@@ -250,7 +250,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           /*--- Edge-based limiters ---*/
 
           if (limiter) {
-            switch(config->GetKind_SlopeLimit_Flow()) {
+            switch(config->GetKind_SlopeLimit_Turb()) {
               case VAN_ALBADA_EDGE:
                 Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
                 Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
