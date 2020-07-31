@@ -52,7 +52,8 @@ def SaveSplineMatrix(config):
 def readConfig(ConfigFileName, voice, BreakCode = True):
     """
     This function scans an input file looking for a specific voice
-    """    
+    """
+    sought_value = 'NO'
     input_file = open(ConfigFileName)
     while 1:
         line = input_file.readline()
@@ -72,12 +73,9 @@ def readConfig(ConfigFileName, voice, BreakCode = True):
             break
     
     if BreakCode == True:
-       if not sought_value:
+       if sought_value == 'NO':
            raise SystemExit(voice + ' is not present in ' + 'ConfigFileName')
-    else:
-        if not sought_value:
-           sought_value = 'NO'
-        
+
     return sought_value
         
 
