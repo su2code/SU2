@@ -104,7 +104,7 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
   }
 
   for (iFace = 0; iFace < GetnFaces(); iFace++) {
-    Area[iFace] = pow(Area[iFace]/MaxArea,2.0);
+    Area[iFace] = pow(Area[iFace]/MaxArea,10.0);
     TotalArea += Area[iFace];
   }
 
