@@ -3041,6 +3041,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+  const bool viscous   = config->GetViscous();
 
   const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
                          (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
