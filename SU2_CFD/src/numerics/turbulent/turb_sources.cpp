@@ -914,7 +914,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
 
-   if (Jacobian_i[1][1] != Jacobian_i[1][1]) cout << "k= " << TurbVar_i[0] << ", Omega= " << TurbVar_i[1] << ", Density= " << Density_i<< ", CDkw= " << CDkw_i << endl;
+   for (unsigned short iVar = 0; iVar < nVar; iVar++)
+   for (unsigned short jVar = 0; jVar < nVar; jVar++)
+   if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) cout << "Jacobian[" << iVar << "][" << jVar << "], k= " << TurbVar_i[0] << ", Omega= " << TurbVar_i[1] << ", Density= " << Density_i<< ", CDkw= " << CDkw_i << endl;
   }
   
   AD::SetPreaccOut(Residual, nVar);
