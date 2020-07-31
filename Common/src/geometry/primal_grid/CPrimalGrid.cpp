@@ -64,11 +64,11 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord, GetnNodes(), nDim);
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Coord_CG[iDim] = 0.0;
-    for (iNode = 0; iNode < GetnNodes();  iNode++)
-      Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
-  }
+  // for (iDim = 0; iDim < nDim; iDim++) {
+  //   Coord_CG[iDim] = 0.0;
+  //   for (iNode = 0; iNode < GetnNodes();  iNode++)
+  //     Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
+  // }
 
   for (iFace = 0; iFace < GetnFaces();  iFace++)
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -78,6 +78,50 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
         Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/su2double(GetnNodesFace(iFace));
       }
     }
+
+  CElement *elements[2] = {nullptr, nullptr};
+  if (nDim==3) {
+    elements[0] = new CTRIA1();
+    elements[1] = new CQUAD4();
+  }
+  su2double TotalArea = 0, MaxArea = 0, *Area = new su2double[GetnFaces()];
+  for (iFace = 0; iFace < GetnFaces(); iFace++) {
+    if (nDim==3) {
+      CElement* element = elements[GetnNodesFace(iFace)-3];
+      for (iNode=0; iNode<GetnNodesFace(iFace); ++iNode) {
+        NodeFace = GetFaces(iFace, iNode);
+        for (iDim=0; iDim<nDim; ++iDim) {
+          element->SetRef_Coord(iNode, iDim, val_coord[NodeFace][iDim]);
+        }
+      }
+      Area[iFace] = element->ComputeArea();
+    }
+    else {
+      Area[iFace] = sqrt(pow(val_coord[1][0]-val_coord[0][0],2)
+                        +pow(val_coord[1][1]-val_coord[0][1],2));
+    }
+    MaxArea = max(Area[iFace],MaxArea);
+  }
+
+  for (iFace = 0; iFace < GetnFaces(); iFace++) {
+    Area[iFace] = pow(Area[iFace]/MaxArea,10.0);
+    TotalArea += Area[iFace];
+  }
+
+
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Coord_CG[iDim] = 0.0;
+    for (iFace = 0; iFace < GetnFaces();  iFace++)
+      Coord_CG[iDim] += Coord_FaceElems_CG[iFace][iDim]*Area[iFace]/TotalArea;
+  }
+
+  if (nDim==3) {
+    delete elements[0];
+    delete elements[1];
+  }
+
+  delete [] Area;
 
   AD::SetPreaccOut(Coord_CG, nDim);
   AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
