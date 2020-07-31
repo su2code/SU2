@@ -35,6 +35,7 @@ import shutil
 import os
 import scipy.io
 from SU2_FSI.FSI_tools import readConfig
+from os import path
 
 # ----------------------------------------------------------------------
 #  FSI Interface Class
@@ -823,8 +824,13 @@ class Interface:
 
             # Store the surface flow history
             if myid is 0:
-                new_name_surf = "./surface_flow_" + str("{:04d}".format(self.FSIIter)) + ".vtk"
-                shutil.move("surface_flow.vtk", new_name_surf)
+                # currently SU2 writes PARAVIEW files both in vtu and vtk format
+                if path.exists("surface_flow.vtk") == True:
+                   new_name_surf = "./surface_flow_" + str("{:04d}".format(self.FSIIter)) + ".vtk"
+                   shutil.move("surface_flow.vtk", new_name_surf)
+                elif path.exists("surface_flow.vtu") == True:
+                    new_name_surf = "./surface_flow_" + str("{:04d}".format(self.FSIIter)) + ".vtu"
+                    shutil.move("surface_flow.vtu", new_name_surf)
 
                 hist_file = open("historyFSI.dat", "a")
                 hist_file.write(str(FluidSolver.Get_DragCoeff()) + "\t")
