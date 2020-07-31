@@ -100,7 +100,7 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
       Area[iFace] = sqrt(pow(val_coord[1][0]-val_coord[0][0],2)
                         +pow(val_coord[1][1]-val_coord[0][1],2));
     }
-    MaxArea = max(Area[iFace],MaxArea)
+    MaxArea = max(Area[iFace],MaxArea);
   }
 
   for (iFace = 0; iFace < GetnFaces(); iFace++) {
