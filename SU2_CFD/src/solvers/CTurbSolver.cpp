@@ -269,6 +269,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
           solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;
+
+          numerics->SetLimiter(Limiter_i, Limiter_j);
         }
 
         numerics->SetTurbVar(solution_i, solution_j);
