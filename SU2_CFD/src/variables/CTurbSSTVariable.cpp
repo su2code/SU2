@@ -88,7 +88,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),CDkwmin)*val_dist*val_dist+eps*eps));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
-  if (F1(iPoint) != F1(iPoint)) cout << "k= " << Primitive(iPoint,0) << ", Omega= " << Primitive(iPoint,1) << ", distance= " << val_dist << endl;
+  if (F1(iPoint) != F1(iPoint)) cout << "k= " << Primitive(iPoint,0) << ", Omega= " << Primitive(iPoint,1) << ", Density= " << val_density << ", UR= " << UnderRelaxation(iPoint) << ", distance= " << val_dist << endl;
 
   /*--- F2 ---*/
 
