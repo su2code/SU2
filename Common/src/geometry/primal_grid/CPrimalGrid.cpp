@@ -100,6 +100,7 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
       Area[iFace] = sqrt(pow(val_coord[1][0]-val_coord[0][0],2)
                         +pow(val_coord[1][1]-val_coord[0][1],2));
     }
+    Area[iFace] = pow(Area[iFace],2.0);
     TotalArea += Area[iFace];
   }
 
@@ -108,6 +109,13 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
     for (iFace = 0; iFace < GetnFaces();  iFace++)
       Coord_CG[iDim] += Coord_FaceElems_CG[iFace][iDim]*Area[iFace]/TotalArea;
   }
+
+  if (nDim==3) {
+    delete elements[0];
+    delete elements[1];
+  }
+
+  delete [] Area;
 
   AD::SetPreaccOut(Coord_CG, nDim);
   AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
