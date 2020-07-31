@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

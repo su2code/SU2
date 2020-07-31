@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1850,7 +1850,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
+void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
 
@@ -1862,9 +1862,8 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
                                           string val_marker,
-                                          CGeometry *geometry,
-                                          CConfig *config) const {
-
+                                          const CGeometry *geometry,
+                                          const CConfig *config) const {
   /*--- Local variables ---*/
 
   unsigned short iMarker, iDim;
@@ -1919,7 +1918,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 
 }
 
-void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;

@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -911,7 +911,6 @@ void CConfig::SetPointersNull(void) {
   Velocity_FreeStream = nullptr;
   Inc_Velocity_Init   = nullptr;
 
-  RefOriginMoment     = nullptr;
   CFL_AdaptParam      = nullptr;
   CFL                 = nullptr;
   HTP_Axis = nullptr;
@@ -1402,6 +1401,9 @@ void CConfig::SetConfig_Options() {
   addActDiskOption("MARKER_ACTDISK",
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
+
+  /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
+  addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
@@ -2832,7 +2834,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
      * If there is a statement after a cont. char
      * throw an error. ---*/
 
-     if (text_line.front() != '%'){
+     if (text_line.size() && (text_line.front() != '%')){
        while (text_line.back() == '\\' ||
               (PrintingToolbox::split(text_line, '\\').size() > 1)){
          string tmp;
@@ -3028,7 +3030,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3852,10 +3854,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }*/
 
-
-  /*--- Initialize the RefOriginMoment Pointer ---*/
-
-  RefOriginMoment = new su2double[3]();
 
   /*--- In case the moment origin coordinates have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
@@ -6213,11 +6211,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case TIME_STEPPING:
       cout << "Unsteady simulation using a time stepping strategy."<< endl;
       if (Unst_CFL != 0.0) {
-                          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
-                          if (Delta_UnstTime != 0.0) {
-                            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
-                          }
-                        }
+        cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+        if (Delta_UnstTime != 0.0) {
+          cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+        }
+      }
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
       break;
       case DT_STEPPING_1ST: case DT_STEPPING_2ND:
@@ -6225,16 +6223,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
       if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      cout << "Total number of internal Dual Time iterations: "<< Unst_nIntIter <<"." << endl;
+      cout << "Total number of internal Dual Time iterations: "<< InnerIter <<"." << endl;
       break;
     }
   }
   else {
     if (Time_Domain) {
-            cout << "Dynamic structural analysis."<< endl;
-            cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
-     } else {
-            cout << "Static structural analysis." << endl;
+      cout << "Dynamic structural analysis."<< endl;
+      cout << "Time step provided by the user for the dynamic analysis(s): "<< Delta_DynTime << "." << endl;
+    } else {
+      cout << "Static structural analysis." << endl;
     }
   }
 
@@ -6895,6 +6893,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_ActDiskOutlet != 0) {
+    if (GetKind_ActDisk() == VARIABLE_LOAD) {
+      cout << endl << "Actuator disk with variable load." << endl;
+      cout << "Actuator disk data read from file: " << GetActDisk_FileName() << endl;
+    }
+  }
+
 }
 
 bool CConfig::TokenizeString(string & str, string & option_name,
@@ -7286,7 +7291,6 @@ CConfig::~CConfig(void) {
 
   /*--- reference origin for moments ---*/
 
-  delete [] RefOriginMoment;
   delete [] RefOriginMoment_X;
   delete [] RefOriginMoment_Y;
   delete [] RefOriginMoment_Z;
@@ -7657,7 +7661,7 @@ CConfig::~CConfig(void) {
 
 }
 
-string CConfig::GetFilename(string filename, string ext, unsigned long Iter){
+string CConfig::GetFilename(string filename, string ext, unsigned long Iter) const {
 
   /*--- Remove any extension --- */
 
@@ -7745,33 +7749,33 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone,
     return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) {
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, string ext) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
-    multizone_filename += ext;
-    return multizone_filename;
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
+  multizone_filename += ext;
+  return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const {
 
-    string multizone_filename = val_filename;
-    char buffer[50];
+  string multizone_filename = val_filename;
+  char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of(".");
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
-    multizone_filename.append(string(buffer));
+  unsigned short lastindex = multizone_filename.find_last_of(".");
+  multizone_filename = multizone_filename.substr(0, lastindex);
+  SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+  multizone_filename.append(string(buffer));
 
-    return multizone_filename;
+  return multizone_filename;
 }
 
-string CConfig::GetObjFunc_Extension(string val_filename) {
+string CConfig::GetObjFunc_Extension(string val_filename) const {
 
   string AdjExt, Filename = val_filename;
 
@@ -8349,7 +8353,7 @@ void CConfig::SetInlet_Ptotal(su2double val_pressure, string val_marker) {
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
 }
 
-su2double* CConfig::GetInlet_FlowDir(string val_marker) {
+const su2double* CConfig::GetInlet_FlowDir(string val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
@@ -9253,7 +9257,7 @@ void CConfig::SetProfilingCSV(void) {
 
 }
 
-void CConfig::GEMM_Tick(double *val_start_time) {
+void CConfig::GEMM_Tick(double *val_start_time) const {
 
 #ifdef PROFILE
 
@@ -9267,7 +9271,7 @@ void CConfig::GEMM_Tick(double *val_start_time) {
 
 }
 
-void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
+void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) const {
 
 #ifdef PROFILE
 

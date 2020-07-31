@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -271,7 +271,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
+  void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
 
   /*!
    * \brief Load a solution from a restart file.

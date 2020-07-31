@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2924,7 +2924,7 @@ void CFluidDriver::Run() {
   /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
 
   if (unsteady)
-    nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+    nIntIter = config_container[MESH_0]->GetnInner_Iter();
   else
     nIntIter = 1;
 
