@@ -81,8 +81,8 @@ protected:
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
-  Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
-  Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
+  Eddy_Viscosity_i = 0,  /*!< \brief Eddy viscosity at point i. */
+  Eddy_Viscosity_j = 0;  /*!< \brief Eddy viscosity at point j. */
   su2double
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */

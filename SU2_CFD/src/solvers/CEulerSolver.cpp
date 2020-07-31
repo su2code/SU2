@@ -3246,6 +3246,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
     }
 
+    if (viscous) {
+      numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
+                                    nodes->GetLaminarViscosity(jPoint));
+      numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                 nodes->GetEddyViscosity(jPoint));
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
+                          geometry->node[jPoint]->GetVolume());
+    }
+
     /*--- Compute the residual ---*/
 
     auto residual = numerics->ComputeResidual(config);

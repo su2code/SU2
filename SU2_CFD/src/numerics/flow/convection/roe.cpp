@@ -289,20 +289,21 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   // for (iVar = 0; iVar < nVar; iVar++)
   //   Lambda[iVar] = max(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
 
-   /*--- Harten and Hyman (1983) entropy correction ---*/
-   for (iDim = 0; iDim < nDim; iDim++)
-     Epsilon[iDim] = 4.0*max(0.0, fabs(Lambda[iDim]-ProjVelocity));
+  /*--- Eigenvalue limiting based on cell Reynolds ---*/
+  su2double Length = (Volume_i + Volume_j)/(2.0*Area);
+  su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
+                            +Eddy_Viscosity_i+Eddy_Viscosity_j);
+  su2double Re = RoeDensity*RoeSoundSpeed*Length/Viscosity;
+  su2double Psi = min(1.0, exp(1.0-500/Re));
+  su2double LambdaRef = Psi*RoeSoundSpeed;
 
-   Epsilon[nVar-2] = 4.0*max(0.0, fabs(Lambda[nVar-2]-(ProjVelocity+RoeSoundSpeed)));
-   Epsilon[nVar-1] = 4.0*max(0.0, fabs(Lambda[nVar-1]-(ProjVelocity-RoeSoundSpeed)));
+  for (iVar = 0; iVar < nVar; iVar++) {
+    if (fabs(Lambda[iVar]) < 2.0*LambdaRef)
+      Lambda[iVar] = pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef;
 
-   for (iVar = 0; iVar < nVar; iVar++) {
-     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-       Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
-
-     Lambda[iVar] = fabs(Lambda[iVar]);
-   }     
-
+    Lambda[iVar] = fabs(Lambda[iVar]);
+  }
+  
   /*--- Reconstruct conservative variables ---*/
 
   Conservatives_i[0] = Density_i;
