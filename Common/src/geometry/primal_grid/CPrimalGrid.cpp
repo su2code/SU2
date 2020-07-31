@@ -63,11 +63,11 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord, GetnNodes(), nDim);
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Coord_CG[iDim] = 0.0;
-    for (iNode = 0; iNode < GetnNodes();  iNode++)
-      Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
-  }
+  // for (iDim = 0; iDim < nDim; iDim++) {
+  //   Coord_CG[iDim] = 0.0;
+  //   for (iNode = 0; iNode < GetnNodes();  iNode++)
+  //     Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
+  // }
 
   for (iFace = 0; iFace < GetnFaces();  iFace++)
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -77,6 +77,18 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
         Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/su2double(GetnNodesFace(iFace));
       }
     }
+
+  su2double TotalArea = 0, *Area = new su2double[GetnFaces()];
+  for (iFace = 0; iFace < GetFaces(); iFace++) {
+    Area[iFace] = ComputeArea();
+    TotalArea += Area[iFace];
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Coord_CG[iDim] = 0.0;
+    for (iFace = 0; iFace < GetnFaces();  iFace++)
+      Coord_CG[iDim] += Coord_FaceElems_CG[iFace][iDim]*Area[iFace]/TotalArea;
+  }
 
   AD::SetPreaccOut(Coord_CG, nDim);
   AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
