@@ -42,7 +42,7 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
 }
 
-void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_NSSolver::Friction_Forces(const CGeometry *geometry, const CConfig *config) {
 
 }
 

@@ -856,7 +856,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
+void CTurbSSTSolver::SetInletAtVertex(const su2double *val_inlet,
                                      unsigned short iMarker,
                                      unsigned long iVertex) {
 
@@ -869,9 +869,8 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            unsigned long val_inlet_point,
                                            unsigned short val_kind_marker,
                                            string val_marker,
-                                           CGeometry *geometry,
-                                           CConfig *config) const {
-
+                                           const CGeometry *geometry,
+                                           const CConfig *config) const {
   /*--- Local variables ---*/
 
   unsigned short iMarker, iDim;
@@ -928,7 +927,7 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
 
 }
 
-void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;

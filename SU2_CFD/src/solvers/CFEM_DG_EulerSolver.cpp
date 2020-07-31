@@ -272,7 +272,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
 }
 
-void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
 
 }
 

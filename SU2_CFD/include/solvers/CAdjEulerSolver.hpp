@@ -117,7 +117,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) final;
+  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Parallelization of Undivided Laplacian.
@@ -236,7 +236,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
     return DonorAdjVar[val_marker][val_vertex];
   }
 
@@ -249,7 +249,7 @@ public:
   inline void SetDonorAdjVar(unsigned short val_marker,
                              unsigned long val_vertex,
                              unsigned short val_var,
-                             su2double val_value) final {
+                             su2double val_value) {
     DonorAdjVar[val_marker][val_vertex][val_var] = val_value;
   }
 
@@ -261,7 +261,7 @@ public:
    */
   inline su2double GetDonorAdjVar(unsigned short val_marker,
                                   unsigned long val_vertex,
-                                  unsigned short val_var) const final {
+                                  unsigned short val_var) const {
     return DonorAdjVar[val_marker][val_vertex][val_var];
   }
 
