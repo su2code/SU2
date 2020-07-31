@@ -448,7 +448,6 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   if (config->GetnMarker_Monitoring() != 0) { Origin = config->GetRefOriginMoment(0); }
 
-  su2double Prandtl_Lam = config->GetPrandtl_Lam();
   bool QCR = config->GetQCR();
   bool axisymmetric = config->GetAxisymmetric();
 
@@ -1261,8 +1260,6 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, CNumer
   su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
   tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
-  su2double Prandtl_Lam  = config->GetPrandtl_Lam();
-  su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
@@ -1578,8 +1575,6 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   su2double laminar_viscosity, eddy_viscosity, Grad_Vel[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
   tau[3][3] = {{0.0, 0.0, 0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}, delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
-  su2double Prandtl_Lam  = config->GetPrandtl_Lam();
-  su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 

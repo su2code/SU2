@@ -3785,8 +3785,6 @@ void CEulerSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
   const su2double Mean_EddyVisc = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
 
   const su2double HeatFluxFactor = Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb;
   const su2double CpOnR = Gamma/Gamma_Minus_One;
