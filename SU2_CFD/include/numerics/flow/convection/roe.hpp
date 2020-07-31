@@ -40,7 +40,7 @@ class CUpwRoeBase_Flow : public CNumerics {
 protected:
   bool implicit, dynamic_grid, roe_low_dissipation;
   su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0}, RoeVelocity[MAXNDIM] = {0.0};
-  su2double *Diff_U = nullptr, *Lambda = nullptr;
+  su2double *Diff_U = nullptr, *Lambda = nullptr, *Epsilon = nullptr;
   su2double *ProjFlux_i = nullptr, *Conservatives_i = nullptr;
   su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
   su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
