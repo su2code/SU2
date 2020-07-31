@@ -291,10 +291,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
    /*--- Harten and Hyman (1983) entropy correction ---*/
    for (iDim = 0; iDim < nDim; iDim++)
-     Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
+     Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity, ProjVelocity-Lambda[iDim]));
 
-   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
-   Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity+RoeSoundSpeed),(ProjVelocity+RoeSoundSpeed)-Lambda[nVar-2]));
+   Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity-RoeSoundSpeed),(ProjVelocity-RoeSoundSpeed)-Lambda[nVar-1]));
 
    for (iVar = 0; iVar < nVar; iVar++) {
      if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
