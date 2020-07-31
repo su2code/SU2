@@ -289,8 +289,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     su2double Psi = 1.0;
     if (config->GetViscous()) {
       const su2double Length = (Volume_i + Volume_j)/(2.0*Area);
-      const su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j
-                                      +Eddy_Viscosity_i+Eddy_Viscosity_j);
+      const su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j);
       const su2double Re = RoeDensity*MaxLambda*Length/Viscosity;
       Psi = min(1.0, exp(1.0-100/Re));
     }
