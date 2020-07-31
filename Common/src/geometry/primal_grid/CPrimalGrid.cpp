@@ -78,9 +78,27 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
       }
     }
 
+  CElement *elements[2] = {nullptr, nullptr};
+  if (nDim==3) {
+    elements[0] = new CTRIA1();
+    elements[1] = new CQUAD4();
+  }
   su2double TotalArea = 0, *Area = new su2double[GetnFaces()];
   for (iFace = 0; iFace < GetFaces(); iFace++) {
-    Area[iFace] = ComputeArea();
+    if (nDim==3) {
+      CElement* element = elements[GetnNodesFace(iFace)-3];
+      for (iNode=0; iNode<GetnNodesFace(iFace); ++iNode) {
+        NodeFace = GetFaces(iFace, iNode);
+        for (iDim=0; iDim<nDim; ++iDim) {
+          element->SetRef_Coord(iNode, iDim, val_coord[NodeFace][iDim]);
+        }
+      }
+      Area[iFace] = element->ComputeArea();
+    }
+    else {
+      Area[iFace] = sqrt(pow(val_coord[1][0]-val_coord[0][0],2)
+                        +pow(val_coord[1][1]-val_coord[0][1],2));
+    }
     TotalArea += Area[iFace];
   }
 
