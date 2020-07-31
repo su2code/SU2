@@ -175,7 +175,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
         }
 
-        for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
 
           const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
