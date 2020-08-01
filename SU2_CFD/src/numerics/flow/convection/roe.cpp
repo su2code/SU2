@@ -236,8 +236,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
@@ -744,8 +743,8 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   if (implicit) {
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because Flux ~ 0.5*(fc_i+fc_j)*Normal ---*/
-    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, 0.5, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, 0.5, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   }
 
   for (iVar = 0; iVar < nVar; iVar ++) {
