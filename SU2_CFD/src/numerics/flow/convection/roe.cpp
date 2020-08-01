@@ -236,7 +236,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
+  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
+  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
@@ -676,8 +677,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke)));
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
   RoePressure = RoeDensity/Gamma*RoeSoundSpeed*RoeSoundSpeed;
 
   /*--- Compute ProjFlux_i ---*/
