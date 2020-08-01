@@ -195,6 +195,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
+  if (config->GetCellReynolds_EntropyFix() && config->GetViscous()) {
+    AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
+    AD::SetPreaccIn(Laminar_Viscosity_i); AD::SetPreaccIn(Laminar_Viscosity_j);
+  }
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
