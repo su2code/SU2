@@ -3103,15 +3103,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
-
-    su2double tke_i = 0.0, tke_j = 0.0;
-
-    if (tkeNeeded) {
-      tke_i = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
-      tke_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
-    }
-
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
@@ -3211,9 +3202,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           sq_vel += pow(RoeVelocity, 2);
         }
         su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
-        su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
-        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel) < 0.0);
       }
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
