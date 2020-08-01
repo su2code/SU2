@@ -3209,13 +3209,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
 
-      if (tkeNeeded) {
-        bad_i = bad_i || (tke_i < 0);
-        bad_j = bad_j || (tke_j < 0);
-
-        numerics->SetTurbKineticEnergy(tke_i, tke_j);
-      }
-
       nodes->SetNon_Physical(iPoint, bad_i);
       nodes->SetNon_Physical(jPoint, bad_j);
 
