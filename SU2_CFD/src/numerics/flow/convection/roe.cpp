@@ -331,8 +331,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     Flux[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 
   if (implicit) {
-    GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, kappa, Jacobian_i);
-    GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, kappa, Jacobian_j);
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, Jacobian_i);
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, Jacobian_j);
 
     // if (muscl) {
     //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i);
