@@ -3107,6 +3107,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     su2double tke_i = 0.0, tke_j = 0.0;
 
+    if (tkeNeeded) {
+      tke_i = solver[TURB_SOL]->GetPrimitive(iPoint,0);
+      tke_j = solver[TURB_SOL]->GetPrimitive(jPoint,0);
+    }
+
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
@@ -3206,12 +3211,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           sq_vel += pow(RoeVelocity, 2);
         }
         su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+        su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
-        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel) < 0.0);
+        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel-RoeTKe) < 0.0);
       }
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
       bool bad_j = neg_sound_speed || neg_pres_or_rho_j;
+
+      if (tkeNeeded) {
+        bad_i = bad_i || (tke_i < 0);
+        bad_j = bad_j || (tke_j < 0);
+
+        numerics->SetTurbKineticEnergy(tke_i, tke_j);
+      }
 
       nodes->SetNon_Physical(iPoint, bad_i);
       nodes->SetNon_Physical(jPoint, bad_j);
