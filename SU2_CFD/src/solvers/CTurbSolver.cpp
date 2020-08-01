@@ -543,7 +543,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUSST);
+  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
