@@ -543,6 +543,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUSST);
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -571,8 +572,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
-    // if (config->GetKind_Turb_Model() == SST) Delta = Vol / nodes->GetDelta_Time(iPoint);
+    su2double Delta = (sst) ? Vol / nodes->GetDelta_Time(iPoint)
+                            : Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
