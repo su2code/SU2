@@ -660,9 +660,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  su2double localUnderRelaxation    =  1.00;
-  const su2double allowableDecrease = -0.99;
-  const su2double allowableIncrease =  0.99;
+  su2double localUnderRelaxation =  1.00;
+  const su2double allowableRatio =  0.99;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -674,20 +673,14 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const
         /* We impose a limit on the maximum percentage that the
          turbulence variables can change over a nonlinear iteration. */
 
-        const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
-        if (ratio > allowableIncrease) {
-          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-        } else if (ratio < allowableDecrease) {
-          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+        const unsigned long index = iPoint * nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index]) / (nodes->GetSolution(iPoint, iVar) + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
 
       }
     }
-
-    /* Choose the minimum factor between mean flow and turbulence. */
-
-    localUnderRelaxation = min(localUnderRelaxation, solver_container[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
