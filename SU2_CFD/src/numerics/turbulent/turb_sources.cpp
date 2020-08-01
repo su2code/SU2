@@ -790,6 +790,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F2_i); AD::SetPreaccIn(CDkw_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(Vorticity_i, 3);
 
@@ -904,7 +905,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    /*--- Cross diffusion ---*/
 
-   Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+   // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+   su2double CrossDiff = 0.;
+   for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+   CrossDiff *= 2.0*Density_i*sigma_omega_2*(1.0 - F1_i)/zeta;
+   Residual[1] += CrossDiff*Volume;
 
    /*--- Implicit part ---*/
 
@@ -912,9 +918,11 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[0][1] += -beta_star*TurbVar_i[0]*Volume;
    Jacobian_i[1][1] += -2.*beta_blended*TurbVar_i[1]*Volume;
 
-   const su2double eps = numeric_limits<passivedouble>::epsilon();
-   Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1]+eps)*Volume;
-   
+   // const su2double eps = numeric_limits<passivedouble>::epsilon();
+   // Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1]+eps)*Volume;
+   if (TurbVar_i[1] > VorticityMag*F2_i/a1)
+     Jacobian_i[1][1] += -(CrossDiff/Density_i)*Volume;
+
   }
   
   AD::SetPreaccOut(Residual, nVar);
