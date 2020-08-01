@@ -447,6 +447,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Gradient of the primitive and conservative variables ---*/
 
       numerics->SetPrimVarGradient(flowNodes->GetGradient_Primitive(iPoint), nullptr);
+      numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nullptr);
 
       /*--- Turbulent variables w/o reconstruction ---*/
 
