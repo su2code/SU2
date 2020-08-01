@@ -3108,8 +3108,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     su2double tke_i = 0.0, tke_j = 0.0;
 
     if (tkeNeeded) {
-      tke_i = solver[TURB_SOL]->GetPrimitive(iPoint,0);
-      tke_j = solver[TURB_SOL]->GetPrimitive(jPoint,0);
+      tke_i = solver[TURB_SOL]->nodes->GetPrimitive(iPoint,0);
+      tke_j = solver[TURB_SOL]->nodes->GetPrimitive(jPoint,0);
     }
 
     if (!muscl) {
