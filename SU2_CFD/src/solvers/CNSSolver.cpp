@@ -668,6 +668,15 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
         WallShearStress = sqrt(WallShearStress);
 
+        /*--- If Wall Model is used, load the shear stress from the wall model---*/
+
+        if (config->GetWall_Models() && nodes->GetTauWall_Flag(iPoint)){
+
+          /*--- Note: TauElem will be used later for force computation ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            TauElem[iDim] = nodes->GetTauWallDir(iPoint,iDim);
+        }
+
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
 
