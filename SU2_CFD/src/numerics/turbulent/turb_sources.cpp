@@ -921,7 +921,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    // const su2double eps = numeric_limits<passivedouble>::epsilon();
    // Jacobian_i[1][1] += -(1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1]+eps)*Volume;
    if (TurbVar_i[1] > VorticityMag*F2_i/a1)
-     Jacobian_i[1][1] += -(CrossDiff/Density_i)*Volume;
+     Jacobian_i[1][1] += -CrossDiff/(Density_i*zeta)*Volume;
 
   }
   
