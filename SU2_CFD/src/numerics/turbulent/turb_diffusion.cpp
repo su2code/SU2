@@ -381,14 +381,14 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   /*--- TODO: add contributions of WLS gradients ---*/
   else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {}
   
-  if (!correct_gradient) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.;
-        Jacobian_j[iVar][jVar] = 0.;
-      }
-    }
-  }
+  // if (!correct_gradient) {
+  //   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+  //       Jacobian_i[iVar][jVar] = 0.;
+  //       Jacobian_j[iVar][jVar] = 0.;
+  //     }
+  //   }
+  // }
   
   AD_END_PASSIVE
 }

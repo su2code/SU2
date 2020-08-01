@@ -574,7 +574,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    Edge_Vector[iDim] = (correct_gradient) ? Coord_j[iDim]-Coord_i[iDim] : Normal[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
@@ -632,7 +632,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    if (correct_gradient && dist_ij_2 != 0.0) {
+    if (dist_ij_2 != 0.0) {
       SetTauJacobian();
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
     }
