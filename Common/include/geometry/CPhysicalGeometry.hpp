@@ -767,6 +767,14 @@ private:
                                      vector<CFaceOfElement> &localFaces);
 
   /*!
+   * \brief Function, which determines the non-matching faces of a FEM grid.
+   * \param[in]  config                - Definition of the particular problem.
+   * \param[in,out] localMatchingFaces - Vector containing the local faces of the FEM grid. On output the non-matching faces are removed.
+   */
+  void DetermineNonMatchingFacesFEMGrid(const CConfig          *config,
+                                        vector<CFaceOfElement> &localMatchingFaces);
+
+  /*!
    * \brief Determine the neighboring information for periodic faces of a FEM grid.
    * \param[in]     config      - Definition of the particular problem.
    * \param[in,out] localFaces  - Vector, which contains the element faces of this rank.

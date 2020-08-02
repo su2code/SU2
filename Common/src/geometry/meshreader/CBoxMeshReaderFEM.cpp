@@ -370,7 +370,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
         surfaceElementConnectivity[5].push_back((pNode-1)*mNode*nNode + (jNode+1)*nNode + iNode+1);
 
         /*--- Update the number of surface elements for this marker. ---*/
-        ++numberOfLocalSurfaceElements[6];
+        ++numberOfLocalSurfaceElements[5];
       }
     }
   }

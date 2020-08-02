@@ -250,14 +250,14 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
     }
   }
 
-  /*--- Loop over all faces on the xMax (= iMax) boundary. ---*/  
-  markerNames[3] = "x_plus";
+  /*--- Loop over all faces on the xMin (= iMin) boundary. ---*/  
+  markerNames[3] = "x_minus";
 
   for(unsigned long jNode = 0; jNode < mNode-1; ++jNode) {
 
     /*--- Determine the corresponding global element ID and check
           if it is stored on this rank. ---*/
-    const unsigned long globalElemID = jNode*nElemI + nElemI-1;
+    const unsigned long globalElemID = jNode*nElemI;
     if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
 
       /*--- The corresponding volume element is stored on this rank,
@@ -268,8 +268,8 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
       surfaceElementConnectivity[3].push_back(jNode);                    // Global surface element ID.
       surfaceElementConnectivity[3].push_back(globalElemID-firstIndex);  // Local volume element ID.
 
-      surfaceElementConnectivity[3].push_back((jNode+1)*nNode + (nNode-1));
-      surfaceElementConnectivity[3].push_back(jNode*nNode + (nNode-1));
+      surfaceElementConnectivity[3].push_back((jNode+1)*nNode);
+      surfaceElementConnectivity[3].push_back(jNode*nNode);
 
       /*--- Update the number of surface elements for this marker. ---*/
       ++numberOfLocalSurfaceElements[3];

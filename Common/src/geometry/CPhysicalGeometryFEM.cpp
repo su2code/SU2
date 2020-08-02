@@ -155,12 +155,16 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     elem[i]->SetColor(0);
 
   /*--- Determine the matching faces of the local elements. ---*/
-  vector<CFaceOfElement> localFaces;
-  DetermineMatchingFacesFEMGrid(config, localFaces);
+  vector<CFaceOfElement> localMatchingFaces;
+  DetermineMatchingFacesFEMGrid(config, localMatchingFaces);
 
   /*--- In the function above the periodic boundaries are not found.
         A different treatment must be used in order to find these. ---*/
-  DeterminePeriodicFacesFEMGrid(config, localFaces);
+  DeterminePeriodicFacesFEMGrid(config, localMatchingFaces);
+
+  /*--- So far only the matching faces have been found. Now find the
+        non-matching faces of the local elements. ---*/
+  DetermineNonMatchingFacesFEMGrid(config, localMatchingFaces);
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
@@ -495,6 +499,51 @@ void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *co
   SU2_MPI::Barrier(MPI_COMM_WORLD);
 
 #endif
+}
+
+void CPhysicalGeometry::DetermineNonMatchingFacesFEMGrid(const CConfig          *config,
+                                                         vector<CFaceOfElement> &localMatchingFaces) {
+
+  /*--- If there are single faces still present in localMatchingFaces, these are
+        non-matching faces. Store these faces in singleFaces and remove them
+        from localMatchingFaces. ---*/
+  vector<CFaceOfElement> singleFaces;
+
+  unsigned long nFacesLoc = localMatchingFaces.size();
+  for(unsigned long i=0; i<localMatchingFaces.size(); ++i) {
+    if(localMatchingFaces[i].elemID1 > Global_nElem) {
+
+      singleFaces.push_back(localMatchingFaces[i]);
+
+      localMatchingFaces[i].nCornerPoints = 4;
+      localMatchingFaces[i].cornerPoints[0] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[1] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[2] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[3] = Global_nPoint;
+      --nFacesLoc;
+    }
+  }
+
+  if( singleFaces.size() ) {
+    sort(localMatchingFaces.begin(), localMatchingFaces.end());
+    localMatchingFaces.resize(nFacesLoc);
+  }
+
+  /*--- Determine the global number of non-matching faces. ---*/
+  nFacesLoc = singleFaces.size();
+  unsigned long nNonMatchingFaces = nFacesLoc;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nFacesLoc, &nNonMatchingFaces, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  /*--- If there are no non-matching faces, return, such that in the rest of this
+        function it can be assumed that non-matching faces are present. ---*/
+  if(nNonMatchingFaces == 0) return;
+
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(const CConfig          *config,

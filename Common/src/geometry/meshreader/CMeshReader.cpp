@@ -123,7 +123,7 @@ void CMeshReader::GetCornerPointsAllFaces(const unsigned long *elemInfo,
   for(unsigned short i=0; i<numFaces; ++i) {
     for(unsigned short j=0; j<nPointsPerFace[i]; ++j) {
       unsigned long nn = faceConn[i][j];
-      faceConn[i][j] = elemInfo[nn];
+      faceConn[i][j] = conn[nn];
     }
   }
 }
