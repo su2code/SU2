@@ -1971,7 +1971,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   }
 
   TmpWeights[nVarFlo+0] += zeta*factor;
-  TmpWeights[nVarFlo+1] += -lim*k/pow(omega,2.)*factor;
+  TmpWeights[nVarFlo+1] += -lim*k*pow(zeta,2.)*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2*zeta*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
     TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2*zeta*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
@@ -2040,6 +2040,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+1] += (1. - F1)*CDkw*zeta/r*varAdjTur->GetSolution(iPoint,1);
 
 }
