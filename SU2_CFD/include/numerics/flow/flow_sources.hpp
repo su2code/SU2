@@ -303,9 +303,9 @@ public:
 class CSourceIncStreamwise_Periodic final : public CSourceBase_Flow {
 private:
 
-  bool implicit,  /*!< \brief Implicit calculation. */
-       turbulent, /*!< \brief Turbulence model used. */
-       energy;    /*!< \brief Energy equation on. */
+  bool turbulent, /*!< \brief Turbulence model used. */
+       energy,    /*!< \brief Energy equation on. */
+       streamwisePeriodic_temperature; /*!< \brief Periodicity in energy equation */
 
   vector<su2double> Streamwise_Coord_Vector; /*!< \brief Translation vector between streamwise periodic surfaces. */
 
@@ -314,7 +314,7 @@ private:
             massflow,  /*!< \brief Massflow through streamwise periodic 'outlet' marker. */
             delta_p, /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
             dot_product, /*!< \brief Container for various dot-products. */
-            scalar_factor; /*!< brief Holds scalar factors to simplify final equations. */
+            scalar_factor; /*!< \brief Holds scalar factors to simplify final equations. */
 
   unsigned short iDim, /*!< brief Counts over Dimensions. */
                  iVar, jVar; /*!< brief Count over Variables. */

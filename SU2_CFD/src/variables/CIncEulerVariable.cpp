@@ -38,9 +38,10 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
 
-  /*--- Allocate and initialize the primitive variables and gradients ---*/
+  /*--- Allocate and initialize the primitive variables and gradients.
+        Make sure to align the sizes with the constructor of CIncEulerSolver ---*/
 
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+6; //TK:: for periodic turb EddyMu, TODO check that this is actually the case
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+6;
 
   /*--- Allocate residual structures ---*/
 

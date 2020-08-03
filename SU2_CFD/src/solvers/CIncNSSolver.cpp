@@ -57,12 +57,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long iPoint, ErrorCounter = 0;
-  unsigned short iDim;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
-  unsigned long InnerIter     = config->GetInnerIter();
+  unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool disc_adjoint       = config->GetDiscrete_Adjoint();
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
@@ -71,7 +70,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool outlet               = ((config->GetnMarker_Outlet() != 0));
-  bool energy             = config->GetEnergy_Equation();
+  bool energy               = config->GetEnergy_Equation();
 
   /*--- Set the primitive variables ---*/
 
@@ -121,8 +120,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
 
-  /*--- Compute recovered pressure and temperature for streamwise periodic BC
-        Second conditional is there to avoid a zero (massflow) in the denominator for recovered temperature. ---*/
+  /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
   if (config->GetKind_Streamwise_Periodic() != NONE) {
 
     /*--- Define and initialize helping variables ---*/
@@ -135,28 +133,27 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
               HeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow(),
               MassFlow = config->GetStreamwise_Periodic_MassFlow();
 
-    su2double *Reference_node = new su2double[nDim];
+    /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
+    vector<su2double> ReferenceNode = config->GetStreamwise_Periodic_RefNode();
 
-    /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector
-          and compute square of the distance between the 2 periodic surfaces. ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Reference_node[iDim] = config->GetStreamwise_Periodic_RefNode()[iDim];
+    /*--- Compute square of the distance between the 2 periodic surfaces. ---*/
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
-    }
 
     /*--- Compute recoverd pressure and temperature for all points ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
       /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
       dot_product = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - Reference_node[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        dot_product += fabs( (geometry->nodes->GetCoord(iPoint,iDim) - ReferenceNode[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
 
-      /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
+      /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature, TK:: added non-dimensionalization here - pres_ref=1 - how is pres_ref set? ---*/
       Pressure_Recovered = nodes->GetSolution(iPoint, 0) - delta_p / norm2_translation * dot_product;
       nodes->SetStreamwise_Periodic_RecoveredPressure(iPoint, Pressure_Recovered);
 
-      if (energy && InnerIter > 0) { //ExtIter > 0, hen egg problem
+      /*--- 'InnerIter > 0' as otherwise MassFlow in the denominator would be zero ---*/
+      if (energy && InnerIter > 0) {
         Temperature_Recovered  = nodes->GetSolution(iPoint, nDim+1);
         Temperature_Recovered += HeatFlow / (MassFlow * nodes->GetSpecificHeatCp(iPoint) * norm2_translation) * dot_product;
         nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, Temperature_Recovered);
@@ -165,10 +162,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
     GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
-
-    /*--- Free allocated memory. ---*/
-    delete [] Reference_node;
-  }
+  } // if streamwise periodic
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
@@ -644,24 +638,24 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
         Res_Visc[nDim+1] = Wall_HeatFlux*Area;
 
-        /*--- With streamwise periodic BC and heatflux walls an additional
+        /*--- With streamwise periodic flow and heatflux walls an additional
               term is introduced in the boundary formulation ---*/
         if (streamwise_periodic && streamwise_periodic_temperature) {
 
           Cp = nodes->GetSpecificHeatCp(iPoint);
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
-          /*--- Scalar part of the contribution ---*/
+          /*--- Scalar factor of the residual contribution ---*/
           scalar_factor = integratedHeatFlow*thermal_conductivity / (massflow * Cp * norm2_translation);
 
-          /*--- Scalar product ---*/
+          /*--- Dot product ---*/
           dot_product = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             dot_product += config->GetPeriodicTranslation(0)[iDim]*Normal[iDim];
           }
 
           Res_Visc[nDim+1] -= scalar_factor*dot_product;
-        }//if streamwise_periodic
+        } // if streamwise_periodic
 
         /*--- Viscous contribution to the residual at the wall ---*/
 

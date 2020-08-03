@@ -2202,7 +2202,7 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
  * \brief types of streamwise periodicity.
  */
 enum ENUM_STREAMWISE_PERIODIC {
-  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No projection. */
+  NO_STREAMWISE_PERIODIC = 0, /*!< \brief No streamwise periodic flow. */
   PRESSURE_DROP          = 1, /*!< \brief Prescribed pressure drop. */
   STREAMWISE_MASSFLOW    = 2, /*!< \brief Prescribed massflow. */
 };

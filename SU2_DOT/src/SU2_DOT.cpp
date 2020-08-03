@@ -302,6 +302,7 @@ int main(int argc, char *argv[]) {
 
   ofstream Gradient_file;
 
+  /*--- For multizone computations the gradient contributions are summed up and written into one file. ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     if ((config_container[iZone]->GetDesign_Variable(0) != NONE) &&
         (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) {
@@ -333,7 +334,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
-  /*--- Print gradients to screen and file ---*/
+  /*--- Print gradients to screen and writes to file ---*/
 
   OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
 

@@ -45,8 +45,8 @@ protected:
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
   VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
 
-  VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure for streamwise periodic flow. */
-             Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature for streamwise periodic flow. */
+  VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
+             Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
 
 public:
   /*!
@@ -358,36 +358,38 @@ public:
 
   /*!
    * \brief Set the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
    * \param[in] val_pressure - pressure value.
    */
-  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) override {
-    Streamwise_Periodic_RecoveredPressure(iPoint) =  val_pressure; }
+  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) final {
+    Streamwise_Periodic_RecoveredPressure(iPoint) =  val_pressure;
+  }
   
   /*!
    * \brief Get the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
    * \return Recovered/Physical pressure for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const override {
-    return Streamwise_Periodic_RecoveredPressure(iPoint); }
+  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const final {
+    return Streamwise_Periodic_RecoveredPressure(iPoint);
+  }
   
   /*!
-   * \brief Set the recovered pressure for streamwise periodic flow.
+   * \brief Set the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
    * \param[in] val_temperature - temperature value.
    */
-  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) override {
-    Streamwise_Periodic_RecoveredTemperature(iPoint) = val_temperature; }
+  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) final {
+    Streamwise_Periodic_RecoveredTemperature(iPoint) = val_temperature;
+  }
   
   /*!
    * \brief Get the recovered temperature for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
    * \return Recovered/Physical temperature for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const override {
-    return Streamwise_Periodic_RecoveredTemperature(iPoint); }
-
-  //TK:: unclear during merge whether necessary
-  inline void SetVelocity(unsigned long iPoint, su2double *val_velocity) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-       Solution(iPoint, iDim+1) = val_velocity[iDim];
+  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const final {
+    return Streamwise_Periodic_RecoveredTemperature(iPoint);
   }
 
 };

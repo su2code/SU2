@@ -569,9 +569,9 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
                                                              CConfig        *config) :
                                CSourceBase_Flow(val_nDim, val_nVar, config) {
 
-  implicit  = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  turbulent = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  turbulent = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
   energy    = config->GetEnergy_Equation();
+  streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
   Streamwise_Coord_Vector.resize(nDim);
   for (iDim = 0; iDim < nDim; iDim++)
@@ -581,7 +581,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
         dot_prod(t*t) = (|t|_2)^2  ---*/
   norm2_translation = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    norm2_translation += Streamwise_Coord_Vector[iDim] * Streamwise_Coord_Vector[iDim];
+    norm2_translation += pow(Streamwise_Coord_Vector[iDim],2);
 
 }
 
@@ -590,28 +590,19 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
   delta_p             = config->GetStreamwise_Periodic_PressureDrop();
   massflow            = config->GetStreamwise_Periodic_MassFlow();
   integrated_heatflow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
-  //cout << "Delta p: " << delta_p << endl;
-  /*--- Initialize the Jacobian contribution to zero ---*/
-  if (implicit) {
-    for (iVar=0; iVar < nVar; iVar++)
-      for (jVar=0; jVar < nVar; jVar++)
-        jacobian[iVar][jVar] = 0.0;
-  }
-
-  // TK What in the case of variable density. Substract Freestream density i.e. hydrostatic pressure?
 
   /*--- No contribution in the continuity equation ---*/
   residual[0] = 0.0;
 
   /*--- Compute the momentum equation source based on the prescribed (or computed if massflow) delta pressure ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
-    scalar_factor = ( delta_p/config->GetPressure_Ref() ) / norm2_translation * Streamwise_Coord_Vector[iDim]; // TK check if pres_ref is the same as force ref, TK the (0) is hardcoded! streamwise periodic has to be the first marker
+    scalar_factor = (delta_p/config->GetPressure_Ref()) / norm2_translation * Streamwise_Coord_Vector[iDim]; // TK check if pres_ref is the same as force ref
     residual[iDim+1] = -Volume * scalar_factor;
   }
 
   /*--- Compute the periodic temperature contribution to the energy equation, if energy equation is considered ---*/
   residual[nDim+1] = 0.0;
-  if (energy && config->GetStreamwise_Periodic_Temperature()) {
+  if (energy && streamwisePeriodic_temperature) {
 
     scalar_factor = integrated_heatflow * DensityInc_i / (massflow * norm2_translation);
 
@@ -627,7 +618,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
     if(turbulent) {
 
       /*--- Compute the scalar factor ---*/
-      scalar_factor = integrated_heatflow / (massflow * sqrt(norm2_translation) * config->GetPrandtl_Turb());
+      scalar_factor = integrated_heatflow / (massflow * sqrt(norm2_translation) * Prandtl_Turb);
 
       /*--- Compute scalar product between periodic translation vector and eddy viscosity gradient. ---*/
       dot_product = 0.0;
@@ -635,14 +626,8 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
         dot_product += Streamwise_Coord_Vector[iDim] * PrimVar_Grad_i[nDim+5][iDim]; // gradient of eddy viscosity
 
       residual[nDim+1] -= Volume * scalar_factor * dot_product;
-    }//if turbulent
-
-    /*--- Jacobian contribution of energy equation periodic source term ---*/
-    if (implicit) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        jacobian[nDim+1][iDim+1] = 0.0;//Volume * scalar_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
-    }//if implicit
-  }//if energy
+    } // if turbulent
+  } // if energy
 
   return ResidualType<>(residual, jacobian, nullptr);
 
@@ -689,9 +674,7 @@ CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(c
     residual[nDim+1] -= abs(local_Massflow/config->GetStreamwise_Periodic_MassFlow()) * config->GetStreamwise_Periodic_OutletHeat() / config->GetHeat_Flux_Ref();
   }
 
-  /////////////////////////////
-  // hdf fluid adaption TODO add description here!
-  // Force the area avg inlet Temp to match the Inc_Temperature_Init with additional residual condtribution
+  /*--- Force the area avg inlet Temp to match the Inc_Temperature_Init with additional residual condtribution ---*/
   residual[nDim+1] += 0.5 * abs(local_Massflow) * SpecificHeat_i * (AreaAvgInletTemp - config->GetInc_Temperature_Init()/config->GetTemperature_Ref() );
 
   return ResidualType<>(residual, jacobian, nullptr);

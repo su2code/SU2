@@ -103,7 +103,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   nDim = geometry->GetnDim();
 
-  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  /*--- Make sure to align the sizes with the constructor of CIncEulerVariable. ---*/
+  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+6;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 

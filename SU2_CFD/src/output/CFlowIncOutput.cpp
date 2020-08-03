@@ -39,8 +39,8 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
-  streamwise_periodic             = config->GetKind_Streamwise_Periodic();
-  streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
+  streamwisePeriodic             = config->GetKind_Streamwise_Periodic();
+  streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
       
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
@@ -222,10 +222,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("DEFORM_RESIDUAL", "DeformRes", ScreenOutputFormat::FIXED, "DEFORM", "Residual of the linear solver for the mesh deformation");
   }
 
-  if(streamwise_periodic) {
-    AddHistoryOutput("STREAMWISE_MASSFLOW", "SWMassflow", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Empty explanation");
-    AddHistoryOutput("STREAMWISE_DP", "SWDeltaP", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Empty explanation");
-    AddHistoryOutput("STREAMWISE_HEAT", "SWHeat", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Empty explanation");
+  if(streamwisePeriodic) {
+    AddHistoryOutput("STREAMWISE_MASSFLOW", "SWMassflow", ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Massflow in streamwise periodic flow");
+    AddHistoryOutput("STREAMWISE_DP",       "SWDeltaP",   ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Pressure drop in streamwise periodic flow");
+    AddHistoryOutput("STREAMWISE_HEAT",     "SWHeat",     ScreenOutputFormat::FIXED, "STREAMWISE_PERIODIC", "Integrated heat for streamwise periodic flow");
   }
   /*--- Add analyze surface history fields --- */
 
@@ -341,7 +341,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
-  if(streamwise_periodic) {
+  if(streamwisePeriodic) {
     SetHistoryOutputValue("STREAMWISE_MASSFLOW", config->GetStreamwise_Periodic_MassFlow());
     SetHistoryOutputValue("STREAMWISE_DP", config->GetStreamwise_Periodic_PressureDrop());
     SetHistoryOutputValue("STREAMWISE_HEAT", config->GetStreamwise_Periodic_IntegratedHeatFlow());
@@ -494,9 +494,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Streamwise Periodicty
-  if(streamwise_periodic) {
+  if(streamwisePeriodic) {
     AddVolumeOutput("RECOVERED_PRESSURE", "Recovered_Pressure", "SOLUTION", "Recovered physical pressure");
-    if (heat && streamwise_periodic_temperature)
+    if (heat && streamwisePeriodic_temperature)
       AddVolumeOutput("RECOVERED_TEMPERATURE", "Recovered_Temperature", "SOLUTION", "Recovered physical temperature");
   }
 
@@ -527,15 +527,14 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
-  if(streamwise_periodic)
-    SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));
+
   SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
   if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
   if (heat) {
     SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
-    if (streamwise_periodic && streamwise_periodic_temperature)
+    if (streamwisePeriodic && streamwisePeriodic_temperature)
       SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   }
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
@@ -652,6 +651,14 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
   }
 
+  // Streamwise Periodicty
+  if(streamwisePeriodic) {
+    SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));
+    if (heat && streamwisePeriodic_temperature)
+      SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
+  }
+
+  // MPI-Rank
   SetVolumeOutputValue("RANK", iPoint, rank);
 
 }

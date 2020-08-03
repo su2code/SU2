@@ -125,7 +125,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
   bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
   bool energy         = config->GetEnergy_Equation();
-  bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
+  bool streamwisePeriodic = config->GetKind_Streamwise_Periodic();
 
 
   bool axisymmetric               = config->GetAxisymmetric();
@@ -225,7 +225,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           Vn2        = Vn * Vn;
           Pressure   = solver->GetNodes()->GetPressure(iPoint);
           /*--- Use recovered pressure here as pressure difference between in and outlet is zero otherwise  ---*/
-          if(streamwise_periodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
+          if(streamwisePeriodic) Pressure = solver->GetNodes()->GetStreamwise_Periodic_RecoveredPressure(iPoint);
           SoundSpeed = solver->GetNodes()->GetSoundSpeed(iPoint);
 
           for (iDim = 0; iDim < nDim; iDim++) {

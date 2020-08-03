@@ -7783,12 +7783,10 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
               min_norm = norm;
               for (iDim = 0; iDim < nDim; iDim++)
                 Buffer_Send_RefNode[iDim] = nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim);
-
-            } else if (norm == min_norm) {
-              // TK::write code later
             }
+            /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
           }
-          break; // Actually no more than one streamwise periodic marker pair is allowed, TK::what if combined with spanwise periodicity?
+          break; // Actually no more than one streamwise periodic marker pair is allowed
         } // receiver conditional
       } // periodic conditional
     } // marker loop
@@ -7815,16 +7813,14 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
         min_norm = norm;
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Send_RefNode[iDim] = Buffer_Recv_RefNode[iPoint*nDim + iDim];
-        
-      } else if (norm == min_norm) {
-        // TK::write code later
       }
+      /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
     }
 
     /*--- Store the final reference node. ---*/
     config->SetStreamwise_Periodic_RefNode(Buffer_Send_RefNode);
 
-    /*--- Print the reference node. ---*/
+    /*--- Print the reference node to screen. ---*/
     if (rank == MASTER_NODE) {
       cout << "Streamwise Periodic Reference Node: [";
       for (iDim = 0; iDim < nDim; iDim++)

@@ -774,7 +774,8 @@ void CHeatSolver::BC_Sym_Plane(CGeometry      *geometry,
                                CConfig        *config,
                                unsigned short val_marker) {
 
-  /* In case of a heat solver nothing has to be done for the symmetry BC. */
+  /* In case of a heat solver (scalar transport equation) nothing has to be done (zero residual contribution)
+     for the symmetry BC. */
 
 }
 

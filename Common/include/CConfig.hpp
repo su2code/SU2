@@ -6443,16 +6443,17 @@ public:
   const su2double *GetPeriodicRotAngles(string val_marker) const;
 
   /*!
-   * \brief Translation vector for a translational (TK:: rotational in Toms code) periodic boundary.
+   * \brief Translation vector for a translational periodic boundary.
    */
   const su2double *GetPeriodicTranslation(string val_marker) const;
 
   /*!
-   * \brief Get the translation vector for a periodic transformation.
+   * \brief Get the translation vector for a periodic transformation. In streamwise periodic flow we currently only
+   *        allow for one periodic boundary (pair) and there always acces val_index=0.
    * \param[in] val_index - Index corresponding to the periodic transformation.
    * \return The translation vector.
    */
-  su2double* GetPeriodicTranslation(unsigned short val_index) { return Periodic_Translation[val_index]; }
+  const su2double* GetPeriodicTranslation(unsigned short val_index) { return Periodic_Translation[val_index]; }
   
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.
