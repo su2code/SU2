@@ -686,15 +686,15 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  su2double localUnderRelaxation    =  1.00;
   const su2double allowableRatio    =  0.99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  if (sa_model || sst_model) {
 
-    localUnderRelaxation = 1.0;
-    if (sa_model || sst_model) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      su2double localUnderRelaxation = 1.0;
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
         /* We impose a limit on the maximum percentage that the
@@ -707,18 +707,18 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         }
 
       }
+
+      /* Threshold the relaxation factor in the event that there is
+       a very small value. This helps avoid catastrophic crashes due
+       to non-realizable states by canceling the update. */
+
+      // if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
+
+      /* Store the under-relaxation factor for this point. */
+
+      nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+      
     }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    // if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
   }
 
 }
