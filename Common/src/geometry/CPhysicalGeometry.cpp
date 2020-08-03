@@ -8449,7 +8449,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 
     /*--- Some recommended defaults for the various ParMETIS options. ---*/
 
-    wgtflag = 0;
+    wgtflag = 2;
     numflag = 0;
     ncon    = 1;
     ubvec   = 1.05;
@@ -8470,10 +8470,14 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
       vtxdist[i+1] = (idx_t)pointPartitioner.GetLastIndexOnRank(i);
     }
 
+    vector<idx_t> vwgt(nPoint);
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
+      vwgt[iPoint] = xadj[iPoint+1] - xadj[iPoint];
+
     /*--- Calling ParMETIS ---*/
 
     if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-    ParMETIS_V3_PartKway(vtxdist, xadj, adjacency, NULL, NULL, &wgtflag,
+    ParMETIS_V3_PartKway(vtxdist, xadj, adjacency, vwgt.data(), nullptr, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
