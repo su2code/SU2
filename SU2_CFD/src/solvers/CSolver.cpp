@@ -2456,11 +2456,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     New_Func = 0.0;
     for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-      New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
+      // New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
+      New_Func += solverFlow->GetRes_RMS(iVar);
     }
     if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
       for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-        New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
+        // New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
+        New_Func += solverTurb->GetRes_RMS(iVar);
       }
     }
 
@@ -2493,15 +2495,16 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
       reduceCFL = true;
       NonLinRes_Counter = 0;
-      New_Func = su2double(nVar);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-      }
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-        }
-      }
+      // New_Func = su2double(nVar);
+      // for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      //   solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
+      // }
+      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      //   for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+      //     solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
+      //   }
+      // }
+      
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
     }
