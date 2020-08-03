@@ -143,7 +143,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.021218, -5.268447, 0.807465, 0.060897]
+    rae2822_sa.test_vals = [-2.021224, -5.268445, 0.807582, 0.060731]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -175,7 +175,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.412446, -6.702976, 0.229866, 0.147638]
+    turb_oneram6.test_vals = [-2.388851, -6.689340, 0.230320, 0.157649]
     test_list.append(turb_oneram6)
 
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
@@ -215,7 +215,7 @@ def main():
     propeller_var_load.cfg_dir   = "rans/actuatordisk_variable_load"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.810684, -4.535582, 0.000252, 0.170455]
+    propeller_var_load.test_vals = [-1.808010, -4.535613, 0.000190, 0.172483]
     test_list.append(propeller_var_load)
 
     #################################
@@ -240,7 +240,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.979339, 1.140084, 1.217182, 0.220079]
+    turb_naca0012_1c.test_vals = [-4.979389, 1.140070, 1.211965, 0.194237]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -248,7 +248,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484195, 0.969780, 1.315926, 0.258346]
+    turb_naca0012_2c.test_vals = [-5.484195, 0.969789, 1.310525, 0.231240]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -256,7 +256,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.586959, 0.932347, 1.540973, 0.345562]
+    turb_naca0012_3c.test_vals = [-5.586959, 0.932359, 1.535455, 0.315820]
     test_list.append(turb_naca0012_3c)
 
     # NACA0012 p1c1
