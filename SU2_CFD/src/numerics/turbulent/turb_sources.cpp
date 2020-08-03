@@ -912,6 +912,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    CrossDiff *= 2.0*Density_i*sigma_omega_2*(1.0 - F1_i)/zeta;
    Residual[1] += CrossDiff*Volume;
 
+   if (log10(fabs(CrossDiff*Volume > 3))) cout << "CrossDiff*V= " << CrossDiff*Volume << endl;
+
    /*--- Implicit part ---*/
 
    Jacobian_i[0][0] += -beta_star*TurbVar_i[1]*Volume;
