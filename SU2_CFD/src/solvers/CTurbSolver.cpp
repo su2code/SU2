@@ -367,10 +367,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
   
-  /*--- Compute Jacobian correction for influence from all neighbors ---*/
-  // CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
-  // CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
-  
 }
 
 void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {

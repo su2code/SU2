@@ -7328,9 +7328,6 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         /*--- Jacobian contribution for implicit integration. ---*/
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-          
-          /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
       }//if viscous
     }//if GetDomain
@@ -7642,9 +7639,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
         if (implicit){
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-          
-          /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
         
       }
@@ -9878,9 +9872,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
 
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-          
-          /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
 
       }
@@ -10088,9 +10079,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
 
         if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-          
-          /*--- Compute Jacobian correction for influence from all neighbors ---*/
-          // CorrectJacobian(geometry, solver, config, iPoint, iPoint, Normal, 1.0);
         }
 
       }
