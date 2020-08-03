@@ -1,8 +1,8 @@
 ﻿/*!
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CNEMOEulerSolver class
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.3 "Blackbird"
+ * \author S. R. Copeland, F. Palacios, W. Maier.
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,13 +36,13 @@
  * \brief Main class for defining the NEMO Euler's flow solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 6.1.0
+ * \version 7.0.6 "Blackbird"
  */
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
 protected:
 
   unsigned short
-  nSpecies;	                             /*!< \brief Number of species in the gas mixture. */
+  nSpecies;                              /*!< \brief Number of species in the gas mixture. */
                   
   su2double                  
   Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */

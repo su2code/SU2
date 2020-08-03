@@ -1,8 +1,8 @@
 /*!
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
- * \author C. Garbacz.
- * \version 7.0.5 "Blackbird"
+ * \author C. Garbacz, W. Maier, S. R. Copeland
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 /*!
  * \class CNEMOGas
  * \brief Class for defining the 2T (trans-rotational and vibro-electronic) nonequilibrium gas model.
- * \author:  C. Garbacz.
+ * \author: C. Garbacz, W. Maier, S. R. Copeland
  */
 class CNEMOGas : public CFluidModel {
 

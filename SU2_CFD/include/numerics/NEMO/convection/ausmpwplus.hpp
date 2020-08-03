@@ -1,8 +1,8 @@
 ﻿/*!
  * \file ausmpwplus.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSMPWPLUS.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author F. Palacios, W.Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,9 +33,10 @@
  * \class CUpwAUSM_NEMO
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
- * \author F. Palacios, W.Maier
- * \version 7.0.5 "Blackbird"
+ * \author F. Palacios, W.Maier, C. Garbacz
+ * \version 7.0.6 "Falcon"
  */
+
 class CUpwAUSMPWplus_NEMO : public CNEMONumerics {
 private:
   su2double *FcL, *FcR;

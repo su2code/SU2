@@ -1,8 +1,8 @@
 ﻿/*!
  * \file CUserDefinedTCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
- * \author C. Garbacz, W. Maier.
- * \version 7.0.5 "Blackbird"
+ * \author C. Garbacz, W. Maier, S. R. Copeland
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,6 @@
 CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config){
 
   nDim = val_nDim;
-
-  bool init_err;
   unsigned short maxEl = 0;
   su2double mf = 0;
 
@@ -65,17 +63,14 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
 
   if (String_GasModel == "N2"){
     /*--- Check for errors in the initialization ---*/
-    init_err = false;
     if (nSpecies != 2) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
-      init_err = true;
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
       cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
-      init_err = true;
     }
     
     /*--- Define parameters of the gas model ---*/
@@ -214,17 +209,14 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
  
   } else if (String_GasModel == "AIR-5"){
     /*--- Check for errors in the initialization ---*/
-    init_err = false;
     if (nSpecies != 5) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
-      init_err = true;
     }
     mf = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       mf += MassFrac_Freestream[iSpecies];
     if (mf != 1.0) {
       cout << "CONFIG ERROR: Initial gas mass fractions do not sum to 1!" << endl;
-      init_err = true;
     }
     
     /*--- Define parameters of the gas model ---*/
@@ -601,12 +593,13 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
 
-  su2double thoTve, exptv, thsqr, num, num2, num3, denom, Cvvs, Cves; 
+  su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves; 
+  unsigned short iElectron = nSpecies-1;
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- If requesting electron specific heat ---*/
-    if (ionization && iSpecies == nSpecies-1) {
+    if (ionization && iSpecies == iElectron) {
       Cvvs = 0.0;
       Cves = 3.0/2.0 * Ru/MolarMass[nSpecies-1];
     }
@@ -618,7 +611,6 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
       if (CharVibTemp[iSpecies] != 0.0) {
         thoTve = CharVibTemp[iSpecies]/Tve;
         exptv = exp(CharVibTemp[iSpecies]/Tve);
-        thsqr = CharVibTemp[iSpecies]*CharVibTemp[iSpecies];
         Cvvs  = Ru/MolarMass[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
       } else {
         Cvvs = 0.0;
@@ -706,11 +698,12 @@ vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
 vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
 
   su2double Ev, Eel, Ef, num, denom;
+  unsigned short iElectron = nSpecies-1;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- Electron species energy ---*/
-    if ((ionization) && (iSpecies == nSpecies-1)) {
+    if ( ionization && (iSpecies == iElectron)) {
       /*--- Calculate formation energy ---*/
       Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
   
@@ -746,7 +739,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
-  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, alpha, af, bf, ab, bb, coeff;
+  su2double T_min, epsilon, Thf, Thb, Trxnf, Trxnb, Keq, kf, kb, kfb, fwdRxn, bkwRxn, af, bf, ab, bb;
 
   /*--- Define artificial chemistry parameters ---*/
   // Note: These parameters artificially increase the rate-controlling reaction
@@ -755,7 +748,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
   T_min   = 800.0;
   epsilon = 80;
   /*--- Define preferential dissociation coefficient ---*/
-  alpha = 0.3;
+  //alpha = 0.3;
 
   for( iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     ws[iSpecies] = 0.0;
@@ -879,7 +872,7 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
   // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
-  su2double conc, N, Qtv, taunum, taudenom, mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
+  su2double conc, N, mu, A_sr, B_sr, num, denom, Cs, sig_s, tau_sr, tauP, tauMW, taus, omegaVT, omegaCV;
   vector<su2double> MolarFrac, eve_eq, eve;
 
   MolarFrac.resize(nSpecies,0.0);
@@ -904,9 +897,6 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
   eve    = GetSpeciesEve(Tve);
 
   /*--- Loop over species to calculate source term --*/
-  Qtv      = 0.0;
-  taunum   = 0.0;
-  taudenom = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 
     /*--- Millikan & White relaxation time ---*/
@@ -951,7 +941,6 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
 
-  su2double ef;
   vector<su2double> cvtrs;
 
   cvtrs = GetSpeciesCvTraRot();
@@ -1317,7 +1306,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
-  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax;
+  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax, Tmin, Tmax;
   bool Bconvg;
   unsigned short iIter, maxBIter;
 
@@ -1336,20 +1325,22 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
 
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
-  /*----------Vibrational temperature----------*/
-  //Cgarbacz: probably not necessary, instead just initialise Tve_o,tve2
-  /*--- Set vibrational temperature clipping values ---*/ 
-  Tvemin = 50.0; Tvemax = 8E4;
+  /*--- Set temperature clipping values ---*/
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = Tve_o = 50.0;
+  Tvemax = Tve2 = 8E4;
+
+  /* Determine if the temperature lies within the acceptable range */
+  if      (T < Tmin) T = Tmin;
+  else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
   Btol     = 1.0E-6;    // Tolerance for the Bisection method
   maxBIter = 50;        // Maximum Bisection method iterations
 
+  //Initialize solution
   Tve   = T;
-  //Execute a bisection root-finding method
-  // Assign the bounds
-  Tve_o = Tvemin;
-  Tve2  = Tvemax;
+
   // Execute the root-finding method
   Bconvg = false;
 
@@ -1380,7 +1371,7 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
 
   // Note: Electron energy not included properly.
 
-  su2double RuBAR, CvtrBAR, rhoCvtr, rhoCvve, rho_el, sqvel, conc, ef, num, denom;
+  su2double CvtrBAR, rhoCvtr, rhoCvve, rho_el, sqvel, conc, ef;
 
   if (val_dPdU == NULL) {
     cout << "ERROR: CalcdPdU - Array dPdU not allocated!" << endl;
@@ -1404,7 +1395,6 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   rhoCvve = V[RHOCVVE_INDEX];
 
   /*--- Pre-compute useful quantities ---*/
-  RuBAR   = 0.0;
   CvtrBAR = 0.0;
   sqvel   = 0.0;
   conc    = 0.0;

@@ -1,8 +1,8 @@
 /*!
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
- * \author C. Garbacz.
- * \version 7.0.5 "Blackbird"
+ * \author C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,31 +37,33 @@ CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
 
 }
 
+//CGarbacz returning random things to avoid warnings. This will be properly implemented once NEMO is in develop
+
 CMutationTCLib::~CMutationTCLib(){}
   
 void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){}
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){}
+vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){}
+vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetMixtureEnergies(){}
+vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){}
+vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetNetProductionRates(){}
+vector<su2double>& CMutationTCLib::GetNetProductionRates(){return MassFrac;}
 
-su2double CMutationTCLib::GetEveSourceTerm(){}
+su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){}
+vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){}
+vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){return MassFrac;}
 
-su2double CMutationTCLib::GetViscosity(){}
+su2double CMutationTCLib::GetViscosity(){return 0;}
 
-vector<su2double>& CMutationTCLib::GetThermalConductivities(){}
+vector<su2double>& CMutationTCLib::GetThermalConductivities(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){}
+vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){return MassFrac;}
 
 void CMutationTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
 

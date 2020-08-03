@@ -1,8 +1,8 @@
 /*!
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author F. Palacios, W.Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -104,15 +104,15 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
 
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
 
-  unsigned short iDim, jDim, iVar, jVar, iSpecies;
+  unsigned short iDim, iVar, iSpecies;
   su2double rho_i, rho_j, rhoEve_i, rhoEve_j, P_i, P_j, h_i, h_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j;
+  su2double rhoRi, rhoRj, RuSI, Ru;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
-  su2double fact, gam, dV2L, dV2R;
+  su2double gam;
 
   alpha = 3.0/16.0;
 
@@ -195,8 +195,8 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
 
   /*--- Calculate L/R Mach & Pressure functions ---*/
-  mL	= ProjVel_i/aij;
-  mR	= ProjVel_j/aij;
+  mL  = ProjVel_i/aij;
+  mR  = ProjVel_j/aij;
   if (fabs(mL) <= 1.0) {
     mLP = 0.25*(mL+1.0)*(mL+1.0);
     pLP = P_i*(0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
@@ -269,7 +269,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
 //    //  dHnR[iSpecies] = 0.5*(dPdU_j[iSpecies] /*+ sqVj/rho_j*/);
 //    //}
 //    //for (iDim = 0; iDim < nDim; iDim++) {
-//    //	dV2L = 0.0;
+//    //  dV2L = 0.0;
 //    //  dV2R = 0.0;
 //    //  for (jDim = 0; jDim < nDim; jDim++) {
 //    //    dV2L += 2.0/rho_i*(u_i[jDim]-ProjVel_i*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));

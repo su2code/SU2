@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
                            CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
                                                           config) {
 
-  unsigned short iVar, iSpecies;
+  unsigned short iSpecies;
 
   /*--- Allocate arrays ---*/
   alphak = new int[nSpecies];
@@ -57,7 +57,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
 }
 
 CSource_NEMO::~CSource_NEMO(void) {
-  unsigned short iVar, iSpecies;
+  unsigned short iSpecies;
 
   /*--- Deallocate arrays ---*/
 
@@ -80,7 +80,7 @@ CSource_NEMO::~CSource_NEMO(void) {
 CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) {
 
   /*--- Nonequilibrium chemistry ---*/
-  unsigned short iSpecies, iVar, jVar;
+  unsigned short iSpecies, iVar;
   su2double T, Tve;
   vector<su2double> rhos;
 
@@ -240,9 +240,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
   // Note: Park limiting cross section
-  unsigned short iSpecies, jSpecies, iVar, jVar;
-  unsigned short nEv;
-  su2double  P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N;
+  unsigned short iSpecies, iVar;
+  su2double  T, Tve;
+  su2double res_min = -1E6;
+  su2double res_max = 1E6;
   vector<su2double> rhos;
 
   rhos.resize(nSpecies,0.0);
@@ -284,13 +285,16 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
 //  }
 
+  if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
+  if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
+
   return ResidualType<>(residual, nullptr, nullptr);
 }
 
 CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *config) {
 
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
-  su2double rho, rhou, rhov, rhoEve, vel2, H, yinv;
+  unsigned short iDim, iSpecies, iVar;
+  su2double rho, rhov, vel2, H, yinv;
 
     /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -303,9 +307,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   /*--- Rename for convenience ---*/
   rho    = V_i[RHO_INDEX];
-  rhou   = U_i[nSpecies];
   rhov   = U_i[nSpecies+1];
-  rhoEve = U_i[nSpecies+nDim+1];
   H      = V_i[H_INDEX];
   vel2   = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)

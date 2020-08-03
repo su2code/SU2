@@ -1,8 +1,8 @@
 /*!
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
- * \author C. Garbacz.
- * \version 7.0.5 "Blackbird"
+ * \author C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,7 @@
 /*!
  * \derived class CMutationTCLib
  * \brief Child class for Mutation++ nonequilibrium gas model.
- * \author:  C. Garbacz.
+ * \author:  C. Garbacz
  */
 class CMutationTCLib : public CNEMOGas {
 

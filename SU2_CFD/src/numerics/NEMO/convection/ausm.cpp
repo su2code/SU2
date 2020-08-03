@@ -1,8 +1,8 @@
 /*!
  * \file ausm.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,9 +65,9 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
 
 CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) {
 
-  unsigned short iDim, iVar, jVar, iSpecies;
-  su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, Cvtrs,
-  rho_el_i, rho_el_j, e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+  unsigned short iDim, iVar, iSpecies;
+  su2double rho_i, rho_j, 
+  e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
   /*--- Compute geometric quantities ---*/
   Area = 0;
@@ -99,10 +99,6 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   rho_j     = V_j[RHO_INDEX];
   e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
   e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
-  rhoCvtr_i = V_i[RHOCVTR_INDEX];
-  rhoCvtr_j = V_j[RHOCVTR_INDEX];
-  rhoCvve_i = V_i[RHOCVVE_INDEX];
-  rhoCvve_j = V_j[RHOCVVE_INDEX];
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;

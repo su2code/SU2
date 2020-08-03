@@ -1,8 +1,8 @@
 ﻿/*!
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author S.R. Copeland, W. Maier, C. Garbacz.
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,13 +33,14 @@
  * \class CAvgGrad_NEMO
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
- * \author S. Copeland, W. Maier
- * \version 7.0.5 "Blackbird"
+ * \author S.R. Copeland, W. Maier, C. Garbacz
+ * \version 7.0.6 "falcon"
  */
+
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar;		/*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
+  unsigned short iDim, iVar;    /*!< \brief Iterators in dimension an variable. */
+  su2double *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
   *Mean_U,
   **Mean_GU,
   *Mean_dTdU,
@@ -47,15 +48,15 @@ private:
   *Mean_dPdU,
   *Mean_Eve,
   *Mean_Cvve,
-  *PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
-  **Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
+  *PrimVar_i, *PrimVar_j,       /*!< \brief Primitives variables at point i and 1. */
+  **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
   *Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
   Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
 
-  *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
-  dist_ij;						/*!< \brief Length of the edge and face. */
+  *ProjFlux,  /*!< \brief Projection of the viscous fluxes. */
+  dist_ij;            /*!< \brief Length of the edge and face. */
  
 public:
 
@@ -89,16 +90,16 @@ public:
  * \class CAvgGradCorrected_NEMO
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
- * \author S. Copeland, W. Maier
- * \version 6.1.0 "Falcon"
+ * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \version 7.0.6 "Blackbird"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;		/*!< \brief Iterators in dimension an variable. */
+  unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;    /*!< \brief Iterators in dimension an variable. */
   su2double
-  *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
-  **Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
+  *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
+  *PrimVar_i, *PrimVar_j,       /*!< \brief Primitives variables at point i and 1. */
+  **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
   *Mean_Eve,
   *Mean_Cvve,
   *Edge_Vector,
@@ -108,8 +109,8 @@ private:
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
 
-  *ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
-  dist_ij;						/*!< \brief Length of the edge and face. */
+  *ProjFlux,  /*!< \brief Projection of the viscous fluxes. */
+  dist_ij;            /*!< \brief Length of the edge and face. */
   bool implicit; /*!< \brief Implicit calculus. */
 
   su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */

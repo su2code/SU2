@@ -1,8 +1,8 @@
 /*!
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSEulerSolver class
- * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.3 "Blackbird"
+ * \author S. R. Copeland, F. Palacios, W. Maier.
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -101,10 +101,6 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *confi
   else
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
-  
-  unsigned long iPoint, iVar;
-  unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
-
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = nodes->GetGradient_Primitive();
 
@@ -123,12 +119,9 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
 
-  bool implicit, err;
-  unsigned short iVar, jVar;
+  bool err;
+  unsigned short iVar;
   unsigned long iPoint, jPoint, iEdge;
-
-  /*--- Determine time integration scheme ---*/
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -210,12 +203,14 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  CConfig *config,
                                                  unsigned short val_marker) {
 
+  SU2_MPI::Error("BC_HeatFluxNonCatalytic_Wall needs a slight update.",CURRENT_FUNCTION);
+
   /*--- Local variables ---*/
   bool implicit;
   unsigned short iDim, iVar;
   unsigned short T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, total_index;
-  su2double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
+  su2double dTdn, dTvedn, ktr, kve, pcontrol, Wall_HeatFlux;
   su2double *Normal, Area;
   su2double **GradV;
 
@@ -265,14 +260,13 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
         dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
       }
       ktr = nodes->GetThermalConductivity(iPoint);
-      //      kve = nodes->GetThermalConductivity_ve();
-      //			Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
-      //                                   Wall_HeatFlux*Area;
-      //      Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
-      //                                   Wall_HeatFlux*Area;
-      //
-      //			/*--- Apply viscous residual to the linear system ---*/
-      //      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      kve = nodes->GetThermalConductivity_ve(iPoint);
+      Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
+                                      Wall_HeatFlux*Area;
+      Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
+                                      Wall_HeatFlux*Area;
+      /*--- Apply viscous residual to the linear system ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
       /*--- Apply the no-slip condition in a strong way ---*/
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -300,7 +294,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      unsigned short val_marker) {
 
   string Marker_Tag, Catalytic_Tag;
-  unsigned short iMarker_HeatFlux, iMarker_Catalytic;
+  unsigned short iMarker_Catalytic;
   bool catalytic;
 
   catalytic = false;
@@ -347,7 +341,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   unsigned short T_INDEX, TVE_INDEX, RHOS_INDEX, RHO_INDEX;
   unsigned long iVertex, iPoint, total_index;
   su2double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
-  su2double rho, Ys, eves, hs;
+  su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *V, *dYdn, SdYdn;
   su2double **GradV, **GradY;
@@ -513,7 +507,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                        unsigned short val_marker) {
 
   string Marker_Tag, Catalytic_Tag;
-  unsigned short iMarker_Isothermal, iMarker_Catalytic;
+  unsigned short iMarker_Catalytic;
   bool catalytic;
 
   catalytic = false;
@@ -547,13 +541,11 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    CConfig *config,
                                                    unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
-  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short iDim, iVar;
   unsigned long iVertex, iPoint, jPoint;
-  su2double ktr, kve, Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU, Twall, dij, theta,
+  su2double ktr, kve, Ti, Tvei, Tj, Tvej, Twall, dij, theta,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
 
-  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool ionization = config->GetIonization();
 
   if (ionization) {
@@ -569,13 +561,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
   /*--- Retrieve the specified wall temperature ---*/
   Twall = config->GetIsothermal_Temperature(Marker_Tag);
-
-  /*--- Extract necessary indices ---*/
-  RHOS_INDEX    = nodes->GetRhosIndex();
-  T_INDEX       = nodes->GetTIndex();
-  TVE_INDEX     = nodes->GetTveIndex();
-  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -677,8 +662,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   bool implicit;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, RHOS_INDEX, RHO_INDEX, T_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double pcontrol, rho, *eves, *dTdU, *dTvedU, *Cvtr, *Cvve, *Normal, Area, Ru, RuSI,
-  dij, UnitNormal[3], *Di, *Dj, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
+  su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
+  dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
   const su2double *Yst;
   vector<su2double> hs, Cvtrs, Ms;
 
@@ -686,7 +671,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Set "Proportional control" coefficient ---*/
-  pcontrol = 0.6;
+  //su2double pcontrol = 0.6;
 
   /*--- Get species mass fractions at the wall ---*/
   Yst = config->GetWall_Catalycity();
@@ -737,10 +722,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-
 
       /*--- Initialize the viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++)
@@ -750,7 +731,6 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Vi   = nodes->GetPrimitive(iPoint);
       Vj   = nodes->GetPrimitive(jPoint);
       Di   = nodes->GetDiffusionCoeff(iPoint);
-      Dj   = nodes->GetDiffusionCoeff(jPoint);
       eves = nodes->GetEve(iPoint);
       hs   = FluidModel->GetSpeciesEnthalpy(Vi[T_INDEX], eves);
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)      
@@ -859,12 +839,12 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
                                             unsigned short val_marker) {
 
 
-  unsigned short iDim, jDim, iVar, jVar, iSpecies;
+  unsigned short iDim, jDim, iVar, iSpecies;
   unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve;
-  su2double Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
-  su2double Twall, Tslip, dij, theta;
+  su2double Ti, Tvei, Tj, Tvej;
+  su2double Twall, Tslip, dij;
   su2double Pi;
   su2double Area, *Normal, UnitNormal[3];
   su2double *Coord_i, *Coord_j;
@@ -872,7 +852,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
   su2double TMAC, TAC;
   su2double Viscosity, Lambda;
-  su2double Density, GasConstant, Ru;
+  su2double Density, GasConstant;
 
   su2double **Grad_PrimVar;
   su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
@@ -885,7 +865,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
   vector<su2double> Ms;
   
-  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool ionization = config->GetIonization();
 
   if (ionization) {

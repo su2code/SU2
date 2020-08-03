@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \author C. Garbacz, W. Maier, S.R. Copeland
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -34,8 +34,8 @@
  * \class CNEMOEulerVariable
  * \brief Main class for defining the variables of the NEMO Euler's solver.
  * \ingroup Euler_Equations
- * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 6.2.0
+ * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
+ * \version 7.0.6
  */
 class CNEMOEulerVariable : public CVariable {
 public:
@@ -44,14 +44,14 @@ public:
 protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
-  VectorType Velocity2;		/*!< \brief Square of the velocity vector. */
+  VectorType Velocity2;   /*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   
   /*--- Primitive variable definition ---*/
-  MatrixType Primitive;	              /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
+  MatrixType Primitive;               /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
   MatrixType Primitive_Aux;           /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
   CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (rhos_s, T, Tve, ...). */
   

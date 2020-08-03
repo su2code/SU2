@@ -2,8 +2,8 @@
  * \file NEMO_diffusion.cpp
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
- * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.5 "Blackbird"
+ * \author S.R. Copeland, W. Maier, C. Garbacz
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
