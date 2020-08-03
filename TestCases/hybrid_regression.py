@@ -264,7 +264,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.132080, 1.076459, 1.183320, 0.207012]
+    turb_naca0012_p1c1.test_vals = [-5.132081, 1.076462, 1.178093, 0.181595]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -272,7 +272,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556645, 0.945121, 1.246337, 0.231311]
+    turb_naca0012_p1c2.test_vals = [-5.556648, 0.945129, 1.240986, 0.205071]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -293,7 +293,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.909633, -5.954752, 0.007773, 0.131217]
+    hb_rans_preconditioning.test_vals = [-1.902391, -5.950120, 0.007786, 0.128110]
     hb_rans_preconditioning.new_output = False
     test_list.append(hb_rans_preconditioning)
 
@@ -386,7 +386,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280316, 0.379651, 44.725470, 2.271540]
+    Jones_tc.test_vals = [-5.280316, 0.379651, 72.207590, 1.277638]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -395,7 +395,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.626647, -1.570858, 34.014100, 10.190720]
+    Jones_tc_rst.test_vals = [-4.625330, -1.568896, 33.995140, 10.181610]
     Jones_tc_rst.new_output = False
     test_list.append(Jones_tc_rst)
 
@@ -404,7 +404,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933199, 5.381560, 73.357900, 1.780500]
+    axial_stage2D.test_vals = [-1.933200, 5.379973, 73.357900, 0.925878]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
 
@@ -413,7 +413,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-0.563540, 5.823232, 96.736080, 0.062426]
+    transonic_stator.test_vals = [-0.562430, 5.828446, 96.436050, 0.062506]
     transonic_stator.new_output = False
     test_list.append(transonic_stator)
 
