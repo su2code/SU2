@@ -488,10 +488,6 @@ void CFluidIteration::Iterate(COutput *output,
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
-    // if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == INC_RANS ) && !frozen_visc) {
-    //   solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-    //                                                                  solver[val_iZone][val_iInst], config[val_iZone]);
-    // }
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -509,18 +505,6 @@ void CFluidIteration::Iterate(COutput *output,
     }
 
   }
-  
-    // /*--- Get dependence of objective function on inputs in discrete adjoint ---*/
-  
-    // if (config[val_iZone]->GetDiscrete_Adjoint()) {
-    //   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
-    //                                                                 config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-  
-    //   su2double monitor = 1.0;
-    //   integration[val_iZone][val_iInst][FLOW_SOL]->NonDimensional_Parameters(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst],
-    //                                                                          numerics[val_iZone][val_iInst], config[val_iZone],
-    //                                                                          MESH_0, RUNTIME_FLOW_SYS, &monitor);
-    // }
 
 }
 
