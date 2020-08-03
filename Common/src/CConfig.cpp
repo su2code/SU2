@@ -3213,6 +3213,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == INC_NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
   }
+  if (Kind_Solver == NEMO_NAVIER_STOKES && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NEMO_NAVIER_STOKES", CURRENT_FUNCTION);
+  }
   if (Kind_Solver == RANS && Kind_Turb_Model == NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
   }
@@ -4329,6 +4332,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == NEMO_NAVIER_STOKES     ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
+             ( Kind_Solver == NEMO_RANS              ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
              ( Kind_Solver == FEM_NAVIER_STOKES      ) ||
              ( Kind_Solver == FEM_RANS               ) ||

@@ -1059,7 +1059,6 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
     cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;
 
   solver = new CSolver**[config->GetnMGLevels()+1];
-
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
     solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
   }
@@ -2146,9 +2145,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           if (spalart_allmaras || neg_spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras ) {
-            numerics[iMGlevel][TURB_SOL][conv_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+            numerics[iMGlevel][TURB_SOL][conv_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
           }
-          else if (menter_sst) numerics[iMGlevel][TURB_SOL][conv_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_Turb,
+          else if (menter_sst) numerics[iMGlevel][TURB_SOL][conv_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_NEMO,
                                                                                                  nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
         }
         break;
@@ -2162,41 +2161,41 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras){
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO,
+        numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_NEMO, nPrimVar_NEMO,
                                                                           nPrimVarGrad_NEMO, true, config);
       }
-      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_Turb,nPrimVar_NEMO,
+      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_NEMO,nPrimVar_NEMO,
                                                                                                            nPrimVarGrad_NEMO, true, config);
-      else if (menter_sst) numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO,
+      else if (menter_sst) numerics[iMGlevel][TURB_SOL][visc_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_NEMO,nPrimVar_NEMO, nPrimVarGrad_NEMO,
                                                                                               constants, true, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      if (spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-      else if (e_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_E(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO,config);
-      else if (comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_COMP(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-      else if (e_comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_E_COMP(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-      else if (menter_sst) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSST(nDim, nVar_Turb,nPrimVar_NEMO, nPrimVarGrad_NEMO, constants, kine_Inf, omega_Inf, config);
-      numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
+      if (spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA(nDim, nVar_NEMO,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (e_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_E(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO,config);
+      else if (comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_COMP(nDim, nVar_NEMO,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (e_comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_E_COMP(nDim, nVar_NEMO,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSA_Neg(nDim, nVar_NEMO,nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+      else if (menter_sst) numerics[iMGlevel][TURB_SOL][source_first_term] = new CNEMOSourcePieceWise_TurbSST(nDim, nVar_NEMO,nPrimVar_NEMO, nPrimVarGrad_NEMO, constants, kine_Inf, omega_Inf, config);
+      numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_NEMO, config);
     }
 
     /*--- Definition of the boundary condition method ---*/
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
-        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
       }
       else if (neg_spalart_allmaras) {
-        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSA(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSA_Neg(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, false, config);
       }
       else if (menter_sst) {
-        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
-        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_Turb, nPrimVar_NEMO, nPrimVarGrad_NEMO, constants,  false, config);
+        numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CNEMOUpwSca_TurbSST(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, config);
+        numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CNEMOAvgGrad_TurbSST(nDim, nVar_NEMO, nPrimVar_NEMO, nPrimVarGrad_NEMO, constants,  false, config);
       }
     }
   }

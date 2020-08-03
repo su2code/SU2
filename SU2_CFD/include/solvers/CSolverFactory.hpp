@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
@@ -58,6 +58,7 @@ enum class SUB_SOLVER_TYPE {
   TURB_SA,                 /*!< \brief SA turbulence model solver */
   TURB_SST,                /*!< \brief SST turbulence model solver */
   TURB,                    /*!< \brief Turbulence model solver */
+  NEMO_TURB,               /*!< \brief Turbulence model solver */
   MESH,                    /*!< \brief Mesh solver */
   RADIATION,               /*!< \brief Radiation solver */
   DISC_ADJ_RADIATION,      /*!< \brief Discrete adjoint radiation solver */
@@ -96,9 +97,11 @@ private:
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
+   * \param[in] adjoint       - Boolean indicating whether a nemo solver should be allocated
    * \return                  - A pointer to the allocated turbulent solver
    */
-  static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint);
+  static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry,
+                                   CConfig *config, int iMGLevel, int adjoint, int nemo);
   
   /*!
    * \brief Create a heat solver 

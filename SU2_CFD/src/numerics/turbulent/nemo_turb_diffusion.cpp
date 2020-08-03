@@ -101,6 +101,8 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
   /*--- Mean gradient approximation ---*/
+  cout << "delete me TurbVar_Grad_i....." << TurbVar_Grad_i[0][0] << endl;
+  cout << "delete me nVARAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD   " <<nVar << endl;
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
@@ -2526,7 +2526,6 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
-
   computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, nVar, gradient);
 }

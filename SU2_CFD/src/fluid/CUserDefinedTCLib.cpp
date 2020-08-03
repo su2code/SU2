@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CUserDefinedTCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier.
@@ -34,7 +34,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
 
   bool init_err;
   unsigned short maxEl = 0;
-  su2double mf;
+  su2double mf = 0;
 
   const auto MassFrac_Freestream = config->GetGas_Composition();
 
@@ -55,7 +55,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   RxnConstantTable.resize(6,5) = su2double(0.0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
 
-  if(viscous){ 
+  if(viscous){
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
