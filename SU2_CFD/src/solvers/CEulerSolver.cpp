@@ -5064,16 +5064,17 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
-        /* We impose a limit on the maximum percentage that the
-         turbulence variables can change over a nonlinear iteration. */
+      /* We impose a limit on the maximum percentage that the
+       density and energy can change over a nonlinear iteration. */
 
+      if ((iVar == 0) || (iVar == nVar-1)) {
         const unsigned long index = iPoint * nVar + iVar;
         su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + eps);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
-
       }
+    }
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
