@@ -2385,7 +2385,7 @@ void CSolver::ResetCFLAdapt() {
 
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
-                             CSolver   ***solver,
+                             CSolver   ***solver_container,
                              CConfig   *config) {
 
   /* Adapt the CFL number on all multigrid levels using an
@@ -2402,8 +2402,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Store the mean flow, and turbulence solvers more clearly. */
 
-    CSolver *solverFlow = solver[iMesh][FLOW_SOL];
-    CSolver *solverTurb = solver[iMesh][TURB_SOL];
+    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
+    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -2439,29 +2439,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     unsigned short Res_Count = 100;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
-    /* Store initial RMS residual for all variables. */
-
-    if (config->GetInnerIter() == 0) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-      }
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-        }
-      }
-    }
-
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
     for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-      // New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
       New_Func += solverFlow->GetRes_RMS(iVar);
     }
     if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
       for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-        // New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
         New_Func += solverTurb->GetRes_RMS(iVar);
       }
     }
@@ -2493,28 +2478,17 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      Reset the array so that we delay the next decrease for some iterations. */
 
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-      reduceCFL = true;
       NonLinRes_Counter = 0;
-      // New_Func = su2double(nVar);
-      // for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      //   solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-      // }
-      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      //   for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-      //     solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-      //   }
-      // }
-      
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = New_Func;
     }
 
-    }  /* End SU2_OMP_MASTER, now all threads update the CFL number. */
+    } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
 
-    // if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-    //   reduceCFL = true;
-    // }
+    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+      reduceCFL = true;
+    }
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -2582,7 +2556,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
