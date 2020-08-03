@@ -632,7 +632,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    if (!correct_gradient) dist_ij_2 *= -1.0;
+    if (!correct_gradient) dist_ij_2 = -Volume_i;
     if (dist_ij_2 != 0.0) {
       SetTauJacobian();
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
