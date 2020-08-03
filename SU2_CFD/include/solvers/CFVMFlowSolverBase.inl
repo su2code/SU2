@@ -603,19 +603,12 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
       if ((iVar == 0) || (iVar == nVar - 1)) {
         const unsigned long index = iPoint * nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index]) / (nodes->GetSolution(iPoint, iVar) + EPS);
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
     }
-
-    /* In case of turbulence, take the min of the under-relaxation factor
-     between the mean flow and the turb model. */
-
-    if (config->GetKind_Turb_Model() != NONE)
-      localUnderRelaxation =
-          min(localUnderRelaxation, solver_container[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
@@ -2029,7 +2022,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
-            delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}, TurbViscosity;
   su2double AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
 
@@ -2047,6 +2040,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool energy = config->GetEnergy_Equation();
   bool QCR = config->GetQCR();
   bool axisymmetric = config->GetAxisymmetric();
+  bool roughwall = (config->GetnRoughWall() > 0);
 
   /// TODO: Move these ifs to specialized functions.
 
@@ -2151,6 +2145,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         }
 
         Viscosity = nodes->GetLaminarViscosity(iPoint);
+        if (roughwall) {
+          unsigned short WallType; su2double Roughness_Height;
+          tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+          TurbViscosity = 0.0;
+          if (WallType == ROUGH) TurbViscosity = nodes->GetEddyViscosity(iPoint);
+          Viscosity = nodes->GetLaminarViscosity(iPoint);
+          Viscosity += TurbViscosity;
+        }
         Density = nodes->GetDensity(iPoint);
 
         Area = 0.0;

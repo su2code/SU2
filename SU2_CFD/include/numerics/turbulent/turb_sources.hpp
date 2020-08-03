@@ -49,6 +49,7 @@ protected:
   su2double sigma;
   su2double cb2;
   su2double cw1;
+  su2double cr1;
 
   su2double gamma_BC;
   su2double intermittency;
@@ -60,6 +61,7 @@ private:
 
 protected:
   const bool incompressible = false, rotating_frame = false;
+  bool roughwall = false;
 
 public:
   /*!
