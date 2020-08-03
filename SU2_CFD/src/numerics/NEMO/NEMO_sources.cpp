@@ -242,6 +242,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
   // Note: Park limiting cross section
   unsigned short iSpecies, iVar;
   su2double  T, Tve;
+  su2double res_min = -1000000;
+  su2double res_max = 1000000;
   vector<su2double> rhos;
 
   rhos.resize(nSpecies,0.0);
@@ -282,6 +284,9 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
 //  }
+
+  if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
+  if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
 
   return ResidualType<>(residual, nullptr, nullptr);
 }

@@ -1306,7 +1306,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
-  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax;
+  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax, Tmin, Tmax;
   bool Bconvg;
   unsigned short iIter, maxBIter;
 
@@ -1325,20 +1325,22 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
 
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
-  /*----------Vibrational temperature----------*/
-  //Cgarbacz: probably not necessary, instead just initialise Tve_o,tve2
-  /*--- Set vibrational temperature clipping values ---*/ 
-  Tvemin = 50.0; Tvemax = 8E4;
+  /*--- Set temperature clipping values ---*/
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = Tve_o = 50.0;
+  Tvemax = Tve2 = 8E4;
+
+  /* Determine if the temperature lies within the acceptable range */
+  if      (T < Tmin) T = Tmin;
+  else if (T > Tmax) T = Tmax;
 
   /*--- Set vibrational temperature algorithm parameters ---*/
   Btol     = 1.0E-6;    // Tolerance for the Bisection method
   maxBIter = 50;        // Maximum Bisection method iterations
 
+  //Initialize solution
   Tve   = T;
-  //Execute a bisection root-finding method
-  // Assign the bounds
-  Tve_o = Tvemin;
-  Tve2  = Tvemax;
+
   // Execute the root-finding method
   Bconvg = false;
 
