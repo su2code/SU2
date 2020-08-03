@@ -568,8 +568,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    su2double Delta = (sst) ? su2double(Vol / nodes->GetDelta_Time(iPoint))
-                            : su2double(Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint)));
+    // su2double Delta = (sst) ? su2double(Vol / nodes->GetDelta_Time(iPoint))
+    //                         : su2double(Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint)));
+    su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
