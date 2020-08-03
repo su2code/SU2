@@ -94,7 +94,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
 
-  /*--- Incompressible flow, gradients primitive variables nDim+4+2, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu), //TK:: for periodic turb EddyMu
+  /*--- Incompressible flow, gradients primitive variables nDim+6, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu).
         We need P, and rho for running the adjoint problem ---*/
 
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
