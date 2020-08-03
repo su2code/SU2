@@ -275,6 +275,11 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     numerics->SetF1blending(nodes->GetF1blending(iPoint),
                             nodes->GetF1blending(jPoint));
 
+  /*--- Roughness heights. ---*/
+    if (config->GetKind_Turb_Model() == SA)
+      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint),
+                             geometry->nodes->GetRoughnessHeight(jPoint));
+
   /*--- Compute residual, and Jacobians ---*/
 
   auto residual = numerics->ComputeResidual(config);
