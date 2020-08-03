@@ -1934,7 +1934,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 //  const su2double zeta = min(1./omega,a1/(VorticityMag*F1));
   
   const su2double lim = 1.0;
-  const su2double zeta = 1./omega;
+  const su2double zeta = 1./(omega+eps);
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
@@ -1973,14 +1973,14 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   TmpWeights[nVarFlo+0] += zeta*factor;
   TmpWeights[nVarFlo+1] += -lim*k/pow(omega,2.)*factor;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2*zeta*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2*zeta*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] += -k*TmpWeights[nVarFlo+0] - omega*TmpWeights[nVarFlo+1]
-                 + lim*k/omega*factor;
+                 + lim*k*zeta*factor;
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[1][iVar] += TmpWeights[iVar];
