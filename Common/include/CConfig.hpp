@@ -9389,7 +9389,7 @@ public:
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
    */
-  su2double GetParMETIS_Tolerance() const { return ParMETIS_tolerance; }
+  passivedouble GetParMETIS_Tolerance() const { return SU2_TYPE::GetValue(ParMETIS_tolerance); }
 
   /*!
    * \brief Get the ParMETIS load balancing weight for points.
