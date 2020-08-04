@@ -33,7 +33,6 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        const CConfig* config,
                        bool val_muscl) :
   CNumerics(val_nDim, val_nVar, config),
-  implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
@@ -136,10 +135,8 @@ void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
   Flux[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
 
-  if (implicit) {
-    Jacobian_i[0][0] = a0;
-    Jacobian_j[0][0] = a1;
-  }
+  Jacobian_i[0][0] = a0;
+  Jacobian_j[0][0] = a1;
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
@@ -158,11 +155,9 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
   Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
 
-  if (implicit) {
-    Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
-    Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
+  Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;
 
-    Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
-    Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
-  }
+  Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;
+  Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;
 }
