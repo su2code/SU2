@@ -490,10 +490,10 @@ void CFluidIteration::Iterate(COutput *output,
   if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!config[val_iZone]->GetDiscrete_Adjoint())) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
+                                                                   solver[val_iZone][val_iInst], config[val_iZone], RUNTIME_FLOW_SYS);
     if (turb)
       solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                     solver[val_iZone][val_iInst], config[val_iZone]);
+                                                                     solver[val_iZone][val_iInst], config[val_iZone], RUNTIME_TURB_SYS);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
@@ -1065,12 +1065,12 @@ void CFEMFluidIteration::Iterate(COutput *output,
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
 
   integration[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry,
-                                                                              solver,
-                                                                              numerics,
-                                                                              config,
-                                                                              RUNTIME_FLOW_SYS,
-                                                                              val_iZone,
-                                                                              val_iInst);
+                                                                    solver,
+                                                                    numerics,
+                                                                    config,
+                                                                    RUNTIME_FLOW_SYS,
+                                                                    val_iZone,
+                                                                    val_iInst);
 }
 
 void CFEMFluidIteration::Update(COutput *output,

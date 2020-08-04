@@ -2386,7 +2386,8 @@ void CSolver::ResetCFLAdapt() {
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
-                             CConfig   *config) {
+                             CConfig   *config,
+                             unsigned short RunTime_EqSystem) {
 
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
@@ -2395,9 +2396,17 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
-  const su2double CFLMax            = (SolverName ==  "C.FLOW") ? config->GetCFL_AdaptParam(3)
-                                                                : config->GetCFL_AdaptParam(3)*config->GetCFLMaxRedCoeff_Turb();
+  const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
+
+  su2double CFLMaxRed = 1.0;
+  switch(RunTime_EqSystem) {
+    case RUNTIME_TURB_SYS:
+      CFLMaxRed = config->GetCFLMaxRedCoeff_Turb();
+      break;
+    default:
+      break;
+  }
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
@@ -2555,8 +2564,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if (CFL*CFLFactor <= CFLMin) {
         CFL       = CFLMin;
         CFLFactor = MGFactor[iMesh];
-      } else if (CFL*CFLFactor >= CFLMax) {
-        CFL       = CFLMax;
+      } else if (CFL*CFLFactor >= CFLMax*CFLMaxRed) {
+        CFL       = CFLMax*CFLMaxRed;
         CFLFactor = MGFactor[iMesh];
       }
 

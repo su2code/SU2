@@ -1707,7 +1707,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - Container vector with all the solutions.
    */
-  void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
+  void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned short RunTime_EqSystem);
 
   /*!
    * \brief Reset the local CFL adaption variables
