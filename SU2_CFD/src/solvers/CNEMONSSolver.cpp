@@ -331,7 +331,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned short val_marker) {
 
-  SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational", CURRENT_FUNCTION);
+  SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
   /*--- Local variables ---*/
   bool implicit, catalytic;
@@ -649,7 +649,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CConfig *config,
                                                 unsigned short val_marker) {
 
-  SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational", CURRENT_FUNCTION);
+  SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
   BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
