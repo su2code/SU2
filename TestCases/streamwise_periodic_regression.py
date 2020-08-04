@@ -111,27 +111,42 @@ def main():
     ## Streamwise Periodic adjoint ###
     ##################################
 
+    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
+    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
+    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
+    unsteady_naca0012.test_iter = 14
+    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
+    unsteady_naca0012.timeout   = 1600
+    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
+    unsteady_naca0012.test_file = "of_grad_cd.csv"
+    unsteady_naca0012.unsteady  = True
+    pass_list.append(unsteady_naca0012.run_filediff())
+    test_list.append(unsteady_naca0012)
+
     # 2D DA case single zone pressure drop
-    sp_da_pinArray_2d_dp_hf_tp           = TestCase('sp_pinArray_2d_dp_hf_tp')
-    sp_da_pinArray_2d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pinArray_pinArray_2d_dp_hf_tp"
-    sp_da_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
-    sp_da_pinArray_2d_dp_hf_tp.test_iter = 10
-    sp_da_pinArray_2d_dp_hf_tp.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
-    sp_da_pinArray_2d_dp_hf_tp.su2_exec  = "parallel_computation.py -f"
-    sp_da_pinArray_2d_dp_hf_tp.timeout   = 1600
-    sp_da_pinArray_2d_dp_hf_tp.tol       = 0.00001
-    test_list.append(sp_pinArray_2d_dp_hf_tp)
+    da_sp_pinArray_cht_2d_dp_hf           = TestCase('da_sp_pinArray_cht_2d_dp_hf')
+    da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
+    da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.742760, -4.002109, -3.800011, -4.002109] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
+    da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
+    da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
+    da_sp_pinArray_cht_2d_dp_hf.multizone = True
+    test_list.append(da_sp_pinArray_cht_2d_dp_hf)
     
     # 2D DA case cht pressure drop, heat obj function
-    sp_da_pinArray_cht_2d_mf_hf           = TestCase('sp_pinArray_cht_2d_mf_hf')
-    sp_da_pinArray_cht_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/sp_pinArray_cht_2d_mf_hf"
-    sp_da_pinArray_cht_2d_mf_hf.cfg_file  = "sp_pinArray_cht_2d_mf_hf.cfg"
-    sp_da_pinArray_cht_2d_mf_hf.test_iter = 10
-    sp_da_pinArray_cht_2d_mf_hf.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
-    sp_da_pinArray_cht_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
-    sp_da_pinArray_cht_2d_mf_hf.timeout   = 1600
-    sp_da_pinArray_cht_2d_mf_hf.tol       = 0.00001
-    test_list.append(sp_pinArray_cht_2d_mf_hf)
+    fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/sp_pinArray_cht_2d_mf_hf"
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_file       = "FD_configMaster.cfg"
+    fd_sp_pinArray_cht_2d_dp_hf.test_iter      = 100
+    fd_sp_pinArray_cht_2d_dp_hf.su2_exec       = "finite_differences.py -z 2 -n 2 -f"
+    fd_sp_pinArray_cht_2d_dp_hf.timeout        = 1600
+    fd_sp_pinArray_cht_2d_dp_hf.reference_file = "of_grad_findiff.csv.ref"
+    fd_sp_pinArray_cht_2d_dp_hf.test_file      = "FINDIFF/of_grad_findiff.csv"
+    fd_sp_pinArray_cht_2d_dp_hf.multizone      = True
+    pass_list.append(fd_sp_pinArray_cht_2d_dp_hf.run_filediff())
+    test_list.append(fd_sp_pinArray_cht_2d_dp_hf)
 
     pass_list = [ test.run_test() for test in test_list ]
 
