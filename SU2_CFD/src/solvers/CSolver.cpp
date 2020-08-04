@@ -2513,7 +2513,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Get the current local flow CFL number at this point. */
 
       // su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
-      su2double CFL = nodes->GetLocalCFL(iPoint);
+      su2double CFL = base_nodes->GetLocalCFL(iPoint);
 
       /* Get the current under-relaxation parameters that were computed
        during the previous nonlinear update. If we have a turbulence model,
@@ -2525,7 +2525,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
       //   underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
       // const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
-      const su2double underRelaxation = nodes->GetUnderRelaxation(iPoint);
+      const su2double underRelaxation = base_nodes->GetUnderRelaxation(iPoint);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -2566,7 +2566,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
       //   solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
       // }
-      nodes->SetLocalCFL(iPoint, CFL);
+      base_nodes->SetLocalCFL(iPoint, CFL);
 
       /* Store min and max CFL for reporting on the fine grid. */
 
