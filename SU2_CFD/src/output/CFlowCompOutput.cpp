@@ -245,6 +245,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
   AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
 
+  AddHistoryOutput("MIN_CFL_TURB", "Min CFL Turb", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local turbulent CFL numbers");
+  AddHistoryOutput("MAX_CFL_TURB", "Max CFL Turb", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local turbulent CFL numbers");
+  AddHistoryOutput("AVG_CFL_TURB", "Avg CFL Turb", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local turbulent CFL numbers");
+
   ///   /// BEGIN_GROUP: FIXED_CL, DESCRIPTION: Relevant outputs for the Fixed CL mode
 
   if (config->GetFixed_CL_Mode()){
@@ -700,6 +704,12 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("MIN_CFL", flow_solver->GetMin_CFL_Local());
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
+
+  if (turb_model != NONE) {
+    SetHistoryOutputValue("MIN_CFL_TURB", turb_solver->GetMin_CFL_Local());
+    SetHistoryOutputValue("MAX_CFL_TURB", turb_solver->GetMax_CFL_Local());
+    SetHistoryOutputValue("AVG_CFL_TURB", turb_solver->GetAvg_CFL_Local());
+  }
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));

@@ -252,6 +252,11 @@ def amg ( config , kind='' ):
                 cfl = max(cfl, float(config.CFL_NUMBER))
                 su2amg.set_cfl(config_cfd_ad, cfl)
 
+                if (KIND_TURB_MODEL != NONE):
+                    cfl_turb = su2amg.get_min_cfl_turb(history_format)
+                    cfl_red  = cfl_turb/cfl
+                    config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
+
                 SU2_CFD(config_cfd_ad)
 
                 func_name      = config.OBJECTIVE_FUNCTION
@@ -532,6 +537,11 @@ def amg ( config , kind='' ):
                     cfl = su2amg.get_min_cfl(history_format)
                     cfl = max(cfl, adap_flow_cfl[iSiz])
                     su2amg.set_cfl(config_cfd_ad, cfl)
+
+                    if (KIND_TURB_MODEL != NONE):
+                        cfl_turb = su2amg.get_min_cfl_turb(history_format)
+                        cfl_red  = cfl_turb/cfl
+                        config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
 
                     SU2_CFD(config_cfd_ad)
 

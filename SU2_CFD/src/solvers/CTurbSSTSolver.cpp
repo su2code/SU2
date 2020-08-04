@@ -233,7 +233,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
-  const su2double CFL = min(config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb(), config->GetCFL_AdaptParam(3)*config->GetCFLMaxRedCoeff_Turb());
+  const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nodes->SetLocalCFL(iPoint, CFL);
   }
