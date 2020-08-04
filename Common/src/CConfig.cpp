@@ -2668,8 +2668,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
 
-  /* DESCRIPTION: Activate ParMETIS mode for testing */
-  addBoolOption("PARMETIS", ParMETIS, false);
+  /* DESCRIPTION: ParMETIS load balancing tolerance */
+  addDoubleOption("PARMETIS_TOLERANCE", ParMETIS_tolerance, 0.05);
+
+  /* DESCRIPTION: ParMETIS load balancing weight for points */
+  addUnsignedShortOption("PARMETIS_POINT_WEIGHT", ParMETIS_pointWgt, 1);
+
+  /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
+  addUnsignedShortOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 0);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/

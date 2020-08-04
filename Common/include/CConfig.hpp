@@ -996,7 +996,9 @@ private:
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   unsigned long Nonphys_Points,     /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
-  bool ParMETIS;                    /*!< \brief Boolean for activating ParMETIS mode (while testing). */
+  su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
+  unsigned short ParMETIS_pointWgt; /*!< \brief Load balancing weight given to points. */
+  unsigned short ParMETIS_edgeWgt;  /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                  /*!< \brief AD-based discrete adjoint mode. */
   FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
@@ -9383,6 +9385,21 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Get the ParMETIS load balancing tolerance.
+   */
+  su2double GetParMETIS_Tolerance() const { return ParMETIS_tolerance; }
+
+  /*!
+   * \brief Get the ParMETIS load balancing weight for points.
+   */
+  unsigned short GetParMETIS_PointWeight() const { return ParMETIS_pointWgt; }
+
+  /*!
+   * \brief Get the ParMETIS load balancing weight for edges
+   */
+  unsigned short GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.
