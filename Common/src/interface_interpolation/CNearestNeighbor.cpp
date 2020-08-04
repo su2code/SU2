@@ -40,8 +40,10 @@ struct DonorInfo {
   DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) : dist(d), pidx(i), proc(p) { }
 };
 
-CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,  unsigned int iZone,
-                                   unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
+                                   const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
+                                   unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
   SetTransferCoeff(config);
 }
 

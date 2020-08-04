@@ -45,8 +45,10 @@ extern "C" void dgemm_(const char*, const char*, const int*, const int*, const i
 #endif
 
 
-CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
+                                           const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
+                                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
   SetTransferCoeff(config);
 }
 

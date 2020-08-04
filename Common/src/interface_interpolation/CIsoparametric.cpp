@@ -46,8 +46,10 @@ struct DonorInfo {
   bool operator< (const DonorInfo& other) const { return distance < other.distance; }
 };
 
-CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                               unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config,
+                               const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
+                               unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
   SetTransferCoeff(config);
 }
 

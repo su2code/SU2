@@ -31,8 +31,10 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
 
-CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config,
+                           const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
+                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -594,7 +596,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                   tmpVect[jj] = ToVisit[jj];
                 tmpVect[nToVisit] = donor_iPoint;
 
-                
+
                   delete [] ToVisit;
 
                 ToVisit = tmpVect;
@@ -639,9 +641,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
                 tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                delete [] Donor_Vect; 
-                delete [] Coeff_Vect; 
-                delete [] storeProc;  
+                delete [] Donor_Vect;
+                delete [] Coeff_Vect;
+                delete [] storeProc;
 
                 Donor_Vect = tmp_Donor_Vect;
                 Coeff_Vect = tmp_Coeff_Vect;
@@ -670,7 +672,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for( jj = 0; jj < nToVisit; jj++ )
             tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
-          
+
           delete [] alreadyVisitedDonor;
 
           alreadyVisitedDonor = tmpVect;

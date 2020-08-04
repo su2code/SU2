@@ -25,6 +25,8 @@
  */
 #pragma once
 
+#include <memory>
+
 class CConfig;
 class CGeometry;
 class CInterpolator;
@@ -39,6 +41,7 @@ namespace CInterpolatorFactory {
  * \brief The factory method.
  * \param[in] geometry_container - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
+ * \param[in] interp_container - Container of all interpolators.
  * \param[in] iZone - Index of the donor zone.
  * \param[in] jZone - Index of the target zone.
  * \param[in] verbose - If true, print information to screen.
@@ -46,6 +49,7 @@ namespace CInterpolatorFactory {
  */
 CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
+                                  const vector<vector<std::unique_ptr<CInterpolator> > >& interp_container,
                                   unsigned iZone, unsigned jZone,
                                   bool verbose = true);
 

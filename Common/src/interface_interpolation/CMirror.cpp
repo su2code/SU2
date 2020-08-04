@@ -31,8 +31,10 @@
 #include "../../include/toolboxes/printing_toolbox.hpp"
 
 
-CMirror::CMirror(CGeometry ****geometry_container, const CConfig* const* config,  unsigned int iZone,
-                 unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CMirror::CMirror(CGeometry ****geometry_container, const CConfig* const* config,
+                 const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
+                 unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
   using PrintingToolbox::to_string;
   if (jZone < iZone) {
     SU2_MPI::Error(string("The order of the zones does not allow conservative interpolation to be setup.\n"

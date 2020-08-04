@@ -31,6 +31,7 @@
 
 
 CInterpolator::CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
+                             const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
                              unsigned int iZone, unsigned int jZone) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
@@ -38,7 +39,8 @@ CInterpolator::CInterpolator(CGeometry ****geometry_container, const CConfig* co
   targetZone(jZone),
   Geometry(geometry_container),
   donor_geometry(geometry_container[iZone][INST_0][MESH_0]),
-  target_geometry(geometry_container[jZone][INST_0][MESH_0]) {
+  target_geometry(geometry_container[jZone][INST_0][MESH_0]),
+  interpolators(interpolator) {
 }
 
 bool CInterpolator::CheckInterfaceBoundary(int markDonor, int markTarget) {

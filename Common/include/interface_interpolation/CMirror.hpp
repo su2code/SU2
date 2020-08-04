@@ -39,10 +39,13 @@ public:
    * \note Data is set in geometry[targetZone].
    * \param[in] geometry_container
    * \param[in] config - config container
+   * \param[in] interpolator - Container of all interpolators
    * \param[in] iZone - First zone
    * \param[in] jZone - Second zone
    */
-  CMirror(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CMirror(CGeometry ****geometry_container, const CConfig* const* config,
+          const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
+          unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
