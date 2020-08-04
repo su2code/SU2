@@ -2449,7 +2449,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     Old_Func = New_Func;
-    unsigned short Res_Count = 100;
+    unsigned short Res_Count = 3;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
     if (config->GetInnerIter() == 0)
