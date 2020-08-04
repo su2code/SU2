@@ -575,7 +575,6 @@ private:
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;       /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
-  bool CellReynolds_EntropyFix;         /*!< \brief Cell Reynolds number based entropy fix. */
   unsigned short AdjTurb_Linear_Iter;   /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double *Stations_Bounds;           /*!< \brief Airfoil section limit. */
   unsigned short nLocationStations,     /*!< \brief Number of section cuts to make when outputting mesh and cp . */
@@ -4099,12 +4098,6 @@ public:
    * \return Vaule of the entropy fix.
    */
   su2double GetEntropyFix_Coeff(void) const { return EntropyFix_Coeff; }
-
-  /*!
-   * \brief Get whether to use cell Reynolds based entropy fix.
-   * \return <code>TRUE</code> means that cell Reynolds formulation is used.
-   */
-  bool GetCellReynolds_EntropyFix(void) const { return CellReynolds_EntropyFix; }
 
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.

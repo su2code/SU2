@@ -1697,8 +1697,6 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
   /* DESCRIPTION: Entropy fix factor */
   addDoubleOption("ENTROPY_FIX_COEFF", EntropyFix_Coeff, 0.001);
-  /* DESCRIPTION: Entropy fix factor */
-  addBoolOption("CELL_REYNOLDS_ENTROPY_FIX", CellReynolds_EntropyFix, false);
   /* DESCRIPTION: Linear solver for the discete adjoint systems */
   addEnumOption("DISCADJ_LIN_SOLVER", Kind_DiscAdj_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */

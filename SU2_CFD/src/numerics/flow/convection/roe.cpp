@@ -195,10 +195,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
-  if (config->GetCellReynolds_EntropyFix() && config->GetViscous()) {
-    AD::SetPreaccIn(Volume_i); AD::SetPreaccIn(Volume_j);
-    AD::SetPreaccIn(Laminar_Viscosity_i); AD::SetPreaccIn(Laminar_Viscosity_j);
-  }
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
@@ -286,30 +282,11 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
-  const su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
 
-  if (config->GetCellReynolds_EntropyFix()) {
-    /*--- Eigenvalue limiting based on cell Reynolds ---*/
-    su2double Psi = 1.0;
-    if (config->GetViscous()) {
-      const su2double Length = (Volume_i + Volume_j)/(2.0*Area);
-      const su2double Viscosity = 0.5*(Laminar_Viscosity_i+Laminar_Viscosity_j);
-      const su2double Re = RoeDensity*MaxLambda*Length/Viscosity;
-      Psi = min(1.0, exp(1.0-100/Re));
-    }
-    const su2double LambdaRef = config->GetEntropyFix_Coeff()*Psi*MaxLambda;
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      Lambda[iVar] = (fabs(Lambda[iVar]) < 2.0*LambdaRef)
-                   ? su2double(pow(Lambda[iVar],2.0)/(4.0*LambdaRef) + LambdaRef)
-                   : su2double(fabs(Lambda[iVar]));
-  }
-
-  else {
-    /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      Lambda[iVar] = max(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
-  }
+  /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    Lambda[iVar] = max(fabs(Lambda[iVar]), MaxLambda);
 
   /*--- Reconstruct conservative variables ---*/
 
