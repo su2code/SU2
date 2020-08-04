@@ -649,7 +649,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
          turbulence variables can change over a nonlinear iteration. */
 
         const unsigned long index = iPoint * nVar + iVar;
-        const su2double allowableDecreas = -allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
+        const su2double allowableDecrease = -allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         if (LinSysSol[index] < allowableDecrease)
           localUnderRelaxation = min(allowableDecrease/(LinSysSol[index]-eps), localUnderRelaxation);
 
