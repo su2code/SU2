@@ -53,6 +53,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CIdealGas.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
+  ../src/fluid/CNEMOGas.cpp \
+  ../src/fluid/CUserDefinedTCLib.cpp \
+  ../src/fluid/CMutationTCLib.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
@@ -90,6 +93,15 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/flow/convection/centered.cpp \
   ../src/numerics/flow/flow_diffusion.cpp \
   ../src/numerics/flow/flow_sources.cpp \
+  ../src/numerics/NEMO/convection/roe.cpp \
+  ../src/numerics/NEMO/convection/ausm.cpp \
+  ../src/numerics/NEMO/convection/ausmplusup2.cpp \
+  ../src/numerics/NEMO/convection/ausmpwplus.cpp \
+  ../src/numerics/NEMO/convection/lax.cpp \
+  ../src/numerics/NEMO/convection/msw.cpp \
+  ../src/numerics/NEMO/CNEMONumerics.cpp \
+  ../src/numerics/NEMO/NEMO_diffusion.cpp \
+  ../src/numerics/NEMO/NEMO_sources.cpp \
   ../src/numerics/continuous_adjoint/adj_convection.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
