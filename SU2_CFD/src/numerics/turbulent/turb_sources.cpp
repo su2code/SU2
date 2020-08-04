@@ -805,14 +805,12 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     AD::SetPreaccIn(V_i, nDim+6);
 
     Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];
     Eddy_Viscosity_i = V_i[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);
 
     Density_i = V_i[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];
   }
 
