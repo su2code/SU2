@@ -131,7 +131,7 @@ def main():
     
     # 2D DA case cht pressure drop, heat obj function
     fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
-    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/sp_pinArray_cht_2d_mf_hf"
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     fd_sp_pinArray_cht_2d_dp_hf.cfg_file       = "FD_configMaster.cfg"
     fd_sp_pinArray_cht_2d_dp_hf.test_iter      = 100
     fd_sp_pinArray_cht_2d_dp_hf.su2_exec       = "finite_differences.py -z 2 -n 2 -f"
