@@ -2398,6 +2398,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
+  const unsigned short Res_Count    = 100;
 
   su2double CFLMaxRed = 1.0;
   switch(RunTime_EqSystem) {
@@ -2449,7 +2450,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     Old_Func = New_Func;
-    unsigned short Res_Count = 100;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
     if (config->GetInnerIter() == 0)
