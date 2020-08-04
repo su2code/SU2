@@ -76,12 +76,6 @@ protected:
    */
   virtual void FinishResidualCalc(const CConfig* config) = 0;
 
-  /*!
-   * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void CorrectJacobian(const CConfig *config) { }
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -128,12 +122,6 @@ private:
    */
   void FinishResidualCalc(const CConfig* config) override;
 
-  /*!
-   * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void CorrectJacobian(const CConfig *config) { }
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -167,12 +155,6 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override;
-
-  /*!
-   * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline void CorrectJacobian(const CConfig *config) { }
 
 public:
   /*!
@@ -214,12 +196,6 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override;
-
-  /*!
-   * \brief Model-specific steps to include gradient terms in Jacobian
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CorrectJacobian(const CConfig *config) override;
 
 public:
   /*!
