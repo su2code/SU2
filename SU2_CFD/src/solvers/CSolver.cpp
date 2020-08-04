@@ -32,6 +32,7 @@
 #include "../../include/limiters/computeLimiters.hpp"
 #include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
+#include "../../../Common/include/toolboxes/MMS/CInviscidShockVortexSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CMMSIncNSSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CMMSNSTwoHalfCirclesSolution.hpp"
@@ -4725,6 +4726,8 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = NULL; break;
     case INVISCID_VORTEX:
       VerificationSolution = new CInviscidVortexSolution(nDim, nVar, MGLevel, config); break;
+    case SHOCK_VORTEX:
+      VerificationSolution = new CInviscidShockVortexSolution(nDim, nVar, MGLevel, config); break;
     case RINGLEB:
       VerificationSolution = new CRinglebSolution(nDim, nVar, MGLevel, config); break;
     case NS_UNIT_QUAD:
