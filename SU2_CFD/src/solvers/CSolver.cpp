@@ -2450,7 +2450,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     Old_Func = New_Func;
-    if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,1.0);
+    if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
     if (config->GetInnerIter() == 0)
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -2558,9 +2558,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        } else {
          CFLFactor = CFLFactorIncrease;
        }
-      const unsigned short k = NonLinRes_Counter, km1 = (NonLinRes_Counter-1)%Res_Count;
-      const su2double ratio = (NonLinRes_Series[km1]-NonLinRes_Series[k])/NonLinRes_Series[km1];
-      CFLFactor *= pow(CFLFactorIncrease, ratio);
 
       /* Check if we are hitting the min or max and adjust. */
 
