@@ -2402,8 +2402,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Store the mean flow, and turbulence solvers more clearly. */
 
-    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
-    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+    // CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
+    // CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -2418,14 +2418,17 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     bool reduceCFL = false;
-    su2double linResFlow = solverFlow->GetResLinSolver();
-    su2double linResTurb = -1.0;
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      linResTurb = solverTurb->GetResLinSolver();
-    }
+    // su2double linResFlow = solverFlow->GetResLinSolver();
+    // su2double linResTurb = -1.0;
+    // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+    //   linResTurb = solverTurb->GetResLinSolver();
+    // }
 
-    su2double maxLinResid = max(linResFlow, linResTurb);
-    if (maxLinResid > 0.5) {
+    // su2double maxLinResid = max(linResFlow, linResTurb);
+    // if (maxLinResid > 0.5) {
+    //   reduceCFL = true;
+    // }
+    if (ResLinSolver > 0.5) {
       reduceCFL = true;
     }
 
@@ -2442,13 +2445,16 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
-    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-      New_Func += solverFlow->GetRes_RMS(iVar);
-    }
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-        New_Func += solverTurb->GetRes_RMS(iVar);
-      }
+    // for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+    //   New_Func += solverFlow->GetRes_RMS(iVar);
+    // }
+    // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+    //   for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+    //     New_Func += solverTurb->GetRes_RMS(iVar);
+    //   }
+    // }
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      New_Func += Res_RMS[iVar];
     }
 
     /* Compute the difference in the nonlinear residuals between the
@@ -2513,11 +2519,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        take the minimum under-relaxation parameter between the mean flow
        and turbulence systems. */
 
-      su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
-      su2double underRelaxationTurb = 1.0;
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+      // su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
+      // su2double underRelaxationTurb = 1.0;
+      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      //   underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+      // const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+      const su2double underRelaxation = nodes->GetUnderRelaxation(iPoint);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -2554,10 +2561,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Apply the adjustment to the CFL and store local values. */
 
       CFL *= CFLFactor;
-      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
-      }
+      // solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      //   solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
+      // }
+      nodes->SetLocalCFL(iPoint, CFL);
 
       /* Store min and max CFL for reporting on the fine grid. */
 

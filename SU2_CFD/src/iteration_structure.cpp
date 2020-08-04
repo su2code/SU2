@@ -413,6 +413,13 @@ void CFluidIteration::Iterate(COutput *output,
                      (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   TimeIter = config[val_iZone]->GetTimeIter();
 
+  bool turb = (config[val_iZone]->GetKind_Solver() == RANS ||
+               config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
+               config[val_iZone]->GetKind_Solver() == INC_RANS ||
+               config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS ) && !frozen_visc;
+  bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
+  bool rads = config[val_iZone]->AddRadiation();
+
   /* --- Setcting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
 
@@ -447,10 +454,7 @@ void CFluidIteration::Iterate(COutput *output,
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics,
                                                                   config, RUNTIME_FLOW_SYS, val_iZone, val_iInst);
 
-  if ((config[val_iZone]->GetKind_Solver() == RANS ||
-       config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
-       config[val_iZone]->GetKind_Solver() == INC_RANS ||
-       config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS ) && !frozen_visc) {
+  if (turb) {
 
     /*--- Solve the turbulence model ---*/
 
@@ -468,14 +472,14 @@ void CFluidIteration::Iterate(COutput *output,
 
   }
 
-  if (config[val_iZone]->GetWeakly_Coupled_Heat()){
+  if (heat){
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics,
                                                                      config, RUNTIME_HEAT_SYS, val_iZone, val_iInst);
   }
 
   /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
-  if (config[val_iZone]->AddRadiation()){
+  if (rads){
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS);
     integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
@@ -487,6 +491,9 @@ void CFluidIteration::Iterate(COutput *output,
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
+    if (turb)
+      solver[val_iZone][val_iInst][MESH_0][TURB_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                     solver[val_iZone][val_iInst], config[val_iZone]);
   }
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
