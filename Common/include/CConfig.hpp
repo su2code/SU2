@@ -997,8 +997,8 @@ private:
   unsigned long Nonphys_Points,     /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
-  unsigned short ParMETIS_pointWgt; /*!< \brief Load balancing weight given to points. */
-  unsigned short ParMETIS_edgeWgt;  /*!< \brief Load balancing weight given to edges. */
+  long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
+  long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                  /*!< \brief AD-based discrete adjoint mode. */
   FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
@@ -9394,12 +9394,12 @@ public:
   /*!
    * \brief Get the ParMETIS load balancing weight for points.
    */
-  unsigned short GetParMETIS_PointWeight() const { return ParMETIS_pointWgt; }
+  long GetParMETIS_PointWeight() const { return ParMETIS_pointWgt; }
 
   /*!
    * \brief Get the ParMETIS load balancing weight for edges
    */
-  unsigned short GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
+  long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.
