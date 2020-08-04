@@ -2395,7 +2395,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
-  const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+  const su2double CFLMax            = (SolverName ==  "C.FLOW") ? config->GetCFL_AdaptParam(3)
+                                                                : config->GetCFL_AdaptParam(3)*config->GetCFLMaxRedCoeff_Turb();
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {

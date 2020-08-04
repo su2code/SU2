@@ -417,6 +417,7 @@ private:
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
   su2double
   CFLRedCoeff_Turb,            /*!< \brief CFL reduction coefficient on the LevelSet problem. */
+  CFLMaxRedCoeff_Turb,         /*!< \brief Maximum CFL reduction coefficient on the LevelSet problem. */
   CFLRedCoeff_AdjFlow,         /*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,         /*!< \brief CFL reduction coefficient for the adjoint turbulent problem. */
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
@@ -6627,6 +6628,12 @@ public:
    * \return Value of the CFL reduction in LevelSet problems.
    */
   su2double GetCFLRedCoeff_Turb(void) const { return CFLRedCoeff_Turb; }
+
+  /*!
+   * \brief Value of the maximum CFL reduction in LevelSet problems.
+   * \return Value of the maximum CFL reduction in LevelSet problems.
+   */
+  su2double GetCFLMaxRedCoeff_Turb(void) const { return CFLMaxRedCoeff_Turb; }
 
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.

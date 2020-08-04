@@ -1604,6 +1604,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+  /* DESCRIPTION: Reduction factor of the maximum CFL coefficient in the level set problem */
+  addDoubleOption("CFL_MAX_REDUCTION_TURB", CFLMaxRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: External iteration offset due to restart */
