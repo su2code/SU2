@@ -205,8 +205,8 @@ protected:
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
-  su2double roughness_i,                   /*!< \brief Roughness of the wall nearest to point i. */
-  roughness_j;                             /*!< \brief Roughness of the wall nearest to point j. */
+  su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
+  roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double *l, *m;
 
