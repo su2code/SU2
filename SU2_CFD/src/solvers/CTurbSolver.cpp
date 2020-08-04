@@ -389,59 +389,6 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
-                                  CSolver             **solver,
-                                  CConfig             *config,
-                                  const unsigned long iPoint,
-                                  const unsigned long jPoint,
-                                  const su2double     sign,
-                                  const su2double     *const *const *const Jacobian_ic) {
-  
-  const bool wasActive = AD::BeginPassive();
-  
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    
-    CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
-    
-    /*--- Influence of i's neighbors on R(i,j) ---*/
-    const su2double ri = nodesFlo->GetDensity(iPoint);
-    for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-      const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
-      const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-      const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-      const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        for (unsigned short iVar = 0; iVar < nVar; iVar++)
-          Jacobian_i[iVar][iVar] += 0.5*Jacobian_ic[iDim][iVar][iVar]*Normalk[iDim]*sign*signk;
-    }// iNode
-    
-    /*--- Influence of boundary i on R(i,j) ---*/
-    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-      for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            for (unsigned short iVar = 0; iVar < nVar; iVar++)
-                Jacobian_i[iVar][iVar] -= Jacobian_ic[iDim][iVar][iVar]*Normal[iDim]*sign;
-        }// iVertex
-      }// iMarker
-    }// if physical boundary
-
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    if (jPoint != iPoint)
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-
-  }// GG
-  
-  AD::EndPassive(wasActive);
-  
-}
-
 void CTurbSolver::BC_Sym_Plane(CGeometry      *geometry,
                                CSolver        **solver,
                                CNumerics      *conv_numerics,
