@@ -634,7 +634,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableDecrease = -0.99;
+  const su2double allowableRatio = 0.99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   if (sa_model || sst_model) {
@@ -649,8 +649,9 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
          turbulence variables can change over a nonlinear iteration. */
 
         const unsigned long index = iPoint * nVar + iVar;
-        if (LinSysSol[index] < allowableDecrease*fabs(nodes->GetSolution(iPoint, iVar)))
-          localUnderRelaxation = min(allowableDecrease*fabs(nodes->GetSolution(iPoint, iVar))/(LinSysSol[index]-eps), localUnderRelaxation);
+        const su2double allowableDecreas = -allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
+        if (LinSysSol[index] < allowableDecrease)
+          localUnderRelaxation = min(allowableDecrease/(LinSysSol[index]-eps), localUnderRelaxation);
 
       }
 
