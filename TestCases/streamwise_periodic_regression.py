@@ -111,18 +111,6 @@ def main():
     ## Streamwise Periodic adjoint ###
     ##################################
 
-    unsteady_naca0012           = TestCase('unsteady_NACA0012_restart_adjoint')
-    unsteady_naca0012.cfg_dir   = "disc_adj_rans/naca0012"
-    unsteady_naca0012.cfg_file  = "naca0012.cfg" 
-    unsteady_naca0012.test_iter = 14
-    unsteady_naca0012.su2_exec  = "discrete_adjoint.py -f"
-    unsteady_naca0012.timeout   = 1600
-    unsteady_naca0012.reference_file = "of_grad_cd.csv.ref"
-    unsteady_naca0012.test_file = "of_grad_cd.csv"
-    unsteady_naca0012.unsteady  = True
-    pass_list.append(unsteady_naca0012.run_filediff())
-    test_list.append(unsteady_naca0012)
-
     # 2D DA case single zone pressure drop
     da_sp_pinArray_cht_2d_dp_hf           = TestCase('da_sp_pinArray_cht_2d_dp_hf')
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
@@ -134,6 +122,12 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
+
+    ######################################
+    ### RUN TESTS                      ###
+    ######################################
+
+    pass_list = [ test.run_test() for test in test_list ]
     
     # 2D DA case cht pressure drop, heat obj function
     fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
@@ -147,8 +141,6 @@ def main():
     fd_sp_pinArray_cht_2d_dp_hf.multizone      = True
     pass_list.append(fd_sp_pinArray_cht_2d_dp_hf.run_filediff())
     test_list.append(fd_sp_pinArray_cht_2d_dp_hf)
-
-    pass_list = [ test.run_test() for test in test_list ]
 
     # Tests summary
     print('==================================================================')
