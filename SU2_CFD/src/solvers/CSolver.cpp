@@ -2551,16 +2551,16 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      // if ((underRelaxation < 0.1)) {
-      //   CFLFactor = CFLFactorDecrease;
-      // } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
-      //   CFLFactor = 1.0;
-      // } else {
-      //   CFLFactor = CFLFactorIncrease;
-      // }
+      if ((underRelaxation < 0.1)) {
+         CFLFactor = CFLFactorDecrease;
+       } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+         CFLFactor = 1.0;
+       } else {
+         CFLFactor = CFLFactorIncrease;
+       }
       const unsigned short k = NonLinRes_Counter, km1 = (NonLinRes_Counter-1)%Res_Count;
       const su2double ratio = (NonLinRes_Series[km1]-NonLinRes_Series[k])/NonLinRes_Series[km1];
-      CFLFactor = pow(CFLFactorIncrease, ratio);
+      CFLFactor *= pow(CFLFactorIncrease, ratio);
 
       /* Check if we are hitting the min or max and adjust. */
 
