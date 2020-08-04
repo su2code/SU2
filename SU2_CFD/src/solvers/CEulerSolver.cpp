@@ -3610,7 +3610,7 @@ void CEulerSolver::CorrectJacobian(CGeometry           *geometry,
                                    const su2double     *Normal,
                                    const su2double     sign) {
   
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     su2double EdgVec[MAXNDIM] = {0.0};
@@ -3621,7 +3621,7 @@ void CEulerSolver::CorrectJacobian(CGeometry           *geometry,
     HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
   }// GG
   
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
   
 }
 
