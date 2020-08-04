@@ -143,7 +143,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     /*--- Allocate transfer and interpolation container --- */
 
     interface_container[iZone]    = new CInterface*[nZone] ();
-    interpolator_container[iZone] = new CInterpolator*[nZone] ();
+    interpolator_container[iZone].resize(nZone);
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
@@ -319,7 +319,6 @@ void CDriver::SetContainers_Null(){
   surface_movement               = nullptr;
   grid_movement                  = nullptr;
   FFDBox                         = nullptr;
-  interpolator_container         = nullptr;
   interface_container            = nullptr;
   interface_types                = nullptr;
   nInst                          = nullptr;
@@ -336,7 +335,7 @@ void CDriver::SetContainers_Null(){
   surface_movement               = new CSurfaceMovement*[nZone];
   grid_movement                  = new CVolumetricMovement**[nZone];
   FFDBox                         = new CFreeFormDefBox**[nZone];
-  interpolator_container         = new CInterpolator**[nZone];
+  interpolator_container.resize(nZone);
   interface_container            = new CInterface**[nZone];
   interface_types                = new unsigned short*[nZone];
   output_container               = new COutput*[nZone];
@@ -354,7 +353,6 @@ void CDriver::SetContainers_Null(){
     surface_movement[iZone]               = nullptr;
     grid_movement[iZone]                  = nullptr;
     FFDBox[iZone]                         = nullptr;
-    interpolator_container[iZone]         = nullptr;
     interface_container[iZone]            = nullptr;
     interface_types[iZone]                = new unsigned short[nZone];
     output_container[iZone]               = nullptr;
@@ -427,19 +425,6 @@ void CDriver::Postprocessing() {
   }
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
-
-  if (interpolator_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (interpolator_container[iZone] != nullptr) {
-        for (unsigned short jZone = 0; jZone < nZone; jZone++)
-          if (interpolator_container[iZone][jZone] != nullptr)
-            delete interpolator_container[iZone][jZone];
-        delete [] interpolator_container[iZone];
-      }
-    }
-    delete [] interpolator_container;
-    if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
-  }
 
   if (interface_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -2391,7 +2376,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
 void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGeometry**** geometry,
                                       unsigned short** interface_types, CInterface ***interface,
-                                      CInterpolator ***interpolation) {
+                                      vector<vector<unique_ptr<CInterpolator> > >& interpolation) {
 
   /*--- Setup interpolation and transfer for all possible donor/target pairs. ---*/
 
@@ -2420,7 +2405,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
         /*--- Setup the interpolation. ---*/
 
-        interpolation[donor][target] = CInterpolatorFactory::CreateInterpolator(geometry, config, donor, target);
+        interpolation[donor][target] = unique_ptr<CInterpolator>(
+          CInterpolatorFactory::CreateInterpolator(geometry, config, donor, target));
 
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 

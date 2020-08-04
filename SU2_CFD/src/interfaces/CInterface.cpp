@@ -256,6 +256,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
                                                std::find(Buffer_Bcast_Indices,
                                                          Buffer_Bcast_Indices + nBuffer_BcastIndices,
                                                          Donor_Global_Index));
+            assert(indexPoint_iVertex < nBuffer_BcastIndices);
 
             /*--- Recover the Target_Variable from the buffer of variables ---*/
             RecoverTarget_Variable(indexPoint_iVertex, Buffer_Bcast_Variables, donorCoeff);
