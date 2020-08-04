@@ -597,19 +597,12 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
       if ((iVar == 0) || (iVar == nVar - 1)) {
         const unsigned long index = iPoint * nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index]) / (nodes->GetSolution(iPoint, iVar) + EPS);
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
     }
-
-    /* In case of turbulence, take the min of the under-relaxation factor
-     between the mean flow and the turb model. */
-
-    if (config->GetKind_Turb_Model() != NONE)
-      localUnderRelaxation =
-          min(localUnderRelaxation, solver_container[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
