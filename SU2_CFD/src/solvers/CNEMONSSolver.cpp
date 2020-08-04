@@ -203,8 +203,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  CConfig *config,
                                                  unsigned short val_marker) {
 
-  SU2_MPI::Error("BC_HeatFluxNonCatalytic_Wall needs a slight update.",CURRENT_FUNCTION);
-
   /*--- Local variables ---*/
   bool implicit;
   unsigned short iDim, iVar;
