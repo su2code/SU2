@@ -237,25 +237,18 @@ namespace AD{
    * \brief Pushes back the current tape position to the tape position's vector.
    */
   void Push_TapePosition();
+
+  /*!
+   * \brief Pushes back the current tape position to the tape position's vector.
+   */
+  void Push_TapePosition();
+
+  /*!
+   * \brief Start a passive region, i.e. stop recording.
+   * \return True is tape was active.
+   */
+  bool BeginPassive();
 }
-
-/*--- Macro to begin and end sections with a passive tape ---*/
-
-#ifdef CODI_REVERSE_TYPE
-#define AD_BEGIN_PASSIVE         \
-  if(AD::globalTape.isActive()) {\
-     AD::globalTape.setPassive();\
-     AD::Status = true;          \
-  }
-#define AD_END_PASSIVE           \
-  if(AD::Status) {               \
-     AD::globalTape.setActive(); \
-     AD::Status = false;         \
-  }
-#else
-#define AD_BEGIN_PASSIVE
-#define AD_END_PASSIVE
-#endif
 
 /*--- If we compile under OSX we have to overload some of the operators for
  *   complex numbers to avoid the use of the standard operators

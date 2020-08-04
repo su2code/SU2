@@ -191,6 +191,16 @@ namespace AD{
     TapePositions.push_back(AD::globalTape.getPosition());
   }
 
+  inline bool BeginPassive() {
+    if(AD::globalTape.isActive()) {
+      StopRecording();
+      return true;
+    }
+    return false;
+  }
+
+  inline void EndPassive(bool wasActive) { if(wasActive) StartRecording(); }
+
   inline void EndPreacc(){
     if (PreaccActive) {
       PreaccHelper.finish(false);
@@ -306,6 +316,10 @@ namespace AD{
   inline void EndPreacc() {}
 
   inline void Push_TapePosition() {}
+
+  inline bool BeginPassive() { return false; }
+
+  inline void EndPassive(bool wasActive) {}
 
   inline void StartExtFunc(bool storePrimalInput, bool storePrimalOutput){}
   

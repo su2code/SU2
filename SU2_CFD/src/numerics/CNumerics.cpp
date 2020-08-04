@@ -371,7 +371,7 @@ void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy,
                                    const su2double *val_normal, const su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) const {
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
 
@@ -402,7 +402,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }
 
 
@@ -410,7 +410,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
     const su2double *val_chi, const su2double *val_kappa,
     const su2double *val_normal, const su2double val_scale,
     su2double **val_Proj_Jac_Tensor) const {
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
 
@@ -441,12 +441,12 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*(a2+1)*proj_vel;
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }
 
 void CNumerics::GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_cp, su2double *val_temperature, su2double *val_dRhodT, su2double *val_normal,
     su2double val_scale, su2double **val_Proj_Jac_Tensor) {
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   unsigned short iDim;
   su2double proj_vel;
 
@@ -509,7 +509,7 @@ void CNumerics::GetInviscidIncProjJac(su2double *val_density, su2double *val_vel
     val_Proj_Jac_Tensor[4][4] = val_scale*((*val_cp)*((*val_temperature)*(*val_dRhodT) + (*val_density))*proj_vel);
 
   }
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }
 
 void CNumerics::GetPreconditioner(su2double *val_density, su2double *val_velocity,

@@ -88,7 +88,7 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
 void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                                    const su2double *lim_i, const su2double *lim_j,
                                    const su2double *val_velocity, const su2double *val_density) {
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   unsigned short iVar, jVar, kVar, iDim;
   su2double **tmp = new su2double*[nVar],
@@ -167,7 +167,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
   delete [] MInv;
   delete [] dLim;
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }
 
 void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,

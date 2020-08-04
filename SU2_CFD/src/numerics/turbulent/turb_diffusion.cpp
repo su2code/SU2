@@ -352,7 +352,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
 void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   
   /*--- Add contributions of GG gradients ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -379,5 +379,5 @@ void CAvgGrad_TurbSST::CorrectJacobian(const CConfig *config) {
   //   }
   // }
   
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }

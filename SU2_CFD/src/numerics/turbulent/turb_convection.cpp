@@ -63,14 +63,14 @@ CUpwScalar::~CUpwScalar(void) {
 
 void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                              const su2double *lim_i, const su2double *lim_j) {
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   unsigned short iVar;
   for (iVar = 0; iVar < nVar; iVar++)
     val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
 
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }
 
 CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {

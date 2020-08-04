@@ -345,7 +345,7 @@ void CADTPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                unsigned long   &pointID,
                                                int             &rankID) {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
@@ -461,7 +461,7 @@ void CADTPointsOnlyClass::DetermineNearestNode(const su2double *coor,
     if(frontLeaves.size() == 0) break;
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* Recompute the distance to get the correct dependency if we use AD */
   coorTarget = coorPoints.data() + nDimADT*minIndex;
@@ -706,7 +706,7 @@ bool CADTElemClass::DetermineContainingElement(const su2double *coor,
                                                su2double       *parCoor,
                                                su2double       *weightsInterpol) {
   
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
      it only contains the root leaf. Make sure to wipe out any data from a
@@ -782,7 +782,7 @@ bool CADTElemClass::DetermineContainingElement(const su2double *coor,
     if(frontLeaves.size() == 0) break;
   }
   
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* If this point is reached, no element is found that contains the coordinate
      and false must be returned. */
@@ -797,7 +797,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
                                             unsigned short  &vtkID,
                                             su2double       *weightsInterpol) {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the distance (squared) to the quaranteed distance ---*/
@@ -975,7 +975,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
     }
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */

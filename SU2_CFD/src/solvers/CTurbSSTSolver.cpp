@@ -501,7 +501,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned long iPoint) {
   
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   
   const CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
@@ -568,7 +568,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     }// if wall distance
   }// GG
   
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver, CNumerics *numerics,
