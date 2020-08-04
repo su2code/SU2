@@ -32,6 +32,7 @@
 #include "../toolboxes/C2DContainer.hpp"
 #include "../toolboxes/fem/CFaceOfElement.hpp"
 
+
 /*!
  * \class CPhysicalGeometry
  * \brief Class for reading a defining the primal grid which is read from the grid file in .su2 or .cgns format.
@@ -105,6 +106,9 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_Line_Linear{nullptr};
   unsigned long *Elem_ID_BoundTria_Linear{nullptr};
   unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
+
+  vector<int> GlobalMarkerStorageDispl;
+  vector<su2double> GlobalRoughness_Height;
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -755,6 +759,11 @@ public:
       nodes->SetWall_Distance(iPoint, val);
     }
   }
+
+  /*!
+   * \brief Set roughness values for markers in a global array.
+   */
+  void SetGlobalMarkerRoughness(const CConfig* config);
 
 private:
 
