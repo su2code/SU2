@@ -2454,7 +2454,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     //   }
     // }
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      New_Func += Res_RMS[iVar];
+      New_Func += Residual_RMS[iVar];
     }
 
     /* Compute the difference in the nonlinear residuals between the
@@ -2512,7 +2512,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Get the current local flow CFL number at this point. */
 
-      su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
+      // su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
+      su2double CFL = nodes->GetLocalCFL(iPoint);
 
       /* Get the current under-relaxation parameters that were computed
        during the previous nonlinear update. If we have a turbulence model,
