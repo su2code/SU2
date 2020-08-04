@@ -252,7 +252,7 @@ def amg ( config , kind='' ):
                 cfl = max(cfl, float(config.CFL_NUMBER))
                 su2amg.set_cfl(config_cfd_ad, cfl)
 
-                if (config.KIND_TURB_MODEL != NONE):
+                if (config.KIND_TURB_MODEL != 'NONE'):
                     cfl_turb = su2amg.get_min_cfl_turb(history_format)
                     cfl_red  = cfl_turb/cfl
                     config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
