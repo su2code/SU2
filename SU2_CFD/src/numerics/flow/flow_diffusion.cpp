@@ -392,10 +392,10 @@ void CAvgGrad_Base::SetTauJacobian() {
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
       // Jacobian w.r.t. momentum
       tau_jacobian_i[iDim][jDim+1] = -xi_i*(Edge_Vector[iDim]*Normal[jDim] 
-                                          - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
+                                          - TWO3*Edge_Vector[jDim]*Normal[iDim] 
                                           + delta[iDim][jDim]*proj_vector_ij);
       tau_jacobian_j[iDim][jDim+1] =  xi_j*(Edge_Vector[iDim]*Normal[jDim] 
-                                          - 2./3.*Edge_Vector[jDim]*Normal[iDim] 
+                                          - TWO3*Edge_Vector[jDim]*Normal[iDim] 
                                           + delta[iDim][jDim]*proj_vector_ij);
     }
     // Jacobian w.r.t. density

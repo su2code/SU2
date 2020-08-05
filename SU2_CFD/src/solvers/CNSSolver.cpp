@@ -514,7 +514,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         /*--- Momentum flux Jacobian wrt momentum ---*/
         for (unsigned short jDim = 0; jDim < nDim; jDim++) {
           Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Normalk[iDim]*Vec[jDim] 
-                                            - 2./3.*Normalk[jDim]*Vec[iDim] 
+                                            - TWO3*Normalk[jDim]*Vec[iDim] 
                                             + delta[iDim][jDim]*ProjVec);
         }// jDim
       }// iDim

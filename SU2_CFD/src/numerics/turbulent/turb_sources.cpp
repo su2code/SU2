@@ -840,24 +840,24 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      SetPerturbedRSM(TurbVar_i[0], config);
      SetPerturbedStrainMag(TurbVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-          - 2./3.*Density_i*TurbVar_i[0]*diverg;
-     pw = PerturbedStrainMag * PerturbedStrainMag - 2./3.*zeta*diverg;
+          - TWO3*Density_i*TurbVar_i[0]*diverg;
+     pw = PerturbedStrainMag * PerturbedStrainMag - TWO3*zeta*diverg;
    }
    else {
     su2double factor = 0.;
      for (iDim = 0; iDim < nDim; iDim++) {
        for (jDim = 0; jDim < nDim; jDim++) {
          factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
-                  - 2./3.*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
+                  - TWO3*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
        }
      }
      // su2double factor = StrainMag_i*StrainMag_i;
-     pk = Eddy_Viscosity_i*factor - 2./3.*Density_i*TurbVar_i[0]*diverg;
-     pw = factor - 2./3.*zeta*diverg;
+     pk = Eddy_Viscosity_i*factor - TWO3*Density_i*TurbVar_i[0]*diverg;
+     pw = factor - TWO3*zeta*diverg;
        
      /*--- k production Jacobian ---*/
      if ((pk > 0.) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-       Jacobian_i[0][0] = (factor/zeta-2./3.*diverg)*Volume;
+       Jacobian_i[0][0] = (factor/zeta-TWO3*diverg)*Volume;
        if (TurbVar_i[1] > VorticityMag*F2_i/a1)
          Jacobian_i[0][1] = -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
      }
@@ -868,7 +868,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      
      /*--- omega production Jacobian ---*/
      if ((pw > 0.) && (TurbVar_i[1] > VorticityMag*F2_i/a1))
-         Jacobian_i[1][1] = -2./3.*alfa_blended*diverg*Volume;
+         Jacobian_i[1][1] = -TWO3*alfa_blended*diverg*Volume;
    }
     
     pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
@@ -963,9 +963,6 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
   unsigned short iDim, jDim;
   su2double **S_ij = new su2double* [3];
   su2double divVel = 0;
-  su2double TWO3 = 2./3.;
-
-
 
   for (iDim = 0; iDim < 3; iDim++){
     S_ij[iDim] = new su2double [3];
