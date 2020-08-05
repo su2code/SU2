@@ -156,7 +156,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX) {
             boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
           }
-          boundary_file	<< iElem_Bound << endl;
+          boundary_file << iElem_Bound << endl;
         }
       }
 
@@ -169,7 +169,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX) {
             boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
           }
-          boundary_file	<< iElem_Bound << endl;
+          boundary_file << iElem_Bound << endl;
         }
       }
 
@@ -3331,7 +3331,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
 
   /*--- First compute the Send/Receive boundaries ---*/
-  Counter_Send = 0; 	Counter_Receive = 0;
+  Counter_Send = 0;   Counter_Receive = 0;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
     if (SendDomainLocal[iDomain].size() != 0) Counter_Send++;
 
@@ -4785,7 +4785,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
 
     if (nDim == 3) {
-    	cout << ", z-direction = "<< TotalMaxCoordZ;
+      cout << ", z-direction = "<< TotalMaxCoordZ;
       if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
     }
     else cout << "." << endl;
@@ -4797,7 +4797,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     if (config->GetSystemMeasurements() == SI) cout <<" m"; else cout <<" ft";
 
     if (nDim == 3) {
-    	cout << ", z-direction = "<< TotalMinCoordZ;
+      cout << ", z-direction = "<< TotalMinCoordZ;
       if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl;
     }
     else cout << "." << endl;
@@ -5166,7 +5166,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
+unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   unsigned long iPoint, iVertex;
   long jVertex;
   int nSpan, nSpan_loc;
@@ -6121,7 +6121,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         }
       }
 
-      delete [] x_gb;	delete [] y_gb; delete [] z_gb;	 delete [] angCoord_gb; delete [] deltaAngCoord_gb; delete[] checkAssign_gb;
+      delete [] x_gb; delete [] y_gb; delete [] z_gb;  delete [] angCoord_gb; delete [] deltaAngCoord_gb; delete[] checkAssign_gb;
 
     }
   }
@@ -6407,7 +6407,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 
     /*--- Forces initialization for contenitors to zero ---*/
     for (iDim=0; iDim<nDim; iDim++) {
-      TotalTurboNormal[iDim]	=0.0;
+      TotalTurboNormal[iDim]  =0.0;
       TotalNormal[iDim]         =0.0;
       TotalGridVel[iDim]        =0.0;
     }
@@ -6458,7 +6458,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
     MyTotalGridVel         = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) {
-      MyTotalTurboNormal[iDim]	= TotalTurboNormal[iDim];
+      MyTotalTurboNormal[iDim]  = TotalTurboNormal[iDim];
       TotalTurboNormal[iDim]    = 0.0;
       MyTotalNormal[iDim]       = TotalNormal[iDim];
       TotalNormal[iDim]         = 0.0;
@@ -6559,7 +6559,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           turboNormal2 = 0.0;
-          Normal2 		= 0.0;
+          Normal2     = 0.0;
 
           for (iDim = 0; iDim < nDim; iDim++){
             turboNormal2 += AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim]*AverageTurboNormal[iMarker][nSpanWiseSections[marker_flag-1]][iDim];
@@ -8933,7 +8933,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
 
     /*--- Write file name with extension if unsteady or steady ---*/
     if (config->GetTime_Marching() == HARMONIC_BALANCE)
-    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
+      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iTimeIter));
 
     if ((config->GetTime_Marching() && config->GetTime_Domain()) ||
         (config->GetTime_Marching() == HARMONIC_BALANCE)) {
@@ -9755,7 +9755,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     unsigned short index = 2;
 
     /*--- Removing the trailing edge from list of points that we are going to use in the interpolation,
-			to be sure that a blunt trailing edge do not affect the interpolation ---*/
+      to be sure that a blunt trailing edge do not affect the interpolation ---*/
 
     if ((Normal[index] >= 0.0) && (fabs(Xcoord_Airfoil_[iVertex]) > MaxDistance*0.01)) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
@@ -9981,8 +9981,8 @@ su2double CPhysicalGeometry::Compute_WaterLineWidth(su2double *Plane_P0, su2doub
   for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     Distance = fabs(Zcoord_Airfoil[iVertex] - WaterLine);
     if (Distance < MinDistance) {
-    	MinDistance = Distance;
-    	WaterLineWidth = fabs(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point]);
+      MinDistance = Distance;
+      WaterLineWidth = fabs(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point]);
     }
   }
 
@@ -10441,21 +10441,21 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Plot the geometrical quatities ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    	if (Xcoord_Airfoil[iPlane].size() > 1) {
-    		if (config->GetTabular_FileFormat() == TAB_CSV) {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
-    			           <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
-    			           <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
-    			           <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
-    		}
-    		else  {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< MaxThickness[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
-    			           <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
-    			           <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
-    			           <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        if (config->GetTabular_FileFormat() == TAB_CSV) {
+          Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
+                     <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
+                     <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
+                     <<", "<< TrailingEdge[iPlane][0]/SemiSpan <<", "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
+        }
+        else  {
+          Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane] <<" "<< MaxThickness[iPlane] <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
+                     <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
+                     <<" "<< LeadingEdge[iPlane][0]/SemiSpan <<" "<< LeadingEdge[iPlane][2]/SemiSpan
+                     <<" "<< TrailingEdge[iPlane][0]/SemiSpan <<" "<< TrailingEdge[iPlane][2]/SemiSpan << endl;
 
-    		}
-    	}
+        }
+      }
     }
 
     Wing_File.close();
@@ -10727,18 +10727,18 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
     /*--- Plot the geometrical quatities ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    	if (Xcoord_Airfoil[iPlane].size() > 1) {
-    		if (config->GetTabular_FileFormat() == TAB_CSV) {
-    			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
-    			           <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
-    			           <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
-    		}
-    		else  {
-    			Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<" "<< Area[iPlane] <<" "<< Length[iPlane] <<" "<< Width[iPlane] <<" "<< WaterLineWidth[iPlane] <<" "<< Height[iPlane] <<" "<< Curvature[iPlane]
-    			           <<" "<< -LeadingEdge[iPlane][1] <<" "<< LeadingEdge[iPlane][0]  <<" "<< LeadingEdge[iPlane][2]
-    			           <<" "<< -TrailingEdge[iPlane][1] <<" "<< TrailingEdge[iPlane][0]  <<" "<< TrailingEdge[iPlane][2] << endl;
-    		}
-    	}
+      if (Xcoord_Airfoil[iPlane].size() > 1) {
+        if (config->GetTabular_FileFormat() == TAB_CSV) {
+          Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
+                     <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
+                     <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+        }
+        else  {
+          Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<" "<< Area[iPlane] <<" "<< Length[iPlane] <<" "<< Width[iPlane] <<" "<< WaterLineWidth[iPlane] <<" "<< Height[iPlane] <<" "<< Curvature[iPlane]
+                     <<" "<< -LeadingEdge[iPlane][1] <<" "<< LeadingEdge[iPlane][0]  <<" "<< LeadingEdge[iPlane][2]
+                     <<" "<< -TrailingEdge[iPlane][1] <<" "<< TrailingEdge[iPlane][0]  <<" "<< TrailingEdge[iPlane][2] << endl;
+        }
+      }
     }
 
     Fuselage_File.close();
@@ -10776,7 +10776,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
     Fuselage_Volume = 0.0;
     for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-      	Fuselage_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+        Fuselage_Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
       }
     }
 
@@ -10786,7 +10786,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
     if (Xcoord_Airfoil[0].size() > 1) Fuselage_WettedArea += (1.0/2.0)*dPlane*Length[0];
     for (iPlane = 1; iPlane < nPlane-1; iPlane++) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-      	Fuselage_WettedArea += dPlane*Length[iPlane];
+        Fuselage_WettedArea += dPlane*Length[iPlane];
       }
     }
     if (Xcoord_Airfoil[nPlane-1].size() > 1) Fuselage_WettedArea += (1.0/2.0)*dPlane*Length[nPlane-1];
@@ -11193,7 +11193,6 @@ std::unique_ptr<CADTElemClass> CPhysicalGeometry::ComputeViscousWallADT(const CC
         markerIDs.push_back(iMarker);
         VTK_TypeElem.push_back(VTK_Type);
         elemIDs.push_back(iElem);
-
         for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
           surfaceConn.push_back(bound[iMarker][iElem]->GetNode(iNode));
       }
@@ -11241,6 +11240,9 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   /*---        distance to a solid wall element                           ---*/
   /*--------------------------------------------------------------------------*/
 
+  /*--- Store marker list and roughness in a global array. ---*/
+  if (config->GetnRoughWall() > 0) SetGlobalMarkerRoughness(config);
+
   SU2_OMP_PARALLEL
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
@@ -11252,9 +11254,51 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
       unsigned long  elemID;
       int            rankID;
       su2double      dist;
+
       WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+
       nodes->SetWall_Distance(iPoint, min(dist,nodes->GetWall_Distance(iPoint)));
+
+      if (config->GetnRoughWall() > 0) {
+        auto index = GlobalMarkerStorageDispl[rankID] + markerID;
+        auto localRoughness = GlobalRoughness_Height[index];
+        nodes->SetRoughnessHeight(iPoint, localRoughness);
+      }
     }
+
   }
   // end SU2_OMP_PARALLEL
+}
+
+void CPhysicalGeometry::SetGlobalMarkerRoughness(const CConfig* config) {
+
+  const auto nMarker_All = config->GetnMarker_All();
+
+  vector<int> recvCounts(size);
+  auto sizeLocal = static_cast<int>(nMarker_All); // number of local markers
+
+  /*--- Communicate size of local marker array and make an array large enough to hold all data. ---*/
+  SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1, MPI_INT, MPI_COMM_WORLD);
+
+  /*--- Set the global array of displacements, needed to access the correct roughness element. ---*/
+  GlobalMarkerStorageDispl.resize(size);
+  GlobalMarkerStorageDispl[0] = 0;
+  for (int iRank = 1; iRank < size; iRank++)
+    GlobalMarkerStorageDispl[iRank] = GlobalMarkerStorageDispl[iRank-1] + recvCounts[iRank-1];
+
+  /*--- Total size ---*/
+  const auto sizeGlobal = GlobalMarkerStorageDispl[size-1] + recvCounts[size-1];
+
+  /*--- Allocate local and global arrays to hold roughness. ---*/
+  vector<su2double> localRough(nMarker_All);   // local number of markers
+  GlobalRoughness_Height.resize(sizeGlobal);   // all markers including send recieve
+
+  for (auto iMarker = 0u; iMarker < nMarker_All; iMarker++) {
+    auto wallprop = config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker));
+    localRough[iMarker] = wallprop.second;
+  }
+
+  /*--- Finally, gather the roughness of all markers. ---*/
+  SU2_MPI::Allgatherv(localRough.data(), sizeLocal, MPI_DOUBLE, GlobalRoughness_Height.data(),
+                      recvCounts.data(), GlobalMarkerStorageDispl.data(), MPI_DOUBLE, MPI_COMM_WORLD);
 }
