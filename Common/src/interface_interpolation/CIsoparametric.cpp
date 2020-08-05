@@ -113,7 +113,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
-    targetVertices[markTarget].resize(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     /*--- Compress the vertex information, and build a map of global point to "compressed
      *    index" to then reconstruct the donor elements in local index space. ---*/

@@ -92,7 +92,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
     Determine_ArraySize(markDonor, markTarget, nVertexDonor, nDim);
-    targetVertices[markTarget].resize(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     const auto nPossibleDonor = accumulate(Buffer_Receive_nVertex_Donor,
                                 Buffer_Receive_nVertex_Donor+nProcessor, 0ul);

@@ -188,7 +188,7 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
-    targetVertices[markTarget].resize(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     /*--- Loop over the vertices on the target marker, define one row of the transpose matrix. ---*/
 

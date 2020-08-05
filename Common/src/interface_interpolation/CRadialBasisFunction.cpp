@@ -280,7 +280,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Fetch target vertex coordinates. ---*/
 
-    targetVertices[markTarget].resize(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
     vector<const su2double*> targetCoord(nVertexTarget);
 
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; ++iVertexTarget) {

@@ -172,7 +172,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
      * - Starting from the closest donor node, it expands the supermesh by including
      * donor elements neighboring the initial one, until the overall target area is fully covered.
      */
-    targetVertices[markTarget].resize(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     if(nDim == 2){
 
