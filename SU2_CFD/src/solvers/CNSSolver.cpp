@@ -500,8 +500,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       Jacobian_i[iVar][jVar] = 0.0;
 
   /*--- Influence of boundary nodes ---*/
-  const su2double signk  = -1.0;
-  const su2double Weight = 0.5*HalfOnVol*sign*signk;
+  const su2double Weight = -0.5*HalfOnVol*sign;
   for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
     if (iVertex != -1) {
@@ -587,7 +586,6 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       Jacobian_i[iVar][jVar] = 0.0;
 
   /*--- Influence of boundary nodes ---*/
-  const su2double signk = -1.0;
   for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
     if (iVertex != -1) {
@@ -596,7 +594,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         Weight += Normalk[iDim]*Vec[iDim];
 
-      Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
+      Weight *= -0.5*HalfOnVol*ConductivityOnR*sign;
 
       /*--- Density Jacobian ---*/
       Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2);
