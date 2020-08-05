@@ -135,10 +135,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-    if(markTarget != -1)
-      nVertexTarget = target_geometry->GetnVertex( markTarget );
-    else
-      nVertexTarget  = 0;
+    nVertexTarget = 0;
+    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex( markTarget );
 
     /*
     3 -Reconstruct the boundaries from parallel partitioning

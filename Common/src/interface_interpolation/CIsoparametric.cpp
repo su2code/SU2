@@ -113,6 +113,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
+    targetVertices[markTarget].resize(nVertexTarget);
 
     /*--- Compress the vertex information, and build a map of global point to "compressed
      *    index" to then reconstruct the donor elements in local index space. ---*/
@@ -175,8 +176,6 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
     {
     su2double maxDist = 0.0;
     unsigned long errorCount = 0, totalCount = 0;
-
-    targetVertices[markTarget].resize(nVertexTarget);
 
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0u; iVertexTarget < nVertexTarget; ++iVertexTarget) {

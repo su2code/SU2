@@ -92,6 +92,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
     Determine_ArraySize(markDonor, markTarget, nVertexDonor, nDim);
+    targetVertices[markTarget].resize(nVertexTarget);
 
     const auto nPossibleDonor = accumulate(Buffer_Receive_nVertex_Donor,
                                 Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
@@ -110,8 +111,6 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
     /*--- Working array for this thread. ---*/
     auto& donorInfo = DonorInfoVec[omp_get_thread_num()];
     donorInfo.resize(nPossibleDonor);
-
-    targetVertices[markTarget].resize(nVertexTarget);
 
     su2double avgDist = 0.0, maxDist = 0.0;
     unsigned long numTarget = 0;
