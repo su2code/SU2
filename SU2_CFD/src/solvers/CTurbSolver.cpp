@@ -400,9 +400,15 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
                                   const su2double     sign,
                                   const su2double     *const *const *const Jacobian_ic) {
   
-  const bool wasActive = AD::BeginPassive();
-  
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  /*--- We're only computing contributions of first neighbors to the Jacobian.
+        In Green-Gauss, this contribution is 0.5*Sum(n_v)/r = 0 for volume nodes
+        and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to the Jacobian
+        if iPoint is on a physical boundary. ---*/
+
+  if ((config->GetKind_Gradient_Method() == GREEN_GAUSS) && 
+      (geometry->node[iPoint]->GetPhysicalBoundary())) {
+
+    const bool wasActive = AD::BeginPassive();
     
     CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
@@ -423,25 +429,23 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     }// iNode
     
     /*--- Influence of boundary i on R(i,j) ---*/
-    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
-      for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            for (unsigned short iVar = 0; iVar < nVar; iVar++)
-                Jacobian_i[iVar][iVar] -= Jacobian_ic[iDim][iVar][iVar]*Normal[iDim]*sign;
-        }// iVertex
-      }// iMarker
-    }// if physical boundary
+    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex != -1) {
+        const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          for (unsigned short iVar = 0; iVar < nVar; iVar++)
+              Jacobian_i[iVar][iVar] -= Jacobian_ic[iDim][iVar][iVar]*Normal[iDim]*sign;
+      }// iVertex
+    }// iMarker
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     if (jPoint != iPoint)
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
-  }// GG
-  
-  AD::EndPassive(wasActive);
+    AD::EndPassive(wasActive);
+
+  }// GG and physical boundary
   
 }
 
