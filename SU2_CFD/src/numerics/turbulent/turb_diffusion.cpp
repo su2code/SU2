@@ -279,13 +279,13 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
       
   proj_on_rho = proj_vector_ij/Density_i;
 
-  Jacobian_i[0][0] = -diff_kine*proj_on_rho;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0;                     Jacobian_i[1][1] = -diff_omega*proj_on_rho;
+  Jacobian_i[0][0] = -diff_kine*proj_on_rho;
+  Jacobian_i[1][1] = -diff_omega*proj_on_rho;
 
   proj_on_rho = proj_vector_ij/Density_j;
 
-  Jacobian_j[0][0] = diff_kine*proj_on_rho;   Jacobian_j[0][1] = 0.0;
-  Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_omega*proj_on_rho;
+  Jacobian_j[0][0] = diff_kine*proj_on_rho;
+  Jacobian_j[1][1] = diff_omega*proj_on_rho;
 
   if (correct_gradient) CorrectJacobian(config);
   
@@ -348,7 +348,7 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
 
     const bool wasActive = AD::BeginPassive();
-    
+
     const su2double weight_i = 0.5 / (Volume_i);
     const su2double weight_j = 0.5 / (Volume_j);
     
