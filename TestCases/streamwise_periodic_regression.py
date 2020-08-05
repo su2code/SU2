@@ -62,7 +62,7 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.tol       = 0.00001
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
-    # create 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
+    # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
     sp_pinArray_2d_dp_hf_tp           = TestCase('sp_pinArray_2d_dp_hf_tp')
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
@@ -73,7 +73,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.tol       = 0.00001
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
-    # create 2D pin case massflow periodic with heatflux BC and prescribed heat
+    # 2D pin case massflow periodic with heatflux BC and prescribed heat
     sp_pinArray_2d_mf_hf           = TestCase('sp_pinArray_2d_mf_hf')
     sp_pinArray_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
@@ -84,7 +84,7 @@ def main():
     sp_pinArray_2d_mf_hf.tol       = 0.00001
     test_list.append(sp_pinArray_2d_mf_hf)
 
-    # create 2D CHT case with HF BC and
+    # 2D CHT case with HF BC and
     sp_pinArray_cht_2d_mf_hf           = TestCase('sp_pinArray_cht_2d_mf_hf')
     sp_pinArray_cht_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_mf_hf.cfg_file  = "configMaster.cfg"
@@ -96,15 +96,16 @@ def main():
     sp_pinArray_cht_2d_mf_hf.multizone = True
     test_list.append(sp_pinArray_cht_2d_mf_hf)
 
-    # create simple small 3D pin case massflow periodic with heatflux BC and temperature periodicity (without turbulence model for now)
+    # simple small 3D pin case massflow periodic with heatflux BC
     sp_pinArray_3d_cht_mf_hf_tp           = TestCase('sp_pinArray_3d_cht_mf_hf_tp')
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [10, -10.352122, -10.185237, -10.185237] #last 4 lines
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.462680, -0.008477, 214.707868, 4.2935e+02, 3.6831e+02] #last 7 lines
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
+    sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
 
     ##################################
