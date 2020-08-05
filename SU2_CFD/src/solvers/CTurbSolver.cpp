@@ -417,18 +417,6 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
     
-    /*--- Influence of i's neighbors on R(i,j) ---*/
-    // const su2double ri = nodesFlo->GetDensity(iPoint);
-    // for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-    //   const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
-    //   const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
-    //   const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-    //   const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-    //   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    //     for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    //       Jacobian_i[iVar][iVar] += 0.5*Jacobian_ic[iDim][iVar][iVar]*Normalk[iDim]*sign*signk;
-    // }// iNode
-    
     /*--- Influence of boundary i on R(i,j) ---*/
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
