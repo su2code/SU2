@@ -528,7 +528,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(iPoint,jDim);
 
       /*--- Energy Jacobian wrt momentum ---*/
-      Jacobian_i[nVar-1][iDim+1] += Jacobian_i[iDim+1][jDim+1]*Mean_Velocity[iDim];
+      Jacobian_i[nVar-1][iDim+1] += Jacobian_i[jDim+1][iDim+1]*Mean_Velocity[jDim];
     }
 
     /*--- Energy Jacobian wrt density ---*/

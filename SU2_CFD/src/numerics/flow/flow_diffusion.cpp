@@ -471,16 +471,16 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
   su2double contraction_i = 0, contraction_j = 0;
   su2double proj_flux_vel_i = 0, proj_flux_vel_j = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    contraction_i += tau_jacobian_i[iDim][0]*val_Mean_PrimVar[iDim+1];
-    contraction_j += tau_jacobian_j[iDim][0]*val_Mean_PrimVar[iDim+1];
-
     proj_flux_vel_i += val_Proj_Visc_Flux[iDim+1]*V_i[iDim+1];
     proj_flux_vel_j += val_Proj_Visc_Flux[iDim+1]*V_j[iDim+1];
 
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_i[nVar-1][iDim+1] += tau_jacobian_i[iDim][jDim+1]*val_Mean_PrimVar[iDim+1];
-      Jacobian_j[nVar-1][iDim+1] += tau_jacobian_j[iDim][jDim+1]*val_Mean_PrimVar[iDim+1];
+      Jacobian_i[nVar-1][iDim+1] += tau_jacobian_i[jDim][iDim+1]*val_Mean_PrimVar[jDim+1];
+      Jacobian_j[nVar-1][iDim+1] += tau_jacobian_j[jDim][iDim+1]*val_Mean_PrimVar[jDim+1];
     }
+    
+    contraction_i -= V_i[iDim+1]*Jacobian_i[nVar-1][iDim+1];
+    contraction_j -= V_j[iDim+1]*Jacobian_j[nVar-1][iDim+1];
   }
 
   Jacobian_i[nVar-1][0] = contraction_i - factor_i*proj_flux_vel_i;
