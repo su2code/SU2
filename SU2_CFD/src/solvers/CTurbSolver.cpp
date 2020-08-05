@@ -400,7 +400,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
                                   const su2double     sign,
                                   const su2double     *const *const *const Jacobian_ic) {
   
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
@@ -441,7 +441,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
   }// GG
   
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
   
 }
 
