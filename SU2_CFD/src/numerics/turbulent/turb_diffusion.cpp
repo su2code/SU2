@@ -183,9 +183,14 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
   Flux[0] = nu_e*Proj_Mean_GradTurbVar[0]/sigma;
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+  
+  Jacobian_i[0][0] = -nu_e*proj_vector_ij/sigma;
+  Jacobian_j[0][0] =  nu_e*proj_vector_i)/sigma;
+  
+  if (correct_gradient) CorrectJacobian(config);
 
-  Jacobian_i[0][0] = (0.5*Proj_Mean_GradTurbVar[0]-nu_e*proj_vector_ij)/sigma;
-  Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar[0]+nu_e*proj_vector_ij)/sigma;
+  Jacobian_i[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
+  Jacobian_j[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
 
 }
 
