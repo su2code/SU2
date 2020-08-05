@@ -281,6 +281,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Jacobian_j[0][0] = diff_kine*proj_on_rho;   Jacobian_j[0][1] = 0.0;
   Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_omega*proj_on_rho;
+
+  CorrectJacobian(config);
   
   /*--- Jacobian wrt eddy viscosity ---*/
       
@@ -338,4 +340,36 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
   }
 
+}
+
+void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
+  
+  AD_BEGIN_PASSIVE
+  
+  /*--- Add contributions of GG gradients ---*/
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    const su2double weight_i = 0.5 / (Volume_i);
+    const su2double weight_j = 0.5 / (Volume_j);
+    
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (unsigned short iVar= 0; iVar < nVar; iVar++) {
+      Jacobian_ic[iDim][iVar][iVar] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
+      Jacobian_jc[iDim][iVar][iVar] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
+      }
+    }
+  }
+  
+  /*--- TODO: add contributions of WLS gradients ---*/
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {}
+  
+  // if (!correct_gradient) {
+  //   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+  //       Jacobian_i[iVar][jVar] = 0.;
+  //       Jacobian_j[iVar][jVar] = 0.;
+  //     }
+  //   }
+  // }
+  
+  AD_END_PASSIVE
 }

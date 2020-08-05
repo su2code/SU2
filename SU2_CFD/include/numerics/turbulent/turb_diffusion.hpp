@@ -99,6 +99,12 @@ public:
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
+  /*!
+   * \brief Steps to include gradient terms in Jacobian
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CorrectJacobian(const CConfig *config) { }
+
 };
 
 /*!
