@@ -2411,6 +2411,8 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
   const su2double kappa = 0.41;
   const su2double B = 5.2;
 
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
@@ -2633,7 +2635,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                           Y_Plus/(11. * U_Tau_Rei) * exp(-Y_Plus / 3.)) + Phi_Rei *
                           (1. / (kappa * U_Tau_Rei)) + (F_Log - F_Rei) *
                           (4. * pow(Y_Plus / 27., 4.) / U_Tau) * 
-                          pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.);
+                          pow(1. / (cosh(pow(Y_Plus / 27., 4.)) + eps), 2.);
 
               if (grad_diff != grad_diff) {
                 cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus << ". pow(...): " << pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.) << endl; 
