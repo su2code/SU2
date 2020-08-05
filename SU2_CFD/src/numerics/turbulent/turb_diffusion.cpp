@@ -343,11 +343,12 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
 void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
   
-  const bool wasActive = AD::BeginPassive();
-  
   /*--- Add contributions of GG gradients ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+
+    const bool wasActive = AD::BeginPassive();
+    
     const su2double weight_i = 0.5 / (Volume_i);
     const su2double weight_j = 0.5 / (Volume_j);
     
@@ -357,7 +358,7 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
       Jacobian_jc[iDim][iVar][iVar] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
       }
     }
+
+    AD::EndPassive(wasActive);
   }
-  
-  AD::EndPassive(wasActive);
 }
