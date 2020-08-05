@@ -414,9 +414,205 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
     if (implicit) {
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
+      CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal()0);
     }
   }
 
+}
+
+void CNSSolver::CorrectJacobian(CGeometry           *geometry,
+                                   CSolver             **solver,
+                                   CConfig             *config,
+                                   const unsigned long iPoint,
+                                   const unsigned long jPoint,
+                                   const su2double     *Normal) {
+  
+  
+  /*--- We're only computing contributions of first neighbors to the Jacobian.
+        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
+        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
+        the Jacobian if iPoint is on a physical boundary. ---*/
+
+  if ((config->GetKind_Gradient_Method() == GREEN_GAUSS) && 
+      (geometry->node[iPoint]->GetPhysicalBoundary())) {
+
+    const bool wasActive = AD::BeginPassive();
+
+    su2double EdgVec[MAXNDIM] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      EdgVec[iDim] = sign*(geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim));
+
+    StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
+    HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec, sign);
+
+    AD::EndPassive(wasActive);
+  }// GG  
+}
+
+void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
+                                     CSolver             **solver,
+                                     CConfig             *config,
+                                     const unsigned long iPoint,
+                                     const unsigned long jPoint,
+                                     const su2double     *Normal,
+                                     const su2double     *EdgVec) {
+
+  const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+  CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
+
+  /*--- Get norm of projection and distance vectors ---*/
+
+  su2double ProjVec = 0.0, Dist2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    ProjVec += Normal[iDim]*EdgVec[iDim];
+    Dist2   += EdgVec[iDim]*EdgVec[iDim];
+  }
+
+  /*--- Get vector multiplied by GG gradient in CNumerics ---*/
+
+  su2double Vec[MAXNDIM] = {0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+
+  const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+
+  /*--- Common factors for all Jacobian terms --*/
+  const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+
+  const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
+  const su2double Mean_EddyVisc = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
+  const su2double Mean_Viscosity = Mean_LaminarVisc + Mean_EddyVisc;
+
+  /*--- TODO: Correction with wall function ---*/
+  const su2double WF_Factor = 1.0;
+
+  const su2double Density = nodes->GetDensity(iPoint);
+  const su2double Xi = WF_Factor*Mean_Viscosity/Density;
+
+  su2double Mean_Velocity[MAXNDIM] = {0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Mean_Velocity[iDim] = 0.5*(nodesFlo->GetVelocity(iPoint,iDim)+nodesFlo->GetVelocity(jPoint,iDim));
+
+  /*--- Reset Jacobian matrix ---*/
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++)
+      Jacobian_i[iVar][jVar] = 0.0;
+
+  /*--- Influence of boundary nodes ---*/
+  const su2double signk  = -1.0;
+  const su2double Weight = 0.5*HalfOnVol*sign*signk;
+  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+    if (iVertex != -1) {
+      const su2double *Normalk = geometry->vertex[iMarker][iVertex]->GetNormal();
+      /*--- Get new projection vector to be multiplied by divergence terms ---*/
+      ProjVec = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        ProjVec += Vec[iDim]*Normalk[iDim];
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        /*--- Momentum flux Jacobian wrt momentum ---*/
+        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+          Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Normalk[iDim]*Vec[jDim] 
+                                            - 2./3.*Normalk[jDim]*Vec[iDim] 
+                                            + delta[iDim][jDim]*ProjVec);
+        }// jDim
+      }// iDim
+    }// iVertex
+  }// iMarker
+
+  /*--- Now get density and energy Jacobians for iPoint ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      /*--- Momentum flux Jacobian wrt density ---*/
+      Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(iPoint,jDim);
+
+      /*--- Energy Jacobian wrt momentum ---*/
+      Jacobian_i[nVar-1][iDim+1] += Jacobian_i[iDim+1][jDim+1]*Mean_Velocity[jDim];
+    }
+
+    /*--- Energy Jacobian wrt density ---*/
+    Jacobian_i[nVar-1][0] += Jacobian_i[iDim+1][0]*Mean_Velocity[iDim];
+  }
+
+  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+
+}
+
+void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
+                                 CSolver             **solver,
+                                 CConfig             *config,
+                                 const unsigned long iPoint,
+                                 const unsigned long jPoint,
+                                 const su2double     *Normal,
+                                 const su2double     *EdgVec) {
+
+  const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+  CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
+
+  /*--- Get norm of projection and distance vectors ---*/
+
+  su2double ProjVec = 0.0, Dist2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    ProjVec += Normal[iDim]*EdgVec[iDim];
+    Dist2   += EdgVec[iDim]*EdgVec[iDim];
+  }
+
+  /*--- Get vector multiplied by GG gradient in CNumerics ---*/
+
+  su2double Vec[MAXNDIM] = {0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+
+  /*--- Common factors for all Jacobian terms --*/
+  const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+
+  const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
+  const su2double Mean_EddyVisc    = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
+
+  const su2double HeatFluxFactor  = Mean_LaminarVisc/Prandtl_Lam + Mean_EddyVisc/Prandtl_Turb;
+  const su2double CpOnR           = Gamma/Gamma_Minus_One;
+  const su2double ConductivityOnR = CpOnR*HeatFluxFactor;
+
+  const su2double Vel2     = nodes->GetVelocity2(iPoint);
+  const su2double Density  = nodes->GetDensity(iPoint);
+  const su2double Pressure = nodes->GetPressure(iPoint);
+  const su2double Phi      = Gamma_Minus_One/Density_i;
+
+  /*--- Reset Jacobian matrix ---*/
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++)
+      Jacobian_i[iVar][jVar] = 0.0;
+
+  /*--- Influence of boundary nodes ---*/
+  const su2double signk = -1.0;
+  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+    if (iVertex != -1) {
+      const su2double *Normalk = geometry->vertex[iMarker][iVertex]->GetNormal();
+      su2double Weight = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Weight += Normalk[iDim]*Vec[iDim];
+
+      Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
+
+      /*--- Density Jacobian ---*/
+      Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
+
+      /*--- Momentum Jacobian ---*/
+      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
+
+      /*--- Energy Jacobian ---*/
+      Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
+    }// iVertex
+  }// iMarker
+
+  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+  
 }
 
 void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {

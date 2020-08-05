@@ -431,12 +431,61 @@ public:
                         CNumerics *numerics, CConfig *config) override;
 
   /*!
+   * \brief Correction to viscous Jacobian that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] sign - Sign based on direction of edge.
+   */
+  void CorrectJacobian(CGeometry           *geometry,
+                       CSolver             **solver,
+                       CConfig             *config,
+                       const unsigned long iPoint,
+                       const unsigned long jPoint,
+                       const su2double     *Normal);
+
+  /*!
+   * \brief Correction to stress tensor Jacobian that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Normal - Normal vector of edge.
+   * \param[in] EdgVec - Vector of edge.
+   */
+  void StressTensorJacobian(CGeometry           *geometry,
+                            CSolver             **solver,
+                            CConfig             *config,
+                            const unsigned long iPoint,
+                            const unsigned long jPoint,
+                            const su2double     *Normal,
+                            const su2double     *EdgVec);
+
+  /*!
+   * \brief Correction to heat flux Jacobian that accounts for GG Jacobian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Normal - Normal vector of edge.
+   * \param[in] EdgVec - Vector of edge.
+   */
+  void HeatFluxJacobian(CGeometry           *geometry,
+                        CSolver             **solver,
+                        CConfig             *config,
+                        const unsigned long iPoint,
+                        const unsigned long jPoint,
+                        const su2double     *Normal,
+                        const su2double     *EdgVec);
+
+  /*!
    * \brief Get the skin friction coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the skin friction coefficient.
    */
-    inline su2double GetCSkinFriction(unsigned short val_marker,
+  inline su2double GetCSkinFriction(unsigned short val_marker,
                                     unsigned long val_vertex,
                                     unsigned short val_dim) const override {
     return CSkinFriction[val_marker][val_dim][val_vertex];
