@@ -103,7 +103,7 @@ public:
    * \brief Steps to include gradient terms in Jacobian
    * \param[in] config - Definition of the particular problem.
    */
-  void CorrectJacobian(const CConfig *config) { }
+  void CorrectJacobian(const CConfig *config);
 
 };
 
