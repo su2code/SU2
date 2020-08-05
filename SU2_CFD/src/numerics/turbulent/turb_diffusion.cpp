@@ -185,7 +185,7 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   
   Jacobian_i[0][0] = -nu_e*proj_vector_ij/sigma;
-  Jacobian_j[0][0] =  nu_e*proj_vector_i)/sigma;
+  Jacobian_j[0][0] =  nu_e*proj_vector_ij/sigma;
   
   if (correct_gradient) CorrectJacobian(config);
 
