@@ -423,7 +423,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       const unsigned long kPoint = geometry->node[iPoint]->GetPoint(iNode);
       const unsigned long kEdge = geometry->FindEdge(iPoint,kPoint);
       const su2double* Normalk = geometry->edge[kEdge]->GetNormal();
-      const su2double signk = (iPoint < kPoint) ? 1.0 : -1.0;
+      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         for (unsigned short iVar = 0; iVar < nVar; iVar++)
           Jacobian_i[iVar][iVar] += 0.5*Jacobian_ic[iDim][iVar][iVar]*Normalk[iDim]*sign*signk;
