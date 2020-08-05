@@ -478,8 +478,8 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     proj_flux_vel_j += val_Proj_Visc_Flux[iDim+1]*V_j[iDim+1];
 
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_i[nVar-1][iDim+1] += tau_jacobian_i[iDim][jDim+1]*val_Mean_PrimVar[jDim+1];
-      Jacobian_j[nVar-1][iDim+1] += tau_jacobian_j[iDim][jDim+1]*val_Mean_PrimVar[jDim+1];
+      Jacobian_i[nVar-1][iDim+1] += tau_jacobian_i[iDim][jDim+1]*val_Mean_PrimVar[iDim+1];
+      Jacobian_j[nVar-1][iDim+1] += tau_jacobian_j[iDim][jDim+1]*val_Mean_PrimVar[iDim+1];
     }
   }
 
