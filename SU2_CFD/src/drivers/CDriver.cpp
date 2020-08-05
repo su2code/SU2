@@ -1050,7 +1050,8 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
   solver = new CSolver**[config->GetnMGLevels()+1];
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
-    solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
+    //solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
+	solver[iMesh] = CSolverFactory::Create("EULER", geometry[iMesh], config, int(iMesh));
   }
 
   /*--- Count the number of DOFs per solution point. ---*/

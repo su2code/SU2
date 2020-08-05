@@ -26,6 +26,7 @@
  */
 #pragma once
 
+#include "../DBMember.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
 /*!
@@ -81,9 +82,24 @@ class CGeometry;
 class CConfig;
 
 class CSolverFactory {
+
+public:
+
+  // --- Define a convinience function pointer
+  using SolverCreatorPtr = CSolver*(*)
+	  (CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel);
+
+  // --- The registration function
+  static bool Register(const string& name, SolverCreatorPtr funcCreate);
   
+  // --- The generic creation method
+  static CSolver** Create
+	  (const string& name, CGeometry *geometry, CConfig *config, int iMGLevel);
+
 private:
 
+  // --- A new map of known solvers
+  static map<string, SolverCreatorPtr> knownSolvers;
   static map<const CSolver*, SolverMetaData> allocatedSolvers;
 
   /*!

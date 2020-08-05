@@ -27,7 +27,7 @@
 
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/solvers/CSolverFactory.hpp"
-#include "../../include/solvers/CEulerSolver.hpp"
+//#include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/solvers/CIncEulerSolver.hpp"
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/solvers/CIncNSSolver.hpp"
@@ -49,6 +49,47 @@
 #include "../../include/solvers/CBaselineSolver.hpp"
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
+
+map<string, CSolverFactory::SolverCreatorPtr> CSolverFactory::knownSolvers;
+
+bool CSolverFactory::Register(const string& name, SolverCreatorPtr funcCreate)
+{
+  auto it = knownSolvers.find(name);        
+  if(it == knownSolvers.end())    
+  {
+	  // If not found, register solver with its creation function
+      knownSolvers[name] = funcCreate;
+      return true;                                  
+  }                                                 
+  return false;    
+}
+
+CSolver** CSolverFactory::Create
+	(const string& name, CGeometry *geometry, CConfig *config, int iMGLevel)
+{    
+	CSolver** solver;
+
+  	solver = new CSolver*[MAX_SOLS]();
+
+    auto it = knownSolvers.find(name);     
+    if (it != knownSolvers.end())      
+    {    
+        // If Name exists, Call funcCreate from solver metadata  
+        solver[FLOW_SOL] = it->second(solver, geometry, config, iMGLevel);
+		return solver;
+    } else {
+        cerr << "<----- Solver " + name + " was not found." << endl;
+        cerr << "<----- Available Solvers: " << endl;
+        for (auto v: knownSolvers) cerr << v.first << endl;
+        exit(1);
+        return nullptr;
+    }
+}
+
+// Register the derived class
+// Need to force initialize this ...
+//bool CEulerSolver::is_registered = 
+//    CSolverFactory::Register(CEulerSolver::GetName(), CEulerSolver::CreateMethod);
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 

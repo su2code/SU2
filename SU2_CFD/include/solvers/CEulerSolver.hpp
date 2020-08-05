@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "CSolverFactory.hpp"
 #include "../variables/CEulerVariable.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
@@ -37,7 +38,7 @@
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
  */
-class CEulerSolver : public CSolver {
+class CEulerSolver : public CSolver, public DBMember<CEulerSolver, CSolverFactory> {
 protected:
   enum : size_t {MAXNDIM = 3};    /*!< \brief Max number of space dimensions, used in some static arrays. */
   enum : size_t {MAXNVAR = 12};   /*!< \brief Max number of variables, used in some static arrays. */
@@ -413,6 +414,18 @@ public:
    * \brief Destructor of the class.
    */
   ~CEulerSolver(void) override;
+
+  // --- Individual solver creation method
+  static CSolver* CreateMethod
+	  (CSolver** solver, CGeometry *geometry, CConfig *config, int iMesh)
+  {
+	  auto mSolver = new CEulerSolver(geometry, config, iMesh);
+	  mSolver->Preprocessing(geometry, solver, config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+	  return dynamic_cast<CSolver*>(mSolver);
+  }
+
+  // --- Get solver name
+  static string GetName() {return "EULER";}
 
   /*!
    * \brief Set the solver nondimensionalization.

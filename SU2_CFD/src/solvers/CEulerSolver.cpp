@@ -37,6 +37,11 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 
+// Register the derived class
+// Need to force initialize this ...
+//bool CEulerSolver::is_registered = 
+//    CSolverFactory::Register(CEulerSolver::GetName(), CEulerSolver::CreateMethod);
+
 void CEulerSolver::AeroCoeffsArray::allocate(int size) {
   _size = size;
   CD = new su2double[size]; CL = new su2double[size]; CSF = new su2double[size]; CEff = new su2double[size];
