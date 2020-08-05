@@ -579,7 +579,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double Vel2     = nodes->GetVelocity2(iPoint);
   const su2double Density  = nodes->GetDensity(iPoint);
   const su2double Pressure = nodes->GetPressure(iPoint);
-  const su2double Phi      = Gamma_Minus_One/Density_i;
+  const su2double Phi      = Gamma_Minus_One/Density;
 
   /*--- Reset Jacobian matrix ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -599,14 +599,14 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
 
       /*--- Density Jacobian ---*/
-      Jacobian_i[nVar-1][0] += Weight*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i);
+      Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2);
 
       /*--- Momentum Jacobian ---*/
       for (unsigned short jDim = 0; jDim < nDim; jDim++)
-        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi_i*nodesFlo->GetVelocity(iPoint,jDim);
+        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(iPoint,jDim);
 
       /*--- Energy Jacobian ---*/
-      Jacobian_i[nVar-1][nVar-1] += Weight*Phi_i;
+      Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
     }// iVertex
   }// iMarker
 
