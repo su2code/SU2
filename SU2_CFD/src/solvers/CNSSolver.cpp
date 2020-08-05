@@ -2698,7 +2698,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
 
               /* --- Newton Step --- */
 
-              U_Tau_Spa = U_Tau_Spa - diff / grad_diff;
+              U_Tau_Spa = U_Tau_Spa - diff / (grad_diff + eps);
 
               counter++;
               if (counter == max_iter) {
