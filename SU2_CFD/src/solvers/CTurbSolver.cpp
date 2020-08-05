@@ -366,8 +366,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     LinSysRes.AddBlock(jPoint, residual);
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
-    CorrectJacobian(geometry, solver, config, iPoint, jPoint, 1.0, residual.jacobian_ic);
-    CorrectJacobian(geometry, solver, config, jPoint, iPoint, -1.0, residual.jacobian_jc);
+    CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
+    CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
   }
   
 }
@@ -397,18 +397,19 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
                                   CConfig             *config,
                                   const unsigned long iPoint,
                                   const unsigned long jPoint,
-                                  const su2double     sign,
                                   const su2double     *const *const *const Jacobian_ic) {
   
   /*--- We're only computing contributions of first neighbors to the Jacobian.
-        In Green-Gauss, this contribution is 0.5*Sum(n_v)/r = 0 for volume nodes
-        and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to the Jacobian
-        if iPoint is on a physical boundary. ---*/
+        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
+        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
+        the Jacobian if iPoint is on a physical boundary. ---*/
 
   if ((config->GetKind_Gradient_Method() == GREEN_GAUSS) && 
       (geometry->node[iPoint]->GetPhysicalBoundary())) {
 
     const bool wasActive = AD::BeginPassive();
+
+    const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
     
     CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
@@ -440,8 +441,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     }// iMarker
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    if (jPoint != iPoint)
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
     AD::EndPassive(wasActive);
 
