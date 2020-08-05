@@ -532,7 +532,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     }
 
     /*--- Energy Jacobian wrt density ---*/
-    Jacobian_i[nVar-1][0] += Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(iPoint,iDim);
+    Jacobian_i[nVar-1][0] -= Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(iPoint,iDim);
   }
 
   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
