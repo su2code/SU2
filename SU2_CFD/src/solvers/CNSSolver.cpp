@@ -2622,11 +2622,11 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               Phi_Rei = tanh(pow(Y_Plus / 27., 4.));
               U_Plus = (1. - Phi_Rei) * F_Rei + Phi_Rei * F_Log;
 
-              /* --- Define function for Newton method to zero --- */
+              /*--- Define function for Newton method to zero ---*/
 
               diff = U_Plus - (VelTangMod / U_Tau_Rei);
 
-              /* --- Gradient of function defined above --- */
+              /*--- Gradient of function defined above ---*/
 
               grad_diff = VelTangMod /(U_Tau_Rei * U_Tau_Rei) + (1. - Phi_Rei) *
                           0.4 * Density_Wall * WallDistMod / (kappa * Lam_Visc_Wall * (1. + 0.4 * Y_Plus)) +
@@ -2638,7 +2638,8 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                           pow(1. / (cosh(pow(Y_Plus / 27., 4.)) + eps), 2.);
 
               if (grad_diff != grad_diff) {
-                cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus << ". pow(...): " << pow(1. / cosh(pow(Y_Plus / 27., 4.)), 2.) << endl; 
+                cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus 
+                     << ". pow(...): " << pow(1. / (cosh(pow(Y_Plus / 27., 4.)) + eps), 2.) << endl; 
               }
 
               /* --- Newton Step --- */
