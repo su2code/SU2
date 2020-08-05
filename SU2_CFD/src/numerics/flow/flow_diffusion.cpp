@@ -453,7 +453,6 @@ void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
 void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        const su2double *val_Proj_Visc_Flux) {
   
-  const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double factor_i = 0.5/V_i[nDim+2];
   const su2double factor_j = 0.5/V_j[nDim+2];
 
@@ -478,7 +477,7 @@ void CAvgGrad_Base::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
       Jacobian_i[nVar-1][iDim+1] += tau_jacobian_i[jDim][iDim+1]*val_Mean_PrimVar[jDim+1];
       Jacobian_j[nVar-1][iDim+1] += tau_jacobian_j[jDim][iDim+1]*val_Mean_PrimVar[jDim+1];
     }
-    
+
     contraction_i -= V_i[iDim+1]*Jacobian_i[nVar-1][iDim+1];
     contraction_j -= V_j[iDim+1]*Jacobian_j[nVar-1][iDim+1];
   }
