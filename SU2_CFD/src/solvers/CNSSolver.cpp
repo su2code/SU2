@@ -2638,8 +2638,10 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                           pow(1. / (cosh(pow(Y_Plus / 27., 4.))), 2.);
 
               if (grad_diff != grad_diff) {
-                cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus 
-                     << ". pow(...): " << pow(1. / (cosh(pow(Y_Plus / 27., 4.))), 2.) << endl; 
+                // cout << "rank: " << rank << ". node: " << geometry->node[iPoint]->GetGlobalIndex() << ". Y_Plus: " << Y_Plus 
+                //      << ". pow(...): " << pow(1. / (cosh(pow(Y_Plus / 27., 4.))), 2.) << endl; 
+                converged = false;
+                break;
               }
 
               /* --- Newton Step --- */
@@ -2695,6 +2697,11 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
                           kappa * kappa * U_Plus * U_Plus / U_Tau_Spa +
                           kappa * kappa * kappa * U_Plus * U_Plus * U_Plus / U_Tau_Spa ) - 
                           Density_Wall * WallDistMod / Lam_Visc_Wall;
+
+              if (grad_diff != grad_diff) {
+                converged = false;
+                break;
+              }
 
               /* --- Newton Step --- */
 
