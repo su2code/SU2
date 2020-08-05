@@ -51,6 +51,11 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
   vector<unsigned long> allNumVertexDonor(nProcessor);
   vector<unsigned long> allNumNodeDonor(nProcessor);
 
+  /*--- The target vertex information of the transpose interpolator. ---*/
+  const auto& donorVertices = interpolators[targetZone][donorZone]->targetVertices;
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
+
   /*--- Number of markers on the interface ---*/
   const auto nMarkerInt = (config[targetZone]->GetMarker_n_ZoneInterface())/2;
 
@@ -79,11 +84,9 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
     unsigned long nVertexDonorLocal = 0;
     unsigned long nNodeDonorLocal = 0;
     for (auto iVertex = 0ul; iVertex < nVertexDonor; iVertex++) {
-
-      auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
-
-      if (donor_geometry->nodes->GetDomain(donor_vertex->GetNode())) {
-        nNodeDonorLocal += donor_vertex->GetnDonorPoints();
+      const auto iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
+      if (donor_geometry->nodes->GetDomain(iPoint)) {
+        nNodeDonorLocal += donorVertices[markDonor][iVertex].nDonor();
         nVertexDonorLocal++;
       }
     }
@@ -103,18 +106,18 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
 
     for (auto iVertex = 0ul, iDonor = 0ul; iVertex < nVertexDonor; ++iVertex) {
 
-      auto donor_vertex = donor_geometry->vertex[markDonor][iVertex];
-      const auto iPoint = donor_vertex->GetNode();
+      auto& donor_vertex = donorVertices[markDonor][iVertex];
+      const auto iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
 
       if (!donor_geometry->nodes->GetDomain(iPoint)) continue;
 
-      const auto nDonor = donor_vertex->GetnDonorPoints();
+      const auto nDonor = donor_vertex.nDonor();
       const auto donorGlobalIndex = donor_geometry->nodes->GetGlobalIndex(iPoint);
 
       for (auto i = 0u; i < nDonor; ++i) {
         sendGlobalIndex[iDonor] = donorGlobalIndex;
-        sendDonorIndex[iDonor] = donor_vertex->GetInterpDonorPoint(i);
-        sendDonorCoeff[iDonor] = donor_vertex->GetDonorCoeff(i);
+        sendDonorIndex[iDonor] = donor_vertex.globalPoint[i];
+        sendDonorCoeff[iDonor] = donor_vertex.coefficient[i];
         ++iDonor;
       }
     }
@@ -185,13 +188,15 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
       }
     }
 
+    targetVertices[markTarget].resize(nVertexTarget);
+
     /*--- Loop over the vertices on the target marker, define one row of the transpose matrix. ---*/
 
     SU2_OMP_PARALLEL_(for schedule(dynamic,roundUpDiv(nVertexTarget, 2*omp_get_max_threads())))
     for (auto iVertex = 0ul; iVertex < nVertexTarget; ++iVertex) {
 
-      auto target_vertex = target_geometry->vertex[markTarget][iVertex];
-      const auto iPoint = target_vertex->GetNode();
+      auto& target_vertex = targetVertices[markTarget][iVertex];
+      const auto iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
       if (!target_geometry->nodes->GetDomain(iPoint)) continue;
 
@@ -209,7 +214,7 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
         ranges[iSend] = p;
       }
 
-      target_vertex->Allocate_DonorInfo(nDonor);
+      target_vertex.resize(nDonor);
 
       /*--- Use the search results to set the interpolation coefficients. ---*/
       for (int iSend = 0, iDonor = 0; iSend < nSend; ++iSend) {
@@ -219,9 +224,9 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
         const auto last = ranges[iSend].second - DonorIndex[iSend];
 
         for (auto iCoeff = first; iCoeff < last; ++iCoeff) {
-          target_vertex->SetInterpDonorProcessor(iDonor, iProcessor);
-          target_vertex->SetDonorCoeff(iDonor, DonorCoeff[iSend][iCoeff]);
-          target_vertex->SetInterpDonorPoint(iDonor, GlobalIndex[iSend][iCoeff]);
+          target_vertex.processor[iDonor] = iProcessor;
+          target_vertex.coefficient[iDonor] = DonorCoeff[iSend][iCoeff];
+          target_vertex.globalPoint[iDonor] = GlobalIndex[iSend][iCoeff];
           ++iDonor;
         }
       }

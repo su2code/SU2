@@ -80,6 +80,21 @@ protected:
   const vector<vector<unique_ptr<CInterpolator> > >& interpolators; /*! \brief All the interpolators. */
 
 public:
+  struct CDonorInfo {
+    vector<int> processor;
+    vector<unsigned long> globalPoint;
+    vector<su2double> coefficient;
+
+    unsigned long nDonor() const { return processor.size(); }
+
+    void resize(size_t nDonor) {
+      processor.resize(nDonor);
+      globalPoint.resize(nDonor);
+      coefficient.resize(nDonor);
+    }
+  };
+  vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
+
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry_container - Geometrical definition of the problem.

@@ -2944,14 +2944,17 @@ void CFluidDriver::Run() {
 
 void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-      config_container[donorZone], config_container[targetZone]);
-  if (config_container[targetZone]->GetKind_Solver() == RANS)
-    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
+  interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
+    solver_container[donorZone][INST_0][MESH_0][FLOW_SOL], solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+    geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
+    config_container[donorZone], config_container[targetZone]);
 
+  if (config_container[targetZone]->GetKind_Solver() == RANS) {
+    interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
+      solver_container[donorZone][INST_0][MESH_0][TURB_SOL], solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+      geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
+      config_container[donorZone], config_container[targetZone]);
+  }
 }
 
 void CFluidDriver::Update() {

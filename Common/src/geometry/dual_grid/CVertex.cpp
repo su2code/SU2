@@ -50,26 +50,6 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 
   for (iDim = 0; iDim < 3; iDim ++) VarCoord[iDim] = 0.0;
 
-  /*--- Set to nullptr variation of the rotation  ---*/
-
-  VarRot = nullptr;
-
-  /*--- Set to nullptr donor arrays for interpolation ---*/
-
-  Donor_Points  = nullptr;
-  Donor_Proc    = nullptr;
-  Donor_Coeff   = nullptr;
-  nDonor_Points = 1;
-
-}
-
-CVertex::~CVertex() {
-
-  delete[] VarRot;
-  delete[] Donor_Coeff;
-  delete[] Donor_Proc;
-  delete[] Donor_Points;
-
 }
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
@@ -111,19 +91,5 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
-
-}
-
-void CVertex::Allocate_DonorInfo(unsigned short nDonor) {
-
-  nDonor_Points = nDonor;
-
-  delete [] Donor_Points;
-  delete [] Donor_Proc;
-  delete [] Donor_Coeff;
-
-  Donor_Points = new unsigned long [nDonor_Points];
-  Donor_Proc   = new unsigned long [nDonor_Points];
-  Donor_Coeff  = new su2double [nDonor_Points];
 
 }

@@ -98,6 +98,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
   su2double **donor_element, *DonorPoint_Coord;
 
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
+
   /* 1 - Variable pre-processing */
 
   const unsigned short nDim = donor_geometry->GetnDim();
@@ -172,6 +174,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
      * - Starting from the closest donor node, it expands the supermesh by including
      * donor elements neighboring the initial one, until the overall target area is fully covered.
      */
+    targetVertices[markTarget].resize(nVertexTarget);
 
     if(nDim == 2){
 
@@ -415,12 +418,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-          target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
+          targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
           for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
-            target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor, Donor_GlobalPoint[Donor_Vect[iDonor]]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+            targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor];
+            targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
+            targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
           }
         }
       }
@@ -686,12 +689,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
+        targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
         for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
-          target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+          targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor] / Area;
+          targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
+          targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
         }
 
         for (ii = 0; ii < 2*nEdges_target + 2; ii++)

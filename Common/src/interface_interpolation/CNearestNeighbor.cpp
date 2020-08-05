@@ -66,6 +66,8 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
+
   vector<vector<DonorInfo> > DonorInfoVec(omp_get_max_threads());
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern. ---*/
@@ -109,14 +111,16 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
     auto& donorInfo = DonorInfoVec[omp_get_thread_num()];
     donorInfo.resize(nPossibleDonor);
 
+    targetVertices[markTarget].resize(nVertexTarget);
+
     su2double avgDist = 0.0, maxDist = 0.0;
     unsigned long numTarget = 0;
 
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
-      auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
-      const auto Point_Target = target_vertex->GetNode();
+      auto& target_vertex = targetVertices[markTarget][iVertexTarget];
+      const auto Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
 
       if (!target_geometry->nodes->GetDomain(Point_Target)) continue;
 
@@ -158,12 +162,12 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       }
 
       /*--- Set interpolation coefficients. ---*/
-      target_vertex->Allocate_DonorInfo(nDonor);
+      target_vertex.resize(nDonor);
 
       for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
-        target_vertex->SetInterpDonorPoint(iDonor, donorInfo[iDonor].pidx);
-        target_vertex->SetInterpDonorProcessor(iDonor, donorInfo[iDonor].proc);
-        target_vertex->SetDonorCoeff(iDonor, donorInfo[iDonor].dist/denom);
+        target_vertex.globalPoint[iDonor] = donorInfo[iDonor].pidx;
+        target_vertex.processor[iDonor] = donorInfo[iDonor].proc;
+        target_vertex.coefficient[iDonor] = donorInfo[iDonor].dist/denom;
       }
     }
     SU2_OMP_CRITICAL

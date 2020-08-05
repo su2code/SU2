@@ -69,6 +69,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
+  /*--- Make space for donor info. ---*/
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
+
   /*--- Init stats. ---*/
   MaxDistance = 0.0; ErrorCounter = 0;
   unsigned long nGlobalVertexTarget = 0;
@@ -172,11 +176,13 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
     su2double maxDist = 0.0;
     unsigned long errorCount = 0, totalCount = 0;
 
+    targetVertices[markTarget].resize(nVertexTarget);
+
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0u; iVertexTarget < nVertexTarget; ++iVertexTarget) {
 
-      auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
-      const auto iPoint = target_vertex->GetNode();
+      auto& target_vertex = targetVertices[markTarget][iVertexTarget];
+      const auto iPoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
 
       if (!target_geometry->nodes->GetDomain(iPoint)) continue;
       totalCount += 1;
@@ -197,10 +203,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
       if (minDist < matchingVertexTol) {
         /*--- Perfect match. ---*/
-        target_vertex->Allocate_DonorInfo(1);
-        target_vertex->SetDonorCoeff(0, 1.0);
-        target_vertex->SetInterpDonorPoint(0, donorPoint[iClosestVertex]);
-        target_vertex->SetInterpDonorProcessor(0, donorProc[iClosestVertex]);
+        target_vertex.resize(1);
+        target_vertex.coefficient[0] = 1.0;
+        target_vertex.globalPoint[0] = donorPoint[iClosestVertex];
+        target_vertex.processor[0] = donorProc[iClosestVertex];
         continue;
       }
 
@@ -251,13 +257,13 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
       const auto nNode = elemNumNodes[donor.iElem];
 
-      target_vertex->Allocate_DonorInfo(nNode);
+      target_vertex.resize(nNode);
 
       for (auto iNode = 0u; iNode < nNode; ++iNode) {
         const auto iVertex = elemIdxNodes(donor.iElem, iNode);
-        target_vertex->SetDonorCoeff(iNode, donor.isoparams[iNode]);
-        target_vertex->SetInterpDonorPoint(iNode, donorPoint[iVertex]);
-        target_vertex->SetInterpDonorProcessor(iNode, donorProc[iVertex]);
+        target_vertex.coefficient[iNode] = donor.isoparams[iNode];
+        target_vertex.globalPoint[iNode] = donorPoint[iVertex];
+        target_vertex.processor[iNode] = donorProc[iVertex];
       }
 
     }

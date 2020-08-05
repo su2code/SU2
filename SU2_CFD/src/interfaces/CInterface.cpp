@@ -56,7 +56,8 @@ CInterface::~CInterface(void) {
   delete[] SpanLevelDonor;
 }
 
-void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution,
+void CInterface::BroadcastData(const CInterpolator& interpolator,
+                               CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
                                CConfig *donor_config, CConfig *target_config) {
 
@@ -69,6 +70,8 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
 
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
+
+  auto& TargetVertices = interpolator.targetVertices;
 
   unsigned long Buffer_Send_nVertexDonor[1];
   unsigned long *Buffer_Recv_nVertexDonor = new unsigned long[size];
@@ -237,7 +240,7 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
         /*--- If this processor owns the node ---*/
         if (target_geometry->nodes->GetDomain(Point_Target)) {
           TotalVertexDonor++;
-          nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
+          nDonorPoints = TargetVertices[Marker_Target][iVertex].nDonor();
 
           InitializeTarget_Variable(target_solution, Marker_Target, iVertex, nDonorPoints);
 
@@ -245,10 +248,10 @@ void CInterface::BroadcastData(CSolver *donor_solution, CSolver *target_solution
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++) {
 
             /*--- Find the global index of the donor points for Point_Target ---*/
-            Donor_Global_Index = target_geometry->vertex[Marker_Target][iVertex]->GetInterpDonorPoint(iDonorPoint);
+            Donor_Global_Index = TargetVertices[Marker_Target][iVertex].globalPoint[iDonorPoint];
 
             /*--- We need to get the donor coefficient in a way like this: ---*/
-            donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
+            donorCoeff = TargetVertices[Marker_Target][iVertex].coefficient[iDonorPoint];
 
             /*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
 
