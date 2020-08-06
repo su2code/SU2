@@ -365,8 +365,11 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
-    CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
+
+    if (config->GetUse_Accurate_Turb_Jacobians()) {
+      CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
+      CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
+    }
   }
   
 }

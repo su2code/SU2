@@ -34,6 +34,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
                                  const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
+  correct_jacobian(correct_grad && config->GetUse_Accurate_Turb_Jacobians())
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
 {
   Proj_Mean_GradTurbVar_Normal = new su2double [nVar];
@@ -187,7 +188,7 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
   Jacobian_i[0][0] = -nu_e*proj_vector_ij/sigma;
   Jacobian_j[0][0] =  nu_e*proj_vector_ij/sigma;
   
-  if (correct_gradient) CorrectJacobian(config);
+  if (correct_jacobian) CorrectJacobian(config);
 
   Jacobian_i[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
   Jacobian_j[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
@@ -287,7 +288,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   Jacobian_j[0][0] = diff_kine*proj_on_rho;
   Jacobian_j[1][1] = diff_omega*proj_on_rho;
 
-  if (correct_gradient) CorrectJacobian(config);
+  if (correct_jacobian) CorrectJacobian(config);
   
   /*--- Jacobian wrt eddy viscosity ---*/
       

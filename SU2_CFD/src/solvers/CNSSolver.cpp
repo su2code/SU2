@@ -414,19 +414,22 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
     if (implicit) {
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-      CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
-      CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
+
+      if (config->GetUse_Accurate_Visc_Jacobians()) {
+        CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
+      }
     }
   }
 
 }
 
 void CNSSolver::CorrectJacobian(CGeometry           *geometry,
-                                   CSolver             **solver,
-                                   CConfig             *config,
-                                   const unsigned long iPoint,
-                                   const unsigned long jPoint,
-                                   const su2double     *Normal) {
+                                CSolver             **solver,
+                                CConfig             *config,
+                                const unsigned long iPoint,
+                                const unsigned long jPoint,
+                                const su2double     *Normal) {
   
   
   /*--- We're only computing contributions of first neighbors to the Jacobian.

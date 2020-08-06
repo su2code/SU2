@@ -1148,6 +1148,9 @@ private:
             Adap_ARmax;                /*!< \brief Maximum cell aspect ratio */
   unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
 
+  bool Use_Accurate_Visc_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG gradients (CNSSolver)  */
+       Use_Accurate_Turb_Jacobians;    /*!< \brief Whether to numerically differentiate the flux due to GG gradients (CTurbSolver) */
+
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
@@ -4331,6 +4334,18 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for CNSSolver.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Visc_Jacobians(void) const { return Use_Accurate_Visc_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for CTurbSolver.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
 
   /*!
    * \brief Get the MUSCL parameter.
