@@ -350,8 +350,8 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
 
     const bool wasActive = AD::BeginPassive();
 
-    const su2double weight_i = 0.5 / (Volume_i);
-    const su2double weight_j = 0.5 / (Volume_j);
+    const su2double weight_i = 0.25 / (Volume_i);
+    const su2double weight_j = 0.25 / (Volume_j);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       for (unsigned short iVar= 0; iVar < nVar; iVar++) {

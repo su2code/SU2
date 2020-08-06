@@ -427,7 +427,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
           for (unsigned short iDim = 0; iDim < nDim; iDim++)
             for (unsigned short iVar = 0; iVar < nVar; iVar++)
-              Jacobian_i[iVar][iVar] -= 0.5*Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim]*sign;
+              Jacobian_i[iVar][iVar] -= Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim]*sign;
         }// iVertex
       }// iMarker
 
@@ -438,7 +438,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
     /*--- Next we compute contributions of second neighbors to the Jacobian.
           To reduce extra communication overhead, we only consider nodes on
-          the current rank. ---*/
+          the current rank. Note that Jacobian_ic is already weighted by 0.25/Vol ---*/
 
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -454,7 +454,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] += 0.5*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim]*sign*signk;
+            Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim]*sign*signk;
 
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
