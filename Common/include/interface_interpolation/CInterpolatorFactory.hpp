@@ -25,8 +25,6 @@
  */
 #pragma once
 
-#include <memory>
-
 class CConfig;
 class CGeometry;
 class CInterpolator;

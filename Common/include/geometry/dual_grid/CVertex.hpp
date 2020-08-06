@@ -37,16 +37,16 @@
  */
 class CVertex : public CDualGrid {
 protected:
-  unsigned long Nodes[1];        /*!< \brief Vector to store the global nodes of an element. */
-  su2double Normal[3];           /*!< \brief Normal coordinates of the element and its center of gravity. */
-  su2double Aux_Var;             /*!< \brief Auxiliar variable defined only on the surface. */
-  su2double CartCoord[3];        /*!< \brief Vertex cartesians coordinates. */
-  su2double VarCoord[3];         /*!< \brief Used for storing the coordinate variation due to a surface modification. */
-  long PeriodicPoint[5];         /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
-  bool ActDisk_Perimeter;        /*!< \brief Identify nodes at the perimeter of the actuator disk */
-  short Rotation_Type;           /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
-  unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
-  su2double Basis_Function[3];   /*!< \brief Basis function values for interpolation across zones. */
+  unsigned long Nodes[1];               /*!< \brief Vector to store the global nodes of an element. */
+  su2double Normal[3] = {0.0};          /*!< \brief Normal coordinates of the element and its center of gravity. */
+  su2double Aux_Var;                    /*!< \brief Auxiliar variable defined only on the surface. */
+  su2double CartCoord[3] = {0.0};       /*!< \brief Vertex cartesians coordinates. */
+  su2double VarCoord[3] = {0.0};        /*!< \brief Used for storing the coordinate variation due to a surface modification. */
+  long PeriodicPoint[5] = {-1};         /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+  bool ActDisk_Perimeter = false;       /*!< \brief Identify nodes at the perimeter of the actuator disk */
+  short Rotation_Type;                  /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
+  unsigned long Normal_Neighbor;        /*!< \brief Index of the closest neighbor. */
+  su2double Basis_Function[3] = {0.0};  /*!< \brief Basis function values for interpolation across zones. */
 
 public:
   /*!
