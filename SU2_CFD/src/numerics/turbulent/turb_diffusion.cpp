@@ -350,13 +350,13 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
 
     const bool wasActive = AD::BeginPassive();
 
-    const su2double weight_i = 0.25 / (Volume_i);
-    const su2double weight_j = 0.25 / (Volume_j);
+    // const su2double weight_i = 0.25 / (Volume_i);
+    // const su2double weight_j = 0.25 / (Volume_j);
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       for (unsigned short iVar= 0; iVar < nVar; iVar++) {
-      Jacobian_ic[iDim][iVar][iVar] -= weight_i*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
-      Jacobian_jc[iDim][iVar][iVar] += weight_j*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
+      Jacobian_ic[iDim][iVar][iVar] -= 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
+      Jacobian_jc[iDim][iVar][iVar] += 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
       }
     }
 
