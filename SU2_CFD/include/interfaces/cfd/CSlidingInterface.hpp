@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -31,40 +31,12 @@
 #include "../CInterface.hpp"
 
 class CSlidingInterface : public CInterface {
-
-protected:
-
 public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CSlidingInterface(void);
-
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
-   * \param[in] config - Definition of the particular problem.
    */
-  CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSlidingInterface(void) override;
-
-  /*!
-   * \brief Retrieve some constants needed for the calculations.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   */
-  void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                             CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config) override;
+  CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst);
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -75,7 +47,7 @@ public:
    * \param[in] Vertex_Donor - Index of the donor vertex.
    * \param[in] Point_Donor - Index of the donor point.
    */
-  void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+  void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, const CConfig *donor_config,
                          unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) override;
 
   /*!
@@ -94,7 +66,7 @@ public:
    * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
    * \param[in] donorCoeff - value of the donor coefficient.
    */
-  void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+  void RecoverTarget_Variable(long indexPoint_iVertex, const su2double *Buffer_Bcast_Variables,
                               su2double donorCoeff) override;
 
   /*!
@@ -106,7 +78,7 @@ public:
    * \param[in] Vertex_Target - Index of the target vertex.
    * \param[in] Point_Target - Index of the target point.
    */
-  void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+  void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target) override;
 
 };

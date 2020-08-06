@@ -39,7 +39,7 @@ protected:
    * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag
    * \param[in] flow_config - Definition of the fluid (donor) problem.
    */
-  void Preprocess(CConfig *flow_config);
+  void Preprocess(const CConfig *flow_config);
 
 public:
   /*!
@@ -51,7 +51,7 @@ public:
    *            (to transfer forces when using conservative interpolation).
    */
   CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                         CConfig *config, bool integrate_tractions_);
+                         const CConfig *config, bool integrate_tractions_);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.
@@ -64,7 +64,7 @@ public:
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                              CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config) override;
+                             const CConfig *donor_config, const CConfig *target_config) override;
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
@@ -74,7 +74,7 @@ public:
    * \param[in] Marker_Donor - Index of the donor marker.
    * \param[in] Vertex_Donor - Index of the donor vertex.
    */
-  void GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
+  void GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, const CConfig *flow_config,
                          unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Flow) override;
 
   /*!
@@ -87,7 +87,7 @@ public:
    * \param[in] Point_Target - Index of the target point.
    */
   void SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-                          CConfig *fea_config, unsigned long Marker_Struct,
+                          const CConfig *fea_config, unsigned long Marker_Struct,
                           unsigned long Vertex_Struct, unsigned long Point_Struct) override;
 
 };

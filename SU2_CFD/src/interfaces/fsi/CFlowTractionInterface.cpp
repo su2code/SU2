@@ -27,16 +27,17 @@
  */
 
 #include "../../../include/interfaces/fsi/CFlowTractionInterface.hpp"
-
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
 CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                               CConfig *config, bool integrate_tractions_) :
-  CInterface(val_nVar, val_nConst, config),
+                                               const CConfig *config, bool integrate_tractions_) :
+  CInterface(val_nVar, val_nConst),
   integrate_tractions(integrate_tractions_) {
-
 }
 
-void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
+void CFlowTractionInterface::Preprocess(const CConfig *flow_config) {
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   const su2double *Velocity_ND, *Velocity_Real;
@@ -60,7 +61,7 @@ void CFlowTractionInterface::Preprocess(CConfig *flow_config) {
 
 void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
                                                    CGeometry *flow_geometry, CGeometry *struct_geometry,
-                                                   CConfig *flow_config, CConfig *struct_config) {
+                                                   const CConfig *flow_config, const CConfig *struct_config) {
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
@@ -98,7 +99,7 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
 }
 
 void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-                                               CConfig *flow_config, unsigned long Marker_Flow,
+                                               const CConfig *flow_config, unsigned long Marker_Flow,
                                                unsigned long Vertex_Flow, unsigned long Point_Struct) {
   unsigned short iVar, jVar;
 
@@ -172,7 +173,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 }
 
 void CFlowTractionInterface::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-                                                CConfig *fea_config, unsigned long Marker_Struct,
+                                                const CConfig *fea_config, unsigned long Marker_Struct,
                                                 unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
   /*--- Add to the Flow traction. If nonconservative interpolation is in use,

@@ -2439,13 +2439,13 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
-          interface[donor][target] = new CDisplacementsInterface(nDim, 0, config[donor]);
+          interface[donor][target] = new CDisplacementsInterface(nDim, 0);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
           interface_type = SLIDING_INTERFACE;
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-          interface[donor][target] = new CSlidingInterface(nVar, 0, config[donor]);
+          interface[donor][target] = new CSlidingInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << "sliding interface." << endl;
         }
         else if (heat_donor || heat_target) {
@@ -2463,7 +2463,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
-            interface[donor][target] = new CConjugateHeatInterface(nVar, 0, config[donor]);
+            interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
           }
           else {
@@ -2476,7 +2476,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
           interface_type = CONSERVATIVE_VARIABLES;
-          interface[donor][target] = new CConservativeVarsInterface(nVar, 0, config[donor]);
+          interface[donor][target] = new CConservativeVarsInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << "generic conservative variables." << endl;
         }
       }
@@ -2486,7 +2486,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       if (config[donor]->GetBoolMixingPlaneInterface()) {
         interface_type = MIXING_PLANE;
         auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-        interface[donor][target] = new CMixingPlaneInterface(nVar, 0, config[donor], config[target]);
+        interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
         if (rank == MASTER_NODE) {
           cout << "Set mixing-plane interface from donor zone "
                << donor << " to target zone " << target << "." << endl;

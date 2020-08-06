@@ -27,13 +27,16 @@
 
 #include "../../include/interfaces/CInterface.hpp"
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../include/solvers/CSolver.hpp"
 
 CInterface::CInterface(void) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()) {
 }
 
-CInterface::CInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) :
+CInterface::CInterface(unsigned short val_nVar, unsigned short val_nConst) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
   nVar(val_nVar) {
@@ -59,7 +62,7 @@ CInterface::~CInterface(void) {
 void CInterface::BroadcastData(const CInterpolator& interpolator,
                                CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
-                               CConfig *donor_config, CConfig *target_config) {
+                               const CConfig *donor_config, const CConfig *target_config) {
 
   int Marker_Donor, Marker_Target;
   unsigned long iVertex;
@@ -293,7 +296,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
 }
 
 void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                   CConfig *donor_config, CConfig *target_config,
+                                   const CConfig *donor_config, const CConfig *target_config,
                                    unsigned short iMarkerInt){
 
   unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
@@ -425,7 +428,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
 
 void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                                   CGeometry *donor_geometry, CGeometry *target_geometry,
-                                  CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+                                  const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt){
 
   unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
@@ -742,7 +745,7 @@ void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_so
 
 
   /*--- here we made the strong assumption that the mesh zone order
-   * follow the same order of the turbomachinery markers ---*/
+   * follows the same order of the turbomachinery markers ---*/
   SetAverageValues(donor_solution, target_solution, donorZone);
 
 }
@@ -751,8 +754,8 @@ void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometr
                                              unsigned short donorZone){
 
 
-  /*--- here we made the strong assumption that the mesh zone order f
-   * ollow the same order of the turbomachinery markers ---*/
+  /*--- here we made the strong assumption that the mesh zone order
+   * follows the same order of the turbomachinery markers ---*/
   SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
 
 }

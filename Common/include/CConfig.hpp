@@ -1829,6 +1829,7 @@ public:
    * \return Dimensionalized freestream velocity vector.
    */
   su2double* GetVelocity_FreeStream(void) { return Velocity_FreeStream; }
+  const su2double* GetVelocity_FreeStream(void) const { return Velocity_FreeStream; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream temperature.
@@ -1847,6 +1848,7 @@ public:
    * \return Non-dimensionalized freestream velocity vector.
    */
   su2double* GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
+  const su2double* GetVelocity_FreeStreamND(void) const { return Velocity_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream energy.
