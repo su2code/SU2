@@ -2468,8 +2468,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     //   }
     // }
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      // New_Func += Residual_RMS[iVar];
-      New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
+      New_Func += Residual_RMS[iVar];
+      // New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
     }
 
     /* Compute the difference in the nonlinear residuals between the
@@ -2501,8 +2501,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
       NonLinRes_Counter = 0;
       for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Series[iCounter] = 1.0;
-        // NonLinRes_Series[iCounter] = New_Func;
+        NonLinRes_Series[iCounter] = New_Func;
+        // NonLinRes_Series[iCounter] = 1.0;
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
     }
