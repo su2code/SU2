@@ -63,6 +63,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
                                CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
                                const CConfig *donor_config, const CConfig *target_config) {
+  static_assert(su2activematrix::Storage == StorageType::RowMajor,"");
 
   GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
                         donor_config, target_config);

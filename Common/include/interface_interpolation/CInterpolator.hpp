@@ -29,7 +29,6 @@
 #include "../../include/basic_types/datatype_structure.hpp"
 #include "../../include/toolboxes/C2DContainer.hpp"
 #include <vector>
-#include <memory>
 
 class CConfig;
 class CGeometry;
@@ -77,7 +76,6 @@ protected:
   CGeometry**** const Geometry;      /*! \brief Vector which stores n zones of geometry. */
   CGeometry* const donor_geometry;   /*! \brief Donor geometry. */
   CGeometry* const target_geometry;  /*! \brief Target geometry. */
-  const vector<vector<unique_ptr<CInterpolator> > >& interpolators; /*! \brief All the interpolators. */
 
 public:
   struct CDonorInfo {
@@ -99,12 +97,10 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] interpolator - Container of all interpolators.
    * \param[in] iZone - index of the donor zone.
    * \param[in] jZone - index of the target zone.
    */
   CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
-                const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
                 unsigned int iZone, unsigned int jZone);
 
   /*!

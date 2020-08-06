@@ -41,9 +41,8 @@ struct DonorInfo {
 };
 
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
-                                   const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
                                    unsigned int iZone, unsigned int jZone) :
-  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 

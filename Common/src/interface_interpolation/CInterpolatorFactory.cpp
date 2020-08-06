@@ -36,7 +36,7 @@
 namespace CInterpolatorFactory {
 CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
-                                  const vector<vector<unique_ptr<CInterpolator> > >& interp_container,
+                                  const CInterpolator* transpInterpolator,
                                   unsigned iZone, unsigned jZone, bool verbose) {
 
   CInterpolator* interpolator = nullptr;
@@ -56,27 +56,27 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
 
   if (type == WEIGHTED_AVERAGE) {
     if (verbose) cout << "using a sliding mesh approach." << endl;
-    interpolator = new CSlidingMesh(geometry_container, config, interp_container, iZone, jZone);
+    interpolator = new CSlidingMesh(geometry_container, config, iZone, jZone);
   }
   else if (config[jZone]->GetConservativeInterpolation()) {
     if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
-    interpolator = new CMirror(geometry_container, config, interp_container, iZone, jZone);
+    interpolator = new CMirror(geometry_container, config, transpInterpolator, iZone, jZone);
   }
   else {
     switch(type) {
     case ISOPARAMETRIC:
       if (verbose) cout << "using the isoparametric approach." << endl;
-      interpolator = new CIsoparametric(geometry_container, config, interp_container, iZone, jZone);
+      interpolator = new CIsoparametric(geometry_container, config, iZone, jZone);
       break;
 
     case NEAREST_NEIGHBOR:
       if (verbose) cout << "using a nearest neighbor approach." << endl;
-      interpolator = new CNearestNeighbor(geometry_container, config, interp_container, iZone, jZone);
+      interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
       break;
 
     case RADIAL_BASIS_FUNCTION:
       if (verbose) cout << "using a radial basis function approach." << endl;
-      interpolator = new CRadialBasisFunction(geometry_container, config, interp_container, iZone, jZone);
+      interpolator = new CRadialBasisFunction(geometry_container, config, iZone, jZone);
       break;
 
     default:

@@ -32,9 +32,9 @@
 
 
 CMirror::CMirror(CGeometry ****geometry_container, const CConfig* const* config,
-                 const vector<vector<unique_ptr<CInterpolator> > >& interpolator,
-                 unsigned int iZone, unsigned int jZone) :
-  CInterpolator(geometry_container, config, interpolator, iZone, jZone) {
+                 const CInterpolator* interpolator, unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone),
+  transpInterpolator(interpolator) {
   using PrintingToolbox::to_string;
   if (jZone < iZone) {
     SU2_MPI::Error(string("The order of the zones does not allow conservative interpolation to be setup.\n"
@@ -52,7 +52,7 @@ void CMirror::SetTransferCoeff(const CConfig* const* config) {
   vector<unsigned long> allNumNodeDonor(nProcessor);
 
   /*--- The target vertex information of the transpose interpolator. ---*/
-  const auto& donorVertices = interpolators[targetZone][donorZone]->targetVertices;
+  const auto& donorVertices = transpInterpolator->targetVertices;
 
   targetVertices.resize(config[targetZone]->GetnMarker_All());
 
