@@ -518,14 +518,12 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           ProjVec += Vec[iDim]*SurfNormal[iDim];
 
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          /*--- Momentum flux Jacobian wrt momentum ---*/
-          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+        /*--- Momentum flux Jacobian wrt momentum ---*/
+        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+          for (unsigned short jDim = 0; jDim < nDim; jDim++)
             Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(SurfNormal[iDim]*Vec[jDim] 
                                               - TWO3*SurfNormal[jDim]*Vec[iDim] 
                                               + delta[iDim][jDim]*ProjVec);
-          }// jDim
-        }// iDim
       }// iVertex
     }// iMarker
 
@@ -572,9 +570,9 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         ProjVec += Vec[iDim]*VolNormal[iDim];
 
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        /*--- Momentum flux Jacobian wrt momentum ---*/
-        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      /*--- Momentum flux Jacobian wrt momentum ---*/
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short jDim = 0; jDim < nDim; jDim++)
           Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(VolNormal[iDim]*Vec[jDim] 
                                       - TWO3*VolNormal[jDim]*Vec[iDim] 
                                       + delta[iDim][jDim]*ProjVec);
