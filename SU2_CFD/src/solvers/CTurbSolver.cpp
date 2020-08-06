@@ -451,13 +451,14 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
         const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
         const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+        const su2double Weight = sign*signk*nodes->GetDensity(iPoint)/nodes->GetDensity(kPoint);
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim]*sign*signk;
+            Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim];
 
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
       }// domain
     }// iNeigh
 
