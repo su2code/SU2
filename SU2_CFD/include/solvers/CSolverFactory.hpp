@@ -192,7 +192,15 @@ public:
    * \param[in] solver - Address of the solver
    * \return sub solver info struct.
    */
-  static SolverMetaData GetSolverMeta(const CSolver* solver) { return allocatedSolvers.at(solver); }
+  //static SolverMetaData GetSolverMeta(const CSolver* solver) { return allocatedSolvers.at(solver); }
+  static SolverMetaData GetSolverMeta(const CSolver* solver) 
+  { 
+	  
+	  SolverMetaData metadata;
+	  metadata.solverType = SUB_SOLVER_TYPE::EULER;
+	  metadata.integrationType = INTEGRATION_TYPE::MULTIGRID;
+	  return metadata; 
+  }
 
   /*!
    * \brief Clear the solver meta data
