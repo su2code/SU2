@@ -77,14 +77,6 @@ void CSlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsi
 
 }
 
-void CSlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, const su2double *Buffer_Bcast_Variables,
-                                               su2double donorCoeff){
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
-
-  Target_Variable[nVar] = donorCoeff;
-}
-
 void CSlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                            const CConfig *target_config, unsigned long Marker_Target,
                                            unsigned long Vertex_Target, unsigned long Point_Target) {

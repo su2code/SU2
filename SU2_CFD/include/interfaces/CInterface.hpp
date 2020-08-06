@@ -136,16 +136,12 @@ protected:
   }
 
   /*!
-   * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
-   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
-   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \brief Recovers the target variable from the buffer of su2doubles that was broadcast.
+   * \param[in] bcastVariable - Broadcast variable.
    * \param[in] donorCoeff - value of the donor coefficient.
    */
-  inline virtual void RecoverTarget_Variable(long indexPoint_iVertex, const su2double *Buffer_Bcast_Variables,
-                                             su2double donorCoeff){
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
-
+  inline virtual void RecoverTarget_Variable(const su2double *bcastVariable, su2double donorCoeff) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
   /*!

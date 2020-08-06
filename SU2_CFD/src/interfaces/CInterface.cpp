@@ -67,188 +67,130 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
   GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
                         donor_config, target_config);
 
-  auto& TargetVertices = interpolator.targetVertices;
+  /*--- Loop over interface markers. ---*/
 
-  /*--- Number of markers on the FSI interface ---*/
-
-  const auto nMarkerInt = donor_config->GetMarker_n_ZoneInterface()/2;
-
-  /*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
-  /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
-
-  for (unsigned short iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
+  for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
 
     /*--- Check if this interface connects the two zones, if not continue. ---*/
 
-    const auto Marker_Donor = donor_config->FindInterfaceMarker(iMarkerInt);
-    const auto Marker_Target = target_config->FindInterfaceMarker(iMarkerInt);
+    const auto markDonor = donor_config->FindInterfaceMarker(iMarkerInt);
+    const auto markTarget = target_config->FindInterfaceMarker(iMarkerInt);
 
-    if(!CInterpolator::CheckInterfaceBoundary(Marker_Donor, Marker_Target)) continue;
+    if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-    unsigned long nLocalVertexDonorOwned = 0, nLocalVertexDonor = 0;
+    /*--- Count donor vertices on this rank. ---*/
 
-    if (Marker_Donor != -1) {
-      nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
-
-      for (auto iVertex = 0ul; iVertex < nLocalVertexDonor; iVertex++) {
-        auto Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-        if (donor_geometry->nodes->GetDomain(Point_Donor))
-          nLocalVertexDonorOwned++;
+    int nLocalVertexDonor = 0;
+    if (markDonor >= 0) {
+      for (auto iVertex = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
+        auto Point_Donor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
+        /*--- Only domain points are donors. ---*/
+        nLocalVertexDonor += donor_geometry->nodes->GetDomain(Point_Donor);
       }
     }
 
-    unsigned long MaxLocalVertexDonor, TotalVertexDonor;
+    /*--- Gather donor counts and compute total sizes, and displacements (cumulative
+     * sums) to perform an Allgatherv of donor indices and variables. ---*/
 
-    /*--- We receive MaxLocalVertexDonor as the maximum number of vertices
-     * in one single processor on the donor side---*/
-    SU2_MPI::Allreduce(&nLocalVertexDonor, &MaxLocalVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    /*--- We receive TotalVertexDonorOwned as the total (real) number of vertices
-     * in one single interface marker on the donor side ---*/
-    SU2_MPI::Allreduce(&nLocalVertexDonorOwned, &TotalVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    vector<int> nAllVertexDonor(size), nAllVarCounts(size), displIdx(size,0), displVar(size);
+    SU2_MPI::Allgather(&nLocalVertexDonor, 1, MPI_INT, nAllVertexDonor.data(), 1, MPI_INT, MPI_COMM_WORLD);
 
-    /*--- We will be gathering the donor information into the master node ---*/
-    const auto nBuffer_DonorVariables = MaxLocalVertexDonor * nVar;
-    const auto nBuffer_DonorIndices = MaxLocalVertexDonor;
-
-    /*--- Then we will broadcasting it to all the processors so they can retrieve the info they need ---*/
-    /*--- We only broadcast those nodes that we need ---*/
-    const auto nBuffer_BcastVariables = TotalVertexDonor * nVar;
-    const auto nBuffer_BcastIndices = TotalVertexDonor;
-
-    /*--- Send and Recv buffers ---*/
-
-    /*--- Buffers to send and receive the variables in the donor mesh ---*/
-    su2double *Buffer_Send_DonorVariables = new su2double[nBuffer_DonorVariables];
-    su2double *Buffer_Recv_DonorVariables = nullptr;
-
-    /*--- Buffers to send and receive the indices in the donor mesh ---*/
-    long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
-    long *Buffer_Recv_DonorIndices = nullptr;
-
-    /*--- Buffers to broadcast the variables and the indices ---*/
-    su2double *Buffer_Bcast_Variables = new su2double[nBuffer_BcastVariables];
-    long *Buffer_Bcast_Indices        = new long[nBuffer_BcastIndices];
-
-    /*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
-
-    if (rank == MASTER_NODE) {
-      Buffer_Recv_DonorVariables  = new su2double[size*nBuffer_DonorVariables];
-      Buffer_Recv_DonorIndices    = new long[size*nBuffer_DonorIndices];
+    for (int i = 0; i < size; ++i) {
+      nAllVarCounts[i] = nAllVertexDonor[i] * nVar;
+      if(i) displIdx[i] = displIdx[i-1] + nAllVertexDonor[i-1];
+      displVar[i] = displIdx[i] * nVar;
     }
 
-    /*--- On the donor side ---*/
-    /*--- First we initialize all of the indices and processors to -1 ---*/
-    /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
-    for (auto iVertex = 0ul; iVertex < nBuffer_DonorIndices; iVertex++)
-      Buffer_Send_DonorIndices[iVertex] = -1;
+    /*--- Fill send buffers. ---*/
 
+    vector<unsigned long> sendDonorIdx(nLocalVertexDonor);
+    su2activematrix sendDonorVar(nLocalVertexDonor, nVar);
 
-    for (auto iVertex = 0ul; iVertex < nLocalVertexDonor; iVertex++) {
-      const auto Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+    if (markDonor >= 0) {
+      for (auto iVertex = 0ul, iSend = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
+        const auto iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
 
-      /*--- If this processor owns the node ---*/
+        /*--- If this processor owns the node. ---*/
+        if (donor_geometry->nodes->GetDomain(iPoint)) {
 
-      if (donor_geometry->nodes->GetDomain(Point_Donor)) {
+          GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iVertex, iPoint);
+          for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
 
-        GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
-
-        Buffer_Send_DonorIndices[iVertex] = donor_geometry->nodes->GetGlobalIndex(Point_Donor);
-      }
-
-    }
-
-    /*--- Once all the messages have been prepared, we gather them all into the MASTER_NODE ---*/
-    SU2_MPI::Gather(Buffer_Send_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, Buffer_Recv_DonorVariables,
-                    nBuffer_DonorVariables, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices,
-                    nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- Now we pack the information to send it over to the different processors. ---*/
-
-    if (rank == MASTER_NODE) {
-
-      /*--- For all the data we have received ---*/
-      /*--- We initialize a counter to determine the position in the broadcast vector ---*/
-
-      auto iLocalVertex = 0ul;
-      for (auto iVertex = 0ul; iVertex < size*nBuffer_DonorIndices; iVertex++) {
-
-        /*--- If the donor index is not -1 (this is, if the node is not originally a halo node) ---*/
-        if (Buffer_Recv_DonorIndices[iVertex] != -1) {
-
-          /*--- We set the donor index ---*/
-          Buffer_Bcast_Indices[iLocalVertex] = Buffer_Recv_DonorIndices[iVertex];
-
-          for (auto iVar = 0u; iVar < nVar; iVar++)
-            Buffer_Bcast_Variables[iLocalVertex*nVar+iVar] = Buffer_Recv_DonorVariables[iVertex*nVar+iVar];
-
-          iLocalVertex++;
-        }
-      }
-      assert(iLocalVertex == TotalVertexDonor);
-    }
-
-    SU2_MPI::Bcast(Buffer_Bcast_Variables, nBuffer_BcastVariables, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- For the target marker we are studying ---*/
-    if (Marker_Target >= 0) {
-
-      /*--- We have identified the local index of the Structural marker ---*/
-      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
-
-      for (auto iVertex = 0ul; iVertex < target_geometry->GetnVertex(Marker_Target); iVertex++) {
-
-        const auto Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
-
-        /*--- If this processor owns the node ---*/
-        if (target_geometry->nodes->GetDomain(Point_Target)) {
-          TotalVertexDonor++;
-          const auto nDonorPoints = TargetVertices[Marker_Target][iVertex].nDonor();
-
-          InitializeTarget_Variable(target_solution, Marker_Target, iVertex, nDonorPoints);
-
-          /*--- For the number of donor points ---*/
-          for (auto iDonorPoint = 0ul; iDonorPoint < nDonorPoints; iDonorPoint++) {
-
-            /*--- Find the global index of the donor points for Point_Target ---*/
-            const auto Donor_Global_Index = TargetVertices[Marker_Target][iVertex].globalPoint[iDonorPoint];
-
-            /*--- We need to get the donor coefficient in a way like this: ---*/
-            const auto donorCoeff = TargetVertices[Marker_Target][iVertex].coefficient[iDonorPoint];
-
-            /*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
-
-            const auto idx = std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices+nBuffer_BcastIndices,
-                                       Donor_Global_Index) - Buffer_Bcast_Indices;
-            assert(idx < nBuffer_BcastIndices);
-
-            /*--- Recover the Target_Variable from the buffer of variables ---*/
-            RecoverTarget_Variable(idx, Buffer_Bcast_Variables, donorCoeff);
-
-            /*--- If the value is not directly aggregated in the previous function ---*/
-            if (!valAggregated) SetTarget_Variable(target_solution, target_geometry, target_config,
-                                                   Marker_Target, iVertex, Point_Target);
-          }
-
-          /*--- If we have aggregated the values in the function RecoverTarget_Variable,
-           * the set is outside the loop ---*/
-          if (valAggregated) SetTarget_Variable(target_solution, target_geometry, target_config,
-                                                Marker_Target, iVertex, Point_Target);
+          sendDonorIdx[iSend] = donor_geometry->nodes->GetGlobalIndex(iPoint);
+          ++iSend;
         }
       }
     }
 
-    delete [] Buffer_Send_DonorVariables;
-    delete [] Buffer_Send_DonorIndices;
-    delete [] Buffer_Bcast_Variables;
-    delete [] Buffer_Bcast_Indices;
+    /*--- Gather data. ---*/
 
-    delete [] Buffer_Recv_DonorVariables;
-    delete [] Buffer_Recv_DonorIndices;
+    const auto nGlobalVertexDonor = displIdx.back() + nAllVertexDonor.back();
+
+    vector<unsigned long> donorIdx(nGlobalVertexDonor);
+    su2activematrix donorVar(nGlobalVertexDonor, nVar);
+
+    SU2_MPI::Allgatherv(sendDonorIdx.data(), sendDonorIdx.size(), MPI_UNSIGNED_LONG, donorIdx.data(),
+                        nAllVertexDonor.data(), displIdx.data(), MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+    SU2_MPI::Allgatherv(sendDonorVar.data(), sendDonorVar.size(), MPI_DOUBLE, donorVar.data(),
+                        nAllVarCounts.data(), displVar.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+
+    /*--- This rank does not need to do more work. ---*/
+    if (markTarget < 0) continue;
+
+    /*--- Sort the donor information by index to then use binary searches. ---*/
+
+    vector<size_t> order(donorIdx.size());
+    iota(order.begin(), order.end(), 0ul);
+    sort(order.begin(), order.end(), [&donorIdx](size_t i, size_t j) {return donorIdx[i] < donorIdx[j];} );
+
+    /*--- inplace permutation. ---*/
+    for (size_t i = 0; i < order.size(); ++i) {
+      auto j = order[i];
+      while (j < i) j = order[j];
+      if (i == j) continue;
+      swap(donorIdx[i], donorIdx[j]);
+      for (auto iVar = 0u; iVar < nVar; ++iVar)
+        swap(donorVar(i,iVar), donorVar(j,iVar));
+    }
+
+    /*--- Loop over target vertices. ---*/
+
+    for (auto iVertex = 0ul; iVertex < target_geometry->GetnVertex(markTarget); iVertex++) {
+      const auto iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+
+      if (!target_geometry->nodes->GetDomain(iPoint)) continue;
+
+      auto& targetVertex = interpolator.targetVertices[markTarget][iVertex];
+      const auto nDonorPoints = targetVertex.nDonor();
+
+      InitializeTarget_Variable(target_solution, markTarget, iVertex, nDonorPoints);
+
+      /*--- For the number of donor points. ---*/
+      for (auto iDonorPoint = 0ul; iDonorPoint < nDonorPoints; iDonorPoint++) {
+
+        /*--- Get the global index of the donor and the interpolation coefficient. ---*/
+
+        const auto donorGlobalIndex = targetVertex.globalPoint[iDonorPoint];
+        const auto donorCoeff = targetVertex.coefficient[iDonorPoint];
+
+        /*--- Find the index of the global donor point in the donor data. ---*/
+
+        const auto idx = lower_bound(donorIdx.begin(), donorIdx.end(), donorGlobalIndex) - donorIdx.begin();
+        assert(idx < donorIdx.size());
+
+        /*--- Recover the Target_Variable from the buffer of variables. ---*/
+        RecoverTarget_Variable(donorVar[idx], donorCoeff);
+
+        /*--- If the value is not directly aggregated in the previous function. ---*/
+        if (!valAggregated)
+          SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iVertex, iPoint);
+      }
+
+      /*--- If we have aggregated the values in the function RecoverTarget_Variable, the set is outside the loop. ---*/
+      if (valAggregated)
+        SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iVertex, iPoint);
+    }
   }
 }
 

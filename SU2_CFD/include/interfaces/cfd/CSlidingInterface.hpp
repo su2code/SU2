@@ -62,12 +62,13 @@ public:
 
   /*!
    * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
-   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
-   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \param[in] bcastVariable - Broadcast variable.
    * \param[in] donorCoeff - value of the donor coefficient.
    */
-  void RecoverTarget_Variable(long indexPoint_iVertex, const su2double *Buffer_Bcast_Variables,
-                              su2double donorCoeff) override;
+  inline void RecoverTarget_Variable(const su2double *bcastVariable, su2double donorCoeff) override {
+    for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] = bcastVariable[iVar];
+    Target_Variable[nVar] = donorCoeff;
+  }
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
