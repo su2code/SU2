@@ -4785,7 +4785,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = 0.99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -4800,7 +4800,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
       if ((iVar == 0) || (iVar == nVar-1)) {
         const unsigned long index = iPoint * nVar + iVar;
-        if (LinSysSol[index] < -allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
+        if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
           localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
       }
     }
