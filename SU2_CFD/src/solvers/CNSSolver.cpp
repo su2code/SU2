@@ -504,17 +504,17 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
     if (iVertex != -1) {
-      const su2double *Normalk = geometry->vertex[iMarker][iVertex]->GetNormal();
+      const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
       /*--- Get new projection vector to be multiplied by divergence terms ---*/
       ProjVec = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        ProjVec += Vec[iDim]*Normalk[iDim];
+        ProjVec += Vec[iDim]*SurfNormal[iDim];
 
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         /*--- Momentum flux Jacobian wrt momentum ---*/
         for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-          Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Normalk[iDim]*Vec[jDim] 
-                                            - TWO3*Normalk[jDim]*Vec[iDim] 
+          Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(SurfNormal[iDim]*Vec[jDim] 
+                                            - TWO3*SurfNormal[jDim]*Vec[iDim] 
                                             + delta[iDim][jDim]*ProjVec);
         }// jDim
       }// iDim
@@ -589,15 +589,15 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
     if (iVertex != -1) {
-      const su2double *Normalk = geometry->vertex[iMarker][iVertex]->GetNormal();
+      const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
       su2double Weight = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Weight += Normalk[iDim]*Vec[iDim];
+        Weight += SurfNormal[iDim]*Vec[iDim];
 
       Weight *= -0.5*HalfOnVol*ConductivityOnR*sign;
 
       /*--- Density Jacobian ---*/
-      Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2);
+      Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
       /*--- Momentum Jacobian ---*/
       for (unsigned short jDim = 0; jDim < nDim; jDim++)

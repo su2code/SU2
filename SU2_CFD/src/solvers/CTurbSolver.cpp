@@ -365,8 +365,7 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
-    CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
+    CorrectJacobian(geometry, solverc, config, jPoint, iPoint, residual.jacobian_jc);
   }
   
 }
@@ -420,10 +419,10 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
-        const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-              Jacobian_i[iVar][iVar] -= 0.5*Jacobian_ic[iDim][iVar][iVar]*Normal[iDim]*sign;
+            Jacobian_i[iVar][iVar] -= 0.5*Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim]*sign;
       }// iVertex
     }// iMarker
 
