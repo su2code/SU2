@@ -400,42 +400,70 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
                                   const unsigned long iPoint,
                                   const unsigned long jPoint,
                                   const su2double     *const *const *const Jacobian_ic) {
-  
-  /*--- We're only computing contributions of first neighbors to the Jacobian.
-        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
-        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
-        the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if ((config->GetKind_Gradient_Method() == GREEN_GAUSS) && 
-      (geometry->node[iPoint]->GetPhysicalBoundary())) {
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) { 
+
+    /*--- First we compute contributions of first neighbors to the Jacobian.
+          In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
+          volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
+          the Jacobian if iPoint is on a physical boundary. ---*/
 
     const bool wasActive = AD::BeginPassive();
 
     const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-    
+      
     CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
-    
-    /*--- Influence of boundary i on R(i,j) ---*/
-    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      if (iVertex != -1) {
-        const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        for (unsigned short jVar = 0; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
+      
+      /*--- Influence of boundary i on R(i,j) ---*/
+      for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex != -1) {
+          const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            for (unsigned short iVar = 0; iVar < nVar; iVar++)
+              Jacobian_i[iVar][iVar] -= 0.5*Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim]*sign;
+        }// iVertex
+      }// iMarker
+
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+
+    }// physical boundary
+
+    /*--- Next we compute contributions of second neighbors to the Jacobian.
+          To reduce extra communication overhead, we only consider nodes on
+          the current rank. ---*/
+
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      if (geometry->node[kPoint]->GetDomain()) {
+
+        for (unsigned short iVar = 0; iVar < nVar; iVar++)
+          for (unsigned short jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+
+        auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+        const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
+        const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           for (unsigned short iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] -= 0.5*Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim]*sign;
-      }// iVertex
-    }// iMarker
+            Jacobian_i[iVar][iVar] += 0.5*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim]*sign*signk;
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+      }// domain
+    }// iNeigh
 
     AD::EndPassive(wasActive);
 
-  }// GG and physical boundary
+  }// GG
   
 }
 
