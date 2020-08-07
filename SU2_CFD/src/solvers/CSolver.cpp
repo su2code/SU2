@@ -5769,7 +5769,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
               for (unsigned short iDim = 0; iDim < nDim; iDim++)
                 dist += pow(node_j->GetCoord(iDim)-node_i->GetCoord(iDim),2);
               dist = 1./dist;
-              suumdist += dist;
+              sumdist += dist;
               for(unsigned short iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;
                 for(unsigned short iMet = 0; iMet < nMet; iMet++) {
