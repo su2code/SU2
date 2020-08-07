@@ -97,7 +97,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ComputeMassAndPressureFluxes(const CConfig* co
 void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
   unsigned short iDim, iVar, jVar, kVar;
-  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, sq_vel, Energy_i, Energy_j;
+  su2double R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeTke, ProjVelocity, sq_vel, Energy_i, Energy_j;
 
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
