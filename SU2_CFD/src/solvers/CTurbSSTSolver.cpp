@@ -1846,7 +1846,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
     CDkw += gradk[iDim]*gradomega;
   }
-  CrossDiff *= 2.0*r*sigmaomega2*(1.0 - F1)/zeta;
+  CDkw *= 2.0*r*sigmaomega2*(1.0 - F1)/zeta;
   
   //--- Account for wall functions
   su2double wf = varFlo->GetTauWallFactor(iPoint);
