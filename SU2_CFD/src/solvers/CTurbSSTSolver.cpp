@@ -1844,7 +1844,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     gradT[iDim]     = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
     gradk[iDim]     = varTur->GetGradient(iPoint, 0, iDim);
     gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
-    CDkw += gradk[iDim]*gradomega;
+    CDkw += gradk[iDim]*gradomega[iDim];
   }
   CDkw *= 2.0*r*sigmaomega2*(1.0 - F1)/zeta;
   
