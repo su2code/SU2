@@ -115,7 +115,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::ApproximateJacobian(su2double **val_Jacobian_i
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke)));
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke)-TWO3*RoeTke));
 
   /*--- Compute P and Lambda (do it with the Normal) ---*/
 
@@ -929,7 +929,7 @@ CNumerics::ResidualType<> CUpwAUSM_Flow::ComputeResidual(const CConfig* config) 
     }
     RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
     RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke)));
+    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke)-TWO3*RoeTke));
 
     /*--- Compute P and Lambda (do it with the Normal) ---*/
     GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
