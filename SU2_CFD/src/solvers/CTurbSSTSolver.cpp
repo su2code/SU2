@@ -700,6 +700,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       visc_numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
                                   flowNodes->GetVorticity(iPoint));
 
+      /*--- Set values for gradient Jacobian ---*/
+      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                               geometry->node[iPoint]->GetVolume());
+
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);
 
@@ -808,6 +812,10 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
       visc_numerics->SetVorticity(solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
 
+      /*--- Set values for gradient Jacobian ---*/
+      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                               geometry->node[iPoint]->GetVolume());
+
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);
 
@@ -912,6 +920,10 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
 //      /*--- Vorticity ---*/
 //      visc_numerics->SetVorticity(solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
 //                                  solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
+//
+//      /*--- Set values for gradient Jacobian ---*/
+//      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+//                               geometry->node[iPoint]->GetVolume());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //      auto visc_residual = visc_numerics->ComputeResidual(config);
@@ -1934,7 +1946,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
    }
    else {
      weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
-                            + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);;
+                            + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
      weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
      weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0)
                             - (40.0*lim+20.0*(1.-lim))*alfa*betastar*zeta*varAdjTur->GetSolution(iPoint,1);

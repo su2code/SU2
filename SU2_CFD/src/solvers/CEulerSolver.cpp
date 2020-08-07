@@ -7033,6 +7033,11 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
           visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
                                       nodes->GetVorticity(iPoint));
         }
+        
+        /*--- Set values for gradient Jacobian ---*/
+
+        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                                 geometry->node[iPoint]->GetVolume());
 
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
               following routine based upon the velocity-component gradients. ---*/
@@ -7329,6 +7334,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
 
         visc_numerics->SetTauWall(-1.0, -1.0);
+
+        /*--- Set values for gradient Jacobian ---*/
+
+        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                                 geometry->node[iPoint]->GetVolume());
 
         /*--- Compute and update viscous residual ---*/
 
@@ -9557,6 +9567,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
 
         visc_numerics->SetTauWall(nodes->GetTauWall(iPoint),
                                   nodes->GetTauWall(iPoint));
+        
+        /*--- Set values for gradient Jacobian ---*/
+
+        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                                 geometry->node[iPoint]->GetVolume());
 
         /*--- Compute and update residual ---*/
 
@@ -9759,6 +9774,11 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
 
         visc_numerics->SetTauWall(nodes->GetTauWall(iPoint),
                                   nodes->GetTauWall(iPoint));
+        
+        /*--- Set values for gradient Jacobian ---*/
+
+        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
+                                 geometry->node[iPoint]->GetVolume());
 
         /*--- Compute and update residual ---*/
 
