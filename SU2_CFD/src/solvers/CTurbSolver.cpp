@@ -713,7 +713,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = 0.99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   if (sa_model || sst_model) {
