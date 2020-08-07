@@ -1901,8 +1901,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   TmpWeights[nVarFlo+0] += factor/zeta;
   TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
   for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/zeta*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/zeta*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   //--- Density weight
@@ -1967,6 +1967,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += lim*(1. - F1)*CDkw/(r*zeta)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
