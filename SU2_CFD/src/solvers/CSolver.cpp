@@ -5996,13 +5996,18 @@ void CSolver::ConvectiveMetric(CSolver                    **solver,
                                CConfig                    *config,
                                unsigned long              iPoint,
                                vector<vector<su2double> > &weights) {
-  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
-            *varTur    = solver[TURB_SOL]->GetNodes(),
-            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
-            *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
 
+  CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+            
   const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+
+  CVariable *varTur, *varAdjTur;
+  if (turb) {
+    varTur    = solver[TURB_SOL]->GetNodes();
+    varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+  }
 
   unsigned short iDim, iVar, jVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
@@ -6139,12 +6144,18 @@ void CSolver::ViscousMetric(CSolver                    **solver,
                             CConfig                    *config,
                             unsigned long              iPoint,
                             vector<vector<su2double> > &weights) {
+  
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
-            *varTur    = solver[TURB_SOL]->GetNodes(),
-            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
-            *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
 
+  const bool turb = (config->GetKind_Turb_Model() != NONE);
   const bool sst  = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+
+  CVariable *varTur, *varAdjTur;
+  if (turb) {
+    varTur    = solver[TURB_SOL]->GetNodes();
+    varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+  }
 
   unsigned short iDim, jDim, iVar;
   const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();

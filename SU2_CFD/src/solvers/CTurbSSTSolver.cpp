@@ -1773,6 +1773,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                      CConfig                    *config,
                                      unsigned long              iPoint,
                                      vector<vector<su2double> > &weights) {
+  
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varTur    = solver[TURB_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
