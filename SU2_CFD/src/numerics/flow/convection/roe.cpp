@@ -237,7 +237,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke)-TWO3*RoeTke;
+  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
