@@ -440,7 +440,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           the current rank. Note that Jacobian_ic is already weighted by 0.25 ---*/
 
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      
+
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         for (unsigned short jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
@@ -729,7 +729,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
          turbulence variables can change over a nonlinear iteration. */
 
         const unsigned long index = iPoint * nVar + iVar;
-        if (LinSysSol[index] < -allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
+        if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
           localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
 
       }
