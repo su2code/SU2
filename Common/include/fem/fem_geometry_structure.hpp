@@ -36,23 +36,6 @@
 using namespace std;
 
 /*!
- * \class CLong3T
- * \brief Help class used to store three longs as one entity.
- * \version 7.0.6 "Blackbird"
- */
-struct CLong3T {
-  long long0 = 0;  /*!< \brief First long to store in this class. */
-  long long1 = 0;  /*!< \brief Second long to store in this class. */
-  long long2 = 0;  /*!< \brief Third long to store in this class. */
-
-  CLong3T() = default;
-
-  CLong3T(const long a, const long b, const long c) {long0 = a; long1 = b; long2 = c;}
-
-  bool operator<(const CLong3T &other) const;
-};
-
-/*!
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide

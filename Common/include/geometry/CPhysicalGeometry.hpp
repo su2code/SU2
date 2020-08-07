@@ -768,6 +768,20 @@ public:
 private:
 
   /*!
+   * \brief Determine the donor elements for the boundary elements on viscous
+            wall boundaries when wall functions are used.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineDonorElementsWallFunctions(CConfig *config);
+
+  /*!
+   * \brief Determine whether or not the Jacobians of the elements and faces
+            are constant and a length scale of the elements.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineFEMConstantJacobiansAndLenScale(CConfig *config);
+
+  /*!
    * \brief Function, which determines the matching faces of a FEM grid.
    * \param[in]  config      - Definition of the particular problem.
    * \param[out] localFaces  - Vector containing the local faces of the FEM grid. On output the matching faces are stored as one face.

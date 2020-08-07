@@ -67,6 +67,12 @@ int main(int argc, char *argv[]) {
   int required = use_thread_mult? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, required, &provided);
+
+  /*--- Test for provided thread support. A less than test suffices as
+        MPI_THREAD_SINGLE < MPI_THREAD_FUNNELED < MPI_THREAD_SERIALIZED < MPI_THREAD_MULTIPLE. ---*/
+  if(provided < required)
+    SU2_MPI::Error(string("Required thread support not provided by the MPI implementation"),
+                   CURRENT_FUNCTION);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif

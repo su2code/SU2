@@ -1,6 +1,6 @@
 /*!
- * \file geometry_structure_fem_part.hpp
- * \brief Helper classes for the Fluid FEM solver.
+ * \file printing_toolbox.hpp
+ * \brief Header file for the classes that consists of multiple integer types.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -27,10 +27,7 @@
 
 #pragma once
 
-#include "../basic_types/datatype_structure.hpp"
-
-#include <vector>
-#include <algorithm>
+#include <iostream>
 
 /*!
  * \struct CUnsignedLong2T
@@ -41,14 +38,29 @@ struct CUnsignedLong2T {
   unsigned long long0;  /*!< \brief First integer to store in this class. */
   unsigned long long1;  /*!< \brief Second integer to store in this class. */
 
+  /*!
+   * \overload
+   * \param[in] a - First element of the object.
+   * \param[in] b - Second element of the object.
+   */
   CUnsignedLong2T(unsigned long a = 0, unsigned long b = 0) : long0(a), long1(b) {}
 
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered less and false otherwise.
+   */
   inline bool operator<(const CUnsignedLong2T &other) const {
     if(long0 != other.long0)
       return (long0 < other.long0);
     return (long1 < other.long1);
   }
 
+  /*!
+   * \brief Equal operator. Needed for the searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered equal and false otherwise.
+   */
   inline bool operator==(const CUnsignedLong2T &other) const {
     return (long0 == other.long0) && (long1 == other.long1);
   }
@@ -63,45 +75,63 @@ struct CUnsignedShort2T {
   unsigned short short0;  /*!< \brief First integer to store in this class. */
   unsigned short short1;  /*!< \brief Second integer to store in this class. */
 
+  /*!
+   * \overload
+   * \param[in] a - First element of the object.
+   * \param[in] b - Second element of the object.
+   */
   CUnsignedShort2T(unsigned short a = 0, unsigned short b = 0) : short0(a), short1(b) {}
 
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered less and false otherwise.
+   */
   inline bool operator<(const CUnsignedShort2T &other) const {
     if(short0 != other.short0)
       return (short0 < other.short0);
     return (short1 < other.short1);
   }
 
+  /*!
+   * \brief Equal operator. Needed for the searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered equal and false otherwise.
+   */
   inline bool operator==(const CUnsignedShort2T &other) const {
     return (short0 == other.short0) && (short1 == other.short1);
   }
 };
 
 /*!
- * \class CBoundaryFace
- * \brief Help class used in the partitioning of the FEM grid.
-          It stores a boundary element.
+ * \struct CLong3T
+ * \brief Help struct used to store three longs as one entity.
+ * \version 7.0.6 "Blackbird"
  */
-class CBoundaryFace {
-public:
-  unsigned short VTK_Type, nPolyGrid, nDOFsGrid;
-  unsigned long  globalBoundElemID, domainElementID;
-  std::vector<unsigned long>  Nodes;
+struct CLong3T {
+  long long0 = 0;  /*!< \brief First long to store in this class. */
+  long long1 = 0;  /*!< \brief Second long to store in this class. */
+  long long2 = 0;  /*!< \brief Third long to store in this class. */
 
-  /* Standard constructor and destructor. Nothing to be done. */
-  CBoundaryFace(){}
-  ~CBoundaryFace(){}
+  /*!
+   * \overload
+   * \param[in] a - First element of the object.
+   * \param[in] b - Second element of the object.
+   * \param[in] c - Third element of the object
+   */
+  CLong3T(const long a, const long b, const long c) {long0 = a; long1 = b; long2 = c;}
 
-  /* Copy constructor and assignment operator. */
-  inline CBoundaryFace(const CBoundaryFace &other) { Copy(other); }
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered less and false otherwise.
+   */
+  inline bool operator<(const CLong3T &other) const {
+    if(long0 != other.long0) return (long0 < other.long0);
+    if(long1 != other.long1) return (long1 < other.long1);
+    if(long2 != other.long2) return (long2 < other.long2);
 
-  inline CBoundaryFace& operator=(const CBoundaryFace &other) { Copy(other); return (*this); }
-
-  /* Less than operator. Needed for the sorting. */
-  inline bool operator<(const CBoundaryFace &other) const {
-    return (globalBoundElemID < other.globalBoundElemID);
+    return false;
   }
-
-private:
-  /*--- Copy function, which copies the data of the given object into the current object. ---*/
-  void Copy(const CBoundaryFace &other);
 };
+

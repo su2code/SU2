@@ -52,24 +52,40 @@ public:
   su2double cornerCoor[4][3];            /*!< \brief Coordinates of the corner points of the face. */
   su2double tolForMatching;              /*!< \brief Tolerance for this face for matching points. */
 
-  /* Standard constructor. */
+  /*!
+   * \brief Default constructor.
+   */
   CMatchingFace();
 
-  /* Destructor, nothing to be done. */
-  ~CMatchingFace(){}
-
-  /* Copy constructor and assignment operator. */
+  /*!
+   * \brief Copy contructor.
+   * \param[in] - other   Object to be copied.
+   */
   inline CMatchingFace(const CMatchingFace &other) { Copy(other); }
 
+  /*!
+   * \brief Assignment operator.
+   * \param[in] - other   Object to be copied.
+   * \return    - Reference to the current object.
+   */
   inline CMatchingFace& operator=(const CMatchingFace &other) { Copy(other); return (*this); }
 
-  /* Less than operator. Needed for the sorting and searching. */
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered less and false otherwise.
+   */
   bool operator<(const CMatchingFace &other) const;
 
-  /*--- Member function, which sorts the coordinates of the face. ---*/
+  /*!
+   * \brief Function, which sorts the coordinates of the face.
+   */
   void SortFaceCoordinates(void);
 
 private:
-  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  /*!
+   * \brief Function, which copies the data of the given object into the current object
+   * \param[in] - other   Object to be copied.
+   */
   void Copy(const CMatchingFace &other);
 };

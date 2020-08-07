@@ -27,6 +27,7 @@
 
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/toolboxes/fem/CMatchingFace.hpp"
+//#include "../../include/fem/fem_standard_element.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../../include/geometry/CPhysicalGeometry.hpp"
@@ -166,7 +167,79 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         non-matching faces of the local elements. ---*/
   DetermineNonMatchingFacesFEMGrid(config, localMatchingFaces);
 
+  /*--- Determine whether or not the Jacobians of the elements and faces
+        can be considered constant. ---*/
+  DetermineFEMConstantJacobiansAndLenScale(config);
+
+  /*--- Determine the donor elements for the wall function treatment. ---*/
+  DetermineDonorElementsWallFunctions(config);
+
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
+}
+
+void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
+
+  /*--- Determine a mapping from the global point ID to the local index
+        of the points.    ---*/
+  map<unsigned long,unsigned long> globalPointIDToLocalInd;
+  for(unsigned long i=0; i<nPoint; ++i) {
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
+  }
+
+  /*--- Determine the chunk size for the OMP loop below. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
+#endif
+
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Define the vectors to store the standard elements for the volume elements
+          and surface faces. These standard elements will be created based on the
+          polynomial degree of the grid.      ---*/
+    //vector<CFEMStandardElement> standardVolumeElements, standardFaceElements;
+
+    /*--- Loop over the local volume elements. ---*/
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for(unsigned long i=0; i<nElem; ++i) {
+
+      /*------------------------------------------------------------------------*/
+      /*--- Compute the Jacobians of the volume element and determine        ---*/
+      /*--- whether the Jacobians can be considered constant.                ---*/
+      /*------------------------------------------------------------------------*/
+
+      /*--- Determine the standard element of the volume element. If it does not
+            exist yet, it will be created. Note that it suffices to indicate that
+            the Jacobians are constant, because the only task here is to determine
+            whether or not the Jacobians are constant. ---*/
+      unsigned short VTK_Type  = elem[i]->GetVTK_Type();
+      unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
+
+  /*  unsigned long ii;
+      for(ii=0; ii<standardVolumeElements.size(); ++ii) {
+        if( standardVolumeElements[ii].SameStandardElement(VTK_Type, nPolyGrid, true) )
+          break;
+      }
+
+      if(ii == standardVolumeElements.size())
+        standardVolumeElements.push_back(CFEMStandardElement(VTK_Type, nPolyGrid,
+                                                             true, config)); */
+
+    }
+
+    SU2_OMP_CRITICAL
+    cout << "My thread ID: " << omp_get_thread_num() << ", total number of threads: " << omp_get_num_threads() << endl;
+
+
+
+  } /*--- end SU2_OMP_PARALLEL ---*/
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
 }
 
 void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *config,
