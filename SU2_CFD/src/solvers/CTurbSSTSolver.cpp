@@ -336,10 +336,10 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double r = flowNodes->GetDensity(iPoint);
-    const su2double k = nodes->GetSolution(iPoint,0)/rho;
+    const su2double r  = flowNodes->GetDensity(iPoint);
+    const su2double k  = nodes->GetSolution(iPoint,0)/r;
     const su2double om = max(nodes->GetSolution(iPoint,1),eps)/r;
-    
+
     nodes->SetPrimitive(iPoint,0,k);
     nodes->SetPrimitive(iPoint,1,om);
     nodes->SetSolution(iPoint,1,r*om);
