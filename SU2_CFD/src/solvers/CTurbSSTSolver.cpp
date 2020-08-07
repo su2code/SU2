@@ -1812,7 +1812,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   
   walldist = geometry->node[iPoint]->GetWall_Distance();
 
-  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3], tautomut[3][3]
+  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3], tautomut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
             pk = 0.;
 
