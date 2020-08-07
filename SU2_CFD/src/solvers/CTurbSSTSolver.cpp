@@ -1961,6 +1961,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += (1. - F1)*CDkw/zeta/r*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+1] += lim*(1. - F1)*CDkw/(r*zeta)*varAdjTur->GetSolution(iPoint,1);
 
 }
