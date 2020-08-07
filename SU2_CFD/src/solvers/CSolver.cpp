@@ -5762,7 +5762,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
           su2double hess[nMet*nVar] = {0.0};
           for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            if(!geometry->node[jPoint]->GetBoundary()) {
+            if(!geometry->node[jPoint]->GetPhysicalBoundary()) {
               for(unsigned short iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;
                 for(unsigned short iMet = 0; iMet < nMet; iMet++) {
@@ -5803,7 +5803,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
       counter = 0;
       for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-        if(!geometry->node[jPoint]->GetSolidBoundary()) {
+        if(!geometry->node[jPoint]->GetPhysicalBoundary()) {
           //--- Reset metric if first volume node detected
           if(counter == 0) {
             for(iMet = 0; iMet < nMet; iMet++) {
