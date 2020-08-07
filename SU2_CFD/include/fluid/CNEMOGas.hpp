@@ -40,7 +40,8 @@ class CNEMOGas : public CFluidModel {
 protected:
   
   bool frozen;                           /*!< \brief Indicates if mixture is frozen. */
-  
+
+  string gas_model;                      /*!< \brief String gas model. */
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */

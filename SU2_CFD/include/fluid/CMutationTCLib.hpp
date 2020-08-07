@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CNEMOGas.hpp"
+#include "mutation++.h"
 
 /*!
  * \derived class CMutationTCLib
@@ -38,7 +39,7 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
-  string GasModel;
+  Mutation::Mixture mix;  //cat: maybe no need for Mutation::
 
 public:
 

@@ -43,8 +43,6 @@ private:
   unsigned short nReactions,                      /*!< \brief Number of reactions in chemical model. */
   iEl;                              /*!< \brief Common iteration counter for electrons */
 
-  string String_GasModel;             /*!< \brief String gas model. */
-
   vector<unsigned short> nElStates; /*!< \brief Number of electron states. */
 
   C3DIntMatrix Reactions;                /*!</brief reaction map for chemically reacting flows */

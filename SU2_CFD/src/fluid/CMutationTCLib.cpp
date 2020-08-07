@@ -28,12 +28,32 @@
 #include "../../include/fluid/CMutationTCLib.hpp"
 
 CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
-  
-  //CGarbacz: if wilke - transportmodel = 'wilke' and so on;
+ 
+  Mutation::MixtureOptions opt; //cat: maybe no need for Mutation::
+  string transport_model, state_model;	
+
+  /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
+
+  /*--- Define thermochemical nonequilibrium model ---*/
+  if(!frozen)
+    state_model = "ChemNonEqTTv";
+  else 
+    state_model = "NonEqTTv";
+
+  /*--- Define transport model ---*/
+  if(Kind_TransCoeffModel == WILKE)
+    transport_model = "Wilke";
+  else if (Kind_TransCoeffModel == GUPTAYOS)
+ 	transport_model = "Gupta-Yos";
+
+  opt.setMechanism(gas_model);   
+  opt.setStateModel(state_model);
+  opt.setViscosityAlgorithm(transport_model);
+  opt.setThermalConductivityAlgorithm(transport_model); 
+
+  Mixture mix(opts); // Initialize the mixture with opts
 
   //CGarbacz: nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;
-
-  //CGarbacz: if frozen send nonchecmttv
 
 }
 
