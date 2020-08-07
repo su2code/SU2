@@ -450,8 +450,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
       const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
       const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
-      const su2double denom      = geometry->node[iPoint]->GetVolume()*nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
-      const su2double Weight     = 0.5*sign*signk/denom;
+      const su2double denom      = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
+      const su2double Weight     = HalfOnVolsign*signk/denom;
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
         for (unsigned short jVar = 0; jVar < nVar; jVar++)
