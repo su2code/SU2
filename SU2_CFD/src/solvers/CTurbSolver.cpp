@@ -417,7 +417,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         for (unsigned short jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
 
-      const su2double Weight = -0.5*HalfOnVol*sign;
+      const su2double Weight = -HalfOnVol*sign;
       
       /*--- Influence of boundary i on R(i,j) ---*/
       for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
