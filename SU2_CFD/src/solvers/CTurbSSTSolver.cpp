@@ -1903,7 +1903,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
   for (iDim = 0; iDim < nDim; ++iDim) {
     TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/zeta*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/zet*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/zeta*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   //--- Density weight
