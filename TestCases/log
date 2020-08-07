@@ -1,0 +1,2226 @@
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_channel_256x128.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: channel ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/euler/channel
+channel: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_channel_RK.cfg.autotest > inv_channel_RK.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -2.454049, 3.065639, -0.200679, 0.036298
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: channel ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA0012_inv.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/euler/naca0012
+naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_NACA0012_Roe.cfg.autotest > inv_NACA0012_Roe.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -4.047448, -3.538057, 0.338691, 0.023131
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: naca0012 ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnDim(std::__cxx11::string, short unsigned int)": 
+-------------------------------------------------------------------------
+mesh_wedge_inv.cgns is not a CGNS file.
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: wedge ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/euler/wedge
+wedge: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_wedge_HLLC.cfg.autotest > inv_wedge_HLLC.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -0.804690, 4.936631, -0.251188, 0.044255
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: wedge ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: oneram6 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/euler/oneram6
+oneram6: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_ONERAM6.cfg.autotest > inv_ONERAM6.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -13.395738, -12.930653, 0.282557, 0.012706
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: oneram6 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fixedcl_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/fixed_cl/naca0012
+fixedcl_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_NACA0012.cfg.autotest > inv_NACA0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 100 could not be found.
+test_iter=100
+test_vals (stored): -2.582897, 2.820443, 0.295158, 0.019324
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fixedcl_naca0012 ====================
+
+9 lines read from control file: polarCtrl.in
+ 
+--------------------------------------------------------------------------------------
+ 
+Configuration file: inv_NACA0012.cfg
+PolarSweepType = 1 Polar sweep in aoa using 5 angles/Mach No 
+ 
+--------------------------------------------------------------------------------------
+ 
+ 
+===============================================================================
+   Polar sweep in 2D ; output in Body system
+===============================================================================
+ 
+Mach =  0.8 AOA =  0.0
+case :DIRECT_M_0.8_AOA_0.0
+==================== Start Test: polar_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/polar/naca0012
+polar_naca0012: FAILED
+Output for the failed case
+execution command: compute_polar.py -n 1 -i 11 > inv_NACA0012.cfg.log
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -1.319488, 4.112397, 0.011954, 0.009584
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: polar_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+CONV_NUM_METHOD_FLOW: improper option value for type convect
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: bluntbody ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/euler/bluntbody
+bluntbody: FAILED
+Output for the failed case
+execution command: SU2_CFD blunt.cfg.autotest > blunt.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): 0.626808, 7.014695, -0.000000, 1.648024
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: bluntbody ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_flatplate_65x65.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: flatplate ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/navierstokes/flatplate
+flatplate: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_flatplate.cfg.autotest > lam_flatplate.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -4.680896, 0.781111, -0.135957, 0.022978
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: flatplate ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_cylinder_lam.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/navierstokes/cylinder
+cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_cylinder.cfg.autotest > lam_cylinder.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): -6.765432, -1.297428, 0.019508, 0.310040
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: cylinder ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_cylinder_lam.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: cylinder_lowmach ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/navierstokes/cylinder
+cylinder_lowmach: FAILED
+Output for the failed case
+execution command: SU2_CFD cylinder_lowmach.cfg.autotest > cylinder_lowmach.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): -6.850123, -1.388088, -0.056090, 108.140177
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: cylinder_lowmach ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_poiseuille_periodic.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: poiseuille ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/navierstokes/poiseuille
+poiseuille: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_poiseuille.cfg.autotest > lam_poiseuille.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -12.272146, -3.335311, 0.000001, 2.351005
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: poiseuille ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_poiseuille_51x51.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: poiseuille_profile ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/navierstokes/poiseuille
+poiseuille_profile: FAILED
+Output for the failed case
+execution command: SU2_CFD profile_poiseuille.cfg.autotest > profile_poiseuille.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -12.494724, -7.712336, -0.000000, 2.085796
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: poiseuille_profile ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: rae2822_sa ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/rae2822
+rae2822_sa: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_SA_RAE2822.cfg.autotest > turb_SA_RAE2822.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -2.000469, -5.228296, 0.820188, 0.052004
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: rae2822_sa ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_RAE2822_turb.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: rae2822_sst ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/rae2822
+rae2822_sst: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_SST_RAE2822.cfg.autotest > turb_SST_RAE2822.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -0.510826, 4.909714, 0.825023, 0.052675
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: rae2822_sst ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_flatplate_turb_137x97.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_flatplate ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/flatplate
+turb_flatplate: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_SA_flatplate.cfg.autotest > turb_SA_flatplate.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -4.158303, -6.737135, -0.176244, 0.057446
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_flatplate ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_ONERAM6_turb_hexa_43008.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_oneram6 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/oneram6
+turb_oneram6: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_ONERAM6.cfg.autotest > turb_ONERAM6.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -2.327523, -6.564349, 0.230471, 0.155843
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_oneram6 ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called n0012_225-65.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_sa ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/naca0012
+turb_naca0012_sa: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_sa.cfg.autotest > turb_NACA0012_sa.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -11.981166, -9.145363, 1.070528, 0.019417
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_sa ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called n0012_225-65.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_sa_bin ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/naca0012
+turb_naca0012_sa_bin: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_sa_binary.cfg.autotest > turb_NACA0012_sa_binary.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -11.981289, -9.145363, 1.070528, 0.019417
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_sa_bin ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called n0012_225-65.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_sst ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/naca0012
+turb_naca0012_sst: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_sst.cfg.autotest > turb_NACA0012_sst.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -12.445710, -6.918658, 1.059622, 0.019138
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_sst ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called ActuatorDisk.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: propeller ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/propeller
+propeller: FAILED
+Output for the failed case
+execution command: SU2_CFD propeller.cfg.autotest > propeller.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -3.378876, -8.396837, 0.000047, 0.055591
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: propeller ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called n0012_113-33.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_sst_restart_mg ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans/naca0012
+turb_naca0012_sst_restart_mg: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_sst_multigrid_restart.cfg.autotest > turb_NACA0012_sst_multigrid_restart.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 50 could not be found.
+test_iter=50
+test_vals (stored): -6.459444, -4.595710, 1.201844, -0.007146, 0.080517
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_sst_restart_mg ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+INC_INLET_TYPE: invalid option name. Check current SU2 options in config_template.cfg.
+INC_INLET_DAMPING: invalid option name. Check current SU2 options in config_template.cfg.
+INC_OUTLET_TYPE: invalid option name. Check current SU2 options in config_template.cfg.
+INC_OUTLET_DAMPING: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: inc_euler_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/incomp_euler/naca0012
+inc_euler_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD incomp_NACA0012.cfg.autotest > incomp_NACA0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -4.880274, -3.797906, 0.501143, 0.007051
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: inc_euler_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+INC_INLET_TYPE: invalid option name. Check current SU2 options in config_template.cfg.
+INC_INLET_DAMPING: invalid option name. Check current SU2 options in config_template.cfg.
+INC_OUTLET_TYPE: invalid option name. Check current SU2 options in config_template.cfg.
+INC_OUTLET_DAMPING: invalid option name. Check current SU2 options in config_template.cfg.
+OUTPUT_FORMAT: invalid option value PARAVIEW_BINARY. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: inc_nozzle ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/incomp_euler/nozzle
+inc_nozzle: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_nozzle.cfg.autotest > inv_nozzle.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -5.799445, -4.785945, -0.000443, 0.124533
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: inc_nozzle ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_cylinder_lam.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: inc_lam_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/incomp_navierstokes/cylinder
+inc_lam_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD incomp_cylinder.cfg.autotest > incomp_cylinder.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -4.004277, -3.227956, 0.003852, 7.626578
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: inc_lam_cylinder ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+OUTPUT_FORMAT: invalid option value PARAVIEW_BINARY. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: inc_buoyancy ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/incomp_navierstokes/buoyancy_cavity
+inc_buoyancy: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_buoyancy_cavity.cfg.autotest > lam_buoyancy_cavity.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -4.436657, 0.507847, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: inc_buoyancy ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+FLUID_MODEL: invalid option value INC_IDEAL_GAS_POLY. Check current SU2 options in config_template.cfg.
+CP_POLYCOEFFS: invalid option name. Check current SU2 options in config_template.cfg.
+VISCOSITY_MODEL: invalid option value POLYNOMIAL_VISCOSITY. Check current SU2 options in config_template.cfg.
+MU_POLYCOEFFS: invalid option name. Check current SU2 options in config_template.cfg.
+CONDUCTIVITY_MODEL: invalid option value POLYNOMIAL_CONDUCTIVITY. Check current SU2 options in config_template.cfg.
+KT_POLYCOEFFS: invalid option name. Check current SU2 options in config_template.cfg.
+TURBULENT_CONDUCTIVITY_MODEL: invalid option name. Check current SU2 options in config_template.cfg.
+OUTPUT_FORMAT: invalid option value PARAVIEW_BINARY. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: inc_poly_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/incomp_navierstokes/cylinder
+inc_poly_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD poly_cylinder.cfg.autotest > poly_cylinder.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -8.108218, -2.158606, 0.019142, 1.902461
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: inc_poly_cylinder ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA0012_turb_897x257.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: inc_turb_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/incomp_rans/naca0012
+inc_turb_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD naca0012.cfg.autotest > naca0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -4.788495, -11.040511, 0.000023, 0.309503
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: inc_turb_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_EULER. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+USE_LUMPED_MASSMATRIX_DGFEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_euler_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_euler/NACA0012_5thOrder
+fem_euler_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD fem_NACA0012_reg.cfg.autotest > fem_NACA0012_reg.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -6.519946, -5.976944, 0.255551, 0.000028
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_euler_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_NAVIER_STOKES. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+THETA_INTERIOR_PENALTY_DG_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+USE_LUMPED_MASSMATRIX_DGFEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_ns_flatplate ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_navierstokes/FlatPlate/nPoly4
+fem_ns_flatplate: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_flatplate_reg.cfg.autotest > lam_flatplate_reg.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): 1.383727, 3.175247, 0.058387, 0.257951
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_ns_flatplate ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_NAVIER_STOKES. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+USE_LUMPED_MASSMATRIX_DGFEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_ns_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_navierstokes/CylinderViscous/nPoly3
+fem_ns_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD fem_Cylinder_reg.cfg.autotest > fem_Cylinder_reg.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.454960, 0.979123, -0.000028, 79.984799
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_ns_cylinder ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_NAVIER_STOKES. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+USE_LUMPED_MASSMATRIX_DGFEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_ns_sphere ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_navierstokes/SphereViscous/nPoly3_QuadDominant
+fem_ns_sphere: FAILED
+Output for the failed case
+execution command: SU2_CFD fem_Sphere_reg.cfg.autotest > fem_Sphere_reg.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -0.288121, 0.240324, 0.000258, 21.797363
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_ns_sphere ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_NAVIER_STOKES. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FLOW: invalid option value ADER_DG. Check current SU2 options in config_template.cfg.
+TIME_DOFS_ADER_DG: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_TIME_ADER_DG: invalid option name. Check current SU2 options in config_template.cfg.
+ADER_PREDICTOR: invalid option name. Check current SU2 options in config_template.cfg.
+LEVELS_TIME_ACCURATE_LTS: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_ns_sphere_ader ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_navierstokes/SphereViscous/nPoly3_QuadDominant
+fem_ns_sphere_ader: FAILED
+Output for the failed case
+execution command: SU2_CFD fem_Sphere_reg_ADER.cfg.autotest > fem_Sphere_reg_ADER.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -35.000000, -35.000000, 0.000047, 31.110911
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_ns_sphere_ader ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_NAVIER_STOKES. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_ns_unsteady_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_navierstokes/UnsteadyCylinder/nPoly4
+fem_ns_unsteady_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD fem_unst_cylinder.cfg.autotest > fem_unst_cylinder.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -3.558582, -3.014464, -0.038927, 1.383983
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_ns_unsteady_cylinder ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value FEM_NAVIER_STOKES. Check current SU2 options in config_template.cfg.
+NUM_METHOD_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+RIEMANN_SOLVER_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_STRAIGHT_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_CURVED_FEM: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FEM_FLOW: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DISCRE_FLOW: invalid option value ADER_DG. Check current SU2 options in config_template.cfg.
+TIME_DOFS_ADER_DG: invalid option name. Check current SU2 options in config_template.cfg.
+QUADRATURE_FACTOR_TIME_ADER_DG: invalid option name. Check current SU2 options in config_template.cfg.
+ADER_PREDICTOR: invalid option name. Check current SU2 options in config_template.cfg.
+LEVELS_TIME_ACCURATE_LTS: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fem_ns_unsteady_cylinder_ader ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/hom_navierstokes/UnsteadyCylinder/nPoly4
+fem_ns_unsteady_cylinder_ader: FAILED
+Output for the failed case
+execution command: SU2_CFD fem_unst_cylinder_ADER.cfg.autotest > fem_unst_cylinder_ADER.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -35.000000, -35.000000, -0.041003, 1.391339
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fem_ns_unsteady_cylinder_ader ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+INC_INLET_TYPE: invalid option name. Check current SU2 options in config_template.cfg.
+INC_INLET_DAMPING: invalid option name. Check current SU2 options in config_template.cfg.
+INC_OUTLET_TYPE: invalid option name. Check current SU2 options in config_template.cfg.
+INC_OUTLET_DAMPING: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: Schubauer_Klebanoff ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/transition/Schubauer_Klebanoff
+Schubauer_Klebanoff: FAILED
+Output for the failed case
+execution command: SU2_CFD transitional_BC_model_ConfigFile.cfg.autotest > transitional_BC_model_ConfigFile.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -8.287490, -14.278189, 0.000050, 0.007986
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: Schubauer_Klebanoff ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_euler/naca0012
+contadj_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_NACA0012.cfg.autotest > inv_NACA0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 5 could not be found.
+test_iter=5
+test_vals (stored): -9.787554, -15.192510, 0.300920, 0.019552
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_oneram6 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_euler/oneram6
+contadj_oneram6: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_ONERAM6.cfg.autotest > inv_ONERAM6.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -12.133160, -12.706697, 0.685900, 0.007594
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_oneram6 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_wedge ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_euler/wedge
+contadj_wedge: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_wedge_ROE.cfg.autotest > inv_wedge_ROE.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 2.856008, -2.767216, 1002900.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_wedge ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_fixedcl_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/fixed_cl/naca0012
+contadj_fixedcl_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_NACA0012_ContAdj.cfg.autotest > inv_NACA0012_ContAdj.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 100 could not be found.
+test_iter=100
+test_vals (stored): 0.341038, -5.166613, 0.265510, -0.000322
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_fixedcl_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_ns_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_navierstokes/cylinder
+contadj_ns_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_cylinder.cfg.autotest > lam_cylinder.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -3.665848, -9.132055, 2.056700, -0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_ns_cylinder ====================
+
+WARNING: The adjoint solver should use a non-dimensional flow solution.
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA0012_lam_hybrid_v2.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_ns_naca0012_sub ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_navierstokes/naca0012_sub
+contadj_ns_naca0012_sub: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_NACA0012.cfg.autotest > lam_NACA0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -2.743268, -8.215193, 0.518810, 0.001210
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_ns_naca0012_sub ====================
+
+WARNING: The adjoint solver should use a non-dimensional flow solution.
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA0012_lam_hybrid_v2.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_ns_naca0012_trans ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_navierstokes/naca0012_trans
+contadj_ns_naca0012_trans: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_NACA0012.cfg.autotest > lam_NACA0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -1.039664, -6.575019, 1.772300, 0.012495
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_ns_naca0012_trans ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_rans_naca0012 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_rans/naca0012
+contadj_rans_naca0012: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_nasa.cfg.autotest > turb_nasa.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -0.794162, -5.761722, 19.214000, -0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_rans_naca0012 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_rans_naca0012_bin ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_rans/naca0012
+contadj_rans_naca0012_bin: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_nasa_binary.cfg.autotest > turb_nasa_binary.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -0.794169, -5.761671, 19.214000, -0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_rans_naca0012_bin ====================
+
+WARNING: The adjoint solver should use a non-dimensional flow solution.
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_RAE2822_turb.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: contadj_rans_rae2822 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_rans/rae2822
+contadj_rans_rae2822: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_SA_RAE2822.cfg.autotest > turb_SA_RAE2822.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -5.369688, -10.872209, -0.212470, 0.005448
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: contadj_rans_rae2822 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+USING_UQ: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_COMPONENT: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_PERMUTE: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_URLX: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_DELTA_B: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_1c ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans_uq/naca0012
+turb_naca0012_1c: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_uq_1c.cfg.autotest > turb_NACA0012_uq_1c.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -4.946255, 1.262038, 5.575706, 2.057785
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_1c ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+USING_UQ: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_COMPONENT: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_PERMUTE: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_URLX: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_DELTA_B: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_2c ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans_uq/naca0012
+turb_naca0012_2c: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_uq_2c.cfg.autotest > turb_NACA0012_uq_2c.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -5.343094, 1.137839, 5.337548, 1.919739
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_2c ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+USING_UQ: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_COMPONENT: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_PERMUTE: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_URLX: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_DELTA_B: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_3c ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans_uq/naca0012
+turb_naca0012_3c: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_uq_3c.cfg.autotest > turb_NACA0012_uq_3c.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -5.421229, 1.099570, 5.184366, 1.835606
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_3c ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+USING_UQ: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_COMPONENT: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_PERMUTE: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_URLX: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_DELTA_B: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_p1c1 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans_uq/naca0012
+turb_naca0012_p1c1: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_uq_p1c1.cfg.autotest > turb_NACA0012_uq_p1c1.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -5.022106, 1.280795, 5.960837, 2.302647
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_p1c1 ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+USING_UQ: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_COMPONENT: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_PERMUTE: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_URLX: invalid option name. Check current SU2 options in config_template.cfg.
+UQ_DELTA_B: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: turb_naca0012_p1c2 ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/rans_uq/naca0012
+turb_naca0012_p1c2: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_NACA0012_uq_p1c2.cfg.autotest > turb_NACA0012_uq_p1c2.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -5.357006, 1.154966, 5.635942, 2.088563
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: turb_naca0012_p1c2 ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA64A010_inv.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: harmonic_balance ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/harmonic_balance
+harmonic_balance: FAILED
+Output for the failed case
+execution command: SU2_CFD HB.cfg.autotest > HB.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): -1.569573, 3.941896, 0.008780, 0.079775
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: harmonic_balance ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called n64a010_turb.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: hb_rans_preconditioning ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/harmonic_balance/hb_rans_preconditioning
+hb_rans_preconditioning: FAILED
+Output for the failed case
+execution command: SU2_CFD davis.cfg.autotest > davis.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): -1.900982, -5.880438, 0.007758, 0.125934
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: hb_rans_preconditioning ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_cavity_stretch.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: cavity ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/moving_wall/cavity
+cavity: FAILED
+Output for the failed case
+execution command: SU2_CFD lam_cavity.cfg.autotest > lam_cavity.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): -5.627934, -0.164470, 0.051972, 2.547034
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: cavity ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_cylinder_lam.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: spinning_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/moving_wall/spinning_cylinder
+spinning_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD spinning_cylinder.cfg.autotest > spinning_cylinder.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 25 could not be found.
+test_iter=25
+test_vals (stored): -7.719673, -2.279643, 1.721389, 1.710467
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: spinning_cylinder ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_square_turb_hybrid.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: square_cylinder ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/unsteady/square_cylinder
+square_cylinder: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_square.cfg.autotest > turb_square.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 3 could not be found.
+test_iter=3
+test_vals (stored): -1.166421, 0.076804, 1.398548, 2.197047
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: square_cylinder ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA0012_inv.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: sine_gust ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/gust
+sine_gust: FAILED
+Output for the failed case
+execution command: SU2_CFD inv_gust_NACA0012.cfg.autotest > inv_gust_NACA0012.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 5 could not be found.
+test_iter=5
+test_vals (stored): -1.977531, 3.481790, -0.006222, -0.001342
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: sine_gust ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: aeroelastic ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/aeroelastic
+aeroelastic: FAILED
+Output for the failed case
+execution command: SU2_CFD aeroelastic_NACA64A010.cfg.autotest > aeroelastic_NACA64A010.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 2 could not be found.
+test_iter=2
+test_vals (stored): 0.077106, 0.036449, -0.001685, -0.000113
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: aeroelastic ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_flatplate_turb_137x97.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: ddes_flatplate ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/ddes/flatplate
+ddes_flatplate: FAILED
+Output for the failed case
+execution command: SU2_CFD ddes_flatplate.cfg.autotest > ddes_flatplate.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): -2.714721, -5.883008, -0.214968, 0.023783
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: ddes_flatplate ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_vki_turbine.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: ls89_sa ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/nicf/LS89
+ls89_sa: FAILED
+Output for the failed case
+execution command: SU2_CFD turb_SA_PR.cfg.autotest > turb_SA_PR.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -5.050658, -13.393664, 0.174911, 0.430700
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: ls89_sa ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: edge_VW ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/nicf/edge
+edge_VW: FAILED
+Output for the failed case
+execution command: SU2_CFD edge_VW.cfg.autotest > edge_VW.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -0.720910, 5.481122, -0.000853, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: edge_VW ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: edge_PPR ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/nicf/edge
+edge_PPR: FAILED
+Output for the failed case
+execution command: SU2_CFD edge_PPR.cfg.autotest > edge_PPR.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -1.688033, 4.505202, 0.000916, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: edge_PPR ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called jones_turbine.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: jones_turbocharger ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/turbomachinery/APU_turbocharger
+jones_turbocharger: FAILED
+Output for the failed case
+execution command: SU2_CFD Jones.cfg.autotest > Jones.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 5 could not be found.
+test_iter=5
+test_vals (stored): -5.304569, 0.419188, 80.085850, 1.034777
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: jones_turbocharger ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called jones_turbine.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: jones_turbocharger_restart ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/turbomachinery/APU_turbocharger
+jones_turbocharger_restart: FAILED
+Output for the failed case
+execution command: SU2_CFD Jones_rst.cfg.autotest > Jones_rst.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 5 could not be found.
+test_iter=5
+test_vals (stored): -4.423322, -1.618510, 82.250600, 2.791319
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: jones_turbocharger_restart ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called axial_stage_2D.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: axial_stage2D ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/turbomachinery/axial_stage_2D
+axial_stage2D: FAILED
+Output for the failed case
+execution command: SU2_CFD Axial_stage2D.cfg.autotest > Axial_stage2D.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -1.837052, 5.787185, 73.679900, 0.888919
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: axial_stage2D ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called su2mesh_per.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: transonic_stator ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/turbomachinery/transonic_stator_2D
+transonic_stator: FAILED
+Output for the failed case
+execution command: SU2_CFD transonic_stator.cfg.autotest > transonic_stator.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -1.114556, 6.120416, 67.101480, 0.070037
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: transonic_stator ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called su2mesh_per.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: transonic_stator_restart ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/turbomachinery/transonic_stator_2D
+transonic_stator_restart: FAILED
+Output for the failed case
+execution command: SU2_CFD transonic_stator_rst.cfg.autotest > transonic_stator_rst.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 20 could not be found.
+test_iter=20
+test_vals (stored): -0.486965, 4.460638, 6.455770, 0.004009
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: transonic_stator_restart ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: uniform_flow ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/uniform_flow
+uniform_flow: FAILED
+Output for the failed case
+execution command: SU2_CFD uniform_NN.cfg.autotest > uniform_NN.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 50 could not be found.
+test_iter=50
+test_vals (stored): -0.368836, 5.156090, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: uniform_flow ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called channel_2D.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: channel_2D ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/channel_2D
+channel_2D: FAILED
+Output for the failed case
+execution command: SU2_CFD channel_2D_WA.cfg.autotest > channel_2D_WA.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 4 could not be found.
+test_iter=4
+test_vals (stored): -1.656852, 4.263152, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: channel_2D ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called channel_3D.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: channel_3D ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/channel_3D
+channel_3D: FAILED
+Output for the failed case
+execution command: SU2_CFD channel_3D_WA.cfg.autotest > channel_3D_WA.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 1 could not be found.
+test_iter=1
+test_vals (stored): -1.899946, 4.032882, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: channel_3D ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called pipe.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: pipe ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/pipe
+pipe: FAILED
+Output for the failed case
+execution command: SU2_CFD pipe_NN.cfg.autotest > pipe_NN.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 2 could not be found.
+test_iter=2
+test_vals (stored): -3.503708, 3.194241, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: pipe ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called rotating_cylinders.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: rotating_cylinders ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/rotating_cylinders
+rotating_cylinders: FAILED
+Output for the failed case
+execution command: SU2_CFD rot_cylinders_WA.cfg.autotest > rot_cylinders_WA.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 3 could not be found.
+test_iter=3
+test_vals (stored): -1.253498, 4.531302, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: rotating_cylinders ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called cylinder.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: supersonic_vortex_shedding ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/supersonic_vortex_shedding
+supersonic_vortex_shedding: FAILED
+Output for the failed case
+execution command: SU2_CFD sup_vor_shed_WA.cfg.autotest > sup_vor_shed_WA.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 5 could not be found.
+test_iter=5
+test_vals (stored): -1.128085, 4.600597, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: supersonic_vortex_shedding ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_bars.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: bars_SST_2D ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/bars_SST_2D
+bars_SST_2D: FAILED
+Output for the failed case
+execution command: SU2_CFD bars.cfg.autotest > bars.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 13 could not be found.
+test_iter=13
+test_vals (stored): -2.138791, 1.639495, -0.000831, 0.117497
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: bars_SST_2D ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value MULTIZONE. Check current SU2 options in config_template.cfg.
+CONFIG_LIST: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DOMAIN: invalid option name. Check current SU2 options in config_template.cfg.
+OUTER_ITER: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: slinc_steady ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/sliding_interface/incompressible_steady
+slinc_steady: FAILED
+Output for the failed case
+execution command: SU2_CFD config.cfg.autotest > config.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 19 could not be found.
+test_iter=19
+test_vals (stored): -4.214657, 1.265231, 0.000000, 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: slinc_steady ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called meshBeam_3d.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: statbeam3d ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/fea_fsi/StatBeam_3d
+statbeam3d: FAILED
+Output for the failed case
+execution command: SU2_CFD configBeam_3d.cfg.autotest > configBeam_3d.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 0 could not be found.
+test_iter=0
+test_vals (stored): -8.498274, -8.230638, -8.123824, 64095.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: statbeam3d ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called meshBeam_2d.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: dynbeam2d ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/fea_fsi/DynBeam_2d
+dynbeam2d: FAILED
+Output for the failed case
+execution command: SU2_CFD configBeam_2d.cfg.autotest > configBeam_2d.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 6 could not be found.
+test_iter=6
+test_vals (stored): -9.420640, -5.365872, -12.430382, 65210.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: dynbeam2d ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value MULTIZONE. Check current SU2 options in config_template.cfg.
+CONFIG_LIST: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DOMAIN: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_ITER: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_STEP: invalid option name. Check current SU2 options in config_template.cfg.
+RESTART_ITER: invalid option name. Check current SU2 options in config_template.cfg.
+OUTER_ITER: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: fsi2d ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/fea_fsi/WallChannel_2d
+fsi2d: FAILED
+Output for the failed case
+execution command: SU2_CFD configFSI.cfg.autotest > configFSI.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 4 could not be found.
+test_iter=4
+test_vals (stored): 2.000000, 0.500000, -7.780236, -1.142100
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: fsi2d ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value MULTIZONE. Check current SU2 options in config_template.cfg.
+CONFIG_LIST: invalid option name. Check current SU2 options in config_template.cfg.
+MULTIZONE_SOLVER: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DOMAIN: invalid option name. Check current SU2 options in config_template.cfg.
+OUTER_ITER: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: airfoil_fsi_rbf ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/fea_fsi/Airfoil_RBF
+airfoil_fsi_rbf: FAILED
+Output for the failed case
+execution command: SU2_CFD config.cfg.autotest > config.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 29 could not be found.
+test_iter=29
+test_vals (stored): -13.474206, -3.771392, -11.646689, 1404500.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: airfoil_fsi_rbf ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+PHYSICAL_PROBLEM: invalid option value MULTIZONE. Check current SU2 options in config_template.cfg.
+CONFIG_LIST: invalid option name. Check current SU2 options in config_template.cfg.
+TIME_DOMAIN: invalid option name. Check current SU2 options in config_template.cfg.
+OUTER_ITER: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: cht_incompressible ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/coupled_cht/incompressible
+cht_incompressible: FAILED
+Output for the failed case
+execution command: SU2_CFD config.cfg.autotest > config.cfg.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000000, 0.000000, -7.685301, -12947.783696
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: cht_incompressible ====================
+
+
+
+Error in "static short unsigned int CConfig::GetnZone(std::__cxx11::string, short unsigned int, CConfig*)": 
+-------------------------------------------------------------------------
+There is no geometry file called mesh_NACA0012_inv.su2
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: naca0012_geo ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/optimization_euler/steady_naca0012
+naca0012_geo: FAILED
+Output for the failed case
+execution command: SU2_GEO inv_NACA0012_adv.cfg > inv_NACA0012_adv.log 2>&1
+ERROR: The code was not able to get to the "OBJFUN" section.
+ERROR: The SU2_GEO values could not be found.
+test_vals (stored): 0.999750, 62.045500, 0.120041, 0.002082
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== End Test: naca0012_geo ====================
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: naca0012_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/naca0012
+naca0012_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_NACA0012.cfg > def_NACA0012.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.003447
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+-------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code.. Per user-direction, the job has been aborted.
+-------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[27266,1],0]
+  Exit code:    1
+--------------------------------------------------------------------------
+==================== Start Test: naca0012_def_file ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/naca0012
+naca0012_def_file: FAILED
+Output for the failed case
+execution command: mpirun -n 2 SU2_DEF surface_file_NACA0012.cfg > surface_file_NACA0012.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.003447
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: rae2822_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/rae2822
+rae2822_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_RAE2822.cfg > def_RAE2822.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: naca4412_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/naca4412
+naca4412_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_NACA4412.cfg > def_NACA4412.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: brick_tets_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/brick_tets
+brick_tets_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_brick_tets.cfg > def_brick_tets.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000897
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: brick_hex_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/brick_hex
+brick_hex_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_brick_hex.cfg > def_brick_hex.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000208
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: brick_pyra_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/brick_pyra
+brick_pyra_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_brick_pyra.cfg > def_brick_pyra.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.001831
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: brick_prism_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/brick_prism
+brick_prism_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_brick_prism.cfg > def_brick_prism.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.005684
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: brick_prism_rans_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/brick_prism_rans
+brick_prism_rans_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_brick_prism_rans.cfg > def_brick_prism_rans.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: brick_hex_rans_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/brick_hex_rans
+brick_hex_rans_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_brick_hex_rans.cfg > def_brick_hex_rans.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000000
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: cylinder_ffd_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/cylindrical_ffd
+cylinder_ffd_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_cylindrical.cfg > def_cylindrical.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.000470
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: sphere_ffd_def ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/spherical_ffd
+sphere_ffd_def: FAILED
+Output for the failed case
+execution command: SU2_DEF def_spherical.cfg > def_spherical.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.003567
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+
+
+Error in "void CConfig::SetConfig_Parsing(char*)": 
+-------------------------------------------------------------------------
+VISUALIZE_SURFACE_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+VISUALIZE_VOLUME_DEF: invalid option name. Check current SU2 options in config_template.cfg.
+
+------------------------------ Error Exit -------------------------------
+
+
+==================== Start Test: sphere_ffd_def_bspline ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/deformation/spherical_ffd
+sphere_ffd_def_bspline: FAILED
+Output for the failed case
+execution command: SU2_DEF def_spherical_bspline.cfg > def_spherical_bspline.log 2>&1
+ERROR: The code was not able to get to the "Begin solver" section.
+ERROR: The iteration number 10 could not be found.
+test_iter=10
+test_vals (stored): 0.002068
+sim_vals (computed): 
+delta_vals: 
+test duration: 0.00 min
+==================== Start Test: contadj_euler_py ====================
+/home/catarina/Codes/SU2/SU2-NEMO/Archie/TestCases/cont_adj_euler/naca0012

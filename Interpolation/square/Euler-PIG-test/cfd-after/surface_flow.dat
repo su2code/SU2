@@ -1,3 +1,0 @@
-TITLE = "Visualization of the surface solution"
-VARIABLES = "x","y","Density","Momentum_x","Momentum_y","Energy","Pressure","Temperature","Mach","C<sub>p</sub>"
-ZONE NODES= 0, ELEMENTS= 0, DATAPACKING=POINT, ZONETYPE=FELINESEG

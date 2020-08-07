@@ -10160,8 +10160,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
-                       CNumerics *second_solver, CConfig *config, unsigned short iMesh);
+ // void Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
+   //                    CNumerics *second_solver, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Get the skin friction coefficient.

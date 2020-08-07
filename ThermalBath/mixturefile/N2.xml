@@ -1,0 +1,11 @@
+<mixture mechanism="N2">
+    
+    <species>
+        N2 N
+    </species>
+    
+    <element_compositions default="default">
+        <composition name="default"> N2:0.99, N: 0.01 </composition>
+    </element_compositions>
+    
+</mixture>

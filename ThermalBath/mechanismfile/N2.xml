@@ -1,0 +1,23 @@
+<!-- Park Air-5 Reaction Mechanism -->
+<mechanism name="N2">
+    
+   <!--<arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" /> -->
+
+   <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" /> 
+   
+   <!-- 1 -->
+   <!--<reaction formula="N2+N2=>2N+N2"> -->
+   <!--    <arrhenius A="7.0E+21" n="-1.6" T="113200.0" /> -->
+   <!--</reaction>
+
+    <arrhenius_units A="mol,cm,s,K" E="kcal,mol,K" />> -->
+    
+    <!-- 1 -->
+    <reaction formula="N2+N2=>2N+N2">
+        <arrhenius A="7.0E+21" n="-1.6" T="113200.0" />
+    </reaction>
+
+
+</mechanism>
+
+

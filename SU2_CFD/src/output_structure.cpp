@@ -5118,6 +5118,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
 
+  unsigned short iSpecies, iDim;
+
   if (!disc_adj && !cont_adj && !DualTime_Iteration) {
     
     if ((config[val_iZone]->GetFixed_CL_Mode()) &&
@@ -6745,7 +6747,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
 
             //THIS NEEDS TO BE UPDATED FOR MULTIPlE SPECIES.....
-            cout << "    Res[Rho1]" << "    Res[Rho2]"<< "    Res[RhoE]" << "    Res[RhoEve]" << "     CL(Total)" << "      CD(Total)";
+            //cout << "    Res[Rho1]" << "    Res[Rho2]"<< "    Res[RhoE]" << "    Res[RhoEve]" << "     CL(Total)" << "      CD(Total)";
+
+
+            for (iSpecies=0; iSpecies<nSpecies; iSpecies++)  cout << "    Res[Rho" << iSpecies << "]" ;
+            if (nDim == 3)  cout << "    Res[u]" << "    Res[v]" << "     Res[w]"; 
+            if (nDim == 2)  cout << "    Res[u]" << "    Res[v]" ; 
+
+            cout << "    Res[RhoE]" << "    Res[RhoEve]" << "     CL(Total)" << "      CD(Total)";
+
 
             if(extra_heat_output) {
               cout <<  "     Res[Heat]" << "   HFlux(Total)";
@@ -7117,10 +7127,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
-              cout.width(13); cout << log10(residual_flow[0]);
-              cout.width(13); cout << log10(residual_flow[1]);
-              cout.width(13); cout << log10(residual_flow[4]);
-              cout.width(13); cout << log10(residual_flow[5]);
+             // cout.width(13); cout << log10(residual_flow[0]);
+             // cout.width(13); cout << log10(residual_flow[1]);
+             // cout.width(13); cout << log10(residual_flow[4]);
+             // cout.width(13); cout << log10(residual_flow[5]);
+              for (iSpecies=0; iSpecies<nSpecies; iSpecies++) {   cout.width(13); cout << log10(residual_flow[iSpecies]); }
+              for (iDim=0; iDim<nDim; iDim++) {  cout.width(13); cout << log10(residual_flow[nSpecies+iDim]); }
+              cout.width(13); cout << log10(residual_flow[nSpecies+nDim]);
+              cout.width(13); cout << log10(residual_flow[nSpecies+nDim+1]);
               cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
               if (extra_heat_output) { cout.width(15); cout << Extra_Heat_Residual; cout.width(15); cout << Extra_Total_Heat; }
             }
