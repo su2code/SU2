@@ -5745,35 +5745,27 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
 }
 
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
-  unsigned short iVar, iMet, iMarker;
   unsigned short nMet = 3*(nDim-1);
-  unsigned long iVertex;
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetSolid_Wall(iMarker)) {
 
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
         if (geometry->node[iPoint]->GetDomain()) {
 
           //--- Correct if any of the neighbors belong to the volume
-          unsigned short iNeigh, counter = 0;
-          su2double hess[nMet*nVar];
-          for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+          unsigned short counter = 0;
+          su2double hess[nMet*nVar] = {0.0};
+          for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             if(!geometry->node[jPoint]->GetBoundary()) {
-              for(iVar = 0; iVar < nVar; iVar++){
+              for(unsigned short iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;
-                //--- Reset hessian if first volume node detected
-                if(counter == 0) {
-                  for(iMet = 0; iMet < nMet; iMet++) {
-                    hess[i+iMet] = base_nodes->GetHessian(iPoint, iVar, iMet);
-                  }// iMet
-                }// if counter
-                for(iMet = 0; iMet < nMet; iMet++) {
+                for(unsigned short iMet = 0; iMet < nMet; iMet++) {
                   hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet);
                 }// iMet
               }// iVar
@@ -5781,10 +5773,10 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
             }// if boundary
           }// iNeigh
           if(counter > 0) {
-            for(iVar = 0; iVar < nVar; iVar++){
+            for(unsigned short iVar = 0; iVar < nVar; iVar++){
               const unsigned short i = iVar*nMet;
-              for(iMet = 0; iMet < nMet; iMet++) {
-                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/su2double(counter+1));
+              for(unsigned short iMet = 0; iMet < nMet; iMet++) {
+                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/su2double(counter));
               }// iMet
             }// iVar
           }// if counter
