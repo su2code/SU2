@@ -1814,10 +1814,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3], tautomut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-            pk = 0.;
+            pk = 0., CDkw = 0.;
 
   const su2double F1   = varTur->GetF1blending(iPoint);
-  const su2double CDkw = varTur->GetCrossDiff(iPoint);
 
   const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
   const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
@@ -1845,7 +1844,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     gradT[iDim]     = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
     gradk[iDim]     = varTur->GetGradient(iPoint, 0, iDim);
     gradomega[iDim] = varTur->GetGradient(iPoint, 1, iDim);
+    CDkw += gradk[iDim]*gradomega;
   }
+  CrossDiff *= 2.0*r*sigmaomega2*(1.0 - F1)/zeta;
   
   //--- Account for wall functions
   su2double wf = varFlo->GetTauWallFactor(iPoint);
@@ -1901,8 +1902,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   TmpWeights[nVarFlo+0] += factor/zeta;
   TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
   for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/zeta*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/zet*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
   //--- Density weight
@@ -1967,6 +1968,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+1] += lim*(1. - F1)*CDkw/(r*zeta)*varAdjTur->GetSolution(iPoint,1);
 
 }
