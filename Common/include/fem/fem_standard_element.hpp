@@ -103,49 +103,6 @@ protected:
   */
   void SubConnForPlottingTriangle(const unsigned short   nPoly,
                                   vector<unsigned short> &subConn);
-
-private:
-  /*!
-  * \brief Function, which determines the integration points for a line
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsLine(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a triangle
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsTriangle(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a quadrilateral
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsQuadrilateral(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a tetrahedron
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsTetrahedron(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a pyramid
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsPyramid(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a prism
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsPrism(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a hexahedron
-           such that polynomials of orderExact are integrated exactly.
-  */
-  void IntegrationPointsHexahedron(void);
 };
 
 /*!
@@ -205,30 +162,6 @@ public:
    * \return  The number of DOFs of the linear elements.
    */
   unsigned short GetNDOFsPerSubElem(unsigned short val_VTK_Type) const;
-
-  /*!
-  * \brief Function, which estimates the amount of work for an element of this
-           type. This information is used to determine a well balanced partition.
-  * \param[in] config - Object, which contains the input parameters.
-  */
-  su2double WorkEstimateMetis(CConfig *config);
-};
-
-/*!
- * \class CFEMStandardInternalFace
- * \brief Class to define a FEM standard internal face.
- * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
- */
-class CFEMStandardInternalFace : public CFEMStandardElementBase {
-
-public:
-  /*!
-  * \brief Function, which estimates the amount of work for an element of this
-           type. This information is used to determine a well balanced partition.
-  * \param[in] config - Object, which contains the input parameters.
-  */
-  su2double WorkEstimateMetis(CConfig *config);
 };
 
 /*!
@@ -260,21 +193,4 @@ public:
   * \return  The pointer to the local connectivity of the linear subfaces.
   */
   inline const unsigned short* GetSubFaceConn(void) const {return NULL;}
-
-  /*!
-  * \brief Function, which estimates the amount of work for an element of this
-           type. This information is used to determine a well balanced partition.
-  * \param[in] config - Object, which contains the input parameters.
-  */
-  su2double WorkEstimateMetis(CConfig *config);
-
-  /*!
-  * \brief Function, which estimates the additional amount of work for an element
-           of this type when a wall function treatment is used. This information
-           is used to determine a well balanced partition.
-  * \param[in] config    - Object, which contains the input parameters.
-  * \param[in] nPointsWF - Number of points to discretize the wall model.
-  */
-  su2double WorkEstimateMetisWallFunctions(CConfig              *config,
-                                           const unsigned short nPointsWF);
 };
