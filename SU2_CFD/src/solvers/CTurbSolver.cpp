@@ -435,7 +435,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     /*--- Now get the contribution of point i to the gradient at point j. ---*/
 
     const su2double HalfOnVolj = 0.5/geometry->node[jPoint]->GetVolume();
-    auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+    auto iEdge = geometry->FindEdge(iPoint,jPoint);
     const su2double *Normal = geometry->edge[iEdge]->GetNormal();
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
