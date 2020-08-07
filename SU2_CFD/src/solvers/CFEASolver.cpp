@@ -3541,6 +3541,18 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
       else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
       else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
     }
+
+    /*--- Compute nodal averages for output. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint=0ul; iPoint<nPoint; ++iPoint) {
+      su2double sum = 0, vol = 0;
+      for (auto iElem : geometry->nodes->GetElems(iPoint)) {
+        su2double w = geometry->nodes->GetVolume(iPoint);
+        sum += w * element_properties[iElem]->GetPhysicalDensity();
+        vol += w;
+      }
+      nodes->SetAuxVar(iPoint, sum/vol);
+    }
   }
 
   delete [] physical_rho;
