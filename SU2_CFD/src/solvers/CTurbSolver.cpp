@@ -410,7 +410,9 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
     const bool wasActive = AD::BeginPassive();
 
-    const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+    /*--- Common factors for all Jacobian terms --*/
+    const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+    const su2double sign      = 1.0 - 2.0*(iPoint > jPoint);
       
     CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
@@ -420,7 +422,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         for (unsigned short jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
 
-      const su2double Weight = -sign/geometry->node[iPoint]->GetVolume();
+      const su2double Weight = -0.5*HalfOnVol*sign;
       
       /*--- Influence of boundary i on R(i,j) ---*/
       for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -448,7 +450,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
       const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
       const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
-      const su2double denom      = geometry->node[kPoint]->GetVolume()*nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
+      const su2double denom      = geometry->node[iPoint]->GetVolume()*nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
       const su2double Weight     = 0.5*sign*signk/denom;
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++)
