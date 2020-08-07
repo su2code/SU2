@@ -1812,7 +1812,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   
   walldist = geometry->node[iPoint]->GetWall_Distance();
 
-  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3],
+  su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3], tautomut[3][3]
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
             pk = 0.;
 
@@ -1835,6 +1835,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
       taut[iDim][jDim] = wf*(mut*( gradu[jDim][iDim] + gradu[iDim][jDim] )
                        - TWO3*mut*divu*delta[iDim][jDim]
                        - TWO3*r*k*delta[iDim][jDim]);
+      tautomut[iDim][jDim] = wf*( gradu[jDim][iDim] + gradu[iDim][jDim] 
+                           - TWO3*divu*delta[iDim][jDim]
+                           - TWO3*r*zeta*delta[iDim][jDim]);
       pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
     }
   }
@@ -1873,7 +1876,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
      }
       for (jDim = 0; jDim < nDim; ++jDim) {
        if (pk <= 20.*betastar*r*omega*k) {
-          factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
+          factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
           factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
        }
       }
@@ -1886,7 +1889,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (taut[iDim][jDim]+wf*TWO3*r*k*delta[iDim][jDim])/mut
+      factor += (tautomut[iDim][jDim]+wf*TWO3*r*zeta*delta[iDim][jDim])
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
