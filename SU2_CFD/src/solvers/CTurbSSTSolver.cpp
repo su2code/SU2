@@ -1859,7 +1859,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                        - TWO3*r*k*delta[iDim][jDim]);
       tautomut[iDim][jDim] = wf*( gradu[jDim][iDim] + gradu[iDim][jDim] 
                            - TWO3*divu*delta[iDim][jDim]
-                           - TWO3*r*zeta*delta[iDim][jDim]);
+                           - TWO3*zeta*delta[iDim][jDim]);
       pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
     }
   }
@@ -1889,7 +1889,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (tautomut[iDim][jDim]+wf*TWO3*r*zeta*delta[iDim][jDim])
+      factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim])
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
