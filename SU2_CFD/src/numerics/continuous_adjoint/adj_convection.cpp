@@ -697,6 +697,8 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
     Enthalpy_j = V_i[nDim+3];
     Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
+    su2double RoeTke = 0;
+
     /*--- Jacobians of the inviscid flux, scaled by
      0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
@@ -706,7 +708,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
     /*--- Compute P, inverse P, and store eigenvalues ---*/
 
     GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-    GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+    GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
     /*--- Flow eigenvalues ---*/
 

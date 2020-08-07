@@ -570,7 +570,7 @@ void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_
 
 }
 
-void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
+void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2double *val_tke,
                            su2double *val_soundspeed, su2double *val_normal, su2double **val_p_tensor) {
 
   su2double sqvel, rhooc, rhoxc;
@@ -599,10 +599,10 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     val_p_tensor[2][2]=0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
     val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
 
-    val_p_tensor[3][0]=0.5*sqvel;
+    val_p_tensor[3][0]=0.5*sqvel-(*val_tke);
     val_p_tensor[3][1]=*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
-    val_p_tensor[3][2]=0.5*(0.5*sqvel*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
-    val_p_tensor[3][3]=0.5*(0.5*sqvel*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
+    val_p_tensor[3][2]=0.5*(0.5*sqvel*rhooc+*vak_tke*rhooc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
+    val_p_tensor[3][3]=0.5*(0.5*sqvel*rhooc+*val_tke*rhooc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
 
   }
   else {

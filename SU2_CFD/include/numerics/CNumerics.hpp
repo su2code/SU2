@@ -948,7 +948,7 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_p_tensor - Pointer to the P matrix.
    */
-  void GetPMatrix(su2double *val_density, su2double *val_velocity,
+  void GetPMatrix(su2double *val_density, su2double *val_velocity, su2double *val_tke,
                   su2double *val_soundspeed, su2double *val_normal,
                   su2double **val_p_tensor);
 
