@@ -3046,6 +3046,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
                          (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
 
+  su2double tke_i = 0, tke_j = 0;
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -3099,6 +3101,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
+
+    if (tkeNeeded) {
+      tke_i = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+      tke_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
+
+      numerics->SetTurbKineticEnergy(tke_i, tke_j);
+    }
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
@@ -3201,8 +3210,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           sq_vel += pow(RoeVelocity, 2);
         }
         su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+        su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
-        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel) < 0.0);
+        neg_sound_speed = ((RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
       }
 
       bool bad_i = neg_sound_speed || neg_pres_or_rho_i;
