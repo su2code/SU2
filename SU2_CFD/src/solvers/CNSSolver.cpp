@@ -544,52 +544,50 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  if (geometry->node[iPoint]->GetDomain()) {
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+  for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-      const su2double Density = nodes->GetDensity(kPoint);
-      const su2double Xi = WF_Factor*Mean_Viscosity/Density;
+    const su2double Density = nodes->GetDensity(kPoint);
+    const su2double Xi = WF_Factor*Mean_Viscosity/Density;
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
 
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
-      const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
-      const su2double Weight     = 0.5*HalfOnVol*sign*signk;
+    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+    const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
+    const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+    const su2double Weight     = 0.5*HalfOnVol*sign*signk;
 
-      /*--- Get new projection vector to be multiplied by divergence terms ---*/
-      ProjVec = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        ProjVec += Vec[iDim]*VolNormal[iDim];
+    /*--- Get new projection vector to be multiplied by divergence terms ---*/
+    ProjVec = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      ProjVec += Vec[iDim]*VolNormal[iDim];
 
-      /*--- Momentum flux Jacobian wrt momentum ---*/
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        for (unsigned short jDim = 0; jDim < nDim; jDim++)
-          Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(VolNormal[iDim]*Vec[jDim] 
-                                      - TWO3*VolNormal[jDim]*Vec[iDim] 
-                                      + delta[iDim][jDim]*ProjVec);
+    /*--- Momentum flux Jacobian wrt momentum ---*/
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(VolNormal[iDim]*Vec[jDim] 
+                                    - TWO3*VolNormal[jDim]*Vec[iDim] 
+                                    + delta[iDim][jDim]*ProjVec);
 
-      /*--- Now get density and energy Jacobians for kPoint ---*/
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-          /*--- Momentum flux Jacobian wrt density ---*/
-          Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(kPoint,jDim);
+    /*--- Now get density and energy Jacobians for kPoint ---*/
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+        /*--- Momentum flux Jacobian wrt density ---*/
+        Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(kPoint,jDim);
 
-          /*--- Energy Jacobian wrt momentum ---*/
-          Jacobian_i[nVar-1][iDim+1] += Jacobian_i[jDim+1][iDim+1]*Mean_Velocity[jDim];
-        }
-
-        /*--- Energy Jacobian wrt density ---*/
-        Jacobian_i[nVar-1][0] -= Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(kPoint,iDim);
+        /*--- Energy Jacobian wrt momentum ---*/
+        Jacobian_i[nVar-1][iDim+1] += Jacobian_i[jDim+1][iDim+1]*Mean_Velocity[jDim];
       }
 
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
-    }// iNeigh
-  }// domain
+      /*--- Energy Jacobian wrt density ---*/
+      Jacobian_i[nVar-1][0] -= Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(kPoint,iDim);
+    }
+
+    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+  }// iNeigh
 
 }
 
@@ -677,43 +675,41 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  if (geometry->node[iPoint]->GetDomain()) {
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-      auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+  for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-      const su2double Vel2     = nodes->GetVelocity2(kPoint);
-      const su2double Density  = nodes->GetDensity(kPoint);
-      const su2double Pressure = nodes->GetPressure(kPoint);
-      const su2double Phi      = Gamma_Minus_One/Density;
+    const su2double Vel2     = nodes->GetVelocity2(kPoint);
+    const su2double Density  = nodes->GetDensity(kPoint);
+    const su2double Pressure = nodes->GetPressure(kPoint);
+    const su2double Phi      = Gamma_Minus_One/Density;
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
 
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
-      const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+    const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
+    const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
 
-      su2double Weight = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Weight += VolNormal[iDim]*Vec[iDim];
+    su2double Weight = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Weight += VolNormal[iDim]*Vec[iDim];
 
-      Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
+    Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
 
-      /*--- Density Jacobian ---*/
-      Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
+    /*--- Density Jacobian ---*/
+    Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
-      /*--- Momentum Jacobian ---*/
-      for (unsigned short jDim = 0; jDim < nDim; jDim++)
-        Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(kPoint,jDim);
+    /*--- Momentum Jacobian ---*/
+    for (unsigned short jDim = 0; jDim < nDim; jDim++)
+      Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(kPoint,jDim);
 
-      /*--- Energy Jacobian ---*/
-      Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
+    /*--- Energy Jacobian ---*/
+    Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
 
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
-    }// iNeigh
-  }// domain
+    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+  }// iNeigh
   
 }
 
