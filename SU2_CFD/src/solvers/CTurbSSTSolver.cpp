@@ -333,13 +333,16 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double rho = flowNodes->GetDensity(iPoint);
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      const su2double cons = nodes->GetSolution(iPoint,iVar);
-      nodes->SetPrimitive(iPoint,iVar,cons/rho);
-    }
+    const su2double r = flowNodes->GetDensity(iPoint);
+    const su2double k = nodes->GetSolution(iPoint,0)/rho;
+    const su2double om = max(nodes->GetSolution(iPoint,1),eps)/r;
+    
+    nodes->SetPrimitive(iPoint,0,k);
+    nodes->SetPrimitive(iPoint,1,om);
+    nodes->SetSolution(iPoint,1,r*om);
   }
 
 }
@@ -1870,7 +1873,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
      }
       for (jDim = 0; jDim < nDim; ++jDim) {
        if (pk <= 20.*betastar*r*omega*k) {
-          factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/max(mut,eps)*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
+          factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa/mut*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
           factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
        }
       }
@@ -1883,7 +1886,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       iVar = iDim+1;
-      factor += (taut[iDim][jDim]+wf*TWO3*r*k*delta[iDim][jDim])/max(mut,eps)
+      factor += (taut[iDim][jDim]+wf*TWO3*r*k*delta[iDim][jDim])/mut
               * (varAdjFlo->GetGradient_Adaptation(iPoint, iVar, jDim)
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }

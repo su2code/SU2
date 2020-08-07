@@ -78,7 +78,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   CDkw(iPoint) = 0.0;
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
-  CDkw(iPoint) *= 2.0*val_density*sigma_om2/(Primitive(iPoint,1)+eps);
+  CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
   CDkw(iPoint) = max(CDkw(iPoint), CDkwmin);
 
   /*--- F1 ---*/
