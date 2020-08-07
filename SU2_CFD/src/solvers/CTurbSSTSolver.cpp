@@ -700,10 +700,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       visc_numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
                                   flowNodes->GetVorticity(iPoint));
 
-      /*--- Set values for gradient Jacobian ---*/
-      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-                               geometry->node[iPoint]->GetVolume());
-
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);
 
@@ -812,10 +808,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver, CNumerics *
       visc_numerics->SetVorticity(solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
                                   solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
 
-      /*--- Set values for gradient Jacobian ---*/
-      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-                               geometry->node[iPoint]->GetVolume());
-
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);
 
@@ -920,10 +912,6 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver, CNumerics 
 //      /*--- Vorticity ---*/
 //      visc_numerics->SetVorticity(solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint),
 //                                  solver[FLOW_SOL]->GetNodes()->GetVorticity(iPoint));
-//
-//      /*--- Set values for gradient Jacobian ---*/
-//      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-//                               geometry->node[iPoint]->GetVolume());
 //
 //      /*--- Compute residual, and Jacobians ---*/
 //      auto visc_residual = visc_numerics->ComputeResidual(config);

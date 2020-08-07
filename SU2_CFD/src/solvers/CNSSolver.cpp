@@ -394,11 +394,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   numerics->SetTauWall(nodes->GetTauWall(iPoint),
                        nodes->GetTauWall(jPoint));
 
-  /*--- Set values for gradient Jacobian ---*/
-    
-  numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
-                      geometry->node[jPoint]->GetVolume());
-
   /*--- Compute and update residual ---*/
 
   auto residual = numerics->ComputeResidual(config);

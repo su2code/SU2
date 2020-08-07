@@ -348,11 +348,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                            flowNodes->GetVorticity(jPoint));
   }
 
-  /*--- Set values for gradient Jacobian ---*/
-    
-  numerics->SetVolume(geometry->node[iPoint]->GetVolume(), 
-                      geometry->node[jPoint]->GetVolume());
-
   /*--- Compute residual, and Jacobians ---*/
 
   auto residual = numerics->ComputeResidual(config);
