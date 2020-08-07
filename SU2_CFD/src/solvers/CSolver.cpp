@@ -6144,7 +6144,7 @@ void CSolver::ViscousMetric(CSolver                    **solver,
                             CConfig                    *config,
                             unsigned long              iPoint,
                             vector<vector<su2double> > &weights) {
-  
+
   CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
             *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
 
@@ -6354,8 +6354,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
                                   CConfig                    *config,
                                   unsigned long              iPoint,
                                   vector<vector<su2double> > &weights) {
-  CVariable *varFlo = solver[FLOW_SOL]->GetNodes(),
-            *varTur = solver[TURB_SOL]->GetNodes();
+  CVariable *varFlo = solver[FLOW_SOL]->GetNodes();
 
   unsigned short iVar, im;
   const unsigned short nMet = 3*(nDim-1);
@@ -6377,6 +6376,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
 
   //--- Turbulent variables
   if(turb) {
+    CVariable *varTur = solver[TURB_SOL]->GetNodes();
     const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
     for (iVar = 0; iVar < nVarTur; ++iVar) {
 
