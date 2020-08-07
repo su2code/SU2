@@ -75,34 +75,6 @@ public:
   */
   static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
                                        unsigned short nPoly);
-
-protected:
-  /*!
-  * \brief Function, which computes the local connectivity of linear subelements of
-           a line, which can be used for plotting.
-  * \param[in]  nPoly    - Polynomial degree of the line.
-  * \param[out] subConn  - The local subconnectivity of a line element.
-  */
-  void SubConnForPlottingLine(const unsigned short   nPoly,
-                              vector<unsigned short> &subConn);
-
-  /*!
-  * \brief Function, which computes the local connectivity of linear subelements of
-           a quadrilateral, which can be used for plotting.
-  * \param[in]  nPoly    - Polynomial degree of the quadrilateral.
-  * \param[out] subConn  - The local subconnectivity of a triangle element.
-  */
-  void SubConnForPlottingQuadrilateral(const unsigned short   nPoly,
-                                       vector<unsigned short> &subConn);
-
-  /*!
-  * \brief Function, which computes the local connectivity of linear subelements of
-           a triangle, which can be used for plotting.
-  * \param[in]  nPoly    - Polynomial degree of the triangle.
-  * \param[out] subConn  - The local subconnectivity of a triangle element.
-  */
-  void SubConnForPlottingTriangle(const unsigned short   nPoly,
-                                  vector<unsigned short> &subConn);
 };
 
 /*!

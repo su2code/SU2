@@ -74,30 +74,6 @@ unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
   return nDOFs;
 }
 
-
-/*----------------------------------------------------------------------------------*/
-/*         Protected member functions of CFEMStandardElementBase.                   */
-/*----------------------------------------------------------------------------------*/
-
-void CFEMStandardElementBase::SubConnForPlottingLine(
-                                         const unsigned short   nPoly,
-                                         vector<unsigned short> &subConn) {
-
-}
-
-void CFEMStandardElementBase::SubConnForPlottingQuadrilateral(
-                                         const unsigned short   nPoly,
-                                         vector<unsigned short> &subConn) {
-
-}
-
-void CFEMStandardElementBase::SubConnForPlottingTriangle(
-                                         const unsigned short   nPoly,
-                                         vector<unsigned short> &subConn) {
-
-}
-
-
 /*----------------------------------------------------------------------------------*/
 /*           Private member functions of CFEMStandardElement.                       */
 /*----------------------------------------------------------------------------------*/
