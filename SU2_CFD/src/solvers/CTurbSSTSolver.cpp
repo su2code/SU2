@@ -1816,6 +1816,28 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
             pk = 0.;
 
+  const su2double F1   = varTur->GetF1blending(iPoint);
+  const su2double CDkw = varTur->GetCrossDiff(iPoint);
+
+  const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
+  const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
+  const su2double sigmaomega  = F1*constants[2] + (1.0 - F1)*constants[3];
+  const su2double sigmaomega2 = constants[3];
+  const su2double beta        = F1*constants[4] + (1.0 - F1)*constants[5];
+  const su2double betastar    = constants[6];
+  const su2double a1          = constants[7];
+
+  const su2double* Vorticity = varFlo->GetVorticity(iPoint);
+  const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+                                      Vorticity[1]*Vorticity[1] +
+                                      Vorticity[2]*Vorticity[2]);
+  
+  const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+  const su2double zeta = max(omega,VorticityMag*F1/a1);
+  
+  // const su2double lim = 1.0;
+  // const su2double zeta = 1./(omega+eps);
+
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
       gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
@@ -1841,28 +1863,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
       pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
     }
   }
-
-  const su2double F1   = varTur->GetF1blending(iPoint);
-  const su2double CDkw = varTur->GetCrossDiff(iPoint);
-
-  const su2double alfa        = F1*constants[8] + (1.0 - F1)*constants[9];
-  const su2double sigmak      = F1*constants[0] + (1.0 - F1)*constants[1];
-  const su2double sigmaomega  = F1*constants[2] + (1.0 - F1)*constants[3];
-  const su2double sigmaomega2 = constants[3];
-  const su2double beta        = F1*constants[4] + (1.0 - F1)*constants[5];
-  const su2double betastar    = constants[6];
-  const su2double a1          = constants[7];
-
-  const su2double* Vorticity = varFlo->GetVorticity(iPoint);
-  const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-                                      Vorticity[1]*Vorticity[1] +
-                                      Vorticity[2]*Vorticity[2]);
-  
- const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
- const su2double zeta = max(omega,VorticityMag*F1/a1);
-  
-  // const su2double lim = 1.0;
-  // const su2double zeta = 1./(omega+eps);
 
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
