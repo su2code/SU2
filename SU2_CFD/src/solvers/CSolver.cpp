@@ -5754,19 +5754,26 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
       for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        auto node_i = geometry->node[iPoint];
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (node_i->GetDomain()) {
 
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
-          su2double hess[nMet*nVar] = {0.0};
-          for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-            const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-            if(!geometry->node[jPoint]->GetSolidBoundary()) {
+          su2double hess[nMet*nVar] = {0.0}, dist = 0.0, sumdist = 0.0;;
+          for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+            const unsigned long jPoint = node_i->GetPoint(iNeigh);
+            auto node_j = geometry->node[jPoint];
+            if(!node_j->GetSolidBoundary()) {
+              dist = 0.0;
+              for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                dist += pow(node_j->GetCoord(iDim)-node_i->GetCoord(iDim),2);
+              dist = 1./dist;
+              suumdist += dist;
               for(unsigned short iVar = 0; iVar < nVar; iVar++){
                 const unsigned short i = iVar*nMet;
                 for(unsigned short iMet = 0; iMet < nMet; iMet++) {
-                  hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet);
+                  hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
                 }// iMet
               }// iVar
               counter ++;
@@ -5776,7 +5783,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
             for(unsigned short iVar = 0; iVar < nVar; iVar++){
               const unsigned short i = iVar*nMet;
               for(unsigned short iMet = 0; iMet < nMet; iMet++) {
-                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/su2double(counter));
+                base_nodes->SetHessian(iPoint, iVar, iMet, hess[i+iMet]/sumdist);
               }// iMet
             }// iVar
           }// if counter
