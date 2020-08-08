@@ -5745,6 +5745,7 @@ void CSolver::CorrectSymmPlaneHessian(CGeometry *geometry, CConfig *config, unsi
 }
 
 void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
+  constexpr size_t MAXNMET = 30;
   unsigned short nMet = 3*(nDim-1);
 
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5760,7 +5761,7 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
 
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
-          su2double hess[nMet*nVar] = {0.0}, suminvdist = 0.0;
+          su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
           for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = node_i->GetPoint(iNeigh);
             auto node_j = geometry->node[jPoint];
@@ -5794,21 +5795,20 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
 }
 
 void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
-  unsigned short iMet, iNeigh, counter;
+  constexpr size_t MAXNMET = 6;
   unsigned short nMet = 3*(nDim-1);
-  unsigned long iPoint;
-  su2double met[nMet];
+  su2double met[MAXNMET] = {0.0};
   
   //--- communicate the metric values via MPI
   InitiateComms(geometry, config, METRIC);
   CompleteComms(geometry, config, METRIC);
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
     if (geometry->node[iPoint]->GetSolidBoundary()) {
       //--- Correct if any of the neighbors belong to the volume
-      counter = 0;
-      for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      unsigned short counter = 0;
+      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         if(!geometry->node[jPoint]->GetSolidBoundary()) {
           //--- Reset metric if first volume node detected
@@ -5817,14 +5817,14 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
               met[iMet] = base_nodes->GetMetric(iPoint, iMet);
             }// iMet
           }// if counter
-          for(iMet = 0; iMet < nMet; iMet++) {
+          for(unsigned short iMet = 0; iMet < nMet; iMet++) {
             met[iMet] += base_nodes->GetMetric(jPoint, iMet);
           }// iMet
           counter ++;
         }// if boundary
       }// iNeigh
       if(counter > 0) {
-        for(iMet = 0; iMet < nMet; iMet++) {
+        for(unsigned short iMet = 0; iMet < nMet; iMet++) {
           base_nodes->SetMetric(iPoint, iMet, met[iMet]/su2double(counter+1));
         }// iMet
       }// if counter
