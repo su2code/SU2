@@ -56,6 +56,7 @@
 #define SU2_OMP(ARGS) PRAGMIZE(omp ARGS)
 
 #else // Compile without OpenMP
+#include <ctime>
 
 /*--- Disable pragmas to quiet compilation warnings. ---*/
 #define SU2_OMP(ARGS)
@@ -84,6 +85,11 @@ inline constexpr int omp_get_thread_num() {return 0;}
  * \brief Returns true if inside a parallel section.
  */
 inline constexpr bool omp_in_parallel() {return false;}
+
+/*!
+ * \brief Return the wall time.
+ */
+inline passivedouble omp_get_wtime() {return passivedouble(clock()) / CLOCKS_PER_SEC;}
 
 /*!
  * \brief Dummy lock type and associated functions.
