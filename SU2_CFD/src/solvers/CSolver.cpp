@@ -5813,7 +5813,7 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
         if(!geometry->node[jPoint]->GetSolidBoundary()) {
           //--- Reset metric if first volume node detected
           if(counter == 0) {
-            for(iMet = 0; iMet < nMet; iMet++) {
+            for(unsigned short iMet = 0; iMet < nMet; iMet++) {
               met[iMet] = base_nodes->GetMetric(iPoint, iMet);
             }// iMet
           }// if counter
