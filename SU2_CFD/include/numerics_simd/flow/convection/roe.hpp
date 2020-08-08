@@ -41,7 +41,7 @@ extern double preaccMem;
 /*!
  * \class CRoeBase
  * \brief Base class for Roe schemes, derived classes implement
- * the dissipation term in a static "finalizeFlux" method.
+ * the dissipation term in a const "finalizeFlux" method.
  * A base class implementing "updateFlux" is accepted as template parameter.
  * Similarly to derived, that method should update the flux and Jacobians, but
  * whereas "finalizeFlux" is passed data prepared by CRoeBase, "updateFlux"
@@ -52,15 +52,18 @@ extern double preaccMem;
 template<class Derived, class Base>
 class CRoeBase : public Base {
 protected:
-  enum: size_t {nDim = Base::nDim};
-  enum: size_t {nVar = CCompressibleConservatives<nDim>::nVar};
+  using Base::nDim;
+  static constexpr size_t nVar = CCompressibleConservatives<nDim>::nVar;
+  static constexpr size_t nPrimVarGrad = nDim+4;
+  static constexpr size_t nPrimVar = Max(Base::nPrimVar, nPrimVarGrad);
 
   const su2double kappa;
   const su2double gamma;
   const su2double entropyFix;
-  const ENUM_ROELOWDISS typeDissip;
   const bool finestGrid;
   const bool dynamicGrid;
+  const bool muscl;
+  const ENUM_LIMITER typeLimiter;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -70,9 +73,10 @@ protected:
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
     entropyFix(config.GetEntropyFix_Coeff()),
-    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())),
     finestGrid(iMesh == MESH_0),
-    dynamicGrid(config.GetDynamic_Grid()) {
+    dynamicGrid(config.GetDynamic_Grid()),
+    muscl(finestGrid && config.GetMUSCL_Flow()),
+    typeLimiter(static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow())) {
   }
 
 public:
@@ -95,8 +99,6 @@ public:
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const bool muscl = finestGrid && config.GetMUSCL_Flow();
-    const auto limiter = static_cast<ENUM_LIMITER>(config.GetKind_SlopeLimit_Flow());
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
@@ -115,8 +117,12 @@ public:
 
     /*--- Reconstructed primitives. ---*/
 
-    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim> >(
-               iPoint, jPoint, muscl, limiter, vector_ij, solution);
+    CPair<CCompressiblePrimitives<nDim,nPrimVar> > V1st;
+    V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
+    V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
+
+    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
+                  iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
@@ -192,13 +198,15 @@ public:
 
     /*--- Finalize in derived class (static polymorphism). ---*/
 
-    Derived::finalizeFlux(flux, jac_i, jac_j, implicit, gamma, kappa, area, unitNormal,
-                          V, U, roeAvg, lambda, pMat, iPoint, jPoint, typeDissip, solution);
+    const auto derived = static_cast<const Derived*>(this);
+
+    derived->finalizeFlux(flux, jac_i, jac_j, implicit, area, unitNormal, V,
+                          U, roeAvg, lambda, pMat, iPoint, jPoint, solution);
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
-    Base::updateFlux(iEdge, iPoint, jPoint, config, geometry, solution_,
-                     area, unitNormal, vector_ij, implicit, flux, jac_i, jac_j);
+    Base::updateFlux(iEdge, iPoint, jPoint, V1st, solution_, vector_ij, geometry,
+                     config, area, unitNormal, implicit, flux, jac_i, jac_j);
 
     /*--- Stop preaccumulation. ---*/
 
@@ -221,38 +229,41 @@ template<class Decorator>
 class CRoeScheme : public CRoeBase<CRoeScheme<Decorator>,Decorator> {
 private:
   using Base = CRoeBase<CRoeScheme<Decorator>,Decorator>;
-  enum: size_t {nDim = Base::nDim};
-  enum: size_t {nVar = Base::nVar};
+  using Base::nDim;
+  using Base::nVar;
+  using Base::gamma;
+  using Base::kappa;
+  const ENUM_ROELOWDISS typeDissip;
+
 public:
   /*!
-   * \brief Constructor, forward everything to base.
+   * \brief Constructor, store some constants and forward to base.
    */
   template<class... Ts>
-  CRoeScheme(Ts&... args) : Base(args...) {}
+  CRoeScheme(const CConfig& config, Ts&... args) : Base(config, args...),
+    typeDissip(static_cast<ENUM_ROELOWDISS>(config.GetKind_RoeLowDiss())) {
+  }
 
   /*!
    * \brief Updates flux and Jacobians with standard Roe dissipation.
    * \note "Ts" is here just in case other schemes in the family need extra args.
    */
-  template<class... Ts>
-  FORCEINLINE static void finalizeFlux(VectorDbl<nVar>& flux,
-                                       MatrixDbl<nVar>& jac_i,
-                                       MatrixDbl<nVar>& jac_j,
-                                       bool implicit,
-                                       Double gamma,
-                                       Double kappa,
-                                       Double area,
-                                       const VectorDbl<nDim>& unitNormal,
-                                       const CPair<CCompressiblePrimitives<nDim> >& V,
-                                       const CPair<CCompressibleConservatives<nDim> >& U,
-                                       const CRoeVariables<nDim>& roeAvg,
-                                       const VectorDbl<nVar>& lambda,
-                                       const MatrixDbl<nVar>& pMat,
-                                       Int iPoint,
-                                       Int jPoint,
-                                       ENUM_ROELOWDISS typeDissip,
-                                       const CEulerVariable& solution,
-                                       Ts&...) {
+  template<class PrimVarType, class ConsVarType, class... Ts>
+  FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
+                                MatrixDbl<nVar>& jac_i,
+                                MatrixDbl<nVar>& jac_j,
+                                bool implicit,
+                                Double area,
+                                const VectorDbl<nDim>& unitNormal,
+                                const CPair<PrimVarType>& V,
+                                const CPair<ConsVarType>& U,
+                                const CRoeVariables<nDim>& roeAvg,
+                                const VectorDbl<nVar>& lambda,
+                                const MatrixDbl<nVar>& pMat,
+                                Int iPoint,
+                                Int jPoint,
+                                const CEulerVariable& solution,
+                                Ts&...) const {
     /*--- Inverse P tensor. ---*/
 
     auto pMatInv = pMatrixInv(gamma, roeAvg.density, roeAvg.velocity,

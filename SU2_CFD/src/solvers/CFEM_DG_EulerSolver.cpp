@@ -6708,7 +6708,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
   }
 }
 
-void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
+void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -6733,7 +6733,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   const su2double RefArea      = config->GetRefArea();
   const su2double RefLength    = config->GetRefLength();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double *Origin      = config->GetRefOriginMoment(0);
+  auto Origin                  = config->GetRefOriginMoment(0);
   const bool grid_movement     = config->GetGrid_Movement();
 
   /*--- Evaluate reference values for non-dimensionalization.
@@ -7518,7 +7518,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
 
   su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
   su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  su2double *Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+  auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
   P_Total /= config->GetPressure_Ref();

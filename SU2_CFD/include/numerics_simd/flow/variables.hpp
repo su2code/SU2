@@ -32,11 +32,11 @@
 
 /*!
  * \brief Type to store compressible primitive variables and access them by name.
- * \note The default nVar assumes inviscid flow.
  */
-template<size_t nDim, size_t nVar_= nDim+4>
+template<size_t nDim_, size_t nVar_>
 struct CCompressiblePrimitives {
-  enum : size_t {nVar = nVar_};
+  static constexpr size_t nDim = nDim_;
+  static constexpr size_t nVar = nVar_;
   VectorDbl<nVar> all;
   FORCEINLINE Double& temperature() { return all(0); }
   FORCEINLINE Double& pressure() { return all(nDim+1); }
@@ -50,7 +50,7 @@ struct CCompressiblePrimitives {
   FORCEINLINE const Double& velocity(size_t iDim) const { return all(iDim+1); }
   FORCEINLINE const Double* velocity() const { return &velocity(0); }
 
-  /*--- Variables used in viscous flow (not allocated by default). ---*/
+  /*--- Un-reconstructed variables (not allocated by default). ---*/
   FORCEINLINE Double& speedSound() { return all(nDim+4); }
   FORCEINLINE Double& laminarVisc() { return all(nDim+5); }
   FORCEINLINE Double& eddyVisc() { return all(nDim+6); }
@@ -62,9 +62,10 @@ struct CCompressiblePrimitives {
 /*!
  * \brief Type to store compressible conservative (i.e. solution) variables.
  */
-template<size_t nDim>
+template<size_t nDim_>
 struct CCompressibleConservatives {
-  enum : size_t {nVar = nDim+2};
+  static constexpr size_t nDim = nDim_;
+  static constexpr size_t nVar = nDim+2;
   VectorDbl<nVar> all;
 
   FORCEINLINE Double& density() { return all(0); }
@@ -81,8 +82,8 @@ struct CCompressibleConservatives {
 /*!
  * \brief Primitive to conservative conversion.
  */
-template<size_t nDim>
-FORCEINLINE CCompressibleConservatives<nDim> compressibleConservatives(const CCompressiblePrimitives<nDim>& V) {
+template<size_t nDim, size_t N>
+FORCEINLINE CCompressibleConservatives<nDim> compressibleConservatives(const CCompressiblePrimitives<nDim,N>& V) {
   CCompressibleConservatives<nDim> U;
   U.density() = V.density();
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -107,9 +108,9 @@ struct CRoeVariables {
 /*!
  * \brief Compute Roe-averaged variables from pair of primitive variables.
  */
-template<size_t nDim>
+template<size_t nDim, class PrimVarType>
 FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(Double gamma,
-                                                     const CPair<CCompressiblePrimitives<nDim> >& V,
+                                                     const CPair<PrimVarType>& V,
                                                      const VectorDbl<nDim>& normal) {
   CRoeVariables<nDim> roeAvg;
   Double R = sqrt(V.j.density() / V.i.density());

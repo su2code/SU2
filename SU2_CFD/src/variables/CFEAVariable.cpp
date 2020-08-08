@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -85,8 +85,9 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
 
   if (prestretch_fem) Prestretch.resize(nPoint,nVar);
 
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
+  if (config->GetMultizone_Problem()) Set_BGSSolution_k();
+
+  if (config->GetTopology_Optimization()) AuxVar.resize(nPoint);
 }
 
 void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }

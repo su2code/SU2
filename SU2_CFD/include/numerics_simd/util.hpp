@@ -37,16 +37,21 @@
  * \note These should be used instead of C-style arrays.
  */
 template<class Type, size_t Size>
-using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, simd::SIMD_SIZE, Size, 1>;
+using Vector = C2DContainer<unsigned long, Type, StorageType::ColumnMajor, Type::Align, Size, 1>;
 
 template<size_t Size> using VectorInt = Vector<Int, Size>;
 template<size_t Size> using VectorDbl = Vector<Double, Size>;
 
 template<class Type, size_t Rows, size_t Cols>
-using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, simd::SIMD_SIZE, Rows, Cols>;
+using Matrix = C2DContainer<unsigned long, Type, StorageType::RowMajor, Type::Align, Rows, Cols>;
 
 template<size_t Rows, size_t Cols = Rows> using MatrixInt = Matrix<Int, Rows, Cols>;
 template<size_t Rows, size_t Cols = Rows> using MatrixDbl = Matrix<Double, Rows, Cols>;
+
+/*!
+ * \brief Constexpr version of max.
+ */
+inline constexpr size_t Max(size_t a, size_t b) { return a>b? a : b; }
 
 /*!
  * \brief Simple pair type for i/j variables.
@@ -141,7 +146,7 @@ FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& 
 }
 
 /*!
- * \brief Distance vector, from i to the centroid of the ij edge (i.e. half way).
+ * \brief Distance vector, from point i to point j.
  */
 template<size_t nDim, class Container>
 FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint,
@@ -150,7 +155,7 @@ FORCEINLINE VectorDbl<nDim> distanceVector(Int iPoint, Int jPoint,
   auto coord_j = gatherVariables<nDim>(jPoint, coords);
   VectorDbl<nDim> vector_ij;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
-    vector_ij(iDim) = 0.5 * (coord_j(iDim) - coord_i(iDim));
+    vector_ij(iDim) = coord_j(iDim) - coord_i(iDim);
   }
   return vector_ij;
 }
