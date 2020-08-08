@@ -35,7 +35,7 @@
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
  */
-class CNSSolver final : public CEulerSolver {
+class CNSSolver final : public CEulerSolver, public DBMember<CNSSolver, CSolverFactory> {
 private:
   su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
   su2double Tke_Inf;        /*!< \brief Turbulent kinetic energy at the infinity. */
@@ -132,6 +132,18 @@ public:
    * \brief Destructor of the class.
    */
   ~CNSSolver(void) override;
+
+  // --- Individual solver creation method
+  static CSolver* CreateMethod
+	  (CSolver** solver, CGeometry *geometry, CConfig *config, int iMesh)
+  {
+	  auto mSolver = new CNSSolver(geometry, config, iMesh);
+	  return dynamic_cast<CSolver*>(mSolver);
+  }
+
+  // --- Get solver name
+  static string GetName() {return "NAVIER_STOKES";}
+
 
   /*!
    * \brief Provide the non dimensional lift coefficient.

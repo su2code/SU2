@@ -1051,7 +1051,20 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
     //solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
-	solver[iMesh] = CSolverFactory::Create("EULER", geometry[iMesh], config, int(iMesh));
+	auto solverKind = config->GetKind_Solver();
+	// GetKind_Solver should return by string and that's it ... but for
+	// demonstration let's:
+	string solverName;
+	if (solverKind == EULER)
+	{
+		solverName = "EULER";
+	} else if (solverKind == NAVIER_STOKES)
+	{
+		solverName = "NAVIER_STOKES";
+	} else {
+		solverName = "NOSOLVER";
+	}
+	solver[iMesh] = CSolverFactory::Create(solverName, geometry[iMesh], config, int(iMesh));
   }
 
   /*--- Count the number of DOFs per solution point. ---*/
