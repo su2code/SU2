@@ -40,6 +40,12 @@
 #define FORCEINLINE inline
 #endif
 
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#define NEVERINLINE inline __attribute__((noinline))
+#else
+#define NEVERINLINE inline
+#endif
+
 /*--- Convenience SFINAE typedef to conditionally
  * enable/disable function template overloads. ---*/
 template<bool condition>
