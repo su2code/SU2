@@ -680,7 +680,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       for (unsigned short jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
-
+      
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
     const su2double Vel2     = nodes->GetVelocity2(kPoint);
@@ -924,7 +924,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           su2double Force[MAXNDIM] = {0.0}, MomentDist[MAXNDIM] = {0.0};
           for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = TauTangent[iDim] * Area * factor * AxiFactor;
+            Force[iDim] = TauElem[iDim] * Area * factor * AxiFactor;
             ForceViscous[iDim] += Force[iDim];
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
           }
