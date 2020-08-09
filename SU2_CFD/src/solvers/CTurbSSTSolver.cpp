@@ -508,6 +508,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
   su2double distance, Density_Wall = 0.0, Lam_Visc_Wall = 0.0;
   su2double Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
+  su2double UnitNormal[3];
   const su2double beta_1 = constants[4];
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
@@ -564,6 +565,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         // Density_Normal  = flowNodes->GetDensity(donorPoint);
         // Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
 
+        const su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+
         unsigned short nDonors = geometry->node[iPoint]->GetnPoint();
 
         distance = 0.0;
@@ -575,7 +580,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
           if(!geometry->node[donorPoint]->GetSolidBoundary()) {
             su2double dist = 0.0;
             for (unsigned short iDim = 0; iDim < nDim; iDim++)
-              dist += pow(geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim),2);
+              dist += pow((geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim))
+                         *(1.-UnitNormal[iDim]),2);
             dist = sqrt(dist);
             suminvdist += 1./dist;
 
