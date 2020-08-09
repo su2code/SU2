@@ -566,6 +566,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
 
         unsigned short nDonors = geometry->node[iPoint]->GetnPoint();
 
+        distance = 0.0;
         Density_Normal = 0.0;
         Lam_Visc_Normal = 0.0;
         su2double suminvdist = 0.0;
@@ -580,10 +581,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
 
             Density_Normal  += flowNodes->GetDensity(donorPoint)/dist;
             Lam_Visc_Normal += flowNodes->GetLaminarViscosity(donorPoint)/dist;
+            distance        += geometry->node[donorPoint]->GetWall_Distance()/dist;
           }
         }
         Density_Normal  /= suminvdist;
         Lam_Visc_Normal /= suminvdist;
+        distance        /= suminvdist;
 
       }
       
