@@ -570,13 +570,19 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
         for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
 
-        unsigned short nDonors = geometry->node[iPoint]->GetnPoint();
+        unsigned short nDonors = 0;
+        for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+          const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
+          if(!geometry->node[donorPoint]->GetSolidBoundary())
+            nDonors++;
+        }
+      
 
         distance = 0.0;
         Density_Normal = 0.0;
         Lam_Visc_Normal = 0.0;
         su2double suminvdist = 0.0;
-        for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+        for (unsigned short iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
           if(!geometry->node[donorPoint]->GetSolidBoundary()) {
             su2double dist = 0.0;
