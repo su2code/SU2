@@ -557,12 +557,34 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
       }
       else {
       
-        const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        // const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
-        distance = geometry->node[donorPoint]->GetWall_Distance();
+        // distance = geometry->node[donorPoint]->GetWall_Distance();
         
-        Density_Normal  = flowNodes->GetDensity(donorPoint);
-        Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
+        // Density_Normal  = flowNodes->GetDensity(donorPoint);
+        // Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
+
+        unsigned short nDonors = geometry->node[iPoint]->GetnPoint();
+
+        Density_Normal = 0.0;
+        Lam_Visc_Normal = 0.0;
+        su2double suminvdist = 0.0;
+        for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+          const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
+          if(!geometry->node[donorPoint]->GetSolidBoundary()) {
+            su2double dist = 0.0;
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              dist += pow(geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim),2);
+            dist = sqrt(dist);
+            suminvdist += 1./dist;
+
+            Density_Normal  += flowNodes->GetDensity(donorPoint)/dist;
+            Lam_Visc_Normal += flowNodes->GetLaminarViscosity(donorPoint)/dist;
+          }
+        }
+        Density_Normal  /= suminvdist;
+        Lam_Visc_Normal /= suminvdist;
+
       }
       
       Density_Wall = flowNodes->GetDensity(iPoint);
