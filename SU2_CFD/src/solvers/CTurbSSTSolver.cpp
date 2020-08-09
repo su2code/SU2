@@ -583,7 +583,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
             for (unsigned short iDim = 0; iDim < nDim; iDim++)
               dist += pow((geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim))
                          *(1.-UnitNormal[iDim]),2);
-            dist = (nDonors > 1) ? sqrt(dist)+eps : 1.0;
+            dist = (nDonors > 1) ? su2double(sqrt(dist)+eps) : su2double(1.0);
             suminvdist += 1./dist;
 
             Density_Normal  += flowNodes->GetDensity(donorPoint)/dist;
