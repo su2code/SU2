@@ -1990,7 +1990,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
       // weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
     // }
-    else {
+    // else {
     //   weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
     //   // weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
     //                          // + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
