@@ -100,7 +100,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool sst = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
-  const bool musclFlow = config->GetMUSCL_Flow() && muscl &&
+  const bool musclFlow = config->GetMUSCL_Flow() &&
                         (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
   /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
   const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
