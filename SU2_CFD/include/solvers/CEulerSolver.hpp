@@ -372,13 +372,18 @@ protected:
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the undivided laplacian for the solution and the
-   *        dissipation sensor for centered schemes.
+   * \brief Compute the undivided laplacian for the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry,
-                                                              CConfig *config);
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute dissipation sensor for centered schemes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.

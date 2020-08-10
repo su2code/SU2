@@ -2558,6 +2558,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
@@ -2628,8 +2629,8 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
-    if (center_jst)
-      SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(geometry, config);
+    if (center_jst) SetUndivided_Laplacian(geometry, config);
+    if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
@@ -2979,6 +2980,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  const bool jst_ke_scheme = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -3013,8 +3015,9 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     if (jst_scheme) {
       numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint),
                                        nodes->GetUndivided_Laplacian(jPoint));
-      numerics->SetSensor(nodes->GetSensor(iPoint),
-                          nodes->GetSensor(jPoint));
+    }
+    if (jst_scheme || jst_ke_scheme){
+      numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
     }
 
     /*--- Grid movement ---*/
@@ -3696,11 +3699,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
-
-  /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
-
-  const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
+void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop domain points. ---*/
 
@@ -3713,9 +3712,6 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
     /*--- Initialize. ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
-
-    iPoint_UndLapl[iPoint] = 0.0;
-    jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
@@ -3733,30 +3729,69 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 
       su2double Pressure_j = nodes->GetPressure(jPoint);
       nodes->AddUnd_Lapl(iPoint, nVar-1, Pressure_j-Pressure_i);
+    }
+  }
+
+  /*--- Correct the Laplacian across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+  }
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+
+}
+
+void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
+
+  /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
+
+  const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
+
+  /*--- Loop domain points. ---*/
+
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+    const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
+    const su2double Pressure_i = nodes->GetPressure(iPoint);
+
+    /*--- Initialize. ---*/
+    iPoint_UndLapl[iPoint] = 0.0;
+    jPoint_UndLapl[iPoint] = 0.0;
+
+    /*--- Loop over the neighbors of point i. ---*/
+    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    {
+      auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
+
+      /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+      if (boundary_i && !boundary_j) continue;
+
+      su2double Pressure_j = nodes->GetPressure(jPoint);
 
       /*--- Dissipation sensor, add pressure difference and pressure sum. ---*/
       iPoint_UndLapl[iPoint] += Pressure_j - Pressure_i;
       jPoint_UndLapl[iPoint] += Pressure_j + Pressure_i;
     }
 
-    if (!isPeriodic)
+    if (!isPeriodic) {
       nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+    }
   }
 
   if (isPeriodic) {
-    /*--- Correct the Laplacian and sensor values across any periodic boundaries. ---*/
+    /*--- Correct the sensor values across any periodic boundaries. ---*/
 
-    SU2_OMP_MASTER
-    {
-      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
-
-        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-      }
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
     }
-    SU2_OMP_BARRIER
 
     /*--- Set final pressure switch for each point ---*/
 
@@ -3765,17 +3800,10 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
       nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
 
-  SU2_OMP_MASTER
-  {
-    /*--- MPI parallelization ---*/
+  /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-    CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-
-    InitiateComms(geometry, config, SENSOR);
-    CompleteComms(geometry, config, SENSOR);
-  }
-  SU2_OMP_BARRIER
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }
 
