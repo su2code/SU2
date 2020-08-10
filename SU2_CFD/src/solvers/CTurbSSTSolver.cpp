@@ -493,9 +493,9 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
       CrossDiffusionJacobian(geometry, solver, config, iPoint);
       
-    }
+    }// if dist
 
-  }
+  }// iPoint
   
 }
 
@@ -522,7 +522,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-      const unsigned long iEdge = geometry->FindEdge(iPoint,jPoint);
+      const unsigned long iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
       const su2double *Normal = geometry->edge[iEdge]->GetNormal();
       const su2double r_j  = flowNodes->GetDensity(jPoint);
       const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
@@ -545,7 +545,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
       for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex > -1) {
+        if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
