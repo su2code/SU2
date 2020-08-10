@@ -3291,7 +3291,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       su2double ZeroVec[MAXNDIM+3] = {0.0};
       numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
 
-      if (tkeNeeded && (bad_i || bad_j)) {
+      if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         numerics->SetTurbKineticEnergy((bad_i || bad_j) ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
                                        (bad_i || bad_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
