@@ -3166,7 +3166,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         tke_j -= Project_Grad_j;
 
       }
-      numerics->SetTurbKineticEnergy(tke_i, tke_j);
     }
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
@@ -3286,16 +3285,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       counter_local += bad_i+bad_j;
 
-      numerics->SetPrimitive(bad_i? V_i : Primitive_i,  bad_j? V_j : Primitive_j);
-      numerics->SetSecondary(bad_i? S_i : Secondary_i,  bad_j? S_j : Secondary_j);
+      numerics->SetPrimitive((bad_i || bad_j)? V_i : Primitive_i,  (bad_i || bad_j)? V_j : Primitive_j);
+      numerics->SetSecondary((bad_i || bad_j)? S_i : Secondary_i,  (bad_i || bad_j)? S_j : Secondary_j);
 
       su2double ZeroVec[MAXNDIM+3] = {0.0};
       numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
 
       if (tkeNeeded && (bad_i || bad_j)) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-                                       bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+        numerics->SetTurbKineticEnergy((bad_i || bad_j) ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
+                                       (bad_i || bad_j) ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
       }
 
     }
