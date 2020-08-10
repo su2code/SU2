@@ -3040,9 +3040,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                 (InnerIter <= config->GetLimiterIter());
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool viscous   = config->GetViscous();
-  const bool musclTurb = config->GetMUSCL_Turb();
+  const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
+  const bool viscous     = config->GetViscous();
+  const bool musclTurb   = config->GetMUSCL_Turb();
+  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                           (InnerIter <= config->GetLimiterIter());
 
   const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
                          (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
@@ -3121,7 +3123,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-        if (limiter) {
+        if (limiterTurb) {
           Limiter_i = turbNodes->GetLimiter(iPoint);
           Limiter_j = turbNodes->GetLimiter(jPoint);
         }
@@ -3145,7 +3147,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         /*--- Edge-based limiters ---*/
 
-        if (limiter) {
+        if (limiterTurb) {
           switch(config->GetKind_SlopeLimit_Turb()) {
             case VAN_ALBADA_EDGE:
               Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
