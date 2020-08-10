@@ -80,13 +80,13 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_filename);
-  
+
   /*--- Set the default values for all of the options that weren't set ---*/
-      
+
   SetDefault();
-  
+
   /*--- Set number of zone ---*/
-  
+
   SetnZone();
 
   /*--- Configuration file postprocessing ---*/
@@ -105,7 +105,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 }
 
 CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_high) {
-  
+
   base_config = true;
 
   iZone = 0;
@@ -116,7 +116,7 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_buffer);
-  
+
   /*--- Set the default values for all of the options that weren't set ---*/
 
   SetDefault();
@@ -142,7 +142,7 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
 
 
 CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
-  
+
   caseName = config->GetCaseName();
 
   unsigned short val_nDim;
@@ -151,7 +151,7 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
 
   iZone = val_iZone;
   nZone = val_nZone;
-  
+
   Init();
 
   /*--- Parsing the config file  ---*/
@@ -197,9 +197,9 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   nZone = 1;
   iZone = 0;
-  
+
   Init();
-      
+
   /*--- Parsing the config file  ---*/
 
   SetConfig_Parsing(case_filename);
@@ -233,7 +233,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   caseName = PrintingToolbox::split(string(case_filename),'.')[0];
 
   base_config = true;
-  
+
   bool runtime_file = false;
 
   Init();
@@ -261,12 +261,12 @@ SU2_MPI::Comm CConfig::GetMPICommunicator() {
 }
 
 void CConfig::Init(){
-  
-  /*--- Store MPI rank and size ---*/ 
-  
+
+  /*--- Store MPI rank and size ---*/
+
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
-  
+
   /*--- Initialize pointers to Null---*/
 
   SetPointersNull();
@@ -274,7 +274,7 @@ void CConfig::Init(){
   /*--- Reading config options  ---*/
 
   SetConfig_Options();
-  
+
 }
 
 void CConfig::SetMPICommunicator(SU2_MPI::Comm Communicator) {
@@ -2809,9 +2809,9 @@ void CConfig::SetConfig_Options() {
 }
 
 void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
-  
+
   ifstream case_file;
-  
+
   /*--- Read the configuration file ---*/
 
   case_file.open(case_filename, ios::in);
@@ -2819,15 +2819,15 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   if (case_file.fail()) {
     SU2_MPI::Error("The configuration file (.cfg) is missing!!", CURRENT_FUNCTION);
   }
-  
+
   SetConfig_Parsing(case_file);
-  
+
   case_file.close();
-  
+
 }
 
   void CConfig::SetConfig_Parsing(istream& config_buffer){
-    
+
   string text_line, option_name;
   vector<string> option_value;
 
@@ -2839,9 +2839,9 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
   map<string, bool> included_options;
 
   /*--- Parse the configuration file and set the options ---*/
-  
+
   while (getline (config_buffer, text_line)) {
-    
+
     if (err_count >= max_err_count) {
       errorString.append("too many errors. Stopping parse");
 
@@ -6026,6 +6026,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
             case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
             case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+            case DUCROS: cout << "Ducros's shock sensor."<< endl; break;
           }
         }
 
