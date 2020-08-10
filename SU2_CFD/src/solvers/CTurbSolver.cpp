@@ -286,8 +286,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       }
       else {
-        solution_i[iVar] = Turb_i[iVar];
-        solution_j[iVar] = Turb_j[iVar];
+        for (iVar = 0; iVar < nVar; iVar++) {
+          solution_i[iVar] = Turb_i[iVar];
+          solution_j[iVar] = Turb_j[iVar];
+        }
       }
       numerics->SetPrimitive((bad_i || bad_j) ? V_i : flowPrimVar_i, (bad_i || bad_j) ? V_j : flowPrimVar_j);
       numerics->SetTurbVar((bad_i || bad_j) ? Turb_i : solution_i, (bad_i || bad_j) ? Turb_j : solution_j);
