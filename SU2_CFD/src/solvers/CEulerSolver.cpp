@@ -3111,21 +3111,21 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
-      }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
+        }
 
-      auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint);
-      auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint);
+        auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint);
+        auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint);
 
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+        su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
-      if (limiter) {
-        Limiter_i = turbNodes->GetLimiter(iPoint);
-        Limiter_j = turbNodes->GetLimiter(jPoint);
-      }
+        if (limiter) {
+          Limiter_i = turbNodes->GetLimiter(iPoint);
+          Limiter_j = turbNodes->GetLimiter(jPoint);
+        }
 
-      const su2double Kappa = config->GetMUSCL_Kappa();
+        const su2double Kappa = config->GetMUSCL_Kappa();
           
         const su2double T_ij = 0.5*(tke_j - tke_i);
 
@@ -3133,8 +3133,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_j = -T_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[0][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[0][iDim];
         }
 
         /*--- Blend upwind and centered differences ---*/
@@ -3147,19 +3147,19 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (limiter) {
           switch(config->GetKind_SlopeLimit_Turb()) {
             case VAN_ALBADA_EDGE:
-              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+              Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+              Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
               break;
             case PIPERNO:
-              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+              Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+              Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
               break;
           }
 
           /*--- Limit projection ---*/
 
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          Project_Grad_i *= Limiter_i[0];
+          Project_Grad_j *= Limiter_j[0];
         }
 
         tke_i += Project_Grad_i;
