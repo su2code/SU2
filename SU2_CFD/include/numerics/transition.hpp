@@ -2,7 +2,7 @@
  * \file transition.hpp
  * \brief Delarations of numerics classes for transition problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,30 +28,58 @@
 #pragma once
 
 #include "CNumerics.hpp"
-#include "turbulent/turb_convection.hpp"
-#include "turbulent/turb_diffusion.hpp"
 
 /*!
- * \class CUpwSca_TransLM
- * \brief Class for doing a scalar upwind solver for the LM transition model.
+ * \class CUpwLin_TransLM
+ * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
  * \ingroup ConvDiscr
- * \author A. Aranake, E. van der Weide.
+ * \author A. Aranake
  */
-class CUpwSca_TransLM : public CUpwScalar {
+class CUpwLin_TransLM : public CNumerics {
 private:
-  /*!
-   * \brief Adds any extra variables to AD
-   */
-  void ExtraADPreaccIn() override;
+  su2double *Velocity_i;
+  su2double *Velocity_j;
+  bool implicit, incompressible;
+  su2double Density_i, Density_j, q_ij, a0, a1;
+  unsigned short iDim;
+
+public:
 
   /*!
-   * \brief LM specific steps in the ComputeResidual method
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwLin_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwLin_TransLM(void) override;
+
+  /*!
+   * \brief Compute the upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig *config) override;
+  void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
+};
+
+/*!
+ * \class CUpwSca_TransLM
+ * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
+ * \ingroup ConvDiscr
+ * \author A. Aranake.
+ */
+class CUpwSca_TransLM : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit;
+  su2double q_ij, a0, a1;
+  unsigned short iDim;
 
 public:
 
@@ -62,106 +90,154 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-};
-
-
-/*!
- * \class CAvgGrad_TransLM
- * \brief Class for computing viscous term using average of gradient with correction (LM transition model).
- * \ingroup ViscDiscr
- * \author A. Bueno, E. van der Weide.
- */
-class CAvgGrad_TransLM : public CAvgGrad_Scalar {
-private:
-  su2double sigma_intermittency; /*!< \brief Constant for the viscous term of the intermittency equation. */
-  su2double sigma_Re_theta;      /*!< \brief Constant for the viscous term of the Re_theta equation. */
 
   /*!
-   * \brief Adds any extra variables to AD
+   * \brief Destructor of the class.
    */
-  void ExtraADPreaccIn(void) override;
+  ~CUpwSca_TransLM(void) override;
 
   /*!
-   * \brief LM specific steps in the ComputeResidual method
+   * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void FinishResidualCalc(const CConfig *config) override;
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim     - Number of dimensions of the problem.
-   * \param[in] val_nVar     - Number of variables of the problem.
-   * \param[in] constants    - Array containing the constants used in the LM model.
-   * \param[in] correct_grad - Whether or not the gradients must be corrected.
-   * \param[in] config       - Definition of the particular problem.
-   */
-  CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar,
-                   const su2double* constants, bool correct_grad, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
- * \class CSourcePieceWise_TransLM
- * \brief Class for integrating the source terms of the LM transition model equation.
- * \ingroup SourceDiscr
- * \author E. van der Weide
+ * \class CAvgGrad_TransLM
+ * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
  */
-class CSourcePieceWise_TransLM : public CNumerics {
+class CAvgGrad_TransLM : public CNumerics {
 private:
-
-  su2double ca1, ca2, ce1, ce2, cthetat;        /*!< \brief Constants in the source term of the LM model. */
-  su2double C_crossflow;                        /*!< \brief Constants in the source term of the LM model
-                                                            related to cross flow instabilities. */
-  su2double Flength_CF, C_Fonset1_CF, CHe_max;  /*!< \brief Constants in the source term of the LM model
-                                                            related to cross flow instabilities. */
-
-  bool incompressible;  /*!< \brief Whether or not an incompressible simulation is carried out. */
+  su2double **Mean_GradTransVar;
+  su2double *Proj_Mean_GradTransVar_Kappa, *Proj_Mean_GradTransVar_Edge;
+  su2double *Edge_Vector;
+  bool implicit, incompressible;
+  su2double sigma;
+  //su2double dist_ij_2;
+  //su2double proj_vector_ij;
+  //unsigned short iVar, iDim;
 
 public:
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_nDim  - Number of dimensions of the problem.
-   * \param[in] val_nVar  - Number of variables of the problem.
-   * \param[in] constants - Constants used in the LM transition model.
-   * \param[in] config    - Definition of the particular problem.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, const su2double* constants, CConfig *config);
+  CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourcePieceWise_TransLM(void);
+  ~CAvgGrad_TransLM(void) override;
 
   /*!
-   * \brief Static member function to compute the Re_theta from turbulence intensity.
-   * \param[in] var_tu - Turbulence intensity.
-   * \return Value of the Re_theta.
+   * \brief Compute the viscous turbulence terms residual using an average of gradients.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
    */
-  static su2double GetREth(const su2double var_tu);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
+};
+
+/*!
+ * \class CAvgGradCorrected_TransLM
+ * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ */
+class CAvgGradCorrected_TransLM : public CNumerics {
+private:
+  su2double **Mean_GradTurbVar;
+  su2double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit, incompressible;
+  su2double sigma;
+
+public:
 
   /*!
-   * \brief Static member function to compute the critical Reynolds_theta. This is the
-            Reynolds number where the intermittency starts to increase in
-            the boundary layer.
-   * \param[in] var_Re_theta - Value of Reynolds theta. The critical Reynolds number
-                               is a correlation based on this value.
-   * \return Value of the critical Re_theta.
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  static su2double GetREth_crit(const su2double var_Re_theta);
+  CAvgGradCorrected_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
-   * \brief Static member function to compute the empirical correlation for Flength,
-            which controls the length of the transition region.
-   * \param[in] var_Re_theta - Value of Reynolds theta. Flength is a
-                               correlation based on this value.
-   * \return Value of the Flength.
+   * \brief Destructor of the class.
    */
-  static su2double GetFlength(const su2double var_Re_theta);
+  ~CAvgGradCorrected_TransLM(void) override;
+
+  /*!
+   * \brief Compute the viscous turbulent residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
+};
+
+/*!
+ * \class CSourcePieceWise_TransLM
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author A. Bueno.
+ */
+class CSourcePieceWise_TransLM : public CNumerics {
+private:
+
+  /*-- SA model constants --*/
+  su2double cv1_3;
+  su2double k2;
+  su2double cb1;
+  su2double cw2;
+  su2double cw3_6;
+  su2double sigma;
+  su2double cb2;
+  su2double cw1;
+
+  /*-- gamma-theta model constants --*/
+  su2double c_e1;
+  su2double c_a1;
+  su2double c_e2;
+  su2double c_a2;
+  su2double sigmaf;
+  su2double s1;
+  su2double c_theta;
+  su2double sigmat;
+
+  /*-- Correlation constants --*/
+  su2double flen_global;
+  su2double alpha_global;
+  su2double Vorticity;
+
+  bool implicit;
+
+public:
+  bool debugme; // For debugging only, remove this. -AA
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TransLM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_TransLM(void) override;
 
   /*!
    * \brief Residual for source term integration.
@@ -170,5 +246,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) override;
+
+  void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(const su2double *TransVar_i, const su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
 };

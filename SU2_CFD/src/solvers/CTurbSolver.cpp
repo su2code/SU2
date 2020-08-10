@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,7 +24,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "../../include/solvers/CTurbSolver.hpp"
 #include "../../../Common/include/omp_structure.hpp"
@@ -412,11 +411,13 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const auto nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double solution_j[MAXNVAR] = {0.0};
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetMarker_All_KindBC(iMarker) != FLUID_INTERFACE) continue;
 
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -430,15 +431,9 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
       for (auto iDim = 0u; iDim < nDim; iDim++)
         Normal[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
 
-      /*--- Initialize Residual, this will serve to accumulate the average ---*/
-
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        Residual[iVar] = 0.0;
-        for (auto jVar = 0u; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
-      }
-
       su2double* PrimVar_i = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+
+      auto Jacobian_i = Jacobian.GetBlock(iPoint,iPoint);
 
       /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
 
@@ -458,9 +453,9 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         /*--- Set the turbulent variable states ---*/
 
         for (auto iVar = 0u; iVar < nVar; ++iVar)
-          Solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+          solution_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
 
-        conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), Solution_j);
+        conv_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
 
         /*--- Set the normal vector ---*/
 
@@ -474,17 +469,11 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         /*--- Accumulate the residuals to compute the average ---*/
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Residual[iVar] += weight*residual.residual[iVar];
+          LinSysRes(iPoint,iVar) += weight*residual.residual[iVar];
           for (auto jVar = 0u; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] += weight*residual.jacobian_i[iVar][jVar];
+            Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
         }
       }
-
-      /*--- Add Residuals and Jacobians ---*/
-
-      LinSysRes.AddBlock(iPoint, Residual);
-
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       /*--- Set the normal vector and the coordinates ---*/
 
@@ -497,7 +486,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Turbulent variables and their gradients ---*/
 
-      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVar(nodes->GetSolution(iPoint), solution_j);
       visc_numerics->SetTurbVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
@@ -662,27 +651,24 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
 
-  SU2_OMP_MASTER
-  {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-
-    /*--- MPI solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION_EDDY);
-    CompleteComms(geometry, config, SOLUTION_EDDY);
-
-    /*--- Compute the root mean square residual ---*/
-
-    SetResidual_RMS(geometry, config);
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
+
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
+
+  /*--- Compute the root mean square residual ---*/
+  SU2_OMP_MASTER
+  SetResidual_RMS(geometry, config);
   SU2_OMP_BARRIER
 
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
+void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) {
 
   /* Only apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
@@ -1085,13 +1071,13 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
+  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  SU2_OMP_BARRIER
+
   /*--- MPI solution and compute the eddy viscosity ---*/
 
   solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
-
-  } // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
-  SU2_OMP_BARRIER
 
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
@@ -1114,12 +1100,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       solver[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
     }
 
-    SU2_OMP_MASTER
-    {
-      solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    }
-    SU2_OMP_BARRIER
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
@@ -1128,7 +1110,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Go back to single threaded execution. ---*/
   SU2_OMP_MASTER
   {
-
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;

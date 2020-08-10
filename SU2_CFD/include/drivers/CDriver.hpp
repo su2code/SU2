@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,7 +30,6 @@
 
 #include "../../../Common/include/mpi_structure.hpp"
 
-#include "../iteration_structure.hpp"
 #include "../integration/CIntegration.hpp"
 #include "../solvers/CSolver.hpp"
 #include "../interfaces/CInterface.hpp"
@@ -42,6 +41,8 @@ using namespace std;
 
 class COutputLegacy;
 class CInterpolator;
+class CIteration;
+class COutput;
 
 /*!
  * \class CDriver
@@ -158,7 +159,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Index of the zone.
    */
-  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration);
+  void Iteration_Preprocessing(CConfig *config, CIteration *&iteration) const;
 
   /*!
    * \brief Definition and allocation of all solution classes.
@@ -190,7 +191,7 @@ protected:
    * \param[in] solver - Container vector with all the solutions.
    * \param[out] integration - Container vector with all the integration methods.
    */
-  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration);
+  void Integration_Preprocessing(CConfig *config, CSolver **solver, CIntegration **&integration) const;
 
   /*!
    * \brief Definition and allocation of all integration classes.
@@ -214,7 +215,7 @@ protected:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics);
+  void Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const;
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -234,7 +235,7 @@ protected:
    * \param grid_movement
    * \param surface_movement
    */
-  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement);
+  void DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, CSolver ***solver, CIteration *iteration, CVolumetricMovement *&grid_movement, CSurfaceMovement *&surface_movement) const;
 
   /*!
    * \brief Initialize Python interface functionalities
@@ -454,7 +455,7 @@ public:
    * \brief Get the current external iteration.
    * \return Current external iteration.
    */
-  unsigned long GetTime_Iter();
+  unsigned long GetTime_Iter() const;
 
   /*!
    * \brief Get the unsteady time step.
@@ -661,7 +662,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Inlet_Preprocessing(CSolver ***solver, CGeometry **geometry,
-                                    CConfig *config);
+                                    CConfig *config) const;
 
   /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
@@ -842,6 +843,59 @@ public:
    */
   void SetInlet_Angle(unsigned short iMarker, passivedouble alpha);
 
+  /*!
+   * \brief Sum the number of primal or adjoint variables for all solvers in a given zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \return Total number of solution variables.
+   */
+  unsigned short GetTotalNumberOfVariables(unsigned short iZone, bool adjoint) const {
+    unsigned short nVar = 0;
+    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && (solver->GetAdjoint() == adjoint)) nVar += solver->GetnVar();
+    }
+    return nVar;
+  }
+
+  /*!
+   * \brief Set the solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[in] solution - Solution object with interface (iPoint,iVar).
+   */
+  template<class Container>
+  void SetAllSolutions(unsigned short iZone, bool adjoint, const Container& solution) {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solver->GetNodes()->SetSolution(iPoint, iVar, solution(iPoint,offset+iVar));
+      offset += solver->GetnVar();
+    }
+  }
+
+  /*!
+   * \brief Get the solution of all solvers (adjoint or primal) in a zone.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] adjoint - True to consider adjoint solvers instead of primal.
+   * \param[out] solution - Solution object with interface (iPoint,iVar).
+   */
+  template<class Container>
+  void GetAllSolutions(unsigned short iZone, bool adjoint, Container& solution) const {
+    const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
+    for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      const auto& sol = solver->GetNodes()->GetSolution();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
+          solution(iPoint,offset+iVar) = SU2_TYPE::GetValue(sol(iPoint,iVar));
+      offset += solver->GetnVar();
+    }
+  }
 
 };
 

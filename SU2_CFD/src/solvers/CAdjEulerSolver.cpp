@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -189,18 +189,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   } else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
-  }
-
-  /*--- Computation of gradients by least squares ---*/
-  if (config->GetLeastSquaresRequired()) {
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    /*--- c vector := transpose(WA)*(Wb) ---*/
-    Cvector = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      Cvector[iVar] = new su2double [nDim];
   }
 
   /*--- Sensitivity definition and coefficient in all the markers ---*/
@@ -1048,7 +1036,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLength  = config->GetRefLength();
-  su2double *RefOriginMoment = config->GetRefOriginMoment(0);
+  const auto RefOriginMoment = config->GetRefOriginMoment(0);
   su2double dCD_dCL          = config->GetdCD_dCL();
   su2double dCMx_dCL         = config->GetdCMx_dCL();
   su2double dCMy_dCL         = config->GetdCMy_dCL();

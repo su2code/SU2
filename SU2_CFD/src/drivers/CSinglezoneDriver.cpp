@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,8 @@
 
 #include "../../include/drivers/CSinglezoneDriver.hpp"
 #include "../../include/definition_structure.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIteration.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -311,4 +313,8 @@ void CSinglezoneDriver::Runtime_Options(){
     delete runtime;
   }
 
+}
+
+bool CSinglezoneDriver::GetTimeConvergence() const{
+  return output_container[ZONE_0]->GetTimeConvergence();
 }

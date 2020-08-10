@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -251,7 +251,7 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry,
                                CSolver **solver_container,
-                               CConfig *config) final;
+                               CConfig *config) override;
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.
@@ -273,7 +273,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config) final;
+  void ComputeUnderRelaxationFactor(CSolver **solver, const CConfig *config) final;
 
   /*!
    * \brief Load a solution from a restart file.
