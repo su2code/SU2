@@ -2631,6 +2631,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     SetMax_Eigenvalue(geometry, config);
     if (center_jst) SetUndivided_Laplacian(geometry, config);
     if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
+    if (center_jst_ke && (kind_row_dissipation == DUCROS)) SetUpwind_Ducros_Sensor(geometry, config);
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
@@ -3809,13 +3810,25 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
 
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
 
+  /*--- If the Ducros's sensor is used with the JST scheme, the final sensor is obtained
+  by multiplying the previously computed pressure sensor by the local Ducros sensor.
+  Ducros et al. Journal of Computational Physics 152, 517–549 (1999)
+  ---*/
+
+  su2double PressureSensor_i = 1.0;
+  bool center_jst_ke = (config->GetKind_Centered_Flow() == JST_KE);
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+    /*---- If JST KE, store the pressure sensor. ---*/
+
+    if (center_jst_ke) PressureSensor_i = nodes->GetSensor(iPoint);
 
     /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
     su2double Ducros_i = 0.0;
-    auto nNeigh = geometry->node[iPoint]->GetnNeighbor();
+    const auto nNeigh = geometry->node[iPoint]->GetnPoint();
 
     for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 
@@ -3831,7 +3844,13 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
       /*--- Compute norm of vorticity ---*/
 
-      const su2double* Vorticity = nodes->GetVorticity(jPoint);
+      su2double Vorticity[3] = {0.,0.,0.};
+      Vorticity[2] = nodes->GetGradient_Primitive(jPoint,2,0) - nodes->GetGradient_Primitive(jPoint,1,1);
+      if (nDim == 3) {
+        Vorticity[0] = nodes->GetGradient_Primitive(jPoint,3,1)-nodes->GetGradient_Primitive(jPoint,2,2);
+        Vorticity[1] = -(nodes->GetGradient_Primitive(jPoint,3,0)-nodes->GetGradient_Primitive(jPoint,1,2));
+      }
+
       su2double Omega = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         Omega += pow(Vorticity[iDim], 2);
@@ -3843,13 +3862,21 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
       if (config->GetKind_RoeLowDiss() == FD_DUCROS) {
         Ducros_j = -uixi / (fabs(uixi) + Omega + 1e-20);
       }
-      else if (config->GetKind_RoeLowDiss() == NTS_DUCROS) {
+      else if ((config->GetKind_RoeLowDiss() == NTS_DUCROS) ||
+               (config->GetKind_RoeLowDiss() == DUCROS)){
         Ducros_j = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
+
+        // if (config->GetKind_RoeLowDiss() == DUCROS){
+        //   su2double MaxLength  = geometry->node[jPoint]->GetMaxLength();
+        //   su2double SpeedSound = nodes->GetSoundSpeed(jPoint);
+        //   su2double Switch_j   = 0.5 * (1. - tanh(2.5 + 10.* (MaxLength/SpeedSound) * uixi));
+        //   //su2double Switch_j   = fabs(tanh(10. * (MaxLength/SpeedSound) * uixi));
+        //   Ducros_j *= Switch_j;
+        // }
       }
       Ducros_i = max(Ducros_i, Ducros_j);
     }
-
-    nodes->SetSensor(iPoint, Ducros_i);
+    nodes->SetSensor(iPoint, PressureSensor_i * Ducros_i);
   }
 
   SU2_OMP_MASTER

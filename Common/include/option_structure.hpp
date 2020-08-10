@@ -920,7 +920,8 @@ enum ENUM_ROELOWDISS {
     FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
     NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
     NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
-    FD_DUCROS     = 4  /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+    FD_DUCROS     = 4, /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+    DUCROS        = 5  /*!< \brief Ducros' Shock Sensor */
 };
 static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
   MakePair("NONE", NO_ROELOWDISS)
@@ -928,6 +929,7 @@ static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
   MakePair("NTS", NTS)
   MakePair("NTS_DUCROS", NTS_DUCROS)
   MakePair("FD_DUCROS", FD_DUCROS)
+  MakePair("DUCROS", DUCROS)
 };
 
 /*!

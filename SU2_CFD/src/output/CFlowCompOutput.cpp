@@ -567,7 +567,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
+    if (config->GetKind_Centered_Flow() == JST_KE) {
+      SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetSensor(iPoint));
+    }
+    else{
+      SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
+    }
   }
 
   if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
