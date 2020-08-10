@@ -220,6 +220,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         bad_i = (flowPrimVar_i[nDim+2] < 0.0);
         bad_j = (flowPrimVar_j[nDim+2] < 0.0);
       }
+      else {
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          flowPrimVar_i[iVar] = V_i[iVar]
+          flowPrimVar_j[iVar] = V_j[iVar];
+        }
+      }
 
       if (muscl) {
         /*--- Reconstruct turbulence variables. ---*/
@@ -278,6 +284,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         bad_i = (solution_i[0] < 0.0) || (solution_i[1] < 0.0) || (bad_i);
         bad_j = (solution_j[0] < 0.0) || (solution_j[1] < 0.0) || (bad_j);
 
+      }
+      else {
+        solution_i[iVar] = Turb_i[iVar];
+        solution_j[iVar] = Turb_j[iVar];
       }
       numerics->SetPrimitive((bad_i || bad_j) ? V_i : flowPrimVar_i, (bad_i || bad_j) ? V_j : flowPrimVar_j);
       numerics->SetTurbVar((bad_i || bad_j) ? Turb_i : solution_i, (bad_i || bad_j) ? Turb_j : solution_j);
