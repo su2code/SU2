@@ -216,7 +216,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
         }
 
-        numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
+        bool bad_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
+        bool bad_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
+
+        numerics->SetPrimitive(bad_i ? V_i : flowPrimVar_i, bad_j ? V_j : flowPrimVar_j);
       }
 
       if (muscl) {
@@ -273,7 +276,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           numerics->SetLimiter(Limiter_i, Limiter_j);
         }
 
-        numerics->SetTurbVar(solution_i, solution_j);
+        bool bad_i = (solution_i[0] < 0.0) || (solution_i[1] < 0.0);
+        bool bad_j = (solution_j[0] < 0.0) || (solution_j[1] < 0.0);
+
+        numerics->SetTurbVar(bad_i ? Turb_i : solution_i, bad_j ? Turb_j : solution_j);
       }
     }
 
