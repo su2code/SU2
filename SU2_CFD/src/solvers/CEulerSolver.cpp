@@ -3046,9 +3046,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                            (InnerIter <= config->GetLimiterIter());
 
-  const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
-                         (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
-
   su2double tke_i = 0, tke_j = 0;
 
   /*--- Non-physical counter. ---*/
