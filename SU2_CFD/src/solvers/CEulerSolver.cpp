@@ -3107,7 +3107,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       tke_i = turbNodes->GetPrimitive(iPoint,0);
       tke_j = turbNodes->GetPrimitive(jPoint,0);
 
-      if (muscl) {
+      if (musclTurb) {
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
