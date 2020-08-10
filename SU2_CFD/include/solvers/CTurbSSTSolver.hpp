@@ -143,6 +143,17 @@ public:
                        unsigned short iMesh) override;
 
   /*!
+  * \brief Jacobians with respect to the gradients in the cross diffusion term.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void CrossDiffusionJacobian(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config,
+                              unsigned long iPoint);
+
+  /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
