@@ -3042,6 +3042,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous   = config->GetViscous();
+  const bool musclTurb = config->GetMUSCL_Turb();
 
   const bool piperno   = (config->GetKind_SlopeLimit_Flow() == PIPERNO) ||
                          (turb_model != NONE && config->GetKind_SlopeLimit_Turb() == PIPERNO);
@@ -3107,7 +3108,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       tke_i = turbNodes->GetPrimitive(iPoint,0);
       tke_j = turbNodes->GetPrimitive(jPoint,0);
 
-      if (muscl) {
+      if (musclTurb) {
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
