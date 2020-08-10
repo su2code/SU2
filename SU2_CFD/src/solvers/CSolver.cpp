@@ -5875,7 +5875,7 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, u
       }
 
       if (check_hess){
-        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
         CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
       }
       else {
@@ -5921,7 +5921,7 @@ void CSolver::SetPositiveDefiniteHessian(CGeometry *geometry, CConfig *config, u
       }
 
       if (check_hess){
-        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = abs(EigVal[iDim]);
+        for(iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = fabs(EigVal[iDim]);
         CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
       }
       else {
@@ -6431,7 +6431,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
-    localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+nDim))*Vol;
+    localScale += pow(abs(EigVal[0]*EigVal[1]),p/(2.*p+3.))*Vol;
   }
 
 #ifdef HAVE_MPI
@@ -6452,7 +6452,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
+    const su2double factor = pow(outComplex/globalScale, 2./3.) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+3.));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
@@ -6551,7 +6551,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     const su2double Vol = geometry->node[iPoint]->GetVolume();
 
-    localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
+    localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+3.))*Vol;
   }
 
 #ifdef HAVE_MPI
@@ -6576,7 +6576,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
 
-    const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+    const su2double factor = pow(outComplex/globalScale, 2./3.) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+3.));
 
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
