@@ -6367,9 +6367,9 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
 
     for (im = 0; im < nMet; ++im) {
       const su2double hess = varFlo->GetHessian(iPoint, iVar, im);
-      const su2double part = fabs(weights[0][iVar]
-                                 +weights[1][iVar]
-                                 +weights[2][iVar])*hess;
+      const su2double part = (fabs(weights[0][iVar])
+                             +fabs(weights[1][iVar])
+                             +fabs(weights[2][iVar]))*hess;
       varFlo->AddMetric(iPoint, im, part);
     }
   }
@@ -6382,9 +6382,9 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
 
       for (im = 0; im < nMet; ++im) {
         const su2double hess = varTur->GetHessian(iPoint, iVar, im);
-        const su2double part = fabs(weights[0][nVarFlo+iVar]
-                                   +weights[1][nVarFlo+iVar]
-                                   +weights[2][nVarFlo+iVar])*hess;
+        const su2double part = (fabs(weights[0][nVarFlo+iVar])
+                               +fabs(weights[1][nVarFlo+iVar])
+                               +fabs(weights[2][nVarFlo+iVar]))*hess;
         varFlo->AddMetric(iPoint, im, part);
       }
     }
