@@ -3107,7 +3107,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       tke_i = turbNodes->GetPrimitive(iPoint,0);
       tke_j = turbNodes->GetPrimitive(jPoint,0);
 
-      if (musclTurb) {
+      if (muscl) {
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
@@ -3285,8 +3285,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       counter_local += bad_i+bad_j;
 
-      numerics->SetPrimitive((bad_i || bad_j)? V_i : Primitive_i,  (bad_i || bad_j)? V_j : Primitive_j);
-      numerics->SetSecondary((bad_i || bad_j)? S_i : Secondary_i,  (bad_i || bad_j)? S_j : Secondary_j);
+      numerics->SetPrimitive((bad_i || bad_j) ? V_i : Primitive_i,  (bad_i || bad_j) ? V_j : Primitive_j);
+      numerics->SetSecondary((bad_i || bad_j) ? S_i : Secondary_i,  (bad_i || bad_j) ? S_j : Secondary_j);
 
       su2double ZeroVec[MAXNDIM+3] = {0.0};
       numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
