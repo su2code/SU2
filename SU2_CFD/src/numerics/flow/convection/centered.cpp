@@ -260,21 +260,25 @@ CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_n
 
 void CCentJST_KE_Flow::DissipationTerm(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j) {
 
+  /*--- Following Lowe et al. Low-Dissipation Low-Dispersion Second-Order Scheme for Unstructured Finite Volume Flow Solvers AIAAJ 2016
+  The cell-stretching factor, which was used for RANS grids to increase dissipation in the highly stretched near-wall cells,
+  is deactivated.---*/
+
   /*--- Compute dissipation coefficient ---*/
 
   sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
-  Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
+  Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j);
 
   /*--- Compute viscous part of the residual ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
-      val_residual[iVar] += Epsilon_2*(Diff_U[iVar])*StretchingFactor*MeanLambda;
+      val_residual[iVar] += Epsilon_2*(Diff_U[iVar])*MeanLambda;
 
   /*--- Jacobian computation ---*/
 
   if (implicit) {
 
-    cte_0 = Epsilon_2*StretchingFactor*MeanLambda;
+    cte_0 = Epsilon_2*MeanLambda;
     cte_1 = cte_0;
 
     ScalarDissipationJacobian(val_Jacobian_i, val_Jacobian_j);
