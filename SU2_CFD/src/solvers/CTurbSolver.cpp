@@ -217,8 +217,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
         }
 
-        bad_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
-        bad_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
+        bad_i = (flowPrimVar_i[nDim+2] < 0.0);
+        bad_j = (flowPrimVar_j[nDim+2] < 0.0);
       }
 
       if (muscl) {
