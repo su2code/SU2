@@ -1853,7 +1853,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   su2double gradu[3][3], gradT[3], gradk[3], gradomega[3], divu, taut[3][3], tautomut[3][3],
             delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
-            pk = 0., CDkw = 0.;
+            pk = 0;
 
   const su2double F1   = varTur->GetF1blending(iPoint);
 
@@ -1865,6 +1865,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double betastar    = constants[6];
   const su2double a1          = constants[7];
   const su2double CDkw        = varTur->GetCrossDiff(iPoint);
+  const su2double CDkwmin     = 1.e-20;
 
   const su2double* Vorticity = varFlo->GetVorticity(iPoint);
   const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
@@ -1939,7 +1940,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   TmpWeights[nVarFlo+0] += factor/zeta;
   TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
-  if (CDkw > 1.e-20) {
+  if (CDkw > CDkwmin) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
       TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
@@ -2011,6 +2012,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  if (CDkw > 1.e-20) weights[0][nVarFlo+1] += lim*(1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  if (CDkw > CDkwmin) weights[0][nVarFlo+1] += lim*(1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
