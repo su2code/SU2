@@ -1907,8 +1907,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   omega = varTur->GetPrimitive(iPoint, 1);
   
   mu  = varFlo->GetLaminarViscosity(iPoint);
-  mut = nodes->GetmuT(iPoint);
-//  mut = r*k/omega;
+  // mut = nodes->GetmuT(iPoint);
+ mut = r*k/omega;
 
   g    = config->GetGamma();
   R    = config->GetGas_ConstantND();
@@ -1942,11 +1942,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                       Vorticity[1]*Vorticity[1] +
                                       Vorticity[2]*Vorticity[2]);
   
-  const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
-  const su2double zeta = max(omega,VorticityMag*F1/a1);
+  // const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+  // const su2double zeta = max(omega,VorticityMag*F1/a1);
   
-  // const su2double lim = 1.0;
-  // const su2double zeta = 1./(omega+eps);
+  const su2double lim = 1.0;
+  const su2double zeta = omega;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
@@ -1977,22 +1977,22 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
   su2double factor = 0.0;
-  if (pk > 0.) {
+  // if (pk > 0.) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       factor = 0.0;
       factor += -TWO3*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-      if (pk <= 20.*betastar*r*omega*k) {   
+      // if (pk <= 20.*betastar*r*omega*k) {   
           factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim);
-      }
+      // }
       for (jDim = 0; jDim < nDim; ++jDim) {
         factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
-        if (pk <= 20.*betastar*r*omega*k) {
+        // if (pk <= 20.*betastar*r*omega*k) {
            factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
-        }
+        // }
       }
       TmpWeights[iDim+1] += factor;
     }
-  }
+  // }
 
   //--- k and omega weights
   factor = 0.0;
@@ -2056,19 +2056,19 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   //--- Zeroth-order terms due to production
   if (pk > 0.) {
-    if (pk <= 20.*betastar*r*omega*k){
+    // if (pk <= 20.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
       // weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
-    }
-    else {
-      weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
-      // weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
-                             // + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
-      weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
-      weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
-      // weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0)
-                             // - (40.0*lim+20.0*(1.-lim))*alfa*betastar*zeta*varAdjTur->GetSolution(iPoint,1);
-    }
+    // }
+    // else {
+    //   weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
+    //   // weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
+    //                          // + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
+    //   weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
+    //   weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
+    //   // weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0)
+    //                          // - (40.0*lim+20.0*(1.-lim))*alfa*betastar*zeta*varAdjTur->GetSolution(iPoint,1);
+    // }
     weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
   }
   
