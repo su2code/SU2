@@ -222,7 +222,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
       else {
         for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-          flowPrimVar_i[iVar] = V_i[iVar]
+          flowPrimVar_i[iVar] = V_i[iVar];
           flowPrimVar_j[iVar] = V_j[iVar];
         }
       }
