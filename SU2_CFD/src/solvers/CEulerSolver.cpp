@@ -3103,9 +3103,69 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
     if (tkeNeeded) {
-      tke_i = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
-      tke_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
+      CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+      tke_i = turbNodes->GetPrimitive(iPoint,0);
+      tke_j = turbNodes->GetPrimitive(jPoint,0);
 
+      if (muscl) {
+        /*--- Reconstruct turbulence variables. ---*/
+
+        su2double Vector_ij[MAXNDIM] = {0.0};
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
+      }
+
+      auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint);
+      auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint);
+
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+
+      if (limiter) {
+        Limiter_i = turbNodes->GetLimiter(iPoint);
+        Limiter_j = turbNodes->GetLimiter(jPoint);
+      }
+
+      const su2double Kappa = config->GetMUSCL_Kappa();
+          
+        const su2double T_ij = 0.5*(tke_j - tke_i);
+
+        su2double Project_Grad_i = -T_ij;
+        su2double Project_Grad_j = -T_ij;
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        }
+
+        /*--- Blend upwind and centered differences ---*/
+
+        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+
+        /*--- Edge-based limiters ---*/
+
+        if (limiter) {
+          switch(config->GetKind_SlopeLimit_Turb()) {
+            case VAN_ALBADA_EDGE:
+              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+              break;
+            case PIPERNO:
+              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+              break;
+          }
+
+          /*--- Limit projection ---*/
+
+          Project_Grad_i *= Limiter_i[iVar];
+          Project_Grad_j *= Limiter_j[iVar];
+        }
+
+        tke_i += Project_Grad_i;
+        tke_j -= Project_Grad_j;
+
+      }
       numerics->SetTurbKineticEnergy(tke_i, tke_j);
     }
 
