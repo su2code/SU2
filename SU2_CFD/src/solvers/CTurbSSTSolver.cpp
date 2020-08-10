@@ -2055,7 +2055,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   weights[2][nVarFlo+1] += TmpWeights[nVarFlo+1];
 
   //--- Zeroth-order terms due to production
-  if (pk > 0.) {
+  // if (pk > 0.) {
     // if (pk <= 20.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
       // weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
@@ -2070,7 +2070,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     //                          // - (40.0*lim+20.0*(1.-lim))*alfa*betastar*zeta*varAdjTur->GetSolution(iPoint,1);
     // }
     weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
-  }
+  // }
   
   //--- Zeroth-order terms due to dissipation
   weights[0][0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
