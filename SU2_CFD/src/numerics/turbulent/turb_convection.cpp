@@ -65,8 +65,7 @@ void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian
                              const su2double *lim_i, const su2double *lim_j) {
   const bool wasActive = AD::BeginPassive();
 
-  unsigned short iVar;
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
     val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
 
 
@@ -104,7 +103,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
       // q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
-      q_ij += 0.5*(R*V_j[iDim+1]+V_i[iDim+1])/(R+1)*Normal[iDim];
+      q_ij += 0.5*(R*V_j[iDim+1]+V_i[iDim+1])/(R+1.)*Normal[iDim];
       a0   += 0.5*V_i[iDim+1]*Normal[iDim];
       a1   += 0.5*V_j[iDim+1]*Normal[iDim];
     }
@@ -118,6 +117,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   if (muscl) {
     GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
     GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+  }
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar][iVar] += fabs(q_ij);
+    Jacobian_j[iVar][iVar] -= fabs(q_ij);
   }
   
   AD::SetPreaccOut(Flux, nVar);
@@ -162,18 +166,12 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0]-fabs(q_ij)*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
   Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1]-fabs(q_ij)*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
 
-  Jacobian_i[0][0] = a0+fabs(q_ij);  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0+fabs(q_ij);
+  Jacobian_i[0][0] = a0;  Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0;
 
-  Jacobian_j[0][0] = a1-fabs(q_ij);  Jacobian_j[0][1] = 0.0;
-  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1-fabs(q_ij);
+  Jacobian_j[0][0] = a1;  Jacobian_j[0][1] = 0.0;
+  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1;
 
   // Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
   // Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
-
-  // Jacobian_i[0][0] = a0;  Jacobian_i[0][1] = 0.0;
-  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0;
-
-  // Jacobian_j[0][0] = a1;  Jacobian_j[0][1] = 0.0;
-  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1;
 }
