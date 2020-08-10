@@ -564,7 +564,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     AD::EndPassive(wasActive);
   }// GG
   
-  AD_END_PASSIVE
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver, CNumerics *numerics,
