@@ -542,6 +542,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     
     /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
     if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+      Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
       for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex > -1) {
@@ -557,9 +558,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
           }// iDim
         }// iVertex
       }// iMarker
+      Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     }// if physical boundary
-
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
     AD::EndPassive(wasActive);
   }// GG
