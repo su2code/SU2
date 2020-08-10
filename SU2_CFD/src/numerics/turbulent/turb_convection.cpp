@@ -105,8 +105,8 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     for (iDim = 0; iDim < nDim; iDim++) {
       // q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
       q_ij += 0.5*(R*V_j[iDim+1]+V_i[iDim+1])/(R+1)*Normal[iDim];
-      a0   += 0.5*V_i[iDim+1];
-      a1   += 0.5*V_j[iDim+1];
+      a0   += 0.5*V_i[iDim+1]*Normal[iDim];
+      a1   += 0.5*V_j[iDim+1]*Normal[iDim];
     }
   }
 
