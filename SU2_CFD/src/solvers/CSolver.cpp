@@ -2554,7 +2554,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if ((underRelaxation < 0.1)) {
          CFLFactor = CFLFactorDecrease;
        } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
-         CFLFactor = 1.0;
+         // CFLFactor = 1.0;
+        CFLFactor = CFLFactorDecrease;
        } else {
          CFLFactor = CFLFactorIncrease;
        }
