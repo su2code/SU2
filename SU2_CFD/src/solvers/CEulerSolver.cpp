@@ -3160,6 +3160,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           Project_Grad_i *= Limiter_i[0];
           Project_Grad_j *= Limiter_j[0];
+
+          numerics->SetTurbLimiter(Limiter_i, Limiter_j);
         }
 
         tke_i += Project_Grad_i;
@@ -3297,6 +3299,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
                                        bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+
+        if (bad_edge)
+          numerics->SetTurbLimiter(ZeroVec, ZeroVec);
       }
 
     }

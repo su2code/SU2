@@ -36,6 +36,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   kappa = config->GetRoe_Kappa(); // 1 is unstable
   muscl_kappa = 0.5*config->GetMUSCL_Kappa();
   muscl = val_muscl;
+  tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -92,8 +93,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
 
   unsigned short iVar, jVar, kVar, iDim;
   su2double **tmp = new su2double*[nVar],
-            **MLim = new su2double*[nVar],
-            **MInv = new su2double*[nVar],
+            **MLim = new su2double*[nVar+1],
+            **MInv = new su2double*[nVar+1],
             *dLim  = new su2double[nDim+3];
   for(iVar = 0; iVar < nVar; iVar++) {
     tmp[iVar]   = new su2double[nVar];
@@ -132,7 +133,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
     MInv[iDim+1][iDim+1] = 1.0/(*val_density);
     MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity[iDim];
   }
-  MInv[nDim+1][0] = Gamma_Minus_One*sq_vel/2.0;
+  MInv[nDim+1][0] = Gamma_Minus_One*(sq_vel/2.0+val_tke);
   MInv[nDim+1][nDim+1] = Gamma_Minus_One;
 
   /*--- Now multiply them all together ---*/
