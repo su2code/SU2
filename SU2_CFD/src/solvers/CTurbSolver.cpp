@@ -278,11 +278,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
           solution_j[iVar] = Turb_j[iVar] - Project_Grad_j;
 
-          numerics->SetLimiter(Limiter_i, Limiter_j);
+          bad_i = (solution_i[iVar] < 0.0) || (bad_i);
+          bad_j = (solution_j[iVar] < 0.0) || (bad_j);
+
         }
 
-        bad_i = (solution_i[0] < 0.0) || (solution_i[1] < 0.0) || (bad_i);
-        bad_j = (solution_j[0] < 0.0) || (solution_j[1] < 0.0) || (bad_j);
+        numerics->SetLimiter(Limiter_i, Limiter_j);
 
       }
       else {
@@ -291,8 +292,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           solution_j[iVar] = Turb_j[iVar];
         }
       }
-      numerics->SetPrimitive((bad_i || bad_j) ? V_i : flowPrimVar_i, (bad_i || bad_j) ? V_j : flowPrimVar_j);
-      numerics->SetTurbVar((bad_i || bad_j) ? Turb_i : solution_i, (bad_i || bad_j) ? Turb_j : solution_j);
+
+      const bool bad_edge = bad_i || bad_j;
+      numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, bad_edge ? V_j : flowPrimVar_j);
+      numerics->SetTurbVar(bad_edge ? Turb_i : solution_i, bad_edge ? Turb_j : solution_j);
     }
 
     /*--- Update convective residual value ---*/
