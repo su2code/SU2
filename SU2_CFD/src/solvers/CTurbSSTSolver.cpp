@@ -2053,16 +2053,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   if (pk > 0.) {
     if (pk <= 20.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
-      // weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
     }
     else {
       weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
-      // weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
-                             // + 20.0*lim*alfa*betastar*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
       weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
       weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
-      // weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0)
-                             // - (40.0*lim+20.0*(1.-lim))*alfa*betastar*zeta*varAdjTur->GetSolution(iPoint,1);
     }
     weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
   }
@@ -2075,6 +2070,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += lim*(1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
