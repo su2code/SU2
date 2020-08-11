@@ -38,7 +38,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                const CConfig *config, bool integrate_tractions_);
+                                const CConfig *config, bool conservative_);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.

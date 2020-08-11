@@ -131,15 +131,4 @@ class CFEAIteration : public CIteration {
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                unsigned short val_iInst) override;
-
-  /*!
-   * \brief Postprocess ???.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                   CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                   CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                   unsigned short val_iInst) override;
 };

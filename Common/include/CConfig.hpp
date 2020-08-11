@@ -998,8 +998,7 @@ private:
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;                    /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint,                  /*!< \brief AD-based discrete adjoint mode. */
-  FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
+  bool DiscreteAdjoint;                  /*!< \brief AD-based discrete adjoint mode. */
   unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
@@ -8436,12 +8435,6 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
-
-  /*!
-  * \brief Get the indicator whether we want to use full (coupled) tapes.
-  * \return the full tape indicator.
-  */
-  bool GetFull_Tape(void) const { return FullTape; }
 
   /*!
    * \brief Get the number of subiterations while a ramp is applied.

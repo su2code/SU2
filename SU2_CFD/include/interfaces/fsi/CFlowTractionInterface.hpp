@@ -29,17 +29,26 @@
 #pragma once
 
 #include "../CInterface.hpp"
+#include <unordered_map>
 
 class CFlowTractionInterface : public CInterface {
-private:
-  bool integrate_tractions;
-
 protected:
+  const bool conservative;
+  std::unordered_map<unsigned long, su2double> vertexArea;
+
   /*!
-   * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag
+   * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag.
    * \param[in] flow_config - Definition of the fluid (donor) problem.
    */
   void Preprocess(const CConfig *flow_config);
+
+  /*!
+   * \brief Computes vertex areas (FEA side) for when tractions need to be integrated.
+   * \param[in] config - Definition of the structural (target) problem.
+   * \param[in] geometry - FEA geometry.
+   * \param[in] solution - FEA solver.
+   */
+  void ComputeVertexAreas(const CConfig *config, CGeometry *geometry, CSolver *solution);
 
 public:
   /*!

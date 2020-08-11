@@ -818,11 +818,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   /*--- Clear external forces. ---*/
   nodes->Clear_SurfaceLoad_Res();
 
-  /*
-   * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
-   */
-  if (fsi && first_iter && (idxIncrement==0)) Integrate_FSI_Loads(geometry, config);
-
   /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
   initial_calc = false;
 
@@ -2236,72 +2231,6 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
     LinSysSol.SetBlock(iNode, Disp);
     Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
 
-  }
-
-}
-
-void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config) {
-
-  /*--- The conservative approach transfers forces directly, no integration needed. ---*/
-  if (config->GetConservativeInterpolation()) return;
-
-  unordered_map<unsigned long, su2double> vertexArea;
-  unordered_set<short> processedMarkers({-1});
-
-  /*--- Compute current area associated with each vertex. ---*/
-
-  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair. ---*/
-    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
-    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
-    if (processedMarkers.count(iMarker) > 0) continue;
-    processedMarkers.insert(iMarker);
-
-    for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
-      /*--- Define the boundary element. ---*/
-      unsigned long nodeList[MAXNNODE_2D] = {0};
-      su2double coords[MAXNNODE_2D][MAXNDIM] = {{0.0}};
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      auto nNode = quad? 4u : nDim;
-
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (auto iDim = 0u; iDim < nDim; ++iDim)
-          coords[iNode][iDim] = geometry->nodes->GetCoord(nodeList[iNode], iDim)+
-                                nodes->GetSolution(nodeList[iNode],iDim);
-      }
-
-      /*--- Compute the area contribution to each node. ---*/
-      su2double normal[MAXNDIM] = {0.0};
-
-      switch (nNode) {
-        case 2: LineNormal(coords, normal); break;
-        case 3: TriangleNormal(coords, normal); break;
-        case 4: QuadrilateralNormal(coords, normal); break;
-      }
-
-      su2double area = Norm(int(MAXNDIM),normal) / nNode;
-
-      /*--- Update area of nodes. ---*/
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        auto iPoint = nodeList[iNode];
-        if (vertexArea.count(iPoint) == 0)
-          vertexArea[iPoint] = area;
-        else
-          vertexArea[iPoint] += area;
-      }
-    }
-  }
-
-  /*--- Integrate tractions. ---*/
-
-  for (auto it = vertexArea.begin(); it != vertexArea.end(); ++it) {
-    auto iPoint = it->first;
-    su2double area = it->second;
-    su2double force[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      force[iDim] = nodes->Get_FlowTraction(iPoint,iDim)*area;
-    nodes->Set_FlowTraction(iPoint, force);
   }
 
 }

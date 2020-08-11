@@ -39,10 +39,6 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
 
                         : CMultizoneDriver(confFile, val_nZone, MPICommunicator) {
 
-  retape = !config_container[ZONE_0]->GetFull_Tape();
-
-  RecordingState = NONE;
-
   direct_nInst.resize(nZone,1);
   nInnerIter.resize(nZone);
 
@@ -236,7 +232,7 @@ void CDiscAdjMultizoneDriver::Run() {
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
-    if (!retape && (RecordingState != SOLUTION_VARIABLES)) {
+    if (RecordingState != SOLUTION_VARIABLES) {
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
@@ -246,11 +242,6 @@ void CDiscAdjMultizoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
 
       config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
-
-      if (retape) {
-        SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-        SetRecording(SOLUTION_VARIABLES, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
-      }
 
       /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
 
@@ -502,7 +493,6 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   AD::Push_TapePosition(); /// REGISTERED
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
   }
@@ -515,9 +505,14 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == MESH_COORDS)) {
     HandleDataTransfer();
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (Has_Deformation(iZone)) {
+        iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
+                                                            config_container, iZone, INST_0, kind_recording);
+      }
+    }
+    SetObjFunction(kind_recording);
   }
-
-  SetObjFunction(kind_recording);
 
   AD::Push_TapePosition(); /// OBJECTIVE_FUNCTION
 
@@ -537,18 +532,10 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
       AD::Push_TapePosition(); /// enter_zone
 
-      if (tape_type == Kind_Tape::ZONE_SPECIFIC_TAPE) {
-        if (iZone == record_zone) {
-          DirectIteration(iZone, kind_recording);
-        }
-      }
-      else {
-        DirectIteration(iZone, kind_recording);
-      }
+      DirectIteration(iZone, kind_recording);
 
       iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
                                                          config_container, output_container[iZone], iZone, INST_0);
-
       AD::Push_TapePosition(); /// leave_zone
     }
   }
@@ -788,7 +775,6 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
             break;
           case TOPOL_COMPLIANCE:
-            static_cast<CFEASolver*>(solvers[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
             solvers[FEA_SOL]->Compute_OFCompliance(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
             break;

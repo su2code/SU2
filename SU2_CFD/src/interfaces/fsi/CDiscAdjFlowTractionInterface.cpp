@@ -32,8 +32,8 @@
 #include "../../../include/solvers/CSolver.hpp"
 
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                             const CConfig *config, bool integrate_tractions_) :
-  CFlowTractionInterface(val_nVar, val_nConst, config, integrate_tractions_) {
+                                                             const CConfig *config, bool conservative_) :
+  CFlowTractionInterface(val_nVar, val_nConst, config, conservative_) {
 }
 
 void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
@@ -45,6 +45,8 @@ void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution
   struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
+
+  if (!conservative) ComputeVertexAreas(struct_config, struct_geometry, struct_solution);
 
   /*--- No ramp applied ---*/
   Physical_Constants[1] = 1.0;
