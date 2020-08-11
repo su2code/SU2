@@ -96,7 +96,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-  AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
+  AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j, nVar);
   ExtraADPreaccIn();
 
   if (incompressible) {
@@ -276,6 +276,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
+  const bool wasActive = AD::BeginPassive();
+
   su2double proj_on_rho;
       
   proj_on_rho = proj_vector_ij/Density_i;
@@ -339,6 +341,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
     Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
   }
+
+  AD::EndPassive(wasActive);
 
 }
 

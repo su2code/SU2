@@ -611,6 +611,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
+    const bool wasActive = AD::BeginPassive();
+
     if (!correct_gradient) dist_ij_2 = -Volume_i;
     if (dist_ij_2 != 0.0) {
       SetTauJacobian();
@@ -619,6 +621,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     GetViscousProjJacs(Mean_PrimVar, Proj_Flux_Tensor);
     SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
     SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+
+    AD::EndPassive(wasActive);
 
   }
 
