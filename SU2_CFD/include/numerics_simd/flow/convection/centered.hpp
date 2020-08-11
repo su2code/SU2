@@ -50,7 +50,7 @@ protected:
   const su2double gamma;
   const su2double fixFactor;
   const bool dynamicGrid;
-  static constexpr passivedouble stretchParam = 0.3;
+  const su2double stretchParam = 0.3;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
