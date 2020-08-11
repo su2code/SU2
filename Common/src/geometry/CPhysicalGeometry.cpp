@@ -449,7 +449,7 @@ void CPhysicalGeometry::SetGlobal_to_Local_Point(void) {
   }
 }
 
-void CPhysicalGeometry::DistributeColoring(CConfig *config,
+void CPhysicalGeometry::DistributeColoring(const CConfig *config,
                                            CGeometry *geometry) {
 
   /*--- To start, each linear partition carries the color only for the
@@ -724,7 +724,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
 }
 
-void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
+void CPhysicalGeometry::DistributeVolumeConnectivity(const CConfig *config,
                                                      CGeometry *geometry,
                                                      unsigned short Elem_Type) {
 
@@ -1058,7 +1058,7 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
 }
 
-void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
+void CPhysicalGeometry::DistributePoints(const CConfig *config, CGeometry *geometry) {
 
   /*--- We now know all of the coloring for our local points and neighbors.
    From this, we can communicate the owned nodes in our linear partitioning
@@ -3085,7 +3085,7 @@ unsigned long CPhysicalGeometry::GetLinearPartition(unsigned long val_global_ind
 
 }
 
-void CPhysicalGeometry::SortAdjacency(CConfig *config) {
+void CPhysicalGeometry::SortAdjacency(const CConfig *config) {
 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -3107,7 +3107,7 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
 
   /*--- We can already create the array that indexes the adjacency. ---*/
 
-  if (xadj == nullptr) xadj = new idx_t[pointPartitioner.GetSizeOnRank(rank)+1];
+  xadj.resize(pointPartitioner.GetSizeOnRank(rank)+1);
   xadj[0] = 0;
 
   /*--- Here, we transfer the adjacency information from a multi-dim vector
@@ -3116,60 +3116,45 @@ void CPhysicalGeometry::SortAdjacency(CConfig *config) {
    copy it into the single vect and clear memory from the multi-dim vec. ---*/
 
   unsigned long total_adj_size = 0;
-  vector<unsigned long>::iterator it;
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-
+  for (auto& neighbors : adj_nodes) {
     /*--- For each point, sort the adjacency in ascending order
      so that we can remove duplicates and complete the size for
      unique set of adjacent nodes for that point. ---*/
 
-    sort(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
-    it = unique(adj_nodes[iPoint].begin(), adj_nodes[iPoint].end());
-    const unsigned long local_size = it - adj_nodes[iPoint].begin();
-    adj_nodes[iPoint].resize(local_size);
+    sort(neighbors.begin(), neighbors.end());
+    auto it = unique(neighbors.begin(), neighbors.end());
+    const auto local_size = it - neighbors.begin();
+    neighbors.resize(local_size);
     total_adj_size += local_size;
-
   }
 
   /*--- Now that we know the size, create the final adjacency array. This
    is the array that we will feed to ParMETIS for partitioning. ---*/
 
-  if (adjacency == nullptr) adjacency = new idx_t[total_adj_size];
+  adjacency.resize(0);
+  adjacency.reserve(total_adj_size);
 
-  unsigned long kPoint = 0;
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    /*--- Local size of the adjacency for the current point. ---*/
-
-    const unsigned long local_size = adj_nodes[iPoint].size();
-
+  unsigned long iPoint = 0;
+  for (const auto& neighbors : adj_nodes) {
     /*--- Move the sorted adjacency into a 1-D vector for all
      points for loading into ParMETIS for partitioning next. ---*/
-
-    for (unsigned long jPoint = 0; jPoint < local_size; jPoint++) {
-      adjacency[kPoint] = (idx_t)adj_nodes[iPoint][jPoint]; kPoint++;
-    }
+    for (auto jPoint : neighbors) adjacency.push_back(jPoint);
 
     /*--- Increment the starting index for the next point (CSR). ---*/
-
-    xadj[iPoint+1] = xadj[iPoint] + local_size;
-
-    /*--- Free vector memory as we go. ---*/
-
-    vector<unsigned long>().swap(adj_nodes[iPoint]);
-
+    xadj[iPoint+1] = xadj[iPoint] + neighbors.size();
+    ++iPoint;
   }
 
   /*--- Force free the entire old multi-dim. adjacency vector. ---*/
 
-  vector< vector<unsigned long> >().swap(adj_nodes);
+  decltype(adj_nodes)().swap(adj_nodes);
 
 #endif
 #endif
 
 }
 
-void CPhysicalGeometry::SetSendReceive(CConfig *config) {
+void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
 
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
@@ -4080,7 +4065,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig     *config,
 
 }
 
-void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
+void CPhysicalGeometry::PrepareAdjacency(const CConfig *config) {
 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -4089,8 +4074,6 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
   adj_nodes.clear();
   adj_nodes.resize(nPoint);
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-  adj_nodes[iPoint].resize(0);
 
   /*--- Create a partitioner object so we can transform the global
    index values stored in the elements to a local index. ---*/
@@ -4100,25 +4083,19 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
   /*--- Loop over all elements that are now loaded and store adjacency. ---*/
 
-  unsigned long connectivity[8] = {0,0,0,0,0,0,0,0};
   for (unsigned long iElem = 0; iElem < nElem; iElem++) {
 
-    /*--- Get the VTK type for this element. This is stored in the
-     first entry of the connectivity structure. ---*/
-
-    unsigned short VTK_Type = elem[iElem]->GetVTK_Type();
+    /*--- Store the connectivity for this element more easily. ---*/
+    unsigned long connectivity[8] = {0};
+    for (unsigned long iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      connectivity[iNode] = elem[iElem]->GetNode(iNode);
+    }
 
     /*--- Instantiate this element and build adjacency structure. ---*/
 
-    switch(VTK_Type) {
+    switch(elem[iElem]->GetVTK_Type()) {
 
       case TRIANGLE:
-
-        /*--- Store the connectivity for this element more easily. ---*/
-
-        for (unsigned long iNode = 0; iNode < N_POINTS_TRIANGLE; iNode++) {
-          connectivity[iNode] = elem[iElem]->GetNode(iNode);
-        }
 
         /*--- Decide whether we need to store the adjacency for any nodes
          in the current element, i.e., check if any of the nodes have a
@@ -4139,21 +4116,13 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
               if (iNode != jNode)
               adj_nodes[local_index].push_back(connectivity[jNode]);
-
             }
-
           }
         }
 
         break;
 
       case QUADRILATERAL:
-
-        /*--- Store the connectivity for this element more easily. ---*/
-
-        for (unsigned long iNode = 0; iNode < N_POINTS_QUADRILATERAL; iNode++) {
-          connectivity[iNode] = elem[iElem]->GetNode(iNode);
-        }
 
         /*--- Decide whether we need to store the adjacency for any nodes
          in the current element, i.e., check if any of the nodes have a
@@ -4172,19 +4141,12 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
             adj_nodes[local_index].push_back(connectivity[(iNode+1)%4]);
             adj_nodes[local_index].push_back(connectivity[(iNode+3)%4]);
-
           }
         }
 
         break;
 
       case TETRAHEDRON:
-
-        /*--- Store the connectivity for this element more easily. ---*/
-
-        for (unsigned long iNode = 0; iNode < N_POINTS_TETRAHEDRON; iNode++) {
-          connectivity[iNode] = elem[iElem]->GetNode(iNode);
-        }
 
         /*--- Decide whether we need to store the adjacency for any nodes
          in the current element, i.e., check if any of the nodes have a
@@ -4205,21 +4167,13 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
 
               if (iNode != jNode)
               adj_nodes[local_index].push_back(connectivity[jNode]);
-
             }
-
           }
         }
 
         break;
 
       case HEXAHEDRON:
-
-        /*--- Store the connectivity for this element more easily. ---*/
-
-        for (unsigned long iNode = 0; iNode < N_POINTS_HEXAHEDRON; iNode++) {
-          connectivity[iNode] = elem[iElem]->GetNode(iNode);
-        }
 
         /*--- Decide whether we need to store the adjacency for any nodes
          in the current element, i.e., check if any of the nodes have a
@@ -4244,19 +4198,12 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
               adj_nodes[local_index].push_back(connectivity[(iNode-1)%4+4]);
             }
             adj_nodes[local_index].push_back(connectivity[(iNode+4)%8]);
-
           }
         }
 
         break;
 
       case PRISM:
-
-        /*--- Store the connectivity for this element more easily. ---*/
-
-        for (unsigned long iNode = 0; iNode < N_POINTS_PRISM; iNode++) {
-          connectivity[iNode] = elem[iElem]->GetNode(iNode);
-        }
 
         /*--- Decide whether we need to store the adjacency for any nodes
          in the current element, i.e., check if any of the nodes have a
@@ -4281,20 +4228,12 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
               adj_nodes[local_index].push_back(connectivity[(iNode-1)%3+3]);
             }
             adj_nodes[local_index].push_back(connectivity[(iNode+3)%6]);
-
           }
         }
 
         break;
 
       case PYRAMID:
-
-
-        /*--- Store the connectivity for this element more easily. ---*/
-
-        for (unsigned long iNode = 0; iNode < N_POINTS_PYRAMID; iNode++) {
-          connectivity[iNode] = elem[iElem]->GetNode(iNode);
-        }
 
         /*--- Decide whether we need to store the adjacency for any nodes
          in the current element, i.e., check if any of the nodes have a
@@ -4321,7 +4260,6 @@ void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
               adj_nodes[local_index].push_back(connectivity[2]);
               adj_nodes[local_index].push_back(connectivity[3]);
             }
-
           }
         }
 
@@ -8411,18 +8349,16 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
 
 }
 
-void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
-
-  /*--- Initialize the color vector ---*/
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    nodes->SetColor(iPoint, 0);
+void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig *config) {
 
   /*--- We need to have parallel support with MPI and have the ParMETIS
    library compiled and linked for parallel graph partitioning. ---*/
 
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
+#if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
+
+  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
+
+  if (size == SINGLE_NODE) return;
 
   MPI_Comm comm = MPI_COMM_WORLD;
 
@@ -8430,79 +8366,71 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 
   CLinearPartitioner pointPartitioner(Global_nPointDomain,0);
 
-  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
+  /*--- Some recommended defaults for the various ParMETIS options. ---*/
 
-  if (size > SINGLE_NODE) {
+  idx_t wgtflag = 2;
+  idx_t numflag = 0;
+  idx_t ncon    = 1;
+  real_t ubvec  = 1.0 + config->GetParMETIS_Tolerance();
+  idx_t nparts  = size;
+  idx_t options[METIS_NOPTIONS];
+  METIS_SetDefaultOptions(options);
+  options[1] = 0;
 
-    /*--- Create some structures that ParMETIS needs for partitioning. ---*/
+  /*--- Fill the necessary ParMETIS input data arrays. ---*/
 
-    idx_t numflag, nparts, edgecut, wgtflag, ncon;
+  vector<real_t> tpwgts(size, 1.0/size);
 
-    idx_t *vtxdist = new idx_t[size+1];
-    idx_t *part    = new idx_t[nPoint];
-
-    real_t ubvec;
-    real_t *tpwgts = new real_t[size];
-
-    /*--- Some recommended defaults for the various ParMETIS options. ---*/
-
-    wgtflag = 0;
-    numflag = 0;
-    ncon    = 1;
-    ubvec   = 1.05;
-    nparts  = (idx_t)size;
-    idx_t options[METIS_NOPTIONS];
-    METIS_SetDefaultOptions(options);
-    options[1] = 0;
-
-    /*--- Fill the necessary ParMETIS data arrays. We do not apply
-     any weighting during the partitioning process. ---*/
-
-    for (int i = 0; i < size; i++) {
-      tpwgts[i] = 1.0/((real_t)size);
-    }
-
-    vtxdist[0] = 0;
-    for (int i = 0; i < size; i++) {
-      vtxdist[i+1] = (idx_t)pointPartitioner.GetLastIndexOnRank(i);
-    }
-
-    /*--- Calling ParMETIS ---*/
-
-    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-    ParMETIS_V3_PartKway(vtxdist, xadj, adjacency, NULL, NULL, &wgtflag,
-                         &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
-                         &edgecut, part, &comm);
-    if (rank == MASTER_NODE) {
-      cout << " graph partitioning complete (";
-      cout << edgecut << " edge cuts)." << endl;
-    }
-
-    /*--- Store the results of the partitioning (note that this is local
-     since each processor is calling ParMETIS in parallel and storing the
-     results for its initial piece of the grid. ---*/
-
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      nodes->SetColor(iPoint, part[iPoint]);
-    }
-
-    /*--- Free all memory needed for the ParMETIS structures ---*/
-
-    if (vtxdist != NULL) delete [] vtxdist;
-    if (part    != NULL) delete [] part;
-    if (tpwgts  != NULL) delete [] tpwgts;
-
+  vector<idx_t> vtxdist(size+1);
+  vtxdist[0] = 0;
+  for (int i = 0; i < size; i++) {
+    vtxdist[i+1] = pointPartitioner.GetLastIndexOnRank(i);
   }
 
-  /*--- Delete the memory from the geometry class that carried the
-   adjacency structure. ---*/
+  /*--- For most FVM-type operations the amount of work is proportional to the
+   * number of edges, for a few however it is proportional to the number of points.
+   * Therefore, for (static) load balancing we consider a weighted function of points
+   * and number of edges (or neighbors) per point, giving more importance to the latter
+   * skews the partitioner towards evenly distributing the total number of edges. ---*/
 
-  if (xadj      != NULL) delete [] xadj;
-  if (adjacency != NULL) delete [] adjacency;
+  const auto wp = config->GetParMETIS_PointWeight();
+  const auto we = config->GetParMETIS_EdgeWeight();
+
+  vector<idx_t> vwgt(nPoint);
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    vwgt[iPoint] = wp + we * (xadj[iPoint+1] - xadj[iPoint]);
+  }
+
+  /*--- Create some structures that ParMETIS needs to output the partitioning. ---*/
+
+  idx_t edgecut;
+  vector<idx_t> part(nPoint);
+
+  /*--- Calling ParMETIS ---*/
+
+  if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
+  auto err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(),
+                                  nullptr, &wgtflag, &numflag, &ncon, &nparts, tpwgts.data(),
+                                  &ubvec, options, &edgecut, part.data(), &comm);
+  if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
+  if (rank == MASTER_NODE) {
+    cout << " graph partitioning complete (" << edgecut << " edge cuts)." << endl;
+  }
+
+  /*--- Store the results of the partitioning (note that this is local
+   since each processor is calling ParMETIS in parallel and storing the
+   results for its initial piece of the grid. ---*/
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    nodes->SetColor(iPoint, part[iPoint]);
+  }
+
+  /*--- Force free the connectivity. ---*/
+
+  decltype(xadj)().swap(xadj);
+  decltype(adjacency)().swap(adjacency);
 
 #endif
-#endif
-
 }
 
 void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {

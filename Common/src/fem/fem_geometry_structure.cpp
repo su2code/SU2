@@ -84,7 +84,7 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
 }
 
-void CMeshFEM_DG::SetSendReceive(CConfig *config) {
+void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 
 }
 
