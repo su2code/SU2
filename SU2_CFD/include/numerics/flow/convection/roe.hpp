@@ -64,7 +64,7 @@ protected:
    */
   void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                    const su2double *lim_i, const su2double *lim_j,
-                   const su2double *val_velocity, const su2double *val_density, *val_tke);
+                   const su2double *val_velocity, const su2double *val_density, const su2double *val_tke);
 
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
