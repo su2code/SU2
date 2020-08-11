@@ -195,6 +195,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
 
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
