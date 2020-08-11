@@ -60,10 +60,11 @@ protected:
    * \param[in] lim_j - Slope limiter at node j.
    * \param[in] val_velocity - Velocity at node i.
    * \param[in] val_density - Density at node i.
+   * \param[in] val_tke - Turbulent kinetic energy at node i.
    */
   void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                    const su2double *lim_i, const su2double *lim_j,
-                   const su2double *val_velocity, const su2double *val_density);
+                   const su2double *val_velocity, const su2double *val_density, *val_tke);
 
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).

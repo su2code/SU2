@@ -87,7 +87,7 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
 
 void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                                    const su2double *lim_i, const su2double *lim_j,
-                                   const su2double *val_velocity, const su2double *val_density) {
+                                   const su2double *val_velocity, const su2double *val_density, const su2double *val_tke) {
   const bool wasActive = AD::BeginPassive();
 
   unsigned short iVar, jVar, kVar, iDim;
@@ -121,7 +121,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
     MLim[iDim+1][iDim+1] = dLim[iDim+1]*(*val_density);
     MLim[nDim+1][iDim+1] = dLim[iDim+1]*(*val_density)*val_velocity[iDim];
   }
-  MLim[nDim+1][0] = dLim[nDim+2]*sq_vel/2.0;
+  MLim[nDim+1][0] = dLim[nDim+2]*(sq_vel/2.0+(*val_tke));
   MLim[nDim+1][nDim+1] = dLim[nDim+1]*1.0/Gamma_Minus_One;
 
   /*--- Inv(d{r,v,p}/dU) ---*/
@@ -317,8 +317,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, kappa, Jacobian_j);
 
     if (muscl) {
-      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i);
-      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j);
+      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i);
+      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j);
     }
   }
 
