@@ -578,7 +578,8 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2d
 
   rhooc = *val_density / *val_soundspeed;
   rhoxc = *val_density * *val_soundspeed;
-  rhoxtkeoc = rhooc*(*val_tke)*(Gamma_Minus_One-TWO3)/Gamma_Minus_One;
+  tke   = (*val_tke)*(Gamma_Minus_One-TWO3)/Gamma_Minus_One;
+  rhoxtkeoc = rhooc*tke;
   //c2 = *val_soundspeed * *val_soundspeed;
 
   if (nDim == 2) {
@@ -600,7 +601,7 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2d
     val_p_tensor[2][2]=0.5*(val_velocity[1]*rhooc+val_normal[1]**val_density);
     val_p_tensor[2][3]=0.5*(val_velocity[1]*rhooc-val_normal[1]**val_density);
 
-    val_p_tensor[3][0]=0.5*sqvel+(*val_tke)*(Gamma_Minus_One-TWO3)/Gamma_Minus_One;
+    val_p_tensor[3][0]=0.5*sqvel-tke;
     val_p_tensor[3][1]=*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0];
     val_p_tensor[3][2]=0.5*(0.5*sqvel*rhooc+rhoxtkeoc+*val_density*val_velocity[0]*val_normal[0]+*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
     val_p_tensor[3][3]=0.5*(0.5*sqvel*rhooc+rhoxtkeoc-*val_density*val_velocity[0]*val_normal[0]-*val_density*val_velocity[1]*val_normal[1]+rhoxc/Gamma_Minus_One);
@@ -634,9 +635,9 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2d
     val_p_tensor[3][3]=0.5*(val_velocity[2]*rhooc+*val_density*val_normal[2]);
     val_p_tensor[3][4]=0.5*(val_velocity[2]*rhooc-*val_density*val_normal[2]);
 
-    val_p_tensor[4][0]=0.5*sqvel*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1]+(*val_tke)*(Gamma_Minus_One-TWO3)/Gamma_Minus_One;
-    val_p_tensor[4][1]=0.5*sqvel*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0]+(*val_tke)*(Gamma_Minus_One-TWO3)/Gamma_Minus_One;
-    val_p_tensor[4][2]=0.5*sqvel*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0]+(*val_tke)*(Gamma_Minus_One-TWO3)/Gamma_Minus_One;
+    val_p_tensor[4][0]=0.5*sqvel*val_normal[0]+*val_density*val_velocity[1]*val_normal[2]-*val_density*val_velocity[2]*val_normal[1]-tke;
+    val_p_tensor[4][1]=0.5*sqvel*val_normal[1]-*val_density*val_velocity[0]*val_normal[2]+*val_density*val_velocity[2]*val_normal[0]-tke;
+    val_p_tensor[4][2]=0.5*sqvel*val_normal[2]+*val_density*val_velocity[0]*val_normal[1]-*val_density*val_velocity[1]*val_normal[0]-tke;
     val_p_tensor[4][3]=0.5*(0.5*sqvel*rhooc+rhoxtkeoc+*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
     val_p_tensor[4][4]=0.5*(0.5*sqvel*rhooc+rhoxtkeoc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
 
