@@ -45,7 +45,7 @@ def main():
     streamwise_periodic_cylinder.cfg_dir   = "incomp_navierstokes/streamwise_periodic/half_cylinder_2D"
     streamwise_periodic_cylinder.cfg_file  = "half_cylinder_2D.cfg"
     streamwise_periodic_cylinder.test_iter = 30
-    streamwise_periodic_cylinder.test_vals = [30, -7.841567, -6.794739, -6.997455] #last 4 lines
+    streamwise_periodic_cylinder.test_vals = [30, -7.818388, -6.797497, -6.968131] #last 4 lines
     streamwise_periodic_cylinder.su2_exec  = "parallel_computation.py -f"
     streamwise_periodic_cylinder.timeout   = 1600
     streamwise_periodic_cylinder.tol       = 0.00001
@@ -67,7 +67,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.669154, 1.393699, -0.709036, 208.023676] #last 4 lines
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.667133, 1.395801, -0.709306, 208.023676] #last 4 lines
     sp_pinArray_2d_dp_hf_tp.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_2d_dp_hf_tp.timeout   = 1600
     sp_pinArray_2d_dp_hf_tp.tol       = 0.00001
@@ -78,7 +78,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pinArray_2d"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.668313, 1.396042, -0.709802, 208.677970] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals = [-4.666406, 1.398210, -0.710070, 208.677550] #last 4 lines
     sp_pinArray_2d_mf_hf.su2_exec  = "parallel_computation.py -f"
     sp_pinArray_2d_mf_hf.timeout   = 1600
     sp_pinArray_2d_mf_hf.tol       = 0.00001
@@ -89,7 +89,7 @@ def main():
     sp_pinArray_cht_2d_mf_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_mf_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_mf_hf.test_iter = 100
-    sp_pinArray_cht_2d_mf_hf.test_vals = [0.251797, -0.749091, -1.044246, -0.754061, 208.023676, 3.5440e+02] #last 7 lines
+    sp_pinArray_cht_2d_mf_hf.test_vals = [0.249545, -0.751311, -1.039004, -0.753314, 208.023676, 354.460000] #last 7 lines
     sp_pinArray_cht_2d_mf_hf.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_cht_2d_mf_hf.timeout   = 1600
     sp_pinArray_cht_2d_mf_hf.tol       = 0.00001
@@ -101,7 +101,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.462680, -0.008477, 214.707868, 4.2935e+02, 3.6831e+02] #last 7 lines
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.511984, -3.063453, -0.462699, -0.008477, 214.707868, 429.350000, 368.310000] #last 7 lines
     sp_pinArray_3d_cht_mf_hf_tp.su2_exec  = "mpirun -n 2 SU2_CFD"
     sp_pinArray_3d_cht_mf_hf_tp.timeout   = 1600
     sp_pinArray_3d_cht_mf_hf_tp.tol       = 0.00001
@@ -117,7 +117,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.742760, -4.002109, -3.800011, -4.002109] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.743093, -4.001999, -3.800034, -4.001999] #last 4 lines
     da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
