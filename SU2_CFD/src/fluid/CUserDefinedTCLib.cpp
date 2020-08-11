@@ -1306,7 +1306,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
-  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tvemin, Tvemax, Tmin, Tmax;
+  su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tmin, Tmax;
   bool Bconvg;
   unsigned short iIter, maxBIter;
 
@@ -1326,9 +1326,8 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
   /*--- Set temperature clipping values ---*/
-  Tmin   = 50.0; Tmax   = 8E4;
-  Tvemin = Tve_o = 50.0;
-  Tvemax = Tve2 = 8E4;
+  Tmin  = 50.0; Tmax = 8E4;
+  Tve_o = 50.0; Tve2 = 8E4;
 
   /* Determine if the temperature lies within the acceptable range */
   if      (T < Tmin) T = Tmin;
