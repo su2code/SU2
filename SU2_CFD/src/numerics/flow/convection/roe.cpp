@@ -385,11 +385,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
       for (kVar = 0; kVar < nVar; kVar++) {
-        su2double LambdaK = (iVar == 0) ? max(Lambda[kVar], MaxLambda) : Lambda[kVar];          
-
-  /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    Lambda[iVar] = max(fabs(Lambda[iVar]), MaxLambda);
+        su2double LambdaK = (iVar == 0) ? max(Lambda[kVar], MaxLambda) : Lambda[kVar];
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*LambdaK*invP_Tensor[kVar][jVar];
       }
 
