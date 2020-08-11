@@ -1,6 +1,6 @@
 /*!
- * \file fem_standard_element.cpp
- * \brief Functions for the FEM standard elements.
+ * \file CFEMStandardVolumeQuadGrid.cpp
+ * \brief Functions for the class CFEMStandardVolumeQuadGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,13 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/fem_standard_element.hpp"
+#include "../../include/fem/CFEMStandardVolumeQuadGrid.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*           Private member functions of CFEMStandardElement.                       */
+/*          Public member functions of CFEMStandardVolumeQuadGrid.                  */
 /*----------------------------------------------------------------------------------*/
 
-unsigned short CFEMStandardElement::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
+CFEMStandardVolumeQuadGrid::CFEMStandardVolumeQuadGrid(const unsigned short val_nPoly,
+                                                       const unsigned short val_orderExact) {
 
-  return 0;
+  /*--- Store the command line arguments. ---*/
+  VTK_Type   = QUADRILATERAL;
+  nPoly      = val_nPoly;
+  orderExact = val_orderExact;
 }

@@ -110,6 +110,7 @@ inline void omp_destroy_lock(omp_lock_t*){}
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
 #define SU2_OMP_MASTER SU2_OMP(master)
+#define SU2_OMP_SINGLE SU2_OMP(single)
 #define SU2_OMP_ATOMIC SU2_OMP(atomic)
 #define SU2_OMP_BARRIER SU2_OMP(barrier)
 #define SU2_OMP_CRITICAL SU2_OMP(critical)

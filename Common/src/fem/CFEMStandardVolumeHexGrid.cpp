@@ -1,6 +1,6 @@
 /*!
- * \file fem_standard_element.cpp
- * \brief Functions for the FEM standard elements.
+ * \file CFEMStandardVolumeHexGrid.cpp
+ * \brief Functions for the class CFEMStandardVolumeHexGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,13 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/fem_standard_element.hpp"
+#include "../../include/fem/CFEMStandardVolumeHexGrid.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*           Private member functions of CFEMStandardElement.                       */
+/*          Public member functions of CFEMStandardVolumeHexGrid.                   */
 /*----------------------------------------------------------------------------------*/
 
-unsigned short CFEMStandardElement::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
+CFEMStandardVolumeHexGrid::CFEMStandardVolumeHexGrid(const unsigned short val_nPoly,
+                                                     const unsigned short val_orderExact) {
 
-  return 0;
+  /*--- Store the command line arguments. ---*/
+  VTK_Type   = HEXAHEDRON;
+  nPoly      = val_nPoly;
+  orderExact = val_orderExact;
 }

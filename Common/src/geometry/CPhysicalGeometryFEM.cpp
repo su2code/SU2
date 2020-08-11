@@ -26,11 +26,17 @@
  */
 
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/classes_multiple_integers.hpp"
 #include "../../include/toolboxes/fem/CMatchingFace.hpp"
-//#include "../../include/fem/fem_standard_element.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../../include/geometry/CPhysicalGeometry.hpp"
+#include "../../include/fem/CFEMStandardVolumeTriGrid.hpp"
+#include "../../include/fem/CFEMStandardVolumeQuadGrid.hpp"
+#include "../../include/fem/CFEMStandardVolumeTetGrid.hpp"
+#include "../../include/fem/CFEMStandardVolumePyraGrid.hpp"
+#include "../../include/fem/CFEMStandardVolumePrismGrid.hpp"
+#include "../../include/fem/CFEMStandardVolumeHexGrid.hpp"
 
 void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReader *mesh) {
 
@@ -196,13 +202,123 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
   const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
 #endif
 
+  /*--- Define the vectors to store the standard elements for the volume elements
+        and surface faces. These standard elements will be created based on the
+        polynomial degree of the grid. ---*/
+  vector<CFEMStandardElementBase *> standardVolumeElements, standardFaceElements;
+
+  /*--- Vector of two unsigned shorts per entity to determine the different
+        element types for the grid. ---*/
+  vector<CUnsignedShort2T> elemTypesGrid(nElem);
+
   /*---- Start of the OpenMP parallel region, if supported. ---*/
   SU2_OMP_PARALLEL
   {
-    /*--- Define the vectors to store the standard elements for the volume elements
-          and surface faces. These standard elements will be created based on the
-          polynomial degree of the grid.      ---*/
-    //vector<CFEMStandardElement> standardVolumeElements, standardFaceElements;
+    /*--- Loop over the local volume elements to determine the different
+          element types for the grid. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for(unsigned long i=0; i<nElem; ++i) {
+
+      /*--- Retrieve the element type and polynomial degree of the grid
+            of this element and store it in elemTypesGrid. ---*/
+      elemTypesGrid[i].short0 = elem[i]->GetVTK_Type();
+      elemTypesGrid[i].short1 = elem[i]->GetNPolyGrid();
+    }
+
+    /*--- Sort elemTypesGrid in increasing order and remove the multiple entities.
+          Allocate the memory for standardVolumeElements afterwards. ---*/
+    SU2_OMP_SINGLE
+    {
+      sort(elemTypesGrid.begin(), elemTypesGrid.end());
+      vector<CUnsignedShort2T>::iterator lastEntry = unique(elemTypesGrid.begin(), elemTypesGrid.end());
+      elemTypesGrid.erase(lastEntry, elemTypesGrid.end());
+      standardVolumeElements.resize(elemTypesGrid.size(), nullptr);
+    }
+
+    /*--- Loop over the standard volume elements and allocate the appropriate objects. ---*/
+    SU2_OMP_FOR_STAT(1)
+    for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
+
+      /*--- Abbreviate the element type and polynomial degree for readability
+            and determine the polynomial order that must be integrated
+            exactly. The latter value is used to determine whether or not
+            the Jacobian is constant and therefore the value for non-constant
+            Jacobians is used to be sure that the volume is computed correctly. ---*/
+      const unsigned short VTK_Type   = elemTypesGrid[i].short0;
+      const unsigned short nPoly      = elemTypesGrid[i].short1;
+      const unsigned short orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Curved());
+
+      /*--- Determine the element type and allocate the appropriate object. ---*/
+      switch( VTK_Type ) {
+        case TRIANGLE:
+          standardVolumeElements[i] = new CFEMStandardVolumeTriGrid(nPoly, orderExact);
+          break;
+        case QUADRILATERAL:
+          standardVolumeElements[i] = new CFEMStandardVolumeQuadGrid(nPoly, orderExact);
+          break;
+        case TETRAHEDRON:
+          standardVolumeElements[i] = new CFEMStandardVolumeTetGrid(nPoly, orderExact);
+          break;
+        case PYRAMID:
+          standardVolumeElements[i] = new CFEMStandardVolumePyraGrid(nPoly, orderExact);
+          break;
+        case PRISM:
+          standardVolumeElements[i] = new CFEMStandardVolumePrismGrid(nPoly, orderExact);
+          break;
+        case HEXAHEDRON:
+          standardVolumeElements[i] = new CFEMStandardVolumeHexGrid(nPoly, orderExact);
+          break;
+        default:  /*--- To avoid a compiler warning. ---*/
+          SU2_MPI::Error(string("Unknown volume element. This should not happen"),
+                         CURRENT_FUNCTION);
+      }
+    }
+
+    /*--- Determine the number of different standard element for the faces
+          and allocate the memory for the pointers. ---*/
+    SU2_OMP_SINGLE
+    {
+      /*--- Reset elemTypesGrid. ---*/
+      elemTypesGrid.clear();
+
+      /*--- Loop over the standard volume elements. ---*/
+      for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
+
+        /*--- Loop over the number of different standard faces for this and
+              store the VTK type and polynomial degree in elemTypesGrid. ---*/
+        for(unsigned short j=0; j<standardVolumeElements[i]->GetnFaceTypes(); ++j)
+          elemTypesGrid.push_back(CUnsignedShort2T(standardVolumeElements[i]->GetVTK_TypeFace(j),
+                                                   standardVolumeElements[i]->GetPolyDegree()));
+      }
+
+      /*--- Sort elemTypesGrid in increasing order and remove the multiple entries.
+            Allocate the memory for standardFaceElements afterwards.  ---*/
+      sort(elemTypesGrid.begin(), elemTypesGrid.end());
+      vector<CUnsignedShort2T>::iterator lastEntry = unique(elemTypesGrid.begin(), elemTypesGrid.end());
+      elemTypesGrid.erase(lastEntry, elemTypesGrid.end());
+
+      standardFaceElements.resize(elemTypesGrid.size(), nullptr);
+    }
+
+    /*--- Loop over the standard face elements and allocate the appropriate objects. ---*/
+    SU2_OMP_FOR_STAT(1)
+    for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
+
+
+    }
+
+
+
+    SU2_OMP_CRITICAL
+    cout << "My thread ID: " << omp_get_thread_num() << ", Number of element types: " << elemTypesGrid.size() << endl;
+
+    SU2_OMP_BARRIER
+
+    SU2_OMP_SINGLE
+    {
+      for(unsigned long i=0; i<elemTypesGrid.size(); ++i)
+        cout << "Element " << i << ": " << elemTypesGrid[i].short0 << " " << elemTypesGrid[i].short1 << endl;
+    }
 
     /*--- Loop over the local volume elements. ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -217,9 +333,6 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
             exist yet, it will be created. Note that it suffices to indicate that
             the Jacobians are constant, because the only task here is to determine
             whether or not the Jacobians are constant. ---*/
-      unsigned short VTK_Type  = elem[i]->GetVTK_Type();
-      unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
-
   /*  unsigned long ii;
       for(ii=0; ii<standardVolumeElements.size(); ++ii) {
         if( standardVolumeElements[ii].SameStandardElement(VTK_Type, nPolyGrid, true) )
@@ -232,12 +345,13 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
     }
 
-    SU2_OMP_CRITICAL
-    cout << "My thread ID: " << omp_get_thread_num() << ", total number of threads: " << omp_get_num_threads() << endl;
-
 
 
   } /*--- end SU2_OMP_PARALLEL ---*/
+
+  /*--- Release the memory of the standard elements again. ---*/
+  for(unsigned long i=0; i<standardVolumeElements.size(); ++i)
+    delete standardVolumeElements[i];
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
 }

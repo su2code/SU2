@@ -32,50 +32,7 @@
 #include <vector>
 #include <cstdlib>
 
-#include "../CConfig.hpp"
-
-using namespace std;
-
-/*!
- * \class CFEMStandardElementBase
- * \brief Base class for a FEM standard element.
- * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
- */
-class CFEMStandardElementBase {
-protected:
-  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
-  unsigned short orderExact;   /*!< \brief Polynomial order that must be integrated exactly by the integration rule. */
-  unsigned short nIntegration; /*!< \brief Number of points used in the numerical integration. */
-
-public:
-  /*!
-  * \brief Constructor. Nothing to be done.
-  */
-  CFEMStandardElementBase() = default;
-
-  /*!
-  * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
-  */
-  virtual ~CFEMStandardElementBase() = default;
-
-public:
-  /*!
-  * \brief Function, which makes available the type of the element.
-  * \return  The type of the element using the VTK convention.
-  */
-  inline unsigned short GetVTK_Type(void) const {return VTK_Type;}
-
-  /*!
-  * \brief Static function, which makes available the number of DOFs for an element
-           corresponding to the arguments.
-  * \param[in] VTK_Type   - Type of the element using the VTK convention.
-  * \param[in] nPoly      - Polynomial degree of the element.
-  * \return The number of DOFs
-  */
-  static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
-                                       unsigned short nPoly);
-};
+#include "CFEMStandardElementBase.hpp"
 
 /*!
  * \class CFEMStandardElement

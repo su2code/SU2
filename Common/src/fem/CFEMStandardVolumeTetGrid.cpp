@@ -1,6 +1,6 @@
 /*!
- * \file fem_standard_element.cpp
- * \brief Functions for the FEM standard elements.
+ * \file CFEMStandardVolumeTetGrid.cpp
+ * \brief Functions for the class CFEMStandardVolumeTetGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,13 +25,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/fem_standard_element.hpp"
+#include "../../include/fem/CFEMStandardVolumeTetGrid.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*           Private member functions of CFEMStandardElement.                       */
+/*          Public member functions of CFEMStandardVolumeTetGrid.                   */
 /*----------------------------------------------------------------------------------*/
 
-unsigned short CFEMStandardElement::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
+CFEMStandardVolumeTetGrid::CFEMStandardVolumeTetGrid(const unsigned short val_nPoly,
+                                                     const unsigned short val_orderExact) {
 
-  return 0;
+  /*--- Store the command line arguments. ---*/
+  VTK_Type   = TETRAHEDRON;
+  nPoly      = val_nPoly;
+  orderExact = val_orderExact;
 }

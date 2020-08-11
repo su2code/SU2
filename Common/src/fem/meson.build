@@ -1,4 +1,11 @@
-common_src += files(['fem_geometry_structure.cpp',
+common_src += files(['CFEMStandardElementBase.cpp',
+                     'CFEMStandardVolumeHexGrid.cpp',
+                     'CFEMStandardVolumePrismGrid.cpp',
+                     'CFEMStandardVolumePyraGrid.cpp',
+                     'CFEMStandardVolumeQuadGrid.cpp',
+                     'CFEMStandardVolumeTetGrid.cpp',
+                     'CFEMStandardVolumeTriGrid.cpp',
+                     'fem_geometry_structure.cpp',
                      'fem_standard_element.cpp',
                      'fem_wall_distance.cpp',
                      'fem_gauss_jacobi_quadrature.cpp'])

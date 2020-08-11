@@ -28,7 +28,7 @@
 
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
-#include "../../../include/fem/fem_standard_element.hpp"
+#include "../../../include/fem/CFEMStandardElementBase.hpp"
 
 CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig        *val_config,
                                                unsigned short val_iZone,
