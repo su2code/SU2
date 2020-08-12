@@ -110,15 +110,10 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   FinishResidualCalc(config);
 
-  // if (muscl) {
-  //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
-  //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
-  // }
-
-  // for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-  //   Jacobian_i[iVar][iVar] += fabs(q_ij);
-  //   Jacobian_j[iVar][iVar] -= fabs(q_ij);
-  // }
+  if (muscl) {
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+  }
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();

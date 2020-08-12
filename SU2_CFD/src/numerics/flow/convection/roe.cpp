@@ -316,21 +316,16 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   if (implicit) {
     GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, kappa, Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, kappa, Jacobian_j);
-
-    // if (muscl) {
-    //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i);
-    //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j);
-    // }
   }
 
   /*--- Finalize in children class ---*/
 
   FinalizeResidual(Flux, Jacobian_i, Jacobian_j, config);
 
-  // if (implicit && muscl) {
-  //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i);
-  //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j);
-  // }
+  if (implicit && muscl) {
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j);
+  }
 
   /*--- Correct for grid motion ---*/
 
