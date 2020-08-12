@@ -526,16 +526,15 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       const su2double *Normal = geometry->edge[iEdge]->GetNormal();
       const su2double r_j  = flowNodes->GetDensity(jPoint);
       const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
+      const su2double Weight = sign*(1. - F1_i)*sigma_om2*r_i/(r_j*om_i);
 
       Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
 
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
         const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
         const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-        Jacobian_i[1][0] += sign*(1. - F1_i)*sigma_om2*r_i/(r_j*om_i)
-                          * gradom*Normal[iDim];
-        Jacobian_i[1][1] += sign*(1. - F1_i)*sigma_om2*r_i/(r_j*om_i)
-                          * gradk*Normal[iDim];
+        Jacobian_i[1][0] += Weight*gradom*Normal[iDim];
+        Jacobian_i[1][1] += Weight*gradk*Normal[iDim];
       }// iDim
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
     }// iNeigh
@@ -547,14 +546,13 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double Weight = -(1. - F1_i)*sigma_om2/om_i;
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
             const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
 
-            Jacobian_i[1][0] += -(1. - F1_i)*sigma_om2/om_i
-                              * gradom*Normal[iDim];
-            Jacobian_i[1][1] += -(1. - F1_i)*sigma_om2/om_i
-                              * gradk*Normal[iDim];
+            Jacobian_i[1][0] += Weight*gradom*Normal[iDim];
+            Jacobian_i[1][1] += Weight*gradk*Normal[iDim];
           }// iDim
         }// iVertex
       }// iMarker
