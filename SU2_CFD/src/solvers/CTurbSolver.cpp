@@ -464,7 +464,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
     /*--- Next we compute contributions of second neighbors to the Jacobian.
           To reduce extra communication overhead, we only consider nodes on
-          the current rank. Note that Jacobian_ic is already weighted by 0.25 ---*/
+          the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
 
     for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
