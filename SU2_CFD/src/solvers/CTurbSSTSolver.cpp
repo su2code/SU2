@@ -300,7 +300,12 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
   
   /*--- Compute gradients ---*/
 
-  Postprocessing(geometry, solver, config, iMesh);
+  // Postprocessing(geometry, solver, config, iMesh);
+
+  SetPrimitive_Variables(solver);
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
     
   if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
@@ -316,6 +321,11 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh) {
+
+  /*--- Clip omega ---*/
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) 
+    nodes->SetSolution(iPoint,1,max(nodes->GetSolution(iPoint,1), eps));
   
   SetPrimitive_Variables(solver);
   
@@ -343,7 +353,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
 
     nodes->SetPrimitive(iPoint,0,k);
     nodes->SetPrimitive(iPoint,1,om);
-    // nodes->SetSolution(iPoint,1,r*om);
+    nodes->SetSolution(iPoint,1,r*om);
   }
 
 }
@@ -371,15 +381,15 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
         
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
-    const su2double F1 = nodes->GetF1blending(iPoint);
+    // const su2double F1 = nodes->GetF1blending(iPoint);
     const su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
 
-    const su2double alfa = F1*constants[8] + (1.0 - F1)*constants[9];
-    if (nodes->GetSolution(iPoint,1) < rho*alfa*flowNodes->GetStrainMag(iPoint)) {
-      nodes->SetSolution(iPoint,1,rho*alfa*flowNodes->GetStrainMag(iPoint));
-      nodes->SetPrimitive(iPoint,1,alfa*flowNodes->GetStrainMag(iPoint));
+    // const su2double alfa = F1*constants[8] + (1.0 - F1)*constants[9];
+    // if (nodes->GetSolution(iPoint,1) < rho*alfa*flowNodes->GetStrainMag(iPoint)) {
+    //   nodes->SetSolution(iPoint,1,rho*alfa*flowNodes->GetStrainMag(iPoint));
+    //   nodes->SetPrimitive(iPoint,1,alfa*flowNodes->GetStrainMag(iPoint));
     }
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
