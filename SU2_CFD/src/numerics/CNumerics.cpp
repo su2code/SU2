@@ -573,11 +573,10 @@ void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_
 void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2double *k,
                            const su2double *c, const su2double *n, su2double **p) {
 
-  su2double c2, alpha, beta, phi2, theta;
+  su2double c2, alpha, phi2, theta;
 
   c2    = pow(*c,2);
   alpha = (*r)/(sqrt(2.)*(*c));
-  beta  = 1./(sqrt(2.)*(*r)*(*c));
 
   if (nDim == 2) {
     phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]));
@@ -715,10 +714,9 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2d
 void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2double *k,
                                const su2double *c, const su2double *n, su2double **invp) {
 
-  su2double c2, alpha, beta, phi2, theta;
+  su2double c2, beta, phi2, theta;
 
   c2    = pow(*c,2);
-  alpha = (*r)/(sqrt(2.)*(*c));
   beta  = 1./(sqrt(2.)*(*r)*(*c));
 
   if (nDim == 2) {
