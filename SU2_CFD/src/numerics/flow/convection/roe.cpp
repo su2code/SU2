@@ -285,11 +285,11 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
-  // const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
+  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
 
   /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-  // for (iVar = 0; iVar < nVar; iVar++)
-  //   Lambda[iVar] = max(fabs(Lambda[iVar]), MaxLambda);
+  for (iVar = 0; iVar < nVar; iVar++)
+    Lambda[iVar] = max(fabs(Lambda[iVar]), MaxLambda);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
@@ -378,16 +378,12 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Standard Roe "dissipation" ---*/
 
-  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
-
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++) {
-        su2double LambdaK = (iVar == 0) ? max(Lambda[kVar], MaxLambda) : Lambda[kVar];
-        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*LambdaK*invP_Tensor[kVar][jVar];
-      }
+      for (kVar = 0; kVar < nVar; kVar++)
+        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       /*--- Update residual and Jacobians ---*/
       val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*Dissipation_ij;
