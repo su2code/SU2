@@ -376,6 +376,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
     const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
                                         Vorticity[1]*Vorticity[1] +
                                         Vorticity[2]*Vorticity[2]);
+    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
         
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
@@ -392,7 +393,8 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    const su2double zeta  = max(omega, VorticityMag*F2/a1);
+    // const su2double zeta  = max(omega, VorticityMag*F2/a1);
+    const su2double zeta  = max(omega, StrainMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
