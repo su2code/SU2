@@ -93,8 +93,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
 
   unsigned short iVar, jVar, kVar, iDim;
   su2double **tmp = new su2double*[nVar],
-            **MLim = new su2double*[nVar+1],
-            **MInv = new su2double*[nVar+1],
+            **MLim = new su2double*[nVar],
+            **MInv = new su2double*[nVar],
             *dLim  = new su2double[nDim+3];
   for(iVar = 0; iVar < nVar; iVar++) {
     tmp[iVar]   = new su2double[nVar];
@@ -234,12 +234,12 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   RoeDensity = R*Density_i;
   su2double sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1.);
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
-  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1);
-  RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1.);
+  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1.);
+  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
@@ -668,11 +668,11 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
   RoeDensity = R*Density_i;
   sq_vel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1.);
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
-  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1.);
+  RoeSoundSpeed = sqrt(fabs(Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel)));
   RoePressure = RoeDensity/Gamma*RoeSoundSpeed*RoeSoundSpeed;
 
   /*--- Compute ProjFlux_i ---*/
@@ -1103,11 +1103,11 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
   R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
   sq_vel = 0;  for (iDim = 0; iDim < nDim; iDim++) {
-    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1.);
     sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
 
-  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1.);
   delta_rho = Density_j - Density_i;
   delta_p = Pressure_j - Pressure_i;
   RoeKappa = 0.5*(Kappa_i + Kappa_j);
