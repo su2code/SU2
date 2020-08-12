@@ -390,7 +390,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
     // if (nodes->GetSolution(iPoint,1) < rho*alfa*flowNodes->GetStrainMag(iPoint)) {
     //   nodes->SetSolution(iPoint,1,rho*alfa*flowNodes->GetStrainMag(iPoint));
     //   nodes->SetPrimitive(iPoint,1,alfa*flowNodes->GetStrainMag(iPoint));
-    }
+    // }
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
