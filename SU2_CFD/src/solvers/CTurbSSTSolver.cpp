@@ -338,11 +338,12 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double r  = flowNodes->GetDensity(iPoint);
     const su2double k  = nodes->GetSolution(iPoint,0)/r;
-    const su2double om = max(nodes->GetSolution(iPoint,1),eps)/r;
+    // const su2double om = max(nodes->GetSolution(iPoint,1),eps)/r;
+    const su2double om = nodes->GetSolution(iPoint,1)/r;
 
     nodes->SetPrimitive(iPoint,0,k);
     nodes->SetPrimitive(iPoint,1,om);
-    nodes->SetSolution(iPoint,1,r*om);
+    // nodes->SetSolution(iPoint,1,r*om);
   }
 
 }
@@ -370,9 +371,16 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
         
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
+    const su2double F1 = nodes->GetF1blending(iPoint);
     const su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
+
+    const su2double alfa = F1*constants[8] + (1.0 - F1)*constants[9];
+    if (nodes->GetSolution(iPoint,1) < rho*alfa*flowNodes->GetStrainMag(iPoint)) {
+      nodes->SetSolution(iPoint,1,rho*alfa*flowNodes->GetStrainMag(iPoint));
+      nodes->SetPrimitive(iPoint,1,alfa*flowNodes->GetStrainMag(iPoint));
+    }
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
