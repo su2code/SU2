@@ -114,15 +114,15 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   FinishResidualCalc(config);
 
-  // if (muscl) {
-  //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
-  //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
-  // }
-
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar][iVar] += fabs(q_ij);
-    Jacobian_j[iVar][iVar] -= fabs(q_ij);
+  if (muscl) {
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
   }
+
+  // for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //   Jacobian_i[iVar][iVar] += fabs(q_ij);
+  //   Jacobian_j[iVar][iVar] -= fabs(q_ij);
+  // }
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
@@ -166,18 +166,18 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0]-fabs(q_ij)*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
   Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1]-fabs(q_ij)*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
 
-  // Jacobian_i[0][0] = a0+fabs(q_ij);  Jacobian_i[0][1] = 0.0;
-  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0+fabs(q_ij);
+  Jacobian_i[0][0] = a0+fabs(q_ij);  Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0+fabs(q_ij);
 
-  // Jacobian_j[0][0] = a1-fabs(q_ij);  Jacobian_j[0][1] = 0.0;
-  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1-fabs(q_ij);
+  Jacobian_j[0][0] = a1-fabs(q_ij);  Jacobian_j[0][1] = 0.0;
+  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1-fabs(q_ij);
 
   // Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
   // Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
 
-  Jacobian_i[0][0] = a0;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0;
+  // Jacobian_i[0][0] = a0;  Jacobian_i[0][1] = 0.0;
+  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0;
 
-  Jacobian_j[0][0] = a1;  Jacobian_j[0][1] = 0.0;
-  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1;
+  // Jacobian_j[0][0] = a1;  Jacobian_j[0][1] = 0.0;
+  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1;
 }
