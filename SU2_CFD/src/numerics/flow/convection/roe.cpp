@@ -291,9 +291,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = max(fabs(Lambda[iVar]), MaxLambda);
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    Lambda[iVar] = fabs(Lambda[iVar]);
-
   /*--- Reconstruct conservative variables ---*/
 
   Conservatives_i[0] = Density_i;
