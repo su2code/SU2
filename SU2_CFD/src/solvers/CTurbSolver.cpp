@@ -751,36 +751,35 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
     su2double localUnderRelaxation = 1.0;
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 
-        /* We impose a limit on the maximum percentage that the
-         turbulence variables can change over a nonlinear iteration. */
+      /* We impose a limit on the maximum percentage that the
+       turbulence variables can change over a nonlinear iteration. */
 
-        const unsigned long index = iPoint * nVar + iVar;
-        if (sa_model) {
-          if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
-            localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
-        }
-        else if (sst_model) {
-          if (LinSysSol[index] < allowableDecrease*fabs(nodes->GetSolution(iPoint, iVar)))
-            localUnderRelaxation = min(fabs(allowableDecrease*nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
-        }
-
+      const unsigned long index = iPoint * nVar + iVar;
+      if (sa_model) {
+        if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
+          localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
+      }
+      else if (sst_model) {
+        if (LinSysSol[index] < allowableDecrease*fabs(nodes->GetSolution(iPoint, iVar)))
+          localUnderRelaxation = min(fabs(allowableDecrease*nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
       }
 
-      /* Choose the minimum factor between mean flow and turbulence. */
-
-      // localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
-
-      /* Threshold the relaxation factor in the event that there is
-       a very small value. This helps avoid catastrophic crashes due
-       to non-realizable states by canceling the update. */
-
-      if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
-
-      /* Store the under-relaxation factor for this point. */
-
-      nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
     }
+
+    /* Choose the minimum factor between mean flow and turbulence. */
+
+    // localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+
   }
 
 }
