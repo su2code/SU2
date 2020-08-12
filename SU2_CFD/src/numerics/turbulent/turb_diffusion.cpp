@@ -135,7 +135,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
   proj_vector_ij *= (correct_gradient) ? su2double(1.0/dist_ij_2) 
-                                       : su2double(1.0/Volume_i);
+                                       : su2double(-1.0/Volume_i);
 
   /*--- Mean gradient approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
