@@ -102,15 +102,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      // q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
       q_ij += 0.5*(R*V_j[iDim+1]+V_i[iDim+1])/(R+1.)*Normal[iDim];
       a0   += 0.5*V_i[iDim+1]*Normal[iDim];
       a1   += 0.5*V_j[iDim+1]*Normal[iDim];
     }
   }
-
-  // a0 = 0.5*(q_ij+fabs(q_ij));
-  // a1 = 0.5*(q_ij-fabs(q_ij));
 
   FinishResidualCalc(config);
 
@@ -171,13 +167,4 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Jacobian_j[0][0] = a1-fabs(q_ij);  Jacobian_j[0][1] = 0.0;
   Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1-fabs(q_ij);
-
-  // Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0];
-  // Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
-
-  // Jacobian_i[0][0] = a0;  Jacobian_i[0][1] = 0.0;
-  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0;
-
-  // Jacobian_j[0][0] = a1;  Jacobian_j[0][1] = 0.0;
-  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1;
 }
