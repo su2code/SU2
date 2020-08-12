@@ -953,15 +953,14 @@ public:
   /*!
    * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
    *        the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_soundspeed - Value of the sound speed.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_p_tensor - Pointer to the P matrix.
+   * \param[in] r - Value of the density.
+   * \param[in] v - Value of the velocity.
+   * \param[in] c - Value of the sound speed.
+   * \param[in] n - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] p - Pointer to the P matrix.
    */
-  void GetPMatrix(su2double *val_density, su2double *val_velocity, su2double *val_tke,
-                  su2double *val_soundspeed, su2double *val_normal,
-                  su2double **val_p_tensor);
+  void GetPMatrix(const su2double *r, const su2double *v, const su2double *k,
+                  const su2double *c, const su2double *n, su2double **p);
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1067,16 +1066,15 @@ public:
 
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_soundspeed - Value of the sound speed.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   *        the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] r - Value of the density.
+   * \param[in] v - Value of the velocity.
+   * \param[in] c - Value of the sound speed.
+   * \param[in] n - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] p - Pointer to the inverse of the P matrix.
    */
-  void GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
-                      su2double *val_soundspeed, su2double *val_normal,
-                      su2double **val_invp_tensor);
+  void GetPMatrix_inv(const su2double *r, const su2double *v, const su2double *k,
+                      const su2double *c, const su2double *n, su2double **p);
 
   /*!
    * \brief Compute viscous residual and jacobian.

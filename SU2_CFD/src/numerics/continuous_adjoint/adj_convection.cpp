@@ -707,7 +707,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (su2double *val_residual_i, su2double *val
 
     /*--- Compute P, inverse P, and store eigenvalues ---*/
 
-    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
     GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
     /*--- Flow eigenvalues ---*/

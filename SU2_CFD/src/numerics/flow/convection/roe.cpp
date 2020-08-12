@@ -364,7 +364,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   unsigned short iVar, jVar, kVar;
 
   /*--- Compute inverse P tensor ---*/
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -454,7 +454,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -527,7 +527,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {

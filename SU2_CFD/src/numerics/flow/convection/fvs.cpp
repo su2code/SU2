@@ -195,7 +195,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   /*--- Compute projected P, invP, and Lambda ---*/
 
   GetPMatrix(&Vst_i[nDim+2], Velst_i, &RoeTke, &Vst_i[nDim+4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(&Vst_i[nDim+2], Velst_i, &Vst_i[nDim+4], UnitNormal, invP_Tensor);
+  GetPMatrix_inv(&Vst_i[nDim+2], Velst_i, &RoeTke, &Vst_i[nDim+4], UnitNormal, invP_Tensor);
 
   /*--- Projected flux (f+) at i ---*/
 
@@ -224,7 +224,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   /*--- Compute projected P, invP, and Lambda ---*/
 
   GetPMatrix(&Vst_j[nDim+2], Velst_j, &RoeTke, &Vst_j[nDim+4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(&Vst_j[nDim+2], Velst_j, &Vst_j[nDim+4], UnitNormal, invP_Tensor);
+  GetPMatrix_inv(&Vst_j[nDim+2], Velst_j, &RoeTke, &Vst_j[nDim+4], UnitNormal, invP_Tensor);
 
   /*--- Projected flux (f-) ---*/
 
