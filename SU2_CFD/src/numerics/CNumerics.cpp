@@ -577,8 +577,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   su2double c2, alpha, beta, phi2, theta;
 
   c2    = pow(*c,2);
-  alpha = (*r)/(sqrt(2.)*c);
-  beta  = 1./(sqrt(2.)*(*r)*c);
+  alpha = (*r)/(sqrt(2.)*(*c));
+  beta  = 1./(sqrt(2.)*(*r)*(*c));
 
   if (nDim == 2) {
     phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1])+(*k));
@@ -591,18 +591,18 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
 
     p[1][0] = v[0];
     p[1][1] = (*r)*n[1];
-    p[1][2] = alpha*(v[0]+c*n[0]);
-    p[1][3] = alpha*(v[0]-c*n[0]);
+    p[1][2] = alpha*(v[0]+(*c)*n[0]);
+    p[1][3] = alpha*(v[0]-(*c)*n[0]);
 
     p[2][0] = v[1];
     p[2][1] = -(*r)*n[0];
-    p[2][2] = alpha*(v[1]+c*n[1]);
-    p[2][3] = alpha*(v[1]+c*n[1]);
+    p[2][2] = alpha*(v[1]+(*c)*n[1]);
+    p[2][3] = alpha*(v[1]+(*c)*n[1]);
 
     p[3][0] = phi2/Gamma_Minus_One;
     p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[3][2] = alpha*((phi2+c2)/Gamma_Minus_One+c*theta);
-    p[3][3] = alpha*((phi2+c2)/Gamma_Minus_One-c*theta);
+    p[3][2] = alpha*((phi2+c2)/Gamma_Minus_One+(*c)*theta);
+    p[3][3] = alpha*((phi2+c2)/Gamma_Minus_One-(*c)*theta);
   }
   else {
     phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])+(*k));
@@ -629,8 +629,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[3][0] = v[2]*n[0]-(*r)*n[1];
     p[3][1] = v[2]*n[2]+(*r)*n[0];
     p[3][2] = v[2]*n[2];
-    p[3][3] = alpha*(v[2]+c*n[2]);
-    p[2][4] = alpha*(v[2]-c*n[2]);
+    p[3][3] = alpha*(v[2]+(*c)*n[2]);
+    p[2][4] = alpha*(v[2]-(*c)*n[2]);
 
     p[4][0] = phi2/Gamma_Minus_One*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
     p[4][1] = phi2/Gamma_Minus_One*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
@@ -720,8 +720,8 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
   su2double c2, alpha, beta, phi2, theta;
 
   c2    = pow(*c,2);
-  alpha = (*r)/(sqrt(2.)*c);
-  beta  = 1./(sqrt(2.)*(*r)*c);
+  alpha = (*r)/(sqrt(2.)*(*c));
+  beta  = 1./(sqrt(2.)*(*r)*(*c));
 
   if (nDim == 2) {
     phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1])+(*k));
