@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@ CBaseMPIWrapper::Win CBaseMPIWrapper::winMinRankError;
 
 #ifdef HAVE_MPI
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
-//AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
+MediTypes* mediTypes;
 #include <medi/medi.cpp>
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 

@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../include/CConfig.hpp"
 #include "../include/blas_structure.hpp"
 #include <cstring>
 
@@ -46,7 +47,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*,
 /* Constructor. Initialize the const member variables, if needed. */
 CBlasStructure::CBlasStructure(void)
 #if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-  : mc (256), kc (128), nc (128) 
+  : mc (256), kc (128), nc (128)
 #endif
 {}
 
@@ -56,7 +57,7 @@ CBlasStructure::~CBlasStructure(void) {}
 /* Dense matrix multiplication, gemm functionality. */
 void CBlasStructure::gemm(const int M,        const int N,        const int K,
                           const su2double *A, const su2double *B, su2double *C,
-                          CConfig *config) {
+                          const CConfig *config) {
 
   /* Initialize the variable for the timing, if profiling is active. */
 #ifdef PROFILE
@@ -124,7 +125,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const su2double *A,
 
   /* Native implementation of the matix vector product.
      Initialize the elements of y to zero. */
-  memset(y, 0, M*sizeof(su2double));  
+  memset(y, 0, M*sizeof(su2double));
 
   /* Carry out the matrix vector product. */
   for(int k=0; k<M; ++k) {

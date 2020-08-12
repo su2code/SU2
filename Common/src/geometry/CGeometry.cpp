@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,8 +32,8 @@
 /*--- Cross product ---*/
 
 #define CROSS(dest,v1,v2) \
-(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];	\
-(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];	\
+(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];  \
+(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];  \
 (dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
 
 /*--- Cross product ---*/
@@ -43,231 +43,123 @@
 /*--- a = b - c ---*/
 
 #define SUB(dest,v1,v2) \
-(dest)[0] = (v1)[0] - (v2)[0];	\
-(dest)[1] = (v1)[1] - (v2)[1];	\
+(dest)[0] = (v1)[0] - (v2)[0];  \
+(dest)[1] = (v1)[1] - (v2)[1];  \
 (dest)[2] = (v1)[2] - (v2)[2];
 
-CGeometry::CGeometry(void) {
-
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();
-
-  nEdge      = 0;
-  nPoint     = 0;
-  nPointNode = 0;
-  nElem      = 0;
-  Global_nPointDomain = 0;
-  Global_nPoint = 0;
-  nPointDomain = 0;
-
-  nElem_Bound         = NULL;
-  Tag_to_Marker       = NULL;
-  elem                = NULL;
-  face                = NULL;
-  bound               = NULL;
-  node                = NULL;
-  edge                = NULL;
-  vertex              = NULL;
-  nVertex             = NULL;
-  newBound            = NULL;
-  nNewElem_Bound      = NULL;
-  Marker_All_SendRecv = NULL;
-
-  /*--- Arrays for defining the linear partitioning ---*/
-
-  beg_node = NULL;
-  end_node = NULL;
-
-  nPointLinear     = NULL;
-  nPointCumulative = NULL;
-
-  /*--- Containers for customized boundary conditions ---*/
-
-  CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
-  CustomBoundaryTemperature = NULL;   //Customized temperature wall
-
-  /*--- MPI point-to-point data structures ---*/
-
-  nP2PSend = 0;
-  nP2PRecv = 0;
-
-  countPerPoint = 0;
-
-  bufD_P2PSend = NULL;
-  bufD_P2PRecv = NULL;
-
-  bufS_P2PSend = NULL;
-  bufS_P2PRecv = NULL;
-
-  req_P2PSend = NULL;
-  req_P2PRecv = NULL;
-
-  nPoint_P2PSend = NULL;
-  nPoint_P2PRecv = NULL;
-
-  Neighbors_P2PSend = NULL;
-  Neighbors_P2PRecv = NULL;
-
-  Local_Point_P2PSend = NULL;
-  Local_Point_P2PRecv = NULL;
-
-  /*--- MPI periodic data structures ---*/
-
-  nPeriodicSend = 0;
-  nPeriodicRecv = 0;
-
-  countPerPeriodicPoint = 0;
-
-  bufD_PeriodicSend = NULL;
-  bufD_PeriodicRecv = NULL;
-
-  bufS_PeriodicSend = NULL;
-  bufS_PeriodicRecv = NULL;
-
-  req_PeriodicSend = NULL;
-  req_PeriodicRecv = NULL;
-
-  nPoint_PeriodicSend = NULL;
-  nPoint_PeriodicRecv = NULL;
-
-  Neighbors_PeriodicSend = NULL;
-  Neighbors_PeriodicRecv = NULL;
-
-  Local_Point_PeriodicSend = NULL;
-  Local_Point_PeriodicRecv = NULL;
-
-  Local_Marker_PeriodicSend = NULL;
-  Local_Marker_PeriodicRecv = NULL;
+CGeometry::CGeometry(void) :
+  size(SU2_MPI::GetSize()),
+  rank(SU2_MPI::GetRank()) {
 
 }
 
 CGeometry::~CGeometry(void) {
 
-  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint, iVertex;
+  unsigned long iElem, iElem_Bound, iFace, iVertex;
   unsigned short iMarker;
 
-  if (elem != NULL) {
+  if (elem != nullptr) {
     for (iElem = 0; iElem < nElem; iElem++)
-      if (elem[iElem] != NULL) delete elem[iElem];
+      delete elem[iElem];
     delete[] elem;
   }
 
-  if (bound != NULL) {
+  if (bound != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
+        delete bound[iMarker][iElem_Bound];
       }
-      if (bound[iMarker] != NULL) delete [] bound[iMarker];
+      delete [] bound[iMarker];
     }
     delete [] bound;
   }
 
-  if (face != NULL) {
+  if (face != nullptr) {
     for (iFace = 0; iFace < nFace; iFace ++)
-      if (face[iFace] != NULL) delete face[iFace];
+      delete face[iFace];
     delete[] face;
   }
 
-  if (node != NULL) {
-    for (iPoint = 0; iPoint < nPointNode; iPoint ++)
-      if (node[iPoint] != NULL) delete node[iPoint];
-    delete[] node;
-  }
+  delete nodes;
 
+  delete edges;
 
-  if (edge != NULL) {
-    for (iEdge = 0; iEdge < nEdge; iEdge ++)
-      if (edge[iEdge] != NULL) delete edge[iEdge];
-    delete[] edge;
-  }
-
-  if (vertex != NULL) {
+  if (vertex != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
+        delete vertex[iMarker][iVertex];
       }
-      if (vertex[iMarker] != NULL) delete [] vertex[iMarker];
+      delete [] vertex[iMarker];
     }
     delete [] vertex;
   }
 
-  if (newBound != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        if (newBound[iMarker][iElem_Bound] != NULL) delete [] newBound[iMarker][iElem_Bound];
-      }
-      delete[] newBound[iMarker];
-    }
-    delete[] newBound;
-  }
+  delete [] nElem_Bound;
+  delete [] nVertex;
+  delete [] Marker_All_SendRecv;
+  delete [] Tag_to_Marker;
 
-  if (nElem_Bound         != NULL) delete [] nElem_Bound;
-  if (nVertex             != NULL) delete [] nVertex;
-  if (nNewElem_Bound      != NULL) delete [] nNewElem_Bound;
-  if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
-  if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
+  delete [] beg_node;
+  delete [] end_node;
+  delete [] nPointLinear;
+  delete [] nPointCumulative;
 
-  if (beg_node != NULL) delete [] beg_node;
-  if (end_node != NULL) delete [] end_node;
-  if (nPointLinear      != NULL) delete [] nPointLinear;
-  if (nPointCumulative  != NULL) delete [] nPointCumulative;
-
-  if(CustomBoundaryHeatFlux != NULL){
+  if(CustomBoundaryHeatFlux != nullptr){
     for(iMarker=0; iMarker < nMarker; iMarker++){
-      if (CustomBoundaryHeatFlux[iMarker] != NULL) delete [] CustomBoundaryHeatFlux[iMarker];
+      delete [] CustomBoundaryHeatFlux[iMarker];
     }
     delete [] CustomBoundaryHeatFlux;
   }
 
-  if(CustomBoundaryTemperature != NULL){
+  if(CustomBoundaryTemperature != nullptr){
     for(iMarker=0; iMarker < nMarker; iMarker++){
-      if(CustomBoundaryTemperature[iMarker] != NULL) delete [] CustomBoundaryTemperature[iMarker];
+      delete [] CustomBoundaryTemperature[iMarker];
     }
     delete [] CustomBoundaryTemperature;
   }
 
   /*--- Delete structures for MPI point-to-point communication. ---*/
 
-  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
-  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  delete [] bufD_P2PRecv;
+  delete [] bufD_P2PSend;
 
-  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
-  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
+  delete [] bufS_P2PRecv;
+  delete [] bufS_P2PSend;
 
-  if (req_P2PSend != NULL) delete [] req_P2PSend;
-  if (req_P2PRecv != NULL) delete [] req_P2PRecv;
+  delete [] req_P2PSend;
+  delete [] req_P2PRecv;
 
-  if (nPoint_P2PRecv != NULL) delete [] nPoint_P2PRecv;
-  if (nPoint_P2PSend != NULL) delete [] nPoint_P2PSend;
+  delete [] nPoint_P2PRecv;
+  delete [] nPoint_P2PSend;
 
-  if (Neighbors_P2PSend != NULL) delete [] Neighbors_P2PSend;
-  if (Neighbors_P2PRecv != NULL) delete [] Neighbors_P2PRecv;
+  delete [] Neighbors_P2PSend;
+  delete [] Neighbors_P2PRecv;
 
-  if (Local_Point_P2PSend != NULL) delete [] Local_Point_P2PSend;
-  if (Local_Point_P2PRecv != NULL) delete [] Local_Point_P2PRecv;
+  delete [] Local_Point_P2PSend;
+  delete [] Local_Point_P2PRecv;
 
   /*--- Delete structures for MPI periodic communication. ---*/
 
-  if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
-  if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
+  delete [] bufD_PeriodicRecv;
+  delete [] bufD_PeriodicSend;
 
-  if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
-  if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
+  delete [] bufS_PeriodicRecv;
+  delete [] bufS_PeriodicSend;
 
-  if (req_PeriodicSend != NULL) delete [] req_PeriodicSend;
-  if (req_PeriodicRecv != NULL) delete [] req_PeriodicRecv;
+  delete [] req_PeriodicSend;
+  delete [] req_PeriodicRecv;
 
-  if (nPoint_PeriodicRecv != NULL) delete [] nPoint_PeriodicRecv;
-  if (nPoint_PeriodicSend != NULL) delete [] nPoint_PeriodicSend;
+  delete [] nPoint_PeriodicRecv;
+  delete [] nPoint_PeriodicSend;
 
-  if (Neighbors_PeriodicSend != NULL) delete [] Neighbors_PeriodicSend;
-  if (Neighbors_PeriodicRecv != NULL) delete [] Neighbors_PeriodicRecv;
+  delete [] Neighbors_PeriodicSend;
+  delete [] Neighbors_PeriodicRecv;
 
-  if (Local_Point_PeriodicSend != NULL) delete [] Local_Point_PeriodicSend;
-  if (Local_Point_PeriodicRecv != NULL) delete [] Local_Point_PeriodicRecv;
+  delete [] Local_Point_PeriodicSend;
+  delete [] Local_Point_PeriodicRecv;
 
-  if (Local_Marker_PeriodicSend != NULL) delete [] Local_Marker_PeriodicSend;
-  if (Local_Marker_PeriodicRecv != NULL) delete [] Local_Marker_PeriodicRecv;
+  delete [] Local_Marker_PeriodicSend;
+  delete [] Local_Marker_PeriodicRecv;
 
 }
 
@@ -394,12 +286,12 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  Local_Point_P2PSend = NULL;
+  Local_Point_P2PSend = nullptr;
   Local_Point_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
   for (iSend = 0; iSend < nPoint_P2PSend[nP2PSend]; iSend++)
     Local_Point_P2PSend[iSend] = 0;
 
-  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PRecv = nullptr;
   Local_Point_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < nPoint_P2PRecv[nP2PRecv]; iRecv++)
     Local_Point_P2PRecv[iRecv] = 0;
@@ -409,11 +301,11 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    memory is deallocated and reallocated automatically in the case that
    the previously allocated memory is not sufficient. ---*/
 
-  bufD_P2PSend = NULL;
-  bufD_P2PRecv = NULL;
+  bufD_P2PSend = nullptr;
+  bufD_P2PRecv = nullptr;
 
-  bufS_P2PSend = NULL;
-  bufS_P2PRecv = NULL;
+  bufS_P2PSend = nullptr;
+  bufS_P2PRecv = nullptr;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
@@ -476,7 +368,7 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
 
 }
 
-void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
+void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
 
   /*--- This routine is activated whenever we attempt to perform
    a point-to-point MPI communication with our neighbors but the
@@ -485,55 +377,46 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
    reallocate a large enough array. Note that after the first set
    communications, this routine will not need to be called again. ---*/
 
-  int iSend, iRecv;
+  if (countPerPoint <= maxCountPerPoint) return;
+
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER {
 
   /*--- Store the larger packet size to the class data. ---*/
 
-  countPerPoint = val_countPerPoint;
+  maxCountPerPoint = countPerPoint;
 
   /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
 
-  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  delete [] bufD_P2PSend;
+  bufD_P2PSend = new su2double[maxCountPerPoint*nPoint_P2PSend[nP2PSend]] ();
 
-  bufD_P2PSend = new su2double[countPerPoint*nPoint_P2PSend[nP2PSend]];
-  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
-    bufD_P2PSend[iSend] = 0.0;
+  delete [] bufD_P2PRecv;
+  bufD_P2PRecv = new su2double[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
-  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
+  delete [] bufS_P2PSend;
+  bufS_P2PSend = new unsigned short[maxCountPerPoint*nPoint_P2PSend[nP2PSend]] ();
 
-  bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
-  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
-    bufD_P2PRecv[iRecv] = 0.0;
+  delete [] bufS_P2PRecv;
+  bufS_P2PRecv = new unsigned short[maxCountPerPoint*nPoint_P2PRecv[nP2PRecv]] ();
 
-  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
-
-  bufS_P2PSend = new unsigned short[countPerPoint*nPoint_P2PSend[nP2PSend]];
-  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
-    bufS_P2PSend[iSend] = 0;
-
-  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
-
-  bufS_P2PRecv = new unsigned short[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
-  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
-    bufS_P2PRecv[iRecv] = 0;
+  } SU2_OMP_BARRIER
 
 }
 
 void CGeometry::PostP2PRecvs(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short commType,
-                             bool val_reverse) {
-
-  /*--- Local variables ---*/
-
-  int iMessage, iRecv, offset, nPointP2P, count, source, tag;
+                             unsigned short countPerPoint,
+                             bool val_reverse) const {
 
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
    the data and send from the neighbor ranks. ---*/
 
-  iMessage = 0;
-  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+  SU2_OMP_MASTER
+  for (int iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+    const auto iMessage = iRecv;
 
     /*--- In some instances related to the adjoint solver, we need
      to reverse the direction of communications such that the normal
@@ -544,23 +427,23 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
       /*--- Compute our location in the buffer using the send data
        structure since we are reversing the comms. ---*/
 
-      offset = countPerPoint*nPoint_P2PSend[iRecv];
+      auto offset = countPerPoint*nPoint_P2PSend[iRecv];
 
       /*--- Take advantage of cumulative storage format to get the number
        of elems that we need to recv. Note again that we select the send
        points here as the recv points. ---*/
 
-      nPointP2P = nPoint_P2PSend[iRecv+1] - nPoint_P2PSend[iRecv];
+      auto nPointP2P = nPoint_P2PSend[iRecv+1] - nPoint_P2PSend[iRecv];
 
       /*--- Total count can include multiple pieces of data per element. ---*/
 
-      count = countPerPoint*nPointP2P;
+      auto count = countPerPoint*nPointP2P;
 
       /*--- Get the rank from which we receive the message. Note again
        that we use the send rank as the source instead of the recv rank. ---*/
 
-      source = Neighbors_P2PSend[iRecv];
-      tag    = source + 1;
+      auto source = Neighbors_P2PSend[iRecv];
+      auto tag = source + 1;
 
       /*--- Post non-blocking recv for this proc. Note that we use the
        send buffer here too. This is important to make sure the arrays
@@ -569,11 +452,11 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
       switch (commType) {
         case COMM_TYPE_DOUBLE:
           SU2_MPI::Irecv(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
-                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iRecv]));
           break;
         case COMM_TYPE_UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
-                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iRecv]));
           break;
         default:
           SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
@@ -585,21 +468,21 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
 
       /*--- Compute our location in the recv buffer. ---*/
 
-      offset = countPerPoint*nPoint_P2PRecv[iRecv];
+      auto offset = countPerPoint*nPoint_P2PRecv[iRecv];
 
       /*--- Take advantage of cumulative storage format to get the number
        of elems that we need to recv. ---*/
 
-      nPointP2P = nPoint_P2PRecv[iRecv+1] - nPoint_P2PRecv[iRecv];
+      auto nPointP2P = nPoint_P2PRecv[iRecv+1] - nPoint_P2PRecv[iRecv];
 
       /*--- Total count can include multiple pieces of data per element. ---*/
 
-      count = countPerPoint*nPointP2P;
+      auto count = countPerPoint*nPointP2P;
 
       /*--- Get the rank from which we receive the message. ---*/
 
-      source = Neighbors_P2PRecv[iRecv];
-      tag    = source + 1;
+      auto source = Neighbors_P2PRecv[iRecv];
+      auto tag = source + 1;
 
       /*--- Post non-blocking recv for this proc. ---*/
 
@@ -620,54 +503,46 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
 
     }
 
-    /*--- Increment message counter. ---*/
-
-    iMessage++;
-
   }
 
 }
 
 void CGeometry::PostP2PSends(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short commType,
+                             unsigned short countPerPoint,
                              int val_iSend,
-                             bool val_reverse) {
-
-  /*--- Local variables ---*/
-
-  int iMessage, offset, nPointP2P, count, dest, tag;
+                             bool val_reverse) const {
 
   /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
-
-  iMessage = val_iSend;
 
   /*--- In some instances related to the adjoint solver, we need
    to reverse the direction of communications such that the normal
    send nodes become the recv nodes and vice-versa. ---*/
 
+  SU2_OMP_MASTER
   if (val_reverse) {
 
     /*--- Compute our location in the buffer using the recv data
      structure since we are reversing the comms. ---*/
 
-    offset = countPerPoint*nPoint_P2PRecv[val_iSend];
+    auto offset = countPerPoint*nPoint_P2PRecv[val_iSend];
 
     /*--- Take advantage of cumulative storage format to get the number
      of points that we need to send. Note again that we select the recv
      points here as the send points. ---*/
 
-    nPointP2P = nPoint_P2PRecv[val_iSend+1] - nPoint_P2PRecv[val_iSend];
+    auto nPointP2P = nPoint_P2PRecv[val_iSend+1] - nPoint_P2PRecv[val_iSend];
 
     /*--- Total count can include multiple pieces of data per element. ---*/
 
-    count = countPerPoint*nPointP2P;
+    auto count = countPerPoint*nPointP2P;
 
     /*--- Get the rank to which we send the message. Note again
      that we use the recv rank as the dest instead of the send rank. ---*/
 
-    dest = Neighbors_P2PRecv[val_iSend];
-    tag  = rank + 1;
+    auto dest = Neighbors_P2PRecv[val_iSend];
+    auto tag = rank + 1;
 
     /*--- Post non-blocking send for this proc. Note that we use the
      send buffer here too. This is important to make sure the arrays
@@ -676,11 +551,11 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
     switch (commType) {
       case COMM_TYPE_DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
-                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[val_iSend]));
         break;
       case COMM_TYPE_UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
-                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[val_iSend]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
@@ -692,32 +567,32 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
 
     /*--- Compute our location in the send buffer. ---*/
 
-    offset = countPerPoint*nPoint_P2PSend[val_iSend];
+    auto offset = countPerPoint*nPoint_P2PSend[val_iSend];
 
     /*--- Take advantage of cumulative storage format to get the number
      of points that we need to send. ---*/
 
-    nPointP2P = nPoint_P2PSend[val_iSend+1] - nPoint_P2PSend[val_iSend];
+    auto nPointP2P = nPoint_P2PSend[val_iSend+1] - nPoint_P2PSend[val_iSend];
 
     /*--- Total count can include multiple pieces of data per element. ---*/
 
-    count = countPerPoint*nPointP2P;
+    auto count = countPerPoint*nPointP2P;
 
     /*--- Get the rank to which we send the message. ---*/
 
-    dest = Neighbors_P2PSend[val_iSend];
-    tag  = rank + 1;
+    auto dest = Neighbors_P2PSend[val_iSend];
+    auto tag = rank + 1;
 
     /*--- Post non-blocking send for this proc. ---*/
 
     switch (commType) {
       case COMM_TYPE_DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
-                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[val_iSend]));
         break;
       case COMM_TYPE_UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
-                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[val_iSend]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
@@ -729,22 +604,10 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
 
 }
 
-void CGeometry::InitiateComms(CGeometry *geometry,
-                              CConfig *config,
-                              unsigned short commType) {
-
-  /*--- Local variables ---*/
-
-  unsigned short iDim;
-  unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
-
-  unsigned long iPoint, msg_offset, buf_offset;
-
-  int iMessage, iSend, nSend;
-
-  /*--- Set the size of the data packet and type depending on quantity. ---*/
-
+void CGeometry::GetCommCountAndType(const CConfig* config,
+                                    unsigned short commType,
+                                    unsigned short &COUNT_PER_POINT,
+                                    unsigned short &MPI_TYPE) const {
   switch (commType) {
     case COORDINATES:
       COUNT_PER_POINT  = nDim;
@@ -774,193 +637,219 @@ void CGeometry::InitiateComms(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
+}
+
+void CGeometry::InitiateComms(CGeometry *geometry,
+                              const CConfig *config,
+                              unsigned short commType) const {
+
+  if (nP2PSend == 0) return;
+
+  /*--- Local variables ---*/
+
+  unsigned short iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+
+  unsigned long iPoint, msg_offset, buf_offset;
+
+  int iMessage, iSend, nSend;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE);
 
   /*--- Check to make sure we have created a large enough buffer
    for these comms during preprocessing. This is only for the su2double
    buffer. It will be reallocated whenever we find a larger count
    per point. After the first cycle of comms, this should be inactive. ---*/
 
-  if (COUNT_PER_POINT > geometry->countPerPoint) {
-    geometry->AllocateP2PComms(COUNT_PER_POINT);
-  }
+  geometry->AllocateP2PComms(COUNT_PER_POINT);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
   su2double *bufDSend      = geometry->bufD_P2PSend;
   unsigned short *bufSSend = geometry->bufS_P2PSend;
 
-  su2double *vector = NULL;
+  su2double *vector = nullptr;
 
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
 
-  if (nP2PSend > 0) {
+  /*--- Post all non-blocking recvs first before sends. ---*/
 
-    /*--- Post all non-blocking recvs first before sends. ---*/
+  geometry->PostP2PRecvs(geometry, config, MPI_TYPE, COUNT_PER_POINT, false);
 
-    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
+  for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
 
-    for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
+    /*--- Get the offset in the buffer for the start of this message. ---*/
 
-      /*--- Get the offset in the buffer for the start of this message. ---*/
+    msg_offset = nPoint_P2PSend[iMessage];
 
-      msg_offset = nPoint_P2PSend[iMessage];
+    /*--- Total count can include multiple pieces of data per element. ---*/
 
-      /*--- Total count can include multiple pieces of data per element. ---*/
+    nSend = (nPoint_P2PSend[iMessage+1] - nPoint_P2PSend[iMessage]);
 
-      nSend = (nPoint_P2PSend[iMessage+1] - nPoint_P2PSend[iMessage]);
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (iSend = 0; iSend < nSend; iSend++) {
 
-      for (iSend = 0; iSend < nSend; iSend++) {
+      /*--- Get the local index for this communicated data. ---*/
 
-        /*--- Get the local index for this communicated data. ---*/
+      iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
 
-        iPoint = geometry->Local_Point_P2PSend[msg_offset + iSend];
+      /*--- Compute the offset in the recv buffer for this point. ---*/
 
-        /*--- Compute the offset in the recv buffer for this point. ---*/
+      buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
-        buf_offset = (msg_offset + iSend)*countPerPoint;
-
-        switch (commType) {
-          case COORDINATES:
-            vector = node[iPoint]->GetCoord();
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = vector[iDim];
-            break;
-          case GRID_VELOCITY:
-            vector = node[iPoint]->GetGridVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = vector[iDim];
-            break;
-          case COORDINATES_OLD:
-            vector = node[iPoint]->GetCoord_n();
+      switch (commType) {
+        case COORDINATES:
+          vector = nodes->GetCoord(iPoint);
+          for (iDim = 0; iDim < nDim; iDim++)
+            bufDSend[buf_offset+iDim] = vector[iDim];
+          break;
+        case GRID_VELOCITY:
+          vector = nodes->GetGridVel(iPoint);
+          for (iDim = 0; iDim < nDim; iDim++)
+            bufDSend[buf_offset+iDim] = vector[iDim];
+          break;
+        case COORDINATES_OLD:
+          vector = nodes->GetCoord_n(iPoint);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            bufDSend[buf_offset+iDim] = vector[iDim];
+          }
+          if (config->GetTime_Marching() == DT_STEPPING_2ND) {
+            vector = nodes->GetCoord_n1(iPoint);
             for (iDim = 0; iDim < nDim; iDim++) {
-              bufDSend[buf_offset+iDim] = vector[iDim];
+              bufDSend[buf_offset+nDim+iDim] = vector[iDim];
             }
-            if (config->GetTime_Marching() == DT_STEPPING_2ND) {
-              vector = node[iPoint]->GetCoord_n1();
-              for (iDim = 0; iDim < nDim; iDim++) {
-                bufDSend[buf_offset+nDim+iDim] = vector[iDim];
-              }
-            }
-            break;
-          case MAX_LENGTH:
-            bufDSend[buf_offset] = node[iPoint]->GetMaxLength();
-            break;
-          case NEIGHBORS:
-            bufSSend[buf_offset] = geometry->node[iPoint]->GetnNeighbor();
-            break;
-          default:
-            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                           CURRENT_FUNCTION);
-            break;
-        }
+          }
+          break;
+        case MAX_LENGTH:
+          bufDSend[buf_offset] = nodes->GetMaxLength(iPoint);
+          break;
+        case NEIGHBORS:
+          bufSSend[buf_offset] = geometry->nodes->GetnNeighbor(iPoint);
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
       }
-
-      /*--- Launch the point-to-point MPI send for this message. ---*/
-
-      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
-
     }
+
+    /*--- Launch the point-to-point MPI send for this message. ---*/
+
+    geometry->PostP2PSends(geometry, config, MPI_TYPE, COUNT_PER_POINT, iMessage, false);
+
   }
 
 }
 
 void CGeometry::CompleteComms(CGeometry *geometry,
-                              CConfig *config,
+                              const CConfig *config,
                               unsigned short commType) {
+
+  if (nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
 
-  unsigned short iDim;
+  unsigned short iDim, COUNT_PER_POINT = 0, MPI_TYPE = 0;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
-  SU2_MPI::Status status;
+
+  /*--- Global status so all threads can see the result of Waitany. ---*/
+  static SU2_MPI::Status status;
+
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+
+  GetCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE);
 
   /*--- Set some local pointers to make access simpler. ---*/
 
-  su2double *bufDRecv      = geometry->bufD_P2PRecv;
-  unsigned short *bufSRecv = geometry->bufS_P2PRecv;
+  const su2double *bufDRecv      = geometry->bufD_P2PRecv;
+  const unsigned short *bufSRecv = geometry->bufS_P2PRecv;
 
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. Note that we
    recv and store the data in any order to take advantage of the
    non-blocking comms. ---*/
 
-  if (nP2PRecv > 0) {
+  for (iMessage = 0; iMessage < nP2PRecv; iMessage++) {
 
-    for (iMessage = 0; iMessage < nP2PRecv; iMessage++) {
+    /*--- For efficiency, recv the messages dynamically based on
+     the order they arrive. ---*/
 
-      /*--- For efficiency, recv the messages dynamically based on
-       the order they arrive. ---*/
+    SU2_OMP_MASTER
+    SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
+    SU2_OMP_BARRIER
 
-      SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
+    /*--- Once we have recv'd a message, get the source rank. ---*/
 
-      /*--- Once we have recv'd a message, get the source rank. ---*/
+    source = status.MPI_SOURCE;
 
-      source = status.MPI_SOURCE;
+    /*--- We know the offsets based on the source rank. ---*/
 
-      /*--- We know the offsets based on the source rank. ---*/
+    jRecv = P2PRecv2Neighbor[source];
 
-      jRecv = P2PRecv2Neighbor[source];
+    /*--- Get the offset in the buffer for the start of this message. ---*/
 
-      /*--- Get the offset in the buffer for the start of this message. ---*/
+    msg_offset = nPoint_P2PRecv[jRecv];
 
-      msg_offset = nPoint_P2PRecv[jRecv];
+    /*--- Get the number of packets to be received in this message. ---*/
 
-      /*--- Get the number of packets to be received in this message. ---*/
+    nRecv = nPoint_P2PRecv[jRecv+1] - nPoint_P2PRecv[jRecv];
 
-      nRecv = nPoint_P2PRecv[jRecv+1] - nPoint_P2PRecv[jRecv];
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+    for (iRecv = 0; iRecv < nRecv; iRecv++) {
 
-      for (iRecv = 0; iRecv < nRecv; iRecv++) {
+      /*--- Get the local index for this communicated data. ---*/
 
-        /*--- Get the local index for this communicated data. ---*/
+      iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
 
-        iPoint = geometry->Local_Point_P2PRecv[msg_offset + iRecv];
+      /*--- Compute the total offset in the recv buffer for this point. ---*/
 
-        /*--- Compute the total offset in the recv buffer for this point. ---*/
+      buf_offset = (msg_offset + iRecv)*COUNT_PER_POINT;
 
-        buf_offset = (msg_offset + iRecv)*countPerPoint;
+      /*--- Store the data correctly depending on the quantity. ---*/
 
-        /*--- Store the data correctly depending on the quantity. ---*/
-
-        switch (commType) {
-          case COORDINATES:
-            for (iDim = 0; iDim < nDim; iDim++)
-              node[iPoint]->SetCoord(iDim, bufDRecv[buf_offset+iDim]);
-            break;
-          case GRID_VELOCITY:
-            for (iDim = 0; iDim < nDim; iDim++)
-              node[iPoint]->SetGridVel(iDim, bufDRecv[buf_offset+iDim]);
-            break;
-          case COORDINATES_OLD:
-            node[iPoint]->SetCoord_n(&bufDRecv[buf_offset]);
-            if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              node[iPoint]->SetCoord_n1(&bufDRecv[buf_offset+nDim]);
-            break;
-          case MAX_LENGTH:
-            node[iPoint]->SetMaxLength(bufDRecv[buf_offset]);
-            break;
-          case NEIGHBORS:
-            node[iPoint]->SetnNeighbor(bufSRecv[buf_offset]);
-            break;
-          default:
-            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                           CURRENT_FUNCTION);
-            break;
-        }
+      switch (commType) {
+        case COORDINATES:
+          for (iDim = 0; iDim < nDim; iDim++)
+            nodes->SetCoord(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+          break;
+        case GRID_VELOCITY:
+          for (iDim = 0; iDim < nDim; iDim++)
+            nodes->SetGridVel(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+          break;
+        case COORDINATES_OLD:
+          nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset+nDim]);
+          break;
+        case MAX_LENGTH:
+          nodes->SetMaxLength(iPoint, bufDRecv[buf_offset]);
+          break;
+        case NEIGHBORS:
+          nodes->SetnNeighbor(iPoint, bufSRecv[buf_offset]);
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
       }
     }
+  }
 
-    /*--- Verify that all non-blocking point-to-point sends have finished.
-     Note that this should be satisfied, as we have received all of the
-     data in the loop above at this point. ---*/
+  /*--- Verify that all non-blocking point-to-point sends have finished.
+   Note that this should be satisfied, as we have received all of the
+   data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-    SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
+  SU2_OMP_MASTER
+  SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
 #endif
-
-  }
+  SU2_OMP_BARRIER
 
 }
 
@@ -1011,7 +900,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           /*--- Get the rank that holds the matching periodic point
            on the other marker in the periodic pair. ---*/
@@ -1096,22 +985,22 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   /*--- Allocate the memory to store the local index values for both
    the send and receive periodic points and periodic index. ---*/
 
-  Local_Point_PeriodicSend = NULL;
+  Local_Point_PeriodicSend = nullptr;
   Local_Point_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
     Local_Point_PeriodicSend[iSend] = 0;
 
-  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicSend = nullptr;
   Local_Marker_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
     Local_Marker_PeriodicSend[iSend] = 0;
 
-  Local_Point_PeriodicRecv = NULL;
+  Local_Point_PeriodicRecv = nullptr;
   Local_Point_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
     Local_Point_PeriodicRecv[iRecv] = 0;
 
-  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicRecv = nullptr;
   Local_Marker_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
     Local_Marker_PeriodicRecv[iRecv] = 0;
@@ -1121,11 +1010,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
    memory is deallocated and reallocated automatically in the case that
    the previously allocated memory is not sufficient. ---*/
 
-  bufD_PeriodicSend = NULL;
-  bufD_PeriodicRecv = NULL;
+  bufD_PeriodicSend = nullptr;
+  bufD_PeriodicRecv = nullptr;
 
-  bufS_PeriodicSend = NULL;
-  bufS_PeriodicRecv = NULL;
+  bufS_PeriodicSend = nullptr;
+  bufS_PeriodicRecv = nullptr;
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
@@ -1160,7 +1049,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          if (geometry->node[iPoint]->GetDomain()) {
+          if (geometry->nodes->GetDomain(iPoint)) {
 
             /*--- Get the rank that holds the matching periodic point
              on the other marker in the periodic pair. ---*/
@@ -1300,7 +1189,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 
 }
 
-void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) {
+void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
 
   /*--- This routine is activated whenever we attempt to perform
    a periodic MPI communication with our neighbors but the
@@ -1309,81 +1198,70 @@ void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) 
    reallocate a large enough array. Note that after the first set
    communications, this routine will not need to be called again. ---*/
 
-  int iSend, iRecv, nSend, nRecv;
+  if (countPerPeriodicPoint <= maxCountPerPeriodicPoint) return;
+
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER {
 
   /*--- Store the larger packet size to the class data. ---*/
 
-  countPerPeriodicPoint = val_countPerPeriodicPoint;
+  maxCountPerPeriodicPoint = countPerPeriodicPoint;
 
   /*--- Store the total size of the send/recv arrays for clarity. ---*/
 
-  nSend = countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend];
-  nRecv = countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv];
+  auto nSend = countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend];
+  auto nRecv = countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv];
 
   /*-- Deallocate and reallocate our cummunication memory. ---*/
 
-  if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
+  delete [] bufD_PeriodicSend;
+  bufD_PeriodicSend = new su2double[nSend] ();
 
-  bufD_PeriodicSend = new su2double[nSend];
-  for (iSend = 0; iSend < nSend; iSend++)
-    bufD_PeriodicSend[iSend] = 0.0;
+  delete [] bufD_PeriodicRecv;
+  bufD_PeriodicRecv = new su2double[nRecv] ();
 
-  if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
+  delete [] bufS_PeriodicSend;
+  bufS_PeriodicSend = new unsigned short[nSend] ();
 
-  bufD_PeriodicRecv = new su2double[nRecv];
-  for (iRecv = 0; iRecv < nRecv; iRecv++)
-    bufD_PeriodicRecv[iRecv] = 0.0;
+  delete [] bufS_PeriodicRecv;
+  bufS_PeriodicRecv = new unsigned short[nRecv] ();
 
-  if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
-
-  bufS_PeriodicSend = new unsigned short[nSend];
-  for (iSend = 0; iSend < nSend; iSend++)
-    bufS_PeriodicSend[iSend] = 0;
-
-  if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
-
-  bufS_PeriodicRecv = new unsigned short[nRecv];
-  for (iRecv = 0; iRecv < nRecv; iRecv++)
-    bufS_PeriodicRecv[iRecv] = 0;
-
+  } SU2_OMP_BARRIER
 }
 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
-                                  CConfig *config,
-                                  unsigned short commType) {
+                                  const CConfig *config,
+                                  unsigned short commType,
+                                  unsigned short countPerPeriodicPoint) {
 
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
 #ifdef HAVE_MPI
 
-  /*--- Local variables ---*/
-
-  int iMessage, iRecv, offset, nPointPeriodic, count, source, tag;
-
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
    the data and send from the neighbor ranks. ---*/
 
-  iMessage = 0;
-  for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++) {
+  SU2_OMP_MASTER
+  for (int iRecv = 0; iRecv < nPeriodicRecv; iRecv++) {
 
     /*--- Compute our location in the recv buffer. ---*/
 
-    offset = countPerPeriodicPoint*nPoint_PeriodicRecv[iRecv];
+    auto offset = countPerPeriodicPoint*nPoint_PeriodicRecv[iRecv];
 
     /*--- Take advantage of cumulative storage format to get the number
      of elems that we need to recv. ---*/
 
-    nPointPeriodic = nPoint_PeriodicRecv[iRecv+1] - nPoint_PeriodicRecv[iRecv];
+    auto nPointPeriodic = nPoint_PeriodicRecv[iRecv+1] - nPoint_PeriodicRecv[iRecv];
 
     /*--- Total count can include multiple pieces of data per element. ---*/
 
-    count = countPerPeriodicPoint*nPointPeriodic;
+    auto count = countPerPeriodicPoint*nPointPeriodic;
 
     /*--- Get the rank from which we receive the message. ---*/
 
-    source = Neighbors_PeriodicRecv[iRecv];
-    tag    = source + 1;
+    auto source = Neighbors_PeriodicRecv[iRecv];
+    auto tag = source + 1;
 
     /*--- Post non-blocking recv for this proc. ---*/
 
@@ -1391,22 +1269,18 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
       case COMM_TYPE_DOUBLE:
         SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_PeriodicRecv)[offset]),
                        count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
-                       &(req_PeriodicRecv[iMessage]));
+                       &(req_PeriodicRecv[iRecv]));
         break;
       case COMM_TYPE_UNSIGNED_SHORT:
         SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_PeriodicRecv)[offset]),
                        count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
-                       &(req_PeriodicRecv[iMessage]));
+                       &(req_PeriodicRecv[iRecv]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
                        CURRENT_FUNCTION);
         break;
     }
-
-    /*--- Increment message counter. ---*/
-
-    iMessage++;
 
   }
 
@@ -1415,40 +1289,35 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
 }
 
 void CGeometry::PostPeriodicSends(CGeometry *geometry,
-                                  CConfig *config,
+                                  const CConfig *config,
                                   unsigned short commType,
-                                  int val_iSend) {
+                                  unsigned short countPerPeriodicPoint,
+                                  int val_iSend) const {
 
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
 #ifdef HAVE_MPI
-
-  /*--- Local variables ---*/
-
-  int iMessage, offset, nPointPeriodic, count, dest, tag;
-
+  SU2_OMP_MASTER {
   /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
-
-  iMessage = val_iSend;
 
   /*--- Compute our location in the send buffer. ---*/
 
-  offset = countPerPeriodicPoint*nPoint_PeriodicSend[val_iSend];
+  auto offset = countPerPeriodicPoint*nPoint_PeriodicSend[val_iSend];
 
   /*--- Take advantage of cumulative storage format to get the number
    of points that we need to send. ---*/
 
-  nPointPeriodic = (nPoint_PeriodicSend[val_iSend+1] -
-                    nPoint_PeriodicSend[val_iSend]);
+  auto nPointPeriodic = (nPoint_PeriodicSend[val_iSend+1] -
+                         nPoint_PeriodicSend[val_iSend]);
 
   /*--- Total count can include multiple pieces of data per element. ---*/
 
-  count = countPerPeriodicPoint*nPointPeriodic;
+  auto count = countPerPeriodicPoint*nPointPeriodic;
 
   /*--- Get the rank to which we send the message. ---*/
 
-  dest = Neighbors_PeriodicSend[val_iSend];
-  tag  = rank + 1;
+  auto dest = Neighbors_PeriodicSend[val_iSend];
+  auto tag = rank + 1;
 
   /*--- Post non-blocking send for this proc. ---*/
 
@@ -1456,12 +1325,35 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
     case COMM_TYPE_DOUBLE:
       SU2_MPI::Isend(&(static_cast<su2double*>(bufD_PeriodicSend)[offset]),
                      count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
-                     &(req_PeriodicSend[iMessage]));
+                     &(req_PeriodicSend[val_iSend]));
       break;
     case COMM_TYPE_UNSIGNED_SHORT:
       SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_PeriodicSend)[offset]),
                      count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
-                     &(req_PeriodicSend[iMessage]));
+                     &(req_PeriodicSend[val_iSend]));
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+  } // end master
+#else
+
+  /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
+
+  int myStart, myFinal, iRecv, iRank;
+  iRank   = geometry->PeriodicRecv2Neighbor[rank];
+  iRecv   = geometry->nPoint_PeriodicRecv[iRank]*countPerPeriodicPoint;
+  myStart = nPoint_PeriodicSend[val_iSend]*countPerPeriodicPoint;
+  myFinal = nPoint_PeriodicSend[val_iSend+1]*countPerPeriodicPoint;
+
+  switch (commType) {
+    case COMM_TYPE_DOUBLE:
+      parallelCopy(myFinal-myStart, &bufD_PeriodicSend[myStart], &bufD_PeriodicRecv[iRecv]);
+      break;
+    case COMM_TYPE_UNSIGNED_SHORT:
+      parallelCopy(myFinal-myStart, &bufS_PeriodicSend[myStart], &bufS_PeriodicRecv[iRecv]);
       break;
     default:
       SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
@@ -1469,36 +1361,11 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
       break;
   }
 
-#else
-
-  /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
-
-  int iSend, myStart, myFinal, iRecv, iRank;
-  iRank   = geometry->PeriodicRecv2Neighbor[rank];
-  iRecv   = geometry->nPoint_PeriodicRecv[iRank]*countPerPeriodicPoint;
-  myStart = nPoint_PeriodicSend[val_iSend]*countPerPeriodicPoint;
-  myFinal = nPoint_PeriodicSend[val_iSend+1]*countPerPeriodicPoint;
-  for (iSend = myStart; iSend < myFinal; iSend++) {
-    switch (commType) {
-      case COMM_TYPE_DOUBLE:
-        bufD_PeriodicRecv[iRecv] =  bufD_PeriodicSend[iSend];
-        break;
-      case COMM_TYPE_UNSIGNED_SHORT:
-        bufS_PeriodicRecv[iRecv] =  bufS_PeriodicSend[iSend];
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
-                       CURRENT_FUNCTION);
-        break;
-    }
-    iRecv++;
-  }
-
 #endif
 
 }
 
-su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord) {
+su2double CGeometry::Point2Plane_Distance(const su2double *Coord, const su2double *iCoord, const su2double *jCoord, const su2double *kCoord) {
   su2double CrossProduct[3], iVector[3], jVector[3], distance, modulus;
   unsigned short iDim;
 
@@ -1522,100 +1389,93 @@ su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, s
 
 }
 
-long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) {
-  unsigned long iPoint = 0;
-  unsigned short iNode;
-  for (iNode = 0; iNode < node[first_point]->GetnPoint(); iNode++) {
-    iPoint = node[first_point]->GetPoint(iNode);
-    if (iPoint == second_point) break;
+long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) const {
+
+  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+    auto iPoint = nodes->GetPoint(first_point, iNode);
+    if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
   }
 
-  if (iPoint == second_point) return node[first_point]->GetEdge(iNode);
-  else {
-    char buf[100];
-    SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
-    SU2_MPI::Error(buf, CURRENT_FUNCTION);
-    return 0;
-  }
+  char buf[100];
+  SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+  SU2_MPI::Error(buf, CURRENT_FUNCTION);
+  return 0;
 }
 
-bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) {
-  unsigned long iPoint = 0;
-  unsigned short iNode;
-  for (iNode = 0; iNode < node[first_point]->GetnPoint(); iNode++) {
-    iPoint = node[first_point]->GetPoint(iNode);
-    if (iPoint == second_point) break;
+bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) const {
+
+  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+    auto iPoint = nodes->GetPoint(first_point, iNode);
+    if (iPoint == second_point) return true;
   }
-
-  if (iPoint == second_point) return true;
-  else return false;
-
+  return false;
 }
 
 void CGeometry::SetEdges(void) {
-  unsigned long iPoint, jPoint;
-  long iEdge;
-  unsigned short jNode, iNode;
-  long TestEdge = 0;
 
   nEdge = 0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-      jPoint = node[iPoint]->GetPoint(iNode);
-      for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
-        if (node[jPoint]->GetPoint(jNode) == iPoint) {
-          TestEdge = node[jPoint]->GetEdge(jNode);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+      auto jPoint = nodes->GetPoint(iPoint, iNode);
+      for (auto jNode = 0u; jNode < nodes->GetnPoint(jPoint); jNode++) {
+        if (nodes->GetPoint(jPoint, jNode) == iPoint) {
+          auto TestEdge = nodes->GetEdge(jPoint, jNode);
+          if (TestEdge == -1) {
+            nodes->SetEdge(iPoint, nEdge, iNode);
+            nodes->SetEdge(jPoint, nEdge, jNode);
+            nEdge++;
+          }
           break;
         }
-      if (TestEdge == -1) {
-        node[iPoint]->SetEdge(nEdge, iNode);
-        node[jPoint]->SetEdge(nEdge, jNode);
-        nEdge++;
       }
     }
+  }
 
-  edge = new CEdge*[nEdge];
+  edges = new CEdge(nEdge,nDim);
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-      jPoint = node[iPoint]->GetPoint(iNode);
-      iEdge = FindEdge(iPoint, jPoint);
-      if (iPoint < jPoint) edge[iEdge] = new CEdge(iPoint, jPoint, nDim);
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+      auto jPoint = nodes->GetPoint(iPoint, iNode);
+      if (iPoint < jPoint) {
+        auto iEdge = FindEdge(iPoint, jPoint);
+        edges->SetNodes(iEdge, iPoint, jPoint);
+      }
     }
+  }
 }
 
 void CGeometry::SetFaces(void) {
-  //	unsigned long iPoint, jPoint, iFace;
-  //	unsigned short jNode, iNode;
-  //	long TestFace = 0;
+  //  unsigned long iPoint, jPoint, iFace;
+  //  unsigned short jNode, iNode;
+  //  long TestFace = 0;
   //
-  //	nFace = 0;
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-  //			jPoint = node[iPoint]->GetPoint(iNode);
-  //			for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
-  //				if (node[jPoint]->GetPoint(jNode) == iPoint) {
-  //					TestFace = node[jPoint]->GetFace(jNode);
-  //					break;
-  //				}
-  //			if (TestFace == -1) {
-  //				node[iPoint]->SetFace(nFace, iNode);
-  //				node[jPoint]->SetFace(nFace, jNode);
-  //				nFace++;
-  //			}
-  //		}
+  //  nFace = 0;
+  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //    for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
+  //      jPoint = nodes->GetPoint(iPoint, iNode);
+  //      for (jNode = 0; jNode < nodes->GetnPoint(jPoint); jNode++)
+  //        if (nodes->GetPoint(jPoint, jNode) == iPoint) {
+  //          TestFace = nodes->GetFace(jPoint, jNode);
+  //          break;
+  //        }
+  //      if (TestFace == -1) {
+  //        nodes->SetFace(iPoint, nFace, iNode);
+  //        nodes->SetFace(jPoint, nFace, jNode);
+  //        nFace++;
+  //      }
+  //    }
   //
-  //	face = new CFace*[nFace];
+  //  face = new CFace*[nFace];
   //
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-  //			jPoint = node[iPoint]->GetPoint(iNode);
-  //			iFace = FindFace(iPoint, jPoint);
-  //			if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
-  //		}
+  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //    for (iNode = 0; iNode < nodes->GetnPoint(iPoint); iNode++) {
+  //      jPoint = nodes->GetPoint(iPoint, iNode);
+  //      iFace = FindFace(iPoint, jPoint);
+  //      if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
+  //    }
 }
 
-void CGeometry::TestGeometry(void) {
+void CGeometry::TestGeometry(void) const {
 
   ofstream para_file;
 
@@ -1625,8 +1485,8 @@ void CGeometry::TestGeometry(void) {
 
   for (unsigned long iEdge = 0; iEdge < nEdge; iEdge++) {
     para_file << "Edge index: " << iEdge << endl;
-    para_file << "   Point index: " << edge[iEdge]->GetNode(0) << "\t" << edge[iEdge]->GetNode(1) << endl;
-    edge[iEdge]->GetNormal(Normal);
+    para_file << "   Point index: " << edges->GetNode(iEdge,0) << "\t" << edges->GetNode(iEdge,1) << endl;
+    edges->GetNormal(iEdge,Normal);
     para_file << "      Face normal : ";
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       para_file << Normal[iDim] << "\t";
@@ -1645,7 +1505,7 @@ void CGeometry::TestGeometry(void) {
       para_file << "      Point index: " << vertex[iMarker][iVertex]->GetNode() << endl;
       para_file << "      Point coordinates : ";
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        para_file << node[vertex[iMarker][iVertex]->GetNode()]->GetCoord(iDim) << "\t";}
+        para_file << nodes->GetCoord(vertex[iMarker][iVertex]->GetNode(), iDim) << "\t";}
       para_file << endl;
       vertex[iMarker][iVertex]->GetNormal(Normal);
       para_file << "         Face normal : ";
@@ -1665,17 +1525,17 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
 
   u = new su2double [n];
 
-  if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;			  // -ural"
-  else {									// or else to have a specified first derivative.
+  if (yp1 > 0.99e30)      // The lower boundary condition is set either to be "nat
+    y2[0]=u[0]=0.0;       // -ural"
+  else {                  // or else to have a specified first derivative.
     y2[0] = -0.5;
     u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
   }
 
-  for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;										//	factors.
+  for (i=2; i<=n-1; i++) {                  //  This is the decomposition loop of the tridiagonal al-
+    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);      //  gorithm. y2 and u are used for tem-
+    p=sig*y2[i-2]+2.0;                      //  porary storage of the decomposed
+    y2[i-1]=(sig-1.0)/p;                    //  factors.
 
     su2double a1 = (y[i]-y[i-1])/(x[i]-x[i-1]); if (x[i] == x[i-1]) a1 = 1.0;
     su2double a2 = (y[i-1]-y[i-2])/(x[i-1]-x[i-2]); if (x[i-1] == x[i-2]) a2 = 1.0;
@@ -1684,15 +1544,15 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
 
   }
 
-  if (ypn > 0.99e30)						// The upper boundary condition is set either to be
-    qn=un=0.0;									// "natural"
-  else {												// or else to have a specified first derivative.
+  if (ypn > 0.99e30)            // The upper boundary condition is set either to be
+    qn=un=0.0;                  // "natural"
+  else {                        // or else to have a specified first derivative.
     qn=0.5;
     un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
   }
   y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
+  for (k=n-1; k>=1; k--)  // This is the backsubstitution loop of the tridiagonal algorithm.
+    y2[k-1]=y2[k-1]*y2[k]+u[k-1];
 
   delete[] u;
 
@@ -1705,24 +1565,24 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
   if (x < xa[0]) x = xa[0];       // Clip max and min values
   if (x > xa[n-1]) x = xa[n-1];
 
-  klo = 1;										// We will find the right place in the table by means of
-  khi = n;										// bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
-    k = (khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi = k;		// to store previous values of klo and khi and test if
-    else klo=k;							// they remain appropriate on the next call.
-  }								// klo and khi now bracket the input value of x
+  klo = 1;                     // We will find the right place in the table by means of
+  khi = n;                     // bisection. This is optimal if sequential calls to this
+  while (khi-klo > 1) {        // routine are at random values of x. If sequential calls
+    k = (khi+klo) >> 1;        // are in order, and closely spaced, one would do better
+    if (xa[k-1] > x) khi = k;  // to store previous values of klo and khi and test if
+    else klo=k;                // they remain appropriate on the next call.
+  }                            // klo and khi now bracket the input value of x
   h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl;	// The xa?s must be distinct.
+  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl; // The xa?s must be distinct.
   a = (xa[khi-1]-x)/h;
-  b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
+  b = (x-xa[klo-1])/h;         // Cubic spline polynomial is now evaluated.
   y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
 }
 
-bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
-                                                           su2double *Plane_P0, su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
+bool CGeometry::SegmentIntersectsPlane(const su2double *Segment_P0, const su2double *Segment_P1, su2double Variable_P0, su2double Variable_P1,
+                                                           const su2double *Plane_P0, const su2double *Plane_Normal, su2double *Intersection, su2double &Variable_Interp) {
   su2double u[3], v[3], Denominator, Numerator, Aux, ModU;
   su2double epsilon = 1E-6; // An epsilon is added to eliminate, as much as possible, the posibility of a line that intersects a point
   unsigned short iDim;
@@ -1767,8 +1627,8 @@ bool CGeometry::SegmentIntersectsPlane(su2double *Segment_P0, su2double *Segment
 
 }
 
-bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
-                                      su2double vert0[3], su2double vert1[3], su2double vert2[3],
+bool CGeometry::RayIntersectsTriangle(const su2double orig[3], const su2double dir[3],
+                                      const su2double vert0[3], const su2double vert1[3], const su2double vert2[3],
                                       su2double *intersect) {
 
   const passivedouble epsilon = 0.000001;
@@ -1827,7 +1687,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
 
 }
 
-bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]) {
+bool CGeometry::SegmentIntersectsLine(const su2double point0[2], const su2double point1[2], const su2double vert0[2], const su2double vert1[2]) {
 
   su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
 
@@ -1870,7 +1730,7 @@ bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], 
   return true;
 }
 
-bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
+bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], const su2double point1[3],
                                           su2double vert0[3], su2double vert1[3], su2double vert2[3]) {
 
   su2double dir[3], intersect[3], u[3], v[3], edge1[3], edge2[3], Plane_Normal[3], Denominator, Numerator, Aux;
@@ -1916,19 +1776,19 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                                        su2double MinXCoord, su2double MaxXCoord,
                                        su2double MinYCoord, su2double MaxYCoord,
                                        su2double MinZCoord, su2double MaxZCoord,
-                                       su2double *FlowVariable,
+                                       const su2double *FlowVariable,
                                        vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil,
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
 
-  AD_BEGIN_PASSIVE
+  const bool wasActive = AD::BeginPassive();
 
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
   long Next_Edge = 0;
   unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, iEdge, PointIndex, jEdge;
   su2double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord,
-  *VarCoord = NULL, Variable_Interp, v1[3] = {0.0, 0.0, 0.0}, v3[3] = {0.0, 0.0, 0.0}, CrossProduct = 1.0;
+  *VarCoord = nullptr, Variable_Interp, v1[3] = {0.0, 0.0, 0.0}, v3[3] = {0.0, 0.0, 0.0}, CrossProduct = 1.0;
   bool Found_Edge;
   passivedouble Dist_Value;
   vector<su2double> Xcoord_Index0, Ycoord_Index0, Zcoord_Index0, Variable_Index0, Xcoord_Index1, Ycoord_Index1, Zcoord_Index1, Variable_Index1;
@@ -1936,7 +1796,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
   vector<unsigned long>::iterator it;
-  su2double **Coord_Variation = NULL;
+  su2double **Coord_Variation = nullptr;
   vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
   vector<unsigned long> IGlobalIDExtra, JGlobalIDExtra;
   vector<bool> AddExtra;
@@ -2004,9 +1864,9 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
         for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
-          AveXCoord += node[iPoint]->GetCoord(0);
-          AveYCoord += node[iPoint]->GetCoord(1);
-          if (nDim == 3) AveZCoord += node[iPoint]->GetCoord(2);
+          AveXCoord += nodes->GetCoord(iPoint, 0);
+          AveYCoord += nodes->GetCoord(iPoint, 1);
+          if (nDim == 3) AveZCoord += nodes->GetCoord(iPoint, 2);
         }
 
         AveXCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
@@ -2079,16 +1939,16 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
             for (iDim = 0; iDim < nDim; iDim++) {
               if (original_surface == true) {
-                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+                Segment_P0[iDim] = nodes->GetCoord(iPoint, iDim);
+                Segment_P1[iDim] = nodes->GetCoord(jPoint, iDim);
               }
               else {
-                Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-                Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+                Segment_P0[iDim] = nodes->GetCoord(iPoint, iDim) + Coord_Variation[iPoint][iDim];
+                Segment_P1[iDim] = nodes->GetCoord(jPoint, iDim) + Coord_Variation[jPoint][iDim];
               }
             }
 
-            if (FlowVariable != NULL) {
+            if (FlowVariable != nullptr) {
               Variable_P0 = FlowVariable[iPoint];
               Variable_P1 = FlowVariable[jPoint];
             }
@@ -2100,8 +1960,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
               Ycoord_Index0.push_back(Segment_P0[2]);                     Ycoord_Index1.push_back(Segment_P1[2]);
               Zcoord_Index0.push_back(Segment_P0[1]);                     Zcoord_Index1.push_back(Segment_P1[1]);
               Variable_Index0.push_back(Variable_P0);                     Variable_Index1.push_back(Variable_P1);
-              IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); IGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
-              JGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex()); JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+              IGlobalID_Index0.push_back(nodes->GetGlobalIndex(iPoint)); IGlobalID_Index1.push_back(nodes->GetGlobalIndex(jPoint));
+              JGlobalID_Index0.push_back(nodes->GetGlobalIndex(iPoint)); JGlobalID_Index1.push_back(nodes->GetGlobalIndex(jPoint));
               PointIndex++;
             }
 
@@ -2115,16 +1975,16 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                   Ycoord_Index0.push_back(Intersection[1]);
                   Zcoord_Index0.push_back(Intersection[2]);
                   Variable_Index0.push_back(Variable_Interp);
-                  IGlobalID_Index0.push_back(node[iPoint]->GetGlobalIndex());
-                  JGlobalID_Index0.push_back(node[jPoint]->GetGlobalIndex());
+                  IGlobalID_Index0.push_back(nodes->GetGlobalIndex(iPoint));
+                  JGlobalID_Index0.push_back(nodes->GetGlobalIndex(jPoint));
                 }
                 if (PointIndex == 1) {
                   Xcoord_Index1.push_back(Intersection[0]);
                   Ycoord_Index1.push_back(Intersection[1]);
                   Zcoord_Index1.push_back(Intersection[2]);
                   Variable_Index1.push_back(Variable_Interp);
-                  IGlobalID_Index1.push_back(node[iPoint]->GetGlobalIndex());
-                  JGlobalID_Index1.push_back(node[jPoint]->GetGlobalIndex());
+                  IGlobalID_Index1.push_back(nodes->GetGlobalIndex(iPoint));
+                  JGlobalID_Index1.push_back(nodes->GetGlobalIndex(jPoint));
                 }
                 PointIndex++;
               }
@@ -2640,11 +2500,11 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 
   }
 
-  AD_END_PASSIVE
+  AD::EndPassive(wasActive);
 
 }
 
-void CGeometry::RegisterCoordinates(CConfig *config) {
+void CGeometry::RegisterCoordinates(CConfig *config) const {
   unsigned short iDim;
   unsigned long iPoint;
   bool input = true;
@@ -2652,29 +2512,27 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(node[iPoint]->GetCoord()[iDim], push_index);
+      AD::RegisterInput(nodes->GetCoord(iPoint)[iDim], push_index);
     }
     if(!push_index) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        node[iPoint]->SetIndex(input);
-      }
+      nodes->SetIndex(iPoint, input);
     }
   }
 }
 
-void CGeometry::RegisterOutput_Coordinates(CConfig *config){
+void CGeometry::RegisterOutput_Coordinates(CConfig *config) const{
   unsigned short iDim;
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     if(config->GetMultizone_Problem()) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
       }
     }
     else {
       for (iDim = 0; iDim < nDim; iDim++) {
-        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+        AD::RegisterOutput(nodes->GetCoord(iPoint)[iDim]);
       }
     }
   }
@@ -2686,7 +2544,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
-  if (config->GetGrid_Movement()){
+  if (config->GetGrid_Movement() || config->GetDynamic_Grid()){
     geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
     geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
@@ -2705,9 +2563,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
 
   }
 
-  if (config->GetKind_Solver() == DISC_ADJ_RANS || config->GetKind_Solver() == DISC_ADJ_INC_RANS)
-  geometry_container[MESH_0]->ComputeWall_Distance(config);
-
 }
 
 void CGeometry::SetCustomBoundary(CConfig *config) {
@@ -2723,8 +2578,8 @@ void CGeometry::SetCustomBoundary(CConfig *config) {
 
   for(iMarker=0; iMarker < nMarker; iMarker++){
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    CustomBoundaryHeatFlux[iMarker] = NULL;
-    CustomBoundaryTemperature[iMarker] = NULL;
+    CustomBoundaryHeatFlux[iMarker] = nullptr;
+    CustomBoundaryTemperature[iMarker] = nullptr;
     if(config->GetMarker_All_PyCustom(iMarker)){
       switch(config->GetMarker_All_KindBC(iMarker)){
         case HEAT_FLUX:
@@ -2919,15 +2774,15 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
 
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
+
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
-  int iProcessor, nProcessor;
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
   vector<unsigned long>::iterator it;
   su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
 
-  bool fea = ((config->GetKind_Solver()==FEM_ELASTICITY) || (config->GetKind_Solver()==DISC_ADJ_FEM));
+  const bool fea = config->GetStructuralProblem();
 
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
@@ -2945,17 +2800,17 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           iPoint  = vertex[iMarker][iVertex]->GetNode();
 
-          if (node[iPoint]->GetDomain()) {
+          if (nodes->GetDomain(iPoint)) {
             /*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
              side of this vertex that lie on the same surface. ---*/
             Point_Edge.clear();
 
-            for (iNeigh_Point = 0; iNeigh_Point < node[iPoint]->GetnPoint(); iNeigh_Point++) {
-              Neighbor_Point = node[iPoint]->GetPoint(iNeigh_Point);
+            for (iNeigh_Point = 0; iNeigh_Point < nodes->GetnPoint(iPoint); iNeigh_Point++) {
+              Neighbor_Point = nodes->GetPoint(iPoint, iNeigh_Point);
 
               /*--- Check if this neighbor lies on the surface. If so,
                add to the list of neighbors. ---*/
-              if (node[Neighbor_Point]->GetPhysicalBoundary()) {
+              if (nodes->GetPhysicalBoundary(Neighbor_Point)) {
                 Point_Edge.push_back(Neighbor_Point);
               }
 
@@ -2964,12 +2819,12 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
             if (Point_Edge.size() == 2) {
 
               /*--- Compute the curvature using three points ---*/
-              X1 = node[iPoint]->GetCoord(0);
-              X2 = node[Point_Edge[0]]->GetCoord(0);
-              X3 = node[Point_Edge[1]]->GetCoord(0);
-              Y1 = node[iPoint]->GetCoord(1);
-              Y2 = node[Point_Edge[0]]->GetCoord(1);
-              Y3 = node[Point_Edge[1]]->GetCoord(1);
+              X1 = nodes->GetCoord(iPoint, 0);
+              X2 = nodes->GetCoord(Point_Edge[0], 0);
+              X3 = nodes->GetCoord(Point_Edge[1], 0);
+              Y1 = nodes->GetCoord(iPoint, 1);
+              Y2 = nodes->GetCoord(Point_Edge[0], 1);
+              Y3 = nodes->GetCoord(Point_Edge[1], 1);
 
               radius = sqrt(((X2-X1)*(X2-X1) + (Y2-Y1)*(Y2-Y1))*
                             ((X2-X3)*(X2-X3) + (Y2-Y3)*(Y2-Y3))*
@@ -2977,7 +2832,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2)+EPS);
 
               K[iPoint] = 1.0/radius;
-              node[iPoint]->SetCurvature(K[iPoint]);
+              nodes->SetCurvature(iPoint, K[iPoint]);
             }
 
           }
@@ -3043,8 +2898,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               iEdge = FindEdge(Point_Triangle[0], Point_Triangle[1]);
 
               for (iDim = 0; iDim < nDim; iDim++) {
-                U[iDim] = node[Point_Triangle[0]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
-                V[iDim] = node[Point_Triangle[1]]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim);
+                U[iDim] = nodes->GetCoord(Point_Triangle[0], iDim) - nodes->GetCoord(iPoint, iDim);
+                V[iDim] = nodes->GetCoord(Point_Triangle[1], iDim) - nodes->GetCoord(iPoint, iDim);
               }
 
               W[0] = 0.5*(U[1]*V[2]-U[2]*V[1]); W[1] = -0.5*(U[0]*V[2]-U[2]*V[0]); W[2] = 0.5*(U[0]*V[1]-U[1]*V[0]);
@@ -3091,8 +2946,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
                   /*--- iPoint, and jPoint ---*/
                   for (iDim = 0; iDim < nDim; iDim++) {
-                    if (Area_Vertex[iPoint] != 0.0) NormalMeanK[iPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[iPoint]->GetCoord(iDim) - node[jPoint]->GetCoord(iDim)) / Area_Vertex[iPoint];
-                    if (Area_Vertex[jPoint] != 0.0) NormalMeanK[jPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (node[jPoint]->GetCoord(iDim) - node[iPoint]->GetCoord(iDim)) / Area_Vertex[jPoint];
+                    if (Area_Vertex[iPoint] != 0.0) NormalMeanK[iPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (nodes->GetCoord(iPoint, iDim) - nodes->GetCoord(jPoint, iDim)) / Area_Vertex[iPoint];
+                    if (Area_Vertex[jPoint] != 0.0) NormalMeanK[jPoint][iDim] += 3.0 * (cot_alpha + cot_beta) * (nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim)) / Area_Vertex[jPoint];
                   }
                 }
 
@@ -3111,7 +2966,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           iPoint  = vertex[iMarker][iVertex]->GetNode();
 
-          if (node[iPoint]->GetDomain()) {
+          if (nodes->GetDomain(iPoint)) {
 
             if (Area_Vertex[iPoint] != 0.0) GaussK = 3.0*Angle_Defect[iPoint]/Area_Vertex[iPoint];
             else GaussK = 0.0;
@@ -3127,7 +2982,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
             /*--- Store the curvature value ---*/
             K[iPoint] = MaxPrinK;
-            node[iPoint]->SetCurvature(K[iPoint]);
+            nodes->SetCurvature(iPoint, K[iPoint]);
           }
 
         }
@@ -3154,7 +3009,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           MaxK = max(MaxK, fabs(K[iPoint]));
           MinK = min(MinK, fabs(K[iPoint]));
           MeanK += fabs(K[iPoint]);
@@ -3164,14 +3019,12 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     }
   }
 
-#ifdef HAVE_MPI
   su2double MyMeanK = MeanK; MeanK = 0.0;
   su2double MyMaxK = MaxK; MaxK = 0.0;
   unsigned long MynPointDomain = TotalnPointDomain; TotalnPointDomain = 0;
   SU2_MPI::Allreduce(&MyMeanK, &MeanK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyMaxK, &MaxK, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MynPointDomain, &TotalnPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   /*--- Compute the mean ---*/
   MeanK /= su2double(TotalnPointDomain);
@@ -3182,17 +3035,15 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           SigmaK += (fabs(K[iPoint]) - MeanK) * (fabs(K[iPoint]) - MeanK);
         }
       }
     }
   }
 
-#ifdef HAVE_MPI
   su2double MySigmaK = SigmaK; SigmaK = 0.0;
   SU2_MPI::Allreduce(&MySigmaK, &SigmaK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
 
   SigmaK = sqrt(SigmaK/su2double(TotalnPointDomain));
 
@@ -3205,7 +3056,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint  = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
+        if (nodes->GetDomain(iPoint)) {
           if (fabs(K[iPoint]) > MeanK + config->GetRefSharpEdges()*SigmaK) {
             Point_Critical.push_back(iPoint);
           }
@@ -3216,14 +3067,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   /*--- Variables and buffers needed for MPI ---*/
 
-#ifdef HAVE_MPI
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = 1;
-#endif
-
   Buffer_Send_nVertex    = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  Buffer_Receive_nVertex = new unsigned long [size];
 
   /*--- Count the total number of critical edge nodes. ---*/
 
@@ -3232,31 +3077,16 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
   /*--- Communicate to all processors the total number of critical edge nodes. ---*/
 
-#ifdef HAVE_MPI
   MaxLocalVertex = 0;
   SU2_MPI::Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MaxLocalVertex = nLocalVertex;
-  Buffer_Receive_nVertex[0] = nLocalVertex;
-#endif
-
 
   /*--- Create and initialize to zero some buffers to hold the coordinates
    of the boundary nodes that are communicated from each partition (all-to-all). ---*/
 
-  Buffer_Send_Coord     = new su2double [MaxLocalVertex*nDim];
-  Buffer_Receive_Coord  = new su2double [nProcessor*MaxLocalVertex*nDim];
-
-#ifdef HAVE_MPI
-  unsigned long nBuffer               = MaxLocalVertex*nDim;
-#endif
-
-  for (iVertex = 0; iVertex < MaxLocalVertex; iVertex++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-    }
-  }
+  const unsigned long nBuffer = MaxLocalVertex*nDim;
+  Buffer_Send_Coord     = new su2double [nBuffer] ();
+  Buffer_Receive_Coord  = new su2double [size*nBuffer];
 
   /*--- Retrieve and store the coordinates of the sharp edges boundary nodes on
    the local partition and broadcast them to all partitions. ---*/
@@ -3264,28 +3094,20 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
     iPoint = Point_Critical[iVertex];
     for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+      Buffer_Send_Coord[iVertex*nDim+iDim] = nodes->GetCoord(iPoint, iDim);
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-#else
-  for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
-    }
-  }
-#endif
 
   /*--- Loop over all interior mesh nodes on the local partition and compute
    the distances to each of the no-slip boundary nodes in the entire mesh.
    Store the minimum distance to the wall for each interior mesh node. ---*/
 
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    Coord = node[iPoint]->GetCoord();
+    Coord = nodes->GetCoord(iPoint);
 
     MinDist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    for (int iProcessor = 0; iProcessor < size; iProcessor++) {
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
         Dist = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -3297,7 +3119,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
         if (Dist < MinDist) MinDist = Dist;
       }
     }
-    node[iPoint]->SetSharpEdge_Distance(MinDist);
+    nodes->SetSharpEdge_Distance(iPoint, MinDist);
   }
 
   /*--- Deallocate Max curvature ---*/
@@ -3534,7 +3356,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> &filter_radius,
 void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start,
                                                 long *&neighbour_idx) const
 {
-  if ( neighbour_idx != NULL )
+  if ( neighbour_idx != nullptr )
     SU2_MPI::Error("neighbour_idx is expected to be NULL, stopping to avoid a potential memory leak",CURRENT_FUNCTION);
 
   /*--- Determine how much space we need for the adjacency matrix by counting the
@@ -3719,7 +3541,7 @@ void CGeometry::SetElemVolume(CConfig *config)
     for (unsigned short iNode=0; iNode<elem[iElem]->GetnNodes(); ++iNode) {
       unsigned long node_idx = elem[iElem]->GetNode(iNode);
       for (unsigned short iDim=0; iDim<nDim; ++iDim) {
-        su2double coord = node[node_idx]->GetCoord(iDim);
+        su2double coord = nodes->GetCoord(node_idx, iDim);
         element->SetRef_Coord(iNode, iDim, coord);
       }
     }
@@ -3738,47 +3560,11 @@ void CGeometry::SetElemVolume(CConfig *config)
   } // end SU2_OMP_PARALLEL
 }
 
-void CGeometry::UpdateBoundaries(CConfig *config){
-
-  unsigned short iMarker;
-  unsigned long iElem_Surface, iNode_Surface, Point_Surface;
-
-  for (iMarker = 0; iMarker <config->GetnMarker_All(); iMarker++){
-    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
-      for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-
-        Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-
-        node[Point_Surface]->SetPhysicalBoundary(false);
-        node[Point_Surface]->SetSolidBoundary(false);
-
-        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-          node[Point_Surface]->SetPhysicalBoundary(true);
-
-        if (config->GetSolid_Wall(iMarker))
-          node[Point_Surface]->SetSolidBoundary(true);
-      }
-    }
-  }
-
-  /*--- Update the normal neighbors ---*/
-
-  FindNormal_Neighbor(config);
-
-  /*--- Compute wall distance ---- */
-
-  ComputeWall_Distance(config);
-
-}
-
 void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   bool loop_on;
   unsigned short iMarker = 0;
-  su2double *Face_Normal = NULL, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  su2double *Face_Normal = nullptr, *Xcoord = nullptr, *Ycoord = nullptr, *Zcoord = nullptr, *FaceArea = nullptr;
   unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
 
   /*--- Compute the total number of points on the near-field ---*/
@@ -3805,9 +3591,9 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
-        Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
-        Ycoord[iVertex_Wall] = node[iPoint]->GetCoord(1);
-        if (nDim==3) Zcoord[iVertex_Wall] = node[iPoint]->GetCoord(2);
+        Xcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 0);
+        Ycoord[iVertex_Wall] = nodes->GetCoord(iPoint, 1);
+        if (nDim==3) Zcoord[iVertex_Wall] = nodes->GetCoord(iPoint, 2);
         Face_Normal = vertex[iMarker][iVertex]->GetNormal();
         FaceArea[iVertex_Wall] = fabs(Face_Normal[nDim-1]);
         iVertex_Wall ++;
@@ -3837,17 +3623,17 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   /*--- Distribute the values among the different PhiAngles ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (node[iPoint]->GetDomain()) {
+    if (nodes->GetDomain(iPoint)) {
       loop_on = true;
       for (ixCoord = 0; ixCoord < XCoordList.size()-1 && loop_on; ixCoord++) {
-        dist_ratio = (node[iPoint]->GetCoord(0) - XCoordList[ixCoord])/(XCoordList[ixCoord+1]- XCoordList[ixCoord]);
+        dist_ratio = (nodes->GetCoord(iPoint, 0) - XCoordList[ixCoord])/(XCoordList[ixCoord+1]- XCoordList[ixCoord]);
         if (dist_ratio >= 0 && dist_ratio <= 1.0) {
           if (dist_ratio <= 0.5) iCoord = ixCoord;
           else iCoord = ixCoord+1;
-          Xcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(0) );
-          Ycoord_plane[iCoord].push_back(node[iPoint]->GetCoord(1) );
-          if (nDim==3) Zcoord_plane[iCoord].push_back(node[iPoint]->GetCoord(2) );
-          FaceArea_plane[iCoord].push_back(node[iPoint]->GetVolume());   ///// CHECK AREA CALCULATION
+          Xcoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 0) );
+          Ycoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 1) );
+          if (nDim==3) Zcoord_plane[iCoord].push_back(nodes->GetCoord(iPoint, 2) );
+          FaceArea_plane[iCoord].push_back(nodes->GetVolume(iPoint));   ///// CHECK AREA CALCULATION
           Plane_points[iCoord].push_back(iPoint );
           loop_on = false;
         }
@@ -3870,7 +3656,7 @@ void CGeometry::SetGeometryPlanes(CConfig *config) {
 
   /*--- Delete structures ---*/
   delete[] Xcoord; delete[] Ycoord;
-  if (Zcoord != NULL) delete[] Zcoord;
+  delete[] Zcoord;
   delete[] FaceArea;
 }
 
@@ -3884,7 +3670,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
   /*--- Center of rotation & angular velocity vector from config ---*/
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     Center[iDim] = config->GetMotion_Origin(iDim);
     Omega[iDim]  = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
   }
@@ -3906,7 +3692,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
     /*--- Get the coordinates of the current node ---*/
 
-    const su2double* Coord = node[iPoint]->GetCoord();
+    const su2double* Coord = nodes->GetCoord(iPoint);
 
     /*--- Calculate the non-dim. distance from the rotation center ---*/
 
@@ -3921,7 +3707,7 @@ void CGeometry::SetRotationalVelocity(CConfig *config, bool print) {
 
     /*--- Store the grid velocity at this node ---*/
 
-    node[iPoint]->SetGridVel(RotVel);
+    nodes->SetGridVel(iPoint, RotVel);
 
   }
 
@@ -3939,7 +3725,7 @@ void CGeometry::SetShroudVelocity(CConfig *config) {
       if(config->GetMarker_Shroud(iMarkerShroud) == config->GetMarker_All_TagBound(iMarker)){
         for (iVertex = 0; iVertex  < nVertex[iMarker]; iVertex++) {
           iPoint = vertex[iMarker][iVertex]->GetNode();
-          node[iPoint]->SetGridVel(RotVel);
+          nodes->SetGridVel(iPoint, RotVel);
         }
       }
     }
@@ -3965,7 +3751,7 @@ void CGeometry::SetTranslationalVelocity(CConfig *config, bool print) {
   /*--- Loop over all nodes and set the translational velocity ---*/
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetGridVel(xDot);
+    nodes->SetGridVel(iPoint, xDot);
 
 }
 
@@ -3984,9 +3770,9 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
 
-    const su2double *Coord_nM1 = node[iPoint]->GetCoord_n1();
-    const su2double *Coord_n   = node[iPoint]->GetCoord_n();
-    const su2double *Coord_nP1 = node[iPoint]->GetCoord();
+    const su2double *Coord_nM1 = nodes->GetCoord_n1(iPoint);
+    const su2double *Coord_n   = nodes->GetCoord_n(iPoint);
+    const su2double *Coord_nP1 = nodes->GetCoord(iPoint);
 
     /*--- Compute and store mesh velocity with 1st or 2nd-order approximation ---*/
 
@@ -4000,7 +3786,7 @@ void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
       if (SecondOrder)
         GridVel = (1.5*Coord_nP1[iDim] - 2.0*Coord_n[iDim] + 0.5*Coord_nM1[iDim]) / TimeStep;
 
-      node[iPoint]->SetGridVel(iDim, GridVel);
+      nodes->SetGridVel(iPoint, iDim, GridVel);
     }
   }
 
@@ -4060,14 +3846,13 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
     }
 
     /*--- Create a temporary sparse pattern from the edges. ---*/
-    /// TODO: Try to avoid temporary once grid information is made contiguous.
     su2vector<unsigned long> outerPtr(nEdge+1);
     su2vector<unsigned long> innerIdx(nEdge*2);
 
     for (unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
       outerPtr(iEdge) = 2*iEdge;
-      innerIdx(iEdge*2+0) = edge[iEdge]->GetNode(0);
-      innerIdx(iEdge*2+1) = edge[iEdge]->GetNode(1);
+      innerIdx(iEdge*2+0) = edges->GetNode(iEdge,0);
+      innerIdx(iEdge*2+1) = edges->GetNode(iEdge,1);
     }
     outerPtr(nEdge) = 2*nEdge;
 
@@ -4113,7 +3898,6 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* effic
     }
 
     /*--- Create a temporary sparse pattern from the elements. ---*/
-    /// TODO: Try to avoid temporary once grid information is made contiguous.
     vector<unsigned long> outerPtr(nElem+1);
     vector<unsigned long> innerIdx; innerIdx.reserve(nElem);
 
@@ -4149,3 +3933,58 @@ void CGeometry::SetNaturalElementColoring()
   /*--- In parallel, set the group size to nElem to protect client code. ---*/
   if (omp_get_max_threads() > 1) elemColorGroupSize = nElem;
 }
+
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry ****geometry_container){
+
+  int nZone = config_container[ZONE_0]->GetnZone();
+  bool allEmpty = true;
+  vector<bool> wallDistanceNeeded(nZone, false);
+
+  for (int iInst = 0; iInst < config_container[ZONE_0]->GetnTimeInstances(); iInst++){
+    for (int iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Check if a zone needs the wall distance and store a boolean ---*/
+
+      ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
+      if (kindSolver == RANS ||
+          kindSolver == INC_RANS ||
+          kindSolver == DISC_ADJ_RANS ||
+          kindSolver == DISC_ADJ_INC_RANS ||
+          kindSolver == FEM_LES ||
+          kindSolver == FEM_RANS){
+        wallDistanceNeeded[iZone] = true;
+      }
+
+      /*--- Set the wall distances in all zones to the numerical limit.
+     * This is necessary, because before a computed distance is set, it will be checked
+     * whether the new distance is smaller than the currently stored one. ---*/
+      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+      if (wallDistanceNeeded[iZone])
+        geometry->SetWallDistance(numeric_limits<su2double>::max());
+    }
+
+    /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
+    for (int iZone = 0; iZone < nZone; iZone++){
+      CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+      unique_ptr<CADTElemClass> WallADT = geometry->ComputeViscousWallADT(config_container[iZone]);
+      if (WallADT && !WallADT->IsEmpty()){
+        allEmpty = false;
+        /*--- Inner loop over all zones to update the wall distances.
+       * It might happen that there is a closer viscous wall in zone iZone for points in zone jZone. ---*/
+        for (int jZone = 0; jZone < nZone; jZone++){
+          if (wallDistanceNeeded[jZone])
+            geometry_container[jZone][iInst][MESH_0]->SetWallDistance(config_container[jZone], WallADT.get());
+        }
+      }
+    }
+
+    /*--- If there are no viscous walls in the entire domain, set distances to zero ---*/
+    if (allEmpty){
+      for (int iZone = 0; iZone < nZone; iZone++){
+        CGeometry *geometry = geometry_container[iZone][iInst][MESH_0];
+        geometry->SetWallDistance(0.0);
+      }
+    }
+  }
+}
+

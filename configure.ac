@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 7.0.3 "Blackbird"
+# \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -66,7 +66,7 @@ AS_IF([test -z "$PYTHON_INCLUDE"], [
   ])
   AC_MSG_CHECKING([python include flags])
   PYTHON_INCLUDE=`$PYTHON_CONFIG --includes`
-  PYTHON_LIB=`$PYTHON_CONFIG --libs`
+  PYTHON_LIB=`$PYTHON_CONFIG --libs --embed`
   PYTHON_EXEC_PREFIX=`$PYTHON_CONFIG --exec-prefix`
   AC_MSG_RESULT([$PYTHON_INCLUDE])
 ])

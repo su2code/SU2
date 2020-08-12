@@ -2,7 +2,7 @@
  * \file CHeatOutput.hpp
  * \brief  Headers of the heat output.
  * \author R. Sanchez, T. Albring.
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -86,5 +86,5 @@ public:
    * \param[in] iVertex - Index of the vertex on the marker.
    */
   void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint,
-                       unsigned short iMarker, unsigned long iVertex);
+                       unsigned short iMarker, unsigned long iVertex) override;
 };

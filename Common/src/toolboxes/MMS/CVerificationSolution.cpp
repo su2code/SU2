@@ -2,7 +2,7 @@
  * \file CVerificationSolution.cpp
  * \brief Implementations of the member functions of CVerificationSolution.
  * \author T. Economon, E. van der Weide
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,10 +30,10 @@
 CVerificationSolution::CVerificationSolution(void) {
 
   /*--- Initialize the pointers to NULL. ---*/
-  Error_RMS             = NULL;
-  Error_Max             = NULL;
-  Error_Point_Max       = NULL;
-  Error_Point_Max_Coord = NULL;
+  Error_RMS             = nullptr;
+  Error_Max             = nullptr;
+  Error_Point_Max       = nullptr;
+  Error_Point_Max_Coord = nullptr;
 }
 
 CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
@@ -73,12 +73,12 @@ CVerificationSolution::CVerificationSolution(unsigned short val_nDim,
 CVerificationSolution::~CVerificationSolution(void) {
 
   /*--- Release the memory of the pointers, if allocated. ---*/
-  if (Error_RMS != NULL) delete [] Error_RMS;
-  if (Error_Max != NULL) delete [] Error_Max;
+  delete [] Error_RMS;
+  delete [] Error_Max;
 
-  if (Error_Point_Max != NULL) delete [] Error_Point_Max;
+  delete [] Error_Point_Max;
 
-  if (Error_Point_Max_Coord != NULL) {
+  if (Error_Point_Max_Coord != nullptr) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Error_Point_Max_Coord[iVar];
     }

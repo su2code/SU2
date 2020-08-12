@@ -2,11 +2,11 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -27,6 +27,8 @@
 
 #include "../../include/drivers/CSinglezoneDriver.hpp"
 #include "../../include/definition_structure.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIteration.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -46,11 +48,7 @@ CSinglezoneDriver::~CSinglezoneDriver(void) {
 
 void CSinglezoneDriver::StartSolver() {
 
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+  StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
 
@@ -127,13 +125,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
-  if ((config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  NAVIER_STOKES) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  RANS) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  INC_EULER) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-      (config_container[ZONE_0]->GetKind_Solver() ==  INC_RANS) ) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], TimeIter);
+  if (config_container[ZONE_0]->GetFluidProblem()) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                            solver_container[ZONE_0][INST_0],
+                                                                            config_container[ZONE_0], TimeIter);
   }
 
 #ifdef HAVE_MPI
@@ -188,17 +183,12 @@ void CSinglezoneDriver::Update() {
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   /*--- Time the output for performance benchmarking. ---*/
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
+
+  StopTime = SU2_MPI::Wtime();
+
   UsedTimeCompute += StopTime-StartTime;
-#ifndef HAVE_MPI
-  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StartTime = MPI_Wtime();
-#endif
+
+  StartTime = SU2_MPI::Wtime();
 
   bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
@@ -207,43 +197,41 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   if (wrote_files){
 
-#ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StopTime = MPI_Wtime();
-#endif
+    StopTime = SU2_MPI::Wtime();
+
     UsedTimeOutput += StopTime-StartTime;
     OutputCount++;
     BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-#ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-    StartTime = MPI_Wtime();
-#endif
+
+    StartTime = SU2_MPI::Wtime();
+
     config_container[ZONE_0]->Set_StartTime(StartTime);
   }
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 
+  auto iteration = iteration_container[ZONE_0][INST_0];
+
   /*--- Legacy dynamic mesh update - Only if GRID_MOVEMENT = YES ---*/
   if (config_container[ZONE_0]->GetGrid_Movement()) {
-    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0],
-                                                          grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
-                                                          config_container[ZONE_0], 0, TimeIter);
+    iteration->SetGrid_Movement(geometry_container[ZONE_0][INST_0],surface_movement[ZONE_0],
+                                grid_movement[ZONE_0][INST_0], solver_container[ZONE_0][INST_0],
+                                config_container[ZONE_0], 0, TimeIter);
   }
 
   /*--- New solver - all the other routines in SetGrid_Movement should be adapted to this one ---*/
   /*--- Works if DEFORM_MESH = YES ---*/
-  if (config_container[ZONE_0]->GetDeform_Mesh()) {
-    iteration_container[ZONE_0][INST_0]->SetMesh_Deformation(geometry_container[ZONE_0][INST_0],
-                                                             solver_container[ZONE_0][INST_0][MESH_0],
-                                                             numerics_container[ZONE_0][INST_0][MESH_0],
-                                                             config_container[ZONE_0],
-                                                             NONE);
+  iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0],
+                                 solver_container[ZONE_0][INST_0][MESH_0],
+                                 numerics_container[ZONE_0][INST_0][MESH_0],
+                                 config_container[ZONE_0], NONE);
+
+  /*--- Update the wall distances if the mesh was deformed. ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement() ||
+      config_container[ZONE_0]->GetDeform_Mesh()) {
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
   }
-
-
 }
 
 bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
@@ -325,4 +313,8 @@ void CSinglezoneDriver::Runtime_Options(){
     delete runtime;
   }
 
+}
+
+bool CSinglezoneDriver::GetTimeConvergence() const{
+  return output_container[ZONE_0]->GetTimeConvergence();
 }

@@ -2,7 +2,7 @@
  * \file transition.hpp
  * \brief Delarations of numerics classes for transition problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,7 +56,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwLin_TransLM(void);
+  ~CUpwLin_TransLM(void) override;
 
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
@@ -65,7 +65,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -94,7 +94,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwSca_TransLM(void);
+  ~CUpwSca_TransLM(void) override;
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -103,7 +103,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -136,7 +136,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGrad_TransLM(void);
+  ~CAvgGrad_TransLM(void) override;
 
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -145,7 +145,7 @@ public:
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -175,7 +175,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrected_TransLM(void);
+  ~CAvgGradCorrected_TransLM(void) override;
 
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
@@ -184,7 +184,7 @@ public:
    * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) override;
 };
 
 /*!
@@ -237,7 +237,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourcePieceWise_TransLM(void);
+  ~CSourcePieceWise_TransLM(void) override;
 
   /*!
    * \brief Residual for source term integration.
@@ -246,7 +246,7 @@ public:
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep);
+  void ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) override;
 
-  void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(su2double *TransVar_i, su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
+  void CSourcePieceWise_TransLM__ComputeResidual_TransLM_d(const su2double *TransVar_i, const su2double *TransVar_id, su2double *val_residual, su2double *val_residuald, CConfig *config);
 };

@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSSTSolver(void);
+  ~CTurbSSTSolver(void) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -228,19 +228,6 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) override;
- /*!
-  * \brief Impose the interface state across sliding meshes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] conv_numerics - Description of the numerical method.
-  * \param[in] visc_numerics - Description of the numerical method.
-  * \param[in] config - Definition of the particular problem.
-  */
-  void BC_Fluid_Interface(CGeometry *geometry,
-                          CSolver **solver_container,
-                          CNumerics *conv_numerics,
-                          CNumerics *visc_numerics,
-                          CConfig *config) override;
 
   /*!
    * \brief Get the constants for the SST model.
@@ -259,14 +246,13 @@ public:
     }
   }
 
-
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
    * \param[in] val_inlet - vector containing the inlet values for the current vertex.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInletAtVertex(su2double *val_inlet,
+  void SetInletAtVertex(const su2double *val_inlet,
                         unsigned short iMarker,
                         unsigned long iVertex) override;
 
@@ -283,8 +269,8 @@ public:
                              unsigned long val_inlet_point,
                              unsigned short val_kind_marker,
                              string val_marker,
-                             CGeometry *geometry,
-                             CConfig *config) const override;
+                             const CGeometry *geometry,
+                             const CConfig *config) const override;
   /*!
    * \brief Set a uniform inlet profile
    *
@@ -294,7 +280,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetUniformInlet(CConfig* config, unsigned short iMarker) override;
+  void SetUniformInlet(const CConfig* config, unsigned short iMarker) override;
 
   /*!
    * \brief Get the value of the turbulent kinetic energy.

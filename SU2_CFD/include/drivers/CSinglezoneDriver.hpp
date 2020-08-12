@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CSinglezoneDriver
  * \brief Class for driving single-zone solvers.
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CSinglezoneDriver : public CDriver {
 protected:
@@ -55,22 +55,22 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CSinglezoneDriver(void);
+  ~CSinglezoneDriver(void) override;
 
   /*!
    * \brief [Overload] Launch the computation for single-zone problems.
    */
-  void StartSolver();
+  void StartSolver() override;
 
   /*!
    * \brief Preprocess the single-zone iteration
    */
-  virtual void Preprocess(unsigned long TimeIter);
+  void Preprocess(unsigned long TimeIter) override;
 
   /*!
    * \brief Run the iteration for ZONE_0.
    */
-  virtual void Run();
+  void Run() override;
 
   /*!
    * \brief Postprocess the iteration for ZONE_0.
@@ -80,32 +80,29 @@ public:
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  void Update() override;
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output(unsigned long TimeIter);
+  void Output(unsigned long TimeIter) override;
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
    */
-  void DynamicMeshUpdate(unsigned long TimeIter);
+  void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
    * \brief Monitor
    * \param ExtIter
    */
-  virtual bool Monitor(unsigned long TimeIter);
+  bool Monitor(unsigned long TimeIter) override;
 
   /*!
-     * \brief  Returns wheter all specified windowed-time-averaged ouputs have been converged
+     * \brief  Returns whether all specified windowed-time-averaged ouputs have been converged
      * \return Boolean indicating whether the problem is converged.
      */
-  inline virtual bool GetTimeConvergence() const{
-    return output_container[ZONE_0]->GetTimeConvergence();
-  }
-
+  virtual bool GetTimeConvergence() const;
 
   /*!
    * \brief Runtime_Parsing

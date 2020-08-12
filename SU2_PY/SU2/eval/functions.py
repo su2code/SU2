@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.3 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -165,6 +165,11 @@ def aerodynamics( config, state=None ):
     
     # initialize
     state = su2io.State(state)
+
+    # Make sure to output aerodynamic coeff.
+    if not 'AERO_COEFF' in config['HISTORY_OUTPUT']:
+        config['HISTORY_OUTPUT'].append('AERO_COEFF')
+
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
@@ -217,7 +222,18 @@ def aerodynamics( config, state=None ):
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
-    
+
+    # files: restarts
+    if config.get('TIME_DOMAIN', 'NO') == 'YES' and config.get('RESTART_SOL','NO') =='YES':
+        if  'RESTART_FILE_1' in files: # not the case for directdiff restart
+            name = files['RESTART_FILE_1']
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+        if 'RESTART_FILE_2' in files:  # not the case for 1st order time stepping
+            name = files['RESTART_FILE_2']
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
 
@@ -229,7 +245,8 @@ def aerodynamics( config, state=None ):
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
-        config['RESTART_SOL'] = 'NO'
+        if config.get('TIME_DOMAIN', 'NO') != 'YES': #rules out steady state optimization special cases.
+            config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
         
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 

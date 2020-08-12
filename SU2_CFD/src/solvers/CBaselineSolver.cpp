@@ -2,7 +2,7 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -444,8 +444,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[iInst]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
-          geometry[iInst]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+          geometry[iInst]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+          geometry[iInst]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
         }
       }
 
@@ -478,9 +478,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars;
+  delete [] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
 
 }
 
@@ -555,5 +555,5 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
 }
 
 CBaselineSolver::~CBaselineSolver(void) {
-  if (nodes != nullptr) delete nodes;
+  delete nodes;
 }

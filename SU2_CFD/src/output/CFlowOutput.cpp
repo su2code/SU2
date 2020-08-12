@@ -2,7 +2,7 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.3 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -185,15 +185,25 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+        if (geometry->nodes->GetDomain(iPoint)) {
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
           if (axisymmetric) {
-            if (geometry->node[iPoint]->GetCoord(1) != 0.0)
-              AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-            else
-              AxiFactor = 1.0;
+            if (geometry->nodes->GetCoord(iPoint, 1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
+            else {
+              /*--- Find the point "above" by finding the neighbor of iPoint that is also a vertex of iMarker. ---*/
+              AxiFactor = 0.0;
+              for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+                auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+                if (geometry->nodes->GetVertex(jPoint, iMarker) >= 0) {
+                  /*--- Not multiplied by two since we need to half the y coordinate. ---*/
+                  AxiFactor = PI_NUMBER * geometry->nodes->GetCoord(jPoint, 1);
+                  break;
+                }
+              }
+            }
           } else {
             AxiFactor = 1.0;
           }
@@ -269,9 +279,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
         }
       }
-
     }
-
   }
 
   /*--- Copy to the appropriate structure ---*/
@@ -440,7 +448,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
 
     Area = fabs(Surface_Area_Total[iMarker_Analyze]);
-
+    
+    /*--- The definitions for Distortion and Uniformity Parameters are taken as defined by Banko, Andrew J., et al. in section 3.2 of
+    https://www.sciencedirect.com/science/article/pii/S0142727X16301412 ------*/
+    
     if (Area != 0.0) {
       Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity2_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
       Surface_StreamVelocity2_Total[iMarker_Analyze] /= Area;
@@ -460,54 +471,67 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
     SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW", MassFlow, iMarker_Analyze);
     Tot_Surface_MassFlow += MassFlow;
+    config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
 
     su2double Mach = Surface_Mach_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_MACH", Mach, iMarker_Analyze);
     Tot_Surface_Mach += Mach;
+    config->SetSurface_Mach(iMarker_Analyze, Mach);
 
     su2double Temperature = Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TEMP", Temperature, iMarker_Analyze);
     Tot_Surface_Temperature += Temperature;
+    config->SetSurface_Temperature(iMarker_Analyze, Temperature);
 
     su2double Pressure = Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_PRESS", Pressure, iMarker_Analyze);
     Tot_Surface_Pressure += Pressure;
+    config->SetSurface_Pressure(iMarker_Analyze, Pressure);
 
     su2double Density = Surface_Density_Total[iMarker_Analyze] * config->GetDensity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_DENSITY", Density, iMarker_Analyze);
     Tot_Surface_Density += Density;
+    config->SetSurface_Density(iMarker_Analyze, Density);
 
     su2double Enthalpy = Surface_Enthalpy_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY", Enthalpy, iMarker_Analyze);
     Tot_Surface_Enthalpy += Enthalpy;
+    config->SetSurface_Enthalpy(iMarker_Analyze, Enthalpy);
 
     su2double NormalVelocity = Surface_NormalVelocity_Total[iMarker_Analyze] * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL", NormalVelocity, iMarker_Analyze);
     Tot_Surface_NormalVelocity += NormalVelocity;
+    config->SetSurface_NormalVelocity(iMarker_Analyze, NormalVelocity);
 
     su2double Uniformity = sqrt(Surface_StreamVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("UNIFORMITY", Uniformity, iMarker_Analyze);
     Tot_Surface_StreamVelocity2 += Uniformity;
+    config->SetSurface_Uniformity(iMarker_Analyze, Uniformity);
 
     su2double SecondaryStrength = sqrt(Surface_TransvVelocity2_Total[iMarker_Analyze]) * config->GetVelocity_Ref();
     SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH", SecondaryStrength, iMarker_Analyze);
     Tot_Surface_TransvVelocity2 += SecondaryStrength;
+    config->SetSurface_SecondaryStrength(iMarker_Analyze, SecondaryStrength);
 
     su2double MomentumDistortion = Surface_MomentumDistortion_Total[iMarker_Analyze];
     SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION", MomentumDistortion, iMarker_Analyze);
     Tot_Momentum_Distortion += MomentumDistortion;
+    config->SetSurface_MomentumDistortion(iMarker_Analyze, MomentumDistortion);
 
     su2double SecondOverUniform = SecondaryStrength/Uniformity;
     SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY", SecondOverUniform, iMarker_Analyze);
     Tot_SecondOverUniformity += SecondOverUniform;
+    config->SetSurface_SecondOverUniform(iMarker_Analyze, SecondOverUniform);
 
     su2double TotalTemperature = Surface_TotalTemperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP", TotalTemperature, iMarker_Analyze);
     Tot_Surface_TotalTemperature += TotalTemperature;
+    config->SetSurface_TotalTemperature(iMarker_Analyze, TotalTemperature);
 
     su2double TotalPressure = Surface_TotalPressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
     SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS", TotalPressure, iMarker_Analyze);
     Tot_Surface_TotalPressure += TotalPressure;
+    config->SetSurface_TotalPressure(iMarker_Analyze, TotalPressure);
 
   }
 
@@ -770,6 +794,13 @@ void CFlowOutput::SetAerodynamicCoefficients(CConfig *config, CSolver *flow_solv
   SetHistoryOutputValue("AOA", config->GetAoA());
 }
 
+void CFlowOutput::SetRotatingFrameCoefficients(CConfig *config, CSolver *flow_solver) {
+
+  SetHistoryOutputValue("CT", flow_solver->GetTotal_CT());
+  SetHistoryOutputValue("CQ", flow_solver->GetTotal_CQ());
+  SetHistoryOutputValue("MERIT", flow_solver->GetTotal_CMerit());
+}
+
 
 void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
 
@@ -781,7 +812,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
   unsigned short iMarker, icommas, Boundary, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
-  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = NULL, Area, PressDiff = 0.0;
+  su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff = 0.0;
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
@@ -827,7 +858,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
 
           /*--- The Pressure file uses the global numbering ---*/
 
-          iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+          iPoint = geometry->nodes->GetGlobalIndex(geometry->vertex[iMarker][iVertex]->GetNode());
 
           if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
             Point2Vertex[iPoint][0] = iMarker;
@@ -1040,25 +1071,25 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     0.0, Visc_CL = 0.0,
     Visc_CD = 0.0, Visc_CSF = 0.0, Visc_CMx = 0.0, Visc_CMy = 0.0,
     Visc_CMz = 0.0, Visc_CEff = 0.0, Visc_CFx = 0.0, Visc_CFy = 0.0, Visc_CFz =
-    0.0, *Surface_CL = NULL, *Surface_CD = NULL,
-    *Surface_CSF = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL,
-    *Surface_CFy = NULL, *Surface_CFz = NULL,
-    *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
-    *Surface_CL_Inv = NULL,
-    *Surface_CD_Inv = NULL, *Surface_CSF_Inv = NULL,
-    *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv =
-    NULL, *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL,
-    *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL,
-    *Surface_CL_Visc = NULL,
-    *Surface_CD_Visc = NULL, *Surface_CSF_Visc = NULL,
-    *Surface_CEff_Visc = NULL, *Surface_CFx_Visc = NULL, *Surface_CFy_Visc =
-    NULL, *Surface_CFz_Visc = NULL, *Surface_CMx_Visc = NULL,
-    *Surface_CMy_Visc = NULL, *Surface_CMz_Visc = NULL,
-    *Surface_CL_Mnt = NULL,
-    *Surface_CD_Mnt = NULL, *Surface_CSF_Mnt = NULL,
-    *Surface_CEff_Mnt = NULL, *Surface_CFx_Mnt = NULL, *Surface_CFy_Mnt =
-    NULL, *Surface_CFz_Mnt = NULL, *Surface_CMx_Mnt = NULL,
-    *Surface_CMy_Mnt = NULL, *Surface_CMz_Mnt = NULL;
+    0.0, *Surface_CL = nullptr, *Surface_CD = nullptr,
+    *Surface_CSF = nullptr, *Surface_CEff = nullptr, *Surface_CFx = nullptr,
+    *Surface_CFy = nullptr, *Surface_CFz = nullptr,
+    *Surface_CMx = nullptr, *Surface_CMy = nullptr, *Surface_CMz = nullptr,
+    *Surface_CL_Inv = nullptr,
+    *Surface_CD_Inv = nullptr, *Surface_CSF_Inv = nullptr,
+    *Surface_CEff_Inv = nullptr, *Surface_CFx_Inv = nullptr, *Surface_CFy_Inv =
+    nullptr, *Surface_CFz_Inv = nullptr, *Surface_CMx_Inv = nullptr,
+    *Surface_CMy_Inv = nullptr, *Surface_CMz_Inv = nullptr,
+    *Surface_CL_Visc = nullptr,
+    *Surface_CD_Visc = nullptr, *Surface_CSF_Visc = nullptr,
+    *Surface_CEff_Visc = nullptr, *Surface_CFx_Visc = nullptr, *Surface_CFy_Visc =
+    nullptr, *Surface_CFz_Visc = nullptr, *Surface_CMx_Visc = nullptr,
+    *Surface_CMy_Visc = nullptr, *Surface_CMz_Visc = nullptr,
+    *Surface_CL_Mnt = nullptr,
+    *Surface_CD_Mnt = nullptr, *Surface_CSF_Mnt = nullptr,
+    *Surface_CEff_Mnt = nullptr, *Surface_CFx_Mnt = nullptr, *Surface_CFy_Mnt =
+    nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
+    *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
 
     /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
      the two lines below that use the dt variable. ---*/
@@ -1350,7 +1381,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.0.3 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
