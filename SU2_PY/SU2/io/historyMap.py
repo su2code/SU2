@@ -65,6 +65,11 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
                      'GROUP': 'HEAT',
                      'HEADER': 'AvgTemp',
                      'TYPE': 'COEFFICIENT'},
+ 'SURFACE_TOTAL_PRESSURE': {'DESCRIPTION': 'Total average total pressure on all '
+                                   'markers set in MARKER_ANALYZE',
+                    'GROUP': 'FLOW_COEFF',
+                    'HEADER': 'Avg_TotalPress',
+                    'TYPE': 'COEFFICIENT'},
  'AVG_TOTALPRESS': {'DESCRIPTION': 'Total average total pressure on all '
                                    'markers set in MARKER_ANALYZE',
                     'GROUP': 'FLOW_COEFF',

@@ -70,9 +70,8 @@ def read_surface_gradients( Grad_filename , scale = 1.0):
     gradfile.readline()
     gradfile.readline()
     header = gradfile.readline()
-    header = header.split("=")
+    header = header.split("=") 
     nNodes = int(header[1].split(",")[0])
-
     
     # read values
     grad_vals = {}
@@ -82,9 +81,9 @@ def read_surface_gradients( Grad_filename , scale = 1.0):
 
         if Node == nNodes:
             break
-        #print (line)
-        if len(line) == 7:
-            grad_vals[int(float(line[6]))] = [float(line[3]), float(line[4]), float(line[5])];
+       
+        if len(line) == 8:
+            grad_vals[int(float(line[7]))] = [float(line[3]), float(line[4]), float(line[5])];
         else:
             grad_vals[int(float(line[5]))] = [float(line[2]), float(line[3])];
 
@@ -407,7 +406,7 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
-    if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return -1.0
+    if ObjFun_name == "SURFACE_TOTAL_PRESSURE"  : return 1.0
     if ObjFun_name == "SURFACE_STATIC_PRESSURE" : return -1.0
     if ObjFun_name == "SURFACE_MASSFLOW"        : return -1.0
     if ObjFun_name == "SURFACE_MACH"            : return -1.0

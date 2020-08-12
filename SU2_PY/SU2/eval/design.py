@@ -286,12 +286,13 @@ def df(dvs, function_list, update_design, config, state=None):
     marker_monitored = config['MARKER_MONITORING']
     for i_obj,this_obj in enumerate(objectives): 
 
-        config['MARKER_MONITORING'] = marker_monitored[i_obj]
+        config['MARKER_MONITORING'] = marker_monitored[i_obj]        
 
         grad = su2grad(this_obj,grad_method,config,state)
         
         vals_out.append(grad)
-    
+
+        config['MARKER_MONITORING']=marker_monitored 
  
     return vals_out
 

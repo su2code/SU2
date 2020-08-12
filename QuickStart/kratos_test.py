@@ -11,18 +11,21 @@ config.GRADIENT_METHOD= 'DISCRETE_ADJOINT'
 #config.CONSOLE= 'CONCISE'
 project = SU2.opt.Project(config,state)
 
-project.config["MOTION_FILENAME"] = "mesh_motion.dat"
-project.state.FILES["MOTION_FILE"] = project.config["MOTION_FILENAME"]
+project.config["DV_FILENAME"] = "mesh_motion.dat"
+project.state.FILES["MOTION_FILE"] = project.config["DV_FILENAME"]
 
 obj = []
 dobj = []
-#obj.append (project.f( ["DRAG"], True, 1 ))
+
 obj.append  (project.f (["DRAG"], True , 1 ))
 dobj.append (project.df(["DRAG"], False, 1 ))
 dobj.append (project.df(["DRAG"], True , 2 ))
 obj.append  (project.f (["DRAG"], False, 1 ))
 
-
+obj.append  (project.f (["LIFT"], True , 1 ))
+dobj.append (project.df(["LIFT"], False, 1 ))
+dobj.append (project.df(["LIFT"], True , 2 ))
+obj.append  (project.f (["LIFT"], False, 1 ))
 
 #obj_d = { id : [x y z] }
 #obj_d = project.df(["LIFT"], False, 2)
