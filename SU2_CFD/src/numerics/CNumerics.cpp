@@ -761,13 +761,13 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     invp[1][1] = Gamma_Minus_One*v[0]*n[1]/c2-n[2]/(*r);
     invp[1][2] = Gamma_Minus_One*v[1]*n[1]/c2;
     invp[1][3] = Gamma_Minus_One*v[2]*n[1]/c2-n[0]/(*r);
-    invp[1][4] = -Gamma_Minus_One*n[1]/c2
+    invp[1][4] = -Gamma_Minus_One*n[1]/c2;
 
     invp[2][0] = (1.0-phi2/c2)*n[2]-(v[0]*n[1]-v[1]*n[0])/(*r);
     invp[2][1] = Gamma_Minus_One*v[0]*n[2]/c2+n[1]/(*r);
     invp[2][2] = Gamma_Minus_One*v[1]*n[2]/c2-n[0]/(*r);
     invp[2][3] = Gamma_Minus_One*v[2]*n[2]/c2;
-    invp[2][4] = -Gamma_Minus_One*n[2]/c2
+    invp[2][4] = -Gamma_Minus_One*n[2]/c2;
 
     invp[3][0] = beta*(phi2-(*c)*theta);
     invp[3][1] = -beta*(Gamma_Minus_One*v[0]-(*c)*n[0]);
