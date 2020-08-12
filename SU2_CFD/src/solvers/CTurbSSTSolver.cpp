@@ -504,8 +504,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned long iPoint) {
   
-  if ((config->GetKind_Gradient_Method() == GREEN_GAUSS) &&
-      (config->GetUse_Accurate_Turb_Jacobians())) {
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
 
     const bool wasActive = AD::BeginPassive();
   
