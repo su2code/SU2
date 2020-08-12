@@ -298,23 +298,23 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
     Jacobian.SetValZero();
   }
   
-  /*--- Compute gradients ---*/
+  /*--- Compute primitives and gradients ---*/
 
   // Postprocessing(geometry, solver, config, iMesh);
 
-  SetPrimitive_Variables(solver);
+  // SetPrimitive_Variables(solver);
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  // if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
     
-  if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-  }
+  // if (config->GetReconstructionGradientRequired()) {
+  //   if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+  //     SetPrimitive_Gradient_GG(geometry, config, true);
+  //   if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+  //     SetPrimitive_Gradient_LS(geometry, config, true);
+  //   if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+  //     SetPrimitive_Gradient_LS(geometry, config, true);
+  // }
 
   if ((limiter_flow && !edge_limiter_flow) || (limiter_turb && !edge_limiter_turb)) SetPrimitive_Limiter(geometry, config);
 
@@ -329,10 +329,19 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   
   SetPrimitive_Variables(solver);
   
-  /*--- Compute mean flow and turbulence gradients ---*/
+  /*--- Compute turbulence gradients ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+
+  if (config->GetReconstructionGradientRequired()) {
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+      SetPrimitive_Gradient_GG(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+      SetPrimitive_Gradient_LS(geometry, config, true);
+  }
   
   /*--- Compute eddy viscosity ---*/
 
