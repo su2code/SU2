@@ -63,7 +63,7 @@ CNEMONSSolver::~CNEMONSSolver(void) {
 
 }
 
-void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
@@ -91,7 +91,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *confi
                              *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
-void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
+void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;

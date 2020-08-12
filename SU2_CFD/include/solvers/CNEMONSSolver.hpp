@@ -40,7 +40,7 @@
  * \author S. R. Copeland, F. Palacios, W. Maier.
  * \version 6.1
  */
-class CNEMONSSolver : public CNEMOEulerSolver {
+class CNEMONSSolver final : public CNEMOEulerSolver {
 private:
 
   su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
@@ -76,8 +76,8 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config,
-                                bool reconstruction = false);
+                                const CConfig *config,
+                                bool reconstruction = false) override;
 
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -87,8 +87,8 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
-                                bool reconstruction = false);
+                                const CConfig *config,
+                                bool reconstruction = false) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -100,7 +100,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -142,7 +142,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong).
@@ -185,7 +185,7 @@ public:
                                CNumerics *conv_numerics,
                                CNumerics *visc_numerics,
                                CConfig *config,
-                               unsigned short val_marker);
+                               unsigned short val_marker) override;
 
   /*!
    * \brief Compute the viscous residuals.
@@ -197,6 +197,6 @@ public:
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
 
 };
