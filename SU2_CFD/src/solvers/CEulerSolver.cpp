@@ -3036,15 +3036,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                                (InnerIter <= config->GetLimiterIter());
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous     = config->GetViscous();
   const bool musclTurb   = config->GetMUSCL_Turb();
-  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                           (InnerIter <= config->GetLimiterIter());
+  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   su2double tke_i = 0, tke_j = 0;
 
@@ -3103,9 +3101,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
     if (tkeNeeded) {
+
       CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
       tke_i = turbNodes->GetPrimitive(iPoint,0);
       tke_j = turbNodes->GetPrimitive(jPoint,0);
+      numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
       if (musclTurb) {
         /*--- Reconstruct turbulence variables. ---*/
@@ -3160,8 +3160,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           Project_Grad_i *= Limiter_i[0];
           Project_Grad_j *= Limiter_j[0];
-
-          numerics->SetTurbLimiter(Limiter_i, Limiter_j);
+          
         }
 
         tke_i += Project_Grad_i;
@@ -3299,9 +3298,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
                                        bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
-
-        if (bad_edge)
-          numerics->SetTurbLimiter(ZeroVec, ZeroVec);
       }
 
     }

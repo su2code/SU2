@@ -68,8 +68,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
 
-  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
-  Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(1.0);
+  Limiter.resize(nPoint,nVar) = su2double(1.0);
 
   Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
   Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
