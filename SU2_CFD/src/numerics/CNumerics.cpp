@@ -607,7 +607,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   }
   else {
     // phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])+(*k));
-    phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+    phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]));
     theta = v[0]*n[0]+v[1]*n[1]+v[2]*n[2];
 
     p[0][0] = n[0];
