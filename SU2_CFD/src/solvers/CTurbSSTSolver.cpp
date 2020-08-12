@@ -353,7 +353,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
 
     nodes->SetPrimitive(iPoint,0,k);
     nodes->SetPrimitive(iPoint,1,om);
-    nodes->SetSolution(iPoint,1,r*om);
+    // nodes->SetSolution(iPoint,1,r*om);
   }
 
 }
