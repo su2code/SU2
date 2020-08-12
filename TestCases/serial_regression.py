@@ -274,7 +274,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.021218, -5.268447, 0.807465, 0.060897] #last 4 columns
+    rae2822_sa.test_vals = [-2.021224, -5.268445, 0.807582, 0.060731] #last 4 columns
     rae2822_sa.su2_exec  = "SU2_CFD"
     rae2822_sa.timeout   = 1600
     rae2822_sa.new_output = True
@@ -321,7 +321,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.412449, -6.702976, 0.229867, 0.147638]#last 4 columns
+    turb_oneram6.test_vals = [-2.388855, -6.689341, 0.230322, 0.157649]#last 4 columns
     turb_oneram6.su2_exec  = "SU2_CFD"
     turb_oneram6.new_output = True
     turb_oneram6.timeout   = 3200
@@ -380,7 +380,7 @@ def main():
     propeller_var_load.cfg_dir    = "rans/actuatordisk_variable_load"
     propeller_var_load.cfg_file   = "propeller_variable_load.cfg"
     propeller_var_load.test_iter  = 20
-    propeller_var_load.test_vals  = [-1.826392, -4.535254, 0.000003, 0.170298] #last 4 columns
+    propeller_var_load.test_vals  = [-1.824944, -4.535272, -0.000008, 0.172071] #last 4 columns
     propeller_var_load.su2_exec   = "SU2_CFD"
     propeller_var_load.new_output = True
     propeller_var_load.timeout    = 3200
@@ -818,7 +818,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.978069, 1.139129, 0.812114, 0.091150] #last 4 columns
+    turb_naca0012_1c.test_vals = [-4.978069, 1.139128, 0.807062, 0.064726] #last 4 columns
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600
@@ -830,7 +830,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484279, 0.967028, 0.828345, 0.097404] #last 4 columns
+    turb_naca0012_2c.test_vals = [-5.484279, 0.967025, 0.823201, 0.070866] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.new_output = True
     turb_naca0012_2c.timeout   = 1600
@@ -842,7 +842,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.587068, 0.929129, 0.882932, 0.118094] #last 4 columns
+    turb_naca0012_3c.test_vals = [-5.587068, 0.929125, 0.877611, 0.090894] #last 4 columns
     turb_naca0012_3c.su2_exec  = "SU2_CFD"
     turb_naca0012_3c.new_output = True
     turb_naca0012_3c.timeout   = 1600
@@ -854,7 +854,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.126795, 1.076579, 0.788111, 0.082021] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [-5.126796, 1.076577, 0.783116, 0.055988] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
     turb_naca0012_p1c1.timeout   = 1600
@@ -866,7 +866,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556585, 0.941681, 0.801057, 0.086980] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.556585, 0.941677, 0.796006, 0.060817] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
     turb_naca0012_p1c2.timeout   = 1600
@@ -894,7 +894,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.909598, -5.954721, 0.007773, 0.131219] #last 4 columns
+    hb_rans_preconditioning.test_vals = [-1.902362, -5.950093, 0.007786, 0.128110] #last 4 columns
     hb_rans_preconditioning.su2_exec  = "SU2_CFD"
     hb_rans_preconditioning.new_output= False
     hb_rans_preconditioning.timeout   = 1600
@@ -1029,7 +1029,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.060859, -13.398192, 0.174451, 0.429491] #last 4 columns
+    ls89_sa.test_vals = [-5.050483, -13.389547, 0.174939, 0.430757] #last 4 columns
     ls89_sa.su2_exec  = "SU2_CFD"
     ls89_sa.new_output= True
     ls89_sa.timeout   = 1600
@@ -1070,7 +1070,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280323, 0.379653, 44.725410, 2.271564] #last 4 columns
+    Jones_tc.test_vals = [-5.280323, 0.379653, 72.207240, 1.277670] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -1082,7 +1082,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.626583, -1.570788, 34.014120, 10.190730] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.625264, -1.568823, 33.995150, 10.181610] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
@@ -1094,7 +1094,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933218, 5.381198, 73.357940, 1.780408] #last 4 columns
+    axial_stage2D.test_vals = [-1.933219, 5.379598, 73.357940, 0.925875] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600
@@ -1106,7 +1106,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-0.562939, 5.828438, 96.597350, 0.062502] #last 4 columns
+    transonic_stator.test_vals = [-0.563318, 5.833490, 96.257510, 0.062597] #last 4 columns
     transonic_stator.su2_exec  = "SU2_CFD"
     transonic_stator.new_output  = False
     transonic_stator.timeout   = 1600
