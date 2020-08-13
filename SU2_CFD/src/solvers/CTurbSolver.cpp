@@ -164,68 +164,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const su2double Kappa = config->GetMUSCL_Kappa();
 
-      if (musclFlow) {
-        /*--- Reconstruct mean flow primitive variables. ---*/
-
-        auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
-        auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
-
-        if (limiterFlow) {
-          Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-          Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-        }
-
-        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-
-          const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
-
-          su2double Project_Grad_i = -V_ij;
-          su2double Project_Grad_j = -V_ij;
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-            Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
-          }
-
-          /*--- Blend upwind and centered differences ---*/
-
-          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
-
-          /*--- Edge-based limiters ---*/
-
-          if (limiterFlow) {
-            switch(config->GetKind_SlopeLimit_Flow()) {
-              case VAN_ALBADA_EDGE:
-                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
-                break;
-              case PIPERNO:
-                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
-                break;
-            }
-
-            /*--- Limit projection ---*/
-
-            Project_Grad_i *= Limiter_i[iVar];
-            Project_Grad_j *= Limiter_j[iVar];
-          }
-
-          flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-          flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
-        }
-
-        bad_i = (flowPrimVar_i[nDim+2] < 0.0);
-        bad_j = (flowPrimVar_j[nDim+2] < 0.0);
-      }
-      else {
-        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-          flowPrimVar_i[iVar] = V_i[iVar];
-          flowPrimVar_j[iVar] = V_j[iVar];
-        }
-      }
-
       if (muscl) {
         /*--- Reconstruct turbulence variables. ---*/
 
@@ -290,6 +228,79 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         for (iVar = 0; iVar < nVar; iVar++) {
           solution_i[iVar] = Turb_i[iVar];
           solution_j[iVar] = Turb_j[iVar];
+        }
+      }
+
+      if (musclFlow) {
+        /*--- Reconstruct mean flow primitive variables. ---*/
+
+        auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
+        auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+
+        if (limiterFlow) {
+          Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+          Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
+        }
+
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+
+          const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+
+          su2double Project_Grad_i = -V_ij;
+          su2double Project_Grad_j = -V_ij;
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+          }
+
+          /*--- Blend upwind and centered differences ---*/
+
+          Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+          Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+
+          /*--- Edge-based limiters ---*/
+
+          if (limiterFlow) {
+            switch(config->GetKind_SlopeLimit_Flow()) {
+              case VAN_ALBADA_EDGE:
+                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+                break;
+              case PIPERNO:
+                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+                break;
+            }
+
+            /*--- Limit projection ---*/
+
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
+          }
+
+          flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
+          flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
+        }
+
+        su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
+        su2double sq_vel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/(R+1);
+          sq_vel += pow(RoeVelocity, 2);
+        }
+        su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/(R+1);
+        su2double RoeTke = (R*solution_j[0]+solution_i[0])/(R+1);
+
+        bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+
+        bad_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0) || neg_sound_speed || bad_i;
+        bad_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0) || neg_sound_speed || bad_j;
+      }
+      else {
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          flowPrimVar_i[iVar] = V_i[iVar];
+          flowPrimVar_j[iVar] = V_j[iVar];
         }
       }
 
