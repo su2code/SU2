@@ -672,7 +672,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   SU2_OMP_BARRIER
 
 
-  ComputeUnderRelaxationFactor(solver, config);
+  // ComputeUnderRelaxationFactor(solver, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
