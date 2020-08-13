@@ -543,7 +543,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
 
     const bool wasActive = AD::BeginPassive();
   
-    const CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
+    CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
     const su2double sigma_om2 = constants[3];
     const su2double a1        = constants[7];
 
