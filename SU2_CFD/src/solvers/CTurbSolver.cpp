@@ -465,28 +465,28 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           To reduce extra communication overhead, we only consider nodes on
           the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+    // for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+    //   for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    //     for (unsigned short jVar = 0; jVar < nVar; jVar++)
+    //       Jacobian_i[iVar][jVar] = 0.0;
 
-      auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    //   auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
-      const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
-      const su2double denom      = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
-      const su2double Weight     = HalfOnVol*sign*signk/denom;
+    //   auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+    //   const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
+    //   const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+    //   const su2double denom      = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
+    //   const su2double Weight     = HalfOnVol*sign*signk/denom;
 
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        for (unsigned short iVar = 0; iVar < nVar; iVar++)
-          Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim];
+    //   for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    //     for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    //       Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim];
 
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+    //   Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+    //   Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
 
-    }// iNeigh
+    // }// iNeigh
 
     AD::EndPassive(wasActive);
 
