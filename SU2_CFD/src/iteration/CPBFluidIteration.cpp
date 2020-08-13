@@ -58,6 +58,7 @@ void CPBFluidIteration::Iterate(COutput *output,
   bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) || (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
   bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
                      (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  bool periodic = (config[val_iZone]->GetnMarker_Periodic() > 0);
   TimeIter = config[val_iZone]->GetTimeIter();
   
   /* --- Setting up iteration values depending on if this is a
@@ -81,14 +82,14 @@ void CPBFluidIteration::Iterate(COutput *output,
   /*--- Solve the momentum equations. ---*/
   /*integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   */
-  //integration[val_iZone][val_iInst][FLOW_SOL]->CurrentGridIteration(geometry, solver, numerics,
-   //                                                               config, FinestMesh, RUNTIME_FLOW_SYS, ExtIter, val_iZone,val_iInst);
+  integration[val_iZone][val_iInst][FLOW_SOL]->CurrentGridIteration(geometry, solver, numerics,
+                                                                config, FinestMesh, RUNTIME_FLOW_SYS, val_iZone,val_iInst);
 
 
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
-  //solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], false, MESH_0);
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 	
-  //solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
 	
 
   /*--- Solve the poisson equation ---*/
@@ -97,17 +98,17 @@ void CPBFluidIteration::Iterate(COutput *output,
   /*integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                             config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);*/
 	
-  //integration[val_iZone][val_iInst][POISSON_SOL]->CurrentGridIteration(geometry, solver, numerics, config, FinestMesh, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
+  integration[val_iZone][val_iInst][POISSON_SOL]->CurrentGridIteration(geometry, solver, numerics, config, FinestMesh, RUNTIME_POISSON_SYS, val_iZone,val_iInst);
   //integration[val_iZone][val_iInst][POISSON_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS, ExtIter, val_iZone,val_iInst);
    
   /*--- Correct pressure and velocities ---*/
-  //solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     
   /*--- Set the prmitive value based on updated solution ---*/
-  //solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
   
-  integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_CyclePB(geometry, solver, numerics,
-                                                                  config, FinestMesh, 0, RUNTIME_FLOW_SYS, InnerIter, val_iZone,val_iInst);
+  /*integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_CyclePB(geometry, solver, numerics,
+                                                                  config, FinestMesh, 0, RUNTIME_FLOW_SYS, val_iZone,val_iInst);*/
                                                                   
   if (config[val_iZone]->GetKind_Solver() == INC_RANS) {
     

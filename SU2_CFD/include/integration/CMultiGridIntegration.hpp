@@ -54,7 +54,7 @@ public:
   
   void MultiGrid_CyclePB(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                     unsigned long Iteration, unsigned short iZone, unsigned short iInst) override;  
+                     unsigned short iZone, unsigned short iInst) override;  
   
 private:
   /*!
@@ -76,7 +76,7 @@ private:
   
   void CurrentGridIteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short RunTime_EqSystem,
-                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
+                     unsigned short iZone, unsigned short iInst);
   
   /*!
    * \brief Compute the forcing term.

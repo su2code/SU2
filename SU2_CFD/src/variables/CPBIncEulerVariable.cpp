@@ -124,8 +124,6 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double pressure, const su2double *ve
   Velocity2.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
   Delta_Time.resize(nPoint) = su2double(0.0);
-  Lambda.resize(nPoint) = su2double(0.0);
-  Sensor.resize(nPoint) = su2double(0.0);
 
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);

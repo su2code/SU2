@@ -346,6 +346,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   bool boundary_i, boundary_j;
   bool weighted = true;
+  bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   unsigned short iVar, jVar, iDim, iVel = 1;
   unsigned short iNeighbor, nNeighbor = 0;
@@ -382,6 +383,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   };
 
   string Marker_Tag;
+  
+  if (pressure_based) iVel = 0;
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 
