@@ -1977,9 +1977,13 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
                                       Vorticity[1]*Vorticity[1] +
                                       Vorticity[2]*Vorticity[2]);
+
+  const su2double StrainMag = varFlo->GetStrainMag(iPoint);
   
-  const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
-  const su2double zeta = max(omega,VorticityMag*F1/a1);
+  // const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+  // const su2double zeta = max(omega,VorticityMag*F1/a1);
+  const su2double lim = (omega > StrainMag*F1/a1) ? 1.0 : 0.0;
+  const su2double zeta = max(omega,StrainMag*F1/a1);
   
   // const su2double lim = 1.0;
   // const su2double zeta = omega;
