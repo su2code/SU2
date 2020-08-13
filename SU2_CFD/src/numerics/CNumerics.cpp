@@ -576,7 +576,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   su2double c2, alpha, phi2, theta, g;
 
   c2    = pow(*c,2);
-  alpha = (*r)/(sqrt(2.)*(*c));
+  alpha = 1.0/(2.*(*c));
   g     = (Gamma_Minus_One-TWO3)/Gamma_Minus_One;
 
   if (nDim == 2) {
@@ -718,7 +718,7 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
   su2double c2, beta, phi2, theta;
 
   c2    = pow(*c,2);
-  beta  = 1./(sqrt(2.)*(*r)*(*c));
+  beta  = 1./((*c));
 
   if (nDim == 2) {
     phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]));
