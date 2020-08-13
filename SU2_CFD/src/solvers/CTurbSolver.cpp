@@ -672,7 +672,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   SU2_OMP_BARRIER
 
 
-  // ComputeUnderRelaxationFactor(solver, config);
+  ComputeUnderRelaxationFactor(solver, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
@@ -767,7 +767,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
-    // localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+    localUnderRelaxation = min(localUnderRelaxation, solver[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
