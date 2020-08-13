@@ -654,14 +654,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
           const su2double donorCoeff     = geometry->vertex[val_marker][iVertex]->GetDonorCoeff(iNode);
 
           Density_Normal += donorCoeff*flowNodes->GetSolution(donorPoint, 0);
-          Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1);
-          Kine_Normal    += donorCoeff*nodes->GetSolution(donorPoint, 0);
+          Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1)/donorCoeff*flowNodes->GetSolution(donorPoint, 0);
+          Kine_Normal    += donorCoeff*nodes->GetPrimitive(donorPoint, 0);
 
-          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetSolution(donorPoint,iDim+1);
+          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
-        Energy_Normal /= Density_Normal;
-        Kine_Normal   /= Density_Normal;
-        for (iDim = 0; iDim < nDim; iDim++) { Vel[iDim] /= Density_Normal; VelMod += Vel[iDim]*Vel[iDim]; }
+        for (iDim = 0; iDim < nDim; iDim++) VelMod += Vel[iDim]*Vel[iDim];
         Energy_Normal -= Kine_Normal + 0.5*VelMod;
         
         solver[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
