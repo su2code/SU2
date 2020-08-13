@@ -390,27 +390,23 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
 
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
 
-    const su2double *Vorticity = flowNodes->GetVorticity(iPoint);
+    const su2double *Vorticity   = flowNodes->GetVorticity(iPoint);
     const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
                                         Vorticity[1]*Vorticity[1] +
                                         Vorticity[2]*Vorticity[2]);
+
+    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
         
     nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
-    // const su2double F1 = nodes->GetF1blending(iPoint);
     const su2double F2 = nodes->GetF2blending(iPoint);
 
     /*--- Compute the eddy viscosity ---*/
 
-    // const su2double alfa = F1*constants[8] + (1.0 - F1)*constants[9];
-    // if (nodes->GetSolution(iPoint,1) < rho*alfa*flowNodes->GetStrainMag(iPoint)) {
-    //   nodes->SetSolution(iPoint,1,rho*alfa*flowNodes->GetStrainMag(iPoint));
-    //   nodes->SetPrimitive(iPoint,1,alfa*flowNodes->GetStrainMag(iPoint));
-    // }
-
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    const su2double zeta  = max(omega, VorticityMag*F2/a1);
+    // const su2double zeta  = max(omega, VorticityMag*F2/a1);
+    const su2double zeta  = max(omega, StrainMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
@@ -547,10 +543,10 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     const su2double sigma_om2 = constants[3];
     const su2double a1        = constants[7];
 
-    const su2double* Vorticity = flowNodes->GetVorticity(iPoint);
-    const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-                                        Vorticity[1]*Vorticity[1] +
-                                        Vorticity[2]*Vorticity[2]);
+    // const su2double* Vorticity = flowNodes->GetVorticity(iPoint);
+    // const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
+    //                                     Vorticity[1]*Vorticity[1] +
+    //                                     Vorticity[2]*Vorticity[2]);
     
     const su2double F1_i = nodes->GetF1blending(iPoint);
     const su2double F2_i = nodes->GetF2blending(iPoint);
@@ -848,6 +844,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       /*--- Vorticity ---*/
       visc_numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
                                   flowNodes->GetVorticity(iPoint));
+      visc_numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint),
+                                  flowNodes->GetStrainMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),

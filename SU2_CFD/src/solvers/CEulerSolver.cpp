@@ -3160,7 +3160,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           Project_Grad_i *= Limiter_i[0];
           Project_Grad_j *= Limiter_j[0];
-          
+
         }
 
         tke_i += Project_Grad_i;
@@ -7109,6 +7109,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
           visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
                                       nodes->GetVorticity(iPoint));
+          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+                                      nodes->GetStrainMag(iPoint));
         }
         
         /*--- Set values for gradient Jacobian ---*/
@@ -7406,6 +7408,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
           visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
                                       nodes->GetVorticity(iPoint));
+          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+                                      nodes->GetStrainMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -9638,6 +9642,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
           visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
                                       nodes->GetVorticity(iPoint));
+          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+                                      nodes->GetStrainMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -9845,6 +9851,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
           visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
                                       nodes->GetVorticity(iPoint));
+          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
+                                      nodes->GetStrainMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
