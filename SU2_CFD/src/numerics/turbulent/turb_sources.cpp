@@ -844,14 +844,14 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = PerturbedStrainMag * PerturbedStrainMag - TWO3*zeta*diverg;
    }
    else {
-    su2double factor = 0.;
-     for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0; jDim < nDim; jDim++) {
-         factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
-                  - TWO3*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
-       }
-     }
-     // su2double factor = StrainMag_i*StrainMag_i;
+    // su2double factor = 0.;
+    //  for (iDim = 0; iDim < nDim; iDim++) {
+    //    for (jDim = 0; jDim < nDim; jDim++) {
+    //      factor += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
+    //               - TWO3*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
+    //    }
+    //  }
+     const su2double factor = StrainMag_i*StrainMag_i;
      pk = Eddy_Viscosity_i*factor - TWO3*Density_i*TurbVar_i[0]*diverg;
      pw = factor - TWO3*zeta*diverg;
        
