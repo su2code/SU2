@@ -856,32 +856,32 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = factor - TWO3*zeta*diverg;
        
      /*--- k production Jacobian ---*/
-     if ((pk > 0.) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
+     if ((pk > 0.) && (pk <= 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
        Jacobian_i[0][0] = (factor/zeta-TWO3*diverg)*Volume;
        if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
          Jacobian_i[0][1] = -factor*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
      }
-     else if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-       Jacobian_i[0][0] = 20.*beta_star*TurbVar_i[1]*Volume;
-       Jacobian_i[0][1] = 20.*beta_star*TurbVar_i[0]*Volume;
+     else if (pk > 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+       Jacobian_i[0][0] = 10.*beta_star*TurbVar_i[1]*Volume;
+       Jacobian_i[0][1] = 10.*beta_star*TurbVar_i[0]*Volume;
      }
      
      /*--- omega production Jacobian ---*/
      if ((pw > 0.) && (TurbVar_i[1] > StrainMag_i*F2_i/a1))
          Jacobian_i[1][1] = -TWO3*alfa_blended*diverg*Volume;
-     // if ((pw > 0.) && (pw <= 20.*beta_star*TurbVar_i[1]*zeta)) {
+     // if ((pw > 0.) && (pw <= 10.*beta_star*TurbVar_i[1]*zeta)) {
      //   if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
      //     Jacobian_i[1][1] = -TWO3*alfa_blended*diverg*Volume;
      // }
-     // else if (pw > 20.*beta_star*TurbVar_i[1]*zeta) {
-     //   Jacobian_i[1][1] = 20.*beta_star*alfa_blended*zeta*Volume;
+     // else if (pw > 10.*beta_star*TurbVar_i[1]*zeta) {
+     //   Jacobian_i[1][1] = 10.*beta_star*alfa_blended*zeta*Volume;
      //   if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
      //    Jacobian_i[1][1] *= 2.0;
      // }
    }
     
-    pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-    // pw = min(pw, 20.*beta_star*TurbVar_i[1]*zeta);
+    pk = min(pk, 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+    // pw = min(pw, 10.*beta_star*TurbVar_i[1]*zeta);
     
     pk = max(pk, 0.0);
     pw = alfa_blended*Density_i*max(pw, 0.0);

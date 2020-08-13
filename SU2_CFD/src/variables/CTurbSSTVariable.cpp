@@ -71,7 +71,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
 
   const su2double eps = numeric_limits<passivedouble>::epsilon();
-  const su2double CDkwmin = 1.0e-20;
+  const su2double CDkwmin = 1.0e-10;
 
   /*--- Cross diffusion ---*/
 

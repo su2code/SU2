@@ -154,8 +154,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  // constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+  // constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  constants[8] = 5.0/9.0; //alfa_1
+  constants[9] = 0.44;    //alfa_2
       
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
@@ -2021,12 +2023,12 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     for (iDim = 0; iDim < nDim; ++iDim) {
       factor = 0.0;
       factor += -TWO3*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-      if (pk <= 20.*betastar*r*omega*k) {   
+      if (pk <= 10.*betastar*r*omega*k) {   
           factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim);
       }
       for (jDim = 0; jDim < nDim; ++jDim) {
         factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
-        if (pk <= 20.*betastar*r*omega*k) {
+        if (pk <= 10.*betastar*r*omega*k) {
            factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
         }
       }
@@ -2091,13 +2093,13 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   //--- Zeroth-order terms due to production
   if (pk > 0.) {
-    if (pk <= 20.*betastar*r*omega*k){
+    if (pk <= 10.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
     }
     else {
-      weights[0][0]         += 20.0*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
-      weights[0][nVarFlo+0] += -20.0*betastar*omega*varAdjTur->GetSolution(iPoint,0);
-      weights[0][nVarFlo+1] += -20.0*betastar*k*varAdjTur->GetSolution(iPoint,0);
+      weights[0][0]         += 10.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
+      weights[0][nVarFlo+0] += -10.*betastar*omega*varAdjTur->GetSolution(iPoint,0);
+      weights[0][nVarFlo+1] += -10.*betastar*k*varAdjTur->GetSolution(iPoint,0);
     }
     weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
   }
