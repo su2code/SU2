@@ -351,8 +351,6 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
   /*--- Add contributions of GG gradients ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-
-    const bool wasActive = AD::BeginPassive();
     
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       for (unsigned short iVar= 0; iVar < nVar; iVar++) {
@@ -360,7 +358,5 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
       Jacobian_jc[iDim][iVar][iVar] += 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
       }
     }
-
-    AD::EndPassive(wasActive);
   }
 }
