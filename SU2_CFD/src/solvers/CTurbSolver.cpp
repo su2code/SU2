@@ -741,7 +741,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
    system for this nonlinear iteration. */
 
   const su2double allowableRatio    =  0.99;
-  const su2double allowableDecrease = -0.5;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -754,14 +753,9 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
        turbulence variables can change over a nonlinear iteration. */
 
       const unsigned long index = iPoint * nVar + iVar;
-      if (sa_model) {
+      if (sa_model || sst_model)
         if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
           localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
-      }
-      else if (sst_model) {
-        if (LinSysSol[index] < allowableDecrease*fabs(nodes->GetSolution(iPoint, iVar)))
-          localUnderRelaxation = min(fabs(allowableDecrease*nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
-      }
 
     }
 
