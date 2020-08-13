@@ -576,11 +576,11 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   su2double c2, alpha, phi2, theta, g;
 
   c2    = pow(*c,2);
-  alpha = 1.0/(2.*(*c));
+  alpha = 1.0/(2.*c2);
   g     = (Gamma_Minus_One-TWO3)/Gamma_Minus_One;
 
   if (nDim == 2) {
-    phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]));
+    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]);
     theta = v[0]*n[0]+v[1]*n[1];
 
     p[0][0] = 1.0;
@@ -604,7 +604,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[3][3] = alpha*((phi2+c2)/Gamma_Minus_One-(*c)*theta+(*k)*g);
   }
   else {
-    phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]));
+    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
     theta = v[0]*n[0]+v[1]*n[1]+v[2]*n[2];
 
     p[0][0] = n[0];
@@ -718,10 +718,9 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
   su2double c2, beta, phi2, theta;
 
   c2    = pow(*c,2);
-  beta  = 1./((*c));
 
   if (nDim == 2) {
-    phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]));
+    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]);
     theta = v[0]*n[0]+v[1]*n[1];
 
     invp[0][0] = (1.0-phi2/c2);
@@ -734,18 +733,18 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     invp[1][2] = -n[0]/(*r);
     invp[1][3] = 0.0;
 
-    invp[2][0] = beta*(phi2-(*c)*theta);
-    invp[2][1] = -beta*(Gamma_Minus_One*v[0]-(*c)*n[0]);
-    invp[2][2] = -beta*(Gamma_Minus_One*v[1]-(*c)*n[1]);
-    invp[2][3] = beta*Gamma_Minus_One;
+    invp[2][0] = phi2-(*c)*theta;
+    invp[2][1] = -Gamma_Minus_One*v[0]+(*c)*n[0];
+    invp[2][2] = -Gamma_Minus_One*v[1]+(*c)*n[1];
+    invp[2][3] = Gamma_Minus_One;
 
-    invp[3][0] = beta*(phi2+(*c)*theta);
-    invp[3][1] = -beta*(Gamma_Minus_One*v[0]+(*c)*n[0]);
-    invp[3][2] = -beta*(Gamma_Minus_One*v[1]+(*c)*n[1]);
-    invp[3][3] = beta*Gamma_Minus_One;
+    invp[3][0] = phi2+(*c)*theta;
+    invp[3][1] = -Gamma_Minus_One*v[0]-(*c)*n[0];
+    invp[3][2] = -Gamma_Minus_One*v[1]-(*c)*n[1];
+    invp[3][3] = Gamma_Minus_One;
   }
   else {
-    phi2  = Gamma_Minus_One*(0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]));
+    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
     theta = v[0]*n[0]+v[1]*n[1]+v[2]*n[2];
 
     invp[0][0] = (1.0-phi2/c2)*n[0]-(v[1]*n[2]-v[2]*n[1])/(*r);
@@ -766,17 +765,17 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     invp[2][3] = Gamma_Minus_One*v[2]*n[2]/c2;
     invp[2][4] = -Gamma_Minus_One*n[2]/c2;
 
-    invp[3][0] = beta*(phi2-(*c)*theta);
-    invp[3][1] = -beta*(Gamma_Minus_One*v[0]-(*c)*n[0]);
-    invp[3][2] = -beta*(Gamma_Minus_One*v[1]-(*c)*n[1]);
-    invp[3][3] = -beta*(Gamma_Minus_One*v[2]-(*c)*n[2]);
-    invp[2][4] = beta*Gamma_Minus_One;
+    invp[3][0] = phi2-(*c)*theta;
+    invp[3][1] = -Gamma_Minus_One*v[0]+(*c)*n[0];
+    invp[3][2] = -Gamma_Minus_One*v[1]+(*c)*n[1];
+    invp[3][3] = -Gamma_Minus_One*v[2]+(*c)*n[2];
+    invp[2][4] = Gamma_Minus_One;
 
-    invp[4][0] = beta*(phi2+(*c)*theta);
-    invp[4][1] = -beta*(Gamma_Minus_One*v[0]+(*c)*n[0]);
-    invp[4][2] = -beta*(Gamma_Minus_One*v[1]+(*c)*n[1]);
-    invp[4][3] = -beta*(Gamma_Minus_One*v[2]+(*c)*n[2]);
-    invp[4][4] = beta*Gamma_Minus_One;
+    invp[4][0] = phi2+(*c)*theta;
+    invp[4][1] = -Gamma_Minus_One*v[0]-(*c)*n[0];
+    invp[4][2] = -Gamma_Minus_One*v[1]-(*c)*n[1];
+    invp[4][3] = -Gamma_Minus_One*v[2]-(*c)*n[2];
+    invp[4][4] = Gamma_Minus_One;
   }
 }
 
