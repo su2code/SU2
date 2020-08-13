@@ -90,6 +90,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   const su2double R = sqrt(fabs(Density_j/Density_i));
 
+  su2double R = sqrt(fabs(Density_j/Density_i));
+  su2double sq_vel = 0.0;
+
   q_ij = 0.0;
   a0   = 0.0;
   a1   = 0.0;
@@ -102,11 +105,22 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      q_ij += 0.5*(R*V_j[iDim+1]+V_i[iDim+1])/(R+1.)*Normal[iDim];
-      a0   += 0.5*V_i[iDim+1]*Normal[iDim];
-      a1   += 0.5*V_j[iDim+1]*Normal[iDim];
+      q_ij += (R*V_j[iDim+1]+V_i[iDim+1])/(R+1.)*Normal[iDim];
+      a0   += V_i[iDim+1]*Normal[iDim];
+      a1   += V_j[iDim+1]*Normal[iDim];
+
+      sq_vel += q_ij*q_ij;
     }
   }
+
+  const su2double RoeEnthalpy = (R*V_j[nDim+3]+V_i[nDim+3])/(R+1.);
+  const su2double RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/(R+1.);
+  const su2double RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+
+  const su2double RoeSoundSpeed = sqrt(RoeSoundSpeed2);
+  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed);
+
+  q_ij = min(fabs(q_ij), MaxLambda);
 
   FinishResidualCalc(config);
 
@@ -148,8 +162,8 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                  CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim+3);
-  AD::SetPreaccIn(V_j, nDim+3);
+  AD::SetPreaccIn(V_i, nDim+4);
+  AD::SetPreaccIn(V_j, nDim+4);
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
