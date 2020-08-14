@@ -376,7 +376,7 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                                nodes->GetGradient(jPoint));
 
   /*--- Menter's first blending function (only SST)---*/
-  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+  if (sst) {
     numerics->SetF1blending(nodes->GetF1blending(iPoint),
                             nodes->GetF1blending(jPoint));
     numerics->SetF2blending(nodes->GetF2blending(iPoint),
