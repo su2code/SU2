@@ -494,7 +494,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set distance to the surface ---*/
 
-      numerics->(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 
       /*--- Menter's first blending function ---*/
 
