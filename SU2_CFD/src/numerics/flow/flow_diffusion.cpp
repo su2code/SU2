@@ -613,7 +613,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    const bool wasActive = AD::BeginPassive();
+    // const bool wasActive = AD::BeginPassive();
 
     if (!correct_gradient) dist_ij_2 = -4.0*Volume_i;
     if (dist_ij_2 != 0.0) {
@@ -624,7 +624,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
     SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
 
-    AD::EndPassive(wasActive);
+    // AD::EndPassive(wasActive);
 
   }
 
