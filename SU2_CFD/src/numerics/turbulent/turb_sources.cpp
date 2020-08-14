@@ -794,13 +794,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(Vorticity_i, 3);
 
-  unsigned short iDim, jDim;
-  su2double alfa_blended, beta_blended;
-  su2double diverg, pk = 0., pw = 0., zeta;
-  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
-                                Vorticity_i[1]*Vorticity_i[1] +
-                                Vorticity_i[2]*Vorticity_i[2]);
-
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6);
 
@@ -813,6 +806,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     Density_i = V_i[nDim+2];
     Eddy_Viscosity_i = V_i[nDim+6];
   }
+
+  unsigned short iDim, jDim;
+  su2double alfa_blended, beta_blended;
+  su2double diverg, pk = 0., pw = 0., zeta;
+  su2double VorticityMag = sqrt(Vorticity_i[0]*Vorticity_i[0] +
+                                Vorticity_i[1]*Vorticity_i[1] +
+                                Vorticity_i[2]*Vorticity_i[2]);
 
   Residual[0] = 0.0;       Residual[1] = 0.0;
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
