@@ -231,7 +231,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
       }
 
-      if (musclFlow) {
+      if (muscl) {
         /*--- Reconstruct mean flow primitive variables. ---*/
 
         auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
