@@ -124,7 +124,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed*Area);
 
   // q_ij = 0.5*max(fabs(q_ij), MaxLambda);
-  q_ij = 0.5*max(fabs(q_ij), 0.5*(q_ij*q_ij/MaxLambda+MaxLambda));
+  q_ij = (fabs(q_ij) >= MaxLambda) ? 0.5*fabs(q_ij) : 0.25*(q_ij*q_ij/MaxLambda+MaxLambda);
   a0  *= 0.5;
   a1  *= 0.5;
 
