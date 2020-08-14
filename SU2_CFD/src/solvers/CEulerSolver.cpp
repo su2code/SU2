@@ -4864,6 +4864,8 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
   const su2double allowableRatio = 0.2;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
+  const su2double CFLInc = config->GetCFL_AdaptParam(1);
+  const su2double CFLMin = config->GetCFL_AdaptParam(2);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -4886,7 +4888,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
 
-    if (localUnderRelaxation < 1.0e-1) localUnderRelaxation = 0.0;
+    if (localUnderRelaxation < 1.0e-1 && nodes->GetLocalCFL(iPoint) < CFLMin*CFLInc) localUnderRelaxation = 0.0;
 
     /* Store the under-relaxation factor for this point. */
 
