@@ -1,6 +1,6 @@
-Build started at 2020-08-14T11:14:01.983749
+Build started at 2020-08-14T12:26:55.270484
 Main binary: /usr/bin/python3
-Build Options: -Dprefix=/home/gsuarez/PhD/SU2/solver/build/SU2-SA-turb_model
+Build Options: -Dprefix=/home/gsuarez/PhD/SU2/solver/build/SU2-SA-turb_model -Dbackend=ninja
 Python system: Linux
 The Meson build system
 Version: 0.54.999
@@ -11,78 +11,14 @@ None of 'PKG_CONFIG_PATH' are defined in the environment, not changing global fl
 None of 'PKG_CONFIG_PATH' are defined in the environment, not changing global flags.
 Project name: SU2
 Project version: 7.0.6 "Blackbird"
-None of 'CC' are defined in the environment, not changing global flags.
-None of 'CFLAGS' are defined in the environment, not changing global flags.
-None of 'LDFLAGS' are defined in the environment, not changing global flags.
-None of 'CPPFLAGS' are defined in the environment, not changing global flags.
-None of 'CC_LD' are defined in the environment, not changing global flags.
-Sanity testing C compiler: cc
-Is cross compiler: False.
-None of 'CC_LD' are defined in the environment, not changing global flags.
-Sanity check compiler command line: cc /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckc.c -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckc.exe -pipe -D_FILE_OFFSET_BITS=64
-Sanity check compile stdout:
-
------
-Sanity check compile stderr:
-
------
-Running test binary command: /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckc.exe
 C compiler for the build machine: cc (gcc 8.3.0 "cc (Debian 8.3.0-6) 8.3.0")
 C linker for the build machine: cc ld.bfd 2.31.1
 None of 'AR' are defined in the environment, not changing global flags.
-None of 'CXX' are defined in the environment, not changing global flags.
-None of 'CXXFLAGS' are defined in the environment, not changing global flags.
-None of 'LDFLAGS' are defined in the environment, not changing global flags.
-None of 'CPPFLAGS' are defined in the environment, not changing global flags.
-None of 'CXX_LD' are defined in the environment, not changing global flags.
-Sanity testing C++ compiler: c++
-Is cross compiler: False.
-None of 'CXX_LD' are defined in the environment, not changing global flags.
-Sanity check compiler command line: c++ /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckcpp.cc -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckcpp.exe -pipe -D_FILE_OFFSET_BITS=64
-Sanity check compile stdout:
-
------
-Sanity check compile stderr:
-
------
-Running test binary command: /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckcpp.exe
 C++ compiler for the build machine: c++ (gcc 8.3.0 "c++ (Debian 8.3.0-6) 8.3.0")
 C++ linker for the build machine: c++ ld.bfd 2.31.1
-None of 'CC' are defined in the environment, not changing global flags.
-None of 'CFLAGS' are defined in the environment, not changing global flags.
-None of 'LDFLAGS' are defined in the environment, not changing global flags.
-None of 'CPPFLAGS' are defined in the environment, not changing global flags.
-None of 'CC_LD' are defined in the environment, not changing global flags.
-Sanity testing C compiler: cc
-Is cross compiler: False.
-None of 'CC_LD' are defined in the environment, not changing global flags.
-Sanity check compiler command line: cc /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckc.c -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckc.exe -pipe -D_FILE_OFFSET_BITS=64
-Sanity check compile stdout:
-
------
-Sanity check compile stderr:
-
------
-Running test binary command: /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckc.exe
 C compiler for the host machine: cc (gcc 8.3.0 "cc (Debian 8.3.0-6) 8.3.0")
 C linker for the host machine: cc ld.bfd 2.31.1
 None of 'AR' are defined in the environment, not changing global flags.
-None of 'CXX' are defined in the environment, not changing global flags.
-None of 'CXXFLAGS' are defined in the environment, not changing global flags.
-None of 'LDFLAGS' are defined in the environment, not changing global flags.
-None of 'CPPFLAGS' are defined in the environment, not changing global flags.
-None of 'CXX_LD' are defined in the environment, not changing global flags.
-Sanity testing C++ compiler: c++
-Is cross compiler: False.
-None of 'CXX_LD' are defined in the environment, not changing global flags.
-Sanity check compiler command line: c++ /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckcpp.cc -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckcpp.exe -pipe -D_FILE_OFFSET_BITS=64
-Sanity check compile stdout:
-
------
-Sanity check compile stderr:
-
------
-Running test binary command: /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/sanitycheckcpp.exe
 C++ compiler for the host machine: c++ (gcc 8.3.0 "c++ (Debian 8.3.0-6) 8.3.0")
 C++ linker for the host machine: c++ ld.bfd 2.31.1
 Build machine cpu family: x86_64
@@ -92,131 +28,15 @@ Host machine cpu: x86_64
 Target machine cpu family: x86_64
 Target machine cpu: x86_64
 Program python3 found: YES (/usr/bin/python3)
-Pkg-config binary for MachineChoice.HOST is not cached.
-None of 'PKG_CONFIG' are defined in the environment, not changing global flags.
-Pkg-config binary missing from cross or native file, or env var undefined.
-Trying a default Pkg-config fallback at pkg-config
-Trying pkg-config binary pkg-config for machine MachineChoice.HOST at ['/usr/bin/pkg-config']
-Found pkg-config: /usr/bin/pkg-config (0.29)
-Determining dependency 'ompi-c' with pkg-config executable '/usr/bin/pkg-config'
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config --modversion ompi-c` -> 0
-3.1.3
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config --cflags ompi-c` -> 0
--pthread -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config ompi-c --libs` -> 0
--L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config ompi-c --libs` -> 0
--L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi
-None of 'PKG_CONFIG_PATH' are defined in the environment, not changing global flags.
-None of 'CC_LD' are defined in the environment, not changing global flags.
-Running compile:
-Working directory:  /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmp0ip0luz8
-Command line:  cc /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmp0ip0luz8/testfile.c -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmp0ip0luz8/output.exe -pipe -D_FILE_OFFSET_BITS=64 -O0 
-
-Code:
- #include<stdio.h>
-        
-        int main(void) {
-            printf("%ld\n", (long)(sizeof(void *)));
-            return 0;
-        };
-Compiler stdout:
- 
-Compiler stderr:
- 
-Program stdout:
-
-8
-
-Program stderr:
-
-
-Running compile:
-Working directory:  /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpy84s659b
-Command line:  cc /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpy84s659b/testfile.c -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpy84s659b/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 --print-search-dirs 
-
-Code:
- 
-Compiler stdout:
- install: /usr/lib/gcc/x86_64-linux-gnu/8/
-programs: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/
-libraries: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/8/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/8/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/
-
-Compiler stderr:
- ICECC[10743] 2020-08-14 11:14:02: $ICECC_VERSION has to point to an existing file to be installed /gsuarez/BuildEnviron/gcc8.tar.gz
-
-Run-time dependency MPI for c found: YES 3.1.3
-Pkg-config binary for MachineChoice.HOST is cached.
-Determining dependency 'ompi-cxx' with pkg-config executable '/usr/bin/pkg-config'
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config --modversion ompi-cxx` -> 0
-3.1.3
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config --cflags ompi-cxx` -> 0
--pthread -I/usr/lib/x86_64-linux-gnu/openmpi/include -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config ompi-cxx --libs` -> 0
--L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
-PKG_CONFIG_PATH: 
-Called `/usr/bin/pkg-config ompi-cxx --libs` -> 0
--L/usr/lib/x86_64-linux-gnu/openmpi/lib -lmpi_cxx -lmpi
-None of 'PKG_CONFIG_PATH' are defined in the environment, not changing global flags.
-None of 'CXX_LD' are defined in the environment, not changing global flags.
-Running compile:
-Working directory:  /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpukd27s3a
-Command line:  c++ /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpukd27s3a/testfile.cpp -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpukd27s3a/output.exe -pipe -D_FILE_OFFSET_BITS=64 -O0 -fpermissive 
-
-Code:
- #include<stdio.h>
-        
-        int main(void) {
-            printf("%ld\n", (long)(sizeof(void *)));
-            return 0;
-        };
-Compiler stdout:
- 
-Compiler stderr:
- 
-Program stdout:
-
-8
-
-Program stderr:
-
-
-Running compile:
-Working directory:  /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpwqdf1p3e
-Command line:  c++ /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpwqdf1p3e/testfile.cpp -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpwqdf1p3e/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
-
-Code:
- 
-Compiler stdout:
- install: /usr/lib/gcc/x86_64-linux-gnu/8/
-programs: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/
-libraries: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/8/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/8/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/
-
-Compiler stderr:
- ICECC[10759] 2020-08-14 11:14:02: $ICECC_VERSION has to point to an existing file to be installed /gsuarez/BuildEnviron/gcc8.tar.gz
-
-Run-time dependency MPI for cpp found: YES 3.1.3
+Dependency mpi found: YES 3.1.3 (cached)
+Dependency mpi found: YES 3.1.3 (cached)
 Running command: /usr/bin/python3 /home/gsuarez/PhD/SU2/solver/source/SU2-develop/meson_scripts/check_dir.py boost
 --- stdout ---
 
 --- stderr ---
 
 
-Message: Extracting boost ...
-Running command: /usr/bin/python3 /home/gsuarez/PhD/SU2/solver/source/SU2-develop/meson_scripts/extract_file.py boost.tar.gz /home/gsuarez/PhD/SU2/solver/source/SU2-develop/externals/tecio
---- stdout ---
-/home/gsuarez/PhD/SU2/solver/source/SU2-develop/externals/tecio
-
---- stderr ---
-
-
+Message: Boost sources found.
 Message: -------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
          |   / __| | | |_  )   Release 7.0.6 "Blackbird"                         |
@@ -253,16 +73,44 @@ Build targets in project: 12
 
 Found ninja-1.10.0.git at /home/gsuarez/PhD/SU2/solver/source/SU2-develop/ninja
 Running compile:
-Working directory:  /tmp/tmpx9fu97fb
-Command line:  c++ /tmp/tmpx9fu97fb/testfile.cpp -o /tmp/tmpx9fu97fb/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
+Working directory:  /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmp7nx2uape
+Command line:  cc /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmp7nx2uape/testfile.c -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmp7nx2uape/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/8/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/8/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/8/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ ICECC[19588] 2020-08-14 12:26:55: $ICECC_VERSION has to point to an existing file to be installed /gsuarez/BuildEnviron/gcc8.tar.gz
+
+Running compile:
+Working directory:  /tmp/tmpiyq2d9eq
+Command line:  c++ /tmp/tmpiyq2d9eq/testfile.cpp -o /tmp/tmpiyq2d9eq/output.obj -pipe -D_FILE_OFFSET_BITS=64 -c -std=c++11 
 
 Code:
  int i = static_cast<int>(0);
 Compiler stdout:
  
 Compiler stderr:
- ICECC[10765] 2020-08-14 11:14:03: $ICECC_VERSION has to point to an existing file to be installed /gsuarez/BuildEnviron/gcc8.tar.gz
+ ICECC[19593] 2020-08-14 12:26:55: $ICECC_VERSION has to point to an existing file to be installed /gsuarez/BuildEnviron/gcc8.tar.gz
 
 Compiler accepts -std=c++11: YES
+Running compile:
+Working directory:  /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpv04b6oqc
+Command line:  c++ /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpv04b6oqc/testfile.cpp -o /home/gsuarez/PhD/SU2/solver/source/SU2-develop/build/meson-private/tmpv04b6oqc/output.obj -pipe -c -D_FILE_OFFSET_BITS=64 -O0 -fpermissive --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/8/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/8/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/8/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ ICECC[19597] 2020-08-14 12:26:55: $ICECC_VERSION has to point to an existing file to be installed /gsuarez/BuildEnviron/gcc8.tar.gz
+
 None of 'STRIP' are defined in the environment, not changing global flags.
 None of 'STRIP' are defined in the environment, not changing global flags.

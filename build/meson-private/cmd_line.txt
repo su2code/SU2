@@ -1,5 +1,6 @@
 [options]
 prefix = /home/gsuarez/PhD/SU2/solver/build/SU2-SA-turb_model
+backend = ninja
 
 [properties]
 
