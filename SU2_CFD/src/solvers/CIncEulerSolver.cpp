@@ -3050,7 +3050,23 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       LinSysRes.AddBlock(iPoint, Residual);
 
+      // ADD old version
       if (implicit) {
+        for (iVar = 1; iVar < nVar; iVar++) {
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+        }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
+        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
+
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      }
+      // ADD old version
+
+      if (implicit && false) {
 
         SetPreconditioner(config, iPoint);
         for (iVar = 0; iVar < nVar; iVar++) {
