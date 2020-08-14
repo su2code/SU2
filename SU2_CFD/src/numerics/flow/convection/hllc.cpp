@@ -127,8 +127,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   Energy_i = Enthalpy_i - Pressure_i / Density_i;
   Energy_j = Enthalpy_j - Pressure_j / Density_j;
 
-  SoundSpeed_i = sqrt( (Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One );
-  SoundSpeed_j = sqrt( (Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One );
+  SoundSpeed_i = sqrt( (Enthalpy_i - 0.5 * sq_vel_i - turb_ke_i) * Gamma_Minus_One );
+  SoundSpeed_j = sqrt( (Enthalpy_j - 0.5 * sq_vel_j 0 turb_ke_j) * Gamma_Minus_One );
 
   /*--- Projected velocities ---*/
 
@@ -174,10 +174,12 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   RoeDensity = sqrt( Density_i * Density_j );
   RoeEnthalpy = ( sqrt(Density_j) * Enthalpy_j + sqrt(Density_i) * Enthalpy_i) / Rrho;
 
+  const su2double RoeTke = ( sqrt(Density_j) * turb_ke_j + sqrt(Density_i) * turb_ke_i) / Rrho;
+
   /*--- Roe-averaged speed of sound ---*/
 
   //RoeSoundSpeed2 = Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe );
-  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe  ) ) - ProjInterfaceVel;
+  RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe  - RoeTke) ) - ProjInterfaceVel;
 
 
   /*--- Speed of sound at L and R ---*/
