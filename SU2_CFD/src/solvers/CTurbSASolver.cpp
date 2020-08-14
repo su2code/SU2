@@ -302,7 +302,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
-  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
+  const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG || config->GetKind_Turb_Model() == SA_NEG_NOFT2);
 
   /*--- Compute eddy viscosity ---*/
 

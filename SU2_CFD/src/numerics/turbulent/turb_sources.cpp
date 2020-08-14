@@ -140,6 +140,181 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
     ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
+    inv_k2 = 1.0/k2;
+    inv_d2 = 1.0/dist_i_2;
+    inv_k2_d2 = 1.0/(k2*dist_i_2);
+
+    Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
+    Shat = max(Shat, 1.0e-10);
+    inv_Shat = 1.0/Shat;
+
+//    Original SA model
+//    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+
+    if (transition) {
+
+//    BC model constants
+      chi_1 = 0.002;
+      chi_2 = 5.0;
+
+      nu_t = (TurbVar_i[0]*fv1); //S-A variable
+      nu_cr = chi_2/rey;
+      nu_BC = (nu_t)/(vmag*dist_i);
+
+      re_v   = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
+      re_theta = re_v/2.193;
+      re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
+      //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
+
+      term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
+      term2 = sqrt(max(nu_BC-nu_cr,0.)/(nu_cr));
+      term_exponential = (term1 + term2);
+      gamma_BC = 1.0 - exp(-term_exponential);
+
+      Production = gamma_BC*cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+    }
+    else {
+      Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+    }
+
+    /*--- Destruction term ---*/
+
+    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+    g = r + cw2*(pow(r,6.0)-r);
+    g_6 =  pow(g,6.0);
+    glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
+    fw = g*glim;
+
+//    Original SA model
+//    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+
+    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+
+    /*--- Diffusion term ---*/
+
+    norm2_Grad = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+
+    CrossProduction = cb2_sigma*norm2_Grad*Volume;
+
+    Residual = Production - Destruction + CrossProduction;
+
+    /*--- Implicit part, production term ---*/
+
+    dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
+    dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+    dJi  = 1.0/nu;
+    dft2 = -2.0*ct4*ft2*Ji*dJi;
+    if ( Shat <= 1.0e-10 ) dShat = 0.0;
+    else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
+
+    if (transition) {
+      Jacobian_i[0] += gamma_BC*cb1*((1-ft2)*(TurbVar_i[0]*dShat+Shat) - Shat*TurbVar_i[0]*dft2)*Volume;
+    }
+    else {
+      Jacobian_i[0] += cb1*((1-ft2)*(TurbVar_i[0]*dShat+Shat) - Shat*TurbVar_i[0]*dft2)*Volume;cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    }
+
+    /*--- Implicit part, destruction term ---*/
+
+    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+    if (r == 10.0) dr = 0.0;
+    dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
+    dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
+    Jacobian_i[0] -= ((TurbVar_i[0]*TurbVar_i[0]/dist_i_2)*(cw1*dfw - cb1*inv_k2*dft2) + (cw1*fw - cb1*inv_k2*ft2)*2.0*TurbVar_i[0]/dist_i_2)*Volume;
+
+  }
+
+//  AD::SetPreaccOut(Residual);
+//  AD::EndPreacc();
+
+  return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+
+}
+
+CSourcePieceWise_TurbSA_Noft2::CSourcePieceWise_TurbSA_Noft2(unsigned short val_nDim,
+							     unsigned short val_nVar,
+							     const CConfig* config) :
+                         CSourceBase_TurbSA(val_nDim, val_nVar, config) {
+
+  transition = (config->GetKind_Trans_Model() == BC);
+}
+
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Noft2::ComputeResidual(const CConfig* config) {
+
+//  AD::StartPreacc();
+//  AD::SetPreaccIn(V_i, nDim+6);
+//  AD::SetPreaccIn(Vorticity_i, nDim);
+//  AD::SetPreaccIn(StrainMag_i);
+//  AD::SetPreaccIn(TurbVar_i[0]);
+//  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+//  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
+
+//  BC Transition Model variables
+  su2double vmag, rey, re_theta, re_theta_t, re_v;
+  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
+
+  // Set the boolean here depending on whether the point is closest to a rough wall or not.
+  roughwall = (roughness_i > 0.0);
+
+  if (incompressible) {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+  }
+
+  Residual        = 0.0;
+  Production      = 0.0;
+  Destruction     = 0.0;
+  CrossProduction = 0.0;
+  Jacobian_i[0]   = 0.0;
+
+  gamma_BC = 0.0;
+  vmag = 0.0;
+  tu   = config->GetTurbulenceIntensity_FreeStream();
+  rey  = config->GetReynolds();
+
+  if (nDim==2) {
+    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]);
+  }
+  else {
+    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]+V_i[3]*V_i[3]);
+  }
+
+  /*--- Evaluate Omega ---*/
+
+  Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
+
+  /*--- Rotational correction term ---*/
+
+  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+
+  if (dist_i > 1e-10) {
+
+    /*--- Production term ---*/
+
+    dist_i_2 = dist_i*dist_i;
+    nu = Laminar_Viscosity_i/Density_i;
+
+    /*--- Modified values for roughness ---*/
+    /*--- Ref: Aupoix, B. and Spalart, P. R., "Extensions of the Spalart-Allmaras Turbulence Model to Account for Wall Roughness,"
+     * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/
+    /* --- See https://turbmodels.larc.nasa.gov/spalart.html#sarough for detailed explanation. ---*/
+
+    Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
+    Ji_2 = Ji*Ji;
+    Ji_3 = Ji_2*Ji;
+    fv1 = Ji_3/(Ji_3+cv1_3);
+
+    /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
+    fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
+
+    ft2 = ct3*exp(-ct4*Ji_2);
+    S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
 
     Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
@@ -201,7 +376,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
     /*--- Implicit part, production term ---*/
 
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
-    dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+    dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
 
@@ -209,7 +384,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
       Jacobian_i[0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     }
     else {
-      Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      Jacobian_i[0] += cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
     }
 
     /*--- Implicit part, destruction term ---*/
@@ -324,7 +499,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_COMP::ComputeResidual(const CC
     /*--- Implicit part, production term ---*/
 
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
-    dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+    dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
     Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
@@ -453,7 +628,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E::ComputeResidual(const CConf
     /*--- Implicit part, production term ---*/
 
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
-    dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+    dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
 
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
@@ -590,7 +765,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(const 
     /*--- Implicit part, production term ---*/
 
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
-    dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+    dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
 
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
@@ -622,6 +797,173 @@ CSourcePieceWise_TurbSA_Neg::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim
                              CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
 
 CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CConfig* config) {
+
+  unsigned short iDim;
+
+//  AD::StartPreacc();
+//  AD::SetPreaccIn(V_i, nDim+6);
+//  AD::SetPreaccIn(Vorticity_i, nDim);
+//  AD::SetPreaccIn(StrainMag_i);
+//  AD::SetPreaccIn(TurbVar_i[0]);
+//  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+//  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
+
+  if (incompressible) {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+  }
+
+  Residual        = 0.0;
+  Production      = 0.0;
+  Destruction     = 0.0;
+  CrossProduction = 0.0;
+  Jacobian_i[0]   = 0.0;
+
+  /*--- Evaluate Omega ---*/
+
+  Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
+
+  /*--- Rotational correction term ---*/
+
+  if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
+
+  if (dist_i > 1e-10) {
+
+    if (TurbVar_i[0] > 0.0) {
+
+      /*--- Production term ---*/
+
+      dist_i_2 = dist_i*dist_i;
+      nu = Laminar_Viscosity_i/Density_i;
+      Ji = TurbVar_i[0]/nu;
+      Ji_2 = Ji*Ji;
+      Ji_3 = Ji_2*Ji;
+      fv1 = Ji_3/(Ji_3+cv1_3);
+      fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+      ft2 = ct3*exp(-ct4*Ji_2);
+      S = Omega;
+      inv_k2    = 1.0/k2;
+      inv_d2    = 1.0/dist_i_2;
+      inv_k2_d2 = 1.0/(k2*dist_i_2);
+      cv2       = 0.7;
+      cv3       = 0.9;
+      cv2_2     = cv2*cv2;
+
+      Sbar = TurbVar_i[0]*fv2*inv_k2_d2;
+      if (Sbar >= -cv2*S)
+	Shat = S + Sbar;
+      else
+	Shat = S + (S*(cv2_2*S + cv3*Sbar))/((cv3-2.0*cv2)*S - Sbar);
+      Shat = max(Shat, 1.0e-10);
+      inv_Shat = 1.0/Shat;
+
+      /*--- Production term ---*/;
+
+      //    Original SA model
+      //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+
+      Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+
+      /*--- Destruction term ---*/
+
+      r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
+      g = r + cw2*(pow(r,6.0)-r);
+      g_6 =  pow(g,6.0);
+      glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
+      fw = g*glim;
+
+      Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+
+      /*--- Diffusion term ---*/
+
+      norm2_Grad = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+
+      CrossProduction = cb2_sigma*norm2_Grad*Volume;
+
+      Residual = Production - Destruction + CrossProduction;
+
+      /*--- Implicit part, production term ---*/
+
+      dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
+      dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+      dJi  = 1.0/nu;
+      dft2 = -2.0*ct4*ft2*Ji*dJi;
+      dSbar = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
+      if ( Shat <= 1.0e-10 ) dShat = 0.0;
+      else {
+	if (Sbar >= -cv2*S)
+	  dShat = dSbar;
+	else
+	  dShat = (dSbar*S*S*(cv3-cv2)*(cv3-cv2))/(((cv3-2.0*cv2)*S - Sbar)*((cv3-2.0*cv2)*S - Sbar));
+      }
+      Jacobian_i[0] += cb1*((1-ft2)*(TurbVar_i[0]*dShat+Shat) - Shat*TurbVar_i[0]*dft2)*Volume;
+
+      /*--- Implicit part, destruction term ---*/
+
+      dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+      if (r == 10.0) dr = 0.0;
+      dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
+      dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
+      Jacobian_i[0] -= ((TurbVar_i[0]*TurbVar_i[0]/dist_i_2)*(cw1*dfw - cb1*inv_k2*dft2) + (cw1*fw - cb1*inv_k2*ft2)*2.0*TurbVar_i[0]/dist_i_2)*Volume;
+
+    }
+
+    else {
+
+      /*--- Production term ---*/
+
+      dist_i_2 = dist_i*dist_i;
+
+      /*--- Production term ---*/;
+
+      Production = cb1*(1.0-ct3)*Omega*TurbVar_i[0]*Volume;
+
+      /*--- Destruction term ---*/
+
+      Destruction = cw1*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+
+      /*--- Diffusion term ---*/
+
+      norm2_Grad = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
+
+      CrossProduction = cb2_sigma*norm2_Grad*Volume;
+
+      Residual = Production + Destruction + CrossProduction;
+
+      /*--- Implicit part, production term ---*/
+
+      Jacobian_i[0] += cb1*(1.0-ct3)*Omega*Volume;
+
+      /*--- Implicit part, destruction term ---*/
+
+      Jacobian_i[0] += 2.0*cw1*TurbVar_i[0]/dist_i_2*Volume;
+
+    }
+
+  }
+
+//  AD::SetPreaccOut(Residual);
+//  AD::EndPreacc();
+
+  return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+
+}
+
+
+CSourcePieceWise_TurbSA_Neg_Noft2::CSourcePieceWise_TurbSA_Neg_Noft2(unsigned short val_nDim,
+								     unsigned short val_nVar,
+								     const CConfig* config) :
+  CSourceBase_TurbSA(val_nDim, val_nVar, config) { }
+
+CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg_Noft2::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
 
@@ -707,7 +1049,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA_Neg::ComputeResidual(const CCo
       /*--- Implicit part, production term ---*/
 
       dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
-      dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
+      dfv2 = -(1.0/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
       if ( Shat <= 1.0e-10 ) dShat = 0.0;
       else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
       Jacobian_i[0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;

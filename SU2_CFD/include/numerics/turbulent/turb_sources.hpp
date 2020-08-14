@@ -123,9 +123,45 @@ public:
  * \class CSourcePieceWise_TurbSA
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
- * \author A. Bueno.
+ * \author G. Suarez
  */
 class CSourcePieceWise_TurbSA final : public CSourceBase_TurbSA {
+private:
+  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double r, g, g_6, glim, fw;
+  su2double norm2_Grad;
+  su2double dfv1, dfv2, dShat;
+  su2double dr, dg, dfw;
+  su2double dJi, dft2;
+  su2double inv_k2, inv_d2;
+  unsigned short iDim;
+  bool transition;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_Noft2
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation without the ft2 term.
+ * \ingroup SourceDiscr
+ * \author A. Bueno.
+ */
+class CSourcePieceWise_TurbSA_Noft2 final : public CSourceBase_TurbSA {
 private:
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -142,7 +178,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CSourcePieceWise_TurbSA_Noft2(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.
@@ -258,11 +294,46 @@ public:
 
 /*!
  * \class CSourcePieceWise_TurbSA_Neg
- * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \brief Class for integrating the source terms of the negative Spalart-Allmaras turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author G. Suarez
+ */
+class CSourcePieceWise_TurbSA_Neg : public CSourceBase_TurbSA {
+private:
+  su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, Sbar, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+  su2double r, g, g_6, glim, fw;
+  su2double norm2_Grad;
+  su2double dfv1, dfv2, dShat;
+  su2double dr, dg, dfw;
+  su2double dJi, dft2, dSbar;
+  su2double inv_k2, inv_d2;
+  su2double cv2, cv2_2, cv3;
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_Neg_Noft2
+ * \brief Class for integrating the source terms of the negative Spalart-Allmaras turbulence model equation without ft2 term.
  * \ingroup SourceDiscr
  * \author F. Palacios
  */
-class CSourcePieceWise_TurbSA_Neg : public CSourceBase_TurbSA {
+class CSourcePieceWise_TurbSA_Neg_Noft2 : public CSourceBase_TurbSA {
 private:
   su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
   su2double r, g, g_6, glim, fw;
@@ -277,7 +348,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  CSourcePieceWise_TurbSA_Neg_Noft2(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
    * \brief Residual for source term integration.

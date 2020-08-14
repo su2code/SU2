@@ -1420,11 +1420,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   /*--- Initialize some useful booleans ---*/
   bool euler, ns, turbulent, adj_euler, adj_ns, adj_turb, fem_euler, fem_ns, fem_turbulent;
-  bool spalart_allmaras, neg_spalart_allmaras, e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras, menter_sst;
+  bool spalart_allmaras, spalart_allmaras_noft2, neg_spalart_allmaras, neg_spalart_allmaras_noft2, e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras, menter_sst;
   bool fem, heat, transition, template_solver;
 
   euler = ns = turbulent = adj_euler = adj_ns = adj_turb = fem_euler = fem_ns = fem_turbulent = false;
-  spalart_allmaras = neg_spalart_allmaras = e_spalart_allmaras = comp_spalart_allmaras = e_comp_spalart_allmaras = menter_sst = false;
+  spalart_allmaras = spalart_allmaras_noft2 = neg_spalart_allmaras = neg_spalart_allmaras_noft2 = e_spalart_allmaras = comp_spalart_allmaras = e_comp_spalart_allmaras = menter_sst = false;
   fem = heat = transition = template_solver = false;
 
   /*--- Assign booleans ---*/
@@ -1500,13 +1500,15 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:        spalart_allmaras = true;        break;
-      case SA_NEG:    neg_spalart_allmaras = true;    break;
-      case SA_E:      e_spalart_allmaras = true;      break;
-      case SA_COMP:   comp_spalart_allmaras = true;   break;
-      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-      case SST:       menter_sst = true;              break;
-      case SST_SUST:  menter_sst = true;              break;
+      case SA:            spalart_allmaras = true;             break;
+      case SA_NOFT2:      spalart_allmaras_noft2 = true;       break;
+      case SA_NEG:        neg_spalart_allmaras = true;         break;
+      case SA_NEG_NOFT2:  neg_spalart_allmaras_noft2 = true;   break;
+      case SA_E:          e_spalart_allmaras = true;           break;
+      case SA_COMP:       comp_spalart_allmaras = true;        break;
+      case SA_E_COMP:     e_comp_spalart_allmaras = true;      break;
+      case SST:           menter_sst = true;                   break;
+      case SST_SUST:      menter_sst = true;                   break;
       default:
         SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
         break;
@@ -1932,7 +1934,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
         break;
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          if (spalart_allmaras || neg_spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras ) {
+          if (spalart_allmaras || spalart_allmaras_noft2 || neg_spalart_allmaras || neg_spalart_allmaras_noft2 || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras ) {
             numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
           }
           else if (menter_sst) numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
@@ -1947,10 +1949,10 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras){
+      if (spalart_allmaras || spalart_allmaras_noft2 || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras){
         numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA(nDim, nVar_Turb, true, config);
       }
-      else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, true, config);
+      else if (neg_spalart_allmaras || neg_spalart_allmaras_noft2) numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, true, config);
       else if (menter_sst) numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, true, config);
     }
 
@@ -1958,10 +1960,12 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
+      else if (spalart_allmaras_noft2) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA_Noft2(nDim, nVar_Turb, config);
       else if (e_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA_E(nDim, nVar_Turb, config);
       else if (comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA_COMP(nDim, nVar_Turb, config);
       else if (e_comp_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA_E_COMP(nDim, nVar_Turb, config);
       else if (neg_spalart_allmaras) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
+      else if (neg_spalart_allmaras_noft2) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSA_Neg_Noft2(nDim, nVar_Turb, config);
       else if (menter_sst) numerics[iMGlevel][TURB_SOL][source_first_term] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, kine_Inf, omega_Inf, config);
       numerics[iMGlevel][TURB_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Turb, config);
     }
@@ -1969,11 +1973,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
     /*--- Definition of the boundary condition method ---*/
 
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
+      if (spalart_allmaras || spalart_allmaras_noft2 || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
         numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
         numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA(nDim, nVar_Turb, false, config);
       }
-      else if (neg_spalart_allmaras) {
+      else if (neg_spalart_allmaras || neg_spalart_allmaras_noft2) {
         numerics[iMGlevel][TURB_SOL][conv_bound_term] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
         numerics[iMGlevel][TURB_SOL][visc_bound_term] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, false, config);
       }

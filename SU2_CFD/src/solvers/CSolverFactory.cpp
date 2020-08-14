@@ -313,7 +313,7 @@ CSolver* CSolverFactory::CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver
 
   if (!adjoint){
     switch (kindTurbModel) {
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      case SA: case SA_NOFT2: case SA_NEG: case SA_NEG_NOFT2: case SA_E: case SA_COMP: case SA_E_COMP:
         turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);

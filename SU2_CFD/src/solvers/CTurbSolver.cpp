@@ -604,7 +604,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     switch (config->GetKind_Turb_Model()) {
 
-      case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
+      case SA: case SA_NOFT2: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG: case SA_NEG_NOFT2:
 
         SU2_OMP_FOR_STAT(omp_chunk_size)
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -658,6 +658,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const
    so the under-relaxation is not applied to that variant. */
 
   bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
+		   (config->GetKind_Turb_Model() == SA_NOFT2)  ||
                    (config->GetKind_Turb_Model() == SA_E)      ||
                    (config->GetKind_Turb_Model() == SA_COMP)   ||
                    (config->GetKind_Turb_Model() == SA_E_COMP));

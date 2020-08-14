@@ -4401,7 +4401,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case SA: case SA_NOFT2: case SA_NEG: case SA_NEG_NOFT2:case SA_E: case SA_COMP: case SA_E_COMP:
       SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
       break;
     case SST:case SST_SUST:
@@ -4409,7 +4409,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
       break;
   }
   switch (config->GetKind_Turb_Model()) {
-    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
+    case SA:case SA_NOFT2:case SA_NEG:case SA_NEG_NOFT2:case SA_E: case SA_COMP: case SA_E_COMP:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
       break;
     case SST:case SST_SUST:
@@ -4786,7 +4786,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
+      case SA: case SA_NOFT2: case SA_NEG: case SA_NEG_NOFT2: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
         case SST: case SST_SUST: nVar_Turb = 2; break;
       }
     }
@@ -4807,7 +4807,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
+        case SA: case SA_NOFT2: case SA_NEG: case SA_NEG_NOFT2: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
         case SST: case SST_SUST: nVar_AdjTurb = 2; break;
       }
     }
@@ -5703,7 +5703,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
+              case SA: case SA_NOFT2: case SA_NEG: case SA_NEG_NOFT2: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
               case SST:	case SST_SUST: cout << "     Res[kine]" << "     Res[omega]"; break;
             }
 
@@ -6762,13 +6762,15 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
         if (incompressible) Breakdown_file << "Incompressible RANS equations." << "\n";
         Breakdown_file << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:        Breakdown_file << "Spalart Allmaras" << "\n"; break;
-          case SA_NEG:    Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
-          case SA_E:      Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
-          case SA_COMP:   Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
-          case SA_E_COMP: Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
-          case SST:       Breakdown_file << "Menter's SST"     << "\n"; break;
-          case SST_SUST:  Breakdown_file << "Menter's SST with sustaining terms" << "\n"; break;
+          case SA:           Breakdown_file << "Spalart Allmaras" << "\n"; break;
+	  case SA_NOFT2:     Breakdown_file << "Spalart Allmaras without ft2 term" << "\n"; break;
+          case SA_NEG:       Breakdown_file << "Negative Spalart Allmaras" << "\n"; break;
+	  case SA_NEG_NOFT2: Breakdown_file << "Negative Spalart Allmaras without ft2 term" << "\n"; break;
+          case SA_E:         Breakdown_file << "Edwards Spalart Allmaras" << "\n"; break;
+          case SA_COMP:      Breakdown_file << "Compressibility Correction Spalart Allmaras" << "\n"; break;
+          case SA_E_COMP:    Breakdown_file << "Compressibility Correction Edwards Spalart Allmaras" << "\n"; break;
+          case SST:          Breakdown_file << "Menter's SST"     << "\n"; break;
+          case SST_SUST:     Breakdown_file << "Menter's SST with sustaining terms" << "\n"; break;
         }
         break;
     }
