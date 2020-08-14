@@ -205,6 +205,8 @@ protected:
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
+  su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
+  roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double *l, *m;
 
@@ -555,6 +557,16 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the value of the roughness from the nearest wall.
+   * \param[in] val_dist_i - Value of of the roughness of the nearest wall from point i
+   * \param[in] val_dist_j - Value of of the roughness of the nearest wall from point j
+   */
+  void SetRoughness(su2double val_roughness_i, su2double val_roughness_j) {
+    roughness_i = val_roughness_i;
+    roughness_j = val_roughness_j;
   }
 
   /*!

@@ -254,6 +254,7 @@ private:
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
+  *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
   *Marker_Clamped,                /*!< \brief Clamped markers. */
@@ -308,6 +309,7 @@ private:
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
+  su2double *Roughness_Height;               /*!< \brief Equivalent sand grain roughness for the marker according to config file. */
   su2double *Displ_Value;                    /*!< \brief Specified displacement for displacement boundaries. */
   su2double *Load_Value;                     /*!< \brief Specified force for load boundaries. */
   su2double *Damper_Constant;                /*!< \brief Specified constant for damper boundaries. */
@@ -555,6 +557,8 @@ private:
   *Kind_Inc_Outlet,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  unsigned short *Kind_Wall;       /*!< \brief Type of wall treatment. */
+  unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
@@ -918,7 +922,8 @@ private:
   nMarkerPitching_Ampl,           /*!< \brief Number of values provided for pitching amplitude of marker. */
   nMarkerPitching_Phase,          /*!< \brief Number of values provided for pitching phase offset of marker. */
   nMarkerPlunging_Omega,          /*!< \brief Number of values provided for angular frequency of marker. */
-  nMarkerPlunging_Ampl;           /*!< \brief Number of values provided for plunging amplitude of marker. */
+  nMarkerPlunging_Ampl,           /*!< \brief Number of values provided for plunging amplitude of marker. */
+  nRough_Wall;                    /*!< \brief Number of rough walls. */
   su2double  *Omega_HB;           /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short
   nOmega_HB,                      /*!< \brief Number of frequencies in Harmonic Balance Operator. */
@@ -991,7 +996,9 @@ private:
   DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
   unsigned long Nonphys_Points,     /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
-  bool ParMETIS;                    /*!< \brief Boolean for activating ParMETIS mode (while testing). */
+  su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
+  long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
+  long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                  /*!< \brief AD-based discrete adjoint mode. */
   FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
@@ -1077,7 +1084,8 @@ private:
   default_body_force[3],         /*!< \brief Default body force vector for the COption class. */
   default_nacelle_location[5],   /*!< \brief Location of the nacelle. */
   default_hs_axes[3],            /*!< \brief Default principal axes (x, y, z) of the ellipsoid containing the heat source. */
-  default_hs_center[3];          /*!< \brief Default position of the center of the heat source. */
+  default_hs_center[3],          /*!< \brief Default position of the center of the heat source. */
+  default_roughness[1];
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -2923,6 +2931,12 @@ public:
    * \return Total number of heat flux markers.
    */
   unsigned short GetnMarker_HeatFlux(void) const { return nMarker_HeatFlux; }
+
+  /*!
+   * \brief Get the total number of rough markers.
+   * \return Total number of heat flux markers.
+   */
+  unsigned short GetnRoughWall(void) const { return nRough_Wall; }
 
   /*!
    * \brief Get the total number of objectives in kind_objective list
@@ -5005,6 +5019,11 @@ public:
   unsigned short GetKind_ActDisk(void) const { return Kind_ActDisk; }
 
   /*!
+   * \brief Set the kind of wall - rough or smooth.
+   */
+  void SetKindWall(string val_marker, unsigned short val_kindwall);
+
+  /*!
    * \brief Get the number of sections.
    * \return Number of sections
    */
@@ -6753,6 +6772,13 @@ public:
    * \return Pointer to the double info for the given marker.
    */
   su2double* GetWallFunction_DoubleInfo(string val_marker);
+
+  /*!
+   * \brief Get the type of wall and roughness height on a wall boundary (Heatflux or Isothermal).
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall type and roughness height.
+   */
+  pair<unsigned short, su2double> GetWallRoughnessProperties(string val_marker) const;
 
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
@@ -9359,6 +9385,21 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Get the ParMETIS load balancing tolerance.
+   */
+  passivedouble GetParMETIS_Tolerance() const { return SU2_TYPE::GetValue(ParMETIS_tolerance); }
+
+  /*!
+   * \brief Get the ParMETIS load balancing weight for points.
+   */
+  long GetParMETIS_PointWeight() const { return ParMETIS_pointWgt; }
+
+  /*!
+   * \brief Get the ParMETIS load balancing weight for edges
+   */
+  long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.
