@@ -636,7 +636,8 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
     ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
 
-    sq_vel += 0.5*(Velocity_i[iDim]*Velocity_i[iDim] + Velocity_j[iDim]*Velocity_j[iDim]);
+    // sq_vel += 0.5*(Velocity_i[iDim]*Velocity_i[iDim] + Velocity_j[iDim]*Velocity_j[iDim]);
+    sq_vel += pow(0.5*(Velocity_i[iDim]+Velocity_j[iDim]),2.0);
   }
 
   /*--- Compute interface speed of sound (aF) ---*/
@@ -734,10 +735,10 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2doubl
   }
 
   su2double Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_veli)));
+  SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_veli-turb_ke_i)));
 
   su2double Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_velj)));
+  SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_velj-turb_ke_j)));
 
   /*--- Compute interface speed of sound (aF), and left/right Mach number ---*/
 
