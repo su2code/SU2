@@ -88,13 +88,13 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];
 
-  const su2double R = sqrt(fabs(Density_j/Density_i));
-  su2double sq_vel = 0.0;
+  // const su2double R = sqrt(fabs(Density_j/Density_i));
+  // su2double sq_vel = 0.0;
 
   q_ij = 0.0;
   a0   = 0.0;
   a1   = 0.0;
-  Area = 0.0;
+  // Area = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
@@ -109,21 +109,21 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
       a0   += V_i[iDim+1]*Normal[iDim];
       a1   += V_j[iDim+1]*Normal[iDim];
 
-      sq_vel += RoeVelocity*RoeVelocity;
-      Area   += Normal[iDim]*Normal[iDim];
+      // sq_vel += RoeVelocity*RoeVelocity;
+      // Area   += Normal[iDim]*Normal[iDim];
     }
   }
 
-  Area = sqrt(Area);
+  // Area = sqrt(Area);
 
-  const su2double RoeEnthalpy = (R*V_j[nDim+3]+V_i[nDim+3])/(R+1.);
-  const su2double RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/(R+1.);
-  const su2double RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+  // const su2double RoeEnthalpy = (R*V_j[nDim+3]+V_i[nDim+3])/(R+1.);
+  // const su2double RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/(R+1.);
+  // const su2double RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
-  const su2double RoeSoundSpeed = sqrt(RoeSoundSpeed2);
-  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed*Area);
+  // const su2double RoeSoundSpeed = sqrt(RoeSoundSpeed2);
+  // const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed*Area);
 
-  q_ij = 0.5*max(fabs(q_ij), MaxLambda);
+  q_ij = 0.5*fabs(q_ij);
   a0  *= 0.5;
   a1  *= 0.5;
 
