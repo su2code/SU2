@@ -696,6 +696,10 @@ def read_config(filename):
         data_dict['MARKER_OUTLET'] = '(NONE)'
     if 'OPT_HESSIAN_FACTOR' not in data_dict:
         data_dict['OPT_HESSIAN_FACTOR'] = 1.0
+    if 'SQP_MODE' not in data_dict:
+        data_dict['SQP_MODE'] = '(NONE)'
+    if 'LINESEARCH_MODE' not in data_dict:
+        data_dict['LINESEARCH_MODE'] = -10.0
 
     #
     # Multipoints requires some particular default values

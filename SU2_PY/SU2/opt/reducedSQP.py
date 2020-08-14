@@ -10,19 +10,18 @@ import numpy as np
 from scipy import optimize
 from .. import eval as su2eval
 from .project import Project
-from .reducedSQP_handmade import SQPhandimplementation
+from .reducedSQP_handmade import SQPconstrained
+from .reducedSQP_handmade import SQPequalconstrained
 
 global glob_project
 
 def reduced_sqp(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_ieqcons, fdotdot, project, iter, acc, xb ):
     "This is the implementation of the reduced SQP optimizer for smoothed derivatives"
 
-    SCIPY = False
-    HANDMADE = True
-    SIMPLIFIED = False
+    SQP_MODE = project.config['SQP_MODE']
 
     # use the SciPy optimizer
-    if SCIPY:
+    if SQP_MODE == 'SCIPY':
 
         # preprocessing before the optimization run
         opt = {'maxiter': iter, 'verbose': 3}
@@ -46,30 +45,38 @@ def reduced_sqp(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_ieq
                                      tol          = acc               ,
                                      options      = opt               )
 
-    # use the self implemented SQP optimizer
-    elif HANDMADE:
+    # use the self implemented SQP optimizer with a cvxopt core
+    elif SQP_MODE == 'SQP_CVXOPT':
 
-        sys.stdout.write('Using implemented SQP version.' + '\n')
+        sys.stdout.write('Using implemented SQP version. \n')
+        outputs = SQPconstrained(x0, func, f_eqcons, f_ieqcons,
+                                 fprime, fprime_eqcons, fprime_ieqcons, fdotdot,
+                                 project, iter, acc, None)
 
-        outputs = SQPhandimplementation(x0, func,
-                                       f_eqcons, f_ieqcons,
-                                       fprime, fprime_eqcons, fprime_ieqcons,
-                                       fdotdot, project, iter, acc, None)
+    # use the self implemented SQP optimizer with a LES core
+    elif SQP_MODE == 'SQP_LES':
 
-    elif SIMPLIFIED:
+        sys.stdout.write('Using implemented SQP version. \n')
+        outputs = SQPequalconstrained(x0, func, f_eqcons,
+                                      fprime, fprime_eqcons, fdotdot,
+                                      project, iter, acc, None)
 
-        sys.stdout.write('Using simplified SQP iterations' + '\n')
+    # call to gradient descend under constraint.
+    elif SQP_MODE =='SIMPLIFIED':
 
-        outputs = SQPhandimplementation(x0, func,
-                                       f_eqcons, f_ieqcons,
-                                       fprime, fprime_eqcons, fprime_ieqcons,
-                                       unit_hessian, project, iter, acc, None)
+        sys.stdout.write('Using simplified SQP iterations \n')
+        outputs = SQPequalconstrained(x0, func, f_eqcons,
+                                      fprime, fprime_eqcons, unit_hessian,
+                                      project, iter, acc, None)
+
+    else:
+        sys.stdout.write('Please choose a valid SQP_MODE! \n')
 
     # return the results
     return outputs
 
 #
-# end of treduced_sqp
+# end of reduced_sqp
 #
 
 

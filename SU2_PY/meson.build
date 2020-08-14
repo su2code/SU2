@@ -44,6 +44,7 @@ install_data(['SU2/mesh/adapt.py',
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
               'SU2/opt/reducedSQP.py',
+              'SU2/opt/reducedSQP_handmade.py',
               'SU2/opt/__init__.py'], 
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 
