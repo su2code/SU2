@@ -597,19 +597,12 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
       if ((iVar == 0) || (iVar == nVar - 1)) {
         const unsigned long index = iPoint * nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index]) / (nodes->GetSolution(iPoint, iVar) + EPS);
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
         if (ratio > allowableRatio) {
           localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
       }
     }
-
-    /* In case of turbulence, take the min of the under-relaxation factor
-     between the mean flow and the turb model. */
-
-    if (config->GetKind_Turb_Model() != NONE)
-      localUnderRelaxation =
-          min(localUnderRelaxation, solver_container[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
@@ -1969,18 +1962,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   if (!config->GetViscous()) return;
 
   unsigned long iVertex, iPoint, iPointNormal;
-  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
+  unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX, TVE_INDEX;
   su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, WallShearStress, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve,
-            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
+            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor,
             delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-  su2double AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   su2double **Grad_PrimVar, dTn, dTven;
-
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -1996,11 +1987,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   bool energy = config->GetEnergy_Equation();
   bool QCR = config->GetQCR();
   bool axisymmetric = config->GetAxisymmetric();
+  bool roughwall = (config->GetnRoughWall() > 0);
   bool nemo = config->GetNEMOProblem();
 
   /*--- Get the locations of the primitive variables for NEMO ---*/
   if (nemo) {
-    unsigned short nSpecies = config->GetnSpecies();  
+    unsigned short nSpecies = config->GetnSpecies();
     T_INDEX       = nSpecies;
     TVE_INDEX     = nSpecies+1;
   }
@@ -2060,11 +2052,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   /*--- Loop over the Navier-Stokes markers ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+
+    if (!config->GetViscous_Wall(iMarker)) continue;
 
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
+    const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
@@ -2073,281 +2066,284 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
     }
 
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == CHT_WALL_INTERFACE)) {
-      /*--- Forces initialization at each Marker ---*/
+    /*--- Forces initialization at each Marker ---*/
 
-      ViscCoeff.setZero(iMarker);
+    ViscCoeff.setZero(iMarker);
 
-      HF_Visc[iMarker] = 0.0;
-      MaxHF_Visc[iMarker] = 0.0;
+    HF_Visc[iMarker] = 0.0;
+    MaxHF_Visc[iMarker] = 0.0;
 
-      su2double ForceViscous[MAXNDIM] = {0.0}, MomentViscous[MAXNDIM] = {0.0};
-      su2double MomentX_Force[MAXNDIM] = {0.0}, MomentY_Force[MAXNDIM] = {0.0}, MomentZ_Force[MAXNDIM] = {0.0};
+    su2double ForceViscous[MAXNDIM] = {0.0}, MomentViscous[MAXNDIM] = {0.0};
+    su2double MomentX_Force[MAXNDIM] = {0.0}, MomentY_Force[MAXNDIM] = {0.0}, MomentZ_Force[MAXNDIM] = {0.0};
 
-      /*--- Loop over the vertices to compute the forces ---*/
+    /*--- Loop over the vertices to compute the forces ---*/
 
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-        Coord = geometry->nodes->GetCoord(iPoint);
-        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+      Coord = geometry->nodes->GetCoord(iPoint);
+      Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, iDim + 1, jDim);
-          }
-
-          /// TODO: Move the temperature index logic to a function.
-
-          if (FlowRegime == COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
-
-          if (FlowRegime == INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, iDim + 1, jDim);
         }
 
-        Viscosity = nodes->GetLaminarViscosity(iPoint);
-        Density = nodes->GetDensity(iPoint);
+        /// TODO: Move the temperature index logic to a function.
 
-        if (nemo) {
-          thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
-          thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-          Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-        }
+        if (FlowRegime == COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
 
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-        Area = sqrt(Area);
+        if (FlowRegime == INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
+      }
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          UnitNormal[iDim] = Normal[iDim] / Area;
-        }
+      Viscosity = nodes->GetLaminarViscosity(iPoint);
+      if (roughwall) {
+        unsigned short WallType; su2double Roughness_Height;
+        tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+        if (WallType == ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
+      }
+      Density = nodes->GetDensity(iPoint);
 
-        /*--- Evaluate Tau ---*/
+      if (nemo) {
+        thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
+        thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
+        Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
+      }
 
-        div_vel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
+      Area = sqrt(Area);
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            Tau[iDim][jDim] = Viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) -
-                              TWO3 * Viscosity * div_vel * delta[iDim][jDim];
-          }
-        }
+      for (iDim = 0; iDim < nDim; iDim++) {
+        UnitNormal[iDim] = Normal[iDim] / Area;
+      }
 
-        /*--- If necessary evaluate the QCR contribution to Tau ---*/
+      /*--- Evaluate Tau ---*/
 
-        if (QCR) {
-          su2double den_aux, c_cr1 = 0.3, O_ik, O_jk;
-          unsigned short kDim;
+      div_vel = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
 
-          /*--- Denominator Antisymmetric normalized rotation tensor ---*/
-
-          den_aux = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            for (jDim = 0; jDim < nDim; jDim++) den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
-          den_aux = sqrt(max(den_aux, 1E-10));
-
-          /*--- Adding the QCR contribution ---*/
-
-          su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (jDim = 0; jDim < nDim; jDim++) {
-              for (kDim = 0; kDim < nDim; kDim++) {
-                O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim]) / den_aux;
-                O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim]) / den_aux;
-                tauQCR[iDim][jDim] += O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim];
-              }
-            }
-          }
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            for (jDim = 0; jDim < nDim; jDim++) Tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
-        }
-
-        /*--- Project Tau in each surface element ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          TauElem[iDim] = 0.0;
-          for (jDim = 0; jDim < nDim; jDim++) {
-            TauElem[iDim] += Tau[iDim][jDim] * UnitNormal[jDim];
-          }
-        }
-
-        /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux
-         * on the wall ---*/
-
-        TauNormal = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-
-        WallShearStress = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-          CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
-          WallShearStress += TauTangent[iDim] * TauTangent[iDim];
-        }
-        WallShearStress = sqrt(WallShearStress);
-
-        for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-        WallDistMod = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim] * WallDist[iDim];
-        WallDistMod = sqrt(WallDistMod);
-
-        /*--- Compute y+ and non-dimensional velocity ---*/
-
-        FrictionVel = sqrt(fabs(WallShearStress) / Density);
-        YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
-
-        /*--- Compute total and maximum heat flux on the wall ---*/
-
-        
-
-        /// TODO: Move these ifs to specialized functions.
-        if (!nemo){
-
-          GradTemperature = 0.0;
-
-          if (FlowRegime == COMPRESSIBLE) {
-            for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
-  
-            Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-            thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
-          }
-          if (FlowRegime == INCOMPRESSIBLE) {
-            if (energy)
-              for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
-  
-            thermal_conductivity = nodes->GetThermalConductivity(iPoint);
-          }
-
-          HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
-
-        } else {
-  
-          dTn = 0.0; dTven = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
-            dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
-          }
-          HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
-        }  
-
-        /*--- Note that y+, and heat are computed at the
-         halo cells (for visualization purposes), but not the forces ---*/
-
-        if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
-          /*--- Axisymmetric simulations ---*/
-
-          if (axisymmetric)
-            AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
-          else
-            AxiFactor = 1.0;
-
-          /*--- Force computation ---*/
-
-          su2double Force[MAXNDIM] = {0.0}, MomentDist[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = TauElem[iDim] * Area * factor * AxiFactor;
-            ForceViscous[iDim] += Force[iDim];
-            MomentDist[iDim] = Coord[iDim] - Origin[iDim];
-          }
-
-          /*--- Moment with respect to the reference axis ---*/
-
-          if (iDim == 3) {
-            MomentViscous[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
-            MomentX_Force[1] += (-Force[1] * Coord[2]);
-            MomentX_Force[2] += (Force[2] * Coord[1]);
-
-            MomentViscous[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLength;
-            MomentY_Force[2] += (-Force[2] * Coord[0]);
-            MomentY_Force[0] += (Force[0] * Coord[2]);
-          }
-          MomentViscous[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
-          MomentZ_Force[0] += (-Force[0] * Coord[1]);
-          MomentZ_Force[1] += (Force[1] * Coord[0]);
-
-          HF_Visc[iMarker] += HeatFlux[iMarker][iVertex] * Area;
-          MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          Tau[iDim][jDim] = Viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) -
+                            TWO3 * Viscosity * div_vel * delta[iDim][jDim];
         }
       }
 
-      /*--- Project forces and store the non-dimensional coefficients ---*/
+      /*--- If necessary evaluate the QCR contribution to Tau ---*/
 
-      if (Monitoring == YES) {
-        if (nDim == 2) {
-          ViscCoeff.CD[iMarker] = ForceViscous[0] * cos(Alpha) + ForceViscous[1] * sin(Alpha);
-          ViscCoeff.CL[iMarker] = -ForceViscous[0] * sin(Alpha) + ForceViscous[1] * cos(Alpha);
-          ViscCoeff.CEff[iMarker] = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker] + EPS);
-          ViscCoeff.CFx[iMarker] = ForceViscous[0];
-          ViscCoeff.CFy[iMarker] = ForceViscous[1];
-          ViscCoeff.CMz[iMarker] = MomentViscous[2];
-          ViscCoeff.CoPx[iMarker] = MomentZ_Force[1];
-          ViscCoeff.CoPy[iMarker] = -MomentZ_Force[0];
-          ViscCoeff.CT[iMarker] = -ViscCoeff.CFx[iMarker];
-          ViscCoeff.CQ[iMarker] = -ViscCoeff.CMz[iMarker];
-          ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
-          MaxHF_Visc[iMarker] = pow(MaxHF_Visc[iMarker], 1.0 / MaxNorm);
-        }
-        if (nDim == 3) {
-          ViscCoeff.CD[iMarker] = ForceViscous[0] * cos(Alpha) * cos(Beta) + ForceViscous[1] * sin(Beta) +
-                                  ForceViscous[2] * sin(Alpha) * cos(Beta);
-          ViscCoeff.CL[iMarker] = -ForceViscous[0] * sin(Alpha) + ForceViscous[2] * cos(Alpha);
-          ViscCoeff.CSF[iMarker] = -ForceViscous[0] * sin(Beta) * cos(Alpha) + ForceViscous[1] * cos(Beta) -
-                                   ForceViscous[2] * sin(Beta) * sin(Alpha);
-          ViscCoeff.CEff[iMarker] = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker] + EPS);
-          ViscCoeff.CFx[iMarker] = ForceViscous[0];
-          ViscCoeff.CFy[iMarker] = ForceViscous[1];
-          ViscCoeff.CFz[iMarker] = ForceViscous[2];
-          ViscCoeff.CMx[iMarker] = MomentViscous[0];
-          ViscCoeff.CMy[iMarker] = MomentViscous[1];
-          ViscCoeff.CMz[iMarker] = MomentViscous[2];
-          ViscCoeff.CoPx[iMarker] = -MomentY_Force[0];
-          ViscCoeff.CoPz[iMarker] = MomentY_Force[2];
-          ViscCoeff.CT[iMarker] = -ViscCoeff.CFz[iMarker];
-          ViscCoeff.CQ[iMarker] = -ViscCoeff.CMz[iMarker];
-          ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
-          MaxHF_Visc[iMarker] = pow(MaxHF_Visc[iMarker], 1.0 / MaxNorm);
-        }
+      if (QCR) {
+        su2double den_aux, c_cr1 = 0.3, O_ik, O_jk;
+        unsigned short kDim;
 
-        AllBoundViscCoeff.CD += ViscCoeff.CD[iMarker];
-        AllBoundViscCoeff.CL += ViscCoeff.CL[iMarker];
-        AllBoundViscCoeff.CSF += ViscCoeff.CSF[iMarker];
-        AllBoundViscCoeff.CFx += ViscCoeff.CFx[iMarker];
-        AllBoundViscCoeff.CFy += ViscCoeff.CFy[iMarker];
-        AllBoundViscCoeff.CFz += ViscCoeff.CFz[iMarker];
-        AllBoundViscCoeff.CMx += ViscCoeff.CMx[iMarker];
-        AllBoundViscCoeff.CMy += ViscCoeff.CMy[iMarker];
-        AllBoundViscCoeff.CMz += ViscCoeff.CMz[iMarker];
-        AllBoundViscCoeff.CoPx += ViscCoeff.CoPx[iMarker];
-        AllBoundViscCoeff.CoPy += ViscCoeff.CoPy[iMarker];
-        AllBoundViscCoeff.CoPz += ViscCoeff.CoPz[iMarker];
-        AllBoundViscCoeff.CT += ViscCoeff.CT[iMarker];
-        AllBoundViscCoeff.CQ += ViscCoeff.CQ[iMarker];
-        AllBound_HF_Visc += HF_Visc[iMarker];
-        AllBound_MaxHF_Visc += pow(MaxHF_Visc[iMarker], MaxNorm);
+        /*--- Denominator Antisymmetric normalized rotation tensor ---*/
 
-        /*--- Compute the coefficients per surface ---*/
+        den_aux = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          for (jDim = 0; jDim < nDim; jDim++) den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
+        den_aux = sqrt(max(den_aux, 1E-10));
 
-        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          if (Marker_Tag == Monitoring_Tag) {
-            SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
-            SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];
-            SurfaceViscCoeff.CSF[iMarker_Monitoring] += ViscCoeff.CSF[iMarker];
-            SurfaceViscCoeff.CEff[iMarker_Monitoring] += ViscCoeff.CEff[iMarker];
-            SurfaceViscCoeff.CFx[iMarker_Monitoring] += ViscCoeff.CFx[iMarker];
-            SurfaceViscCoeff.CFy[iMarker_Monitoring] += ViscCoeff.CFy[iMarker];
-            SurfaceViscCoeff.CFz[iMarker_Monitoring] += ViscCoeff.CFz[iMarker];
-            SurfaceViscCoeff.CMx[iMarker_Monitoring] += ViscCoeff.CMx[iMarker];
-            SurfaceViscCoeff.CMy[iMarker_Monitoring] += ViscCoeff.CMy[iMarker];
-            SurfaceViscCoeff.CMz[iMarker_Monitoring] += ViscCoeff.CMz[iMarker];
-            Surface_HF_Visc[iMarker_Monitoring] += HF_Visc[iMarker];
-            Surface_MaxHF_Visc[iMarker_Monitoring] += pow(MaxHF_Visc[iMarker], MaxNorm);
+        /*--- Adding the QCR contribution ---*/
+
+        su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0; jDim < nDim; jDim++) {
+            for (kDim = 0; kDim < nDim; kDim++) {
+              O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim]) / den_aux;
+              O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim]) / den_aux;
+              tauQCR[iDim][jDim] += O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim];
+            }
           }
+        }
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          for (jDim = 0; jDim < nDim; jDim++) Tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
+      }
+
+      /*--- Project Tau in each surface element ---*/
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        TauElem[iDim] = 0.0;
+        for (jDim = 0; jDim < nDim; jDim++) {
+          TauElem[iDim] += Tau[iDim][jDim] * UnitNormal[jDim];
+        }
+      }
+
+      /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux
+       * on the wall ---*/
+
+      TauNormal = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+      WallShearStress = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+        CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
+        WallShearStress += TauTangent[iDim] * TauTangent[iDim];
+      }
+      WallShearStress = sqrt(WallShearStress);
+
+      for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+      WallDistMod = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim] * WallDist[iDim];
+      WallDistMod = sqrt(WallDistMod);
+
+      /*--- Compute y+ and non-dimensional velocity ---*/
+
+      FrictionVel = sqrt(fabs(WallShearStress) / Density);
+      YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+
+      /*--- Compute total and maximum heat flux on the wall ---*/
+
+
+
+      /// TODO: Move these ifs to specialized functions.
+      if (!nemo){
+
+        GradTemperature = 0.0;
+
+        if (FlowRegime == COMPRESSIBLE) {
+          for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+
+          Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+          thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
+        }
+        if (FlowRegime == INCOMPRESSIBLE) {
+          if (energy)
+            for (iDim = 0; iDim < nDim; iDim++) GradTemperature -= Grad_Temp[iDim] * UnitNormal[iDim];
+
+          thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+        }
+
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
+
+      } else {
+
+        dTn = 0.0; dTven = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+        }
+        HeatFlux[iMarker][iVertex] = thermal_conductivity_tr*dTn + thermal_conductivity_ve*dTven;
+      }
+
+      /*--- Note that y+, and heat are computed at the
+       halo cells (for visualization purposes), but not the forces ---*/
+
+      if ((geometry->nodes->GetDomain(iPoint)) && (Monitoring == YES)) {
+        /*--- Axisymmetric simulations ---*/
+
+        if (axisymmetric)
+          AxiFactor = 2.0 * PI_NUMBER * geometry->nodes->GetCoord(iPoint, 1);
+        else
+          AxiFactor = 1.0;
+
+        /*--- Force computation ---*/
+
+        su2double Force[MAXNDIM] = {0.0}, MomentDist[MAXNDIM] = {0.0};
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Force[iDim] = TauElem[iDim] * Area * factor * AxiFactor;
+          ForceViscous[iDim] += Force[iDim];
+          MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+        }
+
+        /*--- Moment with respect to the reference axis ---*/
+
+        if (iDim == 3) {
+          MomentViscous[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
+          MomentX_Force[1] += (-Force[1] * Coord[2]);
+          MomentX_Force[2] += (Force[2] * Coord[1]);
+
+          MomentViscous[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLength;
+          MomentY_Force[2] += (-Force[2] * Coord[0]);
+          MomentY_Force[0] += (Force[0] * Coord[2]);
+        }
+        MomentViscous[2] += (Force[1] * MomentDist[0] - Force[0] * MomentDist[1]) / RefLength;
+        MomentZ_Force[0] += (-Force[0] * Coord[1]);
+        MomentZ_Force[1] += (Force[1] * Coord[0]);
+
+        HF_Visc[iMarker] += HeatFlux[iMarker][iVertex] * Area;
+        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
+      }
+    }
+
+    /*--- Project forces and store the non-dimensional coefficients ---*/
+
+    if (Monitoring == YES) {
+      if (nDim == 2) {
+        ViscCoeff.CD[iMarker] = ForceViscous[0] * cos(Alpha) + ForceViscous[1] * sin(Alpha);
+        ViscCoeff.CL[iMarker] = -ForceViscous[0] * sin(Alpha) + ForceViscous[1] * cos(Alpha);
+        ViscCoeff.CEff[iMarker] = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker] + EPS);
+        ViscCoeff.CFx[iMarker] = ForceViscous[0];
+        ViscCoeff.CFy[iMarker] = ForceViscous[1];
+        ViscCoeff.CMz[iMarker] = MomentViscous[2];
+        ViscCoeff.CoPx[iMarker] = MomentZ_Force[1];
+        ViscCoeff.CoPy[iMarker] = -MomentZ_Force[0];
+        ViscCoeff.CT[iMarker] = -ViscCoeff.CFx[iMarker];
+        ViscCoeff.CQ[iMarker] = -ViscCoeff.CMz[iMarker];
+        ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
+        MaxHF_Visc[iMarker] = pow(MaxHF_Visc[iMarker], 1.0 / MaxNorm);
+      }
+      if (nDim == 3) {
+        ViscCoeff.CD[iMarker] = ForceViscous[0] * cos(Alpha) * cos(Beta) + ForceViscous[1] * sin(Beta) +
+                                ForceViscous[2] * sin(Alpha) * cos(Beta);
+        ViscCoeff.CL[iMarker] = -ForceViscous[0] * sin(Alpha) + ForceViscous[2] * cos(Alpha);
+        ViscCoeff.CSF[iMarker] = -ForceViscous[0] * sin(Beta) * cos(Alpha) + ForceViscous[1] * cos(Beta) -
+                                 ForceViscous[2] * sin(Beta) * sin(Alpha);
+        ViscCoeff.CEff[iMarker] = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker] + EPS);
+        ViscCoeff.CFx[iMarker] = ForceViscous[0];
+        ViscCoeff.CFy[iMarker] = ForceViscous[1];
+        ViscCoeff.CFz[iMarker] = ForceViscous[2];
+        ViscCoeff.CMx[iMarker] = MomentViscous[0];
+        ViscCoeff.CMy[iMarker] = MomentViscous[1];
+        ViscCoeff.CMz[iMarker] = MomentViscous[2];
+        ViscCoeff.CoPx[iMarker] = -MomentY_Force[0];
+        ViscCoeff.CoPz[iMarker] = MomentY_Force[2];
+        ViscCoeff.CT[iMarker] = -ViscCoeff.CFz[iMarker];
+        ViscCoeff.CQ[iMarker] = -ViscCoeff.CMz[iMarker];
+        ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
+        MaxHF_Visc[iMarker] = pow(MaxHF_Visc[iMarker], 1.0 / MaxNorm);
+      }
+
+      AllBoundViscCoeff.CD += ViscCoeff.CD[iMarker];
+      AllBoundViscCoeff.CL += ViscCoeff.CL[iMarker];
+      AllBoundViscCoeff.CSF += ViscCoeff.CSF[iMarker];
+      AllBoundViscCoeff.CFx += ViscCoeff.CFx[iMarker];
+      AllBoundViscCoeff.CFy += ViscCoeff.CFy[iMarker];
+      AllBoundViscCoeff.CFz += ViscCoeff.CFz[iMarker];
+      AllBoundViscCoeff.CMx += ViscCoeff.CMx[iMarker];
+      AllBoundViscCoeff.CMy += ViscCoeff.CMy[iMarker];
+      AllBoundViscCoeff.CMz += ViscCoeff.CMz[iMarker];
+      AllBoundViscCoeff.CoPx += ViscCoeff.CoPx[iMarker];
+      AllBoundViscCoeff.CoPy += ViscCoeff.CoPy[iMarker];
+      AllBoundViscCoeff.CoPz += ViscCoeff.CoPz[iMarker];
+      AllBoundViscCoeff.CT += ViscCoeff.CT[iMarker];
+      AllBoundViscCoeff.CQ += ViscCoeff.CQ[iMarker];
+      AllBound_HF_Visc += HF_Visc[iMarker];
+      AllBound_MaxHF_Visc += pow(MaxHF_Visc[iMarker], MaxNorm);
+
+      /*--- Compute the coefficients per surface ---*/
+
+      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_Tag == Monitoring_Tag) {
+          SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
+          SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];
+          SurfaceViscCoeff.CSF[iMarker_Monitoring] += ViscCoeff.CSF[iMarker];
+          SurfaceViscCoeff.CEff[iMarker_Monitoring] += ViscCoeff.CEff[iMarker];
+          SurfaceViscCoeff.CFx[iMarker_Monitoring] += ViscCoeff.CFx[iMarker];
+          SurfaceViscCoeff.CFy[iMarker_Monitoring] += ViscCoeff.CFy[iMarker];
+          SurfaceViscCoeff.CFz[iMarker_Monitoring] += ViscCoeff.CFz[iMarker];
+          SurfaceViscCoeff.CMx[iMarker_Monitoring] += ViscCoeff.CMx[iMarker];
+          SurfaceViscCoeff.CMy[iMarker_Monitoring] += ViscCoeff.CMy[iMarker];
+          SurfaceViscCoeff.CMz[iMarker_Monitoring] += ViscCoeff.CMz[iMarker];
+          Surface_HF_Visc[iMarker_Monitoring] += HF_Visc[iMarker];
+          Surface_MaxHF_Visc[iMarker_Monitoring] += pow(MaxHF_Visc[iMarker], MaxNorm);
         }
       }
     }

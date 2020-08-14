@@ -730,11 +730,13 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, jVar;
   bool err;
+
+  auto numerics = numerics_container[CONV_TERM];
 
   /*--- Set booleans based on config settings ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -3085,44 +3087,3 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
 
 }
 
-void CNEMOEulerSolver::SetVolume_Output(CConfig *config, CGeometry *geometry, su2double **data_container, unsigned short nOutput_Vars) {
-
-#ifdef DEBUG_TDE
-
-  unsigned short iVar;
-  unsigned long iPoint;
-
-  /*--- Add up total number of output variables to be written. ---*/
-  nOutput_Vars = nVar;
-
-  for (iVar = 0; iVar < config->GetnOutput_Vars_Vol(); iVar++ ) {
-
-    switch(config->GetOutput_Vars_Vol(iVar)) {
-    case PRESSURE:
-      nOutput_Vars++;
-      break;
-    case MACH:
-      nOutput_Vars++;
-      break;
-    }
-  }
-
-  // NEEDS TO BE MAX NUMBER OF POINTS ON ANY PARTITION ?
-  data_container = new su2double*[nOutput_Vars];
-  for (iVar = 0; iVar < nOutput_Vars; iVar++ ) {
-    data_container[iVar] = new su2double[nPointDomain];
-  }
-
-  for (iVar = 0; iVar < config->GetnOutput_Vars_Vol(); iVar++ ) {
-
-    switch(config->GetOutput_Vars_Vol(iVar)) {
-    case PRESSURE:
-      nOutput_Vars++;
-      break;
-    case MACH:
-      nOutput_Vars++;
-      break;
-    }
-  }
-#endif
-}
