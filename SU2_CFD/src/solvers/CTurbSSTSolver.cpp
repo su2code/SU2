@@ -494,7 +494,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set distance to the surface ---*/
 
-      numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+      numerics->(geometry->node[iPoint]->GetWall_Distance(), 0.0);
 
       /*--- Menter's first blending function ---*/
 
@@ -537,7 +537,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned long iPoint) {
   
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS && nodes->GetCrossDiff(iPoint) > 1.0e-10) {
 
     const bool wasActive = AD::BeginPassive();
   
@@ -1973,7 +1973,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double betastar    = constants[6];
   const su2double a1          = constants[7];
   const su2double CDkw        = varTur->GetCrossDiff(iPoint);
-  const su2double CDkwmin     = 1.e-20;
+  const su2double CDkwmin     = 1.e-10;
 
   const su2double* Vorticity = varFlo->GetVorticity(iPoint);
   const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
@@ -2052,10 +2052,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   TmpWeights[nVarFlo+0] += factor/zeta;
   TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-  }
+  if (CDkw > CDkwmin)
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+      TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    }
 
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
@@ -2115,6 +2116,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  if (CDkw > CDkwmin) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
