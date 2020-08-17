@@ -371,7 +371,7 @@ void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
 void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy, const su2double *val_tke,
                                    const su2double *val_normal, const su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) const {
-  // const bool wasActive = AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
 
@@ -402,7 +402,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
-  // AD::EndPassive(wasActive);
+  AD::EndPassive(wasActive);
 }
 
 

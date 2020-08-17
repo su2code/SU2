@@ -277,7 +277,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
-  // const bool wasActive = AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   su2double proj_on_rho;
       
@@ -337,7 +337,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
   }
 
-  // AD::EndPassive(wasActive);
+  AD::EndPassive(wasActive);
 
 }
 

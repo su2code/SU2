@@ -544,11 +544,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
     const su2double sigma_om2 = constants[3];
     const su2double a1        = constants[7];
-
-    // const su2double* Vorticity = flowNodes->GetVorticity(iPoint);
-    // const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-    //                                     Vorticity[1]*Vorticity[1] +
-    //                                     Vorticity[2]*Vorticity[2]);
     
     const su2double F1_i = nodes->GetF1blending(iPoint);
     const su2double F2_i = nodes->GetF2blending(iPoint);
