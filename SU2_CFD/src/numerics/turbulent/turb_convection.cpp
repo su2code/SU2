@@ -63,13 +63,13 @@ CUpwScalar::~CUpwScalar(void) {
 
 void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                              const su2double *lim_i, const su2double *lim_j) {
-  // const bool wasActive = AD::BeginPassive();
+  const bool wasActive = AD::BeginPassive();
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
 
 
-  // AD::EndPassive(wasActive);
+  AD::EndPassive(wasActive);
 }
 
 CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
@@ -132,10 +132,10 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   FinishResidualCalc(config);
 
-  if (muscl) {
-    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
-    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
-  }
+  // if (muscl) {
+  //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
+  //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+  // }
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
