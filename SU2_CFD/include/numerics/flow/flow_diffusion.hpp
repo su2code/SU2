@@ -48,6 +48,7 @@ protected:
   bool implicit = false;                  /*!< \brief Implicit calculus. */
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
+  tke_flux_vector[MAXNDIM] = {0.0},       /*!< \brief Flux of total energy due to turbulent diffusion */
   *heat_flux_jac_i = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
   *heat_flux_jac_j = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
   **tau_jacobian_i = nullptr,             /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
@@ -57,6 +58,7 @@ protected:
   *PrimVar_i = nullptr,
   *PrimVar_j = nullptr;                   /*!< \brief Primitives variables at point i and j. */
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
+  *Mean_GradTurbVar = nullptr,            /*!< \brief Mean value of the turbulent gradient. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
@@ -71,7 +73,9 @@ protected:
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
   
+  bool sst = false;
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
+  su2double sigma_k_i, sigma_k_j;
   su2double F1_i, F1_j;
   su2double F2_i, F2_j;
 
@@ -227,22 +231,6 @@ public:
                        su2double val_turb_ke,
                        su2double val_laminar_viscosity,
                        su2double val_eddy_viscosity);
-
-  /*!
-   * \brief Get a component of the viscous stress tensor.
-   *
-   * \param[in] iDim - The first index
-   * \param[in] jDim - The second index
-   * \return The component of the viscous stress tensor at iDim, jDim
-   */
-  inline su2double GetStressTensor(unsigned short iDim, unsigned short jDim) const { return tau[iDim][jDim];}
-
-  /*!
-   * \brief Get a component of the heat flux vector.
-   * \param[in] iDim - The index of the component
-   * \return The component of the heat flux vector at iDim
-   */
-  inline su2double GetHeatFluxVector(unsigned short iDim) const { return heat_flux_vector[iDim]; }
   
   /*!
    * \brief Sets value of first blending function.
@@ -294,6 +282,16 @@ public:
   void SetHeatFluxVector(const su2double* const *val_gradprimvar,
                          su2double val_laminar_viscosity,
                          su2double val_eddy_viscosity);
+
+  /*!
+   * \brief Compute the energy flux due to turbulent diffusivity
+   * \param[in] val_gradturbvar - Gradient of the turbulent variables.
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   */
+  void SetTKEFluxVector(const su2double* val_gradturbvar,
+                        su2double val_laminar_viscosity,
+                        su2double val_eddy_viscosity);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
