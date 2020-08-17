@@ -132,7 +132,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     su2double GradTurbVar_Edge = 0.0, 
               Delta = turb_ke_j - turb_ke_i;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradTurbVar_Edge += GradTurbVar[0][iDim]*Edge_Vector[iDim];
+      GradTurbVar_Edge += Mean_GradTurbVar[iDim]*Edge_Vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       Mean_GradTurbVar[iDim] -= (GradTurbVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
