@@ -30,7 +30,7 @@
 
 CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              unsigned short val_nVar,
-                             unsigned short val_nPrimVar,x
+                             unsigned short val_nPrimVar,
                              bool val_correct_grad,
                              const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config),
