@@ -67,25 +67,26 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
+    cout<<filename_<<endl;
 
     if (dual_time) {
       if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+      cout<<filename_<<endl;
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
 
     if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+      Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
     }
   }
 
   /*--- Define geometry constants in the solver structure.
-   * Incompressible flow, primitive variables (P, vx, vy, vz, rho) ---*/
+   * Incompressible flow, primitive variables (P, vx, vy, vz, rho, mu_lam, mu_t) ---*/
 
   nDim = geometry->GetnDim();
 
@@ -197,6 +198,13 @@ CPBIncEulerSolver::~CPBIncEulerSolver(void) {
       delete [] FaceVelocity[iEdge];
     }
     delete [] FaceVelocity;
+  }
+  
+  if (FaceVelocityCorrec != NULL) {
+    for (iEdge = 0; iEdge < nEdge; iEdge++) {
+      delete [] FaceVelocityCorrec[iEdge];
+    }
+    delete [] FaceVelocityCorrec;
   }
 
 }
@@ -319,6 +327,7 @@ void CPBIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short
   Force_Ref        = Velocity_Ref*Velocity_Ref/Length_Ref;               config->SetForce_Ref(Force_Ref);
   Gas_Constant_Ref = Velocity_Ref*Velocity_Ref/Temperature_Ref;          config->SetGas_Constant_Ref(Gas_Constant_Ref);
   Viscosity_Ref    = Density_Ref*Velocity_Ref*Length_Ref;                config->SetViscosity_Ref(Viscosity_Ref);
+  Heat_Flux_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref*Velocity_Ref; config->SetHeat_Flux_Ref(Heat_Flux_Ref); //To avoid error in Friction Force routine only
 
   /*--- Get the freestream energy. Only useful if energy equation is active. ---*/
 

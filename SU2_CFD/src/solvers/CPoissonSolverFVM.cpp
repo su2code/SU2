@@ -452,6 +452,7 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
    }
   }
    delete [] Normal;
+   delete [] MomCoeffxNormal;
 }
                                 
                                 

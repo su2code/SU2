@@ -134,5 +134,11 @@ public:
    * \return Value of the DES length Scale.
    */
   inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
+  
+  /*!
+   * \brief Get the thermal conductivity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override { return 0.0; }
     
 };

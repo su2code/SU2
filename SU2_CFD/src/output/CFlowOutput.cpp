@@ -2859,13 +2859,13 @@ bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool f
   if (config->GetTime_Domain()){
     if (((config->GetTime_Marching() == DT_STEPPING_1ST) ||
          (config->GetTime_Marching() == TIME_STEPPING)) &&
-        ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
+        ((Iter == 0) || (Iter % config->GetWrt_Sol_Freq_DualTime() == 0))){
       return true;
     }
 
     if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
-        ((Iter == 0) || (Iter    % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) ||
+        ((Iter == 0) || (Iter    % config->GetWrt_Sol_Freq_DualTime() == 0) ||
+         ((Iter+1) % config->GetWrt_Sol_Freq_DualTime() == 0) ||
          ((Iter+2 == config->GetnTime_Iter())))){
       return true;
     }
