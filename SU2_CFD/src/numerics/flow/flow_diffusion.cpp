@@ -693,7 +693,7 @@ void CAvgGrad_Flow::SetTKEFluxVector(const su2double* val_gradturbvar,
   /*--- Gradient of TKE ---*/
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    tke_flux_vector[iDim] = viscosity*val_gradturbvar[0][iDim];
+    tke_flux_vector[iDim] = viscosity*val_gradturbvar[iDim];
   }
 }
 
