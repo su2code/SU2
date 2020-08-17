@@ -500,8 +500,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      if (config->GetUse_Accurate_Turb_Jacobians())
-        CrossDiffusionJacobian(geometry, solver, config, iPoint);
+      // if (config->GetUse_Accurate_Turb_Jacobians())
+      //   CrossDiffusionJacobian(geometry, solver, config, iPoint);
       
     }// if dist
 
@@ -2018,7 +2018,8 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
               + u[jDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim));
     }
     factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim);
-    factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+    factor += sigmak*gradk[iDim]*(varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim)
+                                 +varAdjFlo->GetGradient_Adaptation(iPoint, (nVarFlo-1), iDim))
             + sigmaomega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
   }
 
@@ -2044,7 +2045,10 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
     const unsigned short rki = 0, romegai = 1, rei = (nVarFlo - 1), xxi = 0, yyi = 3, zzi = 5;
     TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
                                                 +varAdjTur->GetHessian(iPoint, rki, yyi)
-                                                +varAdjTur->GetHessian(iPoint, rki, zzi)); // Hk
+                                                +varAdjTur->GetHessian(iPoint, rki, zzi)
+                                                +varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                                +varAdjFlo->GetHessian(iPoint, rei, yyi)
+                                                +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, yyi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
@@ -2053,7 +2057,9 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   else {
     const unsigned short rki = 0, romegai = 1, rei = (nVarFlo - 1), xxi = 0, yyi = 2;
     TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
-                                                +varAdjTur->GetHessian(iPoint, rki, yyi)); // Hk
+                                                +varAdjTur->GetHessian(iPoint, rki, yyi)
+                                                +varAdjFlo->GetHessian(iPoint, rei, xxi)
+                                                +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
     TmpWeights[nVarFlo+1] += -(mu+sigmaomega*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
                                                     +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
   }
