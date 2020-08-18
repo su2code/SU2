@@ -311,7 +311,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   /*--- Clip omega ---*/
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) 
-    nodes->SetSolution(iPoint,1,max(nodes->GetSolution(iPoint,1), eps));
+    nodes->SetSolution(iPoint,1,max(nodes->GetSolution(iPoint,1), solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint)*eps));
   
   SetPrimitive_Variables(solver);
   
