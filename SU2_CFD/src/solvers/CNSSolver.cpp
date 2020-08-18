@@ -605,6 +605,9 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
 
+  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
+
   /*--- Get norm of projection and distance vectors ---*/
 
   su2double ProjVec = 0.0, Dist2 = 0.0;
@@ -666,6 +669,18 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
         /*--- Energy Jacobian ---*/
         Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
+
+        /*--- Tke term ---*/
+        if (sst) {
+          CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+          const su2double F1_i = nodesTur->GetF1blending(iPoint);
+          const su2double F1_j = nodesTur->GetF1blending(jPoint);
+          const su2double sigma_k = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2
+                                       + F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
+          const su2double tke = nodesTur->GetPrimitive(iPoint,0);
+          Weight *= tke/ConductivityOnR;
+          Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + sigma_k*Mean_EddyVisc)*tke/Density;
+        }
       }// iVertex
     }// iMarker
 
@@ -708,6 +723,18 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
     /*--- Energy Jacobian ---*/
     Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
+
+    /*--- Tke term ---*/
+    if (sst) {
+      CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+      const su2double F1_i = nodesTur->GetF1blending(iPoint);
+      const su2double F1_j = nodesTur->GetF1blending(jPoint);
+      const su2double sigma_k = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2
+                                   + F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
+      const su2double tke = nodesTur->GetPrimitive(kPoint,0);
+      Weight *= tke/ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + sigma_k*Mean_EddyVisc)*tke/Density;
+    }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
