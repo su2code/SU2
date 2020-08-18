@@ -3232,15 +3232,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           Project_Grad_i *= Limiter_i[iVar];
           Project_Grad_j *= Limiter_j[iVar];
-
-          /*--- Store nodal values ---*/
-          numerics->SetNodalPrimitive(V_i, V_j);
-          if (tkeNeeded) {
-            CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-            numerics->SetNodalTurbVar(turbNodes->GetPrimitive(iPoint),
-                                      turbNodes->GetPrimitive(jPoint));
-          }
           
+        }
+        else {
+          su2double OneVec[MAXNDIM+3] = {1.0};
+          numerics->SetLimiter(OneVec, OneVec);
+        }
+
+        /*--- Store nodal values ---*/
+        numerics->SetNodalPrimitive(V_i, V_j);
+        if (tkeNeeded) {
+          numerics->SetNodalTurbVar(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint),
+                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint));
         }
 
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;

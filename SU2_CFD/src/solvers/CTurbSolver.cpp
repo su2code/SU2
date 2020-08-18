@@ -313,9 +313,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         numerics->SetLimiter(ZeroVec, ZeroVec);
       }
 
-      if (limiter || limiterFlow) {
-        numerics->SetNodalPrimitive(V_i, V_j);
-        numerics->SetNodalTurbVar(Turb_i, Turb_j);
+      numerics->SetNodalPrimitive(V_i, V_j);
+      numerics->SetNodalTurbVar(Turb_i, Turb_j);
+      if (!limiter && !limiterFlow) {
+        su2double OneVec[MAXNDIM+3] = {1.0};
+        numerics->SetLimiter(OneVec, OneVec);
       }
     }
 
