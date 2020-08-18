@@ -844,46 +844,41 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = PerturbedStrainMag * PerturbedStrainMag - TWO3*zeta*diverg;
    }
    else {
-     const su2double S2 = StrainMag_i*StrainMag_i;
+    su2double S2 = 0.;
+     for (iDim = 0; iDim < nDim; iDim++) {
+       for (jDim = 0; jDim < nDim; jDim++) {
+         S2 += (PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]
+                  - TWO3*diverg*delta[iDim][jDim])*PrimVar_Grad_i[iDim+1][jDim];
+       }
+     }
+     // const su2double S2 = StrainMag_i*StrainMag_i;
      pk = Eddy_Viscosity_i*S2 - TWO3*Density_i*TurbVar_i[0]*diverg;
      pw = S2 - TWO3*zeta*diverg;
        
-     // /*--- k production Jacobian ---*/
-     // if ((pk > 0.) && (pk <= 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-     //   Jacobian_i[0][0] = (S2/zeta-TWO3*diverg)*Volume;
-     //   if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
-     //     Jacobian_i[0][1] = -S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
-     // }
+     /*--- k production Jacobian ---*/
+     if ((pk > 0.) && (pk <= 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
+       Jacobian_i[0][0] = min(-TWO3*diverg*Volume,0.0);
+       if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
+         Jacobian_i[0][1] = -S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+     }
      // else if (pk > 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
      //   Jacobian_i[0][0] = 10.*beta_star*TurbVar_i[1]*Volume;
      //   Jacobian_i[0][1] = 10.*beta_star*TurbVar_i[0]*Volume;
      // }
      
-     // /*--- omega production Jacobian ---*/
-     // if ((pw > 0.) && (pw <= 10.*beta_star*TurbVar_i[1]*zeta) && (TurbVar_i[1] > StrainMag_i*F2_i/a1)) {
-     //   Jacobian_i[1][1] = -TWO3*alfa_blended*diverg*Volume;
-     // }
+     /*--- omega production Jacobian ---*/
+     if ((pw > 0.) && (pw <= 10.*beta_star*TurbVar_i[1]*zeta) && (TurbVar_i[1] > StrainMag_i*F2_i/a1)) {
+       Jacobian_i[1][1] = min(-TWO3*alfa_blended*diverg*Volume,0.0);
+     }
      // else if (pw > 10.*beta_star*TurbVar_i[1]*zeta) {
      //   Jacobian_i[1][1] = 10.*beta_star*alfa_blended*zeta*Volume;
      //   if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
      //    Jacobian_i[1][1] *= 2.0;
      // }
-
-     /*--- k production Jacobian ---*/
-     // if ((pk > 0.) && (pk <= 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
-       Jacobian_i[0][0] = min(-TWO3*diverg*Volume, 0.0);
-       // if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
-         Jacobian_i[0][1] = -S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
-     // }
-     
-     /*--- omega production Jacobian ---*/
-     // if ((pw > 0.) && (pw <= 10.*beta_star*TurbVar_i[1]*zeta) && (TurbVar_i[1] > StrainMag_i*F2_i/a1)) {
-       Jacobian_i[1][1] = min(-TWO3*alfa_blended*diverg*Volume, 0.0);
-     // }
    }
     
     pk = min(pk, 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-    // pw = min(pw, 10.*beta_star*TurbVar_i[1]*zeta);
+    pw = min(pw, 10.*beta_star*TurbVar_i[1]*zeta);
     
     pk = max(pk, 0.0);
     pw = alfa_blended*Density_i*max(pw, 0.0);
