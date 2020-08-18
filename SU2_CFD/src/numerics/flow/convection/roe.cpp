@@ -103,17 +103,17 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
 
   su2double sq_vel = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    sq_vel += pow(val_velocity_n[iDim], 2.0);
+    sq_vel += pow(val_velocity[iDim], 2.0);
 
   /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
 
   MLim[0][0] = dLim[nDim+2];
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    MLim[iDim+1][0] = dLim[nDim+2]*val_velocity_n[iDim];
-    MLim[iDim+1][iDim+1] = dLim[iDim+1]*(*val_density_n);
-    MLim[nDim+1][iDim+1] = dLim[iDim+1]*(*val_density_n)*val_velocity_n[iDim];
+    MLim[iDim+1][0] = dLim[nDim+2]*val_velocity[iDim];
+    MLim[iDim+1][iDim+1] = dLim[iDim+1]*(*val_density);
+    MLim[nDim+1][iDim+1] = dLim[iDim+1]*(*val_density)*val_velocity[iDim];
   }
-  MLim[nDim+1][0] = dLim[nDim+2]*(sq_vel/2.0+(*val_tke_n));
+  MLim[nDim+1][0] = dLim[nDim+2]*(sq_vel/2.0+(*val_tke));
   MLim[nDim+1][nDim+1] = dLim[nDim+1]/Gamma_Minus_One;
 
   /*--- Inv(d{r,v,p}/dU), evaluated at node ---*/
