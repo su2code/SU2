@@ -3041,7 +3041,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous     = config->GetViscous();
-  const bool musclTurb   = config->GetMUSCL_Turb();
+  const bool musclTurb   = config->GetMUSCL_Turb() && muscl;
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   su2double tke_i = 0, tke_j = 0;
@@ -3107,7 +3107,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       tke_j = turbNodes->GetPrimitive(jPoint,0);
       numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
-      if (muscl) {
+      if (musclTurb) {
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
