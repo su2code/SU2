@@ -678,7 +678,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
           const su2double sigma_k = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2
                                        + F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
           const su2double tke = nodesTur->GetPrimitive(iPoint,0);
-          Weight *= tke/ConductivityOnR;
+          Weight /= ConductivityOnR;
           Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + sigma_k*Mean_EddyVisc)*tke/Density;
         }
       }// iVertex
@@ -732,7 +732,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       const su2double sigma_k = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2
                                    + F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2);
       const su2double tke = nodesTur->GetPrimitive(kPoint,0);
-      Weight *= tke/ConductivityOnR;
+      Weight /= ConductivityOnR;
       Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + sigma_k*Mean_EddyVisc)*tke/Density;
     }
 

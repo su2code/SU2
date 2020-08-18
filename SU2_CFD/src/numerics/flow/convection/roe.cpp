@@ -98,14 +98,14 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
             MInv[MAXNVAR][MAXNVAR] = {0.0},
             dLim[MAXNVAR+1]        = {0.0};
 
+  /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
+
   for (unsigned short iVar = 0; iVar < nDim+3; iVar++) 
     dLim[iVar] = 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
 
   su2double sq_vel = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     sq_vel += pow(val_velocity[iDim], 2.0);
-
-  /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
 
   MLim[0][0] = dLim[nDim+2];
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -141,12 +141,9 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
     }
   }
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    for (unsigned short jVar = 0; jVar < nVar; jVar++)
-      val_Jacobian[iVar][jVar] = 0.0;
-
   for(unsigned short iVar = 0; iVar < nVar; iVar++) {
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      val_Jacobian[iVar][jVar] = 0.0;
       for (unsigned short kVar = 0; kVar < nVar; kVar++) {
         val_Jacobian[iVar][jVar] += tmp[iVar][kVar]*MInv[kVar][jVar];
       }
