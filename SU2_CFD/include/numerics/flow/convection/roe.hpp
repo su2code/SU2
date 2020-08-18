@@ -58,13 +58,14 @@ protected:
    * \param[in/out] val_Jacobian - Flux Jacobian wrt node i conservatives (implicit computation).
    * \param[in] lim_i - Slope limiter at node i.
    * \param[in] lim_j - Slope limiter at node j.
-   * \param[in] val_velocity - Velocity at node i.
-   * \param[in] val_density - Density at node i.
-   * \param[in] val_tke - Turbulent kinetic energy at node i.
+   * \param[in] val_velocity{_n} - Velocity at node i (subscript n denotes value at node).
+   * \param[in] val_density{_n} - Density at node i (subscript n denotes value at node).
+   * \param[in] val_tke{_n} - Turbulent kinetic energy at node i (subscript n denotes value at node).
    */
   void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                    const su2double *lim_i, const su2double *lim_j,
-                   const su2double *val_velocity, const su2double *val_density, const su2double *val_tke);
+                   const su2double *val_velocity, const su2double *val_density, const su2double *val_tke,
+                   const su2double *val_velocity_n, const su2double *val_density_n, const su2double *val_tke_n);
 
   /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).

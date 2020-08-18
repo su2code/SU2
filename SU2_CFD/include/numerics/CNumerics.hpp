@@ -140,6 +140,9 @@ protected:
   *V_i,     /*!< \brief Vector of primitive variables at point i. */
   *V_j;     /*!< \brief Vector of primitive variables at point j. */
   su2double
+  *Vn_i,    /*!< \brief Vector of primitive variables at point i. */
+  *Vn_j;    /*!< \brief Vector of primitive variables at point j. */
+  su2double
   *S_i,     /*!< \brief Vector of secondary variables at point i. */
   *S_j;     /*!< \brief Vector of secondary variables at point j. */
   su2double
@@ -151,8 +154,10 @@ protected:
   su2double
   *TurbVar_i,   /*!< \brief Vector of turbulent variables at point i. */
   *TurbVar_id,  /*!< \brief Vector of derivative of turbulent variables at point i. */
+  *TurbVarn_i,
   *TurbVar_j,   /*!< \brief Vector of turbulent variables at point j. */
-  *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
+  *TurbVar_jd,  /*!< \brief Vector of derivative of turbulent variables at point j. */
+  *TurbVarn_j;
   su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -353,6 +358,16 @@ public:
   }
 
   /*!
+   * \brief Set the value of the primitive variables at the node when using MUSCL.
+   * \param[in] val_v_i - Value of the primitive variable at point i.
+   * \param[in] val_v_j - Value of the primitive variable at point j.
+   */
+  inline void SetNodalPrimitive(su2double *val_v_i, su2double *val_v_j) {
+    Vn_i = val_v_i;
+    Vn_j = val_v_j;
+  }
+
+  /*!
    * \brief Set the value of the primitive variables.
    * \param[in] val_v_i - Value of the primitive variable at point i.
    * \param[in] val_v_j - Value of the primitive variable at point j.
@@ -419,6 +434,16 @@ public:
   inline void SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
     TurbVar_i = val_turbvar_i;
     TurbVar_j = val_turbvar_j;
+  }
+
+  /*!
+   * \brief Set the value of the turbulent variable at the node when using MUSCL.
+   * \param[in] val_turbvar_i - Value of the turbulent variable at point i.
+   * \param[in] val_turbvar_j - Value of the turbulent variable at point j.
+   */
+  inline void SetNodalTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j) {
+    TurbVarn_i = val_turbvar_i;
+    TurbVarn_j = val_turbvar_j;
   }
 
   /*!

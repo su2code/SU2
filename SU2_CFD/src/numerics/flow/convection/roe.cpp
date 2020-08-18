@@ -88,7 +88,8 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
 
 void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
                                    const su2double *lim_i, const su2double *lim_j,
-                                   const su2double *val_velocity, const su2double *val_density, const su2double *val_tke) {
+                                   const su2double *val_velocity, const su2double *val_density, const su2double *val_tke,
+                                   const su2double *val_velocity_n, const su2double *val_density_n, const su2double *val_tke_n) {
   const bool wasActive = AD::BeginPassive();
 
   unsigned short iVar, jVar, kVar, iDim;
@@ -125,15 +126,19 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
   MLim[nDim+1][0] = dLim[nDim+2]*(sq_vel/2.0+(*val_tke));
   MLim[nDim+1][nDim+1] = dLim[nDim+1]*1.0/Gamma_Minus_One;
 
-  /*--- Inv(d{r,v,p}/dU) ---*/
+  /*--- Inv(d{r,v,p}/dU), evaluated at node ---*/
+
+  sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    sq_vel += pow(val_velocity_n[iDim], 2.0);
 
   MInv[0][0] = 1.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    MInv[iDim+1][0] = -val_velocity[iDim]/(*val_density);
-    MInv[iDim+1][iDim+1] = 1.0/(*val_density);
-    MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity[iDim];
+    MInv[iDim+1][0] = -val_velocity_n[iDim]/(*val_density_n);
+    MInv[iDim+1][iDim+1] = 1.0/(*val_density_n);
+    MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity_n[iDim];
   }
-  MInv[nDim+1][0] = Gamma_Minus_One*(sq_vel/2.0-(*val_tke));
+  MInv[nDim+1][0] = Gamma_Minus_One*(sq_vel/2.0-(*val_tke_n));
   MInv[nDim+1][nDim+1] = Gamma_Minus_One;
 
   /*--- Now multiply them all together ---*/
@@ -324,8 +329,21 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   FinalizeResidual(Flux, Jacobian_i, Jacobian_j, config);
 
   if (implicit && muscl) {
-    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i);
-    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j);
+    /*--- Extract nodal values ---*/
+    su2double Velocity_n_i[3] = {0.0}, Velocity_n_j[3] = {0.0};
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_n_i[iDim] = Vn_i[iDim+1];
+      Velocity_n_j[iDim] = Vn_j[iDim+1];
+    }
+    su2double Denisty_n_i = Vn_i[nDim+2];
+    su2double Denisty_n_j = Vn_j[nDim+2];
+    su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
+    if (tkeNeeded) {
+      turb_ke_n_i = TurbVarn_i[0];
+      turb_ke_n_j = TurbVarn_j[0];
+    }
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
   }
 
   /*--- Correct for grid motion ---*/
