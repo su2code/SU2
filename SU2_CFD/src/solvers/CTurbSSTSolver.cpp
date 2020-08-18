@@ -1947,20 +1947,10 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double CDkw        = varTur->GetCrossDiff(iPoint);
   const su2double CDkwmin     = 1.e-10;
 
-  const su2double* Vorticity = varFlo->GetVorticity(iPoint);
-  const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-                                      Vorticity[1]*Vorticity[1] +
-                                      Vorticity[2]*Vorticity[2]);
-
   const su2double StrainMag = varFlo->GetStrainMag(iPoint);
-  
-  // const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
-  // const su2double zeta = max(omega,VorticityMag*F1/a1);
+
   const su2double lim = (omega > StrainMag*F1/a1) ? 1.0 : 0.0;
   const su2double zeta = max(omega,StrainMag*F1/a1);
-  
-  // const su2double lim = 1.0;
-  // const su2double zeta = omega;
 
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
@@ -1994,15 +1984,15 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   if (pk > 0.) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       factor = 0.0;
-      // if (pk <= 10.*betastar*r*omega*k) {   
+      if (pk <= 10.*betastar*r*omega*k) {   
           factor += -TWO3*divu*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
           factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, iDim);
-      // }
+      }
       for (jDim = 0; jDim < nDim; ++jDim) {
-        // if (pk <= 10.*betastar*r*omega*k) {
+        if (pk <= 10.*betastar*r*omega*k) {
            factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adaptation(iPoint, 1, jDim);
            factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adaptation(iPoint, 0, jDim);
-        // }
+        }
       }
       TmpWeights[iDim+1] += factor;
     }
@@ -2025,10 +2015,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   TmpWeights[nVarFlo+0] += factor/zeta;
   TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-    TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
-  }
+  if (CDkw > CDkwmin)
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+      TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmaomega2/omega*gradk[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
+    }
 
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
@@ -2071,18 +2062,18 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   //--- Zeroth-order terms due to production
   if (pk > 0.) {
-    // if (pk <= 10.*betastar*r*omega*k){
+    if (pk <= 10.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
       weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
-    // }
-    // else {
-    //   weights[0][0]         += 10.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
-    //                            -10*lim*betastar*alfa*omega*omega*varAdjTur->GetSolution(iPoint,1);
-    //   weights[0][nVarFlo+0] += -10.*betastar*omega*varAdjTur->GetSolution(iPoint,0);
-    //   weights[0][nVarFlo+1] += -10.*betastar*k*varAdjTur->GetSolution(iPoint,0)
-    //                            -10.*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1)
-    //                            -10.*lim*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1);
-    // }
+    }
+    else {
+      weights[0][0]         += 10.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
+                               -10*lim*betastar*alfa*omega*omega*varAdjTur->GetSolution(iPoint,1);
+      weights[0][nVarFlo+0] += -10.*betastar*omega*varAdjTur->GetSolution(iPoint,0);
+      weights[0][nVarFlo+1] += -10.*betastar*k*varAdjTur->GetSolution(iPoint,0)
+                               -10.*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1)
+                               -10.*lim*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1);
+    }
   }
   
   //--- Zeroth-order terms due to dissipation
@@ -2093,6 +2084,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  if (CDkw > CDkwmin) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
