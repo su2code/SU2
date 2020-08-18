@@ -69,9 +69,11 @@ protected:
    * \param[in/out] val_Jacobian - Flux Jacobian wrt node i conservatives (implicit computation).
    * \param[in] lim_i - Slope limiter at node i.
    * \param[in] lim_j - Slope limiter at node j.
+   * \param[in] val_density{_n} - Density at node i (subscript n denotes value at node).
    */
   void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
-                   const su2double *lim_i, const su2double *lim_j);
+                   const su2double *lim_i, const su2double *lim_j,
+                   const su2double *val_density, const su2double *val_density_n);
 
   /*!
    * \brief Model-specific steps in the ComputeResidual method, derived classes

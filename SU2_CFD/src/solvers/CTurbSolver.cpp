@@ -312,6 +312,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double ZeroVec[MAXNVAR] = {0.0};
         numerics->SetLimiter(ZeroVec, ZeroVec);
       }
+
+      if (limiter || limiterFlow) {
+        numerics->SetNodalPrimitive(V_i, V_j);
+        numerics->SetNodalTurbVar(Turb_i, Turb_j);
+      }
     }
 
     /*--- Update convective residual value ---*/

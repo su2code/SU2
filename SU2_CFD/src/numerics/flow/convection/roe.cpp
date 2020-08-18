@@ -329,7 +329,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   FinalizeResidual(Flux, Jacobian_i, Jacobian_j, config);
 
   if (implicit && muscl) {
+
     /*--- Extract nodal values ---*/
+
     su2double Velocity_n_i[3] = {0.0}, Velocity_n_j[3] = {0.0};
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_n_i[iDim] = Vn_i[iDim+1];
@@ -342,6 +344,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
       turb_ke_n_i = TurbVarn_i[0];
       turb_ke_n_j = TurbVarn_j[0];
     }
+
+    /*--- Compute Jacobian wrt extrapolation ---*/
+
     GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
     GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
   }

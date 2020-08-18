@@ -62,11 +62,12 @@ CUpwScalar::~CUpwScalar(void) {
 }
 
 void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
-                             const su2double *lim_i, const su2double *lim_j) {
+                             const su2double *lim_i, const su2double *lim_j,
+                             const su2double *val_density, const su2double *val_density_n) {
   const bool wasActive = AD::BeginPassive();
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
+    val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(*val_density)*(lim_j[iVar]-lim_i[iVar])/(*val_density_n);
 
 
   AD::EndPassive(wasActive);
@@ -133,8 +134,16 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   FinishResidualCalc(config);
 
   if (muscl) {
-    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j);
-    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i);
+
+    /*--- Extract nodal values ---*/
+
+    const su2double Density_n_i = Vn_i[nDim+2];
+    const su2double Density_n_j = Vn_j[nDim+2];
+
+    /*--- Compute Jacobian wrt extrapolation ---*/
+
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, &Density_i, &Density_n_i);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, &Density_j, &Density_n_j);
   }
   
   AD::SetPreaccOut(Flux, nVar);
