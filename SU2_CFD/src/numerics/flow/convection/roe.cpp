@@ -116,7 +116,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
   MLim[nDim+1][0] = dLim[nDim+2]*(sq_vel/2.0+(*val_tke));
   MLim[nDim+1][nDim+1] = dLim[nDim+1]/Gamma_Minus_One;
 
-  /*--- Inv(d{r,v,p}/dU), evaluated at node ---*/
+  /*--- d{r,v,p}/dU, evaluated at node ---*/
 
   sq_vel = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -128,7 +128,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
     MInv[iDim+1][iDim+1] = 1.0/(*val_density_n);
     MInv[nDim+1][iDim+1] = -Gamma_Minus_One*val_velocity_n[iDim];
   }
-  MInv[nDim+1][0] = Gamma_Minus_One*(sq_vel/2.0-(*val_tke_n));
+  MInv[nDim+1][0] = Gamma_Minus_One*(sq_vel/2.0);
   MInv[nDim+1][nDim+1] = Gamma_Minus_One;
 
   /*--- Now multiply them all together ---*/
@@ -309,8 +309,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
         Velocity_n_i[iDim] = Vn_i[iDim+1];
         Velocity_n_j[iDim] = Vn_j[iDim+1];
       }
-      su2double Density_n_i = Vn_i[nDim+2];
-      su2double Density_n_j = Vn_j[nDim+2];
+      const su2double Density_n_i = Vn_i[nDim+2];
+      const su2double Density_n_j = Vn_j[nDim+2];
       su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
       if (tkeNeeded) {
         turb_ke_n_i = TurbVarn_i[0];
