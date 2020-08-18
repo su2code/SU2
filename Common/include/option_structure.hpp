@@ -107,6 +107,8 @@ const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
 
 const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
 
+const su2double CDKW_MIN = 1.0e-10; /*!< \brief Minimum cross diffusion for SST solver. */
+
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */

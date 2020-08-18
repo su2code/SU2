@@ -71,7 +71,6 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
 
   const su2double eps = numeric_limits<passivedouble>::epsilon();
-  const su2double CDkwmin = 1.0e-10;
 
   /*--- Cross diffusion ---*/
 
@@ -79,14 +78,14 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
-  CDkw(iPoint) = max(CDkw(iPoint), CDkwmin);
+  CDkw(iPoint) = max(CDkw(iPoint), CDKW_MIN);
 
   /*--- F1 ---*/
 
   arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*val_dist+eps);
   arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Primitive(iPoint,1)+eps);
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),CDkwmin)*val_dist*val_dist+eps));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),CDKW_MIN)*val_dist*val_dist+eps));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
