@@ -98,13 +98,11 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
             MInv[MAXNVAR][MAXNVAR] = {0.0},
             dLim[MAXNVAR+1]        = {0.0};
 
-  unsigned short iVar, jVar, kVar, iDim;
-
   for (unsigned short iVar = 0; iVar < nDim+3; iVar++) 
     dLim[iVar] = 1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]);
 
   su2double sq_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     sq_vel += pow(val_velocity[iDim], 2.0);
 
   /*--- dU/d{r,v,p} * diag(1+0.5*Kappa*(Lim_j-Lim_i)) ---*/
