@@ -335,8 +335,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
       Velocity_n_i[iDim] = Vn_i[iDim+1];
       Velocity_n_j[iDim] = Vn_j[iDim+1];
     }
-    su2double Denisty_n_i = Vn_i[nDim+2];
-    su2double Denisty_n_j = Vn_j[nDim+2];
+    su2double Density_n_i = Vn_i[nDim+2];
+    su2double Density_n_j = Vn_j[nDim+2];
     su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
     if (tkeNeeded) {
       turb_ke_n_i = TurbVarn_i[0];
