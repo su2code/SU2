@@ -3235,13 +3235,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           
         }
 
-        /*--- Store nodal values ---*/
-        numerics->SetNodalPrimitive(V_i, V_j);
-        if (tkeNeeded) {
-          numerics->SetNodalTurbVar(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint),
-                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint));
-        }
-
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
@@ -3297,21 +3290,31 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetPrimitive(bad_i ? V_i : Primitive_i,  bad_j ? V_j : Primitive_j);
       numerics->SetSecondary(bad_i ? S_i : Secondary_i,  bad_j ? S_j : Secondary_j);
 
-      if (limiter) {
-        su2double ZeroVec[MAXNDIM+3] = {0.0};
-        numerics->SetLimiter(bad_i? ZeroVec : Limiter_i, bad_j? ZeroVec : Limiter_j);
-      }
-      else {
-        su2double ZeroVec[MAXNDIM+3] = {0.0};
-        su2double OneVec[MAXNDIM+3] = {1.0};
-        numerics->SetLimiter(bad_i? ZeroVec : OneVec, bad_j? ZeroVec : OneVec);
-      }
-
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
                                        bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
       }
+
+      /*--- Store values for limiter, even if limiter isn't being used ---*/
+
+      if (limiter) {
+        su2double ZeroVec[MAXNDIM+3] = {0.0};
+        numerics->SetLimiter(bad_i ? ZeroVec : Limiter_i, bad_j ? ZeroVec : Limiter_j);
+      }
+      else {
+        su2double ZeroVec[MAXNDIM+3] = {0.0};
+        su2double OneVec[MAXNDIM+3] = {1.0};
+        numerics->SetLimiter(bad_i ? ZeroVec : OneVec, bad_j ? ZeroVec : OneVec);
+      }
+
+      /*--- Store nodal values ---*/
+
+        numerics->SetNodalPrimitive(V_i, V_j);
+        if (tkeNeeded) {
+          numerics->SetNodalTurbVar(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint),
+                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint));
+        }
 
     }
 
