@@ -95,7 +95,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(const su2double val_kappa, su2double **val_Ja
 
   su2double tmp[MAXNVAR][MAXNVAR]  = {0.0},
             MLim[MAXNVAR][MAXNVAR] = {0.0},
-            Minv[MAXNVAR][MAXNVAR] = {0.0},
+            MInv[MAXNVAR][MAXNVAR] = {0.0},
             dLim[MAXNVAR+1]        = {0.0};
 
   unsigned short iVar, jVar, kVar, iDim;
