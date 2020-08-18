@@ -867,7 +867,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      //   Jacobian_i[1][1] = 10.*beta_star*alfa_blended*zeta*Volume;
      //   if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
      //    Jacobian_i[1][1] *= 2.0;
-     }
+     // }
 
      /*--- k production Jacobian ---*/
      if ((pk > 0.) && (pk <= 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
