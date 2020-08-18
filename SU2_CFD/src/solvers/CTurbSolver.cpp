@@ -306,12 +306,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetTurbVar(bad_i ? Turb_i : solution_i, bad_j ? Turb_j : solution_j);
 
       if (limiter) {
-        su2double ZeroVec[MAXNDIM+3] = {0.0};
+        su2double ZeroVec[MAXNVAR] = {0.0};
         numerics->SetLimiter(bad_i? ZeroVec : TurbLimiter_i, bad_j? ZeroVec : TurbLimiter_j);
       }
       else {
-        su2double OneVec[MAXNDIM+3] = {0.0};
-        su2double OneVec[MAXNDIM+3] = {1.0};
+        su2double ZeroVec[MAXNVAR] = {0.0};
+        su2double OneVec[MAXNVAR] = {1.0};
         numerics->SetLimiter(bad_i? ZeroVec : OneVec, bad_j? ZeroVec : OneVec);
       }
 
