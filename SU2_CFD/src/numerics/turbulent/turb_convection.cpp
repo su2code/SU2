@@ -67,7 +67,7 @@ void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian
   const bool wasActive = AD::BeginPassive();
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    val_Jacobian[iVar][iVar] *= 1.0+val_kappa*(*val_density)*(lim_j[iVar]-lim_i[iVar])/(*val_density_n);
+    val_Jacobian[iVar][iVar] *= (*val_density)*(1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]))/(*val_density_n);
 
 
   AD::EndPassive(wasActive);
