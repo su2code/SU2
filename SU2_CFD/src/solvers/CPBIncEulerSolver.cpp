@@ -67,14 +67,12 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
-    cout<<filename_<<endl;
 
     if (dual_time) {
       if (config->GetTime_Marching() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
-      cout<<filename_<<endl;
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -111,7 +109,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
    specified reference values. ---*/
 
   SetNondimensionalization(config, iMesh);
-  
+
   AllocateTerribleLegacyTemporaryVariables();
 
   /*--- Define some auxiliary vectors related to the primitive solution ---*/
@@ -162,7 +160,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     geometry->edges->GetNormal(iEdge, Normal);
     FaceVelocity[iEdge]       = new su2double [nDim];
     FaceVelocityCorrec[iEdge] = new su2double [nDim];
-    iPoint = geometry->edges->GetNode(iEdge,0); 
+    iPoint = geometry->edges->GetNode(iEdge,0);
     jPoint = geometry->edges->GetNode(iEdge,1);
     for (iDim = 0; iDim < nDim; iDim++) {
       FaceVelocity[iEdge][iDim]= 0.5*(nodes->GetSolution(iPoint,iDim)+nodes->GetSolution(jPoint,iDim));
@@ -186,7 +184,7 @@ CPBIncEulerSolver::~CPBIncEulerSolver(void) {
   unsigned short iMarker;
   unsigned long iVertex;
   unsigned long iEdge;
-  
+
   delete [] Primitive;
   delete [] Primitive_i;
   delete [] Primitive_j;
@@ -199,7 +197,7 @@ CPBIncEulerSolver::~CPBIncEulerSolver(void) {
     }
     delete [] FaceVelocity;
   }
-  
+
   if (FaceVelocityCorrec != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge++) {
       delete [] FaceVelocityCorrec[iEdge];
@@ -715,42 +713,38 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  su2double Area_Children, Area_Parent, Coord[3] = {0.0}, *Solution_Fine;
 
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  string UnstExt, text_line;
-  ifstream restart_file;
+  bool turbulent = (config->GetKind_Solver() == INC_RANS) || (config->GetKind_Solver() == DISC_ADJ_INC_RANS);
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string restart_filename = config->GetSolution_FileName();
-
-  Coord = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Coord[iDim] = 0.0;
+  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
+  /*--- This variable is only used to skip upto grid velocities.
+        Pressure + ndim velocities need to be read from the restart file.
+        Mass flux is also stored in restart file, need to skip it when
+        reading grid velocities.---*/
+  unsigned short nVar_Restart = nVar+2;
+
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-  restart_filename = config->GetMultizone_FileName(restart_filename, iZone, ".dat");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (dual_time || time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter, ".dat");
+  /*--- Store the number of variables for the turbulence model
+   (that could appear in the restart file before the grid velocities). ---*/
+  unsigned short turbVars = 0;
+  if (turbulent){
+    if ((turb_model == SST) || (turb_model == SST_SUST)) turbVars = 2;
+    else turbVars = 1;
+  }
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -773,13 +767,16 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
     if (iPoint_Local > -1) {
 
       /*--- We need to store this point's data, so jump to the correct
-       offset in the buffer of data from the restart file and load it. ---*/
+       offset in the buffer of data from the restart file and load it.
+       Pressure is not part of the solution vector, so store it in the
+       primitive variable vector---*/
 
       index = counter*Restart_Vars[1] + skipVars;
       nodes->SetPressure_val(iPoint_Local, Restart_Data[index]);
       for (iVar = 1; iVar <= nVar; iVar++) Solution[iVar-1] = Restart_Data[index+iVar];
       nodes->SetSolution(iPoint_Local, Solution);
       iPoint_Global_Local++;
+
       /*--- Remove mass flux. ---*/
       index++;
 
@@ -809,7 +806,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar_Restart + turbVars;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -826,16 +823,46 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
+  if (iPoint_Global_Local < nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  }
+
+  /*--- Update the geometry for flows on deforming meshes ---*/
+
+  if (dynamic_grid) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+    if (dynamic_grid) {
+      geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+      geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+    }
+
+    /*--- Recompute the edges and  dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      if (dynamic_grid) {
+        geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      }
+      geometry[iMesh]->SetMaxLength(config);
+    }
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -847,7 +874,12 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, PRESSURE_VAR);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, PRESSURE_VAR);
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  /*--- For turbulent simulations the flow preprocessing is done by the turbulence solver
+   *    after it loads its variables (they are needed to compute flow primitives). ---*/
+  if (!turbulent) {
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
@@ -868,51 +900,23 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, PRESSURE_VAR);
-    solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, PRESSURE_VAR);
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-
-  }
-
-  /*--- Update the geometry for flows on dynamic meshes ---*/
-
-  if (dynamic_grid) {
-
-    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
-
-
-    /*--- Recompute the edges and  dual mesh control volumes in the
-     domain and on the boundaries. ---*/
-
-    geometry[MESH_0]->SetCoord_CG();
-    geometry[MESH_0]->SetControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-
-    /*--- Update the multigrid structure after setting up the finest grid,
-     including computing the grid velocities on the coarser levels. ---*/
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      iMeshFine = iMesh-1;
-      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
-      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
-      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+    solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[iMesh], config, PRESSURE_VAR);
+    solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[iMesh], config, PRESSURE_VAR);
+    if (!turbulent) {
+     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
   }
 
-  delete [] Coord;
+  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
+  if (dual_time && config->GetGrid_Movement() && !config->GetDeform_Mesh() &&
+      (config->GetKind_GridMovement() != RIGID_MOTION)) {
+    Restart_OldGeometry(geometry[MESH_0], config);
+  }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
+  delete [] Restart_Vars; Restart_Vars = nullptr;
+  delete [] Restart_Data; Restart_Data = nullptr;
 
 }
 
@@ -1220,12 +1224,12 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
-    
+
     /*--- Workaround to deal with nodes that are part of multiple boundaries and where
      *    one face might be strong BC and another weak BC (mostly for farfield boundary
      *    where the boundary face is strong or weak depending on local flux. ---*/
     if (nodes->GetStrongBC(iPoint)) {
-        for (iVar = 0; iVar < nVar; iVar++) 
+        for (iVar = 0; iVar < nVar; iVar++)
             LinSysRes.SetBlock_Zero(iPoint, iVar);
     }
 
@@ -1237,7 +1241,7 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     }
   }
   SetIterLinSolver(1);
-  
+
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
@@ -1345,7 +1349,7 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     }
   }
 
-  if (config->GetInnerIter() == 0) 
+  if (config->GetInnerIter() == 0)
     UpdateFaceVelocity(geometry, solver_container, config);
 
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
@@ -1456,7 +1460,7 @@ void CPBIncEulerSolver::UpdateFaceVelocity(CGeometry *geometry, CSolver **solver
 
   unsigned long iEdge, iPoint, jPoint;
   su2double Normal[MAXNDIM];
-  
+
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
     geometry->edges->GetNormal(iEdge, Normal);
@@ -1464,9 +1468,9 @@ void CPBIncEulerSolver::UpdateFaceVelocity(CGeometry *geometry, CSolver **solver
       FaceVelocity[iEdge][iDim] = 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim));
     }
   }
-  
-    
-  
+
+
+
 }
 
 void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -1716,7 +1720,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       nodes->SetMassFluxZero(iPoint);
 
   Net_Mass = 0.0;
-  
+
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
@@ -1794,13 +1798,13 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       RhieChowInterp += Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
       FaceVel[iDim] -= Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
     }
-    
+
     //MassFlux_Part = MassFlux_Avg - RhieChowInterp + Transient_Corr;
     MassFlux_Part = MassFlux_Avg - RhieChowInterp;
-    
+
     for (iDim = 0; iDim < nDim; iDim++)
       FaceVelocity[iEdge][iDim] = FaceVel[iDim];
-    
+
     if (geometry->nodes->GetDomain(iPoint)) nodes->AddMassFlux(iPoint,MassFlux_Part);
     if (geometry->nodes->GetDomain(jPoint)) nodes->SubtractMassFlux(jPoint,MassFlux_Part);
   }
@@ -2017,8 +2021,9 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Pressure_Correc[iPoint] = solver_container[POISSON_SOL]->GetNodes()->GetSolution(iPoint,0);
   }
-  
+
   Pref_local = geometry->GetGlobal_to_Local_Point(PRef_Point);
+  PCorr_Ref = 0.0;
   if (Pref_local >= 0)
     if(geometry->nodes->GetDomain(Pref_local))
     PCorr_Ref = 0.0;//Pressure_Correc[Pref_local];
@@ -2039,23 +2044,23 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     }
     alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
   }
-  
+
   /*--- Correct face velocity. ---*/
   /*for (iEdge = 0; iEdge < nEdge; iEdge++) {
-    
+
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
     geometry->edges->GetNormal(iEdge, Normal);
     dist_ij_2 = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Edge_Vector[iDim] = (geometry->nodes->GetCoord(jPoint, iDim) - 
+      Edge_Vector[iDim] = (geometry->nodes->GetCoord(jPoint, iDim) -
                            geometry->nodes->GetCoord(iPoint, iDim));
       dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     }
-    
+
     for (iDim = 0; iDim < nDim; iDim++)
-      GradP_in[iDim] = ( solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iDim) + 
+      GradP_in[iDim] = ( solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iDim) +
                          solver_container[POISSON_SOL]->GetNodes()->GetGradient(jPoint,0,iDim) );
-    
+
     GradP_proj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       GradP_proj += GradP_in[iDim]*Edge_Vector[iDim];
@@ -2068,10 +2073,10 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 
     for (iDim =0; iDim < nDim; iDim++) {
       Coeff_Mom = 0.5*(nodes->Get_Mom_Coeff(iPoint,iDim) + nodes->Get_Mom_Coeff(jPoint,iDim));
-      FaceVelocity[iEdge][iDim] = FaceVelocity[iEdge][iDim] - Coeff_Mom*(GradP_f[iDim]);          
+      FaceVelocity[iEdge][iDim] = FaceVelocity[iEdge][iDim] - Coeff_Mom*(GradP_f[iDim]);
     }
   }*/
-  
+
   /*--- Reassign strong boundary conditions ---*/
   /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
    *  where different treatment of pressure might be needed. Symmetry and Euler wall are weak BCs. ---*/
@@ -2182,7 +2187,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
     nodes->SetPressure_val(iPoint,Current_Pressure);
   }
-  
+
 
   /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
@@ -2236,7 +2241,8 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
   su2double Density, Cp;
   su2double *U_time_nM1, *U_time_n, *U_time_nP1;
   su2double Volume_nM1, Volume_nP1, TimeStep;
-  const su2double *Normal = nullptr;
+  su2double *GridVel_i = nullptr, *GridVel_j = nullptr, Residual_GCL;
+  const su2double* Normal;
 
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -2302,6 +2308,158 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
       }
     }
 
+  }
+  else {
+    /*--- For unsteady flows on dynamic meshes (rigidly transforming or
+     dynamically deforming), the Geometric Conservation Law (GCL) should be
+     satisfied in conjunction with the ALE formulation of the governing
+     equations. The GCL prevents accuracy issues caused by grid motion, i.e.
+     a uniform free-stream should be preserved through a moving grid. First,
+     we will loop over the edges and boundaries to compute the GCL component
+     of the dual time source term that depends on grid velocities. ---*/
+
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+      /*--- Initialize the Residual / Jacobian container to zero. ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+      /*--- Get indices for nodes i & j plus the face normal ---*/
+
+      iPoint = geometry->edges->GetNode(iEdge,0);
+      jPoint = geometry->edges->GetNode(iEdge,1);
+      Normal = geometry->edges->GetNormal(iEdge);
+
+      /*--- Grid velocities stored at nodes i & j ---*/
+
+      GridVel_i = geometry->nodes->GetGridVel(iPoint);
+      GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+      /*--- Compute the GCL term by averaging the grid velocities at the
+       edge mid-point and dotting with the face normal. ---*/
+
+      Residual_GCL = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+
+      /*--- Compute the GCL component of the source term for node i ---*/
+
+      U_time_n = nodes->GetSolution_time_n(iPoint);
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Compute the GCL component of the source term for node j ---*/
+
+      U_time_n = nodes->GetSolution_time_n(jPoint);
+
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+
+      LinSysRes.SubtractBlock(jPoint, Residual);
+
+    }
+
+    /*---  Loop over the boundary edges ---*/
+
+    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        /*--- Initialize the Residual / Jacobian container to zero. ---*/
+
+        for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+        /*--- Get the index for node i plus the boundary face normal ---*/
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+        /*--- Grid velocities stored at boundary node i ---*/
+
+        GridVel_i = geometry->nodes->GetGridVel(iPoint);
+
+        /*--- Compute the GCL term by dotting the grid velocity with the face
+         normal. The normal is negated to match the boundary convention. ---*/
+
+        Residual_GCL = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
+
+        /*--- Compute the GCL component of the source term for node i ---*/
+
+        U_time_n = nodes->GetSolution_time_n(iPoint);
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+
+        LinSysRes.AddBlock(iPoint, Residual);
+
+      }
+      }
+    }
+
+    /*--- Loop over all nodes (excluding halos) to compute the remainder
+     of the dual time-stepping source term. ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Initialize the Residual / Jacobian container to zero. ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+
+      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+       previous solutions that are stored in memory. ---*/
+
+      U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
+      U_time_nP1 = nodes->GetSolution(iPoint);
+
+      /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
+       grids, the volumes will change. On rigidly transforming grids, the
+       volumes will remain constant. ---*/
+
+      Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
+      Volume_nP1 = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Compute the dual time-stepping source residual. Due to the
+       introduction of the GCL term above, the remainder of the source residual
+       due to the time discretization has a new form.---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        if (config->GetTime_Marching() == DT_STEPPING_1ST)
+          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+        if (config->GetTime_Marching() == DT_STEPPING_2ND)
+          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+      }
+
+      /*--- Store the residual and compute the Jacobian contribution due
+       to the dual time source term. ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            if (config->GetTime_Marching() == DT_STEPPING_1ST)
+              Jacobian_i[iVar][jVar] = Volume_nP1 / TimeStep;
+            if (config->GetTime_Marching() == DT_STEPPING_2ND)
+              Jacobian_i[iVar][jVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+          }
+        }
+
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      }
+    }
   }
 }
 
