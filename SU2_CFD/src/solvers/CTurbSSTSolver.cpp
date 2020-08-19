@@ -540,8 +540,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       const su2double *Normal = geometry->edge[iEdge]->GetNormal();
       const su2double r_j  = flowNodes->GetDensity(jPoint);
       const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
-      // const su2double Weight = sign*(1. - F1)*sigma_om2*r/(r_j*om);
-      const su2double Weight = sign*(1. - F1)*sigma_om2*r/(r_j*z);
+      const su2double Weight = sign*(1. - F1)*sigma_om2*r/(r_j*om);
+      // const su2double Weight = sign*(1. - F1)*sigma_om2*r/(r_j*z);
 
       Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
 
@@ -561,8 +561,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          // const su2double Weight = -(1. - F1)*sigma_om2/om;
-          const su2double Weight = -(1. - F1)*sigma_om2/z;
+          const su2double Weight = -(1. - F1)*sigma_om2/om;
+          // const su2double Weight = -(1. - F1)*sigma_om2/z;
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
             const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
