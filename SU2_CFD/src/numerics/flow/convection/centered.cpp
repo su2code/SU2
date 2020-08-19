@@ -344,6 +344,7 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
   energy           = config->GetEnergy_Equation();
 
   /*--- Artificial dissipation part ---*/
@@ -531,8 +532,8 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
     for (jVar = 0; jVar < nVar; jVar++) {
       ProjFlux[iVar] += Precon[iVar][jVar]*Epsilon_0*Diff_V[jVar]*StretchingFactor*MeanLambda;
       if (implicit) {
-        Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
-        Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
+        Jacobian_i[iVar][jVar] += fix_factor*Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
+        Jacobian_j[iVar][jVar] -= fix_factor*Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
       }
     }
   }
@@ -564,6 +565,7 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
   energy           = config->GetEnergy_Equation();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
 
   /*--- Artifical dissipation part ---*/
 
@@ -759,8 +761,8 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
     for (jVar = 0; jVar < nVar; jVar++) {
       ProjFlux[iVar] += Precon[iVar][jVar]*(Epsilon_2*Diff_V[jVar] - Epsilon_4*Diff_Lapl[jVar])*StretchingFactor*MeanLambda;
       if (implicit) {
-        Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-        Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
+        Jacobian_i[iVar][jVar] += fix_factor*Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
+        Jacobian_j[iVar][jVar] -= fix_factor*Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
       }
     }
   }
