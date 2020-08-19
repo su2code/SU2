@@ -133,18 +133,18 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   FinishResidualCalc(config);
 
-  if (muscl) {
+  // if (muscl) {
 
-    /*--- Extract nodal values ---*/
+  //   /*--- Extract nodal values ---*/
 
-    const su2double Density_n_i = Vn_i[nDim+2];
-    const su2double Density_n_j = Vn_j[nDim+2];
+  //   const su2double Density_n_i = Vn_i[nDim+2];
+  //   const su2double Density_n_j = Vn_j[nDim+2];
 
-    /*--- Compute Jacobian wrt extrapolation ---*/
+  //   /*--- Compute Jacobian wrt extrapolation ---*/
 
-    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, &Density_i, &Density_n_i);
-    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, &Density_j, &Density_n_j);
-  }
+  //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, &Density_i, &Density_n_i);
+  //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, &Density_j, &Density_n_j);
+  // }
 
   Jacobian_i[0][0] += q_ij; Jacobian_i[1][1] += q_ij;
   Jacobian_j[0][0] -= q_ij; Jacobian_j[1][1] -= q_ij;
