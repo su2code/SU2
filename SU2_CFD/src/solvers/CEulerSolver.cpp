@@ -3042,7 +3042,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous     = config->GetViscous();
   const bool musclTurb   = config->GetMUSCL_Turb() && muscl;
-  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiterTurb = musclTurb && (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   su2double tke_i = 0, tke_j = 0;
 
@@ -3296,14 +3296,28 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
+      su2double ZeroVec[MAXNDIM+3] = {0.0};
       if (limiter) {
-        su2double ZeroVec[MAXNDIM+3] = {0.0};
-        numerics->SetLimiter(bad_edge ? ZeroVec : Limiter_i, bad_edge ? ZeroVec : Limiter_j);
+        numerics->SetLimiter(bad_edge ? ZeroVec : Limiter_i, 
+                             bad_edge ? ZeroVec : Limiter_j);
       }
       else {
-        su2double ZeroVec[MAXNDIM+3] = {0.0};
         su2double OneVec[MAXNDIM+3] = {1.0};
-        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, bad_edge ? ZeroVec : OneVec);
+        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
+                             bad_edge ? ZeroVec : OneVec);
+      }
+
+      if (tkeNeeded) {
+        CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+        if (limiterTurb) {
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbNodes->GetLimiter(iPoint), 
+                                   bad_edge ? ZeroVec : turbNodes->GetLimiter(jPoint));
+        }
+        else {
+          su2double OneVec[MAXNDIM+3] = {1.0};
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec, 
+                                   bad_edge ? ZeroVec : OneVec);
+        }
       }
 
       /*--- Store nodal values ---*/

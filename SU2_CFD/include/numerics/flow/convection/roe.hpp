@@ -63,7 +63,8 @@ protected:
    * \param[in] val_tke{_n} - Turbulent kinetic energy at node i (subscript n denotes value at node).
    */
   void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
-                   const su2double *lim_i, const su2double *lim_j,
+                   const su2double *lim_i, const su2double *lim_j, 
+                   const su2double *turblim_i, const su2double *turblim_j,
                    const su2double *val_velocity, const su2double *val_density, const su2double *val_tke,
                    const su2double *val_velocity_n, const su2double *val_density_n, const su2double *val_tke_n);
 
