@@ -3264,8 +3264,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
-      bool bad_i = neg_sound_speed || neg_pres_or_rho_i || (RoeSqVel < RoeTke);
-      bool bad_j = neg_sound_speed || neg_pres_or_rho_j || (RoeSqVel < RoeTke);
+      bool bad_i = neg_sound_speed || neg_pres_or_rho_i || (0.5*RoeSqVel < RoeTke);
+      bool bad_j = neg_sound_speed || neg_pres_or_rho_j || (0.5*RoeSqVel < RoeTke);
 
       if (tkeNeeded) {
         bad_i = bad_i || (tke_i < 0);
@@ -3283,25 +3283,25 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const bool bad_edge = bad_i || bad_j;
 
-      numerics->SetPrimitive(bad_edge ? V_i : Primitive_i,  bad_edge ? V_j : Primitive_j);
-      numerics->SetSecondary(bad_edge ? S_i : Secondary_i,  bad_edge ? S_j : Secondary_j);
+      numerics->SetPrimitive(bad_i ? V_i : Primitive_i,  bad_j ? V_j : Primitive_j);
+      numerics->SetSecondary(bad_i ? S_i : Secondary_i,  bad_j ? S_j : Secondary_j);
 
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-        numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-                                       bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
+                                       bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
       }
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (limiter) {
         su2double ZeroVec[MAXNDIM+3] = {0.0};
-        numerics->SetLimiter(bad_edge ? ZeroVec : Limiter_i, bad_edge ? ZeroVec : Limiter_j);
+        numerics->SetLimiter(bad_i ? ZeroVec : Limiter_i, bad_j ? ZeroVec : Limiter_j);
       }
       else {
         su2double ZeroVec[MAXNDIM+3] = {0.0};
         su2double OneVec[MAXNDIM+3] = {1.0};
-        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, bad_edge ? ZeroVec : OneVec);
+        numerics->SetLimiter(bad_i ? ZeroVec : OneVec, bad_j ? ZeroVec : OneVec);
       }
 
       /*--- Store nodal values ---*/

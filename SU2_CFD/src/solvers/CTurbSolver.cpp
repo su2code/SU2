@@ -229,7 +229,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
       }
 
-      if (musclFlow) {
+      if (muscl) {
         /*--- Reconstruct mean flow primitive variables. ---*/
 
         auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
@@ -282,18 +282,18 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
 
         su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
-        su2double sq_vel = 0.0;
+        su2double RoeSqVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/(R+1);
-          sq_vel += pow(RoeVelocity, 2);
+          RoeSqVel += pow(RoeVelocity, 2);
         }
         su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/(R+1);
         su2double RoeTke = (R*solution_j[0]+solution_i[0])/(R+1);
 
-        bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+        bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
-        bad_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0) || neg_sound_speed || bad_i;
-        bad_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0) || neg_sound_speed || bad_j;
+        bad_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0) || neg_sound_speed || (0.5*RoeSqVel < RoeTke) || bad_i;
+        bad_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0) || neg_sound_speed || (0.5*RoeSqVel < RoeTke) || bad_j;
 
       }
       else {
@@ -307,20 +307,20 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store extrapolated state ---*/
 
-      numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, bad_edge ? V_j : flowPrimVar_j);
-      numerics->SetTurbVar(bad_edge ? T_i : solution_i, bad_edge ? T_j : solution_j);
+      numerics->SetPrimitive(bad_i ? V_i : flowPrimVar_i, bad_j ? V_j : flowPrimVar_j);
+      numerics->SetTurbVar(bad_i ? T_i : solution_i, bad_j ? T_j : solution_j);
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (muscl) {
         if (limiter) {
           su2double ZeroVec[MAXNVAR] = {0.0};
-          numerics->SetLimiter(bad_edge ? ZeroVec : TurbLim_i, bad_edge ? ZeroVec : TurbLim_j);
+          numerics->SetLimiter(bad_i ? ZeroVec : TurbLim_i, bad_j ? ZeroVec : TurbLim_j);
         }
         else {
           su2double ZeroVec[MAXNVAR] = {0.0};
           su2double OneVec[MAXNVAR] = {1.0};
-          numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, bad_edge ? ZeroVec : OneVec);
+          numerics->SetLimiter(bad_i ? ZeroVec : OneVec, bad_j ? ZeroVec : OneVec);
         }
       }
 
