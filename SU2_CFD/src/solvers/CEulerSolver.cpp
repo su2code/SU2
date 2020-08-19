@@ -3171,13 +3171,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    if (!muscl) {
-
-      numerics->SetPrimitive(V_i, V_j);
-      numerics->SetSecondary(S_i, S_j);
-
-    }
-    else {
+    if (muscl) {
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
@@ -3312,11 +3306,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store nodal values ---*/
 
-        numerics->SetNodalPrimitive(V_i, V_j);
-        if (tkeNeeded) {
-          numerics->SetNodalTurbVar(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint),
-                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint));
-        }
+      numerics->SetNodalPrimitive(V_i, V_j);
+      if (tkeNeeded) {
+        numerics->SetNodalTurbVar(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint),
+                                  solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint));
+      }
+
+    }
+    else {
+
+      numerics->SetPrimitive(V_i, V_j);
+      numerics->SetSecondary(S_i, S_j);
 
     }
 
