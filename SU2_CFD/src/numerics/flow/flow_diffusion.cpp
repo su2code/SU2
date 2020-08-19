@@ -688,8 +688,7 @@ void CAvgGrad_Flow::SetTKEFluxVector(const su2double* val_gradturbvar,
   sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
   sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
 
-  const su2double sigma_k   = 0.5*(sigma_k_i + sigma_k_j);
-  const su2double viscosity = val_laminar_viscosity+ sigma_k*val_eddy_viscosity;
+  const su2double viscosity = val_laminar_viscosity + 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j);
 
   /*--- Gradient of TKE ---*/
 
@@ -747,7 +746,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- Include TKE diffusion term ---*/
 
-  if (sst) heat_flux_jac_i[0] += (val_laminar_viscosity + sigma_k*val_eddy_viscosity)*turb_ke_i/Density;
+  if (sst) heat_flux_jac_i[0] += (val_laminar_viscosity + 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j))*turb_ke_i/Density;
 
   /*--- Now repeat everything for node j ---*/
   
@@ -782,7 +781,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   }
 
-  if (sst) heat_flux_jac_j[0] -= (val_laminar_viscosity + sigma_k*val_eddy_viscosity)*turb_ke_j/Density;
+  if (sst) heat_flux_jac_j[0] -= (val_laminar_viscosity + 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j))*turb_ke_j/Density;
 }
 
 void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVar,
