@@ -295,7 +295,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         bad_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0) || neg_sound_speed || bad_i;
         bad_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0) || neg_sound_speed || bad_j;
 
-        const bool bad_edge = bad_i || bad_j;
       }
       else {
         for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
@@ -303,6 +302,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           flowPrimVar_j[iVar] = V_j[iVar];
         }
       }
+
+      const bool bad_edge = bad_i || bad_j;
 
       /*--- Store extrapolated state ---*/
 
