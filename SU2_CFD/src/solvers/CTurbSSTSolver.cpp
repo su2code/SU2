@@ -1980,7 +1980,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   //--- Momentum weights
   vector<su2double> TmpWeights(weights[0].size(), 0.0);
   su2double factor = 0.0;
-  if (pk > 0.) {
+  // if (pk > 0.) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       factor = 0.0;
       if (pk <= 10.*betastar*r*omega*k) {   
@@ -1995,7 +1995,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
       }
       TmpWeights[iDim+1] += factor;
     }
-  }
+  // }
 
   //--- k and omega weights
   factor = 0.0;
@@ -2060,7 +2060,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   weights[2][nVarFlo+1] += TmpWeights[nVarFlo+1];
 
   //--- Zeroth-order terms due to production
-  if (pk > 0.) {
+  // if (pk > 0.) {
     if (pk <= 10.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
       weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
@@ -2073,7 +2073,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                                -10.*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1)
                                -10.*lim*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1);
     }
-  }
+  // }
   
   //--- Zeroth-order terms due to dissipation
   weights[0][0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
