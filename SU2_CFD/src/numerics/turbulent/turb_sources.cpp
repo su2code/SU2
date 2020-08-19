@@ -903,7 +903,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
    /*--- Cross diffusion ---*/
 
-   Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+   if (CDkw_i > CDKW_MIN) Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
 
    /*--- Implicit part ---*/
 
