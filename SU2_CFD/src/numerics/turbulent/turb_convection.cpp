@@ -66,8 +66,9 @@ void CUpwScalar::GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian
                              const su2double *val_density, const su2double *val_density_n) {
   const bool wasActive = AD::BeginPassive();
 
+  const su2double weight = (*val_density)/(*val_density_n);
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    val_Jacobian[iVar][iVar] *= (*val_density)*(1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]))/(*val_density_n);
+    val_Jacobian[iVar][iVar] *= weight*(1.0+val_kappa*(lim_j[iVar]-lim_i[iVar]));
 
 
   AD::EndPassive(wasActive);
@@ -124,10 +125,8 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   const su2double RoeSoundSpeed = sqrt(RoeSoundSpeed2);
   const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed*Area);
 
-  // q_ij = 0.5*max(fabs(q_ij), MaxLambda);
   q_ij = (fabs(q_ij) >= MaxLambda) ? su2double(0.5*fabs(q_ij)) 
                                    : su2double(0.25*(q_ij*q_ij/MaxLambda+MaxLambda));
-  // q_ij = 0.5*fabs(q_ij);
   a0  *= 0.5;
   a1  *= 0.5;
 
