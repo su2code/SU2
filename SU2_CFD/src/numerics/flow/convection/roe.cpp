@@ -318,34 +318,57 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   if (implicit) {
     GetInviscidProjJac(Velocity_i, &Energy_i, &turb_ke_i, Normal, kappa, Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, &turb_ke_j, Normal, kappa, Jacobian_j);
+
+    if (muscl) {
+
+      /*--- Extract nodal values ---*/
+
+      su2double Velocity_n_i[3] = {0.0}, Velocity_n_j[3] = {0.0};
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity_n_i[iDim] = Vn_i[iDim+1];
+        Velocity_n_j[iDim] = Vn_j[iDim+1];
+      }
+      const su2double Density_n_i = Vn_i[nDim+2];
+      const su2double Density_n_j = Vn_j[nDim+2];
+      su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
+      if (tkeNeeded) {
+        turb_ke_n_i = TurbVarn_i[0];
+        turb_ke_n_j = TurbVarn_j[0];
+      }
+
+      /*--- Compute Jacobian wrt extrapolation ---*/
+
+      GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
+      GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, TurbLimiter_j, TurbLimiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
+    }
   }
 
   /*--- Finalize in children class ---*/
 
   FinalizeResidual(Flux, Jacobian_i, Jacobian_j, config);
 
-  if (implicit && muscl) {
+  // if (implicit && muscl) {
 
-    /*--- Extract nodal values ---*/
+  //   /*--- Extract nodal values ---*/
 
-    su2double Velocity_n_i[3] = {0.0}, Velocity_n_j[3] = {0.0};
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_n_i[iDim] = Vn_i[iDim+1];
-      Velocity_n_j[iDim] = Vn_j[iDim+1];
-    }
-    const su2double Density_n_i = Vn_i[nDim+2];
-    const su2double Density_n_j = Vn_j[nDim+2];
-    su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
-    if (tkeNeeded) {
-      turb_ke_n_i = TurbVarn_i[0];
-      turb_ke_n_j = TurbVarn_j[0];
-    }
+  //   su2double Velocity_n_i[3] = {0.0}, Velocity_n_j[3] = {0.0};
+  //   for (iDim = 0; iDim < nDim; iDim++) {
+  //     Velocity_n_i[iDim] = Vn_i[iDim+1];
+  //     Velocity_n_j[iDim] = Vn_j[iDim+1];
+  //   }
+  //   const su2double Density_n_i = Vn_i[nDim+2];
+  //   const su2double Density_n_j = Vn_j[nDim+2];
+  //   su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
+  //   if (tkeNeeded) {
+  //     turb_ke_n_i = TurbVarn_i[0];
+  //     turb_ke_n_j = TurbVarn_j[0];
+  //   }
 
-    /*--- Compute Jacobian wrt extrapolation ---*/
+  //   /*--- Compute Jacobian wrt extrapolation ---*/
 
-    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
-    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, TurbLimiter_j, TurbLimiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
-  }
+  //   GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
+  //   GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, TurbLimiter_j, TurbLimiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
+  // }
 
   /*--- Correct for grid motion ---*/
 
