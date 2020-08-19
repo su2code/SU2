@@ -2084,6 +2084,6 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   
   //--- Zeroth-order terms due to cross-diffusion
   if (CDkw > CDKW_MIN) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
-  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  // weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
