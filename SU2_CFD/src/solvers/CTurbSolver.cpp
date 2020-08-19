@@ -312,20 +312,20 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store extrapolated state ---*/
 
-      numerics->SetPrimitive(bad_i ? V_i : flowPrimVar_i, bad_j ? V_j : flowPrimVar_j);
-      numerics->SetTurbVar(bad_i ? T_i : solution_i, bad_j ? T_j : solution_j);
+      numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, bad_edge ? V_j : flowPrimVar_j);
+      numerics->SetTurbVar(bad_edge ? T_i : solution_i, bad_edge ? T_j : solution_j);
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (muscl) {
         if (limiter) {
           su2double ZeroVec[MAXNVAR] = {0.0};
-          numerics->SetLimiter(bad_i ? ZeroVec : TurbLim_i, bad_j ? ZeroVec : TurbLim_j);
+          numerics->SetLimiter(bad_edge ? ZeroVec : TurbLim_i, bad_edge ? ZeroVec : TurbLim_j);
         }
         else {
           su2double ZeroVec[MAXNVAR] = {0.0};
           su2double OneVec[MAXNVAR] = {1.0};
-          numerics->SetLimiter(bad_i ? ZeroVec : OneVec, bad_j ? ZeroVec : OneVec);
+          numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, bad_edge ? ZeroVec : OneVec);
         }
       }
 
