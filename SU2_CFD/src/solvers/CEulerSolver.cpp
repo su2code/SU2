@@ -3254,18 +3254,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
       su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
-      su2double RoeSqVel = 0.0;
+      su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
         RoeSqVel += pow(RoeVelocity, 2);
+        SqVel_i += pow(Primitive_i[iDim+1],2);
+        SqVel_j += pow(Primitive_j[iDim+1],2);
       }
       su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
       su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
-      bool neg_sound_speed = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
+      bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0) || (0.5*RoeSqVel < RoeTke);
 
-      bool bad_i = neg_sound_speed || neg_pres_or_rho_i || (0.5*RoeSqVel < RoeTke);
-      bool bad_j = neg_sound_speed || neg_pres_or_rho_j || (0.5*RoeSqVel < RoeTke);
+      bool bad_i = bad_roe || neg_pres_or_rho_i || (0.5*SqVel_i < tke_i);
+      bool bad_j = bad_roe || neg_pres_or_rho_j || (0.5*SqVel_j < tke_j);
 
       if (tkeNeeded) {
         bad_i = bad_i || (tke_i < 0);
