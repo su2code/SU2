@@ -205,15 +205,15 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
       jac_i[iVar][jVar] = 0.0;
       for (unsigned short kVar = 0; kVar < nVar; kVar++) {
         jac_i[iVar][jVar] += (tmp_i[iVar][kVar]*(1.0-muscl_kappa*l_i[kVar])
-                           +  tmp_j[iVar][jVar]*muscl_kappa*l_j[kVar])*dVdU_i[kVar][jVar];
+                           +  tmp_j[iVar][kVar]*muscl_kappa*l_j[kVar])*dVdU_i[kVar][jVar];
         jac_j[iVar][jVar] += (tmp_j[iVar][kVar]*(1.0-muscl_kappa*l_j[kVar])
-                           +  tmp_i[iVar][jVar]*muscl_kappa*l_i[kVar])*dVdU_j[kVar][jVar];
+                           +  tmp_i[iVar][kVar]*muscl_kappa*l_i[kVar])*dVdU_j[kVar][jVar];
       }
       if (tkeNeeded) {
         jac_i[iVar][jVar] += (tmp_i[iVar][nVar]*(1.0-muscl_kappa*l_i[nVar])
-                           +  tmp_j[iVar][jVar]*muscl_kappa*l_j[nVar])*dVdU_i[nVar][jVar];
+                           +  tmp_j[iVar][nVar]*muscl_kappa*l_j[nVar])*dVdU_i[nVar][jVar];
         jac_j[iVar][jVar] += (tmp_j[iVar][nVar]*(1.0-muscl_kappa*l_j[nVar])
-                           +  tmp_i[iVar][jVar]*muscl_kappa*l_i[nVar])*dVdU_j[nVar][jVar];
+                           +  tmp_i[iVar][nVar]*muscl_kappa*l_i[nVar])*dVdU_j[nVar][jVar];
       }
     }
   }
