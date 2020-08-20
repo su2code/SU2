@@ -297,8 +297,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
-        bad_i = neg_pres_or_rho_i || bad_roe || bad_i;
-        bad_j = neg_pres_or_rho_i || bad_roe || bad_j;
+        bad_i = neg_pres_or_rho_i || bad_roe || (0.5*SqVel_i < solution_i[0]) || bad_i;
+        bad_j = neg_pres_or_rho_i || bad_roe || (0.5*SqVel_j < solution_j[0]) || bad_j;
 
       }
       else {

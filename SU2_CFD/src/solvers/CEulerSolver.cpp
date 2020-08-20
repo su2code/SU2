@@ -3266,8 +3266,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
-      bool bad_i = bad_roe || neg_pres_or_rho_i;
-      bool bad_j = bad_roe || neg_pres_or_rho_j;
+      bool bad_i = bad_roe || neg_pres_or_rho_i || (0.5*SqVel_i < tke_i);
+      bool bad_j = bad_roe || neg_pres_or_rho_j || (0.5*SqVel_j < tke_j);
 
       if (tkeNeeded) {
         bad_i = bad_i || (tke_i < 0);
