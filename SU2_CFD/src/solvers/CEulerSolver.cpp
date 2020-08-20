@@ -3300,25 +3300,25 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       su2double ZeroVec[MAXNDIM+3] = {0.0};
       if (limiter) {
-        numerics->SetLimiter(bad_i ? ZeroVec : Limiter_i, 
-                             bad_j ? ZeroVec : Limiter_j);
+        numerics->SetLimiter(bad_edge ? ZeroVec : Limiter_i, 
+                             bad_edge ? ZeroVec : Limiter_j);
       }
       else {
         su2double OneVec[MAXNDIM+3] = {1.0};
-        numerics->SetLimiter(bad_i ? ZeroVec : OneVec, 
-                             bad_j ? ZeroVec : OneVec);
+        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
+                             bad_edge ? ZeroVec : OneVec);
       }
 
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         if (limiterTurb) {
-          numerics->SetTurbLimiter(bad_i ? ZeroVec : turbNodes->GetLimiter(iPoint), 
-                                   bad_j ? ZeroVec : turbNodes->GetLimiter(jPoint));
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbNodes->GetLimiter(iPoint), 
+                                   bad_edge ? ZeroVec : turbNodes->GetLimiter(jPoint));
         }
         else {
           su2double OneVec[MAXNDIM+3] = {1.0};
-          numerics->SetTurbLimiter(bad_i ? ZeroVec : OneVec, 
-                                   bad_j ? ZeroVec : OneVec);
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec, 
+                                   bad_edge ? ZeroVec : OneVec);
         }
       }
 
