@@ -339,6 +339,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   //                                                    : su2double(0.5*(Lambda[iVar]*Lambda[iVar]/MaxLambda+MaxLambda));
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
+  constexpr size_t MAXNVAR = 5;
   Epsilon[MAXNVAR] = {0.0};
   for (iDim = 0; iDim < nDim; iDim++)
     Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
