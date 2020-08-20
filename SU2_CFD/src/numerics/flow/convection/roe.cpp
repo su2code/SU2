@@ -324,6 +324,19 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   FinalizeResidual(Flux, Jacobian_i, Jacobian_j, config);
 
+  /*--- Correct for grid motion ---*/
+
+  if (dynamic_grid) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Flux[iVar] -= ProjGridVel*Area * 0.5*(Conservatives_i[iVar]+Conservatives_j[iVar]);
+
+      if (implicit) {
+        Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel*Area;
+        Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel*Area;
+      }
+    }
+  }
+
   if (implicit && muscl) {
 
     /*--- Extract nodal values ---*/
@@ -343,21 +356,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
     /*--- Compute Jacobian wrt extrapolation ---*/
 
-    // GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
-    // GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, TurbLimiter_j, TurbLimiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
-  }
-
-  /*--- Correct for grid motion ---*/
-
-  if (dynamic_grid) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Flux[iVar] -= ProjGridVel*Area * 0.5*(Conservatives_i[iVar]+Conservatives_j[iVar]);
-
-      if (implicit) {
-        Jacobian_i[iVar][iVar] -= 0.5*ProjGridVel*Area;
-        Jacobian_j[iVar][iVar] -= 0.5*ProjGridVel*Area;
-      }
-    }
+    GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, Velocity_i, &Density_i, &turb_ke_i, Velocity_n_i, &Density_n_i, &turb_ke_n_i);
+    GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, TurbLimiter_j, TurbLimiter_i, Velocity_j, &Density_j, &turb_ke_j, Velocity_n_j, &Density_n_j, &turb_ke_n_j);
   }
 
   AD::SetPreaccOut(Flux, nVar);

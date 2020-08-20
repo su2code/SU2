@@ -144,9 +144,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     // GetMUSCLJac(muscl_kappa, Jacobian_i, Limiter_i, Limiter_j, &Density_i, &Density_n_i);
     // GetMUSCLJac(muscl_kappa, Jacobian_j, Limiter_j, Limiter_i, &Density_j, &Density_n_j);
   }
-
-  // Jacobian_i[0][0] += q_ij; Jacobian_i[1][1] += q_ij;
-  // Jacobian_j[0][0] -= q_ij; Jacobian_j[1][1] -= q_ij;
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
@@ -195,10 +192,4 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Jacobian_j[0][0] = a1-q_ij;  Jacobian_j[0][1] = 0.0;
   Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1-q_ij;
-  
-  // Jacobian_i[0][0] = a0;  Jacobian_i[0][1] = 0.0;
-  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0;
-
-  // Jacobian_j[0][0] = a1;  Jacobian_j[0][1] = 0.0;
-  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1;
 }
