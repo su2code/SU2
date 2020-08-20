@@ -120,7 +120,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
-  Epsilon = max(0.0, max(Lambda-ProjVel_i, ProjVel_j-Lambda));
+  Epsilon = 4.0*max(0.0, max(Lambda-ProjVel_i, ProjVel_j-Lambda));
   Lambda  = (fabs(Lambda) < Epsilon) ? su2double(0.5*(Lambda*Lambda/Epsilon + Epsilon))
                                      : su2double(fabs(Lambda));
 
