@@ -3290,12 +3290,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetSecondary(bad_i ? S_i : Secondary_i, 
                              bad_j ? S_j : Secondary_j);
 
-      if (tkeNeeded) {
-        CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-                                       bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
-      }
-
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       su2double ZeroVec[MAXNDIM+3] = {0.0};
@@ -3314,8 +3308,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetNodalPrimitive(V_i, V_j);
 
+      /*--- Turbulent variables ---*/
+      
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
+
+        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
+                                       bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+
         if (limiterTurb) {
           numerics->SetTurbLimiter(bad_i ? ZeroVec : turbNodes->GetLimiter(iPoint), 
                                    bad_j ? ZeroVec : turbNodes->GetLimiter(jPoint));
