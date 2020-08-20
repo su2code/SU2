@@ -188,8 +188,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   const unsigned short nPrimVarTot = nVar + tkeNeeded;
 
   for(unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-      for (unsigned short kVar = 0; kVar < nPrimVarTot; kVar++) {
+    for (unsigned short jVar = 0; jVar < nPrimVarTot; jVar++) {
+      for (unsigned short kVar = 0; kVar < nVar; kVar++) {
         tmp_i[iVar][jVar] += jac_i[iVar][kVar]*dUdV_i[kVar][jVar];
         tmp_j[iVar][jVar] += jac_j[iVar][kVar]*dUdV_j[kVar][jVar];
       }
