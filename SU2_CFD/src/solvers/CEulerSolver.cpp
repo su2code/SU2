@@ -3310,6 +3310,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                              bad_j ? ZeroVec : OneVec);
       }
 
+      /*--- Store nodal values ---*/
+
+      numerics->SetNodalPrimitive(V_i, V_j);
+
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         if (limiterTurb) {
@@ -3320,14 +3324,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           numerics->SetTurbLimiter(bad_i ? ZeroVec : OneVec, 
                                    bad_j ? ZeroVec : OneVec);
         }
-      }
 
-      /*--- Store nodal values ---*/
-
-      numerics->SetNodalPrimitive(V_i, V_j);
-      if (tkeNeeded) {
-        numerics->SetNodalTurbVar(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint),
-                                  solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint));
+        numerics->SetNodalTurbVar(turbNodes->GetPrimitive(iPoint),
+                                  turbNodes->GetPrimitive(jPoint));
       }
 
     }
