@@ -514,8 +514,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned long iPoint) {
   
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS && nodes->GetCrossDiff(iPoint) > CDKW_MIN) {
-  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS && nodes->GetCrossDiff(iPoint) > CDKW_MIN) {
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
 
     const bool wasActive = AD::BeginPassive();
   
@@ -2087,7 +2087,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
                          + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
   
   //--- Zeroth-order terms due to cross-diffusion
-  if (CDkw > CDKW_MIN) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
-  // weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  // if (CDkw > CDKW_MIN) weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
+  weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1);
 
 }
