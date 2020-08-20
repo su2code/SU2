@@ -66,7 +66,7 @@ protected:
   /*!
    * \brief Compute the contribution of central differencing to the flux Jacobian.
    * \param[in] val_kappa - MUSCL kappa blending parameter.
-   * \param[in/out] jac_{i/j} - Flux Jacobian wrt conservative at face.
+   * \param[in/out] jac_{i/j} - Flux Jacobian wrt conservative at [face/node].
    * \param[in] lim_{i/j} - Slope limiter at node.
    * \param[in] r_{i/j} - Density at face.
    * \param[in] r_{i/j} - Density at node.
