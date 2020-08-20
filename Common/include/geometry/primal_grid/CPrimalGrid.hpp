@@ -410,6 +410,18 @@ public:
   inline virtual void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
 
   /*!
+   * \brief Virtual function to get whether or not the LGL distribution is used.
+   * \return True if the LGL distribution is used and false otherwise.
+   */
+  inline virtual bool GetLGLDistribution(void) { return false; }
+
+  /*!
+   * \brief Virtual function to set the value of LGLDistribution.
+   * \param[in] val_LGLDistribution - The value to be set for LGLDistribution.
+   */
+  inline virtual void SetLGLDistribution(bool val_LGLDistribution) {}
+
+  /*!
    * \brief Virtual function to correct the offset of the global DOFs.
    * \param[in] val_offsetRank - The offset that must be added for this rank.
    */

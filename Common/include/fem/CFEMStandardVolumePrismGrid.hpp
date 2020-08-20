@@ -28,7 +28,7 @@
 
 #pragma once 
 
-#include "CFEMStandardElementBase.hpp"
+#include "CFEMStandardPrism.hpp"
 
 /*!
  * \class CFEMStandardVolumePrismGrid
@@ -37,7 +37,7 @@
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  */
-class CFEMStandardVolumePrismGrid final: public CFEMStandardElementBase {
+class CFEMStandardVolumePrismGrid final: public CFEMStandardPrism {
 
 public:
   /*!
@@ -56,27 +56,55 @@ public:
                               const unsigned short val_orderExact);
 
   /*!
+   * \brief Destructor. Nothing to be done.
+   */
+  ~CFEMStandardVolumePrismGrid() = default;
+
+  /*!
+   * \brief Function to determine whether the point distribution of the element is LGL.
+   * \param[in] matCoor - Matrix that contains the coordinates of the grid DOFs.
+   * \param[in] ldb     - Leading dimension of matCoor (gemm convention).
+   * \return True if the coordinates are LGL and false otherwise.
+   */
+  bool CoordinatesAreLGL(const ColMajorMatrix<su2double> &matCoor,
+                         const unsigned short            ldb) const override;
+
+  /*!
+   * \brief Function, which computes the data and/or derivatives in the
+   *        integration points from the known data in the DOFs.
+   * \param[in]  matB    - Matrix that contains the input data.
+   * \param[in]  ldb     - Leading dimension of matB (gemm convention).
+   * \param[in]  ldc     - Leading dimension of matC (gemm convention).
+   * \param[in]  n       - Second dimension of matB and matC (gemm convention).
+   * \param[out] matC    - Result of the multiplication C = A*B.
+   * \param[out] matDerC - Result of the multiplication CDer = ADer*B.
+   * \param[in]  config  - Pointer to the configuration. Used for the timings.
+   */
+  void DataIntegrationPoints(const ColMajorMatrix<su2double>    &matB,
+                             const unsigned short               ldb,
+                             const unsigned short               ldc,
+                             const unsigned short               n,
+                             ColMajorMatrix<su2double>          *matC,
+                             vector<ColMajorMatrix<su2double> > *matDerC,
+                             const CConfig                      *config) const override;
+
+  /*!
    * \brief Function, that returns the number of different face types
    *        occuring in this volume element.
    * \return The number of different face types of the volume element.
    */
-  unsigned short GetnFaceTypes(void) const {return 2;}
+  unsigned short GetnFaceTypes(void) const override {return 2;}
 
   /*!
    * \brief Function that returns the VTK type for the given face type index.
    * \param[in] ind - Index of the face type for which the VTK type must be returned.
    * \return The VTK type of the given face type.
    */
-  unsigned short GetVTK_TypeFace(unsigned short ind) const {
+  unsigned short GetVTK_TypeFace(unsigned short ind) const override {
     if(ind == 0) return TRIANGLE;
     else         return QUADRILATERAL;
   }
 
 private:
-
-  unsigned short nDOFs1D;        /*!< \brief Number of DOFs in one space direction. */
-  unsigned short nDOFsTriangle;  /*!< \brief Number of DOFs of the triangular parts. */
-  unsigned short nInt1D;         /*!< \brief Number of integration points in one space direction. */
-  unsigned short nIntTriangle;   /*!< \brief Number of integration points of the triangular parts. */
 
 };

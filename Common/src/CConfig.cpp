@@ -29,7 +29,7 @@
 #include "../include/CConfig.hpp"
 #undef ENABLE_MAPS
 
-#include "../include/fem/fem_gauss_jacobi_quadrature.hpp"
+#include "../include/fem/CFEMStandardElementBase.hpp"
 #include "../include/toolboxes/classes_multiple_integers.hpp"
 
 #include "../include/basic_types/ad_structure.hpp"
@@ -4201,9 +4201,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     /* Determine the location of the ADER time DOFs, which are the Gauss-Legendre
        integration points corresponding to the number of time DOFs. */
-    vector<passivedouble> GLPoints(nTimeDOFsADER_DG), GLWeights(nTimeDOFsADER_DG);
-    CGaussJacobiQuadrature GaussJacobi;
-    GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
+    vector<su2double> GLPoints, GLWeights;
+    CFEMStandardElementBase standardElem;
+    standardElem.IntegrationPointsLine(nTimeDOFsADER_DG, GLPoints, GLWeights);
 
     TimeDOFsADER_DG = new su2double[nTimeDOFsADER_DG];
     for(unsigned short i=0; i<nTimeDOFsADER_DG; ++i)
@@ -4214,9 +4214,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     unsigned short orderExact = ceil(Quadrature_Factor_Time_ADER_DG*(nTimeDOFsADER_DG-1));
     nTimeIntegrationADER_DG = orderExact/2 + 1;
     nTimeIntegrationADER_DG = max(nTimeIntegrationADER_DG, nTimeDOFsADER_DG);
-    GLPoints.resize(nTimeIntegrationADER_DG);
-    GLWeights.resize(nTimeIntegrationADER_DG);
-    GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
+    standardElem.IntegrationPointsLine(nTimeIntegrationADER_DG, GLPoints, GLWeights);
 
     TimeIntegrationADER_DG    = new su2double[nTimeIntegrationADER_DG];
     WeightsIntegrationADER_DG = new su2double[nTimeIntegrationADER_DG];

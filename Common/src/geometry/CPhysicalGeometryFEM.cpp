@@ -37,6 +37,9 @@
 #include "../../include/fem/CFEMStandardVolumePyraGrid.hpp"
 #include "../../include/fem/CFEMStandardVolumePrismGrid.hpp"
 #include "../../include/fem/CFEMStandardVolumeHexGrid.hpp"
+#include "../../include/fem/CFEMStandardFaceLineGrid.hpp"
+#include "../../include/fem/CFEMStandardFaceTriGrid.hpp"
+#include "../../include/fem/CFEMStandardFaceQuadGrid.hpp"
 
 void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReader *mesh) {
 
@@ -304,20 +307,53 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     SU2_OMP_FOR_STAT(1)
     for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
 
+      /*--- Abbreviate the element type and polynomial degree for readability
+            and determine the polynomial order that must be integrated
+            exactly. The latter value is used to determine whether or not
+            the Jacobian is constant and therefore the value for non-constant
+            Jacobians is used to be sure that the surface is computed correctly. ---*/
+      const unsigned short VTK_Type   = elemTypesGrid[i].short0;
+      const unsigned short nPoly      = elemTypesGrid[i].short1;
+      const unsigned short orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Curved());
 
+      /*--- Determine the element type and allocate the appropriate object. ---*/
+      switch( VTK_Type ) {
+        case LINE:
+          standardFaceElements[i] = new CFEMStandardFaceLineGrid(nPoly, orderExact);
+          break;
+        case TRIANGLE:
+          standardFaceElements[i] = new CFEMStandardFaceTriGrid(nPoly, orderExact);
+          break;
+        case QUADRILATERAL:
+          standardFaceElements[i] = new CFEMStandardFaceQuadGrid(nPoly, orderExact);
+          break;
+        default:  /*--- To avoid a compiler warning. ---*/
+          SU2_MPI::Error(string("Unknown surface element. This should not happen"),
+                         CURRENT_FUNCTION);
+      }
     }
 
+    /*--- Determine the sizes of the help matrices needed. ---*/
+    unsigned short sizeDOF = 0, sizeInt = 0;
+    for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
+      sizeDOF = max(sizeDOF, standardVolumeElements[i]->GetNDOFsPad());
+      sizeInt = max(sizeInt, standardVolumeElements[i]->GetNIntegrationPad());
+    }
 
+    /*--- Define the help matrices needed for the desired storage of the
+          coordinates and the metric terms. ---*/
+    ColMajorMatrix<su2double> matCoor(sizeDOF, nDim);
+    vector<ColMajorMatrix<su2double> > matMetricTerms(nDim, ColMajorMatrix<su2double>(sizeInt, nDim));
 
-    SU2_OMP_CRITICAL
-    cout << "My thread ID: " << omp_get_thread_num() << ", Number of element types: " << elemTypesGrid.size() << endl;
+    /*--- Fill these matrices with the default values to avoid
+          problems later on. ---*/
+    matCoor.setConstant(0.0);
 
-    SU2_OMP_BARRIER
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+      matMetricTerms[iDim].setConstant(0.0);
 
-    SU2_OMP_SINGLE
-    {
-      for(unsigned long i=0; i<elemTypesGrid.size(); ++i)
-        cout << "Element " << i << ": " << elemTypesGrid[i].short0 << " " << elemTypesGrid[i].short1 << endl;
+      for(unsigned short i=0; i<sizeInt; ++i)
+        matMetricTerms[iDim](i,iDim) = 1.0;
     }
 
     /*--- Loop over the local volume elements. ---*/
@@ -329,19 +365,41 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       /*--- whether the Jacobians can be considered constant.                ---*/
       /*------------------------------------------------------------------------*/
 
-      /*--- Determine the standard element of the volume element. If it does not
-            exist yet, it will be created. Note that it suffices to indicate that
-            the Jacobians are constant, because the only task here is to determine
-            whether or not the Jacobians are constant. ---*/
-  /*  unsigned long ii;
-      for(ii=0; ii<standardVolumeElements.size(); ++ii) {
-        if( standardVolumeElements[ii].SameStandardElement(VTK_Type, nPolyGrid, true) )
+      /*--- Determine the standard element of the volume element. ---*/
+      unsigned long ii;
+      for(ii=0; ii<standardVolumeElements.size(); ++ii)
+        if( standardVolumeElements[ii]->SameStandardElement(elem[i]->GetVTK_Type(),
+                                                            elem[i]->GetNPolyGrid()) )
           break;
+
+      /*--- Retrieve the number of grid DOFs for this element. ---*/
+      const unsigned short nDOFs = standardVolumeElements[ii]->GetNDOFs();
+
+      /*--- Copy the coordinates into matCoor, such that the gemm routines
+            can be used to compute the metric terms. ---*/
+      for(unsigned short j=0; j<nDOFs; ++j) {
+        unsigned long nodeID = elem[i]->GetNode(j);
+
+        map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
+        unsigned long ind = MI->second;
+        for(unsigned short k=0; k<nDim; ++k)
+          matCoor(j,k) = nodes->GetCoord(ind, k);
       }
 
-      if(ii == standardVolumeElements.size())
-        standardVolumeElements.push_back(CFEMStandardElement(VTK_Type, nPolyGrid,
-                                                             true, config)); */
+      /*--- Determine whether the LGL or equidistant distribution
+            of the grid points is used. ---*/
+      const bool LGLDistribution = standardVolumeElements[ii]->CoordinatesAreLGL(matCoor, sizeDOF);
+      elem[i]->SetLGLDistribution(LGLDistribution);
+
+      /*--- Carry out the matrix products to determine the derivatives of
+            the coordinates w.r.t. the parametric coordinates. The fifth
+            argument is the null pointer, because the coordinates of the
+            integration points are not needed. The last argument is the
+            null pointer, such that this gemm call is ignored in the
+            profiling. Replace by config if if should be included ---*/
+      standardVolumeElements[ii]->DataIntegrationPoints(matCoor, sizeDOF, sizeInt, nDim,
+                                                        nullptr, &matMetricTerms,nullptr);
+
 
     }
 
@@ -352,6 +410,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
   /*--- Release the memory of the standard elements again. ---*/
   for(unsigned long i=0; i<standardVolumeElements.size(); ++i)
     delete standardVolumeElements[i];
+
+  for(unsigned long i=0; i<standardFaceElements.size(); ++i)
+    delete standardFaceElements[i];
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
 }

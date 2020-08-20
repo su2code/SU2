@@ -48,6 +48,9 @@ private:
 
   bool JacobianConsideredConstant;   /*!< \brief Whether or not the Jacobian of the transformation to
                                                  is (almost) constant. */
+  bool LGLDistribution;              /*!< \brief Whether or not the grid points follow the
+                                                 Legendre-Gauss-Lobatto (LGL) distribution.
+                                                 If not, equidistant is assumed. */
 
 public:
 
@@ -192,6 +195,19 @@ public:
                                            unsigned short &numFaces,
                                            unsigned short nPointsPerFace[],
                                            unsigned long  faceConn[6][4]);
+
+  /*!
+   * \brief Function to get whether or not the LGL distribution is used.
+   * \return True if the LGL distribution is used and false otherwise.
+   */
+  inline bool GetLGLDistribution(void) override {return LGLDistribution;}
+
+  /*!
+   * \brief Function to set the value of LGLDistribution.
+   * \param[in] val_LGLDistribution - The value to be set for LGLDistribution.
+   */
+  inline void SetLGLDistribution(bool val_LGLDistribution) override {LGLDistribution = val_LGLDistribution;}
+
 private:
 
   /*!

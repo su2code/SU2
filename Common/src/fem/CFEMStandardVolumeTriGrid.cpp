@@ -32,10 +32,25 @@
 /*----------------------------------------------------------------------------------*/
 
 CFEMStandardVolumeTriGrid::CFEMStandardVolumeTriGrid(const unsigned short val_nPoly,
-                                                     const unsigned short val_orderExact) {
+                                                     const unsigned short val_orderExact)
+  : CFEMStandardTri(val_nPoly, val_orderExact) {
 
-  /*--- Store the command line arguments. ---*/
-  VTK_Type   = TRIANGLE;
-  nPoly      = val_nPoly;
-  orderExact = val_orderExact;
+}
+
+bool CFEMStandardVolumeTriGrid::CoordinatesAreLGL(const ColMajorMatrix<su2double> &matCoor,
+                                                  const unsigned short            ldb) const {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  return false;
+}
+
+void CFEMStandardVolumeTriGrid::DataIntegrationPoints(const ColMajorMatrix<su2double>    &matB,
+                                                      const unsigned short               ldb,
+                                                      const unsigned short               ldc,
+                                                      const unsigned short               n,
+                                                      ColMajorMatrix<su2double>          *matC,
+                                                      vector<ColMajorMatrix<su2double> > *matDerC,
+                                                      const CConfig                      *config) const {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
