@@ -100,23 +100,23 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   const su2double R = sqrt(fabs(Density_j/Density_i));
   su2double sq_vel = 0.0;
 
-  q_ij = 0.0;
-  a0   = 0.0;
-  a1   = 0.0;
+  Lambda = 0.0;
+  ProjVel_i   = 0.0;
+  ProjVel_j   = 0.0;
   Area = 0.0;
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
       su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
-      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
+      Lambda += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
       const su2double RoeVelocity = (R*V_j[iDim+1]+V_i[iDim+1])/(R+1.);
-      q_ij += RoeVelocity*Normal[iDim];
-      a0   += V_i[iDim+1]*Normal[iDim];
-      a1   += V_j[iDim+1]*Normal[iDim];
+      Lambda    += RoeVelocity*Normal[iDim];
+      ProjVel_i += V_i[iDim+1]*Normal[iDim];
+      ProjVel_j += V_j[iDim+1]*Normal[iDim];
 
       sq_vel += RoeVelocity*RoeVelocity;
       Area   += Normal[iDim]*Normal[iDim];
@@ -130,13 +130,19 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   const su2double RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke);
 
   const su2double RoeSoundSpeed = sqrt(RoeSoundSpeed2);
-  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed*Area);
+  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(Lambda) + RoeSoundSpeed*Area);
 
-  // q_ij = (fabs(q_ij) >= MaxLambda) ? su2double(0.5*fabs(q_ij)) 
-  //                                  : su2double(0.25*(q_ij*q_ij/MaxLambda+MaxLambda));
-  q_ij = 0.5*fabs(q_ij);
-  a0  *= 0.5;
-  a1  *= 0.5;
+  // Lambda = (fabs(Lambda) >= MaxLambda) ? su2double(0.5*fabs(Lambda)) 
+  //                                  : su2double(0.25*(Lambda*Lambda/MaxLambda+MaxLambda));
+
+  /*--- Harten and Hyman (1983) entropy correction ---*/
+
+  const su2double Epsilon = 4.0*max(0.0, max(Lambda-ProjVel_i, Lambda-ProjVel_j));
+  Lambda = (fabs(Lambda) < Epsilon) ? 0.25*(Lambda*Lambda/Epsilon + Epsilon)
+                                    : 0.5*fabs(Lambda);
+  // Lambda     = 0.5*fabs(Lambda);
+  ProjVel_i *= 0.5;
+  ProjVel_j *= 0.5;
 
   FinishResidualCalc(config);
 
@@ -173,10 +179,10 @@ void CUpwSca_TurbSA::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a0*TurbVar_i[0]+a1*TurbVar_j[0];
+  Flux[0] = ProjVel_i*TurbVar_i[0]+ProjVel_j*TurbVar_j[0];
 
-  Jacobian_i[0][0] = a0;
-  Jacobian_j[0][0] = a1;
+  Jacobian_i[0][0] = ProjVel_i;
+  Jacobian_j[0][0] = ProjVel_j;
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
@@ -192,12 +198,12 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a0*Density_i*TurbVar_i[0]+a1*Density_j*TurbVar_j[0]-q_ij*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
-  Flux[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1]-q_ij*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
+  Flux[0] = ProjVel_i*Density_i*TurbVar_i[0]+ProjVel_j*Density_j*TurbVar_j[0]-Lambda*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
+  Flux[1] = ProjVel_i*Density_i*TurbVar_i[1]+ProjVel_j*Density_j*TurbVar_j[1]-Lambda*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
 
-  Jacobian_i[0][0] = a0+q_ij;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = a0+q_ij;
+  Jacobian_i[0][0] = ProjVel_i+Lambda;  Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = ProjVel_i+Lambda;
 
-  Jacobian_j[0][0] = a1-q_ij;  Jacobian_j[0][1] = 0.0;
-  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = a1-q_ij;
+  Jacobian_j[0][0] = ProjVel_j-Lambda;  Jacobian_j[0][1] = 0.0;
+  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = ProjVel_j-Lambda;
 }

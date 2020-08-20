@@ -318,9 +318,13 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
 
   if (dynamic_grid) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
-    ProjVelocity -= ProjGridVel;
+    su2double ProjGridVel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
+    }
+    ProjVelocity   -= ProjGridVel;
+    ProjVelocity_i -= ProjGridVel;
+    ProjVelocity_j -= ProjGridVel;
   }
 
   /*--- Flow eigenvalues ---*/
@@ -339,8 +343,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   //                                                    : su2double(0.5*(Lambda[iVar]*Lambda[iVar]/MaxLambda+MaxLambda));
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
-  constexpr size_t MAXNVAR = 5;
-  Epsilon[MAXNVAR] = {0.0};
+
   for (iDim = 0; iDim < nDim; iDim++)
     Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
 
