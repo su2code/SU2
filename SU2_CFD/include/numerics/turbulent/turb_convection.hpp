@@ -66,14 +66,15 @@ protected:
   /*!
    * \brief Compute the contribution of central differencing to the flux Jacobian.
    * \param[in] val_kappa - MUSCL kappa blending parameter.
-   * \param[in/out] val_Jacobian - Flux Jacobian wrt node i conservatives (implicit computation).
-   * \param[in] lim_i - Slope limiter at node i.
-   * \param[in] lim_j - Slope limiter at node j.
-   * \param[in] val_density{_n} - Density at node i (subscript n denotes value at node).
+   * \param[in/out] jac_{i/j} - Flux Jacobian wrt conservative at face.
+   * \param[in] lim_{i/j} - Slope limiter at node.
+   * \param[in] r_{i/j} - Density at face.
+   * \param[in] r_{i/j} - Density at node.
    */
-  void GetMUSCLJac(const su2double val_kappa, su2double **val_Jacobian,
+  void GetMUSCLJac(su2double **jac_i, su2double **jac_j,
                    const su2double *lim_i, const su2double *lim_j,
-                   const su2double *val_density, const su2double *val_density_n);
+                   const su2double *r_i, const su2double *r_j,
+                   const su2double *r_n_i, const su2double *r_n_j);
 
   /*!
    * \brief Model-specific steps in the ComputeResidual method, derived classes
