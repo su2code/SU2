@@ -45,6 +45,7 @@ protected:
   su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
   su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
   su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeTke, ProjVelocity, RoeSoundSpeed2, kappa;
+  su2double SoundSpeed_i, SoundSpeed_j, ProjVelocity_i, ProjVelocity_j;
   su2double muscl_kappa;
   bool muscl, tkeNeeded;
 

@@ -67,15 +67,11 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
                              const su2double *r_n_i, const su2double *r_n_j) {
   const bool wasActive = AD::BeginPassive();
 
-  /*--- Subscripts _mn denote Jacobian of flux m wrt node n ---*/
-
-  su2double dFidUi, dFidUj, dFjdUi, dFjdUj;
-
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    dFidUi = jac_i[iVar][iVar]*(*r_i)*(1.0-muscl_kappa*lim_i[iVar])/(*r_n_i);
-    dFidUj = jac_i[iVar][iVar]*(*r_i)*muscl_kappa*lim_i[iVar]/(*r_n_j);
-    dFjdUi = jac_j[iVar][iVar]*(*r_j)*muscl_kappa*lim_j[iVar]/(*r_n_i);
-    dFjdUj = jac_j[iVar][iVar]*(*r_j)*(1.0-muscl_kappa*lim_j[iVar])/(*r_n_j);
+    const su2double dFidUi = jac_i[iVar][iVar]*(*r_i)*(1.0-muscl_kappa*lim_i[iVar])/(*r_n_i);
+    const su2double dFidUj = jac_i[iVar][iVar]*(*r_i)*muscl_kappa*lim_i[iVar]/(*r_n_j);
+    const su2double dFjdUi = jac_j[iVar][iVar]*(*r_j)*muscl_kappa*lim_j[iVar]/(*r_n_i);
+    const su2double dFjdUj = jac_j[iVar][iVar]*(*r_j)*(1.0-muscl_kappa*lim_j[iVar])/(*r_n_j);
     
     jac_i[iVar][iVar] = dFidUi + dFjdUi;
     jac_j[iVar][iVar] = dFidUj + dFjdUj;
@@ -136,8 +132,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   const su2double RoeSoundSpeed = sqrt(RoeSoundSpeed2);
   const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(q_ij) + RoeSoundSpeed*Area);
 
-  q_ij = (fabs(q_ij) >= MaxLambda) ? su2double(0.5*fabs(q_ij)) 
-                                   : su2double(0.25*(q_ij*q_ij/MaxLambda+MaxLambda));
+  // q_ij = (fabs(q_ij) >= MaxLambda) ? su2double(0.5*fabs(q_ij)) 
+  //                                  : su2double(0.25*(q_ij*q_ij/MaxLambda+MaxLambda));
+  q_ij = 0.5*fabs(q_ij);
   a0  *= 0.5;
   a1  *= 0.5;
 

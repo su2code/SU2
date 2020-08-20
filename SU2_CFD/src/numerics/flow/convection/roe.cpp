@@ -257,6 +257,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
 
@@ -266,6 +267,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  SoundSpeed_i = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   /*--- Compute variables that are common to the derived schemes ---*/
 
@@ -308,9 +310,12 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Projected velocity adjusted for mesh motion ---*/
 
-  ProjVelocity = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    ProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
+  ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
+    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+    ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
+  }
 
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++)
@@ -326,12 +331,26 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
-  const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
+  // const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
 
   /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    Lambda[iVar] = (fabs(Lambda[iVar]) >= MaxLambda) ? su2double(fabs(Lambda[iVar])) 
-                                                     : su2double(0.5*(Lambda[iVar]*Lambda[iVar]/MaxLambda+MaxLambda));
+  // for (iVar = 0; iVar < nVar; iVar++)
+  //   Lambda[iVar] = (fabs(Lambda[iVar]) >= MaxLambda) ? su2double(fabs(Lambda[iVar])) 
+  //                                                    : su2double(0.5*(Lambda[iVar]*Lambda[iVar]/MaxLambda+MaxLambda));
+
+  /*--- Harten and Hyman (1983) entropy correction ---*/
+  Epsilon[MAXNVAR] = {0.0};
+  for (iDim = 0; iDim < nDim; iDim++)
+    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
+
+  Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
+  Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+
+ for (iVar = 0; iVar < nVar; iVar++)
+   if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+     Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+   else
+     Lambda[iVar] = fabs(Lambda[iVar]);
 
   /*--- Reconstruct conservative variables ---*/
 
