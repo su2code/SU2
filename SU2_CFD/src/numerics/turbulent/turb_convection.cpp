@@ -138,8 +138,8 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
   const su2double Epsilon = 4.0*max(0.0, max(Lambda-ProjVel_i, Lambda-ProjVel_j));
-  Lambda = (fabs(Lambda) < Epsilon) ? 0.25*(Lambda*Lambda/Epsilon + Epsilon)
-                                    : 0.5*fabs(Lambda);
+  Lambda = (fabs(Lambda) < Epsilon) ? su2double(0.25*(Lambda*Lambda/Epsilon + Epsilon))
+                                    : su2double(0.5*fabs(Lambda));
   // Lambda     = 0.5*fabs(Lambda);
   ProjVel_i *= 0.5;
   ProjVel_j *= 0.5;
