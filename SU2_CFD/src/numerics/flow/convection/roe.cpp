@@ -334,13 +334,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
-  
-  // const su2double MaxLambda = config->GetEntropyFix_Coeff()*(fabs(ProjVelocity) + RoeSoundSpeed);
-
-  /*--- Apply Mavriplis' entropy correction to eigenvalues ---*/
-  // for (iVar = 0; iVar < nVar; iVar++)
-  //   Lambda[iVar] = (fabs(Lambda[iVar]) >= MaxLambda) ? su2double(fabs(Lambda[iVar])) 
-  //                                                    : su2double(0.5*(Lambda[iVar]*Lambda[iVar]/MaxLambda+MaxLambda));
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
