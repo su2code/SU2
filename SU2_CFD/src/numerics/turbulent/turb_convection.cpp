@@ -69,7 +69,7 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   /*--- Subscripts _mn denote Jacobian of flux m wrt node n ---*/
 
-  su2double tmp_ii, tmp_ij, tmp_ji, tmp_jj;
+  su2double dFidUi, dFidUj, dFjdUi, dFjdUj;
 
   const su2double w_ii = (*r_i)/(*r_n_i);
   const su2double w_ij = (*r_i)/(*r_n_j);
@@ -77,13 +77,13 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   const su2double w_jj = (*r_j)/(*r_n_j);
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    tmp_ii = w_ii*(1.0-muscl_kappa*lim_i[iVar])*jac_i[iVar][iVar];
-    tmp_ij = w_ij*muscl_kappa*lim_i[iVar]*jac_i[iVar][iVar];
-    tmp_ji = w_ji*muscl_kappa*lim_j[iVar]*jac_j[iVar][iVar];
-    tmp_jj = w_jj*(1.0-muscl_kappa*lim_j[iVar])*jac_j[iVar][iVar];
+    dFidUi = w_ii*(1.0-muscl_kappa*lim_i[iVar])*jac_i[iVar][iVar];
+    dFidUj = w_ij*muscl_kappa*lim_i[iVar]*jac_i[iVar][iVar];
+    dFjdUi = w_ji*muscl_kappa*lim_j[iVar]*jac_j[iVar][iVar];
+    dFjdUj = w_jj*(1.0-muscl_kappa*lim_j[iVar])*jac_j[iVar][iVar];
     
-    jac_i[iVar][iVar] = tmp_ii + tmp_ji;
-    jac_j[iVar][iVar] = tmp_ij + tmp_jj;
+    jac_i[iVar][iVar] = dFidUi + dFjdUi;
+    jac_j[iVar][iVar] = dFidUj + dFjdUj;
   }
 
 

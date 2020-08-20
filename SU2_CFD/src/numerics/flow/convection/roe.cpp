@@ -96,8 +96,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   const bool wasActive = AD::BeginPassive();
   constexpr size_t MAXNVAR = 5;
 
-  su2double tmp_i[MAXNVAR][MAXNVAR+1]  = {0.0},
-            tmp_j[MAXNVAR][MAXNVAR+1]  = {0.0},
+  su2double dFdV_i[MAXNVAR][MAXNVAR+1]  = {0.0},
+            dFdV_j[MAXNVAR][MAXNVAR+1]  = {0.0},
             dUdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
             dUdV_j[MAXNVAR][MAXNVAR+1] = {0.0},
             dVdU_i[MAXNVAR+1][MAXNVAR] = {0.0},
@@ -190,8 +190,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   for(unsigned short iVar = 0; iVar < nVar; iVar++) {
     for (unsigned short jVar = 0; jVar < nPrimVarTot; jVar++) {
       for (unsigned short kVar = 0; kVar < nVar; kVar++) {
-        tmp_i[iVar][jVar] += jac_i[iVar][kVar]*dUdV_i[kVar][jVar];
-        tmp_j[iVar][jVar] += jac_j[iVar][kVar]*dUdV_j[kVar][jVar];
+        dFdV_i[iVar][jVar] += jac_i[iVar][kVar]*dUdV_i[kVar][jVar];
+        dFdV_j[iVar][jVar] += jac_j[iVar][kVar]*dUdV_j[kVar][jVar];
       }
     }
   }
@@ -201,10 +201,10 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
       jac_i[iVar][jVar] = 0.0;
       jac_j[iVar][jVar] = 0.0;
       for (unsigned short kVar = 0; kVar < nPrimVarTot; kVar++) {
-        jac_i[iVar][jVar] += (tmp_i[iVar][kVar]*(1.0-muscl_kappa*l_i[kVar])
-                           +  tmp_j[iVar][kVar]*muscl_kappa*l_j[kVar])*dVdU_i[kVar][jVar];
-        jac_j[iVar][jVar] += (tmp_j[iVar][kVar]*(1.0-muscl_kappa*l_j[kVar])
-                           +  tmp_i[iVar][kVar]*muscl_kappa*l_i[kVar])*dVdU_j[kVar][jVar];
+        jac_i[iVar][jVar] += (dFdV_i[iVar][kVar]*(1.0-muscl_kappa*l_i[kVar])
+                           +  dFdV_j[iVar][kVar]*muscl_kappa*l_j[kVar])*dVdU_i[kVar][jVar];
+        jac_j[iVar][jVar] += (dFdV_j[iVar][kVar]*(1.0-muscl_kappa*l_j[kVar])
+                           +  dFdV_i[iVar][kVar]*muscl_kappa*l_i[kVar])*dVdU_j[kVar][jVar];
       }
     }
   }
