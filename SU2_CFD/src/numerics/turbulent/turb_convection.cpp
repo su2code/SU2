@@ -71,16 +71,11 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   su2double dFidUi, dFidUj, dFjdUi, dFjdUj;
 
-  const su2double w_ii = (*r_i)/(*r_n_i);
-  const su2double w_ij = (*r_i)/(*r_n_j);
-  const su2double w_ji = (*r_i)/(*r_n_j);
-  const su2double w_jj = (*r_j)/(*r_n_j);
-
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    dFidUi = w_ii*(1.0-muscl_kappa*lim_i[iVar])*jac_i[iVar][iVar];
-    dFidUj = w_ij*muscl_kappa*lim_i[iVar]*jac_i[iVar][iVar];
-    dFjdUi = w_ji*muscl_kappa*lim_j[iVar]*jac_j[iVar][iVar];
-    dFjdUj = w_jj*(1.0-muscl_kappa*lim_j[iVar])*jac_j[iVar][iVar];
+    dFidUi = jac_i[iVar][iVar]*(*r_i)*(1.0-muscl_kappa*lim_i[iVar])/(*r_n_i);
+    dFidUj = jac_i[iVar][iVar]*(*r_i)*muscl_kappa*lim_i[iVar]/(*r_n_j);
+    dFjdUi = jac_j[iVar][iVar]*(*r_j)*muscl_kappa*lim_j[iVar]/(*r_n_i);
+    dFjdUj = jac_j[iVar][iVar]*(*r_j)*(1.0-muscl_kappa*lim_j[iVar])/(*r_n_j);
     
     jac_i[iVar][iVar] = dFidUi + dFjdUi;
     jac_j[iVar][iVar] = dFidUj + dFjdUj;
