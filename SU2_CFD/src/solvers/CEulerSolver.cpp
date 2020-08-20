@@ -3042,7 +3042,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous     = config->GetViscous();
   const bool musclTurb   = config->GetMUSCL_Turb() && muscl;
-  const bool limiterTurb = musclTurb && (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   su2double tke_i = 0, tke_j = 0;
 
