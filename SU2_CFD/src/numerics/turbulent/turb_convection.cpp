@@ -118,7 +118,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
       Lambda[0] += RoeVelocity*Normal[iDim];
       ProjVel_i += V_i[iDim+1]*Normal[iDim];
       ProjVel_j += V_j[iDim+1]*Normal[iDim];
-      RoeSqVel  += RoeVelocity[iDim]*RoeVelocity[iDim];
+      RoeSqVel  += RoeVelocity*RoeVelocity;
       Area      += Normal[iDim]*Normal[iDim];
     }
   }
