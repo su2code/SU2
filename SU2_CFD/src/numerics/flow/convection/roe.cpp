@@ -439,10 +439,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
   if (tkeNeeded) {
     P_Tensor[nVar-1][nVar] = (Gamma_Minus_One-TWO3)/Gamma_Minus_One;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      P_Tensor[iDim+1][nVar] = (Gamma_Minus_One-TWO3)*UnitNormal[iDim]/Gamma_Minus_One;
-    }
-    invP_Tensor[nVar][nVar-1] = RoeTke;
+    invP_Tensor[nVar][0] = RoeTke;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
