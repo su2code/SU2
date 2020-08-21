@@ -3299,10 +3299,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                              bad_edge ? ZeroVec : Limiter_j);
       }
       else {
-        // numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
-        //                      bad_edge ? ZeroVec : OneVec);
-        numerics->SetLimiter(OneVec, 
-                             OneVec);
+        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
+                             bad_edge ? ZeroVec : OneVec);
       }
 
       /*--- Store nodal values ---*/
@@ -3322,10 +3320,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    bad_edge ? ZeroVec : turbNodes->GetLimiter(jPoint));
         }
         else {
-          // numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec, 
-          //                          bad_edge ? ZeroVec : OneVec);
-          numerics->SetTurbLimiter(OneVec, 
-                                   OneVec);
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec, 
+                                   bad_edge ? ZeroVec : OneVec);
         }
 
         numerics->SetNodalTurbVar(turbNodes->GetPrimitive(iPoint),
