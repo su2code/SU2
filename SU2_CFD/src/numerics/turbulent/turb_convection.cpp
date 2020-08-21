@@ -103,6 +103,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Lambda[0] = 0.0;
   ProjVel_i   = 0.0;
   ProjVel_j   = 0.0;
+  RoeSqVel    = 0.0;
   Area        = 0.0;
   if (dynamic_grid) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -117,6 +118,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
       Lambda[0] += RoeVelocity*Normal[iDim];
       ProjVel_i += V_i[iDim+1]*Normal[iDim];
       ProjVel_j += V_j[iDim+1]*Normal[iDim];
+      RoeSqVel  += RoeVelocity[iDim]*RoeVelocity[iDim];
       Area      += Normal[iDim]*Normal[iDim];
     }
   }
