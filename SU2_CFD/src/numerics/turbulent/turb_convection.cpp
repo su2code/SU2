@@ -39,7 +39,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
@@ -52,7 +52,7 @@ CUpwScalar::~CUpwScalar(void) {
 
   delete [] Flux;
   if (Jacobian_i != nullptr) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
       delete [] Jacobian_j[iVar];
     }
@@ -67,7 +67,7 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
                              const su2double *r_n_i, const su2double *r_n_j) {
   const bool wasActive = AD::BeginPassive();
 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     const su2double dFidUi = jac_i[iVar][iVar]*(*r_i)*(1.0-muscl_kappa*lim_i[iVar])/(*r_n_i);
     const su2double dFidUj = jac_i[iVar][iVar]*(*r_i)*muscl_kappa*lim_i[iVar]/(*r_n_j);
     const su2double dFjdUi = jac_j[iVar][iVar]*(*r_j)*muscl_kappa*lim_j[iVar]/(*r_n_i);
@@ -93,11 +93,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   ExtraADPreaccIn();
 
   Area = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   Density_i = V_i[nDim+2];
@@ -113,14 +113,14 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   ProjVel_j   = 0.0;
   RoeSqVel    = 0.0;
   if (dynamic_grid) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
       su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
       Lambda[0] += 0.5*(Velocity_i+Velocity_j)*UnitNormal[iDim];
     }
   }
   else {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double RoeVelocity = (R*V_j[iDim+1]+V_i[iDim+1])/R_Plus_One;
       Lambda[0] += RoeVelocity*UnitNormal[iDim];
       ProjVel_i += V_i[iDim+1]*UnitNormal[iDim];
@@ -143,7 +143,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Epsilon[1] = 4.0*max(0.0, max(Lambda[1]-(ProjVel_i+SoundSpeed_i),(ProjVel_j+SoundSpeed_j)-Lambda[1]));
   Epsilon[2] = 4.0*max(0.0, max(Lambda[2]-(ProjVel_i-SoundSpeed_i),(ProjVel_j-SoundSpeed_j)-Lambda[2]));
 
-  for (unsigned short iVar = 0; iVar < 3; iVar++)
+  for (auto iVar = 0; iVar < 3; iVar++)
     Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
                                                          : su2double(fabs(Lambda[iVar]));
 

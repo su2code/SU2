@@ -124,7 +124,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Initialize the wall index map and solution matrices on the first iteration. ---*/
   if (config->GetWall_Functions()) {
     unsigned long counter = 0;
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
         nodes->SetWallMap(iPoint,counter);
         counter++;
@@ -241,7 +241,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   su2double strainMax = 0.0, omegaMax = 0.0;
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
 
     su2double StrainMag = nodes->GetStrainMag(iPoint);
     const su2double* Vorticity = nodes->GetVorticity(iPoint);
@@ -279,7 +279,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
         cout << "Switching to wall function." << endl;
       ResetCFLAdapt();
       const su2double CFL = config->GetCFL(iMesh);
-      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
         nodes->SetLocalCFL(iPoint, CFL);
       }
       Min_CFL_Local = CFL;
@@ -304,7 +304,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver, CConfig *confi
   const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed). ---*/
 
@@ -439,7 +439,7 @@ void CNSSolver::CorrectJacobian(CGeometry           *geometry,
     const bool wasActive = AD::BeginPassive();
 
     su2double EdgVec[MAXNDIM] = {0.0};
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0; iDim < nDim; iDim++)
       EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
 
     StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
@@ -463,7 +463,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   /*--- Get norm of projection and distance vectors ---*/
 
   su2double ProjVec = 0.0, Dist2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+  for (auto iDim = 0; iDim < nDim; iDim++){
     ProjVec += Normal[iDim]*EdgVec[iDim];
     Dist2   += EdgVec[iDim]*EdgVec[iDim];
   }
@@ -471,7 +471,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
@@ -487,7 +487,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   const su2double WF_Factor = 1.0;
 
   su2double Mean_Velocity[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     Mean_Velocity[iDim] = 0.5*(nodesFlo->GetVelocity(iPoint,iDim)+nodesFlo->GetVelocity(jPoint,iDim));
 
   /*--- First we compute contributions of first neighbors to the Jacobian.
@@ -497,27 +497,27 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
   if (geometry->node[iPoint]->GetPhysicalBoundary()) {
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
     const su2double Density = nodes->GetDensity(iPoint);
     const su2double Xi = WF_Factor*Mean_Viscosity/Density;
 
     const su2double Weight = -0.5*HalfOnVol*sign;
-    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
         const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
         /*--- Get new projection vector to be multiplied by divergence terms ---*/
         ProjVec = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           ProjVec += Vec[iDim]*SurfNormal[iDim];
 
         /*--- Momentum flux Jacobian wrt momentum ---*/
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto jDim = 0; jDim < nDim; jDim++)
             Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(SurfNormal[iDim]*Vec[jDim] 
                                               - TWO3*SurfNormal[jDim]*Vec[iDim] 
                                               + delta[iDim][jDim]*ProjVec);
@@ -525,8 +525,8 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     }// iMarker
 
     /*--- Now get density and energy Jacobians for iPoint ---*/
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto jDim = 0; jDim < nDim; jDim++) {
         /*--- Momentum flux Jacobian wrt density ---*/
         Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(iPoint,jDim);
 
@@ -546,10 +546,10 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -564,19 +564,19 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0; iDim < nDim; iDim++)
       ProjVec += Vec[iDim]*VolNormal[iDim];
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto jDim = 0; jDim < nDim; jDim++)
         Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(VolNormal[iDim]*Vec[jDim] 
                                     - TWO3*VolNormal[jDim]*Vec[iDim] 
                                     + delta[iDim][jDim]*ProjVec);
 
     /*--- Now get density and energy Jacobians for kPoint ---*/
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto jDim = 0; jDim < nDim; jDim++) {
         /*--- Momentum flux Jacobian wrt density ---*/
         Jacobian_i[iDim+1][0] -= Jacobian_i[iDim+1][jDim+1]*nodesFlo->GetVelocity(kPoint,jDim);
 
@@ -611,7 +611,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   /*--- Get norm of projection and distance vectors ---*/
 
   su2double ProjVec = 0.0, Dist2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+  for (auto iDim = 0; iDim < nDim; iDim++){
     ProjVec += Normal[iDim]*EdgVec[iDim];
     Dist2   += EdgVec[iDim]*EdgVec[iDim];
   }
@@ -619,7 +619,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   /*--- Get vector multiplied by GG gradient in CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
   /*--- Common factors for all Jacobian terms --*/
@@ -639,8 +639,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   if (geometry->node[iPoint]->GetPhysicalBoundary()) {
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
     const su2double Vel2     = nodes->GetVelocity2(iPoint);
@@ -649,13 +649,13 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Phi      = Gamma_Minus_One/Density;
 
     /*--- Influence of boundary nodes ---*/
-    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
         const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
         su2double Weight = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Weight += SurfNormal[iDim]*Vec[iDim];
 
         Weight *= -0.5*HalfOnVol*ConductivityOnR*sign;
@@ -664,7 +664,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
         /*--- Momentum Jacobian ---*/
-        for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        for (auto jDim = 0; jDim < nDim; jDim++)
           Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(iPoint,jDim);
 
         /*--- Energy Jacobian ---*/
@@ -692,10 +692,10 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      for (unsigned short jVar = 0; jVar < nVar; jVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
       
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -709,7 +709,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
 
     su2double Weight = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0; iDim < nDim; iDim++)
       Weight += VolNormal[iDim]*Vec[iDim];
 
     Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
@@ -718,7 +718,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
     /*--- Momentum Jacobian ---*/
-    for (unsigned short jDim = 0; jDim < nDim; jDim++)
+    for (auto jDim = 0; jDim < nDim; jDim++)
       Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(kPoint,jDim);
 
     /*--- Energy Jacobian ---*/
@@ -1862,7 +1862,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
 
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
 
@@ -2280,7 +2280,7 @@ void CNSSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
             
             const unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
-            for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+            for (auto iNode = 0; iNode < nDonors; iNode++) {
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
@@ -2599,7 +2599,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
             
             const unsigned short nDonors = geometry->vertex[iMarker][iVertex]->GetnDonorPoints();
-            for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
+            for (auto iNode = 0; iNode < nDonors; iNode++) {
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               

@@ -2409,7 +2409,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       break;
   }
 
-  for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+  for (auto iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
     /* Store the mean flow, and turbulence solvers more clearly. */
 
@@ -2453,21 +2453,21 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
     if (config->GetInnerIter() == 0)
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
 
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
-    // for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+    // for (auto iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
     //   New_Func += solverFlow->GetRes_RMS(iVar);
     // }
     // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-    //   for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+    //   for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
     //     New_Func += solverTurb->GetRes_RMS(iVar);
     //   }
     // }
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       // New_Func += Residual_RMS[iVar];
       New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
     }
@@ -2489,7 +2489,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     NonLinRes_Value = New_Func;
     if (config->GetTimeIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
-      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+      for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Value += NonLinRes_Series[iCounter];
     }
 
@@ -2500,10 +2500,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     if (fabs(NonLinRes_Value) < 0.1*New_Func) {
       NonLinRes_Counter = 0;
-      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+      for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         NonLinRes_Series[iCounter] = 1.0;
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
     }
 
@@ -2526,7 +2526,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     }
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
-    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+    for (auto iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
 
       /* Get the current local flow CFL number at this point. */
 
@@ -3159,7 +3159,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
 
 void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
   
-//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+//  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
 //    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetDensity(iPoint)*base_nodes->GetEnthalpy(iPoint));
 //
 //  //--- communicate the solution values via MPI
@@ -3188,13 +3188,13 @@ void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config, unsigned short
 }
 
 void CSolver::Add_External_To_Solution() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
 }
 
 void CSolver::Add_Solution_To_External() {
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
 }
@@ -3210,8 +3210,8 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 
   passivedouble alpha = SU2_TYPE::GetValue(config->GetAitkenStatRelax());
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       passivedouble
       new_val = SU2_TYPE::GetValue(base_nodes->GetSolution(iPoint,iVar)),
       delta = alpha * (new_val - cross_term(iPoint,iVar));
@@ -4048,7 +4048,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
     SU2_MPI::Error(string("Restart file does not seem to be a CSV file.\n") + error_string, CURRENT_FUNCTION);
   }
 
-  for (unsigned short iField = 0; iField < fields.size(); iField++){
+  for (auto iField = 0; iField < fields.size(); iField++){
     PrintingToolbox::trim(fields[iField]);
   }
 
@@ -4626,7 +4626,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
 
         case (AKIMA_1D):
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+          for (auto iCol=0; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CAkimaInterpolation(InletRadii,Interpolation_Column);
             interpolation_function = "AKIMA";
@@ -4635,7 +4635,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
 
         case (LINEAR_1D):
-          for (unsigned short iCol=0; iCol < nColumns; iCol++){
+          for (auto iCol=0; iCol < nColumns; iCol++){
             Interpolation_Column = profileReader.GetColumnForProfile(jMarker, iCol);
             interpolator[iCol] = new CLinearInterpolation(InletRadii,Interpolation_Column);
             interpolation_function = "LINEAR";
@@ -4688,7 +4688,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             index = iRow*nColumns;
 
             dist = 0.0;
-            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            for (auto iDim = 0; iDim < nDim; iDim++)
             dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
             dist = sqrt(dist);
 
@@ -4771,7 +4771,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
           solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values.data(), iMarker, iVertex);
 
-          for (unsigned short iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
+          for (auto iVar=0; iVar < (nCol_InletFile+nDim); iVar++)
             Inlet_Data_Interpolated[iVertex*(nCol_InletFile+nDim)+iVar] = Inlet_Values[iVar];
 
         }
@@ -4905,7 +4905,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
   Velocity2_Real = 0.0;
   Velocity2_ND   = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity2_Real += Velocity_Real[iDim]*Velocity_Real[iDim];
     Velocity2_ND   += Velocity_ND[iDim]*Velocity_ND[iDim];
   }
@@ -5214,7 +5214,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
   int iMessage, iProc, offset, nElem, count, source, dest, tag;
   unsigned short commType;
 
-  for (unsigned short i = 0; i < 3; i++) {
+  for (auto i = 0; i < 3; i++) {
 
     /*--- Elements ---*/
     if (i == 0) {
@@ -5252,13 +5252,13 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
       for (iProc = 0; iProc < size; iProc++) {
         if ((nElemRecv[iProc+1] > nElemRecv[iProc]) && (iProc != rank)) {
           nElem = nElemRecv[iProc+1] - nElemRecv[iProc];
-          for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+          for (auto iElem = 0; iElem < nElem; iElem++) {
             offset = countPerElem*(nElemRecv[iProc]+iElem);
 
             const unsigned long ElemID = bufLRecv[nElemRecv[iProc]+iElem];
             const unsigned short MarkerID = bufSRecv[nElemRecv[iProc]+iElem];
             const unsigned short nNodeElem = geometry->bound[MarkerID][ElemID]->GetnNodes();
-            for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
+            for (auto kNode = 0; kNode < nNodeElem; kNode++) {
               const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
               bufDSend[offset+kNode*4]   = flowNodes->GetDensity(kPoint);
               bufDSend[offset+kNode*4+1] = flowNodes->GetLaminarViscosity(kPoint);
@@ -5419,14 +5419,14 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
       const unsigned short RankID = geometry->node[iPoint]->GetWall_Rank();
       if ((nElemSend[RankID+1] > nElemSend[RankID]) && (RankID != rank)) {
         nElem = nElemSend[RankID+1] - nElemSend[RankID];
-        for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+        for (auto iElem = 0; iElem < nElem; iElem++) {
           offset = nElemSend[RankID]+iElem;
           const unsigned long ElemID = bufLSend[offset];
           const unsigned short MarkerID = bufSSend[offset];
           if ((geometry->node[iPoint]->GetWall_Marker() == MarkerID) &&
               (geometry->node[iPoint]->GetWall_Element() == ElemID)) {
             const unsigned short nNodeElem = geometry->node[iPoint]->GetWall_nNode();
-            for (unsigned short kNode = 0; kNode < nNodeElem; kNode++) {
+            for (auto kNode = 0; kNode < nNodeElem; kNode++) {
               flowNodes->SetWallDensity(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4]);
               flowNodes->SetWallLamVisc(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+1]);
               flowNodes->SetWallUTau(iPoint, kNode, bufDRecv[countPerElem*offset+kNode*4+2]);
@@ -5439,7 +5439,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
       else if (RankID == rank) {
         const unsigned short MarkerID = geometry->node[iPoint]->GetWall_Marker();
         const unsigned long ElemID = geometry->node[iPoint]->GetWall_Element();
-        for (unsigned short kNode = 0; kNode < geometry->bound[MarkerID][ElemID]->GetnNodes(); kNode++) {
+        for (auto kNode = 0; kNode < geometry->bound[MarkerID][ElemID]->GetnNodes(); kNode++) {
           const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
           flowNodes->SetWallDensity(iPoint, kNode, flowNodes->GetDensity(kPoint));
           flowNodes->SetWallLamVisc(iPoint, kNode, flowNodes->GetLaminarViscosity(kPoint));
@@ -5473,7 +5473,7 @@ void CSolver::WallFunctionComms(CGeometry *geometry,
     if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
       const unsigned short MarkerID = geometry->node[iPoint]->GetWall_Marker();
       const unsigned long ElemID = geometry->node[iPoint]->GetWall_Element();
-      for (unsigned short kNode = 0; kNode < geometry->bound[MarkerID][ElemID]->GetnNodes(); kNode++) {
+      for (auto kNode = 0; kNode < geometry->bound[MarkerID][ElemID]->GetnNodes(); kNode++) {
         const unsigned long kPoint = geometry->bound[MarkerID][ElemID]->GetNode(kNode);
         flowNodes->SetWallDensity(iPoint, kNode, flowNodes->GetDensity(kPoint));
         flowNodes->SetWallLamVisc(iPoint, kNode, flowNodes->GetLaminarViscosity(kPoint));
@@ -5748,11 +5748,11 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
   constexpr size_t MAXNMET = 30;
   unsigned short nMet = 3*(nDim-1);
 
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (config->GetSolid_Wall(iMarker)) {
 
-      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         auto node_i = geometry->node[iPoint];
@@ -5762,12 +5762,12 @@ void CSolver::CorrectBoundHessian(CGeometry *geometry, CConfig *config, unsigned
           //--- Correct if any of the neighbors belong to the volume
           unsigned short counter = 0;
           su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
-          for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+          for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
             const unsigned long jPoint = node_i->GetPoint(iNeigh);
             auto node_j = geometry->node[jPoint];
             if(!node_j->GetSolidBoundary()) {
               su2double dist = 0.0;
-              for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0; iDim < nDim; iDim++)
                 dist += pow(node_j->GetCoord(iDim)-node_i->GetCoord(iDim),2);
               dist = sqrt(dist);
               suminvdist += 1./dist;
@@ -5803,12 +5803,12 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, CConfig *config) {
   InitiateComms(geometry, config, METRIC);
   CompleteComms(geometry, config, METRIC);
 
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
     //--- Correct for physical boundaries
     if (geometry->node[iPoint]->GetSolidBoundary()) {
       //--- Correct if any of the neighbors belong to the volume
       unsigned short counter = 0;
-      for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
         const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
         if(!geometry->node[jPoint]->GetSolidBoundary()) {
           //--- Reset metric if first volume node detected
@@ -6458,9 +6458,9 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
-    for (unsigned short iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
+    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
 
-    for (unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+    for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 
@@ -6582,9 +6582,9 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
-    for (unsigned short iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
+    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
 
-    for (unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+    for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
 

@@ -537,7 +537,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Communicate and store volume and the number of neighbors for
    any dual CVs that lie on on periodic markers. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+  for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
@@ -2481,7 +2481,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver, 
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
 
-    for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (auto iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       solver[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
       solver[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
       if (rans) {
@@ -2502,7 +2502,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver, 
 
       /*--- Push back this new solution to time level N. ---*/
 
-      for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for (auto iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
         solver[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
         if (rans) {
           solver[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
@@ -2661,7 +2661,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver, CConfig *co
   unsigned long nonPhysicalPoints = 0;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+  for (auto iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
@@ -2723,7 +2723,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
     /*--- Loop over the neighbors of point i. ---*/
 
-    for (unsigned short iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
 
       jPoint = node_i->GetPoint(iNeigh);
@@ -3415,11 +3415,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
 
@@ -3439,7 +3439,7 @@ void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsig
   su2double pressure = primitive[nDim+1];
 
   su2double velocity2 = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     velocity2 += pow(primitive[iDim+1], 2);
 
   fluidModel->SetTDState_Prho(pressure, density);
@@ -3708,20 +3708,20 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     /*--- Set eigenvalues to zero. ---*/
     nodes->SetLambda(iPoint,0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
     {
       auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
       auto Normal = geometry->edge[iEdge]->GetNormal();
       su2double Area = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
+      for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
       Area = sqrt(Area);
 
       /*--- Mean Values ---*/
@@ -3735,7 +3735,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
         const su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
         const su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
 
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
 
@@ -3749,19 +3749,19 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop boundary edges ---*/
 
-  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+    for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
       /*--- Point identification, Normal vector and area ---*/
 
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
       su2double Area = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         Area += pow(Normal[iDim],2);
       Area = sqrt(Area);
 
@@ -3774,7 +3774,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
       if (dynamic_grid) {
         auto GridVel = geometry->node[iPoint]->GetGridVel();
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
       }
 
@@ -3792,7 +3792,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   {
     /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
 
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
     }
@@ -3815,20 +3815,20 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     const bool boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
     const su2double Pressure_i = nodes->GetPressure(iPoint);
 
     /*--- Initialize. ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
     iPoint_UndLapl[iPoint] = 0.0;
     jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
+    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh)
     {
       auto jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       bool boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
@@ -3838,7 +3838,7 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 
       /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
         nodes->AddUnd_Lapl(iPoint, iVar, nodes->GetSolution(jPoint,iVar)-nodes->GetSolution(iPoint,iVar));
 
       su2double Pressure_j = nodes->GetPressure(jPoint);
@@ -3858,7 +3858,7 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 
     SU2_OMP_MASTER
     {
-      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
         InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
         CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
 
@@ -3871,7 +3871,7 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
     /*--- Set final pressure switch for each point ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++)
       nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
   }
 
@@ -3892,14 +3892,14 @@ void CEulerSolver::SetUndivided_Laplacian_And_Centered_Dissipation_Sensor(CGeome
 void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config){
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  for (auto iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
     /*---- Ducros sensor for iPoint and its neighbor points to avoid lower dissipation near shocks. ---*/
 
     su2double Ducros_i = 0.0;
     auto nNeigh = geometry->node[iPoint]->GetnNeighbor();
 
-    for (unsigned short iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
+    for (auto iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
 
       auto jPoint = iPoint;
       if (iNeigh < nNeigh) jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -3915,7 +3915,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
       const su2double* Vorticity = nodes->GetVorticity(jPoint);
       su2double Omega = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Omega += pow(Vorticity[iDim], 2);
       }
       Omega = sqrt(Omega);
@@ -4628,7 +4628,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
    *    local ones for current thread to work on. ---*/
 
   SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
@@ -4641,7 +4641,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
   /*--- Update the solution and residuals ---*/
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     su2double Vol = geometry->node[iPoint]->GetVolume() + geometry->node[iPoint]->GetPeriodicVolume();
     su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
@@ -4650,7 +4650,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
     const su2double* Residual = LinSysRes.GetBlock(iPoint);
 
     if (!adjoint) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
 
         su2double Res = Residual[iVar] + Res_TruncError[iVar];
 
@@ -4696,7 +4696,7 @@ void CEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver,
   if (!adjoint) {
     /*--- Reduce residual information over all threads in this rank. ---*/
     SU2_OMP_CRITICAL
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       AddRes_RMS(iVar, resRMS[iVar]);
       AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
     }
@@ -4757,7 +4757,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
    *    local ones for current thread to work on. ---*/
 
   SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
@@ -4770,7 +4770,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Build implicit system ---*/
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the residual ---*/
 
@@ -4796,7 +4796,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
@@ -4804,7 +4804,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
@@ -4819,7 +4819,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
   SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
     AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
@@ -4829,11 +4829,11 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   SU2_OMP(sections nowait)
   {
     SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       LinSysRes.SetBlock_Zero(iPoint);
 
     SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       LinSysSol.SetBlock_Zero(iPoint);
   }
 
@@ -4860,8 +4860,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   if (!adjoint) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
         nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
       }
     }
@@ -4869,7 +4869,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   SU2_OMP_MASTER
   {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
@@ -4902,11 +4902,11 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   const su2double CFLMin = config->GetCFL_AdaptParam(2);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     su2double localUnderRelaxation = 1.0;
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
 
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
@@ -6592,7 +6592,7 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
   /*--- Check that the norm of the flow unit vector is actually 1 ---*/
 
   su2double norm = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     norm += pow(val_inlet[FlowDir_position + iDim], 2);
   }
   norm = sqrt(norm);
@@ -6620,7 +6620,7 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
 
   Inlet_Ttotal[iMarker][iVertex] = val_inlet[T_position];
   Inlet_Ptotal[iMarker][iVertex] = val_inlet[P_position];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Inlet_FlowDir[iMarker][iVertex][iDim] =  val_inlet[FlowDir_position + iDim];
   }
 
@@ -6700,10 +6700,10 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
     su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
 
-    for (unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    for (auto iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
     }
 
@@ -6712,10 +6712,10 @@ void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
     /*--- For now, non-inlets just get set to zero. In the future, we
      can do more customization for other boundary types here. ---*/
 
-    for (unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    for (auto iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
       Inlet_Ttotal[iMarker][iVertex] = 0.0;
       Inlet_Ptotal[iMarker][iVertex] = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
     }
   }
@@ -11391,7 +11391,7 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver,
    accumulated correctly during the communications. For implicit calculations,
    the Jacobians and linear system are also correctly adjusted here. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+  for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
@@ -11672,13 +11672,13 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
       if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
       /*--- Reset the global error measures to zero. ---*/
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
         VerificationSolution->SetError_RMS(iVar, 0.0);
         VerificationSolution->SetError_Max(iVar, 0.0, 0);
       }
 
       /*--- Loop over all owned points. ---*/
-      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
         const su2double *coor = geometry->node[iPoint]->GetCoord();
@@ -11689,7 +11689,7 @@ void CEulerSolver::ComputeVerificationError(CGeometry *geometry,
         VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
 
         /* Increment the global error measures */
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0; iVar < nVar; iVar++) {
           VerificationSolution->AddError_RMS(iVar, error[iVar]*error[iVar]);
           VerificationSolution->AddError_Max(iVar, fabs(error[iVar]),
                                              geometry->node[iPoint]->GetGlobalIndex(),
@@ -13076,7 +13076,7 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
     }
 
     velsq = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       velsq += vel[iDim]*vel[iDim];
     }
     f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);

@@ -43,7 +43,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
   nVertex = new unsigned long[nMarker];
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+  for (auto iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -78,9 +78,9 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 CTurbSolver::~CTurbSolver(void) {
 
   if (Inlet_TurbVars != nullptr) {
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
       if (Inlet_TurbVars[iMarker] != nullptr) {
-        for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           delete [] Inlet_TurbVars[iMarker][iVertex];
         }
         delete [] Inlet_TurbVars[iMarker];
@@ -435,11 +435,11 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPoint; ++iPoint) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
+    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); ++iNeigh) {
 
       auto iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
 
@@ -476,19 +476,19 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
     if (geometry->node[iPoint]->GetPhysicalBoundary()) {
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        for (auto jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
 
       const su2double Weight = -HalfOnVol*sign;
       
       /*--- Influence of boundary i on R(i,j) ---*/
-      for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            for (unsigned short iVar = 0; iVar < nVar; iVar++)
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            for (auto iVar = 0; iVar < nVar; iVar++)
               Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim];
         }// iVertex
       }// iMarker
@@ -502,10 +502,10 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           To reduce extra communication overhead, we only consider nodes on
           the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        for (unsigned short jVar = 0; jVar < nVar; jVar++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        for (auto jVar = 0; jVar < nVar; jVar++)
           Jacobian_i[iVar][jVar] = 0.0;
 
       auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -516,8 +516,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       const su2double denom      = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
       const su2double Weight     = HalfOnVol*sign*signk/denom;
 
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iVar = 0; iVar < nVar; iVar++)
           Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim];
 
       Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
@@ -618,7 +618,7 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver,
    accumulated corectly during the communications. For implicit calculations
    the Jacobians and linear system are also correctly adjusted here. ---*/
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+  for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
   }
@@ -637,7 +637,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
    *    local ones for current thread to work on. ---*/
 
   SU2_OMP_MASTER
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
@@ -650,7 +650,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   /*--- Build implicit system ---*/
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Read the volume ---*/
 
@@ -665,7 +665,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = -LinSysRes[total_index];
       LinSysSol[total_index] = 0.0;
@@ -680,7 +680,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
     }
   }
   SU2_OMP_CRITICAL
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
     AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
   }
@@ -690,11 +690,11 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   SU2_OMP(sections)
   {
     SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       LinSysRes.SetBlock_Zero(iPoint);
 
     SU2_OMP(section)
-    for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+    for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       LinSysSol.SetBlock_Zero(iPoint);
   }
 
@@ -722,7 +722,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
 
         SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
           nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
         }
         break;
@@ -730,9 +730,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
       case SST: case SST_SUST:
 
         SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-          for (unsigned short iVar = 0; iVar < nVar; iVar++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
             nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         }
         break;
@@ -742,7 +742,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   SU2_OMP_MASTER
   {
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    for (auto iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
@@ -783,10 +783,10 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     su2double localUnderRelaxation = 1.0;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
 
       /* We impose a limit on the maximum percentage that the
        turbulence variables can change over a nonlinear iteration. */

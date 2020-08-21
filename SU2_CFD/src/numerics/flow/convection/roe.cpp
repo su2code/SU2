@@ -57,7 +57,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   invP_Tensor = new su2double* [nPrimVarTot];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     P_Tensor[iVar] = new su2double [nPrimVarTot];
     invP_Tensor[iVar] = new su2double [nVar];
     Jacobian_i[iVar] = new su2double [nVar];
@@ -77,7 +77,7 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
   delete [] Conservatives_j;
   delete [] Lambda;
   delete [] Epsilon;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
     delete [] Jacobian_i[iVar];
@@ -115,14 +115,14 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   su2double vel_i[MAXNDIM] = {0.0}, vel_n_i[MAXNDIM] = {0.0},
             vel_j[MAXNDIM] = {0.0}, vel_n_j[MAXNDIM] = {0.0};
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     vel_i[iDim] = primvar_i[iDim+1]; vel_n_i[iDim] = primvar_n_i[iDim+1];
     vel_j[iDim] = primvar_j[iDim+1]; vel_n_j[iDim] = primvar_n_j[iDim+1];
   }
 
   su2double sq_vel_i = 0.0, sq_vel_n_i = 0.0,
             sq_vel_j = 0.0, sq_vel_n_j = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     sq_vel_i += pow(vel_i[iDim], 2.0); sq_vel_n_i += pow(vel_n_i[iDim], 2.0);
     sq_vel_j += pow(vel_j[iDim], 2.0); sq_vel_n_j += pow(vel_n_j[iDim], 2.0);
   }
@@ -130,7 +130,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   /*--- Store limiters in single vector in proper order ---*/
   su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
   l_i[0] = lim_i[nDim+2]; l_j[0] = lim_j[nDim+2];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     l_i[iDim+1] = lim_i[iDim+1]; l_j[iDim+1] = lim_j[iDim+1];
   }
   l_i[nDim+1] = lim_i[nDim+1]; l_j[nDim+1] = lim_j[nDim+1];
@@ -142,7 +142,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   dUdV_i[0][0] = dUdV_j[0][0] = 1.0;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     dUdV_i[iDim+1][0] = vel_i[iDim];
     dUdV_j[iDim+1][0] = vel_j[iDim];
 
@@ -167,7 +167,7 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   dVdU_i[0][0] = dVdU_j[0][0] = 1.0;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     dVdU_i[iDim+1][0] = -vel_n_i[iDim]*inv_r_n_i;
     dVdU_j[iDim+1][0] = -vel_n_j[iDim]*inv_r_n_j;
 
@@ -193,8 +193,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   const unsigned short nPrimVarTot = nVar + tkeNeeded;
 
   for(unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nPrimVarTot; jVar++) {
-      for (unsigned short kVar = 0; kVar < nVar; kVar++) {
+    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
+      for (auto kVar = 0; kVar < nVar; kVar++) {
         dFdV_i[iVar][jVar] += jac_i[iVar][kVar]*dUdV_i[kVar][jVar];
         dFdV_j[iVar][jVar] += jac_j[iVar][kVar]*dUdV_j[kVar][jVar];
       }
@@ -202,10 +202,10 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   }
 
   for(unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0; jVar < nVar; jVar++) {
       jac_i[iVar][jVar] = 0.0;
       jac_j[iVar][jVar] = 0.0;
-      for (unsigned short kVar = 0; kVar < nPrimVarTot; kVar++) {
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
         jac_i[iVar][jVar] += (dFdV_i[iVar][kVar]*(1.0-muscl_kappa*l_i[kVar])
                            +  dFdV_j[iVar][kVar]*muscl_kappa*l_j[kVar])*dVdU_i[kVar][jVar];
         jac_j[iVar][jVar] += (dFdV_j[iVar][kVar]*(1.0-muscl_kappa*l_j[kVar])

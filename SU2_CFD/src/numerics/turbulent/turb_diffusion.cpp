@@ -46,14 +46,14 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   Jacobian_j = new su2double* [nVar];
   Jacobian_ic = new su2double** [nDim];
   Jacobian_jc = new su2double** [nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Jacobian_ic[iDim] = new su2double* [nVar];
     Jacobian_jc[iDim] = new su2double* [nVar];
   }
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       Jacobian_ic[iDim][iVar] = new su2double [nVar];
       Jacobian_jc[iDim][iVar] = new su2double [nVar];
     }
@@ -68,17 +68,17 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
   delete [] Flux;
   if (Jacobian_i != nullptr) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
       delete [] Jacobian_j[iVar];
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         delete [] Jacobian_ic[iDim][iVar];
         delete [] Jacobian_jc[iDim][iVar];
       }
     }
     delete [] Jacobian_i;
     delete [] Jacobian_j;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       delete [] Jacobian_ic[iDim];
       delete [] Jacobian_jc[iDim];
     }
@@ -332,7 +332,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
                            * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.)),
                   factor_j = dmudT_j/(Density_j*Cv);
   
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
     Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
   }
@@ -347,8 +347,8 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      for (unsigned short iVar= 0; iVar < nVar; iVar++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto iVar= 0; iVar < nVar; iVar++) {
       Jacobian_ic[iDim][iVar][iVar] -= 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
       Jacobian_jc[iDim][iVar][iVar] += 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
       }

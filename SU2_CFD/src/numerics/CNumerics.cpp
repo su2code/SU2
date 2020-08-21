@@ -190,28 +190,28 @@ CNumerics::~CNumerics(void) {
   if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 
   if (Flux_Tensor!= NULL) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
     delete [] Flux_Tensor;
   }
 
   if (tau != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
     }
     delete [] tau;
   }
 
   if (delta != NULL) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       delete [] delta[iDim];
     }
     delete [] delta;
   }
 
   if (delta3 != NULL) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    for (auto iDim = 0; iDim < 3; iDim++) {
       delete [] delta3[iDim];
     }
     delete [] delta3;
@@ -225,7 +225,7 @@ CNumerics::~CNumerics(void) {
   if (m != NULL) delete [] m;
 
   if (using_uq) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++){
+    for (auto iDim = 0; iDim < 3; iDim++){
       delete [] MeanReynoldsStress[iDim];
       delete [] MeanPerturbedRSM[iDim];
       delete [] A_ij[iDim];
@@ -1323,7 +1323,7 @@ void CNumerics::GetJacInviscidLambda_fabs(su2double *val_velocity, su2double val
     su2double *val_normal, su2double *val_Lambda_Vector) {
   su2double ProjVelocity = 0;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     ProjVelocity += val_velocity[iDim]*val_normal[iDim];
 
   if (nDim == 3) {
