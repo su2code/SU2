@@ -34,9 +34,11 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
+
   muscl_kappa = 0.5*config->GetMUSCL_Kappa();
   muscl = val_muscl;
   tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  nPrimVarTot = nVar + tkeNeeded;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -44,23 +46,25 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   roe_low_dissipation = val_low_dissipation;
 
   Flux = new su2double [nVar];
-  Diff_U = new su2double [nVar];
+  Diff_U = new su2double [nPrimVarTot];
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
-  Conservatives_i = new su2double [nVar];
-  Conservatives_j = new su2double [nVar];
-  Lambda = new su2double [nVar];
-  Epsilon = new su2double [nVar];
+  Conservatives_i = new su2double [nPrimVarTot];
+  Conservatives_j = new su2double [nPrimVarTot];
+  Lambda = new su2double [nPrimVarTot];
+  Epsilon = new su2double [nPrimVarTot];
   P_Tensor = new su2double* [nVar];
-  invP_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nPrimVarTot];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nVar];
+    P_Tensor[iVar] = new su2double [nPrimVarTot];
     invP_Tensor[iVar] = new su2double [nVar];
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
+
+  if (tkeNeeded) invP_Tensor[nVar] = new su2double[nVar];
 }
 
 CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
@@ -79,6 +83,7 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
     delete [] Jacobian_i[iVar];
     delete [] Jacobian_j[iVar];
   }
+  if (tkeNeeded) delete [] invP_Tensor[nVar];
   delete [] P_Tensor;
   delete [] invP_Tensor;
   delete [] Jacobian_i;
@@ -275,14 +280,14 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   su2double R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
-  su2double sq_vel = 0.0;
+  su2double RoeSqVel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1.);
-    sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
+    RoeSqVel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1.);
   RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1.);
-  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*sq_vel-RoeTke);
+  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
@@ -307,6 +312,10 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   /*--- P tensor ---*/
 
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
+
+  if (tkeNeeded) {
+    P_Tensor[nVar-1][nVar] = (Gamma_Minus_One-TWO3)*RoeSqVel/(Gamma_Minus_One*RoeSoundSpeed2);
+  }
 
   /*--- Projected velocity adjusted for mesh motion ---*/
 
@@ -343,7 +352,12 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
   Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
 
- for (iVar = 0; iVar < nVar; iVar++)
+  if (tkeNeeded) {
+    Lambda[nVar] = ProjVelocity;
+    Epsilon[nVar] = 4.0*max(0.0, max(Lambda[nVar]-ProjVelocity_i,ProjVelocity_j-Lambda[nVar]));
+  }
+
+ for (iVar = 0; iVar < nPrimVarTot; iVar++)
    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
      Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
    else
@@ -360,6 +374,11 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   Conservatives_i[nDim+1] = Density_i*Energy_i;
   Conservatives_j[nDim+1] = Density_j*Energy_j;
+
+  if (tkeNeeded) {
+    Conservatives_i[nDim+2] = Density_i*turb_ke_i;
+    Conservatives_j[nDim+2] = Density_j*turb_ke_j;
+  }
 
   /*--- Compute left and right fluxes ---*/
 
@@ -427,6 +446,10 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Compute inverse P tensor ---*/
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
+  if (tkeNeeded) {
+    invP_Tensor[nVar][nVar-1] = (Gamma_Minus_One-TWO3)*RoeSqVel/(Gamma_Minus_One*RoeSoundSpeed2);
+  }
+
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
@@ -443,7 +466,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     for (jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++)
+      for (kVar = 0; kVar < nPrimVarTot; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       /*--- Update residual and Jacobians ---*/

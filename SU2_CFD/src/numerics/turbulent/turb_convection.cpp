@@ -97,7 +97,8 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];
 
-  const su2double R = sqrt(fabs(Density_j/Density_i));
+  const su2double R = sqrt(fabs(Density_j/Density_i))
+                  R_Plus_One = R+1.;
 
   Lambda = 0.0;
   ProjVel_i   = 0.0;
@@ -111,7 +112,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      const su2double RoeVelocity = (R*V_j[iDim+1]+V_i[iDim+1])/(R+1.);
+      const su2double RoeVelocity = (R*V_j[iDim+1]+V_i[iDim+1])/R_Plus_One;
       Lambda    += 0.5*RoeVelocity*Normal[iDim];
       ProjVel_i += 0.5*V_i[iDim+1]*Normal[iDim];
       ProjVel_j += 0.5*V_j[iDim+1]*Normal[iDim];
