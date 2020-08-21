@@ -93,11 +93,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   ExtraADPreaccIn();
 
   Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   Density_i = V_i[nDim+2];
