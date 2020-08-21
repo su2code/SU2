@@ -97,7 +97,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_i = V_i[nDim+2];
   Density_j = V_j[nDim+2];
 
-  const su2double R = sqrt(fabs(Density_j/Density_i))
+  const su2double R = sqrt(fabs(Density_j/Density_i)),
                   R_Plus_One = R+1.;
 
   Lambda = 0.0;
