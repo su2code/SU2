@@ -198,12 +198,10 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  const su2double g = Gamma_Minus_One-TWO3;
-
   const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
   const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
 
-  const su2double Diss_rk = Lambda[0]+RoeTke*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
+  const su2double Diss_rk = Lambda[0]+RoeTke*(Gamma_Minus_One-TWO3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
   const su2double Diss_ro = Lambda[0];
 
   Flux[0] = ProjVel_i*Density_i*TurbVar_i[0]+ProjVel_j*Density_j*TurbVar_j[0]-Diss_rk*Delta_rk;
