@@ -144,23 +144,10 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Epsilon[2] = 4.0*max(0.0, max(Lambda[2]-(ProjVel_i-SoundSpeed_i),(ProjVel_j-SoundSpeed_j)-Lambda[2]));
 
   for (auto iVar = 0; iVar < 3; iVar++)
-    Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
-                                                         : su2double(fabs(Lambda[iVar]));
+    Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
+                                                        : su2double(fabs(Lambda[iVar]));
 
   FinishResidualCalc(config);
-
-  if (muscl) {
-
-    /*--- Extract nodal values ---*/
-
-    const su2double Density_n_i = Vn_i[nDim+2];
-    const su2double Density_n_j = Vn_j[nDim+2];
-
-    /*--- Compute Jacobian wrt extrapolation ---*/
-
-    GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
-                &Density_i, &Density_j, &Density_n_i, &Density_n_j);
-  }
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
@@ -215,4 +202,17 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;  Jacobian_j[0][1] = 0.0;
   Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
+
+  if (muscl) {
+
+    /*--- Extract nodal values ---*/
+
+    const su2double Density_n_i = Vn_i[nDim+2];
+    const su2double Density_n_j = Vn_j[nDim+2];
+
+    /*--- Compute Jacobian wrt extrapolation ---*/
+
+    GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
+                &Density_i, &Density_j, &Density_n_i, &Density_n_j);
+  }
 }
