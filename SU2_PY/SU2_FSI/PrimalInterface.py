@@ -474,7 +474,7 @@ class Interface:
         #    scipy.io.savemat( './globalFluidIndex.mat', mdict={'globalFluidIndex': self.globalFluidIndex }) 
         #    scipy.io.savemat( './globalFluidCoordinates.mat', mdict={'globalFluidCoordinates': self.globalFluidCoordinates })
 
-    def transferFluidTractions(self, FluidSolver, SolidSolver, MLSSolver):
+    def transferFluidTractions(self, FluidSolver, SolidSolver, MLSSolver,FSI_iter):
         """
         Transfer fluid tractions.
         Gathers the fluid tractions from the interface into the root process.
@@ -597,6 +597,13 @@ class Interface:
                 SolidSolver.SetLoads(iVertex, self.globalSolidLoadX[iVertex],
                                               self.globalSolidLoadY[iVertex],
                                               self.globalSolidLoadZ[iVertex])
+
+            # write loadfile
+            # beam.SetLoads(107 , 0 , 0 ,350000.)
+            load_file = open("Solid_load_"+str(FSI_iter)+".dat", "w")
+            for iVertex in range(0, self.nSolidInterfaceNodes):
+               load_file.write("beam.SetLoads( " + str(iVertex) + " , " + str(self.globalSolidLoadX[iVertex]) + " , " + str(self.globalSolidLoadY[iVertex]) + " , " + str(self.globalSolidLoadZ[iVertex]) + " )\n")
+            load_file.close()
 
     def transferStructuralDisplacements(self, FSIConfig, FluidSolver, SolidSolver, MLSSolver):
         """
@@ -803,7 +810,7 @@ class Interface:
             # --- Surface fluid loads interpolation and communication ---#
             self.MPIPrint('\n##### Transferring fluid tractions to the beam solver\n')
             self.MPIBarrier()
-            self.transferFluidTractions(FluidSolver, SolidSolver, MLSSolver)
+            self.transferFluidTractions(FluidSolver, SolidSolver, MLSSolver,self.FSIIter)
 
             if nFSIIter !=1:  # if the analysis we are running is not rigid (which means nFSIIter =1)
                # --- Solid solver call for FSI subiteration --- #
