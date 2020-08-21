@@ -447,7 +447,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   if (tkeNeeded) {
-    invP_Tensor[nVar][nVar-1] = RoeTkes;
+    invP_Tensor[nVar][nVar-1] = RoeTke;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
