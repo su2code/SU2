@@ -327,8 +327,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
         else {
           su2double OneVec[2] = {1.0};
-          numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
-                               bad_edge ? ZeroVec : OneVec);
+          // numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
+          //                      bad_edge ? ZeroVec : OneVec);
+          numerics->SetLimiter(OneVec, 
+                               OneVec);
         }
       }
 
