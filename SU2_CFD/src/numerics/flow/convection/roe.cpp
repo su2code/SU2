@@ -353,11 +353,12 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     Epsilon[nVar] = 4.0*max(0.0, max(Lambda[nVar]-ProjVelocity_i,ProjVelocity_j-Lambda[nVar]));
   }
 
- for (iVar = 0; iVar < nPrimVarTot; iVar++)
-   if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-     Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
-   else
-     Lambda[iVar] = fabs(Lambda[iVar]);
+  for (iVar = 0; iVar < nPrimVarTot; iVar++) {
+    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+      Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
+    else
+      Lambda[iVar] = fabs(Lambda[iVar]);
+  }
 
   /*--- Reconstruct conservative variables ---*/
 
