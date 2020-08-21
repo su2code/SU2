@@ -430,6 +430,13 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("TAU_WALL-Z", "Tau_Wall_z", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
   }
 
+  // Mesh Quality
+  if (config->GetWrt_MeshQuality()) {
+    AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality value");
+    AddVolumeOutput("ASPECT_RATIO", "Aspect_Ratio", "MESH_QUALITY", "Aspect Ratio value");
+    AddVolumeOutput("VOLUME_RATIO", "Volume_Ratio", "MESH_QUALITY", "Volume Ratio value");
+  }
+
   if (config->GetTime_Domain()){
     SetTimeAveragedFields(config);
   }
@@ -591,6 +598,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("TAU_WALL-Y", iPoint, Node_Flow->GetTauWallDir(iPoint,1));
     if (nDim == 3)
       SetVolumeOutputValue("TAU_WALL-Z", iPoint, Node_Flow->GetTauWallDir(iPoint,2));
+  }
+
+  if (config->GetWrt_MeshQuality()){
+    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
+    SetVolumeOutputValue("ASPECT_RATIO", iPoint, geometry->Aspect_Ratio[iPoint]);
+    SetVolumeOutputValue("VOLUME_RATIO", iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
   if (config->GetTime_Domain()){
