@@ -359,7 +359,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
  for (iVar = 0; iVar < nPrimVarTot; iVar++)
    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-     Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+     Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon[iVar]);
    else
      Lambda[iVar] = fabs(Lambda[iVar]);
 
@@ -451,7 +451,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nPrimVarTot; iVar++)
     Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
 
   /*--- Low dissipation formulation ---*/
@@ -463,7 +463,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Standard Roe "dissipation" ---*/
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
+    for (jVar = 0; jVar < nPrimVarTot; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
       for (kVar = 0; kVar < nPrimVarTot; kVar++)
@@ -472,7 +472,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       /*--- Update residual and Jacobians ---*/
       val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*Dissipation_ij;
 
-      if(implicit){
+      if(implicit && jVar < nVar){
         val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*Dissipation_ij;
         val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*Dissipation_ij;
       }
