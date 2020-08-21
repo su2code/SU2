@@ -313,10 +313,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
-  if (tkeNeeded) {
-    P_Tensor[nVar-1][nVar] = 0.5*(Gamma_Minus_One-TWO3)*RoeSqVel/(Gamma_Minus_One*RoeSoundSpeed2);
-  }
-
   /*--- Projected velocity adjusted for mesh motion ---*/
 
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -442,7 +438,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   if (tkeNeeded) {
-    invP_Tensor[nVar][nVar-1] = -RoeTke;
+    P_Tensor[nVar-1][nVar] = (Gamma_Minus_One-TWO3)/(Gamma_Minus_One*RoeSoundSpeed2);
+    invP_Tensor[nVar][nVar-1] = RoeTke;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
