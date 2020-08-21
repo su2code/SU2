@@ -671,16 +671,16 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
 
         /*--- Tke term ---*/
-        // if (sst) {
-        //   CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
-        //   const su2double F1_i = nodesTur->GetF1blending(iPoint);
-        //   const su2double F1_j = nodesTur->GetF1blending(jPoint);
-        //   const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
-        //   const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-        //   const su2double tke = nodesTur->GetPrimitive(iPoint,0);
-        //   Weight /= ConductivityOnR;
-        //   Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
-        // }
+        if (sst) {
+          CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+          const su2double F1_i = nodesTur->GetF1blending(iPoint);
+          const su2double F1_j = nodesTur->GetF1blending(jPoint);
+          const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
+          const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
+          const su2double tke = nodesTur->GetPrimitive(iPoint,0);
+          Weight /= ConductivityOnR;
+          Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
+        }
       }// iVertex
     }// iMarker
 
@@ -725,16 +725,16 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
 
     /*--- Tke term ---*/
-    // if (sst) {
-    //   CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
-    //   const su2double F1_i = nodesTur->GetF1blending(iPoint);
-    //   const su2double F1_j = nodesTur->GetF1blending(jPoint);
-    //   const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
-    //   const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-    //   const su2double tke = nodesTur->GetPrimitive(kPoint,0);
-    //   Weight /= ConductivityOnR;
-    //   Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
-    // }
+    if (sst) {
+      CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+      const su2double F1_i = nodesTur->GetF1blending(iPoint);
+      const su2double F1_j = nodesTur->GetF1blending(jPoint);
+      const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
+      const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
+      const su2double tke = nodesTur->GetPrimitive(kPoint,0);
+      Weight /= ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
+    }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
