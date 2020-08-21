@@ -272,7 +272,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  SoundSpeed_i = sqrt(fabs(Pressure_j*Gamma/Density_j));
+  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   /*--- Compute variables that are common to the derived schemes ---*/
 

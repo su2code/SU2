@@ -3299,7 +3299,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                              bad_j ? ZeroVec : Limiter_j);
       }
       else {
-        
         numerics->SetLimiter(bad_i ? ZeroVec : OneVec, 
                              bad_j ? ZeroVec : OneVec);
       }
@@ -3309,7 +3308,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetNodalPrimitive(V_i, V_j);
 
       /*--- Turbulent variables ---*/
-      
+
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
 
