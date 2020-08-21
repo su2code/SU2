@@ -314,7 +314,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, P_Tensor);
 
   if (tkeNeeded) {
-    P_Tensor[nVar-1][nVar] = (Gamma_Minus_One-TWO3)*RoeSqVel/(Gamma_Minus_One*RoeSoundSpeed2);
+    P_Tensor[nVar-1][nVar] = 0.5*(Gamma_Minus_One-TWO3)*RoeSqVel/(Gamma_Minus_One*RoeSoundSpeed2);
   }
 
   /*--- Projected velocity adjusted for mesh motion ---*/
