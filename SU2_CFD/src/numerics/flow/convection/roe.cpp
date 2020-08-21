@@ -438,8 +438,12 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   if (tkeNeeded) {
+    for (iVar = 0; iVar < nVar-1; iVar++) {
+      P_Tensor[iVar][nVar]      = 0.0;
+      invP_Tensor[nVar][iVar+1] = 0.0;
+    }
     P_Tensor[nVar-1][nVar] = (Gamma_Minus_One-TWO3)/Gamma_Minus_One;
-    invP_Tensor[nVar][0] = RoeTke;
+    invP_Tensor[nVar][0]   = RoeTke;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
