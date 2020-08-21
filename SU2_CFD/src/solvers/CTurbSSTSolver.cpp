@@ -551,8 +551,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         Jacobian_i[1][0] += Weight*gradom*Normal[iDim];
         Jacobian_i[1][1] += Weight*gradk*Normal[iDim];
       }// iDim
-      Jacobian_i[1][0] = min(Jacobian_i[1][0], 0.0);
-      Jacobian_i[1][1] = min(Jacobian_i[1][1], 0.0);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
     }// iNeigh
     
@@ -574,8 +572,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
           }// iDim
         }// iVertex
       }// iMarker
-      Jacobian_i[1][0] = min(Jacobian_i[1][0], 0.0);
-      Jacobian_i[1][1] = min(Jacobian_i[1][1], 0.0);
       Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     }// if physical boundary
 
