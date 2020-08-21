@@ -49,8 +49,8 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   Diff_U = new su2double [nPrimVarTot];
   ProjFlux_i = new su2double [nVar];
   ProjFlux_j = new su2double [nVar];
-  Conservatives_i = new su2double [nPrimVarTot];
-  Conservatives_j = new su2double [nPrimVarTot];
+  Conservatives_i = new su2double [nVar];
+  Conservatives_j = new su2double [nVar];
   Lambda = new su2double [nPrimVarTot];
   Epsilon = new su2double [nPrimVarTot];
   P_Tensor = new su2double* [nVar];
@@ -375,11 +375,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Conservatives_i[nDim+1] = Density_i*Energy_i;
   Conservatives_j[nDim+1] = Density_j*Energy_j;
 
-  if (tkeNeeded) {
-    Conservatives_i[nDim+2] = Density_i*turb_ke_i;
-    Conservatives_j[nDim+2] = Density_j*turb_ke_j;
-  }
-
   /*--- Compute left and right fluxes ---*/
 
   GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
@@ -451,7 +446,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
-  for (iVar = 0; iVar < nPrimVarTot; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
 
   /*--- Low dissipation formulation ---*/
@@ -463,7 +458,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Standard Roe "dissipation" ---*/
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nPrimVarTot; jVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
       for (kVar = 0; kVar < nPrimVarTot; kVar++)
@@ -472,7 +467,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       /*--- Update residual and Jacobians ---*/
       val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*Dissipation_ij;
 
-      if(implicit && jVar < nVar){
+      if(implicit){
         val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*Dissipation_ij;
         val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*Dissipation_ij;
       }
