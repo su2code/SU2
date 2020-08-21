@@ -139,6 +139,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
                 &Density_i, &Density_j, &Density_n_i, &Density_n_j);
   }
+
+  Jacobian_i[0][0] += Lambda; Jacobian_i[1][1] += Lambda;
+  Jacobian_j[0][0] -= Lambda; Jacobian_j[1][1] -= Lambda;
   
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
@@ -182,9 +185,15 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = ProjVel_i*Density_i*TurbVar_i[0]+ProjVel_j*Density_j*TurbVar_j[0]-Lambda*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
   Flux[1] = ProjVel_i*Density_i*TurbVar_i[1]+ProjVel_j*Density_j*TurbVar_j[1]-Lambda*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
 
-  Jacobian_i[0][0] = ProjVel_i+Lambda;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = ProjVel_i+Lambda;
+  // Jacobian_i[0][0] = ProjVel_i+Lambda;  Jacobian_i[0][1] = 0.0;
+  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = ProjVel_i+Lambda;
 
-  Jacobian_j[0][0] = ProjVel_j-Lambda;  Jacobian_j[0][1] = 0.0;
-  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = ProjVel_j-Lambda;
+  // Jacobian_j[0][0] = ProjVel_j-Lambda;  Jacobian_j[0][1] = 0.0;
+  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = ProjVel_j-Lambda;
+
+  Jacobian_i[0][0] = ProjVel_i;  Jacobian_i[0][1] = 0.0;
+  Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = ProjVel_i;
+
+  Jacobian_j[0][0] = ProjVel_j;  Jacobian_j[0][1] = 0.0;
+  Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = ProjVel_j;
 }
