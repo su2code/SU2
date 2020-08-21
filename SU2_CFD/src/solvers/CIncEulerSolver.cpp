@@ -66,7 +66,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
     auto filename_ = config->GetSolution_FileName();
-    cout<<filename_<<"\t from construtor"<<endl;
 
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
@@ -78,7 +77,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
       filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
-      cout<<filename_<<"\t from construtor if cond"<<endl;;
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/

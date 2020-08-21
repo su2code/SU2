@@ -2449,14 +2449,11 @@ void CPBIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solv
       LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (config->GetTime_Marching() == DT_STEPPING_1ST)
-              Jacobian_i[iVar][jVar] = Volume_nP1 / TimeStep;
-            if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              Jacobian_i[iVar][jVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-          }
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
     }
