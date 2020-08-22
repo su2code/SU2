@@ -1791,6 +1791,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
+  /*!\brief HYBRID_CENTRAL_UPWIND \n DESCRIPTION: If a hybrid central upwind scheme should be used \ingroup Config*/
+  addBoolOption("HYBRID_CENTRAL_UPWIND", Hybrid_Central_Upwind, false);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);

@@ -533,7 +533,8 @@ private:
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  Use_Accurate_Jacobians,  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  Hybrid_Central_Upwind;   /*!< \brief Use of a hybrid central upwind scheme for WMLES/DDES. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
@@ -1284,7 +1285,7 @@ public:
    * \brief Constructor of the class which takes an istream buffer containing the config options.
    */
   CConfig(istream &case_buffer, unsigned short val_software, bool verb_high);
-  
+
   /*!
    * \brief Constructor of the class which reads the input file and uses default options from another config.
    */
@@ -1304,7 +1305,7 @@ public:
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
   /*!
   * \brief Initialize common fields of the config structure.
   */
@@ -4322,6 +4323,12 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!
+   * \brief Get whether to use Hybrid Central Upwind scheme for WMLES and DDES.
+   * \return yes/no.
+   */
+  bool GetHybrid_Central_Upwind(void) const { return Hybrid_Central_Upwind; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -8011,8 +8018,8 @@ public:
   /*!
    * \brief Set the config file parsing.
    */
-  void SetConfig_Parsing(istream &config_buffer);  
-  
+  void SetConfig_Parsing(istream &config_buffer);
+
   /*!
    * \brief Set the config file parsing.
    */
