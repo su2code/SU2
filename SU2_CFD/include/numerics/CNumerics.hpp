@@ -771,6 +771,10 @@ public:
                           su2double *val_normal, su2double val_scale,
                           su2double **val_Proj_Jac_tensor);
 
+  void GetInviscidProjFlux_KEEP(su2double *val_primitive_i, su2double *val_primitive_j,
+                                su2double *val_normal, su2double *val_Proj_Flux,
+                                su2double **val_Proj_Jac_tensor);
+
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
    * \param[in] val_density - Value of the density.
