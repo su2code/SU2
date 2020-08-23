@@ -101,8 +101,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   const bool wasActive = AD::BeginPassive();
   constexpr size_t MAXNVAR = 5;
 
-  su2double dFdV_i[MAXNVAR][MAXNVAR+1]  = {0.0},
-            dFdV_j[MAXNVAR][MAXNVAR+1]  = {0.0},
+  su2double dFdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
+            dFdV_j[MAXNVAR][MAXNVAR+1] = {0.0},
             dUdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
             dUdV_j[MAXNVAR][MAXNVAR+1] = {0.0},
             dVdU_i[MAXNVAR+1][MAXNVAR] = {0.0},
@@ -189,8 +189,6 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
   }
 
   /*--- Now multiply them all together ---*/
-
-  const unsigned short nPrimVarTot = nVar + tkeNeeded;
 
   for(unsigned short iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {

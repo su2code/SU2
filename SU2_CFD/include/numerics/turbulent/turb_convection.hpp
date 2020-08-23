@@ -59,7 +59,7 @@ protected:
   su2double muscl_kappa;
   bool muscl;
 
-  su2double R, R_Plus_One, RoeSqVel, RoeEnthalpy, RoeTke, RoeSoundSpeed2, RoeSoundSpeed;
+  su2double R, R_Plus_One, RoeSqVel, RoeEnthalpy, RoeTke, RoeOmega, RoeSoundSpeed2, RoeSoundSpeed;
 
   const bool implicit = false, incompressible = false, dynamic_grid = false;
 
