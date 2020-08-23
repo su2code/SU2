@@ -196,7 +196,7 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   const su2double Diss_rk = Lambda[0]+RoeTke*(Gamma_Minus_One-TWO3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
   const su2double Diss_ro = Lambda[0];
-  const su2double Diss_ro_rk = Lambda[0]+RoeOmega*(Gamma_Minus_One-TWO3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
+  const su2double Diss_ro_rk = RoeOmega*(Gamma_Minus_One-TWO3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
 
   Flux[0] = 0.5*(ProjVel_i*Density_i*TurbVar_i[0]+ProjVel_j*Density_j*TurbVar_j[0]-Diss_rk*Delta_rk)*Area;
   Flux[1] = 0.5*(ProjVel_i*Density_i*TurbVar_i[1]+ProjVel_j*Density_j*TurbVar_j[1]-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
