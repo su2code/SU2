@@ -924,7 +924,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
    Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-   if (CDkw_i > CDKW_MIN) Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   // if (CDkw_i > CDKW_MIN) Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
    // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
    // if (TurbVar_i[1] > VorticityMag*F2_i/a1)
    //   Jacobian_i[1][1] += -CrossDiff/(Density_i*zeta)*Volume;
