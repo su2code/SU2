@@ -129,25 +129,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     }
   }
 
-  RoeEnthalpy = (R*V_j[nDim+3]+V_i[nDim+3])/R_Plus_One;
-  RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/R_Plus_One;
-  RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])/R_Plus_One;
-  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
-  RoeSoundSpeed  = sqrt(RoeSoundSpeed2);
-
-  Lambda[1] = Lambda[0] + RoeSoundSpeed;
-  Lambda[2] = Lambda[0] - RoeSoundSpeed;
-
-  /*--- Harten and Hyman (1983) entropy correction ---*/
-
-  Epsilon[0] = 4.0*max(0.0, max(Lambda[0]-ProjVel_i, ProjVel_j-Lambda[0]));
-  Epsilon[1] = 4.0*max(0.0, max(Lambda[1]-(ProjVel_i+SoundSpeed_i),(ProjVel_j+SoundSpeed_j)-Lambda[1]));
-  Epsilon[2] = 4.0*max(0.0, max(Lambda[2]-(ProjVel_i-SoundSpeed_i),(ProjVel_j-SoundSpeed_j)-Lambda[2]));
-
-  for (auto iVar = 0; iVar < 3; iVar++)
-    Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
-                                                        : su2double(fabs(Lambda[iVar]));
-
   FinishResidualCalc(config);
   
   AD::SetPreaccOut(Flux, nVar);
@@ -188,6 +169,25 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
+
+  RoeEnthalpy = (R*V_j[nDim+3]+V_i[nDim+3])/R_Plus_One;
+  RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/R_Plus_One;
+  RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])/R_Plus_One;
+  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
+  RoeSoundSpeed  = sqrt(RoeSoundSpeed2);
+
+  Lambda[1] = Lambda[0] + RoeSoundSpeed;
+  Lambda[2] = Lambda[0] - RoeSoundSpeed;
+
+  /*--- Harten and Hyman (1983) entropy correction ---*/
+
+  Epsilon[0] = 4.0*max(0.0, max(Lambda[0]-ProjVel_i, ProjVel_j-Lambda[0]));
+  Epsilon[1] = 4.0*max(0.0, max(Lambda[1]-(ProjVel_i+SoundSpeed_i),(ProjVel_j+SoundSpeed_j)-Lambda[1]));
+  Epsilon[2] = 4.0*max(0.0, max(Lambda[2]-(ProjVel_i-SoundSpeed_i),(ProjVel_j-SoundSpeed_j)-Lambda[2]));
+
+  for (auto iVar = 0; iVar < 3; iVar++)
+    Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
+                                                        : su2double(fabs(Lambda[iVar]));
 
   const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
   const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
