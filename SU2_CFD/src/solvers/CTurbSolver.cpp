@@ -425,10 +425,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
     if (config->GetUse_Accurate_Turb_Jacobians()) {
-      const bool not_send_recv_i = (!geometry->node[iPoint]->GetBoundary()) || (geometry->node[iPoint]->GetPhysicalBoundary());
-      const bool not_send_recv_j = (!geometry->node[jPoint]->GetBoundary()) || (geometry->node[jPoint]->GetPhysicalBoundary());
-      if (not_send_recv_i) CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
-      if (not_send_recv_j) CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
+      CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
+      CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
     }
   }
   

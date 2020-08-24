@@ -413,10 +413,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
       if (config->GetUse_Accurate_Visc_Jacobians()) {
-        const bool not_send_recv_i = (!geometry->node[iPoint]->GetBoundary()) || (geometry->node[iPoint]->GetPhysicalBoundary());
-        const bool not_send_recv_j = (!geometry->node[jPoint]->GetBoundary()) || (geometry->node[jPoint]->GetPhysicalBoundary());
-        if (not_send_recv_i) CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
-        if (not_send_recv_j) CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
       }
     }
   }
@@ -508,22 +506,24 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
     const su2double Weight = -0.5*HalfOnVol*sign;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      if (iVertex != -1) {
-        const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex != -1) {
+          const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        /*--- Get new projection vector to be multiplied by divergence terms ---*/
-        ProjVec = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          ProjVec += Vec[iDim]*SurfNormal[iDim];
+          /*--- Get new projection vector to be multiplied by divergence terms ---*/
+          ProjVec = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            ProjVec += Vec[iDim]*SurfNormal[iDim];
 
-        /*--- Momentum flux Jacobian wrt momentum ---*/
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          for (auto jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(SurfNormal[iDim]*Vec[jDim] 
-                                              - TWO3*SurfNormal[jDim]*Vec[iDim] 
-                                              + delta[iDim][jDim]*ProjVec);
-      }// iVertex
+          /*--- Momentum flux Jacobian wrt momentum ---*/
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            for (auto jDim = 0; jDim < nDim; jDim++)
+              Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(SurfNormal[iDim]*Vec[jDim] 
+                                                - TWO3*SurfNormal[jDim]*Vec[iDim] 
+                                                + delta[iDim][jDim]*ProjVec);
+        }// iVertex
+      }// not send-receive
     }// iMarker
 
     /*--- Now get density and energy Jacobians for iPoint ---*/
@@ -652,38 +652,40 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
     /*--- Influence of boundary nodes ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      if (iVertex != -1) {
-        const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        if (iVertex != -1) {
+          const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        su2double Weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          Weight += SurfNormal[iDim]*Vec[iDim];
+          su2double Weight = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            Weight += SurfNormal[iDim]*Vec[iDim];
 
-        Weight *= -0.5*HalfOnVol*ConductivityOnR*sign;
+          Weight *= -0.5*HalfOnVol*ConductivityOnR*sign;
 
-        /*--- Density Jacobian ---*/
-        Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
+          /*--- Density Jacobian ---*/
+          Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
-        /*--- Momentum Jacobian ---*/
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(iPoint,jDim);
+          /*--- Momentum Jacobian ---*/
+          for (auto jDim = 0; jDim < nDim; jDim++)
+            Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(iPoint,jDim);
 
-        /*--- Energy Jacobian ---*/
-        Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
+          /*--- Energy Jacobian ---*/
+          Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
 
-        /*--- Tke term ---*/
-        if (sst) {
-          CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
-          const su2double F1_i = nodesTur->GetF1blending(iPoint);
-          const su2double F1_j = nodesTur->GetF1blending(jPoint);
-          const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
-          const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-          const su2double tke = nodesTur->GetPrimitive(iPoint,0);
-          Weight /= ConductivityOnR;
-          Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
-        }
-      }// iVertex
+          /*--- Tke term ---*/
+          if (sst) {
+            CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+            const su2double F1_i = nodesTur->GetF1blending(iPoint);
+            const su2double F1_j = nodesTur->GetF1blending(jPoint);
+            const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
+            const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
+            const su2double tke = nodesTur->GetPrimitive(iPoint,0);
+            Weight /= ConductivityOnR;
+            Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
+          }
+        }// iVertex
+      }// not send-receive
     }// iMarker
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
