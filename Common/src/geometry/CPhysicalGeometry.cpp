@@ -8822,7 +8822,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
       NormalFace = vertex[iMarker][iVertex]->GetNormal();
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
       Area = sqrt(Area);
-      if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
+      if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = numeric_limits<passivedouble>::epsilon();
     }
 
 }
