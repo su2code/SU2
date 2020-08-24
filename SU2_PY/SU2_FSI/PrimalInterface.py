@@ -450,7 +450,7 @@ class Interface:
 
             # Check the nodes which are on the symmetry plane in order to automatically put to 0 their displacements
             self.list_symmetry = []
-            for i in len(self.globalFluidCoordinates[:][1]):
+            for i in range(len(self.globalFluidCoordinates[:][1])):
                if self.globalFluidCoordinates[i][1] < 1.0e-15:
                    self.list_symmetry.append(i)
 
@@ -670,7 +670,7 @@ class Interface:
             self.globalFluidDispZ = MLSSolver.interpolation_matrix.dot(relaxedSolidDispZ)
 
             # set to 0 displacements on the symmetry plane (i.e. points belonging to both WING and SYMMETRY boundaries)
-            for i in len(self.list_symmetry):
+            for i in range(len(self.list_symmetry)):
                 x = self.list_symmetry(i)
                 self.globalFluidDispX[x] = 0.0
                 self.globalFluidDispY[x] = 0.0
