@@ -671,7 +671,7 @@ class Interface:
 
             # set to 0 displacements on the symmetry plane (i.e. points belonging to both WING and SYMMETRY boundaries)
             for i in range(len(self.list_symmetry)):
-                x = self.list_symmetry(i)
+                x = self.list_symmetry[i]
                 self.globalFluidDispX[x] = 0.0
                 self.globalFluidDispY[x] = 0.0
                 self.globalFluidDispZ[x] = 0.0
