@@ -521,7 +521,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim];
 
       Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+      // Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
 
     }// iNeigh
 
