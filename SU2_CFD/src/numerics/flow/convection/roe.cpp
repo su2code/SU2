@@ -441,7 +441,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       P_Tensor[iVar][nVar]      = 0.0;
       invP_Tensor[nVar][iVar+1] = 0.0;
     }
-    P_Tensor[nVar-1][nVar] = (Gamma_Minus_One-TWO3)/Gamma_Minus_One;
+    P_Tensor[nVar-1][nVar] = Gamma_Minus_One-TWO3;
     invP_Tensor[nVar][0]   = RoeTke;
   }
 
