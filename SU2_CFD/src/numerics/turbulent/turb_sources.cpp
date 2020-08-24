@@ -880,11 +880,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    }
     
     pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-    // pw = min(pw, 20.*beta_star*TurbVar_i[1]*zeta)*alfa_blended*Density_i;
-    pw = alfa_blended*Density_i*pw;
+    pw = min(pw, 20.*beta_star*TurbVar_i[1]*zeta)*alfa_blended*Density_i;
     
-    // pk = max(pk, 0.0);
-    // pw = alfa_blended*Density_i*max(pw, 0.0);/
+    pk = max(pk, 0.0);
+    pw = max(pw, 0.0);
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
