@@ -881,9 +881,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     
     pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     // pw = min(pw, 20.*beta_star*TurbVar_i[1]*zeta)*alfa_blended*Density_i;
+    pw = alfa_blended*Density_i*pw;
     
-    pk = max(pk, 0.0);
-    pw = alfa_blended*Density_i*max(pw, 0.0);
+    // pk = max(pk, 0.0);
+    // pw = alfa_blended*Density_i*max(pw, 0.0);/
     
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
@@ -913,11 +914,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /*--- Cross diffusion ---*/
 
    Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-   // su2double CrossDiff = 0.;
-   // for (auto iDim = 0; iDim < nDim; iDim++)
-   //  CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-   // CrossDiff *= 2.0*Density_i*sigma_omega_2*(1.0 - F1_i)/zeta;
-   // Residual[1] += CrossDiff*Volume;
 
    /*--- Implicit part ---*/
 
@@ -928,8 +924,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
    // if (CDkw_i > CDKW_MIN) Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
    Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
-   // if (TurbVar_i[1] > VorticityMag*F2_i/a1)
-   //   Jacobian_i[1][1] += -CrossDiff/(Density_i*zeta)*Volume;
 
   }
   
