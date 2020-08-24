@@ -737,7 +737,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-    // Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
   }// iNeigh
   
 }
