@@ -189,6 +189,8 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
     Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
                                                         : su2double(fabs(Lambda[iVar]));
 
+  /*--- Intermediate variables ---*/
+
   const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
   const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
 
@@ -205,11 +207,9 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[1] = 0.5*(rov_i+rov_j-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
 
   Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk)*Area;  Jacobian_i[0][1] = 0.0;
-  // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;
   Jacobian_i[1][0] = 0.5*Diss_ro_rk*Area; Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;
 
   Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;  Jacobian_j[0][1] = 0.0;
-  // Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
   Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
 
   if (muscl) {
