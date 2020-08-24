@@ -500,7 +500,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      const bool not_send_recv_i = (!node[iPoint]->GetBoundary()) || (node[iPoint]->GetPhysicalBoundary());
+      const bool not_send_recv_i = (!geometry->node[iPoint]->GetBoundary()) || (geometry->node[iPoint]->GetPhysicalBoundary());
       if (config->GetUse_Accurate_Turb_Jacobians() && not_send_recv_i)
         CrossDiffusionJacobian(geometry, solver, config, iPoint);
       

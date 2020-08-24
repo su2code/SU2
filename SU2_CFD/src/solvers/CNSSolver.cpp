@@ -413,8 +413,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
       if (config->GetUse_Accurate_Visc_Jacobians()) {
-        const bool not_send_recv_i = (!node[iPoint]->GetBoundary()) || (node[iPoint]->GetPhysicalBoundary());
-        const bool not_send_recv_j = (!node[jPoint]->GetBoundary()) || (node[jPoint]->GetPhysicalBoundary());
+        const bool not_send_recv_i = (!geometry->node[iPoint]->GetBoundary()) || (geometry->node[iPoint]->GetPhysicalBoundary());
+        const bool not_send_recv_j = (!geometry->node[jPoint]->GetBoundary()) || (geometry->node[jPoint]->GetPhysicalBoundary());
         if (not_send_recv_i) CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
         if (not_send_recv_j) CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
       }
