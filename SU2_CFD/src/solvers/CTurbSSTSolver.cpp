@@ -177,10 +177,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
   /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = kine_Inf;
+  lowerlimit[0] = rhoInf*kine_Inf;
   upperlimit[0] = 1.0e15;
 
-  lowerlimit[1] = omega_Inf*1.0e-3;
+  lowerlimit[1] = rhoInf*omega_Inf*1.0e-3;
   upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
