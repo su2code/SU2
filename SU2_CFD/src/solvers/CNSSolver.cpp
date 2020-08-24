@@ -692,53 +692,53 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  // for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-  //   for (auto iVar = 0; iVar < nVar; iVar++)
-  //     for (auto jVar = 0; jVar < nVar; jVar++)
-  //       Jacobian_i[iVar][jVar] = 0.0;
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
       
-  //   auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-  //   const su2double Vel2     = nodes->GetVelocity2(kPoint);
-  //   const su2double Density  = nodes->GetDensity(kPoint);
-  //   const su2double Pressure = nodes->GetPressure(kPoint);
-  //   const su2double Phi      = Gamma_Minus_One/Density;
-  //   auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-  //   const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
-  //   const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+    const su2double Vel2     = nodes->GetVelocity2(kPoint);
+    const su2double Density  = nodes->GetDensity(kPoint);
+    const su2double Pressure = nodes->GetPressure(kPoint);
+    const su2double Phi      = Gamma_Minus_One/Density;
+    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+    const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
+    const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
 
-  //   su2double Weight = 0.0;
-  //   for (auto iDim = 0; iDim < nDim; iDim++)
-  //     Weight += VolNormal[iDim]*Vec[iDim];
+    su2double Weight = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      Weight += VolNormal[iDim]*Vec[iDim];
 
-  //   Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
+    Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
 
-  //   /*--- Density Jacobian ---*/
-  //   Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
+    /*--- Density Jacobian ---*/
+    Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
-  //   /*--- Momentum Jacobian ---*/
-  //   for (auto jDim = 0; jDim < nDim; jDim++)
-  //     Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(kPoint,jDim);
+    /*--- Momentum Jacobian ---*/
+    for (auto jDim = 0; jDim < nDim; jDim++)
+      Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(kPoint,jDim);
 
-  //   /*--- Energy Jacobian ---*/
-  //   Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
+    /*--- Energy Jacobian ---*/
+    Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
 
-  //   /*--- Tke term ---*/
-  //   if (sst) {
-  //     CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
-  //     const su2double F1_i = nodesTur->GetF1blending(iPoint);
-  //     const su2double F1_j = nodesTur->GetF1blending(jPoint);
-  //     const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
-  //     const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-  //     const su2double tke = nodesTur->GetPrimitive(kPoint,0);
-  //     Weight /= ConductivityOnR;
-  //     Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
-  //   }
+    /*--- Tke term ---*/
+    if (sst) {
+      CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+      const su2double F1_i = nodesTur->GetF1blending(iPoint);
+      const su2double F1_j = nodesTur->GetF1blending(jPoint);
+      const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
+      const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
+      const su2double tke = nodesTur->GetPrimitive(kPoint,0);
+      Weight /= ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
+    }
 
-  //   Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-  //   Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
-  // }// iNeigh
+    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+  }// iNeigh
   
 }
 
