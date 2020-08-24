@@ -158,13 +158,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
   // constants[8] = 5.0/9.0; //alfa_1
   // constants[9] = 0.44;    //alfa_2
-      
-  /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
-  upperlimit[0] = 1.0e15;
-
-  lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
-  upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
@@ -182,6 +175,13 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   kine_Inf  = 1.5*VelMag*VelMag*Intensity*Intensity;
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+
+  /*--- Initialize lower and upper limits---*/
+  lowerlimit[0] = kine_Inf;
+  upperlimit[0] = 1.0e15;
+
+  lowerlimit[1] = omega_Inf*1.0e-3;
+  upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;  
@@ -310,8 +310,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- Clip omega ---*/
   const su2double eps = numeric_limits<passivedouble>::epsilon();
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) 
-    nodes->SetSolution(iPoint,1,max(nodes->GetSolution(iPoint,1), solver[FLOW_SOL]->GetNodes()->GetDensity(iPoint)*eps));
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVr < nVar; iVar++)
+    nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), lowerlimit[iVar]));
   
   SetPrimitive_Variables(solver);
   
