@@ -51,14 +51,12 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
 CUpwScalar::~CUpwScalar(void) {
 
   delete [] Flux;
-  if (Jacobian_i != nullptr) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      delete [] Jacobian_i[iVar];
-      delete [] Jacobian_j[iVar];
-    }
-    delete [] Jacobian_i;
-    delete [] Jacobian_j;
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
   }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
 }
 
 void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
@@ -194,12 +192,17 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
   const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
 
+  const su2double rkv_i = ProjVel_i*Density_i*TurbVar_i[0];
+  const su2double rkv_j = ProjVel_j*Density_j*TurbVar_j[0];
+  const su2double rov_i = ProjVel_i*Density_i*TurbVar_i[1];
+  const su2double rov_j = ProjVel_j*Density_j*TurbVar_j[1];
+
   const su2double Diss_rk = Lambda[0]+RoeTke*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
   const su2double Diss_ro = Lambda[0];
   const su2double Diss_ro_rk = RoeOmega*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
 
-  Flux[0] = 0.5*(ProjVel_i*Density_i*TurbVar_i[0]+ProjVel_j*Density_j*TurbVar_j[0]-Diss_rk*Delta_rk)*Area;
-  Flux[1] = 0.5*(ProjVel_i*Density_i*TurbVar_i[1]+ProjVel_j*Density_j*TurbVar_j[1]-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
+  Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk*Delta_rk)*Area;
+  Flux[1] = 0.5*(rov_i+rov_j-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
 
   Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk)*Area;  Jacobian_i[0][1] = 0.0;
   // Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;
