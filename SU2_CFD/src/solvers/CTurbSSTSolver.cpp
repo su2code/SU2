@@ -309,10 +309,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   const bool edge_limiter_turb  = config->GetEdgeLimiter_Turb();
 
   /*--- Clip omega ---*/
-  // const su2double eps = numeric_limits<passivedouble>::epsilon();
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   for (auto iVar = 0; iVar < nVar; iVar++)
-  //     nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), lowerlimit[iVar]));
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), lowerlimit[iVar]));
   
   SetPrimitive_Variables(solver);
   
