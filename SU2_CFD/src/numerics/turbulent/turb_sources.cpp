@@ -874,7 +874,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      else if (pw > 20.*beta_star*TurbVar_i[1]*zeta) {
        Jacobian_i[1][1] = 20.*beta_star*alfa_blended*zeta*Volume;
        if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
-        Jacobian_i[1][1] *= 2.0;
+        Jacobian_i[1][1] *= 2.;
      }
    }
     
@@ -924,7 +924,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
    Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-   Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
    // if (CDkw_i > CDKW_MIN) Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
    // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
    // if (TurbVar_i[1] > VorticityMag*F2_i/a1)
