@@ -573,10 +573,12 @@ void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_
 void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2double *k,
                            const su2double *c, const su2double *n, su2double **p) {
 
-  su2double c2, alpha, phi2, theta, g;
+  su2double c2, alpha, kappa, phi2, theta;
 
   c2    = pow(*c,2);
   alpha = 1.0/(2.*c2);
+  kappa = kappa/Gamma_Minus_One;
+
 
   if (nDim == 2) {
     phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]);
@@ -597,10 +599,10 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[2][2] = alpha*(v[1]+(*c)*n[1]);
     p[2][3] = alpha*(v[1]-(*c)*n[1]);
 
-    p[3][0] = (phi2)/Gamma_Minus_One-(Gamma - FIVE3)*(*k);
+    p[3][0] = (phi2)/Gamma_Minus_One-kappa;
     p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[3][2] = alpha*((phi2+c2)/Gamma_Minus_One-(Gamma - FIVE3)*(*k)+(*c)*theta);
-    p[3][3] = alpha*((phi2+c2)/Gamma_Minus_One-(Gamma - FIVE3)*(*k)-(*c)*theta);
+    p[3][2] = alpha*((phi2+c2)/Gamma_Minus_One-kappa+(*c)*theta);
+    p[3][3] = alpha*((phi2+c2)/Gamma_Minus_One-kappa-(*c)*theta);
   }
   else {
     phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
@@ -630,11 +632,11 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[3][3] = alpha*(v[2]+(*c)*n[2]);
     p[2][4] = alpha*(v[2]-(*c)*n[2]);
 
-    p[4][0] = (phi2/Gamma_Minus_One-(Gamma - FIVE3)*(*k))*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    p[4][1] = (phi2/Gamma_Minus_One-(Gamma - FIVE3)*(*k))*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    p[4][2] = (phi2/Gamma_Minus_One-(Gamma - FIVE3)*(*k))*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[4][3] = alpha*((phi2+c2)/Gamma_Minus_One-(Gamma - FIVE3)*(*k)+(*c)*theta);
-    p[4][4] = alpha*((phi2+c2)/Gamma_Minus_One-(Gamma - FIVE3)*(*k)-(*c)*theta);
+    p[4][0] = (phi2/Gamma_Minus_One-kappa)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    p[4][1] = (phi2/Gamma_Minus_One-kappa)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    p[4][2] = (phi2/Gamma_Minus_One-kappa)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    p[4][3] = alpha*((phi2+c2)/Gamma_Minus_One-kappa+(*c)*theta);
+    p[4][4] = alpha*((phi2+c2)/Gamma_Minus_One-kappa-(*c)*theta);
   }
 
 }
