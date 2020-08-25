@@ -807,10 +807,6 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     Eddy_Viscosity_i = V_i[nDim+6];
   }
 
-  unsigned short iDim, jDim;
-  su2double alfa_blended, beta_blended;
-  su2double diverg, pk = 0., pw = 0.;
-
   Residual[0] = 0.0;       Residual[1] = 0.0;
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
   Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
@@ -819,13 +815,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
     /*--- Computation of blended constants for the source terms---*/
 
-    alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
-    beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
+    const su2double alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
+    const su2double beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
 
    /*--- Production ---*/
 
-   diverg = 0.0;
-   for (iDim = 0; iDim < nDim; iDim++)
+  su2double diverg = 0., pk = 0., pw = 0.;
+   for (auto iDim = 0; iDim < nDim; iDim++)
      diverg += PrimVar_Grad_i[iDim+1][iDim];
     
    const su2double zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
@@ -847,8 +843,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
        
      /*--- k production Jacobian ---*/
      Jacobian_i[0][0] -= TWO3*Volume*max(diverg,0.0);
-     if ((TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
-       Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+     // if ((TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
+     //   Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
 
      // if ((pk >= 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
      //   Jacobian_i[0][0] += S2/zeta-TWO3*diverg*Volume;
