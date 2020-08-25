@@ -287,15 +287,16 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         const bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
 
         su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
+        su2double R_Plus_One = R+1.;
         su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/(R+1);
+          su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/R_Plus_One;
           RoeSqVel += pow(RoeVelocity, 2);
           SqVel_i += pow(flowPrimVar_i[iDim+1],2);
           SqVel_j += pow(flowPrimVar_j[iDim+1],2);
         }
-        su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/(R+1);
-        su2double RoeTke = (R*solution_j[0]+solution_i[0])/(R+1);
+        su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/R_Plus_One;
+        su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
 
         const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 

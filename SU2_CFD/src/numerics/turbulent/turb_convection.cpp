@@ -174,54 +174,71 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/R_Plus_One;
   RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])/R_Plus_One;
   RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
-  RoeSoundSpeed  = sqrt(RoeSoundSpeed2);
 
-  Lambda[1] = Lambda[0] + RoeSoundSpeed;
-  Lambda[2] = Lambda[0] - RoeSoundSpeed;
+  /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
-  /*--- Harten and Hyman (1983) entropy correction ---*/
+  if (RoeSoundSpeed2 <= 0.0) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Flux[iVar] = 0.0;
+      if (implicit){
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.0;
+          Jacobian_j[iVar][jVar] = 0.0;
+        }
+      }
+    }
+  }
 
-  Epsilon[0] = 4.0*max(0.0, max(Lambda[0]-ProjVel_i, ProjVel_j-Lambda[0]));
-  Epsilon[1] = 4.0*max(0.0, max(Lambda[1]-(ProjVel_i+SoundSpeed_i),(ProjVel_j+SoundSpeed_j)-Lambda[1]));
-  Epsilon[2] = 4.0*max(0.0, max(Lambda[2]-(ProjVel_i-SoundSpeed_i),(ProjVel_j-SoundSpeed_j)-Lambda[2]));
+  else {
+    RoeSoundSpeed  = sqrt(RoeSoundSpeed2);
 
-  for (auto iVar = 0; iVar < 3; iVar++)
-    Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
-                                                        : su2double(fabs(Lambda[iVar]));
+    Lambda[1] = Lambda[0] + RoeSoundSpeed;
+    Lambda[2] = Lambda[0] - RoeSoundSpeed;
 
-  /*--- Intermediate variables ---*/
+    /*--- Harten and Hyman (1983) entropy correction ---*/
 
-  const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
-  const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
+    Epsilon[0] = 4.0*max(0.0, max(Lambda[0]-ProjVel_i, ProjVel_j-Lambda[0]));
+    Epsilon[1] = 4.0*max(0.0, max(Lambda[1]-(ProjVel_i+SoundSpeed_i),(ProjVel_j+SoundSpeed_j)-Lambda[1]));
+    Epsilon[2] = 4.0*max(0.0, max(Lambda[2]-(ProjVel_i-SoundSpeed_i),(ProjVel_j-SoundSpeed_j)-Lambda[2]));
 
-  const su2double rkv_i = ProjVel_i*Density_i*TurbVar_i[0];
-  const su2double rkv_j = ProjVel_j*Density_j*TurbVar_j[0];
-  const su2double rov_i = ProjVel_i*Density_i*TurbVar_i[1];
-  const su2double rov_j = ProjVel_j*Density_j*TurbVar_j[1];
+    for (auto iVar = 0; iVar < 3; iVar++)
+      Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
+                                                          : su2double(fabs(Lambda[iVar]));
 
-  const su2double Diss_rk = Lambda[0]+RoeTke*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
-  const su2double Diss_ro = Lambda[0];
-  const su2double Diss_ro_rk = RoeOmega*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
+    /*--- Intermediate variables ---*/
 
-  Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk*Delta_rk)*Area;
-  Flux[1] = 0.5*(rov_i+rov_j-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
+    const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
+    const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
 
-  Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk)*Area;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.5*Diss_ro_rk*Area; Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;
+    const su2double rkv_i = ProjVel_i*Density_i*TurbVar_i[0];
+    const su2double rkv_j = ProjVel_j*Density_j*TurbVar_j[0];
+    const su2double rov_i = ProjVel_i*Density_i*TurbVar_i[1];
+    const su2double rov_j = ProjVel_j*Density_j*TurbVar_j[1];
 
-  Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;  Jacobian_j[0][1] = 0.0;
-  Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
+    const su2double Diss_rk = Lambda[0]+RoeTke*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
+    const su2double Diss_ro = Lambda[0];
+    const su2double Diss_ro_rk = RoeOmega*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
 
-  if (muscl) {
+    Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk*Delta_rk)*Area;
+    Flux[1] = 0.5*(rov_i+rov_j-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
 
-    /*--- Extract nodal values ---*/
+    Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk)*Area;  Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.5*Diss_ro_rk*Area; Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;
 
-    const su2double Density_n_i = Vn_i[nDim+2];
-    const su2double Density_n_j = Vn_j[nDim+2];
+    Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;  Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
 
-    /*--- Compute Jacobian wrt extrapolation ---*/
+    if (muscl) {
 
-    GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
-                &Density_i, &Density_j, &Density_n_i, &Density_n_j);
+      /*--- Extract nodal values ---*/
+
+      const su2double Density_n_i = Vn_i[nDim+2];
+      const su2double Density_n_j = Vn_j[nDim+2];
+
+      /*--- Compute Jacobian wrt extrapolation ---*/
+
+      GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
+                  &Density_i, &Density_j, &Density_n_i, &Density_n_j);
+    }
   }
 }
