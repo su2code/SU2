@@ -388,25 +388,17 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
     
     const su2double rho = flowNodes->GetDensity(iPoint);
     const su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
-
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
-
-    const su2double *Vorticity   = flowNodes->GetVorticity(iPoint);
-    const su2double VorticityMag = sqrt(Vorticity[0]*Vorticity[0] +
-                                        Vorticity[1]*Vorticity[1] +
-                                        Vorticity[2]*Vorticity[2]);
-
-    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
         
     nodes->SetBlendingFunc(iPoint, mu, dist, rho, cdkw_max);
 
-    const su2double F2 = nodes->GetF2blending(iPoint);
-
     /*--- Compute the eddy viscosity ---*/
+
+    const su2double F2 = nodes->GetF2blending(iPoint);
+    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    // const su2double zeta  = max(omega, VorticityMag*F2/a1);
     const su2double zeta  = max(omega, StrainMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
@@ -522,8 +514,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      // if (config->GetUse_Accurate_Turb_Jacobians())
-      //   CrossDiffusionJacobian(geometry, solver, config, iPoint);
+      if (config->GetUse_Accurate_Turb_Jacobians())
+        CrossDiffusionJacobian(geometry, solver, config, iPoint);
       
     }// if dist
 
