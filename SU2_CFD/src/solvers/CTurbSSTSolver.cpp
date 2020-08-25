@@ -181,8 +181,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
   upperlimit[0] = 1.0e15;
 
-  // lowerlimit[1] = rhoInf*omega_Inf*1.0e-3;
-  lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
+  lowerlimit[1] = rhoInf*omega_Inf*1.0e-3;
+  // lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
   upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
@@ -312,9 +312,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 
   /*--- Clip omega ---*/
   // const su2double eps = numeric_limits<passivedouble>::epsilon();
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), lowerlimit[iVar]));
+  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+  //   for (auto iVar = 0; iVar < nVar; iVar++)
+  //     nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), lowerlimit[iVar]));
   
   SetPrimitive_Variables(solver);
   

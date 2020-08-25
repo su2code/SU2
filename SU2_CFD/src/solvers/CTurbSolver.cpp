@@ -799,10 +799,10 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
           const su2double invratio = fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps);
           localUnderRelaxation = min(allowableRatio*invratio, localUnderRelaxation);
         }
-        // if (iVar == 1 && nodes->GetSolution(iPoint, iVar)+LinSysSol[index] < lowerlimit[iVar]) {
-        //   const su2double ratio = (nodes->GetSolution(iPoint, iVar)-lowerlimit[iVar])/(fabs(LinSysSol[index])+eps);
-        //   localUnderRelaxation = min(ratio, localUnderRelaxation);
-        // }
+        if (iVar == 1 && nodes->GetSolution(iPoint, iVar)+LinSysSol[index] < lowerlimit[iVar]) {
+          const su2double ratio = (nodes->GetSolution(iPoint, iVar)-lowerlimit[iVar])/(fabs(LinSysSol[index])+eps);
+          localUnderRelaxation = min(ratio, localUnderRelaxation);
+        }
       }
 
     }
