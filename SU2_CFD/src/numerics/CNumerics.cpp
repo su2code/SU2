@@ -372,17 +372,16 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
                                    const su2double *val_normal, const su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) const {
   const bool wasActive = AD::BeginPassive();
-  su2double sqvel, proj_vel, phi, a1, a2;
 
-  sqvel = 0.0; proj_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  su2double sqvel = 0.0, proj_vel = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     sqvel    += val_velocity[iDim]*val_velocity[iDim];
     proj_vel += val_velocity[iDim]*val_normal[iDim];
   }
 
-  phi = 0.5*Gamma_Minus_One*sqvel;
-  a1 = Gamma*(*val_energy)-phi-Gamma_Minus_One*(*val_tke);
-  a2 = Gamma_Minus_One;
+  const su2double phi = 0.5*Gamma_Minus_One*sqvel;
+  const su2double a1 = Gamma*(*val_energy)-phi-Gamma_Minus_One*(*val_tke);
+  const su2double a2 = Gamma_Minus_One;
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++)
