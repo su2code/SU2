@@ -751,8 +751,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- MPI solution ---*/
 
-    InitiateComms(geometry, config, SOLUTION_EDDY);
-    CompleteComms(geometry, config, SOLUTION_EDDY);
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
 
     /*--- Compute the root mean square residual ---*/
 
