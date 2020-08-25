@@ -92,14 +92,14 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val
   /*--- Note: Hellsten uses max CDkw in domain times 10^-8 as CDkw_min in arg1 for
               numerical stability. ---*/
   const su2double eps = numeric_limits<passivedouble>::epsilon();
-  const su2double cdkw_min = cdkw_max*1.0e-8;
+  // const su2double cdkw_min = cdkw_max*1.0e-8;
 
   /*--- F1 ---*/
 
   arg2A = sqrt(Primitive(iPoint,0))/(beta_star*Primitive(iPoint,1)*val_dist+eps);
   arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Primitive(iPoint,1)+eps);
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),cdkw_min)*val_dist*val_dist+eps));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Primitive(iPoint,0) / (max(CDkw(iPoint),CDKW_MIN)*val_dist*val_dist+eps));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
