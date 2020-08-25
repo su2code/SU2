@@ -525,7 +525,7 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim,
 CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
+  AD::SetPreaccIn(V_i, nDim+7);   AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
