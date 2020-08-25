@@ -548,7 +548,6 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  if ((!geometry->node[iPoint]->GetBoundary()) || (geometry->node[iPoint]->GetPhysicalBoundary()))
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
@@ -697,7 +696,6 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  if ((!geometry->node[iPoint]->GetBoundary()) || (geometry->node[iPoint]->GetPhysicalBoundary()))
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
