@@ -372,7 +372,6 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
                                    const su2double *val_normal, const su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) const {
   const bool wasActive = AD::BeginPassive();
-  unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
 
   sqvel = 0.0; proj_vel = 0.0;
@@ -386,20 +385,20 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   a2 = Gamma_Minus_One;
 
   val_Proj_Jac_Tensor[0][0] = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[0][iDim+1] = val_scale*val_normal[iDim];
   val_Proj_Jac_Tensor[0][nDim+1] = 0.0;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     val_Proj_Jac_Tensor[iDim+1][0] = val_scale*(val_normal[iDim]*phi - val_velocity[iDim]*proj_vel);
-    for (jDim = 0; jDim < nDim; jDim++)
+    for (auto jDim = 0; jDim < nDim; jDim++)
       val_Proj_Jac_Tensor[iDim+1][jDim+1] = val_scale*(val_normal[jDim]*val_velocity[iDim]-a2*val_normal[iDim]*val_velocity[jDim]);
     val_Proj_Jac_Tensor[iDim+1][iDim+1] += val_scale*proj_vel;
     val_Proj_Jac_Tensor[iDim+1][nDim+1] = val_scale*a2*val_normal[iDim];
   }
 
   val_Proj_Jac_Tensor[nDim+1][0] = val_scale*proj_vel*(phi-a1);
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
   AD::EndPassive(wasActive);
