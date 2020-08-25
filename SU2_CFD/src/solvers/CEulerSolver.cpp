@@ -3058,6 +3058,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
+  su2double ZeroVec[MAXNDIM+3] = {0.0};
+  su2double OneVec[MAXNDIM+3] = {1.0};
+
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -3292,8 +3295,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
-      su2double ZeroVec[MAXNDIM+3] = {0.0};
-      su2double OneVec[MAXNDIM+3] = {1.0};
       if (limiter) {
         numerics->SetLimiter(bad_i ? ZeroVec : Limiter_i, 
                              bad_j ? ZeroVec : Limiter_j);
