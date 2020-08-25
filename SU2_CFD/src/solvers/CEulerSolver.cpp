@@ -3281,8 +3281,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       nodes->SetNon_Physical(jPoint, bad_j);
 
       /*--- Get updated state, in case the point recovered after the set. ---*/
-      bad_i = nodes->GetNon_Physical(iPoint);
-      bad_j = nodes->GetNon_Physical(jPoint);
+      // bad_i = nodes->GetNon_Physical(iPoint);
+      // bad_j = nodes->GetNon_Physical(jPoint);
 
       counter_local += bad_i+bad_j;
 
