@@ -3118,8 +3118,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
         }
 
-        auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint);
-        auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint);
+        auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[0];
+        auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[0];
 
         su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
@@ -3136,8 +3136,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_j = -T_ij;
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[0][iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[0][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
         }
 
         /*--- Blend upwind and centered differences ---*/
