@@ -113,8 +113,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
-  const su2double ZeroVec[2] = {0.0};
-  const su2double OneVec[2]  = {0.0};
+  su2double ZeroVec[2] = {0.0};
+  su2double OneVec[2]  = {0.0};
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
