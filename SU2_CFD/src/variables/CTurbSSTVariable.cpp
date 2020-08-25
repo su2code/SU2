@@ -62,7 +62,6 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
 void CTurbSSTVariable::SetCrossDiff(unsigned long iPoint, const su2double val_density) {
   AD::StartPreacc();
-  AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
   AD::SetPreaccIn(Primitive[iPoint], nVar);
   AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
