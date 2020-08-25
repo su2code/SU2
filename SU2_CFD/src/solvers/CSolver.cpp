@@ -2507,7 +2507,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       NonLinRes_Counter = 0;
       unsigned short nVarTot = solverFlow->GetnVar();
       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-        nVarTot += solverTur->GetnVar();
+        nVarTot += solverTurb->GetnVar();
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         NonLinRes_Series[iCounter] = su2double(nVarTot);
