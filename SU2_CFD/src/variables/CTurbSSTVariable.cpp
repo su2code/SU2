@@ -89,6 +89,8 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val
   AD::SetPreaccIn(cdkw_max);
   AD::SetPreaccIn(CDkw(iPoint));
 
+  /*--- Note: Hellsten uses max CDkw in domain times 10^-8 for CDkw_min in arg1 for
+              numerical stability. ---*/
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double cdkw_min = cdkw_max*1.0e-8;
 
