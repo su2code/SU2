@@ -2454,10 +2454,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     if (config->GetInnerIter() == 0) {
       for (auto iVar = 0; iVar < nVar; iVar++)
-        solverFlow->SetRes_Ini(iVar) = solverFlow->GetRes_RMS(iVar);
+        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
         for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
-          solverTurb->SetRes_Ini(iVar) = solverTurb->GetRes_RMS(iVar);
+          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
       }
     }
 
