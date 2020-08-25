@@ -636,8 +636,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
-  if (sst) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity,
-                            Mean_Eddy_Viscosity);
+  if (sst) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
