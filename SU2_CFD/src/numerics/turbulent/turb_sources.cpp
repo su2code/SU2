@@ -809,18 +809,18 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   unsigned short iDim, jDim;
   su2double alfa_blended, beta_blended;
-  su2double diverg, pk = 0., pw = 0., zeta;
+  su2double diverg, pk = 0., pw = 0.;
 
   Residual[0] = 0.0;       Residual[1] = 0.0;
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
   Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
 
-  /*--- Computation of blended constants for the source terms---*/
-
-  alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
-  beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
-
   if (dist_i > 1e-10) {
+
+    /*--- Computation of blended constants for the source terms---*/
+
+    alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
+    beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
 
    /*--- Production ---*/
 

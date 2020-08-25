@@ -287,11 +287,9 @@ public:
    * \brief Compute the energy flux due to turbulent diffusivity
    * \param[in] val_gradturbvar - Gradient of the turbulent variables.
    * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
    */
   void SetTKEFluxVector(const su2double* val_gradturbvar,
-                        su2double val_laminar_viscosity,
-                        su2double val_eddy_viscosity);
+                        su2double val_laminar_viscosity);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector

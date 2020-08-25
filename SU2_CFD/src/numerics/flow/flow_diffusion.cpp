@@ -682,8 +682,7 @@ void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
 }
 
 void CAvgGrad_Flow::SetTKEFluxVector(const su2double* val_gradturbvar,
-                                     const su2double val_laminar_viscosity,
-                                     const su2double val_eddy_viscosity) {
+                                     const su2double val_laminar_viscosity) {
 
   sigma_k_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
   sigma_k_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
