@@ -154,9 +154,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     bool bad_i = false, bad_j = false;
 
-    if (muscl || musclFlow) {
-      su2double *TurbLim_i = nullptr, *TurbLim_j = nullptr;
-      su2double *FlowLim_i = nullptr, *FlowLim_j = nullptr;
+    if (muscl) {
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
       const auto Coord_i = geometry->node[iPoint]->GetCoord();
       const auto Coord_j = geometry->node[jPoint]->GetCoord();
@@ -175,8 +174,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
         if (limiter) {
-          TurbLim_i = nodes->GetLimiter(iPoint);
-          TurbLim_j = nodes->GetLimiter(jPoint);
+          Limiter_i = nodes->GetLimiter(iPoint);
+          Limiter_j = nodes->GetLimiter(jPoint);
         }
 
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -201,19 +200,19 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           if (limiter) {
             switch(config->GetKind_SlopeLimit_Turb()) {
               case VAN_ALBADA_EDGE:
-                TurbLim_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-                TurbLim_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
                 break;
               case PIPERNO:
-                TurbLim_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-                TurbLim_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
                 break;
             }
 
             /*--- Limit projection ---*/
 
-            Project_Grad_i *= TurbLim_i[iVar];
-            Project_Grad_j *= TurbLim_j[iVar];
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
           }
 
           solution_i[iVar] = T_i[iVar] + Project_Grad_i;
@@ -239,8 +238,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
         if (limiterFlow) {
-          FlowLim_i = flowNodes->GetLimiter_Primitive(iPoint);
-          FlowLim_j = flowNodes->GetLimiter_Primitive(jPoint);
+          Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+          Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
         }
 
         for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
@@ -265,19 +264,19 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           if (limiterFlow) {
             switch(config->GetKind_SlopeLimit_Flow()) {
               case VAN_ALBADA_EDGE:
-                FlowLim_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-                FlowLim_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
                 break;
               case PIPERNO:
-                FlowLim_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-                FlowLim_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
                 break;
             }
 
             /*--- Limit projection ---*/
 
-            Project_Grad_i *= FlowLim_i[iVar];
-            Project_Grad_j *= FlowLim_j[iVar];
+            Project_Grad_i *= Limiter_i[iVar];
+            Project_Grad_j *= Limiter_j[iVar];
           }
 
           flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
@@ -325,8 +324,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (muscl) {
         
         if (limiter) {
-          numerics->SetLimiter(bad_i ? ZeroVec : TurbLim_i, 
-                               bad_j ? ZeroVec : TurbLim_j);
+          numerics->SetLimiter(bad_i ? ZeroVec : nodes->GetLimiter(iPoint), 
+                               bad_j ? ZeroVec : nodes->GetLimiter(jPoint));
         }
         else {
           numerics->SetLimiter(bad_i ? ZeroVec : OneVec, 

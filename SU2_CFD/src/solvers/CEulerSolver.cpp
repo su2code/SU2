@@ -3296,8 +3296,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (limiter) {
-        numerics->SetLimiter(bad_i ? ZeroVec : Limiter_i, 
-                             bad_j ? ZeroVec : Limiter_j);
+        numerics->SetLimiter(bad_i ? ZeroVec : nodes->GetLimiter_Primitive(iPoint), 
+                             bad_j ? ZeroVec : nodes->GetLimiter_Primitive(jPoint));
       }
       else {
         numerics->SetLimiter(bad_i ? ZeroVec : OneVec, 
