@@ -343,7 +343,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
 void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     const su2double r  = flowNodes->GetDensity(iPoint);
@@ -377,7 +376,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&cdkw_max, &local_cdkw_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&local_cdkw_max, &cdkw_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
   cdkw_max = local_cdkw_max;
 #endif
