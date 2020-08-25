@@ -504,6 +504,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           To reduce extra communication overhead, we only consider nodes on
           the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
 
+    if ((!geometry->node[iPoint]->GetBoundar()) || (geometry->node[iPoint]->GetPhysicalBoundary()))
     for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
       for (auto iVar = 0; iVar < nVar; iVar++)
