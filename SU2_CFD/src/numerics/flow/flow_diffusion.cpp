@@ -534,8 +534,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(Volume_i);
   if (sst) {
-    AD::SetPreaccIn(TurbVar_Grad_i, 1, nDim);
-    AD::SetPreaccIn(TurbVar_Grad_j, 1, nDim);
+    AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
+    AD::SetPreaccIn(TurbVar_Grad_j[0], nDim);
     AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
   }
   
