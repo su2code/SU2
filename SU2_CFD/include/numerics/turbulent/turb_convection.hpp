@@ -74,7 +74,7 @@ protected:
    * \param[in/out] jac_{i/j} - Flux Jacobian wrt conservative at [face/node].
    * \param[in] lim_{i/j} - Slope limiter at node.
    * \param[in] r_{i/j} - Density at face.
-   * \param[in] r_{i/j} - Density at node.
+   * \param[in] r_n_{i/j} - Density at node.
    */
   void GetMUSCLJac(su2double **jac_i, su2double **jac_j,
                    const su2double *lim_i, const su2double *lim_j,

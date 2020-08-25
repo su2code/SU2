@@ -113,6 +113,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
+  const su2double ZeroVec[2] = {0.0};
+  const su2double OneVec[2]  = {0.0};
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -320,13 +323,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (muscl) {
-        su2double ZeroVec[2] = {0.0};
+        
         if (limiter) {
           numerics->SetLimiter(bad_i ? ZeroVec : TurbLim_i, 
                                bad_j ? ZeroVec : TurbLim_j);
         }
         else {
-          su2double OneVec[2] = {1.0};
           numerics->SetLimiter(bad_i ? ZeroVec : OneVec, 
                                bad_j ? ZeroVec : OneVec);
         }
