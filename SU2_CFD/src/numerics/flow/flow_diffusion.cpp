@@ -50,9 +50,9 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
-  if (sst) {
-    Mean_GradTurbVar = new su2double [nDim];
-  }
+  Mean_GradTurbVar = new su2double [nDim];
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Mean_GradTurbVar[iDim] = 0.0;
 
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
