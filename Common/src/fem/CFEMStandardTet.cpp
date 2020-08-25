@@ -45,7 +45,7 @@ CFEMStandardTet::CFEMStandardTet(const unsigned short val_nPoly,
 
   /*--- Determine the parametric location and weights of the
         integration rule of the tetrahedron. ---*/
-  vector<su2double> rTet, sTet, tTet, wTet;
+  vector<passivedouble> rTet, sTet, tTet, wTet;
   IntegrationPointsTetrahedron(rTet, sTet, tTet, wTet);
 
   /*--- Determine the total number of integration points

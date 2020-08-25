@@ -31,10 +31,10 @@
 /*         Protected member functions of CFEMStandardElementBase.                   */
 /*----------------------------------------------------------------------------------*/
 
-void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<su2double> &rTet,
-                                                           vector<su2double> &sTet,
-                                                           vector<su2double> &tTet,
-                                                           vector<su2double> &wTet) {
+void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<passivedouble> &rTet,
+                                                           vector<passivedouble> &sTet,
+                                                           vector<passivedouble> &tTet,
+                                                           vector<passivedouble> &wTet) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
@@ -67,10 +67,10 @@ void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<su2double> &rT
 
   /*--- Set the pointers to the data arrays of the variables just allocated, such
         that the names are shorter. This is useful for the code below. ---*/
-  su2double *r = rTet.data();
-  su2double *s = sTet.data();
-  su2double *t = tTet.data();
-  su2double *w = wTet.data();
+  passivedouble *r = rTet.data();
+  passivedouble *s = sTet.data();
+  passivedouble *t = tTet.data();
+  passivedouble *w = wTet.data();
 
   /*--- Set the data for the integration points, depending on the order.
         These integration rules are obtained with the open source program

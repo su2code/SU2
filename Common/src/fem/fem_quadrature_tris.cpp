@@ -31,9 +31,9 @@
 /*         Protected member functions of CFEMStandardElementBase.                   */
 /*----------------------------------------------------------------------------------*/
 
-void CFEMStandardElementBase::IntegrationPointsTriangle(vector<su2double> &rTriangle,
-                                                        vector<su2double> &sTriangle,
-                                                        vector<su2double> &wTriangle) {
+void CFEMStandardElementBase::IntegrationPointsTriangle(vector<passivedouble> &rTriangle,
+                                                        vector<passivedouble> &sTriangle,
+                                                        vector<passivedouble> &wTriangle) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
@@ -78,9 +78,9 @@ void CFEMStandardElementBase::IntegrationPointsTriangle(vector<su2double> &rTria
 
   /*--- Set the pointers to the data arrays of the variables just allocated, such
         that the names are shorter. This is useful for the code below. ---*/
-  su2double *r = rTriangle.data();
-  su2double *s = sTriangle.data();
-  su2double *w = wTriangle.data();
+  passivedouble *r = rTriangle.data();
+  passivedouble *s = sTriangle.data();
+  passivedouble *w = wTriangle.data();
 
   /*--- Set the data for the integration points, depending on the order.
         These integration rules come from the Matlab codes corresponding to

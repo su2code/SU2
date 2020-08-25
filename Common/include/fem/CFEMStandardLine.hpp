@@ -60,6 +60,13 @@ public:
    */
   virtual ~CFEMStandardLine() = default;
 
-private:
+protected:
 
+  vector<passivedouble> rLineDOFsEqui; /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when equidistant spacing is used. */
+  vector<passivedouble> rLineDOFsLGL;  /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when the LGL distribution is used. */
+  vector<passivedouble> rLineInt;      /*!< \brief 1D parametric coordinates of the
+                                                   integration points. */
+  vector<passivedouble> wLineInt;      /*!< \brief Weights of the 1D integration points. */
 };

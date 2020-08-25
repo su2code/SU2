@@ -43,8 +43,25 @@ CFEMStandardLine::CFEMStandardLine(const unsigned short val_nPoly,
   nDOFs    = (nPoly+1);
   nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
 
+  /*--- Determine the 1D parametric locations of the grid DOFs. ---*/
+  Location1DGridDOFsEquidistant(rLineDOFsEqui);
+  Location1DGridDOFsLGL(rLineDOFsLGL);
+
   /*--- Determine the total number of integration points
         and its padded version. ---*/
   nIntegration    = orderExact/2 + 1;
   nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Determine the location and the weights of the 1D integration points. ---*/
+  IntegrationPointsLine(nIntegration, rLineInt, wLineInt);
+
+  /*--- Allocate the memory for the padded number of integration points and
+        initialize the weights to zero. This is done such that the padded
+        values are initialized appropriately. ---*/
+  wIntegration.resize(nIntegrationPad);
+  wIntegration.setConstant(0.0);
+
+  /*--- Copy the values from wLineInt to wIntegration. ---*/
+  for(unsigned short i=0; i<nIntegration; ++i)
+    wIntegration(i) = wLineInt[i];
 }

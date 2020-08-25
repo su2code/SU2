@@ -65,11 +65,11 @@ protected:
   unsigned short nDOFs1D;   /*!< \brief Number of DOFs in one space direction. */
   unsigned short nInt1D;    /*!< \brief Number of integration points in one space direction. */
 
-  vector<su2double> rLineDOFsEqui; /*!< \brief 1D parametric coordinates of the grid
-                                               DOFs when equidistant spacing is used. */
-  vector<su2double> rLineDOFsLGL;  /*!< \brief 1D parametric coordinates of the grid
-                                               DOFs when the LGL distribution is used. */
-  vector<su2double> rLineInt;      /*!< \brief 1D parametric coordinates of the
-                                               integration points. */
-  vector<su2double> wLineInt;      /*!< \brief Weights of the 1D integration points. */
+  vector<passivedouble> rLineDOFsEqui; /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when equidistant spacing is used. */
+  vector<passivedouble> rLineDOFsLGL;  /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when the LGL distribution is used. */
+  vector<passivedouble> rLineInt;      /*!< \brief 1D parametric coordinates of the
+                                                   integration points. */
+  vector<passivedouble> wLineInt;      /*!< \brief Weights of the 1D integration points. */
 };

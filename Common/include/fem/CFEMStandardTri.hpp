@@ -60,6 +60,21 @@ public:
    */
   virtual ~CFEMStandardTri() = default;
 
-private:
+protected:
 
+  vector<passivedouble> rTriangleDOFsEqui; /*!< \brief Parametric r-coordinates of the triangle grid
+                                                       DOFs when equidistant spacing is used. */
+  vector<passivedouble> sTriangleDOFsEqui; /*!< \brief Parametric s-coordinates of the triangle grid
+                                                       DOFs when equidistant spacing is used. */
+  vector<passivedouble> rTriangleDOFsLGL;  /*!< \brief Parametric r-coordinates of the triangle grid
+                                                       DOFs when the LGL distribution is used. */
+  vector<passivedouble> sTriangleDOFsLGL;  /*!< \brief Parametric s-coordinates of the triangle grid
+                                                       DOFs when the LGL distribution is used. */
+
+  vector<passivedouble> rTriangleInt;      /*!< \brief Parametric r-coordinates of the integration
+                                                       points of the triangle. */
+  vector<passivedouble> sTriangleInt;      /*!< \brief Parametric s-coordinates of the integration
+                                                       points of the triangle. */
+  vector<passivedouble> wTriangleInt;      /*!< \brief Weights of the integration points of the
+                                                       triangle. */
 };

@@ -43,13 +43,26 @@ CFEMStandardTri::CFEMStandardTri(const unsigned short val_nPoly,
   nDOFs    = (nPoly+1)*(nPoly+2)/2;
   nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
 
+  /*--- Determine the parametric locations of the grid DOFs of the triange. ---*/
+  LocationTriangleGridDOFsEquidistant(rTriangleDOFsEqui, sTriangleDOFsEqui);
+  LocationTriangleGridDOFsLGL(rTriangleDOFsLGL, sTriangleDOFsLGL);
+
   /*--- Determine the parametric location and weights of the
-        integration rule of the base triangle of the prism. ---*/
-  vector<su2double> rTriangle, sTriangle, wTriangle;
-  IntegrationPointsTriangle(rTriangle, sTriangle, wTriangle);
+        integration rule of the triangle. ---*/
+  IntegrationPointsTriangle(rTriangleInt, sTriangleInt, wTriangleInt);
 
   /*--- Determine the total number of integration points
         and its padded version. ---*/
-  nIntegration    = rTriangle.size();
+  nIntegration    = rTriangleInt.size();
   nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Allocate the memory for the padded number of integration points and
+        initialize the weights to zero. This is done such that the padded
+        values are initialized appropriately. ---*/
+  wIntegration.resize(nIntegrationPad);
+  wIntegration.setConstant(0.0);
+
+  /*--- Copy the values from wTriangleInt to wIntegration. ---*/
+  for(unsigned short i=0; i<nIntegration; ++i)
+    wIntegration(i) = wTriangleInt[i];
 }

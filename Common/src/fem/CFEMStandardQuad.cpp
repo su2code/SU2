@@ -59,4 +59,16 @@ CFEMStandardQuad::CFEMStandardQuad(const unsigned short val_nPoly,
   /*--- Determine the location and the weights of the 1D integration points.
         The 2D integration points are obtained via a tensor product. ---*/
   IntegrationPointsLine(nInt1D, rLineInt, wLineInt);
+
+  /*--- Allocate the memory for the padded number of integration points and
+        initialize the weights to zero. This is done such that the padded
+        values are initialized appropriately. ---*/
+  wIntegration.resize(nIntegrationPad);
+  wIntegration.setConstant(0.0);
+
+  /*--- Double loop to set the integration weights in the 2D integration points. ---*/
+  unsigned short ii = 0;
+  for(unsigned short j=0; j<nInt1D; ++j)
+    for(unsigned short i=0; i<nInt1D; ++i, ++ii)
+      wIntegration(ii) = wLineInt[i]*wLineInt[j];
 }

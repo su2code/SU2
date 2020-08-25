@@ -49,7 +49,7 @@ CFEMStandardPrism::CFEMStandardPrism(const unsigned short val_nPoly,
 
   /*--- Determine the parametric location and weights of the
         integration rule of the base triangle of the prism. ---*/
-  vector<su2double> rTriangle, sTriangle, wTriangle;
+  vector<passivedouble> rTriangle, sTriangle, wTriangle;
   IntegrationPointsTriangle(rTriangle, sTriangle, wTriangle);
 
   nIntTriangle = rTriangle.size();

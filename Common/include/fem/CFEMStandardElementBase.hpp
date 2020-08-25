@@ -56,6 +56,8 @@ protected:
   unsigned short nIntegration;     /*!< \brief Total number of points used in the numerical integration. */
   unsigned short nIntegrationPad;  /*!< \brief Padded version of nIntegration. */
 
+  su2passivevector wIntegration;    /*!< \brief The weights of the integration points for this standard element. */
+
 public:
   /*!
   * \brief Constructor. Nothing to be done.
@@ -189,9 +191,9 @@ public:
    * \param[out] rLine   - Vector of the parametric r-coordinates of the integration points.
    * \param[out] wLine   - Vector of the weights of the integration points.
    */
-  void IntegrationPointsLine(const unsigned short nPoints,
-                             vector<su2double>    &rLine,
-                             vector<su2double>    &wLine);
+  void IntegrationPointsLine(const unsigned short  nPoints,
+                             vector<passivedouble> &rLine,
+                             vector<passivedouble> &wLine);
 
 protected:
 
@@ -203,10 +205,10 @@ protected:
    * \param[out] tTet - Vector of the parametric t-coordinates of the integration points.
    * \param[out] wTet - Vector of the weights of the integration points.
    */
-  void IntegrationPointsTetrahedron(vector<su2double> &rTet,
-                                    vector<su2double> &sTet,
-                                    vector<su2double> &tTet,
-                                    vector<su2double> &wTet);
+  void IntegrationPointsTetrahedron(vector<passivedouble> &rTet,
+                                    vector<passivedouble> &sTet,
+                                    vector<passivedouble> &tTet,
+                                    vector<passivedouble> &wTet);
 
   /*!
    * \brief Function, which determines the integration points for a triangle
@@ -215,32 +217,52 @@ protected:
    * \param[out] sTriangle - Vector of the parametric s-coordinates of the integration points.
    * \param[out] wTriangle - Vector of the weights of the integration points.
    */
-  void IntegrationPointsTriangle(vector<su2double> &rTriangle,
-                                 vector<su2double> &sTriangle,
-                                 vector<su2double> &wTriangle);
+  void IntegrationPointsTriangle(vector<passivedouble> &rTriangle,
+                                 vector<passivedouble> &sTriangle,
+                                 vector<passivedouble> &wTriangle);
 
   /*!
    * \brief Function, which determines the location of the 1D grid DOFs for polynomial
    *        degree nPoly when an equidistant spacing is used.
    * \param[out] r - Vector of the parametric r-coordinates of the DOFs.
    */
-  void Location1DGridDOFsEquidistant(vector<su2double> &r);
+  void Location1DGridDOFsEquidistant(vector<passivedouble> &r);
 
   /*!
    * \brief Function, which determines the location of the 1D grid DOFs for polynomial
    *        degree nPoly when the LGL distribution is used.
    * \param[out] r - Vector of the parametric r-coordinates of the DOFs.
    */
-  void Location1DGridDOFsLGL(vector<su2double> &r);
+  void Location1DGridDOFsLGL(vector<passivedouble> &r);
 
+  /*!
+   * \brief Function, which determines the location of the triangular grid DOFs for
+   *        polynomial degree nPoly when an equidistant spacing is used.
+   * \param[out] r - Vector of the parametric r-coordinates of the DOFs.
+   * \param[out] s - Vector of the parametric s-coordinates of the DOFs.
+   */
+  void LocationTriangleGridDOFsEquidistant(vector<passivedouble> &r,
+                                           vector<passivedouble> &s);
+
+  /*!
+   * \brief Function, which determines the location of the triangular grid DOFs for
+   *        polynomial degree nPoly when the LGL distribution is used. The definition
+   *        used is according to the book of Hesthaven and Warburton.
+   * \param[out] r - Vector of the parametric r-coordinates of the DOFs.
+   * \param[out] s - Vector of the parametric s-coordinates of the DOFs.
+   */
+  void LocationTriangleGridDOFsLGL(vector<passivedouble> &r,
+                                   vector<passivedouble> &s);
+
+private:
   /*!
    * \brief Function, which computes the value of the unscaled Legendre polynomial for the given x-coordinate.
    * \param[in] n     - Order of the Jacobi polynomial.
    * \param[in] x     - Coordinate (-1 <= x <= 1) for which the Legendre polynomial must be evaluated
    * \return            The value of the unscaled Legendre polynomial of order n for the given value of x
    */
-  su2double Legendre(unsigned short n,
-                     su2double      x);
+  passivedouble Legendre(unsigned short n,
+                         passivedouble  x);
 
   /*!
    * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
@@ -250,8 +272,26 @@ protected:
    * \param[in] x     - Coordinate (-1 <= x <= 1) for which the Jacobi polynomial must be evaluated.
    * \return            The value of the normalized Jacobi polynomial of order n for the given value of x.
    */
-  su2double NormJacobi(unsigned short n,
-                       unsigned short alpha,
-                       unsigned short beta,
-                       su2double      x);
+  passivedouble NormJacobi(unsigned short n,
+                           unsigned short alpha,
+                           unsigned short beta,
+                           passivedouble  x);
+
+  /*!
+   * \brief Function, which computes the Vandermonde matrix for a standard 1D edge.
+   * \param[in]  r  - Parametric coordinates for which the Vandermonde matrix must be computed.
+   * \param[out] V  - Matrix to store the Vandermonde matrix in all r-locations.
+   */
+  void Vandermonde1D(const vector<passivedouble>   &r,
+                     ColMajorMatrix<passivedouble> &V); 
+
+  /*!
+   * \brief Function, which computes a scaled warp function for all DOFs of a standard triangle
+   *        with a polynomial basis function of order nPoly. This info is used to construct
+   *        the location of the DOFs inside a standard triangle.
+   * \param[in]  rout - Input coordinates for the warp factor.
+   * \param[out] warp - Warp factor to be computed.
+   */
+  void WarpFactor(const vector<passivedouble> &rout,
+                  vector<passivedouble>       &warp);
 };

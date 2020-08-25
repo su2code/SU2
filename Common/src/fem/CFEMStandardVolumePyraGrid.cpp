@@ -48,7 +48,7 @@ void CFEMStandardVolumePyraGrid::DataIntegrationPoints(const ColMajorMatrix<su2d
                                                        const unsigned short               ldb,
                                                        const unsigned short               ldc,
                                                        const unsigned short               n,
-                                                       ColMajorMatrix<su2double>          *matC,
+                                                       ColMajorMatrix<su2double>      *matC,
                                                        vector<ColMajorMatrix<su2double> > *matDerC,
                                                        const CConfig                      *config) const {
 
