@@ -136,7 +136,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
   proj_vector_ij *= (correct_gradient) ? su2double(1.0/dist_ij_2) 
-                                       : su2double(-0.25/Volume_i);
+                                       : su2double(-0.5/Volume_i);
 
   /*--- Mean gradient approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -315,27 +315,27 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[1][1] += -0.5*sigma_omega_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1];
   }
   
-  // /*--- Jacobian wrt laminar viscosity ---*/
+  /*--- Jacobian wrt laminar viscosity ---*/
 
-  // const su2double Cv    = Gas_Constant/Gamma_Minus_One;
-  // const su2double muref = config->GetMu_RefND();
-  // const su2double Tref  = config->GetMu_Temperature_RefND();
-  // const su2double Sref  = config->GetMu_SND();
+  const su2double Cv    = Gas_Constant/Gamma_Minus_One;
+  const su2double muref = config->GetMu_RefND();
+  const su2double Tref  = config->GetMu_Temperature_RefND();
+  const su2double Sref  = config->GetMu_SND();
   
-  // const su2double T_i      = V_i[0],
-  //                 dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
-  //                          * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),
-  //                 factor_i = dmudT_i/(Density_i*Cv);
+  const su2double T_i      = V_i[0],
+                  dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
+                           * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),
+                  factor_i = dmudT_i/(Density_i*Cv);
   
-  // const su2double T_j      = V_j[0],
-  //                 dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
-  //                          * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.)),
-  //                 factor_j = dmudT_j/(Density_j*Cv);
+  const su2double T_j      = V_j[0],
+                  dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
+                           * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.)),
+                  factor_j = dmudT_j/(Density_j*Cv);
   
-  // for (auto iVar = 0; iVar < nVar; iVar++) {
-  //   Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
-  //   Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
-  // }
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar][0] += -0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
+    Jacobian_j[iVar][0] += -0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
+  }
 
   AD::EndPassive(wasActive);
 
