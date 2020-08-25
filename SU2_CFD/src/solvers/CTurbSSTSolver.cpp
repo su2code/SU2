@@ -178,11 +178,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Initialize lower and upper limits---*/
   // lowerlimit[0] = rhoInf*kine_Inf;
-  lowerlimit[0] = rhoInf*numeric_limits<passivedouble>::epsilon();
+  lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
   upperlimit[0] = 1.0e15;
 
   // lowerlimit[1] = rhoInf*omega_Inf*1.0e-3;
-  lowerlimit[1] = rhoInf*numeric_limits<passivedouble>::epsilon();
+  lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
   upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
