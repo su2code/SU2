@@ -2455,23 +2455,20 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if (config->GetInnerIter() == 0) {
       for (auto iVar = 0; iVar < nVar; iVar++)
         solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
         for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
           solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-      }
     }
 
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
-    for (auto iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+    for (auto iVar = 0; iVar < solverFlow->GetnVar(); iVar++)
       New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
-    }
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
         New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
-      }
-    }
+      
     // for (auto iVar = 0; iVar < nVar; iVar++) {
     //   // New_Func += Residual_RMS[iVar];
     //   New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
@@ -2511,8 +2508,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         NonLinRes_Series[iCounter] = su2double(nVarTot);
+      // for (auto iVar = 0; iVar < nVar; iVar++)
+      //   Residual_Ini[iVar] = Residual_RMS[iVar];
       for (auto iVar = 0; iVar < nVar; iVar++)
-        Residual_Ini[iVar] = Residual_RMS[iVar];
+        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+        for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
+          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
     }
 
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
