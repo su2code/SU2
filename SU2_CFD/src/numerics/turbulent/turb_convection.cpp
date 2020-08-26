@@ -80,7 +80,7 @@ CUpwScalar::~CUpwScalar(void) {
 
 //   AD::EndPassive(wasActive);
 // }
-id CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
+void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
                              const su2double *lim_i, const su2double *lim_j,
                              const su2double *r_i, const su2double *r_j,
                              const su2double *r_n_i, const su2double *r_n_j) {
