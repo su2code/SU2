@@ -126,6 +126,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   MaxLength.resize(npoint) = su2double(0.0);
   Curvature.resize(npoint) = su2double(0.0);
   Wall_Distance.resize(npoint) = su2double(0.0);
+  RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
 
 }

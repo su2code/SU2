@@ -117,7 +117,7 @@ public:
    * \brief get global index for ordered span-wise turbovertex.
    */
   inline int GetGlobalVertexIndex(void) const {return GlobalIndex;}
- 
+
   /*!
    * \brief set angular coord.
    */
