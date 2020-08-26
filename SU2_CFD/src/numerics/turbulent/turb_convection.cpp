@@ -162,7 +162,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     SqVel_j += Velocity_j[iDim]*Velocity_j[iDim];
   }
   Energy_j = U_j[nDim+1]/U_j[0];
-  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-Density_j*TurbVar_j[0]);
+  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-TurbVar_j[0]);
   Enthalpy_j = Energy_j+Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
