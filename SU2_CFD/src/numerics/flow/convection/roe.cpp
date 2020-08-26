@@ -306,7 +306,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   turb_ke_i /= Density_i;
   Energy_i = U_i[nDim+1]/U_i[0];
-  Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-Density_i*SqVel_i-Density_i*turb_ke_i);
+  Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-0.5*Density_i*SqVel_i-Density_i*turb_ke_i);
   Enthalpy_i = Energy_i+Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
@@ -321,7 +321,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   turb_ke_j /= Density_j;
   Energy_j = U_j[nDim+1]/U_j[0];
-  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-Density_j*SqVel_j-Density_j*turb_ke_j);
+  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-Density_j*turb_ke_j);
   Enthalpy_j = Energy_j+Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 

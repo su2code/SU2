@@ -150,7 +150,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   }
   Energy_i = U_i[nDim+1]/U_i[0];
-  Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-Density_i*SqVel_i-TurbVar_i[0]);
+  Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-0.5*Density_i*SqVel_i-TurbVar_i[0]);
   Enthalpy_i = Energy_i+Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
@@ -164,7 +164,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   }
   Energy_j = U_j[nDim+1]/U_j[0];
-  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-Density_j*SqVel_j-Density_j*TurbVar_j[0]);
+  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-Density_j*TurbVar_j[0]);
   Enthalpy_j = Energy_j+Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 

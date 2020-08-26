@@ -7218,6 +7218,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
   su2double Kine_Infty = 0., Omega_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
+  su2double *U_domain;
+  su2double U_infty[MAXNVAR] = {0.0};
+  // su2double Conservative_i[MAXNVAR] = {0.0}, Conservative_j[MAXNVAR] = {0.0};
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
@@ -7234,6 +7237,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
+    // U_infty = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -7396,15 +7400,27 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
 
+      /*--- Store new conservative state for computing the flux. ---*/
+
+      U_infty[0] = Density;
+      for (iDim = 0; iDim < nDim; iDim++)
+        U_infty[iDim+1] = Density*Velocity[iDim];
+      U_infty[nDim+1] = Density*Energy;
+
+      U_domain = nodes->GetSolution(iPoint);
+
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
 
       if (tkeNeeded)
-        conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                            Kine_Infty);
+        // conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+        //                                     Kine_Infty);
+        conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                            Density*Kine_Infty);
 
       /*--- Set various quantities in the numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetConservative(U_domain, U_infty);
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
