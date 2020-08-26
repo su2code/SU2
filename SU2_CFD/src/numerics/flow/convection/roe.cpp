@@ -457,21 +457,21 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     }
   }
 
-  if (implicit && muscl) {
+  // if (implicit && muscl) {
 
-    /*--- Extract nodal values ---*/
+  //   /*--- Extract nodal values ---*/
 
-    su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
-    if (tkeNeeded) {
-      turb_ke_n_i = TurbVarn_i[0];
-      turb_ke_n_j = TurbVarn_j[0];
-    }
+  //   su2double turb_ke_n_i = 0.0, turb_ke_n_j = 0.0;
+  //   if (tkeNeeded) {
+  //     turb_ke_n_i = TurbVarn_i[0];
+  //     turb_ke_n_j = TurbVarn_j[0];
+  //   }
 
-    /*--- Compute Jacobian wrt extrapolation ---*/
+  //   /*--- Compute Jacobian wrt extrapolation ---*/
 
-    GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, 
-                V_i, V_j, Vn_i, Vn_j, &turb_ke_i, &turb_ke_j, &turb_ke_n_i, &turb_ke_n_j);
-  }
+  //   GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, TurbLimiter_i, TurbLimiter_j, 
+  //               V_i, V_j, Vn_i, Vn_j, &turb_ke_i, &turb_ke_j, &turb_ke_n_i, &turb_ke_n_j);
+  // }
 
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();

@@ -301,17 +301,17 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
     Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;  Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
 
-    if (muscl) {
+    // if (muscl) {
 
-      /*--- Extract nodal values ---*/
+    //   /*--- Extract nodal values ---*/
 
-      const su2double Density_n_i = Vn_i[nDim+2];
-      const su2double Density_n_j = Vn_j[nDim+2];
+    //   const su2double Density_n_i = Vn_i[nDim+2];
+    //   const su2double Density_n_j = Vn_j[nDim+2];
 
-      /*--- Compute Jacobian wrt extrapolation ---*/
+    //   /*--- Compute Jacobian wrt extrapolation ---*/
 
-      GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
-                  &Density_i, &Density_j, &Density_n_i, &Density_n_j);
-    }
+    //   GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
+    //               &Density_i, &Density_j, &Density_n_i, &Density_n_j);
+    // }
   }
 }
