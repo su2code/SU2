@@ -89,7 +89,6 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
 CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config) {
 
-  unsigned short iVar, jVar, iDim;
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
@@ -115,12 +114,12 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Flux[iVar] = 0.0;
-    for (jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Jacobian_ic[iDim][iVar][jVar] = 0.0;
         Jacobian_jc[iDim][iVar][jVar] = 0.0;
       }
@@ -130,7 +129,7 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   /*--- Compute vector going from iPoint to jPoint ---*/
 
   dist_ij_2 = 0; proj_vector_ij = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = (correct_gradient) ? Coord_j[iDim]-Coord_i[iDim] : Normal[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
@@ -139,10 +138,10 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
                                        : su2double(-0.25/Volume_i);
 
   /*--- Mean gradient approximation ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       su2double Mean_GradTurbVar = 0.5*(TurbVar_Grad_i[iVar][iDim] +
                                         TurbVar_Grad_j[iVar][iDim]);
 
