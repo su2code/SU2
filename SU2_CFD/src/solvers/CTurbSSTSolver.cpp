@@ -737,7 +737,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
   unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
-  su2double U_infty[2] = {0.0}, *U_domain;
+  su2double U_infty[MAXNVARFLOW] = {0.0}, *U_domain;
   const su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
   su2double Vn_Infty = 0., Velocity2 = 0.;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
