@@ -255,7 +255,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   su2double ProjGridVel = 0.0, Energy_i, Energy_j;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
+  // AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); 
+  AD::SetPreaccIn(U_i, nVar); AD::SetPreaccIn(U_j, nVar); 
+  AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }

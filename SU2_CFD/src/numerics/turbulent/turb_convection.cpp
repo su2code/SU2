@@ -208,8 +208,10 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                 CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim+1);
-  AD::SetPreaccIn(V_j, nDim+1);
+  // AD::SetPreaccIn(V_i, nDim+1);
+  // AD::SetPreaccIn(V_j, nDim+1);
+  AD::SetPreaccIn(U_i, nDim+2);
+  AD::SetPreaccIn(U_j, nDim+2);
 }
 
 void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
@@ -227,8 +229,10 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                  CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim+4);
-  AD::SetPreaccIn(V_j, nDim+4);
+  // AD::SetPreaccIn(V_i, nDim+4);
+  // AD::SetPreaccIn(V_j, nDim+4);
+  AD::SetPreaccIn(U_i, nDim+2);
+  AD::SetPreaccIn(U_j, nDim+2);
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
