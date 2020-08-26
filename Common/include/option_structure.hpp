@@ -2135,7 +2135,9 @@ enum MPI_QUANTITIES {
   WALL_FUNCTION        = 31,  /*!< \brief Wall function variables. */
   ANISO_GRADIENT       = 32,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
   HESSIAN              = 33,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
-  METRIC               = 34   /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+  METRIC               = 34,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+  PRIMITIVE_GRADIENT_RECON = 35,  /*!< \brief Primitive gradient communication. */
+  SOLUTION_GRADIENT_RECON  = 36   /*!< \brief Conservative solution gradient communication. */
 };
 
 /*!

@@ -4956,8 +4956,9 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
 
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  auto kindComms = reconstruction? PRIMITIVE_GRADIENT_RECON : PRIMITIVE_GRADIENT;
 
-  computeGradientsGreenGauss(this, PRIMITIVE_GRADIENT, PERIODIC_PRIM_GG, *geometry,
+  computeGradientsGreenGauss(this, kindComms, PERIODIC_PRIM_GG, *geometry,
                              *config, primitives, 0, nPrimVarGrad, gradient);
 }
 
@@ -4974,9 +4975,10 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  auto kindComms = reconstruction? PRIMITIVE_GRADIENT_RECON : PRIMITIVE_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
+  computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 

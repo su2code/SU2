@@ -417,8 +417,9 @@ void CTurbSSTSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *conf
 
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+  auto kindComms = reconstruction? SOLUTION_GRADIENT_RECON : SOLUTION_GRADIENT;
 
-  computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
+  computeGradientsGreenGauss(this, kindComms, PERIODIC_SOL_GG, *geometry,
                              *config, primitives, 0, nVar, gradient);
 }
 
@@ -435,9 +436,10 @@ void CTurbSSTSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *conf
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+  auto kindComms = reconstruction? SOLUTION_GRADIENT_RECON : SOLUTION_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
-  computeGradientsLeastSquares(this, SOLUTION_GRADIENT, kindPeriodicComm, *geometry, *config,
+  computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nVar, gradient, rmatrix);
 }
 
