@@ -491,14 +491,14 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Compute inverse P tensor ---*/
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
-  if (tkeNeeded) {
-    for (auto iVar = 0; iVar < nVar-1; iVar++) {
-      P_Tensor[iVar][nVar]      = 0.0;
-      invP_Tensor[nVar][iVar+1] = 0.0;
-    }
-    P_Tensor[nVar-1][nVar] = Gamma - FIVE3;
-    invP_Tensor[nVar][0]   = RoeTke;
-  }
+  // if (tkeNeeded) {
+  //   for (auto iVar = 0; iVar < nVar-1; iVar++) {
+  //     P_Tensor[iVar][nVar]      = 0.0;
+  //     invP_Tensor[nVar][iVar+1] = 0.0;
+  //   }
+  //   P_Tensor[nVar-1][nVar] = Gamma - FIVE3;
+  //   invP_Tensor[nVar][0]   = RoeTke;
+  // }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (auto iVar = 0; iVar < nVar; iVar++)
@@ -516,7 +516,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     for (auto jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (kVar = 0; kVar < nPrimVarTot; kVar++)
+      // for (kVar = 0; kVar < nPrimVarTot; kVar++)
+      for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       /*--- Update residual and Jacobians ---*/
