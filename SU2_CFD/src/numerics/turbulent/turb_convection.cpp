@@ -147,7 +147,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
     SqVel_i += Velocity_i[iDim]*Velocity_i[iDim];
-
   }
   Energy_i = U_i[nDim+1]/U_i[0];
   Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-0.5*Density_i*SqVel_i-TurbVar_i[0]);
@@ -161,7 +160,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_j[iDim] = U_j[iDim+1]/U_j[0];
     SqVel_j += Velocity_j[iDim]*Velocity_j[iDim];
-
   }
   Energy_j = U_j[nDim+1]/U_j[0];
   Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-Density_j*TurbVar_j[0]);
@@ -184,10 +182,10 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      const su2double RoeVelocity = (R*Velocity_j[iDim+1]+Velocity_i[iDim+1])/R_Plus_One;
+      const su2double RoeVelocity = (R*Velocity_j[iDim]+Velocity_i[iDim])/R_Plus_One;
       Lambda[0] += RoeVelocity*UnitNormal[iDim];
-      ProjVel_i += Velocity_i[iDim+1]*UnitNormal[iDim];
-      ProjVel_j += Velocity_j[iDim+1]*UnitNormal[iDim];
+      ProjVel_i += Velocity_i[iDim]*UnitNormal[iDim];
+      ProjVel_j += Velocity_j[iDim]*UnitNormal[iDim];
       RoeSqVel  += RoeVelocity*RoeVelocity;
     }
   }
