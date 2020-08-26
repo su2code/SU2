@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardLine.hpp"
+#include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*              Public member functions of CFEMStandardLine.                        */
@@ -53,7 +54,11 @@ CFEMStandardLine::CFEMStandardLine(const unsigned short val_nPoly,
   nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
 
   /*--- Determine the location and the weights of the 1D integration points. ---*/
-  IntegrationPointsLine(nIntegration, rLineInt, wLineInt);
+  rLineInt.resize(nIntegration);
+  wLineInt.resize(nIntegration);
+
+  CGaussJacobiQuadrature GaussJacobi;
+  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, rLineInt, wLineInt);
 
   /*--- Allocate the memory for the padded number of integration points and
         initialize the weights to zero. This is done such that the padded

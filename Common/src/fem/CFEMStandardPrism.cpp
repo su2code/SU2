@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardPrism.hpp"
+#include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*                 Public member functions of CFEMStandardPrism.                    */
@@ -47,18 +48,45 @@ CFEMStandardPrism::CFEMStandardPrism(const unsigned short val_nPoly,
   nDOFs         = nDOFs1D*nDOFsTriangle;
   nDOFsPad      = ((nDOFs+vecLen-1)/vecLen)*vecLen;
 
-  /*--- Determine the parametric location and weights of the
-        integration rule of the base triangle of the prism. ---*/
-  vector<passivedouble> rTriangle, sTriangle, wTriangle;
-  IntegrationPointsTriangle(rTriangle, sTriangle, wTriangle);
+  /*--- Determine the 1D parametric locations of the grid DOFs. These are needed
+        as the 3D grid DOFs are obtained by taking the tensor product of the
+        1D grid DOFs and the grid DOFs of the base triangle. ---*/
+  Location1DGridDOFsEquidistant(rLineDOFsEqui);
+  Location1DGridDOFsLGL(rLineDOFsLGL);
 
-  nIntTriangle = rTriangle.size();
+  /*--- Determine the parametric locations of the grid DOFs of the triangle. ---*/
+  LocationTriangleGridDOFsEquidistant(rTriangleDOFsEqui, sTriangleDOFsEqui);
+  LocationTriangleGridDOFsLGL(rTriangleDOFsLGL, sTriangleDOFsLGL);
+
+  /*--- Determine the 1D integration points of a line, which corresponds to the
+        direction normal to the base triangle of the prism. ---*/
+  nInt1D = orderExact/2 + 1;
+  rLineInt.resize(nInt1D);
+  wLineInt.resize(nInt1D);
+
+  CGaussJacobiQuadrature GaussJacobi;
+  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, rLineInt, wLineInt);
+
+  /*--- Determine the parametric location and weights of the
+        integration rule of the base triangle. ---*/
+  IntegrationPointsTriangle(rTriangleInt, sTriangleInt, wTriangleInt);
+  nIntTriangle = rTriangleInt.size();
 
   /*--- The 3D quadrature rule is a tensor product of the 1D Gauss-Legendre
         quadrature rule and the integration rule of the triangle. Determine
-        the number of integration points in 1D and the total number.
-        Also determine the padded value of the latter. ---*/
-  nInt1D          = orderExact/2 + 1;
+        the total number of integration points and its padded value. ---*/
   nIntegration    = nInt1D*nIntTriangle;
   nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Allocate the memory for the padded number of integration points and
+        initialize the weights to zero. This is done such that the padded
+        values are initialized appropriately. ---*/
+  wIntegration.resize(nIntegrationPad);
+  wIntegration.setConstant(0.0);
+
+  /*--- Determine the integration weights of the prism. ---*/
+  unsigned short ii = 0;
+  for(unsigned short j=0; j<nInt1D; ++j)
+    for(unsigned short i=0; i<nIntTriangle; ++i, ++ii)
+        wIntegration(ii) = wTriangleInt[i]*wLineInt[j];
 }

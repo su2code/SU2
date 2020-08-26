@@ -60,6 +60,42 @@ public:
    */
   virtual ~CFEMStandardTet() = default;
 
+protected:
+
+  vector<passivedouble> rTetDOFsEqui; /*!< \brief Parametric r-coordinates of the tetrahedral grid
+                                                  DOFs when equidistant spacing is used. */
+  vector<passivedouble> sTetDOFsEqui; /*!< \brief Parametric s-coordinates of the tetrahedral grid
+                                                  DOFs when equidistant spacing is used. */
+  vector<passivedouble> tTetDOFsEqui; /*!< \brief Parametric t-coordinates of the tetrahedral grid
+                                                  DOFs when equidistant spacing is used. */
+
+  vector<passivedouble> rTetDOFsLGL;  /*!< \brief Parametric r-coordinates of the tetrahedral grid
+                                                  DOFs when the LGL distribution is used. */
+  vector<passivedouble> sTetDOFsLGL;  /*!< \brief Parametric s-coordinates of the tetrahedral grid
+                                                  DOFs when the LGL distribution is used. */
+  vector<passivedouble> tTetDOFsLGL;  /*!< \brief Parametric t-coordinates of the tetrahedral grid
+                                                  DOFs when the LGL distribution is used. */
+
+  vector<passivedouble> rTetInt;      /*!< \brief Parametric r-coordinates of the integration
+                                                  points of the tetrahedron. */
+  vector<passivedouble> sTetInt;      /*!< \brief Parametric s-coordinates of the integration
+                                                  points of the tetrahedron. */
+  vector<passivedouble> tTetInt;      /*!< \brief Parametric t-coordinates of the integration
+                                                  points of the tetrahedron. */
+  vector<passivedouble> wTetInt;      /*!< \brief Weights of the integration points of the
+                                                  tetrahedron. */
+
 private:
 
+  /*!
+   * \brief Function, which determines the location of the grid DOFs of a tetrahedron
+   *        for polynomial degree nPoly when an equidistant spacing is used.
+   */
+  void LocationTetGridDOFsEquidistant();
+
+  /*!
+   * \brief Function, which determines the location of the grid DOFs of a tetrahedron
+   *        for polynomial degree nPoly when the LGL distribution is used.
+   */
+  void LocationTetGridDOFsLGL();
 };

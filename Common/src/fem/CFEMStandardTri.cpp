@@ -43,7 +43,7 @@ CFEMStandardTri::CFEMStandardTri(const unsigned short val_nPoly,
   nDOFs    = (nPoly+1)*(nPoly+2)/2;
   nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
 
-  /*--- Determine the parametric locations of the grid DOFs of the triange. ---*/
+  /*--- Determine the parametric locations of the grid DOFs of the triangle. ---*/
   LocationTriangleGridDOFsEquidistant(rTriangleDOFsEqui, sTriangleDOFsEqui);
   LocationTriangleGridDOFsLGL(rTriangleDOFsLGL, sTriangleDOFsLGL);
 

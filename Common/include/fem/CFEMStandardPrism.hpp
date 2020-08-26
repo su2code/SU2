@@ -68,4 +68,31 @@ protected:
   unsigned short nInt1D;         /*!< \brief Number of integration points in one space direction. */
   unsigned short nIntTriangle;   /*!< \brief Number of integration points of the triangular parts. */
 
+  vector<passivedouble> rLineDOFsEqui; /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when equidistant spacing is used. */
+  vector<passivedouble> rLineDOFsLGL;  /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when the LGL distribution is used. */
+
+  vector<passivedouble> rTriangleDOFsEqui; /*!< \brief Parametric r-coordinates of the triangle grid
+                                                       DOFs when equidistant spacing is used. */
+  vector<passivedouble> sTriangleDOFsEqui; /*!< \brief Parametric s-coordinates of the triangle grid
+                                                       DOFs when equidistant spacing is used. */
+  vector<passivedouble> rTriangleDOFsLGL;  /*!< \brief Parametric r-coordinates of the triangle grid
+                                                       DOFs when the LGL distribution is used. */
+  vector<passivedouble> sTriangleDOFsLGL;  /*!< \brief Parametric s-coordinates of the triangle grid
+                                                       DOFs when the LGL distribution is used. */
+
+  vector<passivedouble> rLineInt;      /*!< \brief 1D parametric coordinates of the
+                                                   integration points. */
+  vector<passivedouble> wLineInt;      /*!< \brief Weights of the 1D integration points. */
+
+
+  vector<passivedouble> rTriangleInt;      /*!< \brief Parametric r-coordinates of the integration
+                                                       points of the triangle. */
+  vector<passivedouble> sTriangleInt;      /*!< \brief Parametric s-coordinates of the integration
+                                                       points of the triangle. */
+  vector<passivedouble> wTriangleInt;      /*!< \brief Weights of the integration points of the
+                                                       triangle. */
+
+
 };

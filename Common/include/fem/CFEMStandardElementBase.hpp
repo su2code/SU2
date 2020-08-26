@@ -184,17 +184,6 @@ public:
   static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
                                        unsigned short nPoly);
 
-  /*!
-   * \brief Function, which determines the integration points for a line
-   *        for the given number of integration points.
-   * \param[in]  nPoints - Number of integration points to use.
-   * \param[out] rLine   - Vector of the parametric r-coordinates of the integration points.
-   * \param[out] wLine   - Vector of the weights of the integration points.
-   */
-  void IntegrationPointsLine(const unsigned short  nPoints,
-                             vector<passivedouble> &rLine,
-                             vector<passivedouble> &wLine);
-
 protected:
 
   /*!

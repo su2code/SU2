@@ -43,13 +43,60 @@ CFEMStandardTet::CFEMStandardTet(const unsigned short val_nPoly,
   nDOFs    = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
   nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
 
+  /*--- Determine the parametric locations of the grid DOFs of the tetrahedron. ---*/
+  LocationTetGridDOFsEquidistant();
+  LocationTetGridDOFsLGL();
+
   /*--- Determine the parametric location and weights of the
         integration rule of the tetrahedron. ---*/
-  vector<passivedouble> rTet, sTet, tTet, wTet;
-  IntegrationPointsTetrahedron(rTet, sTet, tTet, wTet);
+  IntegrationPointsTetrahedron(rTetInt, sTetInt, tTetInt, wTetInt);
 
   /*--- Determine the total number of integration points
         and its padded version. ---*/
-  nIntegration    = rTet.size();
+  nIntegration    = rTetInt.size();
   nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Allocate the memory for the padded number of integration points and
+        initialize the weights to zero. This is done such that the padded
+        values are initialized appropriately. ---*/
+  wIntegration.resize(nIntegrationPad);
+  wIntegration.setConstant(0.0);
+
+  /*--- Copy the values from wTetInt to wIntegration. ---*/
+  for(unsigned short i=0; i<nIntegration; ++i)
+    wIntegration(i) = wTetInt[i];
+}
+
+void CFEMStandardTet::LocationTetGridDOFsEquidistant() {
+
+  /*--- For a tetrahedron it is not possible to apply
+        a tensor product and therefore all DOFs are
+        simply stored. Allocate the memory. ---*/
+  rTetDOFsEqui.resize(nDOFs);
+  sTetDOFsEqui.resize(nDOFs);
+  tTetDOFsEqui.resize(nDOFs);
+
+  /*--- Determine the equidistant spacing along an edge. ---*/
+  const passivedouble dh = 2.0/nPoly;
+
+  /*--- Triple loop to compute the location of the grid DOFs. ---*/
+  unsigned short ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k) {
+    const passivedouble t = -1.0 + k*dh;
+    const unsigned short uppBoundJ = nPoly - k;
+    for(unsigned short j=0; j<=uppBoundJ; ++j) {
+      const passivedouble s = -1.0 + j*dh;
+      const unsigned short uppBoundI = nPoly - k - j;
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
+        rTetDOFsEqui[ii] = -1.0 + i*dh;
+        sTetDOFsEqui[ii] =  s;
+        tTetDOFsEqui[ii] =  t;
+      }
+    }
+  }
+}
+
+void CFEMStandardTet::LocationTetGridDOFsLGL() {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

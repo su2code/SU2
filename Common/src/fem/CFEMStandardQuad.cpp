@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardQuad.hpp"
+#include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardVolumeQuadGrid.                  */
@@ -58,7 +59,11 @@ CFEMStandardQuad::CFEMStandardQuad(const unsigned short val_nPoly,
 
   /*--- Determine the location and the weights of the 1D integration points.
         The 2D integration points are obtained via a tensor product. ---*/
-  IntegrationPointsLine(nInt1D, rLineInt, wLineInt);
+  rLineInt.resize(nInt1D);
+  wLineInt.resize(nInt1D);
+
+  CGaussJacobiQuadrature GaussJacobi;
+  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, rLineInt, wLineInt);
 
   /*--- Allocate the memory for the padded number of integration points and
         initialize the weights to zero. This is done such that the padded

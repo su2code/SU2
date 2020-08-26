@@ -62,6 +62,43 @@ public:
 
 protected:
 
-  unsigned short nDOFs1D;   /*!< \brief Number of DOFs in one space direction for the base quad. */
+  unsigned short nDOFs1D;   /*!< \brief Number of DOFs along the line seqment of the base quad. */
   unsigned short nInt1D;    /*!< \brief Number of integration points in one space direction. */
+
+  vector<passivedouble> rPyraDOFsEqui; /*!< \brief Parametric r-coordinates of the pyramid grid
+                                                   DOFs when equidistant spacing is used. */
+  vector<passivedouble> sPyraDOFsEqui; /*!< \brief Parametric s-coordinates of the pyramid grid
+                                                   DOFs when equidistant spacing is used. */
+  vector<passivedouble> tPyraDOFsEqui; /*!< \brief Parametric t-coordinates of the pyramid grid
+                                                   DOFs when equidistant spacing is used. */
+
+  vector<passivedouble> rPyraDOFsLGL;  /*!< \brief Parametric r-coordinates of the pyramid grid
+                                                   DOFs when the LGL distribution is used. */
+  vector<passivedouble> sPyraDOFsLGL;  /*!< \brief Parametric s-coordinates of the pyramid grid
+                                                   DOFs when the LGL distribution is used. */
+  vector<passivedouble> tPyraDOFsLGL;  /*!< \brief Parametric t-coordinates of the pyramid grid
+                                                   DOFs when the LGL distribution is used. */
+
+  vector<passivedouble> rLineIntGL;      /*!< \brief 1D parametric coordinates of the
+                                                     Gauss-Legendre integration points. */
+  vector<passivedouble> wLineIntGL;      /*!< \brief Weights of the 1D Gauss-Legendre
+                                                     integration points. */
+
+  vector<passivedouble> rLineIntGJ;      /*!< \brief 1D parametric coordinates of the
+                                                     Gauss-Jacobi integration points. */
+  vector<passivedouble> wLineIntGJ;      /*!< \brief Weights of the 1D Gauss-Jacobi
+                                                     integration points. */
+private:
+
+  /*!
+   * \brief Function, which determines the location of the grid DOFs of a pyramid for
+   *        polynomial degree nPoly when an equidistant spacing is used.
+   */
+  void LocationPyramidGridDOFsEquidistant();
+
+  /*!
+   * \brief Function, which determines the location of the grid DOFs of a pyramid for
+   *        polynomial degree nPoly when the LGL distribution is used.
+   */
+  void LocationPyramidGridDOFsLGL();
 };
