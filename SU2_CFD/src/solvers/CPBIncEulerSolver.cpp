@@ -1172,9 +1172,9 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Load the conservative variables ---*/
+      /*--- Load the primitive variables ---*/
 
-      numerics->SetConservative(nodes->GetSolution(iPoint), NULL);
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), NULL);
 
       /*--- Set incompressible density ---*/
 
@@ -2758,6 +2758,9 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       V_domain = nodes->GetPrimitive(iPoint);
 
       V_outlet = GetCharacPrimVar(val_marker, iVertex);
+      
+      if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       switch (Kind_Outlet) {
 
