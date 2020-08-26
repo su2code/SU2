@@ -88,8 +88,8 @@ id CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      const su2double dFidUi = jac_i[iVar][jVar](1.0-muscl_kappa*lim_i[jVar]);
-      const su2double dFjdUj = jac_j[iVar][jVar](1.0-muscl_kappa*lim_j[jVar]);
+      const su2double dFidUi = jac_i[iVar][jVar]*(1.0-muscl_kappa*lim_i[jVar]);
+      const su2double dFjdUj = jac_j[iVar][jVar]*(1.0-muscl_kappa*lim_j[jVar]);
       const su2double dFjdUi = jac_i[iVar][jVar]*muscl*lim_j[jVar];
       const su2double dFidUj = jac_j[iVar][jVar]*muscl*lim_i[jVar];
 
@@ -122,7 +122,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   // /*--- Primitive variables at point i ---*/
 
-  // for (iDim = 0; iDim < nDim; iDim++)
+  // for (auto iDim = 0; iDim < nDim; iDim++)
   //   Velocity_i[iDim] = V_i[iDim+1];
   // Pressure_i = V_i[nDim+1];
   // Density_i  = V_i[nDim+2];
@@ -132,7 +132,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   // /*--- Primitive variables at point j ---*/
 
-  // for (iDim = 0; iDim < nDim; iDim++)
+  // for (auto iDim = 0; iDim < nDim; iDim++)
   //   Velocity_j[iDim] = V_j[iDim+1];
   // Pressure_j = V_j[nDim+1];
   // Density_j  = V_j[nDim+2];
@@ -144,7 +144,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   su2double SqVel_i = 0.0;
   Density_i  = U_i[0];
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
     SqVel_i += Velocity_i[iDim]*Velocity_i[iDim];
 
@@ -158,7 +158,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   su2double SqVel_j = 0.0;
   Density_j  = U_j[0];
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_j[iDim] = U_j[iDim+1]/U_j[0];
     SqVel_j += Velocity_j[iDim]*Velocity_j[iDim];
 

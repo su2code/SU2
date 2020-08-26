@@ -51,8 +51,6 @@ protected:
   Epsilon[3] = {0.0},          /*!< \brief Band for entropy correction. */
   ProjVel_i = 0.0,             /*!< \brief The maximum of the face-normal velocity and 0 */
   ProjVel_j = 0.0,             /*!< \brief The minimum of the face-normal velocity and 0 */
-  SoundSpeed_i = 0.0,
-  SoundSpeed_j = 0.0,
   *Flux = nullptr,             /*!< \brief Final result, diffusive flux/residual. */
   **Jacobian_i = nullptr,      /*!< \brief Flux Jacobian w.r.t. node i. */
   **Jacobian_j = nullptr;      /*!< \brief Flux Jacobian w.r.t. node j. */
