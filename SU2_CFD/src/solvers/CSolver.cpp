@@ -2557,7 +2557,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     if (NonLinRes_Value > 0.1*New_Func || fabs(NonLinRes_Value) < 0.1*New_Func) {
       reduceCFL = true;
-      New_Func = 1.0;
+      // New_Func = 1.0;
+      New_Func = 0.0;
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        New_Func += Residual_RMS[iVar];
     }
 
     /* Loop over all points on this grid and apply CFL adaption. */
