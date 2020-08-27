@@ -3272,8 +3272,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         SqVel_j += pow(Conservative_j[iDim+1]/Conservative_j[0],2);
 
       }
-      const su2double Pressure_i = Gamma_Minus_One*(Conservative_i[nDim+1]-0.5*Conservative_i[0]*SqVel_i-tke_i);
-      const su2double Pressure_j = Gamma_Minus_One*(Conservative_j[nDim+1]-0.5*Conservative_j[0]*SqVel_j-tke_j);
+      const su2double Pressure_i = Conservative_i[nDim+1]-0.5*Conservative_i[0]*SqVel_i-tke_i;
+      const su2double Pressure_j = Conservative_j[nDim+1]-0.5*Conservative_j[0]*SqVel_j-tke_j;
 
       const bool neg_pres_or_rho_i = (Conservative_i[0] < 0.0) || (Conservative_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
       const bool neg_pres_or_rho_j = (Conservative_j[0] < 0.0) || (Conservative_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
