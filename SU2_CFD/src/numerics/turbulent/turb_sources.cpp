@@ -844,9 +844,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      /*--- k production Jacobian ---*/
      if (pk >= 0)
        Jacobian_i[0][0] -= TWO3*Volume*max(diverg,0.0);
-
-     // if ((TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
-     //   Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+     if ((TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
+       Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
 
      // if ((pk >= 0) && (pk <= 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0])) {
      //   Jacobian_i[0][0] += (S2/zeta-TWO3*diverg)*Volume;
@@ -881,7 +880,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     
     pk = max(pk, 0.0);
     pw = max(pw, 0.0)*alfa_blended*Density_i;
-    
+
    /*--- Sustaining terms, if desired. Note that if the production terms are
          larger equal than the sustaining terms, the original formulation is
          obtained again. This is in contrast to the version in literature
