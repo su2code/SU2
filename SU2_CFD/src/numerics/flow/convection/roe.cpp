@@ -228,8 +228,8 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
     for (auto jVar = 0; jVar < nVar; jVar++) {
       const su2double dFidUi = jac_i[iVar][jVar]*(1.0-muscl_kappa*lim_i[jVar]);
       const su2double dFjdUj = jac_j[iVar][jVar]*(1.0-muscl_kappa*lim_j[jVar]);
-      const su2double dFjdUi = jac_j[iVar][jVar]*muscl*lim_j[jVar];
-      const su2double dFidUj = jac_i[iVar][jVar]*muscl*lim_i[jVar];
+      const su2double dFjdUi = jac_j[iVar][jVar]*muscl_kappa*lim_j[jVar];
+      const su2double dFidUj = jac_i[iVar][jVar]*muscl_kappa*lim_i[jVar];
 
       jac_i[iVar][jVar] = dFidUi+dFjdUi;
       jac_j[iVar][jVar] = dFidUj+dFjdUj;
