@@ -333,7 +333,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   su2double R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
-  su2double RoeSqVel = 0.0;
+  RoeSqVel = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1.);
     RoeSqVel += RoeVelocity[iDim]*RoeVelocity[iDim];
@@ -494,10 +494,14 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   if (tkeNeeded) {
     for (auto iVar = 0; iVar < nVar-1; iVar++) {
       P_Tensor[iVar][nVar]      = 0.0;
-      invP_Tensor[nVar][iVar+1] = 0.0;
     }
-    P_Tensor[nVar-1][nVar] = Gamma - FIVE3;
-    invP_Tensor[nVar][0]   = RoeTke;
+    P_Tensor[nVar-1][nVar] = (Gamma - FIVE3)*RoeSqVel/(2.*RoeSoundSpeed2);
+
+    invP_Tensor[nVar][0] = -RoeTke;
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      invP_Tensor[nVar][iDim+1] = (Gamma - FIVE3)*RoeVelocity[iDim]/(2.*RoeSoundSpeed2);
+    }
+    invP_Tensor[nVar][nVar-1] = 0.0;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
