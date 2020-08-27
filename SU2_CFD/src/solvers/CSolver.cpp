@@ -2503,8 +2503,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     //   for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
     //     New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      // New_Func += Residual_RMS[iVar];
-      New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
+      New_Func += Residual_RMS[iVar];
+      // New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
     }
 
     /* Compute the difference in the nonlinear residuals between the
