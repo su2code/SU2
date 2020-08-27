@@ -2503,8 +2503,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     //   for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
     //     New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      New_Func += Residual_RMS[iVar];
-      // New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
+      // New_Func += Residual_RMS[iVar];
+      New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
     }
 
     /* Compute the difference in the nonlinear residuals between the
@@ -2538,10 +2538,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       // unsigned short nVarTot = solverFlow->GetnVar();
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
       //   nVarTot += solverTurb->GetnVar();
-      // for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
+      for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         // NonLinRes_Series[iCounter] = 1.0;
-        // NonLinRes_Series[iCounter] = -1.0;
+        NonLinRes_Series[iCounter] = -1.0;
         // NonLinRes_Series[iCounter] = su2double(nVarTot);
       for (auto iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
@@ -2557,12 +2557,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     if (NonLinRes_Value > 0.1*New_Func || fabs(NonLinRes_Value) < 0.1*New_Func) {
       reduceCFL = true;
-      // New_Func = 1.0;
-      New_Func = 0.0;
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        New_Func += Residual_RMS[iVar];
-      for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Series[iCounter] = -New_Func;
+      New_Func = 1.0;
     }
 
     /* Loop over all points on this grid and apply CFL adaption. */
