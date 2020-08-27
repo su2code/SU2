@@ -313,8 +313,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   /*--- Clip omega ---*/
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-    // for (auto iVar = 0; iVar < nVar; iVar++)
-      nodes->SetSolution(iPoint,1,max(nodes->GetSolution(iPoint,1), eps));
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), eps));
   
   SetPrimitive_Variables(solver);
   
