@@ -2533,7 +2533,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      rate. In this situation, we force a reduction of the CFL in all cells.
      Reset the array so that we delay the next decrease for some iterations. */
 
-    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+    if (NonLinRes_Value > 0.1*New_Func) {
       NonLinRes_Counter = 0;
       // unsigned short nVarTot = solverFlow->GetnVar();
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
