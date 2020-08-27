@@ -2522,7 +2522,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      set of all stored iterations. */
 
     NonLinRes_Value = New_Func;
-    if (config->GetTimeIter() >= Res_Count) {
+    if (config->GetInnerIter() >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Value += NonLinRes_Series[iCounter];
