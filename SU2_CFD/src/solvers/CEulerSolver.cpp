@@ -3312,22 +3312,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const bool bad_edge = bad_i || bad_j;
 
-      // numerics->SetPrimitive(bad_i ? V_i : Primitive_i, 
-      //                        bad_j ? V_j : Primitive_j);
-      numerics->SetConservative(bad_i ? U_i : Conservative_i, 
-                                bad_j ? U_j : Conservative_j);
-      numerics->SetSecondary(bad_i ? S_i : Secondary_i, 
-                             bad_j ? S_j : Secondary_j);
+      // numerics->SetPrimitive(bad_edge ? V_i : Primitive_i, 
+      //                        bad_edge ? V_j : Primitive_j);
+      numerics->SetConservative(bad_edge ? U_i : Conservative_i, 
+                                bad_edge ? U_j : Conservative_j);
+      numerics->SetSecondary(bad_edge ? S_i : Secondary_i, 
+                             bad_edge ? S_j : Secondary_j);
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (limiter) {
-        numerics->SetLimiter(bad_i ? ZeroVec : nodes->GetLimiter_Primitive(iPoint), 
-                             bad_j ? ZeroVec : nodes->GetLimiter_Primitive(jPoint));
+        numerics->SetLimiter(bad_edge ? ZeroVec : nodes->GetLimiter_Primitive(iPoint), 
+                             bad_edge ? ZeroVec : nodes->GetLimiter_Primitive(jPoint));
       }
       else {
-        numerics->SetLimiter(bad_i ? ZeroVec : OneVec, 
-                             bad_j ? ZeroVec : OneVec);
+        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
+                             bad_edge ? ZeroVec : OneVec);
       }
 
       /*--- Store nodal values ---*/
@@ -3339,18 +3339,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
 
-        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetSolution(iPoint,0) : tke_i,
-                                       bad_j ? turbNodes->GetSolution(jPoint,0) : tke_j);
-        // numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-        //                                bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+        numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetSolution(iPoint,0) : tke_i,
+                                       bad_edge ? turbNodes->GetSolution(jPoint,0) : tke_j);
+        // numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
+        //                                bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
 
         if (limiterTurb) {
-          numerics->SetTurbLimiter(bad_i ? ZeroVec : turbNodes->GetLimiter(iPoint), 
-                                   bad_j ? ZeroVec : turbNodes->GetLimiter(jPoint));
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbNodes->GetLimiter(iPoint), 
+                                   bad_edge ? ZeroVec : turbNodes->GetLimiter(jPoint));
         }
         else {
-          numerics->SetTurbLimiter(bad_i ? ZeroVec : OneVec, 
-                                   bad_j ? ZeroVec : OneVec);
+          numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec, 
+                                   bad_edge ? ZeroVec : OneVec);
         }
 
         numerics->SetNodalTurbVar(turbNodes->GetPrimitive(iPoint),
