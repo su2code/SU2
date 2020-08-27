@@ -2538,11 +2538,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       // unsigned short nVarTot = solverFlow->GetnVar();
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
       //   nVarTot += solverTurb->GetnVar();
-      for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
+      for (auto iCounter = 0; iCounter < Res_Count-1; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         // NonLinRes_Series[iCounter] = 1.0;
         NonLinRes_Series[iCounter] = 0.0;
         // NonLinRes_Series[iCounter] = su2double(nVarTot);
+      NonLinRes_Series[Res_Count-1] = 1.0;
       for (auto iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
       // for (auto iVar = 0; iVar < nVar; iVar++)
