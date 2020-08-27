@@ -45,7 +45,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   }
 
   // muscl_kappa = 0.5*config->GetMUSCL_Kappa();
-  muscl_kappa = 1.0;
+  muscl_kappa = 0.5;
   muscl = val_muscl;
 }
 

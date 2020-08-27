@@ -36,7 +36,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
   // muscl_kappa = 0.5*config->GetMUSCL_Kappa();
-  muscl_kappa = 1.0;
+  muscl_kappa = 0.5;
   muscl = val_muscl;
   tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   nPrimVarTot = nVar + tkeNeeded;
