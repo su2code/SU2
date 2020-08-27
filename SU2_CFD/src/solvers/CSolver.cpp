@@ -2540,7 +2540,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       //   nVarTot += solverTurb->GetnVar();
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
-        NonLinRes_Series[iCounter] = 1.0;
+        // NonLinRes_Series[iCounter] = 1.0;
+        NonLinRes_Series[iCounter] = 0.0;
         // NonLinRes_Series[iCounter] = su2double(nVarTot);
       for (auto iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
