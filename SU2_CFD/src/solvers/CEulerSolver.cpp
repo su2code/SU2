@@ -3265,8 +3265,18 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       // const bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
       // const bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
-      const bool neg_pres_or_rho_i = (Conservative_i[0] < 0.0) || (Conservative_i[nDim+1] < 0.0);
-      const bool neg_pres_or_rho_j = (Conservative_j[0] < 0.0) || (Conservative_j[nDim+1] < 0.0);
+
+      su2double SqVel_i = 0, SqVel_j = 0;
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        SqVel_i += pow(Conservative_i[iDim+1]/Conservative_i[0],2);
+        SqVel_j += pow(Conservative_j[iDim+1]/Conservative_j[0],2);
+
+      }
+      const su2double Pressure_i = Gamma_Minus_One*(Conservative_i[nDim+1]-0.5*Conservative_i[0]*SqVel_i-tke_i);
+      const su2double Pressure_j = Gamma_Minus_One*(Conservative_j[nDim+1]-0.5*Conservative_j[0]*SqVel_j-tke_j);
+
+      const bool neg_pres_or_rho_i = (Conservative_i[0] < 0.0) || (Conservative_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
+      const bool neg_pres_or_rho_j = (Conservative_j[0] < 0.0) || (Conservative_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
 
       // su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
       // su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;

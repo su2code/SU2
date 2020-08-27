@@ -297,8 +297,18 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         // const bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
         // const bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
-        const bool neg_pres_or_rho_i = (flowPrimVar_i[0] < 0.0) || (flowPrimVar_i[nDim+1] < 0.0);
-        const bool neg_pres_or_rho_j = (flowPrimVar_j[0] < 0.0) || (flowPrimVar_j[nDim+1] < 0.0);
+
+        su2double SqVel_i = 0, SqVel_j = 0;
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          SqVel_i += pow(flowPrimVar_i[iDim+1]/flowPrimVar_i[0],2);
+          SqVel_j += pow(flowPrimVar_j[iDim+1]/flowPrimVar_j[0],2);
+
+        }
+        const su2double Pressure_i = Gamma_Minus_One*(flowPrimVar_i[nDim+1]-0.5*flowPrimVar_i[0]*SqVel_i-solution_i[0]);
+        const su2double Pressure_j = Gamma_Minus_One*(flowPrimVar_j[nDim+1]-0.5*flowPrimVar_j[0]*SqVel_j-solution_j[0]);
+        
+        const bool neg_pres_or_rho_i = (flowPrimVar_i[0] < 0.0) || (flowPrimVar_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
+        const bool neg_pres_or_rho_j = (flowPrimVar_j[0] < 0.0) || (flowPrimVar_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
 
         // su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
         // su2double R_Plus_One = R+1.;
