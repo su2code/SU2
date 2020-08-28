@@ -2529,7 +2529,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      set of all stored iterations. */
 
     NonLinRes_Value = New_Func;
-    if (config->GetInnerIter() >= Res_Count) {
+    if (NonLinRes_Counter >= Res_Count) {
       NonLinRes_Value = 0.0;
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Value += NonLinRes_Series[iCounter];
@@ -2630,7 +2630,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL*config->GetCFLRedCoeff_Turb());
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, max(CFL*config->GetCFLRedCoeff_Turb(), CFLMin));
       }
       // base_nodes->SetLocalCFL(iPoint, CFL);
 
