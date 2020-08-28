@@ -2639,12 +2639,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetSolution_Gradient_GG(geometry, config, true); break;
-        // SetPrimitive_Gradient_GG(geometry, config, true); break;
+        // SetSolution_Gradient_GG(geometry, config, true); break;
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetSolution_Gradient_LS(geometry, config, true); break;
-        // SetPrimitive_Gradient_LS(geometry, config, true); break;
+        // SetSolution_Gradient_LS(geometry, config, true); break;
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
 
@@ -3110,10 +3110,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (tkeNeeded) {
 
       CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-      tke_i = turbNodes->GetSolution(iPoint,0);
-      tke_j = turbNodes->GetSolution(jPoint,0);
-      // tke_i = turbNodes->GetPrimitive(iPoint,0);
-      // tke_j = turbNodes->GetPrimitive(jPoint,0);
+      // tke_i = turbNodes->GetSolution(iPoint,0);
+      // tke_j = turbNodes->GetSolution(jPoint,0);
+      tke_i = turbNodes->GetPrimitive(iPoint,0);
+      tke_j = turbNodes->GetPrimitive(jPoint,0);
       numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
       if (muscl) {
@@ -3200,11 +3200,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const su2double Kappa = config->GetMUSCL_Kappa();
 
-      // for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      // for (iVar = 0; iVar < nVar; iVar++) {
 
-        // const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
-        const su2double V_ij = 0.5*(U_j[iVar] - U_i[iVar]);
+        const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+        // const su2double V_ij = 0.5*(U_j[iVar] - U_i[iVar]);
 
         su2double Project_Grad_i = -V_ij;
         su2double Project_Grad_j = -V_ij;
@@ -3240,10 +3240,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           
         }
 
-        // Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-        // Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
-        Conservative_i[iVar] = U_i[iVar] + Project_Grad_i;
-        Conservative_j[iVar] = U_j[iVar] - Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
+        // Conservative_i[iVar] = U_i[iVar] + Project_Grad_i;
+        // Conservative_j[iVar] = U_j[iVar] - Project_Grad_j;
       }
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
@@ -3263,38 +3263,39 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      // const bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
-      // const bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
+      const bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
+      const bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-      su2double SqVel_i = 0, SqVel_j = 0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        SqVel_i += pow(Conservative_i[iDim+1]/Conservative_i[0],2);
-        SqVel_j += pow(Conservative_j[iDim+1]/Conservative_j[0],2);
+      // su2double SqVel_i = 0, SqVel_j = 0;
+      // for (auto iDim = 0; iDim < nDim; iDim++) {
+      //   SqVel_i += pow(Conservative_i[iDim+1]/Conservative_i[0],2);
+      //   SqVel_j += pow(Conservative_j[iDim+1]/Conservative_j[0],2);
 
-      }
-      const su2double Pressure_i = Conservative_i[nDim+1]-0.5*Conservative_i[0]*SqVel_i-tke_i;
-      const su2double Pressure_j = Conservative_j[nDim+1]-0.5*Conservative_j[0]*SqVel_j-tke_j;
-
-      const bool neg_pres_or_rho_i = (Conservative_i[0] < 0.0) || (Conservative_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
-      const bool neg_pres_or_rho_j = (Conservative_j[0] < 0.0) || (Conservative_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
-
-      // su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
-      // su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
-      //   RoeSqVel += pow(RoeVelocity, 2);
-      //   SqVel_i += pow(Primitive_i[iDim+1],2);
-      //   SqVel_j += pow(Primitive_j[iDim+1],2);
       // }
-      // su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
-      // su2double RoeTke = (R*tke_j+tke_i)/(R+1);
+      // const su2double Pressure_i = Conservative_i[nDim+1]-0.5*Conservative_i[0]*SqVel_i-tke_i;
+      // const su2double Pressure_j = Conservative_j[nDim+1]-0.5*Conservative_j[0]*SqVel_j-tke_j;
 
-      // const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
+      // const bool neg_pres_or_rho_i = (Conservative_i[0] < 0.0) || (Conservative_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
+      // const bool neg_pres_or_rho_j = (Conservative_j[0] < 0.0) || (Conservative_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
+      
+      // bool bad_i = neg_pres_or_rho_i;
+      // bool bad_j = neg_pres_or_rho_j;
 
-      // bool bad_i = bad_roe || neg_pres_or_rho_i;
-      // bool bad_j = bad_roe || neg_pres_or_rho_j;
-      bool bad_i = neg_pres_or_rho_i;
-      bool bad_j = neg_pres_or_rho_j;
+      su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+      su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
+        RoeSqVel += pow(RoeVelocity, 2);
+        SqVel_i += pow(Primitive_i[iDim+1],2);
+        SqVel_j += pow(Primitive_j[iDim+1],2);
+      }
+      su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+      su2double RoeTke = (R*tke_j+tke_i)/(R+1);
+
+      const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
+
+      bool bad_i = bad_roe || neg_pres_or_rho_i;
+      bool bad_j = bad_roe || neg_pres_or_rho_j;
 
       if (tkeNeeded) {
         bad_i = bad_i || (tke_i < 0);
@@ -3312,10 +3313,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const bool bad_edge = bad_i || bad_j;
 
-      // numerics->SetPrimitive(bad_edge ? V_i : Primitive_i, 
-      //                        bad_edge ? V_j : Primitive_j);
-      numerics->SetConservative(bad_edge ? U_i : Conservative_i, 
-                                bad_edge ? U_j : Conservative_j);
+      numerics->SetPrimitive(bad_edge ? V_i : Primitive_i, 
+                             bad_edge ? V_j : Primitive_j);
+      // numerics->SetConservative(bad_edge ? U_i : Conservative_i, 
+      //                           bad_edge ? U_j : Conservative_j);
       numerics->SetSecondary(bad_edge ? S_i : Secondary_i, 
                              bad_edge ? S_j : Secondary_j);
 
@@ -3339,10 +3340,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
 
-        numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetSolution(iPoint,0) : tke_i,
-                                       bad_edge ? turbNodes->GetSolution(jPoint,0) : tke_j);
-        // numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-        //                                bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+        // numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetSolution(iPoint,0) : tke_i,
+        //                                bad_edge ? turbNodes->GetSolution(jPoint,0) : tke_j);
+        numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
+                                       bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
 
         if (limiterTurb) {
           numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbNodes->GetLimiter(iPoint), 
@@ -3360,8 +3361,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     }
     else {
 
-      // numerics->SetPrimitive(V_i, V_j);
-      numerics->SetConservative(U_i, U_j);
+      numerics->SetPrimitive(V_i, V_j);
+      // numerics->SetConservative(U_i, U_j);
       numerics->SetSecondary(S_i, S_j);
 
     }
@@ -7414,20 +7415,20 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       /*--- Store new conservative state for computing the flux. ---*/
 
-      U_infty[0] = Density;
-      for (iDim = 0; iDim < nDim; iDim++)
-        U_infty[iDim+1] = Density*Velocity[iDim];
-      U_infty[nDim+1] = Density*Energy;
+      // U_infty[0] = Density;
+      // for (iDim = 0; iDim < nDim; iDim++)
+      //   U_infty[iDim+1] = Density*Velocity[iDim];
+      // U_infty[nDim+1] = Density*Energy;
 
-      U_domain = nodes->GetSolution(iPoint);
+      // U_domain = nodes->GetSolution(iPoint);
 
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
 
       if (tkeNeeded)
-        // conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-        //                                     Kine_Infty);
-        conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                            Density*Kine_Infty);
+        conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                            Kine_Infty);
+        // conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+        //                                     Density*Kine_Infty);
 
       /*--- Set various quantities in the numerics class ---*/
 

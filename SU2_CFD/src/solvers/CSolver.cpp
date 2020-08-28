@@ -2535,16 +2535,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     if (NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) {
       NonLinRes_Counter = 0;
-      // unsigned short nVarTot = solverFlow->GetnVar();
-      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-      //   nVarTot += solverTurb->GetnVar();
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         NonLinRes_Series[iCounter] = 1.0;
-        // NonLinRes_Series[iCounter] = -1.0;
-        // NonLinRes_Series[iCounter] = su2double(nVarTot);
       for (auto iVar = 0; iVar < nVar; iVar++)
         Residual_Ini[iVar] = Residual_RMS[iVar];
+      // unsigned short nVarTot = solverFlow->GetnVar();
+      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      //   nVarTot += solverTurb->GetnVar();
       // for (auto iVar = 0; iVar < nVar; iVar++)
       //   solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))

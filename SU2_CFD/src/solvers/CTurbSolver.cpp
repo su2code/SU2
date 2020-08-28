@@ -142,16 +142,16 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    const auto U_i = flowNodes->GetSolution(iPoint);
-    const auto U_j = flowNodes->GetSolution(jPoint);
-    numerics->SetConservative(U_i, U_j);
+    // const auto U_i = flowNodes->GetSolution(iPoint);
+    // const auto U_j = flowNodes->GetSolution(jPoint);
+    // numerics->SetConservative(U_i, U_j);
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    // const auto T_i = (sst) ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
-    // const auto T_j = (sst) ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
-    const auto T_i = nodes->GetSolution(iPoint);
-    const auto T_j = nodes->GetSolution(jPoint);
+    const auto T_i = (sst) ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
+    const auto T_j = (sst) ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
+    // const auto T_i = nodes->GetSolution(iPoint);
+    // const auto T_j = nodes->GetSolution(jPoint);
     numerics->SetTurbVar(T_i, T_j);
 
     /*--- Grid Movement ---*/
@@ -250,11 +250,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
         }
 
-        // for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++) {
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+        // for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++) {
 
-          // const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
-          const su2double V_ij = 0.5*(U_j[iVar] - U_i[iVar]);
+          const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+          // const su2double V_ij = 0.5*(U_j[iVar] - U_i[iVar]);
 
           su2double Project_Grad_i = -V_ij;
           su2double Project_Grad_j = -V_ij;
@@ -289,66 +289,67 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             Project_Grad_j *= Limiter_j[iVar];
           }
 
-          // flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-          // flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
-          flowPrimVar_i[iVar] = U_i[iVar] + Project_Grad_i;
-          flowPrimVar_j[iVar] = U_j[iVar] - Project_Grad_j;
+          flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
+          flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
+          // flowPrimVar_i[iVar] = U_i[iVar] + Project_Grad_i;
+          // flowPrimVar_j[iVar] = U_j[iVar] - Project_Grad_j;
         }
 
-        // const bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
-        // const bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
+        // su2double SqVel_i = 0, SqVel_j = 0;
+        // for (auto iDim = 0; iDim < nDim; iDim++) {
+        //   SqVel_i += pow(flowPrimVar_i[iDim+1]/flowPrimVar_i[0],2);
+        //   SqVel_j += pow(flowPrimVar_j[iDim+1]/flowPrimVar_j[0],2);
 
-        su2double SqVel_i = 0, SqVel_j = 0;
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          SqVel_i += pow(flowPrimVar_i[iDim+1]/flowPrimVar_i[0],2);
-          SqVel_j += pow(flowPrimVar_j[iDim+1]/flowPrimVar_j[0],2);
-
-        }
-        const su2double Pressure_i = flowPrimVar_i[nDim+1]-0.5*flowPrimVar_i[0]*SqVel_i-solution_i[0];
-        const su2double Pressure_j = flowPrimVar_j[nDim+1]-0.5*flowPrimVar_j[0]*SqVel_j-solution_j[0];
-
-        const bool neg_pres_or_rho_i = (flowPrimVar_i[0] < 0.0) || (flowPrimVar_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
-        const bool neg_pres_or_rho_j = (flowPrimVar_j[0] < 0.0) || (flowPrimVar_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
-
-        // su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
-        // su2double R_Plus_One = R+1.;
-        // su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-        // for (iDim = 0; iDim < nDim; iDim++) {
-        //   su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/R_Plus_One;
-        //   RoeSqVel += pow(RoeVelocity, 2);
-        //   SqVel_i += pow(flowPrimVar_i[iDim+1],2);
-        //   SqVel_j += pow(flowPrimVar_j[iDim+1],2);
         // }
-        // su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/R_Plus_One;
-        // su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
+        // const su2double Pressure_i = flowPrimVar_i[nDim+1]-0.5*flowPrimVar_i[0]*SqVel_i-solution_i[0];
+        // const su2double Pressure_j = flowPrimVar_j[nDim+1]-0.5*flowPrimVar_j[0]*SqVel_j-solution_j[0];
 
-        // const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
+        // const bool neg_pres_or_rho_i = (flowPrimVar_i[0] < 0.0) || (flowPrimVar_i[nDim+1] < 0.0) || (Pressure_i < 0.0);
+        // const bool neg_pres_or_rho_j = (flowPrimVar_j[0] < 0.0) || (flowPrimVar_j[nDim+1] < 0.0) || (Pressure_j < 0.0);
 
-        // bad_i = neg_pres_or_rho_i || bad_roe || bad_i;
-        // bad_j = neg_pres_or_rho_j || bad_roe || bad_j;
-        bad_i = neg_pres_or_rho_i || bad_i;
-        bad_j = neg_pres_or_rho_j || bad_j;
+        // bad_i = neg_pres_or_rho_i || bad_i;
+        // bad_j = neg_pres_or_rho_j || bad_j;
+
+        const bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
+        const bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
+
+        su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
+        su2double R_Plus_One = R+1.;
+        su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/R_Plus_One;
+          RoeSqVel += pow(RoeVelocity, 2);
+          SqVel_i += pow(flowPrimVar_i[iDim+1],2);
+          SqVel_j += pow(flowPrimVar_j[iDim+1],2);
+        }
+        su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/R_Plus_One;
+        su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
+
+        const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
+
+        bad_i = neg_pres_or_rho_i || bad_roe || bad_i;
+        bad_j = neg_pres_or_rho_j || bad_roe || bad_j;
 
       }
       else {
-        // for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-        //   flowPrimVar_i[iVar] = V_i[iVar];
-        //   flowPrimVar_j[iVar] = V_j[iVar];
-        // }
-        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++) {
-          flowPrimVar_i[iVar] = U_i[iVar];
-          flowPrimVar_j[iVar] = U_j[iVar];
+        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          flowPrimVar_i[iVar] = V_i[iVar];
+          flowPrimVar_j[iVar] = V_j[iVar];
         }
+        // for (iVar = 0; iVar < solver[FLOW_SOL]->GetnVar(); iVar++) {
+        //   flowPrimVar_i[iVar] = U_i[iVar];
+        //   flowPrimVar_j[iVar] = U_j[iVar];
+        // }
       }
 
       const bool bad_edge = bad_i || bad_j;
 
       /*--- Store extrapolated state ---*/
 
-      // numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, 
-      //                        bad_edge ? V_j : flowPrimVar_j);
-      numerics->SetConservative(bad_edge ? U_i : flowPrimVar_i, 
-                                bad_edge ? U_j : flowPrimVar_j);
+      numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, 
+                             bad_edge ? V_j : flowPrimVar_j);
+      // numerics->SetConservative(bad_edge ? U_i : flowPrimVar_i, 
+      //                           bad_edge ? U_j : flowPrimVar_j);
       numerics->SetTurbVar(bad_edge ? T_i : solution_i, 
                            bad_edge ? T_j : solution_j);
 

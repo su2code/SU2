@@ -60,27 +60,6 @@ CUpwScalar::~CUpwScalar(void) {
   delete [] Jacobian_j;
 }
 
-// void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
-//                              const su2double *lim_i, const su2double *lim_j,
-//                              const su2double *r_i, const su2double *r_j,
-//                              const su2double *r_n_i, const su2double *r_n_j) {
-//   const bool wasActive = AD::BeginPassive();
-
-//   for (auto iVar = 0; iVar < nVar; iVar++) {
-//     for (auto jVar = 0; jVar < nVar; jVar++) {
-//       const su2double dFidUi = jac_i[iVar][jVar]*(*r_i)*(1.0-muscl_kappa*lim_i[jVar])/(*r_n_i);
-//       const su2double dFidUj = jac_i[iVar][jVar]*(*r_i)*muscl_kappa*lim_i[jVar]/(*r_n_j);
-//       const su2double dFjdUi = jac_j[iVar][jVar]*(*r_j)*muscl_kappa*lim_j[jVar]/(*r_n_i);
-//       const su2double dFjdUj = jac_j[iVar][jVar]*(*r_j)*(1.0-muscl_kappa*lim_j[jVar])/(*r_n_j);
-    
-//       jac_i[iVar][jVar] = dFidUi + dFjdUi;
-//       jac_j[iVar][jVar] = dFidUj + dFjdUj;
-//     }
-//   }
-
-
-//   AD::EndPassive(wasActive);
-// }
 void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
                              const su2double *lim_i, const su2double *lim_j,
                              const su2double *r_i, const su2double *r_j,
@@ -89,18 +68,40 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      const su2double dFidUi = jac_i[iVar][jVar]*(1.0-muscl_kappa*lim_i[jVar]);
-      const su2double dFjdUj = jac_j[iVar][jVar]*(1.0-muscl_kappa*lim_j[jVar]);
-      const su2double dFjdUi = jac_j[iVar][jVar]*muscl_kappa*lim_j[jVar];
-      const su2double dFidUj = jac_i[iVar][jVar]*muscl_kappa*lim_i[jVar];
-
-      jac_i[iVar][jVar] = dFidUi+dFjdUi;
-      jac_j[iVar][jVar] = dFidUj+dFjdUj;
+      const su2double dFidUi = jac_i[iVar][jVar]*(*r_i)*(1.0-muscl_kappa*lim_i[jVar])/(*r_n_i);
+      const su2double dFidUj = jac_i[iVar][jVar]*(*r_i)*muscl_kappa*lim_i[jVar]/(*r_n_j);
+      const su2double dFjdUi = jac_j[iVar][jVar]*(*r_j)*muscl_kappa*lim_j[jVar]/(*r_n_i);
+      const su2double dFjdUj = jac_j[iVar][jVar]*(*r_j)*(1.0-muscl_kappa*lim_j[jVar])/(*r_n_j);
+    
+      jac_i[iVar][jVar] = dFidUi + dFjdUi;
+      jac_j[iVar][jVar] = dFidUj + dFjdUj;
     }
   }
 
+
   AD::EndPassive(wasActive);
 }
+
+// void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
+//                              const su2double *lim_i, const su2double *lim_j,
+//                              const su2double *r_i, const su2double *r_j,
+//                              const su2double *r_n_i, const su2double *r_n_j) {
+//   const bool wasActive = AD::BeginPassive();
+
+//   for (auto iVar = 0; iVar < nVar; iVar++) {
+//     for (auto jVar = 0; jVar < nVar; jVar++) {
+//       const su2double dFidUi = jac_i[iVar][jVar]*(1.0-muscl_kappa*lim_i[jVar]);
+//       const su2double dFjdUj = jac_j[iVar][jVar]*(1.0-muscl_kappa*lim_j[jVar]);
+//       const su2double dFjdUi = jac_j[iVar][jVar]*muscl_kappa*lim_j[jVar];
+//       const su2double dFidUj = jac_i[iVar][jVar]*muscl_kappa*lim_i[jVar];
+
+//       jac_i[iVar][jVar] = dFidUi+dFjdUi;
+//       jac_j[iVar][jVar] = dFidUj+dFjdUj;
+//     }
+//   }
+
+//   AD::EndPassive(wasActive);
+// }
 
 CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
@@ -121,51 +122,51 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  // /*--- Primitive variables at point i ---*/
-
-  // for (auto iDim = 0; iDim < nDim; iDim++)
-  //   Velocity_i[iDim] = V_i[iDim+1];
-  // Pressure_i = V_i[nDim+1];
-  // Density_i  = V_i[nDim+2];
-  // Enthalpy_i = V_i[nDim+3];
-  // Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  // SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-
-  // /*--- Primitive variables at point j ---*/
-
-  // for (auto iDim = 0; iDim < nDim; iDim++)
-  //   Velocity_j[iDim] = V_j[iDim+1];
-  // Pressure_j = V_j[nDim+1];
-  // Density_j  = V_j[nDim+2];
-  // Enthalpy_j = V_j[nDim+3];
-  // Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  // SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
-
   /*--- Primitive variables at point i ---*/
 
-  su2double SqVel_i = 0.0;
-  Density_i  = U_i[0];
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
-    SqVel_i += Velocity_i[iDim]*Velocity_i[iDim];
-  }
-  Energy_i = U_i[nDim+1]/U_i[0];
-  Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-0.5*Density_i*SqVel_i-TurbVar_i[0]);
-  Enthalpy_i = Energy_i+Pressure_i/Density_i;
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Velocity_i[iDim] = V_i[iDim+1];
+  Pressure_i = V_i[nDim+1];
+  Density_i  = V_i[nDim+2];
+  Enthalpy_i = V_i[nDim+3];
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
 
-  su2double SqVel_j = 0.0;
-  Density_j  = U_j[0];
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    Velocity_j[iDim] = U_j[iDim+1]/U_j[0];
-    SqVel_j += Velocity_j[iDim]*Velocity_j[iDim];
-  }
-  Energy_j = U_j[nDim+1]/U_j[0];
-  Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-TurbVar_j[0]);
-  Enthalpy_j = Energy_j+Pressure_j/Density_j;
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Velocity_j[iDim] = V_j[iDim+1];
+  Pressure_j = V_j[nDim+1];
+  Density_j  = V_j[nDim+2];
+  Enthalpy_j = V_j[nDim+3];
+  Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
+
+  // /*--- Primitive variables at point i ---*/
+
+  // su2double SqVel_i = 0.0;
+  // Density_i  = U_i[0];
+  // for (auto iDim = 0; iDim < nDim; iDim++) {
+  //   Velocity_i[iDim] = U_i[iDim+1]/U_i[0];
+  //   SqVel_i += Velocity_i[iDim]*Velocity_i[iDim];
+  // }
+  // Energy_i = U_i[nDim+1]/U_i[0];
+  // Pressure_i = Gamma_Minus_One*(U_i[nDim+1]-0.5*Density_i*SqVel_i-TurbVar_i[0]);
+  // Enthalpy_i = Energy_i+Pressure_i/Density_i;
+  // SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
+
+  // /*--- Primitive variables at point j ---*/
+
+  // su2double SqVel_j = 0.0;
+  // Density_j  = U_j[0];
+  // for (auto iDim = 0; iDim < nDim; iDim++) {
+  //   Velocity_j[iDim] = U_j[iDim+1]/U_j[0];
+  //   SqVel_j += Velocity_j[iDim]*Velocity_j[iDim];
+  // }
+  // Energy_j = U_j[nDim+1]/U_j[0];
+  // Pressure_j = Gamma_Minus_One*(U_j[nDim+1]-0.5*Density_j*SqVel_j-TurbVar_j[0]);
+  // Enthalpy_j = Energy_j+Pressure_j/Density_j;
+  // SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   R = sqrt(fabs(Density_j/Density_i));
   R_Plus_One = R+1.;
@@ -207,10 +208,10 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                 CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
-  // AD::SetPreaccIn(V_i, nDim+1);
-  // AD::SetPreaccIn(V_j, nDim+1);
-  AD::SetPreaccIn(U_i, nDim+2);
-  AD::SetPreaccIn(U_j, nDim+2);
+  AD::SetPreaccIn(V_i, nDim+1);
+  AD::SetPreaccIn(V_j, nDim+1);
+  // AD::SetPreaccIn(U_i, nDim+2);
+  // AD::SetPreaccIn(U_j, nDim+2);
 }
 
 void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
@@ -228,10 +229,10 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                  CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  // AD::SetPreaccIn(V_i, nDim+4);
-  // AD::SetPreaccIn(V_j, nDim+4);
-  AD::SetPreaccIn(U_i, nDim+2);
-  AD::SetPreaccIn(U_j, nDim+2);
+  AD::SetPreaccIn(V_i, nDim+4);
+  AD::SetPreaccIn(V_j, nDim+4);
+  // AD::SetPreaccIn(U_i, nDim+2);
+  // AD::SetPreaccIn(U_j, nDim+2);
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
@@ -271,23 +272,23 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
     /*--- Fluxes ---*/
 
-    // const su2double rkv_i = ProjVel_i*Density_i*TurbVar_i[0];
-    // const su2double rkv_j = ProjVel_j*Density_j*TurbVar_j[0];
-    // const su2double rov_i = ProjVel_i*Density_i*TurbVar_i[1];
-    // const su2double rov_j = ProjVel_j*Density_j*TurbVar_j[1];
+    const su2double rkv_i = ProjVel_i*Density_i*TurbVar_i[0];
+    const su2double rkv_j = ProjVel_j*Density_j*TurbVar_j[0];
+    const su2double rov_i = ProjVel_i*Density_i*TurbVar_i[1];
+    const su2double rov_j = ProjVel_j*Density_j*TurbVar_j[1];
 
-    const su2double rkv_i = ProjVel_i*TurbVar_i[0];
-    const su2double rkv_j = ProjVel_j*TurbVar_j[0];
-    const su2double rov_i = ProjVel_i*TurbVar_i[1];
-    const su2double rov_j = ProjVel_j*TurbVar_j[1];
+    // const su2double rkv_i = ProjVel_i*TurbVar_i[0];
+    // const su2double rkv_j = ProjVel_j*TurbVar_j[0];
+    // const su2double rov_i = ProjVel_i*TurbVar_i[1];
+    // const su2double rov_j = ProjVel_j*TurbVar_j[1];
 
     /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
 
-    // const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
-    // const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
+    const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
+    const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
 
-    const su2double Delta_rk = TurbVar_j[0]-TurbVar_i[0];
-    const su2double Delta_ro = TurbVar_j[1]-TurbVar_i[1];
+    // const su2double Delta_rk = TurbVar_j[0]-TurbVar_i[0];
+    // const su2double Delta_ro = TurbVar_j[1]-TurbVar_i[1];
 
     const su2double Diss_rk = Lambda[0]+RoeTke*(Gamma - FIVE3)*(Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])/RoeSoundSpeed2;
     const su2double Diss_ro = Lambda[0];
