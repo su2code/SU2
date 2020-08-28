@@ -2450,6 +2450,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
     CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
+    /* Total number of variables between all solvers */
+    unsigned short nVarTot = solverFlow->GetnVar();
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      nVarTot += solverTurb->GetnVar();
+
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
     if (iMesh == MESH_0) {
@@ -2500,10 +2505,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     New_Func = 0.0;
     for (auto iVar = 0; iVar < solverFlow->GetnVar(); iVar++)
-      New_Func += solverFlow->GetRes_RMS(iVar)/solverFlow->GetRes_Ini(iVar);
+      New_Func += solverFlow->GetRes_RMS(iVar)/(su2double(nVarTot)*solverFlow->GetRes_Ini(iVar));
     if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
       for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
-        New_Func += solverTurb->GetRes_RMS(iVar)/solverTurb->GetRes_Ini(iVar);
+        New_Func += solverTurb->GetRes_RMS(iVar)/(su2double(nVarTot)*solverTurb->GetRes_Ini(iVar));
     // for (auto iVar = 0; iVar < nVar; iVar++) {
     //   // New_Func += Residual_RMS[iVar];
     //   New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
@@ -2536,13 +2541,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      Reset the array so that we delay the next decrease for some iterations. */
 
     if (NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) {
-      unsigned short nVarTot = solverFlow->GetnVar();
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-        nVarTot += solverTurb->GetnVar();
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Series[iCounter] = nVarTot;
         // NonLinRes_Series[iCounter] = New_Func;
-        // NonLinRes_Series[iCounter] = 1.0;
+        NonLinRes_Series[iCounter] = 1.0;
       // for (auto iVar = 0; iVar < nVar; iVar++)
       //   Residual_Ini[iVar] = Residual_RMS[iVar];
       for (auto iVar = 0; iVar < nVar; iVar++)
