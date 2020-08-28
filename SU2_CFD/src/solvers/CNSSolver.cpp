@@ -203,11 +203,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        // SetSolution_Gradient_GG(geometry, config, false); break;
         SetPrimitive_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        // SetSolution_Gradient_LS(geometry, config, false); break;
         SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
