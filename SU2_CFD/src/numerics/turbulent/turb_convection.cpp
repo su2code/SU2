@@ -44,7 +44,8 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
     Jacobian_j[iVar] = new su2double [nVar];
   }
 
-  muscl_kappa = 0.5*config->GetMUSCL_Kappa();
+  // muscl_kappa = 0.5*config->GetMUSCL_Kappa();
+  muscl_kappa = 0.5;
   muscl = val_muscl;
 }
 
