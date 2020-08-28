@@ -2511,12 +2511,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      current and previous iterations. */
 
     NonLinRes_Func = (New_Func - Old_Func);
-    NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
+    NonLinRes_Series[NonLinRes_Counter%Res_Count] = NonLinRes_Func;
 
     /* Increment the counter, if we hit the max size, then start over. */
 
     NonLinRes_Counter++;
-    if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
+    // if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
 
     /* Sum the total change in nonlinear residuals over the previous
      set of all stored iterations. */
@@ -2533,7 +2533,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      rate. In this situation, we force a reduction of the CFL in all cells.
      Reset the array so that we delay the next decrease for some iterations. */
 
-    if (NonLinRes_Value > 0.1*New_Func || fabs(NonLinRes_Value) < 0.1*New_Func) {
+    if (NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) {
       NonLinRes_Counter = 0;
       // unsigned short nVarTot = solverFlow->GetnVar();
       // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
@@ -2555,7 +2555,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
 
-    if (NonLinRes_Value > 0.1*New_Func || fabs(NonLinRes_Value) < 0.1*New_Func) {
+    if (NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) {
       reduceCFL = true;
       New_Func = 1.0;
     }

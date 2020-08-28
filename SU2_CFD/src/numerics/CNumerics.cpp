@@ -576,7 +576,6 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   c2    = pow(*c,2);
   alpha = 1.0/(2.*c2);
   kappa = (Gamma - FIVE3)*(*k);
-  // kappa = -TWO3*(*k);
 
 
   if (nDim == 2) {

@@ -68,7 +68,7 @@ protected:
   su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
   su2double NonLinRes_Value,     /*!< \brief Summed value of the nonlinear residual indicator. */
   NonLinRes_Func;                /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
-  unsigned short NonLinRes_Counter;   /*!< \brief Number of elements of the nonlinear residual indicator series. */
+  unsigned long NonLinRes_Counter;    /*!< \brief Number of elements of the nonlinear residual indicator series. */
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
   New_Func;            /*!< \brief Current value of the nonlinear residual indicator. */
