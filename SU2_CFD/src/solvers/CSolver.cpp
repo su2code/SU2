@@ -2534,7 +2534,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      Reset the array so that we delay the next decrease for some iterations. */
 
     if (NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) {
-      NonLinRes_Counter = 0;
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         // NonLinRes_Series[iCounter] = New_Func;
         NonLinRes_Series[iCounter] = 1.0;
@@ -2554,6 +2553,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     SU2_OMP_BARRIER
 
     if (NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) {
+      NonLinRes_Counter = 0;
       reduceCFL = true;
       New_Func = 1.0;
     }
