@@ -101,7 +101,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  if (sst) {
+  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
     turb_ke_i = TurbVar_i[0];
     turb_ke_j = TurbVar_j[0];
   }
