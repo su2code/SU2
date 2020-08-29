@@ -3264,7 +3264,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         SqVel_i += pow(Primitive_i[iDim+1],2);
         SqVel_j += pow(Primitive_j[iDim+1],2);
       }
-      su2double RoeEnthalpy = (R*Primitive_j[nDim+3]+Primitive_i[nDim+3])/(R+1);
+      su2double Energy_i = Primitive_i[nDim+1]/(Gamma_Minus_One*Primitive_i[nDim+2])+tke_i+0.5*SqVel_i;
+      su2double Energy_j = Primitive_j[nDim+1]/(Gamma_Minus_One*Primitive_j[nDim+2])+tke_j+0.5*SqVel_j;
+      su2double Enthalpy_i = Energy_i+Primitive_i[nDim+1]/Primitive_i[nDim+2];
+      su2double Enthalpy_j = Energy_j+Primitive_j[nDim+1]/Primitive_j[nDim+2];
+      su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
       su2double RoeTke = (R*tke_j+tke_i)/(R+1);
 
       const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);

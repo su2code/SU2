@@ -294,7 +294,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           SqVel_i += pow(flowPrimVar_i[iDim+1],2);
           SqVel_j += pow(flowPrimVar_j[iDim+1],2);
         }
-        su2double RoeEnthalpy = (R*flowPrimVar_j[nDim+3]+flowPrimVar_i[nDim+3])/R_Plus_One;
+        su2double Energy_i = flowPrimVar_i[nDim+1]/(Gamma_Minus_One*flowPrimVar_i[nDim+2])+solution_i[0]+0.5*SqVel_i;
+        su2double Energy_j = flowPrimVar_j[nDim+1]/(Gamma_Minus_One*flowPrimVar_j[nDim+2])+solution_j[0]+0.5*SqVel_j;
+        su2double Enthalpy_i = Energy_i+flowPrimVar_i[nDim+1]/flowPrimVar_i[nDim+2];
+        su2double Enthalpy_j = Energy_j+flowPrimVar_j[nDim+1]/flowPrimVar_j[nDim+2];
+        su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
         su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
 
         const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
