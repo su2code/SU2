@@ -101,14 +101,23 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
+  if (sst) {
+    turb_ke_i = TurbVar_i[0];
+    turb_ke_j = TurbVar_j[0];
+  }
+
   /*--- Primitive variables at point i ---*/
 
   for (auto iDim = 0; iDim < nDim; iDim++)
     Velocity_i[iDim] = V_i[iDim+1];
   Pressure_i = V_i[nDim+1];
   Density_i  = V_i[nDim+2];
-  Enthalpy_i = V_i[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Energy_i += 0.5*pow(Velocity_i[iDim],2);
+  Enthalpy_i = Energy_i + Pressure_i/Density_i;
+  // Enthalpy_i = V_i[nDim+3];
+  // Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
@@ -117,8 +126,12 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     Velocity_j[iDim] = V_j[iDim+1];
   Pressure_j = V_j[nDim+1];
   Density_j  = V_j[nDim+2];
-  Enthalpy_j = V_j[nDim+3];
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Energy_j += 0.5*pow(Velocity_j[iDim],2);
+  Enthalpy_j = Energy_j + Pressure_j/Density_j;
+  // Enthalpy_j = V_j[nDim+3];
+  // Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   R = sqrt(fabs(Density_j/Density_i));
