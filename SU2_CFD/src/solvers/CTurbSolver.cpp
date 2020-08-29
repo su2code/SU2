@@ -794,7 +794,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
       const unsigned long index = iPoint * nVar + iVar;
       if (sa_model || sst_model) {
-        if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))) {
+        if (LinSysSol[index] < -allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))) {
           const su2double invratio = fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps);
           localUnderRelaxation = min(allowableRatio*invratio, localUnderRelaxation);
         }
@@ -814,7 +814,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
 
-    if (localUnderRelaxation < 0.01 && nodes->GetLocalCFL(iPoint) > CFLMin*CFLInc) localUnderRelaxation = 0.0;
+    if (localUnderRelaxation < 1.0e-10 && nodes->GetLocalCFL(iPoint) > CFLMin*CFLInc) localUnderRelaxation = 0.0;
 
     /* Store the under-relaxation factor for this point. */
 
