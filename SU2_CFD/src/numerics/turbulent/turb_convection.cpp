@@ -187,8 +187,8 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-  RoeTke = (R*TurbVar_j[0]/Density_j+TurbVar_i[0]/Density_i)/R_Plus_One;
-  RoeOmega = (R*TurbVar_j[1]/Density_j+TurbVar_i[1]/Density_i)/R_Plus_One;
+  RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/R_Plus_One;
+  RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])/R_Plus_One;
   RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
@@ -221,10 +221,10 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
     /*--- Fluxes ---*/
 
-    const su2double rkv_i = ProjVel_i*Density_i*TurbVar_i[0];
-    const su2double rkv_j = ProjVel_j*Density_j*TurbVar_j[0];
-    const su2double rov_i = ProjVel_i*Density_i*TurbVar_i[1];
-    const su2double rov_j = ProjVel_j*Density_j*TurbVar_j[1];
+    const su2double rkv_i = Density_i*TurbVar_i[0]*ProjVel_i;
+    const su2double rkv_j = Density_j*TurbVar_j[0]*ProjVel_j;
+    const su2double rov_i = Density_i*TurbVar_i[1]*ProjVel_i;
+    const su2double rov_j = Density_j*TurbVar_j[1]*ProjVel_j;
 
     /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
 
