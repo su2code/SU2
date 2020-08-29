@@ -4896,7 +4896,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.99;
+  const su2double allowableRatio = 0.2;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2);
