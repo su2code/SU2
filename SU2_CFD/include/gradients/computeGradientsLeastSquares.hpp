@@ -126,16 +126,16 @@ void computeGradientsLeastSquares(CSolver* solver,
       {
         weight = 1.0 / weight;
 
-        Rmatrix(iPoint,0,0) += dist_ij[0]*dist_ij[0]*sqrt(weight);
-        Rmatrix(iPoint,0,1) += dist_ij[0]*dist_ij[1]*sqrt(weight);
-        Rmatrix(iPoint,1,1) += dist_ij[1]*dist_ij[1]*sqrt(weight);
+        Rmatrix(iPoint,0,0) += dist_ij[0]*dist_ij[0]*weight;
+        Rmatrix(iPoint,0,1) += dist_ij[0]*dist_ij[1]*weight;
+        Rmatrix(iPoint,1,1) += dist_ij[1]*dist_ij[1]*weight;
 
         if (nDim == 3)
         {
-          Rmatrix(iPoint,0,2) += dist_ij[0]*dist_ij[2]*sqrt(weight);
-          Rmatrix(iPoint,1,2) += dist_ij[1]*dist_ij[2]*sqrt(weight);
-          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*sqrt(weight);
-          Rmatrix(iPoint,2,2) += dist_ij[2]*dist_ij[2]*sqrt(weight);
+          Rmatrix(iPoint,0,2) += dist_ij[0]*dist_ij[2]*weight;
+          Rmatrix(iPoint,1,2) += dist_ij[1]*dist_ij[2]*weight;
+          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
+          Rmatrix(iPoint,2,2) += dist_ij[2]*dist_ij[2]*weight;
         }
 
         /*--- Entries of c:= transpose(A)*b ---*/
