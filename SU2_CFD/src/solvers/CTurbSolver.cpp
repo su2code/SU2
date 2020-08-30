@@ -1105,6 +1105,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent;
   const su2double *Solution_Fine = nullptr;
+  const bool restart_cfl = config->GetRestart_CFL();
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
@@ -1214,6 +1215,11 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
+
+  /*--- Store the CFL number if loaded from restart ---*/
+  if (restart_cfl)
+    for (auto iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
+      nodes->SetLocalCFL(iPoint, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint)*config->GetCFLRedCoeff_Turb());
 
   /*--- Go back to single threaded execution. ---*/
   SU2_OMP_MASTER

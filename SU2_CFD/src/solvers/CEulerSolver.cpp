@@ -11763,11 +11763,12 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   su2double Area_Children, Area_Parent;
   const su2double* Solution_Fine = nullptr;
   const passivedouble* Coord = nullptr;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
-  bool steady_restart = config->GetSteadyRestart();
-  bool turbulent = (config->GetKind_Turb_Model() != NONE);
+  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND));
+  const bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
+  const bool steady_restart = config->GetSteadyRestart();
+  const bool turbulent = (config->GetKind_Turb_Model() != NONE);
+  const bool restart_cfl = config->GetRestart_CFL();
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
@@ -11838,6 +11839,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
+      }
+
+      /*--- Load local CFL number ---*/
+
+      if (restart_cfl) {
+        index += nDim*(config->GetGrid_Movement());
+        nodes->SetLocalCFL(iPoint, Restart_Data[index]);
       }
 
       /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the

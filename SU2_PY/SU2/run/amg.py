@@ -199,7 +199,7 @@ def amg ( config , kind='' ):
         if (config_cfd.WRT_BINARY_RESTART == "NO") and (config_cfd.READ_BINARY_RESTART == "NO"):
             sol_ext = ".csv"
 
-    config_cfd.VOLUME_OUTPUT = "COORDINATES, SOLUTION, PRIMITIVE"
+    config_cfd.VOLUME_OUTPUT = "COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER"
         
     if config['RESTART_SOL'] == 'NO':
         
@@ -236,6 +236,8 @@ def amg ( config , kind='' ):
 
                 cur_solfil_adj = "restart_adj" + sol_ext
 
+                config_cfd_ad.RESTART_CFL         = 'YES'
+
                 config_cfd_ad.CONV_FILENAME        = "history_adj"
                 config_cfd_ad.RESTART_ADJ_FILENAME = cur_solfil_adj
                 config_cfd_ad.SOLUTION_FILENAME    = cur_solfil
@@ -248,14 +250,14 @@ def amg ( config , kind='' ):
                 config_cfd_ad.ADAP_ARMAX           = config.PYADAP_ARMAX
                 config_cfd_ad.ADAP_COMPLEXITY      = int(mesh_sizes[0])
 
-                cfl = su2amg.get_min_cfl(history_format)
-                cfl = max(cfl, float(config.CFL_NUMBER))
-                su2amg.set_cfl(config_cfd_ad, cfl)
+                # cfl = su2amg.get_min_cfl(history_format)
+                # cfl = max(cfl, float(config.CFL_NUMBER))
+                # su2amg.set_cfl(config_cfd_ad, cfl)
 
-                if (config.KIND_TURB_MODEL != 'NONE'):
-                    cfl_turb = su2amg.get_min_cfl_turb(history_format)
-                    cfl_red  = cfl_turb/cfl
-                    config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
+                # if (config.KIND_TURB_MODEL != 'NONE'):
+                #     cfl_turb = su2amg.get_min_cfl_turb(history_format)
+                #     cfl_red  = cfl_turb/cfl
+                #     config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
 
                 SU2_CFD(config_cfd_ad)
 
@@ -313,6 +315,8 @@ def amg ( config , kind='' ):
 
         if adap_sensor == 'GOAL':
             config_cfd_ad = copy.deepcopy(config)
+
+            config_cfd_ad.RESTART_CFL           = 'YES'
 
             config_cfd_ad.CONV_FILENAME         = "history_adj"
             config_cfd_ad.RESTART_FILENAME      = cur_solfil
@@ -534,14 +538,14 @@ def amg ( config , kind='' ):
                     config_cfd_ad.ITER                   = int(adap_adj_iter[iSiz])
                     config_cfd_ad.ADAP_COMPLEXITY        = int(mesh_sizes[iSiz])
 
-                    cfl = su2amg.get_min_cfl(history_format)
-                    cfl = max(cfl, adap_flow_cfl[iSiz])
-                    su2amg.set_cfl(config_cfd_ad, cfl)
+                    # cfl = su2amg.get_min_cfl(history_format)
+                    # cfl = max(cfl, adap_flow_cfl[iSiz])
+                    # su2amg.set_cfl(config_cfd_ad, cfl)
 
-                    if (config.KIND_TURB_MODEL != 'NONE'):
-                        cfl_turb = su2amg.get_min_cfl_turb(history_format)
-                        cfl_red  = cfl_turb/cfl
-                        config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
+                    # if (config.KIND_TURB_MODEL != 'NONE'):
+                    #     cfl_turb = su2amg.get_min_cfl_turb(history_format)
+                    #     cfl_red  = cfl_turb/cfl
+                    #     config_cfd_ad.CFL_REDUCTION_TURB = float(cfl_red)
 
                     SU2_CFD(config_cfd_ad)
 
