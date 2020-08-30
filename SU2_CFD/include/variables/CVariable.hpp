@@ -97,6 +97,7 @@ protected:
 
   VectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   VectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  VectorOfMatrix Smatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
