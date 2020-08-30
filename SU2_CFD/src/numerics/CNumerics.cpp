@@ -1919,7 +1919,7 @@ su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
 
   assert((Dissipation_i >= 0) && (Dissipation_i <= 1));
   assert((Dissipation_j >= 0) && (Dissipation_j <= 1));
-  if (roe_low_diss == FD_DUCROS || roe_low_diss == NTS_DUCROS) {
+  if (roe_low_diss == FD_DUCROS || roe_low_diss == NTS_DUCROS || roe_low_diss == DUCROS) {
     assert((Sensor_i >= 0) && (Sensor_i <= 1));
     assert((Sensor_j >= 0) && (Sensor_j <= 1));
   }
@@ -1962,6 +1962,15 @@ su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
     const su2double phi2 = Mean_Dissipation;
 
     Dissipation_ij = max(Min_Dissipation, phi1 + phi2 - (phi1*phi2));
+
+  } else if (roe_low_diss == DUCROS) {
+
+    if (config->GetHybrid_Central_Upwind()){
+      Dissipation_ij = 1.0;
+    }
+    else{
+      Dissipation_ij = max(Min_Dissipation, max(Sensor_i,Sensor_j));
+    }
 
   } else {
 

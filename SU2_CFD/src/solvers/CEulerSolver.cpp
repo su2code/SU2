@@ -2638,7 +2638,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   if (roe_low_dissipation) {
     SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS || kind_row_dissipation == DUCROS){
       SetUpwind_Ducros_Sensor(geometry, config);
     }
   }
@@ -3274,7 +3274,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetDissipation(nodes->GetRoe_Dissipation(iPoint),
                                nodes->GetRoe_Dissipation(jPoint));
 
-      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS || kind_dissipation == DUCROS){
         numerics->SetSensor(nodes->GetSensor(iPoint),
                             nodes->GetSensor(jPoint));
       }
@@ -3301,6 +3301,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       su2double Ortho = min(geometry->Orthogonality[iPoint],
                         geometry->Orthogonality[jPoint]) * PI_NUMBER / 180.;
       su2double Sigma = pow(cos(Ortho),2.0);
+
+      su2double Ducros_ij = 0.0;
+      if (config->GetKind_RoeLowDiss() == DUCROS){
+        Ducros_ij = max(nodes->GetSensor(iPoint),
+                        nodes->GetSensor(jPoint));
+      }
+
+      Sigma = max(Sigma, Ducros_ij);
 
       for (iVar = 0; iVar < nVar; iVar++)
       {
@@ -3330,6 +3338,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         delete [] Proj_Flux_Jac_i[iVar];
         delete [] Proj_Flux_Jac_j[iVar];
       }
+      delete [] Proj_Flux_Jac_i;
       delete [] Proj_Flux_Jac_j;
 
     }else
@@ -3913,7 +3922,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
 
       /*---- Dilatation for jPoint ---*/
 
-      su2double uixi=0.0;
+      su2double uixi = 0.0;
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
         uixi += nodes->GetGradient_Primitive(jPoint,iDim+1, iDim);
       }
@@ -3927,10 +3936,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
         Vorticity[1] = -(nodes->GetGradient_Primitive(jPoint,3,0)-nodes->GetGradient_Primitive(jPoint,1,2));
       }
 
-      su2double Omega = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        Omega += pow(Vorticity[iDim], 2);
-      }
+      su2double Omega = pow(Vorticity[0], 2) + pow(Vorticity[1], 2) + pow(Vorticity[2], 2);
       Omega = sqrt(Omega);
 
       su2double Ducros_j = 0.0;
@@ -3942,13 +3948,15 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
                (config->GetKind_RoeLowDiss() == DUCROS)){
         Ducros_j = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
 
-        // if (config->GetKind_RoeLowDiss() == DUCROS){
-        //   su2double MaxLength  = geometry->node[jPoint]->GetMaxLength();
-        //   su2double SpeedSound = nodes->GetSoundSpeed(jPoint);
-        //   su2double Switch_j   = 0.5 * (1. - tanh(2.5 + 10.* (MaxLength/SpeedSound) * uixi));
-        //   //su2double Switch_j   = fabs(tanh(10. * (MaxLength/SpeedSound) * uixi));
-        //   Ducros_j *= Switch_j;
-        // }
+        /*--- Bhagatwala and Lele switch for the shock sensor
+        Journal of Computational Physics 228 (2009) 4965–4969 ---*/
+        if (config->GetKind_RoeLowDiss() == DUCROS){
+          su2double MaxLength  = geometry->node[jPoint]->GetMaxLength();
+          su2double SpeedSound = nodes->GetSoundSpeed(jPoint);
+          su2double Switch_j   = 0.5 * (1. - tanh(2.5 + 10.* (MaxLength/SpeedSound) * uixi));
+          //su2double Switch_j   = fabs(tanh(10. * (MaxLength/SpeedSound) * uixi));
+          Ducros_j *= Switch_j;
+        }
       }
       Ducros_i = max(Ducros_i, Ducros_j);
     }
