@@ -3219,6 +3219,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
       }
       if (limiterTurb) {
+        CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         turbLimiter_i = turbNodes->GetLimiter(iPoint);
         turbLimiter_j = turbNodes->GetLimiter(jPoint);
       }
