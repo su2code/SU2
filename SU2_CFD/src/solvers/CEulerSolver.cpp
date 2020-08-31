@@ -3414,11 +3414,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (bad_edge || !muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
+          su2double tke_n_i = 0, tke_n_j = 0;
+          if (tkeNeeded) {
+            tke_n_i = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+            tke_n_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
+          }
           SetExtrapolationJacobian(solver, geometry, config,
                                    Primitive_i, Primitive_j,
                                    V_i, V_j,
                                    &tke_i, &tke_j,
-                                   solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0), solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0),
+                                   &tke_n_i, &tke_n_j,
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
@@ -3429,7 +3434,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    Primitive_j, Primitive_i,
                                    V_j, V_i,
                                    &tke_j, &tke_i,
-                                   solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0), solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+                                   &tke_n_j, &tke_n_i,
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
