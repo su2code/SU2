@@ -319,9 +319,14 @@ protected:
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
+                                su2double *primvar_i, su2double *primvar_j,
+                                su2double *primvar_n_i, su2double *primvar_n_j,
+                                su2double *k_i, su2double *k_j,
+                                su2double *k_n_i, su2double *k_n_j,
                                 su2double* limiter_i, su2double* limiter_j,
                                 su2double *turbLimiter_i, su2double* turbLimiter_j,
                                 const su2double *const *const dFdU_i,
+                                const su2double *const *const dFdU_j,
                                 unsigned long iPoint, unsigned long jPoint);
 
   /*!
