@@ -566,75 +566,113 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
                                   const unsigned long jPoint,
                                   const su2double     *const *const *const Jacobian_ic) {
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) { 
+  const bool wasActive = AD::BeginPassive();
 
-    /*--- First we compute contributions of first neighbors to the Jacobian.
-          In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
-          volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
-          the Jacobian if iPoint is on a physical boundary. ---*/
+  su2double Weight = 0.0;
+  const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
+  const bool ls  = config->GetKind_Gradient_Method() == LEAST_SQUARES;
+  const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
-    const bool wasActive = AD::BeginPassive();
+  /*--- First we compute contributions of first neighbors to the Jacobian.
+        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
+        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
+        the Jacobian if iPoint is on a physical boundary. Least squares gradients
+        do not have a surface term. ---*/
 
-    /*--- Common factors for all Jacobian terms --*/
-    const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-    const su2double sign      = 1.0 - 2.0*(iPoint > jPoint);
-      
-    CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
+  /*--- Common factors for all Jacobian terms --*/
+  const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+  const su2double sign      = 1.0 - 2.0*(iPoint > jPoint);
+    
+  CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
-    if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if ((gg) && (geometry->node[iPoint]->GetPhysicalBoundary())) {
 
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        for (auto jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
 
-      const su2double Weight = -HalfOnVol*sign;
-      
-      /*--- Influence of boundary i on R(i,j) ---*/
-      for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            for (auto iVar = 0; iVar < nVar; iVar++)
-              Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*SurfNormal[iDim];
-        }// iVertex
-      }// iMarker
+    Weight = -HalfOnVol*sign;
+    
+    /*--- Influence of boundary i on R(i,j) ---*/
+    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      if (iVertex != -1) {
+        const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*Normal[iDim];
+      }// iVertex
+    }// iMarker
 
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
-    }// physical boundary
+  }// physical boundary
 
-    /*--- Next we compute contributions of second neighbors to the Jacobian.
-          To reduce extra communication overhead, we only consider nodes on
-          the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
+  /*--- Next we compute contributions of neighbor nodes to the Jacobian.
+        To reduce extra communication overhead, we only consider first neighbors on
+        the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
 
-    for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        for (auto jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
+      }
 
-      auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
-      const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
-      const su2double denom      = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
-      const su2double Weight     = HalfOnVol*sign*signk/denom;
+    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+
+    su2double Basis[MAXNDIM] = {0.0};
+    if (gg) {
+      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+      const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
+      Weight = HalfOnVol*sign*signk/denom;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];
 
       for (auto iDim = 0; iDim < nDim; iDim++)
         for (auto iVar = 0; iVar < nVar; iVar++)
-          Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*VolNormal[iDim];
+          Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
+    }
+    else {
+      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+      const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
 
-      Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+      su2double dist_ik[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
 
-    }// iNeigh
+      if (ls)
+        Weight = 1.0;
+      else {
+        Weight = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          Weight += pow(dist_ik[iDim],2);
+      }
 
-    AD::EndPassive(wasActive);
+      const auto Smat = nodes->GetSmatrix(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Basis[iDim] += Smat[iDim][jDim]*dist_ij[jDim]
 
-  }// GG
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
+          Jacobian_j[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Basis[iDim];
+        }
+    }
+
+    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_j);
+
+  }// iNeigh
+
+  AD::EndPassive(wasActive);
   
 }
 

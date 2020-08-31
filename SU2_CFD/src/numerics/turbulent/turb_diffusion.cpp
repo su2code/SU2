@@ -341,15 +341,12 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
 void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
   
-  /*--- Add contributions of GG gradients ---*/
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      for (auto iVar= 0; iVar < nVar; iVar++) {
-      Jacobian_ic[iDim][iVar][iVar] -= 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
-      Jacobian_jc[iDim][iVar][iVar] += 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
-      }
+  /*--- Add contributions of nodal gradients ---*/
+ 
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iVar= 0; iVar < nVar; iVar++) {
+    Jacobian_ic[iDim][iVar][iVar] -= 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
+    Jacobian_jc[iDim][iVar][iVar] += 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
     }
   }
 }
