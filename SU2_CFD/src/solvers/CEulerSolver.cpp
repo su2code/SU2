@@ -4962,7 +4962,7 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   auto kindComms = reconstruction? PRIMITIVE_GRADIENT_RECON : PRIMITIVE_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
-  auto& smatrix = reconstruction? base_nodes->GetSmatrix_Aux() : base_nodes->GetSmatrix();
+  auto& smatrix = reconstruction? nodes->GetSmatrix_Aux() : nodes->GetSmatrix();
 
   computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix, smatrix);

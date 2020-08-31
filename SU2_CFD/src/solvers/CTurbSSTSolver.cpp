@@ -437,7 +437,7 @@ void CTurbSSTSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *conf
   auto kindComms = reconstruction? SOLUTION_GRADIENT_RECON : SOLUTION_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
-  auto& smatrix = reconstruction? base_nodes->GetSmatrix_Aux() : base_nodes->GetSmatrix();
+  auto& smatrix = reconstruction? nodes->GetSmatrix_Aux() : nodes->GetSmatrix();
 
   computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nVar, gradient, rmatrix, smatrix);
