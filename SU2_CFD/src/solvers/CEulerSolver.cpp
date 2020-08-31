@@ -3129,6 +3129,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     auto U_i = nodes->GetSolution(iPoint);  auto U_j = nodes->GetSolution(jPoint);
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
+    bool bad_edge = false;
+
     if (tkeNeeded) {
 
       CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
@@ -3322,7 +3324,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       counter_local += bad_i+bad_j;
 
-      const bool bad_edge = bad_i || bad_j;
+      bad_edge = bad_i || bad_j;
 
       numerics->SetPrimitive(bad_edge ? V_i : Primitive_i, 
                              bad_edge ? V_j : Primitive_j);
@@ -3343,15 +3345,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetLimiter(bad_edge ? ZeroVec : GradBasis_i, 
                            bad_edge ? ZeroVec : GradBasis_j);
 
-      // if (limiter) {
-      //   numerics->SetLimiter(bad_edge ? ZeroVec : Limiter_i, 
-      //                        bad_edge ? ZeroVec : Limiter_j);
-      // }
-      // else {
-      //   numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
-      //                        bad_edge ? ZeroVec : OneVec);
-      // }
-
       /*--- Store nodal values ---*/
 
       numerics->SetNodalPrimitive(V_i, V_j);
@@ -3365,14 +3358,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbGradBasis_i, 
                                  bad_edge ? ZeroVec : turbGradBasis_j);
-        // if (limiterTurb) {
-        //   numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbLimiter_i, 
-        //                            bad_edge ? ZeroVec : turbLimiter_j);
-        // }
-        // else {
-        //   numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec,
-        //                            bad_edge ? ZeroVec : OneVec);
-        // }
 
         numerics->SetNodalTurbVar(turbNodes->GetPrimitive(iPoint),
                                   turbNodes->GetPrimitive(jPoint));
@@ -3425,8 +3410,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       LinSysRes.SubtractBlock(jPoint, residual);
 
       /*--- Set implicit computation ---*/
-      if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      if (implicit) {
+        if (bad_edge || !muscl)
+          Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        else
+          SetExtrapolationJacobian(solver, geometry, config,
+                                   limiter ? Limiter_i : OneVec, 
+                                   limiter ? Limiter_j : OneVec, 
+                                   limiterTurb ? turbLimiter_i : OneVec, 
+                                   limiterTurb ? turbLimiter_j : OneVec, 
+                                   iPoint, jPoint);
+      }
     }
 
     /*--- Viscous contribution. ---*/
@@ -3495,6 +3489,86 @@ void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   const su2double kappa = config->GetMUSCL_Kappa();
+
+  for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
+    gradBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
+  }
+  if (tkeNeeded) {
+    turbGradBasis_i[0] = 0.5*kappa*turbLimiter_i[0];
+    turbGradBasis_j[0] = 0.5*kappa*turbLimiter_j[0];
+  }
+
+
+  auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  switch (kindRecon) {
+    case GREEN_GAUSS:
+      break;
+    case WEIGHTED_LEAST_SQUARES:
+    case LEAST_SQUARES:
+      su2double weight = 1.0;
+      su2double dist_ij[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
+      if (kindRecon == WEIGHTED_LEAST_SQUARES) {
+        weight = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          weight += pow(dist_ij[iDim],2); 
+      }
+      weight *= 0.5*(1.-kappa);
+
+      auto flowVar = solver[FLOW_SOL]->GetNodes();
+      auto flowS_i = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
+                                   : flowVar->GetSmatrix(iPoint);
+      auto flowS_j = reconRequired ? flowVar->GetSmatrix_Aux(jPoint)
+                                   : flowVar->GetSmatrix(jPoint);
+      for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0; jDim < nDim; jDim++) {
+            gradBasis_i[iVar] += weight*flowS_i[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_i[iVar];
+            gradBasis_j[iVar] += weight*flowS_j[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_j[iVar];
+          }
+        }
+      }
+      if (tkeNeeded) {
+        auto turbVar = solver[TURB_SOL]->GetNodes();
+        auto turbS_i = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
+                                     : turbVar->GetSmatrix(iPoint);
+        auto turbS_j = reconRequired ? turbVar->GetSmatrix_Aux(jPoint)
+                                     : turbVar->GetSmatrix(jPoint);
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0; jDim < nDim; jDim++) {
+            turbGradBasis_i[0] += weight*turbS_i[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*turbLimiter_i[0];
+            turbGradBasis_j[0] += weight*turbS_j[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*turbLimiter_j[0];
+          }
+        }
+      }
+      break;
+  }
+}
+
+void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
+                                            su2double* limiter_i, su2double* limiter_j,
+                                            su2double *turbLimiter_i, su2double* turbLimiter_j,
+                                            const su2double *const *const dFdU_i,
+                                            unsigned long iPoint, unsigned long jPoint) {
+  const bool reconRequired = config->GetReconstructionGradientRequired();
+  const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
+                                                 : config->GetKind_Gradient_Method();
+
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+
+  const su2double kappa = config->GetMUSCL_Kappa();
+  const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
+
+  constexpr size_t MAXNVAR = 5;
+
+  su2double dFdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
+            dFdV_j[MAXNVAR][MAXNVAR+1] = {0.0},
+            dUdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
+            dUdV_j[MAXNVAR][MAXNVAR+1] = {0.0},
+            dVdU_i[MAXNVAR+1][MAXNVAR] = {0.0},
+            dVdU_j[MAXNVAR+1][MAXNVAR] = {0.0};
 
   for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
     gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];

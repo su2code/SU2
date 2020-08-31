@@ -316,6 +316,15 @@ protected:
                     unsigned long iPoint, unsigned long jPoint);
 
   /*!
+   * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
+   */
+  void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
+                                su2double* limiter_i, su2double* limiter_j,
+                                su2double *turbLimiter_i, su2double* turbLimiter_j,
+                                const su2double *const *const dFdU_i,
+                                unsigned long iPoint, unsigned long jPoint);
+
+  /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

@@ -197,7 +197,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool bad_i = false, bad_j = false;
+    bool bad_i = false, bad_j = false, bad_edge = false;
 
     if (muscl) {
       su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
@@ -360,7 +360,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         }
       }
 
-      const bool bad_edge = bad_i || bad_j;
+      bad_edge = bad_i || bad_j;
 
       /*--- Store extrapolated state ---*/
 
@@ -379,15 +379,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                    iPoint, jPoint);
         numerics->SetLimiter(bad_edge ? ZeroVec : GradBasis_i, 
                              bad_edge ? ZeroVec : GradBasis_j);
-        
-        // if (limiter) {
-        //   numerics->SetLimiter(bad_edge ? ZeroVec : nodes->GetLimiter(iPoint), 
-        //                        bad_edge ? ZeroVec : nodes->GetLimiter(jPoint));
-        // }
-        // else {
-        //   numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
-        //                        bad_edge ? ZeroVec : OneVec);
-        // }
       }
 
       /*--- Store nodal values ---*/
@@ -407,7 +398,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      if (bad_edge || !muscl)
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      else
+        SetExtrapolationJacobian(solver, geometry, config,
+                                 limiter ? nodes->GetLimiter(iPoint) : OneVec, 
+                                 limiter ? nodes->GetLimiter(jPoint) : OneVec,
+                                 iPoint, jPoint);
     }
 
     /*--- Viscous contribution. ---*/
@@ -514,6 +511,55 @@ void CTurbSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *c
                                su2double* gradBasis_i, su2double* gradBasis_j,
                                su2double* limiter_i, su2double* limiter_j,
                                unsigned long iPoint, unsigned long jPoint) {
+  const bool reconRequired = config->GetReconstructionGradientRequired();
+  const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
+                                                 : config->GetKind_Gradient_Method();
+
+  const su2double kappa = config->GetMUSCL_Kappa();
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
+    gradBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
+  }
+
+  auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  switch (kindRecon) {
+    case GREEN_GAUSS:
+      break;
+    case WEIGHTED_LEAST_SQUARES:
+    case LEAST_SQUARES:
+      su2double weight = 1.0;
+      su2double dist_ij[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
+      if (kindRecon == WEIGHTED_LEAST_SQUARES) {
+        weight = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          weight += pow(dist_ij[iDim],2); 
+      }
+      weight *= 0.5*(1.-kappa);
+
+      auto var = solver[TURB_SOL]->GetNodes();
+      auto S_i = reconRequired ? var->GetSmatrix_Aux(iPoint)
+                               : var->GetSmatrix(iPoint);
+      auto S_j = reconRequired ? var->GetSmatrix_Aux(jPoint)
+                               : var->GetSmatrix(jPoint);
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0; jDim < nDim; jDim++) {
+            gradBasis_i[iVar] += weight*S_i[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_i[iVar];
+            gradBasis_j[iVar] += weight*S_j[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_j[iVar];
+          }
+        }
+      }
+      break;
+  }
+}
+
+void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
+                                           su2double* limiter_i, su2double* limiter_j,
+                                           const su2double *const *const dFdU_i,
+                                           unsigned long iPoint, unsigned long jPoint) {
   const bool reconRequired = config->GetReconstructionGradientRequired();
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
