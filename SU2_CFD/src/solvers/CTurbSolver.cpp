@@ -594,8 +594,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] = sign*((*r_i)*(1.0-gradBasis_i[jVar])
-                             + (*r_j)*gradBasis_j[jVar])/(*r_n_i);
+      Jacobian_i[iVar][jVar] = sign*(dFdU_i[iVar][jVar]*(*r_i)*(1.0-gradBasis_i[jVar])
+                             + dFdU_j[iVar][jVar]*(*r_j)*gradBasis_j[jVar])/(*r_n_i);
     }
   }
 
@@ -663,8 +663,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = sign*(*r_i)*gradBasis_i[jVar]/(*r_n_i);
-        Jacobian_j[iVar][jVar] = sign*(*r_i)*gradBasis_j[jVar]/(flowVar->GetDensity(kPoint));
+        Jacobian_i[iVar][jVar] = dFdU_i[iVar][jVar]*sign*(*r_i)*gradBasis_i[jVar]/(*r_n_i);
+        Jacobian_j[iVar][jVar] = dFdU_i[iVar][jVar]*sign*(*r_i)*gradBasis_j[jVar]/(flowVar->GetDensity(kPoint));
       }
     }
 
