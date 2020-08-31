@@ -550,8 +550,8 @@ void CTurbSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *c
       for (auto iVar = 0; iVar < nVar; iVar++) {
         for (auto iDim = 0; iDim < nDim; iDim++) {
           for (auto jDim = 0; jDim < nDim; jDim++) {
-            gradBasis_i[iVar] += weight*S_i[iDim][jDim]*dist_ij[jDim]*limiter_i[iVar];
-            gradBasis_j[iVar] -= weight*S_j[iDim][jDim]*dist_ij[jDim]*limiter_j[iVar];
+            gradBasis_i[iVar] -= weight*S_i[iDim][jDim]*dist_ij[jDim]*limiter_i[iVar];
+            gradBasis_j[iVar] += weight*S_j[iDim][jDim]*dist_ij[jDim]*limiter_j[iVar];
           }
         }
       }
