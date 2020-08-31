@@ -655,13 +655,15 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
-        Basis[iDim] += Smat[iDim][jDim]*dist_ij[jDim]
+        for (auto jDim = 0; jDim < nDim; jDim++)
+          Basis[iDim] += Smat[iDim][jDim]*dist_ij[jDim]
 
       for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto iVar = 0; iVar < nVar; iVar++) {
-          Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
-          Jacobian_j[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Basis[iDim];
-        }
+        for (auto jDim = 0; jDim < nDim; jDim++)
+          for (auto iVar = 0; iVar < nVar; iVar++) {
+            Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
+            Jacobian_j[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Basis[iDim];
+          }
     }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
