@@ -3765,6 +3765,15 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
 
     switch (kindRecon) {
       case GREEN_GAUSS:
+        const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+        const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+        const su2double weight = 0.5*(1.-kappa)*HalfOnVol*sign*signk;
+        for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*l_i[iVar];
+          }
+          gradBasis_j[iVar] = gradBasis_i[iVar];
+        }
         break;
       case WEIGHTED_LEAST_SQUARES:
       case LEAST_SQUARES:
@@ -3786,8 +3795,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
           for (auto iDim = 0; iDim < nDim; iDim++) {
             for (auto jDim = 0; jDim < nDim; jDim++) {
               gradBasis_i[iVar] -= weight*flowSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
-              gradBasis_j[iVar] += weight*flowSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
             }
+            gradBasis_j[iVar] = -gradBasis_i[iVar];
           }
         }
         if (tkeNeeded) {
@@ -3797,8 +3806,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
           for (auto iDim = 0; iDim < nDim; iDim++) {
             for (auto jDim = 0; jDim < nDim; jDim++) {
               gradBasis_i[nVar] -= weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[nVar];
-              gradBasis_j[nVar] += weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[nVar];
             }
+            gradBasis_j[nVar] = -gradBasis_i[nVar];
           }
         }
         break;

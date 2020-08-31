@@ -633,6 +633,15 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
   switch (kindRecon) {
       case GREEN_GAUSS:
+        const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+        const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+        const su2double weight = 0.5*(1.-kappa)*HalfOnVol*sign*signk;
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*limiter_i[iVar];
+          }
+          gradBasis_j[iVar] = gradBasis_i[iVar];
+        }
         break;
       case WEIGHTED_LEAST_SQUARES:
       case LEAST_SQUARES:
@@ -654,8 +663,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
           for (auto iDim = 0; iDim < nDim; iDim++) {
             for (auto jDim = 0; jDim < nDim; jDim++) {
               gradBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
-              gradBasis_j[iVar] += weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
             }
+            gradBasis_j[iVar] = -gradBasis_i[iVar];
           }
         }
         break;
