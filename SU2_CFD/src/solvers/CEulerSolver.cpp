@@ -3531,8 +3531,8 @@ void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *
       for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
         for (auto iDim = 0; iDim < nDim; iDim++) {
           for (auto jDim = 0; jDim < nDim; jDim++) {
-            gradBasis_i[iVar] -= weight*flowS_i[iDim][jDim]*dist_ij[jDim]*limiter_i[iVar];
-            gradBasis_j[iVar] += weight*flowS_j[iDim][jDim]*dist_ij[jDim]*limiter_j[iVar];
+            gradBasis_i[iVar] += weight*flowS_i[iDim][jDim]*dist_ij[jDim]*limiter_i[iVar];
+            gradBasis_j[iVar] -= weight*flowS_j[iDim][jDim]*dist_ij[jDim]*limiter_j[iVar];
           }
         }
       }
@@ -3544,8 +3544,8 @@ void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *
                                      : turbVar->GetSmatrix(jPoint);
         for (auto iDim = 0; iDim < nDim; iDim++) {
           for (auto jDim = 0; jDim < nDim; jDim++) {
-            turbGradBasis_i[0] -= weight*turbS_i[iDim][jDim]*dist_ij[jDim]*turbLimiter_i[0];
-            turbGradBasis_j[0] += weight*turbS_j[iDim][jDim]*dist_ij[jDim]*turbLimiter_j[0];
+            turbGradBasis_i[0] += weight*turbS_i[iDim][jDim]*dist_ij[jDim]*turbLimiter_i[0];
+            turbGradBasis_j[0] -= weight*turbS_j[iDim][jDim]*dist_ij[jDim]*turbLimiter_j[0];
           }
         }
       }
