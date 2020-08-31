@@ -1453,7 +1453,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   bool compressible = false;
   bool incompressible = false;
   bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
-  bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS);
+  bool roe_low_dissipation = (config->GetKind_RoeLowDiss() != NO_ROELOWDISS && !config->GetHybrid_Central_Upwind());
 
   /*--- Initialize some useful booleans ---*/
   bool euler, ns, turbulent, adj_euler, adj_ns, adj_turb, fem_euler, fem_ns, fem_turbulent;
