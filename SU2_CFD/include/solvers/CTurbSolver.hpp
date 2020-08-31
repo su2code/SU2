@@ -117,7 +117,7 @@ private:
   /*!
    * \brief Set the gradient basis function to compute the gradient of the MUSCL extrapolation.
    */
-  void SetGradBasis(CSolver** solver, CGeometry *geometry, 
+  void SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *config,
                     su2double* gradBasis_i, su2double* gradBasis_j,
                     su2double* limiter_i, su2double* limiter_j,
                     unsigned long iPoint, unsigned long jPoint);

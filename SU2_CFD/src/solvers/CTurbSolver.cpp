@@ -508,15 +508,13 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, 
+void CTurbSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *config,
                                su2double* gradBasis_i, su2double* gradBasis_j,
                                su2double* limiter_i, su2double* limiter_j,
                                unsigned long iPoint, unsigned long jPoint) {
   const bool reconRequired = config->GetReconstructionGradientRequired();
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
-
-  const book tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   const su2double kappa = config->GetMUSCL_Kappa();
 

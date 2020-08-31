@@ -3481,7 +3481,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, 
+void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *config,
                                 su2double* gradBasis_i, su2double* gradBasis_j,
                                 su2double* turbGradBasis_i, su2double* turbGradBasis_j,
                                 su2double* limiter_i, su2double* limiter_j,
@@ -3491,7 +3491,7 @@ void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry,
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
-  const book tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   const su2double kappa = config->GetMUSCL_Kappa();
 
