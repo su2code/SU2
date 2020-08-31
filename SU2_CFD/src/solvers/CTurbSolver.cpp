@@ -159,6 +159,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   su2double ZeroVec[2] = {0.0}, OneVec[2]  = {0.0};
 
+  su2double GradBasis_i[2] = {0.0}, GradBasis_j[2] = {0.0};
+
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
