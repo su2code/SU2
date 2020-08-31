@@ -3418,7 +3418,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    Primitive_i, Primitive_j,
                                    V_i, V_j,
                                    tke_i, tke_j,
-                                   turbNodes->GetPrimitive(iPoint,0), turbNodes->GetPrimitive(jPoint,0),
+                                   solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0), solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0),
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
@@ -3429,7 +3429,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    Primitive_j, Primitive_i,
                                    V_j, V_i,
                                    tke_j, tke_i,
-                                   turbNodes->GetPrimitive(jPoint,0), turbNodes->GetPrimitive(iPoint,0),
+                                   solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0), solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
@@ -3659,11 +3659,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
   /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
   su2double inv_r_n_i = 1.0/primvar_n_i[nDim+2];
-  su2double vel_n_k[MAXNDIM] = {0.0};
-  su2double sq_vel_n_k = 0.0;
+  su2double vel_n_i[MAXNDIM] = {0.0};
+  su2double sq_vel_n_i = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    vel_n_k[iDim] = flowVar->GetVelocity(kPoint,iDim);
-    sq_vel_n_k += pow(vel_n_k[iDim],2);
+    vel_n_i[iDim] = primvar_n_i[iDim+1];
+    sq_vel_n_i += pow(vel_n_i[iDim],2);
   }
 
   dVdU_i[0][0] = 1.0;
