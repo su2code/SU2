@@ -662,7 +662,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         for (auto jDim = 0; jDim < nDim; jDim++)
           for (auto iVar = 0; iVar < nVar; iVar++) {
             Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
-            Jacobian_j[iVar][jVar] -= Jacobian_ic[iDim][iVar][jVar]*Basis[iDim];
+            Jacobian_j[iVar][iVar] -= Jacobian_ic[iDim][iVar][jVar]*Basis[iDim];
           }
     }
 
