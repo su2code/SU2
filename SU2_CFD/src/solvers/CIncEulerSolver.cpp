@@ -3618,8 +3618,9 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
   auto& smatrix = reconstruction? nodes->GetSmatrix_Aux() : nodes->GetSmatrix();
+  auto kindSmatComms = reconstruction? SMATRIX_RECON : SMATRIX;
 
-  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
+  computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, kindSmatComms, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix, smatrix);
 }
 
