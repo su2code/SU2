@@ -656,7 +656,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
         for (auto jDim = 0; jDim < nDim; jDim++)
-          Basis[iDim] += Smat[iDim][jDim]*dist_ij[jDim]
+          Basis[iDim] += Smat[iDim][jDim]*dist_ik[jDim];
 
       for (auto iDim = 0; iDim < nDim; iDim++)
         for (auto jDim = 0; jDim < nDim; jDim++)
