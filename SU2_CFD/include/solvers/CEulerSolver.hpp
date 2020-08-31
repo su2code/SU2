@@ -306,6 +306,16 @@ protected:
   void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
+   * \brief Set the gradient basis function to compute the gradient of the MUSCL extrapolation.
+   */
+  void SetGradBasis(CSolver** solver, CGeometry *geometry, 
+                    su2double* gradBasis_i, su2double* gradBasis_j,
+                    su2double* turbGradBasis_i, su2double* turbGradBasis_j,
+                    su2double* limiter_i, su2double* limiter_j,
+                    su2double *turbLimiter_i, su2double* turbLimiter_j,
+                    unsigned long iPoint, unsigned long jPoint);
+
+  /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

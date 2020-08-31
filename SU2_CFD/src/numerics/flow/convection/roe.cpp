@@ -205,10 +205,10 @@ void CUpwRoeBase_Flow::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
       jac_i[iVar][jVar] = 0.0;
       jac_j[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        jac_i[iVar][jVar] += (dFdV_i[iVar][kVar]*(1.0-muscl_kappa*l_i[kVar])
-                           +  dFdV_j[iVar][kVar]*muscl_kappa*l_j[kVar])*dVdU_i[kVar][jVar];
-        jac_j[iVar][jVar] += (dFdV_j[iVar][kVar]*(1.0-muscl_kappa*l_j[kVar])
-                           +  dFdV_i[iVar][kVar]*muscl_kappa*l_i[kVar])*dVdU_j[kVar][jVar];
+        jac_i[iVar][jVar] += (dFdV_i[iVar][kVar]*(1.0-l_i[kVar])
+                           +  dFdV_j[iVar][kVar]*l_j[kVar])*dVdU_i[kVar][jVar];
+        jac_j[iVar][jVar] += (dFdV_j[iVar][kVar]*(1.0-l_j[kVar])
+                           +  dFdV_i[iVar][kVar]*l_i[kVar])*dVdU_j[kVar][jVar];
       }
     }
   }

@@ -44,7 +44,7 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
     Jacobian_j[iVar] = new su2double [nVar];
   }
 
-  muscl_kappa = 0.5*config->GetMUSCL_Kappa();
+  // muscl_kappa = 0.5*config->GetMUSCL_Kappa();
   // muscl_kappa = 0.5;
   muscl = val_muscl;
 }
@@ -68,10 +68,10 @@ void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      const su2double dFidUi = jac_i[iVar][jVar]*(*r_i)*(1.0-muscl_kappa*lim_i[jVar])/(*r_n_i);
-      const su2double dFidUj = jac_i[iVar][jVar]*(*r_i)*muscl_kappa*lim_i[jVar]/(*r_n_j);
-      const su2double dFjdUi = jac_j[iVar][jVar]*(*r_j)*muscl_kappa*lim_j[jVar]/(*r_n_i);
-      const su2double dFjdUj = jac_j[iVar][jVar]*(*r_j)*(1.0-muscl_kappa*lim_j[jVar])/(*r_n_j);
+      const su2double dFidUi = jac_i[iVar][jVar]*(*r_i)*(1.0-lim_i[jVar])/(*r_n_i);
+      const su2double dFidUj = jac_i[iVar][jVar]*(*r_i)*lim_i[jVar]/(*r_n_j);
+      const su2double dFjdUi = jac_j[iVar][jVar]*(*r_j)*lim_j[jVar]/(*r_n_i);
+      const su2double dFjdUj = jac_j[iVar][jVar]*(*r_j)*(1.0-lim_j[jVar])/(*r_n_j);
     
       jac_i[iVar][jVar] = dFidUi + dFjdUi;
       jac_j[iVar][jVar] = dFidUj + dFjdUj;

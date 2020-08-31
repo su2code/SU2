@@ -3083,6 +3083,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
 
+  su2double GradBasis_i[MAXNVAR] = {0.0}, turbGradBasis_i[1] = {0.0};
+  su2double GradBasis_j[MAXNVAR] = {0.0}, turbGradBasis_j[1] = {0.0};
+
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -3208,11 +3211,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+      su2double *Limiter_i = nullptr, *turbLimiter_i = nullptr;
+      su2double *Limiter_j = nullptr, *turbLimiter_j = nullptr;
 
       if (limiter) {
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
         Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      }
+      if (limiterTurb) {
+        turbLimiter_i = turbNodes->GetLimiter(iPoint);
+        turbLimiter_j = turbNodes->GetLimiter(jPoint);
       }
 
       const su2double Kappa = config->GetMUSCL_Kappa();
@@ -3322,14 +3330,26 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
-      if (limiter) {
-        numerics->SetLimiter(bad_edge ? ZeroVec : nodes->GetLimiter_Primitive(iPoint), 
-                             bad_edge ? ZeroVec : nodes->GetLimiter_Primitive(jPoint));
-      }
-      else {
-        numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
-                             bad_edge ? ZeroVec : OneVec);
-      }
+      SetGradBasis(solver, geometry, 
+                   GradBasis_i, GradBasis_j, 
+                   turbGradBasis_i, turbGradBasis_j,
+                   limiter ? Limiter_i : OneVec, 
+                   limiter ? Limiter_j : OneVec, 
+                   limiterTurb ? turbLimiter_i : OneVec, 
+                   limiterTurb ? turbLimiter_j : OneVec, 
+                   iPoint, jPoint);
+
+      numerics->SetLimiter(bad_edge ? ZeroVec : GradBasis_i, 
+                           bad_edge ? ZeroVec : GradBasis_j);
+
+      // if (limiter) {
+      //   numerics->SetLimiter(bad_edge ? ZeroVec : Limiter_i, 
+      //                        bad_edge ? ZeroVec : Limiter_j);
+      // }
+      // else {
+      //   numerics->SetLimiter(bad_edge ? ZeroVec : OneVec, 
+      //                        bad_edge ? ZeroVec : OneVec);
+      // }
 
       /*--- Store nodal values ---*/
 
@@ -3342,14 +3362,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
                                        bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
 
-        if (limiterTurb) {
-          numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbNodes->GetLimiter(iPoint), 
-                                   bad_edge ? ZeroVec : turbNodes->GetLimiter(jPoint));
-        }
-        else {
-          numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec, 
-                                   bad_edge ? ZeroVec : OneVec);
-        }
+        numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbGradBasis_i, 
+                                 bad_edge ? ZeroVec : turbGradBasis_j);
+        // if (limiterTurb) {
+        //   numerics->SetTurbLimiter(bad_edge ? ZeroVec : turbLimiter_i, 
+        //                            bad_edge ? ZeroVec : turbLimiter_j);
+        // }
+        // else {
+        //   numerics->SetTurbLimiter(bad_edge ? ZeroVec : OneVec,
+        //                            bad_edge ? ZeroVec : OneVec);
+        // }
 
         numerics->SetNodalTurbVar(turbNodes->GetPrimitive(iPoint),
                                   turbNodes->GetPrimitive(jPoint));
@@ -3457,6 +3479,77 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
     }
   }
 
+}
+
+void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, 
+                                su2double* gradBasis_i, su2double* gradBasis_j,
+                                su2double* turbGradBasis_i, su2double* turbGradBasis_j,
+                                su2double* limiter_i, su2double* limiter_j,
+                                su2double *turbLimiter_i, su2double* turbLimiter_j,
+                                unsigned long iPoint, unsigned long jPoint) {
+  const bool reconRequired = config->GetReconstructionGradientRequired();
+  const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
+                                                 : config->GetKind_Gradient_Method();
+
+  const book tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+
+  const su2double kappa = config->GetMUSCL_Kappa();
+
+  for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
+    gradBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
+  }
+  if (tkeNeeded) {
+    turbGradBasis_i[0] = 0.5*kappa*turbLimiter_i[0];
+    turbGradBasis_j[0] = 0.5*kappa*turbLimiter_j[0];
+  }
+
+
+  auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  switch (kindRecon) {
+    case GREEN_GAUSS:
+      break;
+    case WEIGHTED_LEAST_SQUARES:
+    case LEAST_SQUARES:
+      su2double weight = 1.0;
+      su2double dist_ij[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
+      if (kindRecon == WEIGHTED_LEAST_SQUARES) {
+        weight = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          weight += pow(dist_ij[iDim],2); 
+      }
+      weight *= 0.5*(1.-kappa);
+
+      auto flowVar = solver[FLOW_SOL]->GetNodes();
+      auto flowS_i = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
+                                   : flowVar->GetSmatrix(iPoint);
+      auto flowS_j = reconRequired ? flowVar->GetSmatrix_Aux(jPoint)
+                                   : flowVar->GetSmatrix(jPoint);
+      for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0; jDim < nDim; jDim++) {
+            gradBasis_i[iVar] += weight*flowS_i[iDim][jDim]*dist_ij*limiter_i[iVar];
+            gradBasis_j[iVar] += weight*flowS_j[iDim][jDim]*dist_ij*limiter_j[iVar];
+          }
+        }
+      }
+      if (tkeNeeded) {
+        auto turbVar = solver[TURB_SOL]->GetNodes();
+        auto turbS_i = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
+                                     : turbVar->GetSmatrix(iPoint);
+        auto turbS_j = reconRequired ? turbVar->GetSmatrix_Aux(jPoint)
+                                     : turbVar->GetSmatrix(jPoint);
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0; jDim < nDim; jDim++) {
+            turbGradBasis_i[0] += weight*turbS_i[iDim][jDim]*dist_ij*turbLimiter_i[0];
+            turbGradBasis_j[0] += weight*turbS_j[iDim][jDim]*dist_ij*turbLimiter_j[0];
+          }
+        }
+      }
+      break;
+  }
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
