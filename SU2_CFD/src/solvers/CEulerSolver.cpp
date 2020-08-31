@@ -3331,7 +3331,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
-      SetGradBasis(solver, geometry, 
+      SetGradBasis(solver, geometry, config,
                    GradBasis_i, GradBasis_j, 
                    turbGradBasis_i, turbGradBasis_j,
                    limiter ? Limiter_i : OneVec, 

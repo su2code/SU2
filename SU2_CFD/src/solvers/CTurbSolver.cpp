@@ -372,7 +372,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       if (muscl) {
-        SetGradBasis(solver, geometry, 
+        SetGradBasis(solver, geometry, config,
                    GradBasis_i, GradBasis_j,
                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                    limiter ? nodes->GetLimiter(iPoint) : OneVec,
