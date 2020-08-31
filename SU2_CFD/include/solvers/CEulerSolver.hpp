@@ -133,6 +133,10 @@ protected:
   ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
 
   su2double
+  ***GradBasis = nullptr,        /*!< \brief Value of the gradient basis function at each boundary. */
+  ***GradBasis_Aux = nullptr;    /*!< \brief Value of the gradient basis function at each boundary. */
+
+  su2double
   *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */
   *Exhaust_MassFlow = nullptr,   /*!< \brief Mass flow rate for each boundary. */
   *Inflow_Pressure = nullptr,    /*!< \brief Fan face pressure for each boundary. */

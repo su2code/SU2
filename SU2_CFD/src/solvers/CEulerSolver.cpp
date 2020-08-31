@@ -326,6 +326,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
 
+  /*--- Store the value of the gradient basis function at the boundaries ---*/
+
+  if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
+    Alloc3D(nMarker, nVertex, nPrimVar, GradBasis_Aux);
+
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
    used for IO with a donor cell ---*/
 
@@ -610,6 +615,24 @@ CEulerSolver::~CEulerSolver(void) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
+  }
+
+  if (GradBasis != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] GradBasis[iMarker][iVertex];
+      delete [] GradBasis[iMarker];
+    }
+    delete [] GradBasis;
+  }
+
+  if (GradBasis_Aux != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] GradBasis_Aux[iMarker][iVertex];
+      delete [] GradBasis_Aux[iMarker];
+    }
+    delete [] GradBasis_Aux;
   }
 
   if (SlidingState != NULL) {
@@ -4963,8 +4986,9 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
   auto& smatrix = reconstruction? nodes->GetSmatrix_Aux() : nodes->GetSmatrix();
+  auto kindSmatComms = reconstruction? SMATRIX_RECON : SMATRIX;
 
-  computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
+  computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, kindSmatComms, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix, smatrix);
 }
 

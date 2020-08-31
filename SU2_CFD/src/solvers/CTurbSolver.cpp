@@ -49,6 +49,32 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
+  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
+
+  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
+    X = new su2double* [M];
+    for(unsigned long i = 0; i < M; ++i)
+      X[i] = new su2double [N[i]] ();
+  };
+
+  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
+
+  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
+    X = new su2double** [M];
+    for(unsigned long i = 0; i < M; ++i) {
+      X[i] = new su2double* [N[i]];
+      for(unsigned long j = 0; j < N[i]; ++j)
+        X[i][j] = new su2double [P] ();
+    }
+  };
+
+  /*--- Store the value of the gradient basis function at the boundaries ---*/
+
+  if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
+    Alloc3D(nMarker, nVertex, nVar, GradBasis_Aux);
+  if (config->GetUse_Accurate_Turb_Jacobians())
+    Alloc3D(nMarker, nVertex, nVar, GradBasis);
+
 #ifdef HAVE_OMP
   /*--- Get the edge coloring, see notes in CEulerSolver's constructor. ---*/
   su2double parallelEff = 1.0;
@@ -87,6 +113,24 @@ CTurbSolver::~CTurbSolver(void) {
       }
     }
     delete [] Inlet_TurbVars;
+  }
+
+  if (GradBasis != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] GradBasis[iMarker][iVertex];
+      delete [] GradBasis[iMarker];
+    }
+    delete [] GradBasis;
+  }
+
+  if (GradBasis_Aux != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] GradBasis_Aux[iMarker][iVertex];
+      delete [] GradBasis_Aux[iMarker];
+    }
+    delete [] GradBasis_Aux;
   }
 
   delete nodes;

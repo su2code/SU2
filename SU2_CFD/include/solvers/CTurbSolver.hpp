@@ -55,6 +55,10 @@ protected:
   Gamma_Minus_One,              /*!< \brief Fluids's Gamma - 1.0  . */
   ***Inlet_TurbVars = nullptr;  /*!< \brief Turbulence variables at inlet profiles */
 
+  su2double
+  ***GradBasis = nullptr,        /*!< \brief Value of the gradient basis function at each boundary. */
+  ***GradBasis_Aux = nullptr;    /*!< \brief Value of the gradient basis function at each boundary. */
+
   /*--- Sliding meshes variables. ---*/
 
   su2double ****SlidingState = nullptr;

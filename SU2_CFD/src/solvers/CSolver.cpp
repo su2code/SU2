@@ -1937,7 +1937,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-      case SOLUTION_GRADIENT_RECON:
+    case SOLUTION_GRADIENT_RECON:
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1947,6 +1947,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
       break;
     case PRIMITIVE_GRADIENT_RECON:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SMATRIX:
+      COUNT_PER_POINT  = nDim*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SMATRIX_RECON:
+      COUNT_PER_POINT  = nDim*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case PRIMITIVE:
@@ -2100,6 +2108,20 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetGradient_Reconstruction(iPoint, iVar, iDim);
+              }
+            }
+            break;
+          case SMATRIX:
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                bufDSend[buf_offset+iDim*nDim+jDim] = base_nodes->GetSmatrix(iPoint, iDim, jDim);
+              }
+            }
+            break;
+          case SMATRIX_RECON:
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                bufDSend[buf_offset+iDim*nDim+jDim] = base_nodes->GetSmatrix_Aux(iPoint, iDim, jDim);
               }
             }
             break;
@@ -2299,6 +2321,20 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 base_nodes->SetGradient_Reconstruction(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+              }
+            }
+            break;
+          case SMATRIX:
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                base_nodes->SetSmatrix(iPoint, iDim, jDim, bufDRecv[buf_offset+iDim*nDim+jDim])
+              }
+            }
+            break;
+          case SMATRIX_RECON:
+            for (iDim = 0; iDim < nDim; iDim++) {
+              for (jDim = 0; jDim < nDim; jDim++) {
+                base_nodes->SetSmatrix_Aux(iPoint, iDim, jDim, bufDRecv[buf_offset+iDim*nDim+jDim]);
               }
             }
             break;
@@ -3184,8 +3220,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
   auto& smatrix = reconstruction? base_nodes->GetSmatrix_Aux() : base_nodes->GetSmatrix();
+  auto kindSmatComms = reconstruction? SMATRIX_RECON : SMATRIX;
 
-  computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
+  computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, kindSmatComms, *geometry, *config,
                                weighted, solution, 0, nVar, gradient, rmatrix, smatrix);
 }
 

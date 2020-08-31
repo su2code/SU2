@@ -48,7 +48,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
-    if (config->GetReconstructionGradientRequired())
+    if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
       Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
     if (config->GetUse_Accurate_Turb_Jacobians())
       Smatrix.resize(nPoint,nDim,nDim,0.0);

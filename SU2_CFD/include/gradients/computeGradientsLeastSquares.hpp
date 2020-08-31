@@ -50,6 +50,7 @@ template<class FieldType, class GradientType, class RMatrixType, class SMatrixTy
 void computeGradientsLeastSquares(CSolver* solver,
                                   MPI_QUANTITIES kindMpiComm,
                                   PERIODIC_QUANTITIES kindPeriodicComm,
+                                  MPI_QUANTITIES kindSmatComm,
                                   CGeometry& geometry,
                                   CConfig& config,
                                   bool weighted,
@@ -304,6 +305,9 @@ void computeGradientsLeastSquares(CSolver* solver,
 
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
+
+    solver->InitiateComms(&geometry, &config, kindSmatComm);
+    solver->CompleteComms(&geometry, &config, kindSmatComm);
   }
   SU2_OMP_BARRIER
 

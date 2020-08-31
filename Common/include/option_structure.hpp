@@ -2137,7 +2137,9 @@ enum MPI_QUANTITIES {
   HESSIAN              = 33,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
   METRIC               = 34,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */
   PRIMITIVE_GRADIENT_RECON = 35,  /*!< \brief Primitive gradient communication. */
-  SOLUTION_GRADIENT_RECON  = 36   /*!< \brief Conservative solution gradient communication. */
+  SOLUTION_GRADIENT_RECON  = 36,   /*!< \brief Conservative solution gradient communication. */
+  SMATRIX              = 37,  /*!< \brief Conservative solution gradient basis communication. */
+  SMATRIX_RECON        = 38   /*!< \brief Conservative solution gradient basis communication. */
 };
 
 /*!
