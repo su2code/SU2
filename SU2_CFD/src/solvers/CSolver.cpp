@@ -3151,9 +3151,10 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   const auto solution = base_nodes->GetAuxVar();
   auto gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
+  auto& smatrix  = base_nodes->GetSmatrix();
 
   computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, 1, gradient, rmatrix);
+                               weighted, solution, 0, 1, gradient, rmatrix, smatrix);
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction) {
@@ -3182,8 +3183,10 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   auto kindComms = reconstruction? SOLUTION_GRADIENT_RECON : SOLUTION_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
+  auto& smatrix = reconstruction? base_nodes->GetSmatrix_Aux() : base_nodes->GetSmatrix();
+
   computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, *geometry, *config,
-                               weighted, solution, 0, nVar, gradient, rmatrix);
+                               weighted, solution, 0, nVar, gradient, rmatrix, smatrix);
 }
 
 void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {

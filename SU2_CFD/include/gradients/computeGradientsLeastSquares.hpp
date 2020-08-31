@@ -44,8 +44,9 @@
  * \param[in] varEnd - Index of last variable for which to compute the gradient.
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  * \param[out] Rmatrix - Generic object implementing operator (iPoint, iDim, iDim).
+ * \param[out] Smatrix - Generic object implementing operator (iPoint, iDim, iDim).
  */
-template<class FieldType, class GradientType, class RMatrixType>
+template<class FieldType, class GradientType, class RMatrixType, class SMatrixType>
 void computeGradientsLeastSquares(CSolver* solver,
                                   MPI_QUANTITIES kindMpiComm,
                                   PERIODIC_QUANTITIES kindPeriodicComm,
@@ -56,7 +57,8 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   size_t varBegin,
                                   size_t varEnd,
                                   GradientType& gradient,
-                                  RMatrixType& Rmatrix)
+                                  RMatrixType& Rmatrix,
+                                  SMatrixType& Smatrix)
 {
   constexpr size_t MAXNDIM = 3;
 
@@ -236,8 +238,6 @@ void computeGradientsLeastSquares(CSolver* solver,
     }
 
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-
-    su2double Smatrix[MAXNDIM][MAXNDIM];
 
     if (singular) {
       for (size_t iDim = 0; iDim < nDim; ++iDim)

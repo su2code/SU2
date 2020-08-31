@@ -97,7 +97,9 @@ protected:
 
   VectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   VectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
-  VectorOfMatrix Smatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  
+  VectorOfMatrix Smatrix;       /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  VectorOfMatrix Smatrix_Aux;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
@@ -996,6 +998,68 @@ public:
    * \return Reference to the Rmatrix.
    */
   inline VectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
+
+  /*!
+   * \brief Add <i>value</i> to the Smatrix for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix entry.
+   */
+  inline void AddSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix(iPoint,iDim,jDim) += value; }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double GetSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix(iPoint,iDim,jDim); }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double **GetSmatrix(unsigned long iPoint) { return Smatrix[iPoint]; }
+
+  /*!
+   * \brief Get the value Smatrix for the entire domain.
+   * \return Reference to the Smatrix.
+   */
+  inline VectorOfMatrix& GetSmatrix(void) { return Smatrix; }
+
+  /*!
+   * \brief Add <i>value</i> to the Smatrix for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix entry.
+   */
+  inline void AddSmatrix_Aux(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix_Aux(iPoint,iDim,jDim) += value; }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double GetSmatrix_Aux(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix_Aux(iPoint,iDim,jDim); }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double **GetSmatrix_Aux(unsigned long iPoint) { return Smatrix_Aux[iPoint]; }
+
+  /*!
+   * \brief Get the value Smatrix for the entire domain.
+   * \return Reference to the Smatrix.
+   */
+  inline VectorOfMatrix& GetSmatrix_Aux(void) { return Smatrix_Aux; }
 
   /*!
    * \brief Set the value of the limiter.
