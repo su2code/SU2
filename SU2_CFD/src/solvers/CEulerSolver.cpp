@@ -3413,13 +3413,30 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (implicit) {
         if (bad_edge || !muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-        else
+        else {
           SetExtrapolationJacobian(solver, geometry, config,
+                                   Primitive_i, Primitive_j,
+                                   V_i, V_j,
+                                   tke_i, tke_j,
+                                   turbNodes->GetPrimitive(iPoint,0), turbNodes->GetPrimitive(jPoint,0),
                                    limiter ? Limiter_i : OneVec, 
                                    limiter ? Limiter_j : OneVec, 
                                    limiterTurb ? turbLimiter_i : OneVec, 
-                                   limiterTurb ? turbLimiter_j : OneVec, 
+                                   limiterTurb ? turbLimiter_j : OneVec,
+                                   residual.jacobian_i, residual.jacobian_j,
                                    iPoint, jPoint);
+          SetExtrapolationJacobian(solver, geometry, config,
+                                   Primitive_j, Primitive_i,
+                                   V_j, V_i,
+                                   tke_j, tke_i,
+                                   turbNodes->GetPrimitive(jPoint,0), turbNodes->GetPrimitive(iPoint,0),
+                                   limiter ? Limiter_j : OneVec, 
+                                   limiter ? Limiter_i : OneVec, 
+                                   limiterTurb ? turbLimiter_j : OneVec, 
+                                   limiterTurb ? turbLimiter_i : OneVec,
+                                   residual.jacobian_j, residual.jacobian_i,
+                                   jPoint, iPoint);
+        }
       }
     }
 
@@ -3548,9 +3565,14 @@ void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
+                                            su2double *primvar_i, su2double *primvar_j,
+                                            su2double *primvar_n_i, su2double *primvar_n_j,
+                                            su2double *k_i, su2double *k_j,
+                                            su2double *k_n_i, su2double *k_n_j,
                                             su2double* limiter_i, su2double* limiter_j,
                                             su2double *turbLimiter_i, su2double* turbLimiter_j,
                                             const su2double *const *const dFdU_i,
+                                            const su2double *const *const dFdU_j,
                                             unsigned long iPoint, unsigned long jPoint) {
   const bool reconRequired = config->GetReconstructionGradientRequired();
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
@@ -3561,6 +3583,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
 
+  const unsigned long nPrimVarTot = nVar + tkeNeeded;
+
   constexpr size_t MAXNVAR = 5;
 
   su2double dFdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
@@ -3568,62 +3592,220 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
             dUdV_i[MAXNVAR][MAXNVAR+1] = {0.0},
             dUdV_j[MAXNVAR][MAXNVAR+1] = {0.0},
             dVdU_i[MAXNVAR+1][MAXNVAR] = {0.0},
-            dVdU_j[MAXNVAR+1][MAXNVAR] = {0.0};
+            dVdU_k[MAXNVAR+1][MAXNVAR] = {0.0};
 
-  for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
-    gradBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
+  /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Store primitives ---*/
+
+  const su2double r_i = primvar_i[nDim+2], r_j = primvar_j[nDim+2];
+  su2double vel_i[MAXNDIM] = {0.0}, vel_j[MAXNDIM] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    vel_i[iDim] = primvar_i[iDim+1];
+    vel_j[iDim] = primvar_j[iDim+1];
   }
+
+  su2double sq_vel_i = 0.0, sq_vel_j = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    sq_vel_i += pow(vel_i[iDim], 2.0);
+    sq_vel_j += pow(vel_j[iDim], 2.0);
+  }
+
+  /*--- Store limiters in single vector in proper order ---*/
+  su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
+  l_i[0] = limiter_i[nDim+2]; l_j[0] = limiter_j[nDim+2];
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    l_i[iDim+1] = limiter_i[iDim+1]; l_j[iDim+1] = limiter_j[iDim+1];
+  }
+  l_i[nDim+1] = limiter_i[nDim+1]; l_j[nDim+1] = limiter_j[nDim+1];
   if (tkeNeeded) {
-    turbGradBasis_i[0] = 0.5*kappa*turbLimiter_i[0];
-    turbGradBasis_j[0] = 0.5*kappa*turbLimiter_j[0];
+    l_i[nDim+2] = turbLimiter_i[0]; l_j[nDim+2] = turbLimiter_j[0];
   }
 
+  su2double gradBasis_i[MAXNVAR+1] = {0.0}, gradBasis_j[MAXNVAR+1] = {0.0};
+  for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+    gradBasis_i[iVar] = 0.5*kappa*l_i[iVar]; gradBasis_j[iVar] = 0.5*kappa*l_j[iVar];
+  }
 
+  /*--- dU/d{r,v,p,k}, evaluated at face ---*/
+
+  dUdV_i[0][0] = 1.0;
+  dUdV_j[0][0] = 1.0;
+
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    dUdV_i[iDim+1][0] = vel_i[iDim];
+    dUdV_j[iDim+1][0] = vel_j[iDim];
+
+    dUdV_i[iDim+1][iDim+1] = r_i;
+    dUdV_j[iDim+1][iDim+1] = r_j;
+
+    dUdV_i[nDim+1][iDim+1] = r_i*vel_i[iDim];
+    dUdV_j[nDim+1][iDim+1] = r_j*vel_j[iDim];
+  }
+
+  dUdV_i[nDim+1][0] = 0.5*sq_vel_i+(*k_i);
+  dUdV_j[nDim+1][0] = 0.5*sq_vel_j+(*k_j);
+
+  dUdV_i[nDim+1][nDim+1] = dUdV_j[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
+
+  if (tkeNeeded) {
+    dUdV_i[nDim+1][nDim+2] = r_i;
+    dUdV_j[nDim+1][nDim+2] = r_j;
+  }
+
+  /*--- d{r,v,p,k}/dU, evaluated at node ---*/
+
+  dVdU_i[0][0] = 1.0;
+
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    dVdU_i[iDim+1][0] = -vel_n_i[iDim]*inv_r_n_i;
+    dVdU_i[iDim+1][iDim+1] = inv_r_n_i;
+    dVdU_i[nDim+1][iDim+1] = -Gamma_Minus_One*vel_n_i[iDim];
+  }
+
+  dVdU_i[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_n_i;
+
+  dVdU_i[nDim+1][nDim+1] = Gamma_Minus_One;
+
+  if (tkeNeeded)
+    dVdU_i[nDim+2][0] = -(*k_n_i)*inv_r_n_i;
+
+  /*--- Now multiply them all together ---*/
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
+      for (auto kVar = 0; kVar < nVar; kVar++) {
+        dFdV_i[iVar][jVar] += dFdU_i[iVar][kVar]*dUdV_i[kVar][jVar];
+        dFdV_j[iVar][jVar] += dFdU_j[iVar][kVar]*dUdV_j[kVar][jVar];
+      }
+    }
+  }
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto jVar = 0; jVar < nVar; jVar++) {
+      Jacobian_i[iVar][jVar] = 0.0;
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+        Jacobian_i[iVar][jVar] += sign*(dFdV_i[iVar][kVar]*(1.0-gradBasis_i[kVar])
+                                + dFdV_j[iVar][kVar]*gradBasis_j[kVar])*dVdU_i[kVar][jVar];
+      }
+    }
+  }
+
+  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
+  /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  auto flowVar = solver[FLOW_SOL]->GetNodes();
   auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
-  switch (kindRecon) {
-    case GREEN_GAUSS:
-      break;
-    case WEIGHTED_LEAST_SQUARES:
-    case LEAST_SQUARES:
-      su2double weight = 1.0;
-      su2double dist_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
-      if (kindRecon == WEIGHTED_LEAST_SQUARES) {
-        weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          weight += pow(dist_ij[iDim],2); 
-      }
-      weight *= 0.5*(1.-kappa);
+  su2double dist_ij[MAXNDIM] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-      auto flowVar = solver[FLOW_SOL]->GetNodes();
-      auto flowS_i = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
-                                   : flowVar->GetSmatrix(iPoint);
-      auto flowS_j = reconRequired ? flowVar->GetSmatrix_Aux(jPoint)
-                                   : flowVar->GetSmatrix(jPoint);
-      for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          for (auto jDim = 0; jDim < nDim; jDim++) {
-            gradBasis_i[iVar] += weight*flowS_i[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_i[iVar];
-            gradBasis_j[iVar] += weight*flowS_j[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_j[iVar];
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
+      }
+
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+      gradBasis_i[iVar] = 0.;
+      gradBasis_j[iVar] = 0.;
+    }
+
+    auto kPoint = node_I->GetPoint(iNeigh);
+    auto kEdge = node_i->GetEdge(iNeigh);
+
+    auto node_k = geometry->node[kPoint];
+
+    /*--- d{r,v,p,k}/dU, evaluated at node ---*/
+
+    su2double inv_r_n_k = 1.0/flowVar->GetDensity(kPoint);
+    su2double vel_n_k[MAXNDIM] = {0.0};
+    su2double sq_vel_n_k = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      vel_n_k[iDim] = flowVar->GetVelocity(kPoint,iDim);
+      sq_vel_n_k += pow(vel_n_k[iDim],2);
+    }
+
+    dVdU_k[0][0] = 1.0;
+
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      dVdU_k[iDim+1][0] = -vel_n_k[iDim]*inv_r_n_k;
+      dVdU_k[iDim+1][iDim+1] = inv_r_n_k;
+      dVdU_k[nDim+1][iDim+1] = -Gamma_Minus_One*vel_n_k[iDim];
+    }
+
+    dVdU_k[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_n_k;
+
+    dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
+
+    if (tkeNeeded)
+      dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes->GetPrimitive(kPoint,0)*inv_r_n_k;
+
+    switch (kindRecon) {
+      case GREEN_GAUSS:
+        break;
+      case WEIGHTED_LEAST_SQUARES:
+      case LEAST_SQUARES:
+        su2double weight = 1.0;
+        su2double dist_ik[MAXNDIM] = {0.0};
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          dist_ik[iDim] = node_k->GetCoord(iDim) - node_i->GetCoord(iDim);
+        
+        if (kindRecon == WEIGHTED_LEAST_SQUARES) {
+          weight = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            weight += pow(dist_ik[iDim],2); 
+        }
+        weight *= 0.5*(1.-kappa);
+
+        auto flowSmat = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
+                                      : flowVar->GetSmatrix(iPoint);
+        for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            for (auto jDim = 0; jDim < nDim; jDim++) {
+              gradBasis_i[iVar] -= weight*flowSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
+              gradBasis_j[iVar] += weight*flowSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
+            }
           }
         }
-      }
-      if (tkeNeeded) {
-        auto turbVar = solver[TURB_SOL]->GetNodes();
-        auto turbS_i = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
-                                     : turbVar->GetSmatrix(iPoint);
-        auto turbS_j = reconRequired ? turbVar->GetSmatrix_Aux(jPoint)
-                                     : turbVar->GetSmatrix(jPoint);
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          for (auto jDim = 0; jDim < nDim; jDim++) {
-            turbGradBasis_i[0] += weight*turbS_i[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*turbLimiter_i[0];
-            turbGradBasis_j[0] += weight*turbS_j[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*turbLimiter_j[0];
+        if (tkeNeeded) {
+          auto turbVar = solver[TURB_SOL]->GetNodes();
+          auto turbSmat = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
+                                        : turbVar->GetSmatrix(iPoint);
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            for (auto jDim = 0; jDim < nDim; jDim++) {
+              gradBasis_i[iVar] -= weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
+              gradBasis_j[iVar] += weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
+            }
           }
         }
+        break;
+    }
+
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+          Jacobian_i[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_i[kVar]*dVdU_i[kVar][jVar];
+          Jacobian_j[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_j[kVar]*dVdU_k[kVar][jVar];
+        }
       }
-      break;
+    }
+
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+
+    Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
 }
 
