@@ -2327,7 +2327,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SMATRIX:
             for (iDim = 0; iDim < nDim; iDim++) {
               for (jDim = 0; jDim < nDim; jDim++) {
-                base_nodes->SetSmatrix(iPoint, iDim, jDim, bufDRecv[buf_offset+iDim*nDim+jDim])
+                base_nodes->SetSmatrix(iPoint, iDim, jDim, bufDRecv[buf_offset+iDim*nDim+jDim]);
               }
             }
             break;
