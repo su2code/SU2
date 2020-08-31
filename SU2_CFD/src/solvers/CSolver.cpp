@@ -3189,7 +3189,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   auto& rmatrix  = base_nodes->GetRmatrix();
   auto& smatrix  = base_nodes->GetSmatrix();
 
-  computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
+  computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, SMATRIX, *geometry, *config,
                                weighted, solution, 0, 1, gradient, rmatrix, smatrix);
 }
 
