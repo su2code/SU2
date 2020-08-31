@@ -3658,6 +3658,14 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
 
   /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
+  su2double inv_r_n_i = 1.0/primvar_n_i[nDim+2];
+  su2double vel_n_k[MAXNDIM] = {0.0};
+  su2double sq_vel_n_k = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    vel_n_k[iDim] = flowVar->GetVelocity(kPoint,iDim);
+    sq_vel_n_k += pow(vel_n_k[iDim],2);
+  }
+
   dVdU_i[0][0] = 1.0;
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -3720,7 +3728,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
       gradBasis_j[iVar] = 0.;
     }
 
-    auto kPoint = node_I->GetPoint(iNeigh);
+    auto kPoint = node_i->GetPoint(iNeigh);
     auto kEdge = node_i->GetEdge(iNeigh);
 
     auto node_k = geometry->node[kPoint];
@@ -3748,7 +3756,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
 
     if (tkeNeeded)
-      dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes->GetPrimitive(kPoint,0)*inv_r_n_k;
+      dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes()->GetPrimitive(kPoint,0)*inv_r_n_k;
 
     switch (kindRecon) {
       case GREEN_GAUSS:
@@ -3783,8 +3791,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
                                         : turbVar->GetSmatrix(iPoint);
           for (auto iDim = 0; iDim < nDim; iDim++) {
             for (auto jDim = 0; jDim < nDim; jDim++) {
-              gradBasis_i[iVar] -= weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
-              gradBasis_j[iVar] += weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
+              gradBasis_i[nVar] -= weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[nVar];
+              gradBasis_j[nVar] += weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[nVar];
             }
           }
         }

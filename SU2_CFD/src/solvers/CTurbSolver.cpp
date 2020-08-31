@@ -626,7 +626,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
       gradBasis_j[iVar] = 0.;
     }
 
-  auto kPoint = node_I->GetPoint(iNeigh);
+  auto kPoint = node_i->GetPoint(iNeigh);
   auto kEdge = node_i->GetEdge(iNeigh);
 
   auto node_k = geometry->node[kPoint];
@@ -650,10 +650,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
         auto Smat = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
                                   : turbVar->GetSmatrix(iPoint);
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          for (auto jDim = 0; jDim < nDim; jDim++) {
-            gradBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
-            gradBasis_j[iVar] += weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            for (auto jDim = 0; jDim < nDim; jDim++) {
+              gradBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
+              gradBasis_j[iVar] += weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
+            }
           }
         }
         break;
