@@ -1910,7 +1910,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
   
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, jDim;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
 
@@ -2230,7 +2230,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
   
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, jDim;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
