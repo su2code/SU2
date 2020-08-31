@@ -1000,6 +1000,15 @@ public:
   inline VectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
+   * \overload
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix.
+   */
+  inline void SetSmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix(iPoint,iDim,jDim) = value; }
+
+  /*!
    * \brief Add <i>value</i> to the Smatrix for least squares gradient calculations.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Index of the dimension.
@@ -1029,6 +1038,15 @@ public:
    * \return Reference to the Smatrix.
    */
   inline VectorOfMatrix& GetSmatrix(void) { return Smatrix; }
+
+  /*!
+   * \overload
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix.
+   */
+  inline void SetSmatrix_Aux(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix_Aux(iPoint,iDim,jDim) = value; }
 
   /*!
    * \brief Add <i>value</i> to the Smatrix for least squares gradient calculations.

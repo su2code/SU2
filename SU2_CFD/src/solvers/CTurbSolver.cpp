@@ -116,8 +116,8 @@ CTurbSolver::~CTurbSolver(void) {
   }
 
   if (GradBasis != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+    for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] GradBasis[iMarker][iVertex];
       delete [] GradBasis[iMarker];
     }
@@ -125,8 +125,8 @@ CTurbSolver::~CTurbSolver(void) {
   }
 
   if (GradBasis_Aux != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+    for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         delete [] GradBasis_Aux[iMarker][iVertex];
       delete [] GradBasis_Aux[iMarker];
     }
