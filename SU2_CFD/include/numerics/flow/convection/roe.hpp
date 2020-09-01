@@ -55,25 +55,6 @@ protected:
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
   /*!
-   * \brief Compute the contribution of central differencing to the flux Jacobian.
-   * \param[in] val_kappa - MUSCL kappa blending parameter.
-   * \param[in/out] jac_{i/j} - Flux Jacobian wrt conservatives at [face/node].
-   * \param[in] lim_{i/j} - Slope limiter at node.
-   * \param[in] turblim_{i/j} - Slope limiter of turb vars at node.
-   * \param[in] primvar_{i/j} - Primitive variables at face.
-   * \param[in] primvar_n_{i/j} - Primitive variables at node.
-   * \param[in] k_{i/j} - Turbulent kinetic energy at face.
-   * \param[in] k_n_{i/j} - Turbulent kinetic energy at node.
-   */
-  void GetMUSCLJac(su2double **jac_i, su2double **jac_j,
-                   const su2double *lim_i, const su2double *lim_j,
-                   const su2double *turblim_i, const su2double *turblim_j,
-                   const su2double *primvar_i, const su2double *primvar_j,
-                   const su2double *primvar_n_i, const su2double *primvar_n_j,
-                   const su2double *k_i, const su2double *k_j,
-                   const su2double *k_n_i, const su2double *k_n_j);
-
-  /*!
    * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
    * \param[out] val_residual - Convective flux.
    * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).

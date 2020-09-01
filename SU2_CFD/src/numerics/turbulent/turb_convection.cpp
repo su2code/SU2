@@ -60,28 +60,6 @@ CUpwScalar::~CUpwScalar(void) {
   delete [] Jacobian_j;
 }
 
-void CUpwScalar::GetMUSCLJac(su2double **jac_i, su2double **jac_j,
-                             const su2double *lim_i, const su2double *lim_j,
-                             const su2double *r_i, const su2double *r_j,
-                             const su2double *r_n_i, const su2double *r_n_j) {
-  const bool wasActive = AD::BeginPassive();
-
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
-      const su2double dFidUi = jac_i[iVar][jVar]*(*r_i)*(1.0-lim_i[jVar])/(*r_n_i);
-      const su2double dFidUj = jac_i[iVar][jVar]*(*r_i)*lim_i[jVar]/(*r_n_j);
-      const su2double dFjdUi = jac_j[iVar][jVar]*(*r_j)*lim_j[jVar]/(*r_n_i);
-      const su2double dFjdUj = jac_j[iVar][jVar]*(*r_j)*(1.0-lim_j[jVar])/(*r_n_j);
-    
-      jac_i[iVar][jVar] = dFidUi + dFjdUi;
-      jac_j[iVar][jVar] = dFidUj + dFjdUj;
-    }
-  }
-
-
-  AD::EndPassive(wasActive);
-}
-
 CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
@@ -256,18 +234,5 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
     Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;  Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area; Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
-
-    // if (muscl) {
-
-    //   /*--- Extract nodal values ---*/
-
-    //   const su2double Density_n_i = Vn_i[nDim+2];
-    //   const su2double Density_n_j = Vn_j[nDim+2];
-
-    //   /*--- Compute Jacobian wrt extrapolation ---*/
-
-    //   GetMUSCLJac(Jacobian_i, Jacobian_j, Limiter_i, Limiter_j, 
-    //               &Density_i, &Density_j, &Density_n_i, &Density_n_j);
-    // }
   }
 }
