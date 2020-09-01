@@ -580,6 +580,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
     const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
 
+    su2double Weight = 0.0;
     su2double Basis[MAXNDIM] = {0.0};
     if (gg) {
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
@@ -756,6 +757,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Phi      = Gamma_Minus_One/Density;
     const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
 
+    su2double Weight = 0.0;
     su2double Basis[MAXNDIM] = {0.0};
     if (gg) {
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
