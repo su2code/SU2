@@ -615,7 +615,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         Jacobian_i[iDim+1][jDim+1] += Weight*Xi_k*(Basis[iDim]*Vec[jDim] 
                                     - TWO3*Basis[jDim]*Vec[iDim] 
                                     + delta[iDim][jDim]*ProjVec);
-        Jacobianj[iDim+1][jDim+1] += Weight*Xi*(Basis[iDim]*Vec[jDim] 
+        Jacobian_j[iDim+1][jDim+1] += Weight*Xi*(Basis[iDim]*Vec[jDim] 
                                     - TWO3*Basis[jDim]*Vec[iDim] 
                                     + delta[iDim][jDim]*ProjVec);
       }

@@ -693,7 +693,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
       }
     }
 
-    if (wls)
+    if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
       for (auto iVar = 0; iVar < nVar; iVar++)
         for (auto jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[nVar-1][iVar] *= -1.0;
