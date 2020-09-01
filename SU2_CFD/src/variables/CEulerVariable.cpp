@@ -125,10 +125,9 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
+    Smatrix.resize(nPoint,nDim,nDim,0.0);
     if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
       Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
-    if (config->GetUse_Accurate_Visc_Jacobians())
-      Smatrix.resize(nPoint,nDim,nDim,0.0);
   }
 
   if (config->GetMultizone_Problem())
