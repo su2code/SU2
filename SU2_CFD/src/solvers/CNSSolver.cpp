@@ -452,19 +452,16 @@ void CNSSolver::CorrectJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  const bool wasActive = AD::BeginPassive();
 
-    const bool wasActive = AD::BeginPassive();
+  su2double EdgVec[MAXNDIM] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
 
-    su2double EdgVec[MAXNDIM] = {0.0};
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
+  StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
+  HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
 
-    StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
-    HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
-
-    AD::EndPassive(wasActive);
-  }// GG  
+  AD::EndPassive(wasActive);
 }
 
 void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
@@ -477,6 +474,10 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
+
+  const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
+  const bool ls  = config->GetKind_Gradient_Method() == LEAST_SQUARES;
+  const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   /*--- Get norm of projection and distance vectors ---*/
 
@@ -513,7 +514,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if ((gg) && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -577,21 +578,44 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     const su2double Density = nodes->GetDensity(kPoint);
     const su2double Xi = WF_Factor*Mean_Viscosity/Density;
 
-    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-    const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
-    const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
-    const su2double Weight     = 0.5*HalfOnVol*sign*signk;
+    const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+
+    su2double Basis[MAXNDIM] = {0.0};
+    if (gg) {
+      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      Weight = 0.5*HalfOnVol*sign*signk;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Basis[iDim] = geometry->edge[kEdge]->GetNormal()[iDim];
+    }
+    else {
+      su2double dist_ik[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
+
+      if (ls)
+        Weight = 0.5*sign;
+      else {
+        Weight = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          Weight += 0.5*sign*pow(dist_ik[iDim],2);
+      }
+
+      const auto Smat = nodes->GetSmatrix(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto jDim = 0; jDim < nDim; jDim++)
+          Basis[iDim] += Smat[iDim][jDim]*dist_ik[jDim];
+    }
 
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
-      ProjVec += Vec[iDim]*VolNormal[iDim];
+      ProjVec += Vec[iDim]*Basis[iDim];
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
     for (auto iDim = 0; iDim < nDim; iDim++)
       for (auto jDim = 0; jDim < nDim; jDim++)
-        Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(VolNormal[iDim]*Vec[jDim] 
-                                    - TWO3*VolNormal[jDim]*Vec[iDim] 
+        Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Basis[iDim]*Vec[jDim] 
+                                    - TWO3*Basis[jDim]*Vec[iDim] 
                                     + delta[iDim][jDim]*ProjVec);
 
     /*--- Now get density and energy Jacobians for kPoint ---*/
@@ -625,6 +649,10 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
 
+  const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
+  const bool ls  = config->GetKind_Gradient_Method() == LEAST_SQUARES;
+  const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
+
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
 
@@ -636,7 +664,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     Dist2   += EdgVec[iDim]*EdgVec[iDim];
   }
 
-  /*--- Get vector multiplied by GG gradient in CNumerics ---*/
+  /*--- Get vector multiplied by gradient Jacobian from CNumerics ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
@@ -657,7 +685,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if (geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if ((gg) && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -726,15 +754,39 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Density  = nodes->GetDensity(kPoint);
     const su2double Pressure = nodes->GetPressure(kPoint);
     const su2double Phi      = Gamma_Minus_One/Density;
-    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-    const su2double *VolNormal = geometry->edge[kEdge]->GetNormal();
     const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
+
+    su2double Basis[MAXNDIM] = {0.0};
+    if (gg) {
+      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      Weight = HalfOnVol*sign*signk;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];
+    }
+    else {
+      su2double dist_ik[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
+
+      if (ls)
+        Weight = sign;
+      else {
+        Weight = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          Weight += sign*pow(dist_ik[iDim],2);
+      }
+
+      const auto Smat = nodes->GetSmatrix(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        for (auto jDim = 0; jDim < nDim; jDim++)
+          Basis[iDim] += Weight*Smat[iDim][jDim]*dist_ik[jDim];
+    }
 
     su2double Weight = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
-      Weight += VolNormal[iDim]*Vec[iDim];
+      Weight += Basis[iDim]*Vec[iDim];
 
-    Weight *= 0.5*HalfOnVol*ConductivityOnR*sign*signk;
+    Weight *= 0.5*ConductivityOnR;
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
