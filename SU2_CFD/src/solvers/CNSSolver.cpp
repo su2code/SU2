@@ -501,11 +501,12 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   const su2double Mean_EddyVisc = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
   const su2double Mean_Viscosity = Mean_LaminarVisc + Mean_EddyVisc;
 
-  const su2double Density = nodes->GetDensity(iPoint);
-  const su2double Xi = WF_Factor*Mean_Viscosity/Density;
-
   /*--- TODO: Correction with wall function ---*/
   const su2double WF_Factor = 1.0;
+
+  const su2double Density = nodes->GetDensity(iPoint);
+  const su2double Xi = WF_Factor*Mean_Viscosity/Density;
+  
 
   su2double Mean_Velocity[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
