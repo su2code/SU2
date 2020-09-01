@@ -3226,6 +3226,45 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
                                weighted, solution, 0, nVar, gradient, rmatrix, smatrix);
 }
 
+void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *solver, Config *config, 
+                           unsigned long iPoint, unsigned long jPoint, bool reconstruction) {
+  const unsigned short kindRecon = reconstruction ? config->GetKind_Gradient_Method_Recon()
+                                                  : config->GetKind_Gradient_Method();
+  switch (kindRecon) {
+    case GREEN_GAUSS:
+      {
+        const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+        auto iEdge = geometry->FindEdge(iPoint, jPoint);
+        const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          gradBasis[iDim] = signk*HalfOnVol*geometry->edge[kEdge]->GetNormal()[iDim];
+        break;
+      }
+    case LEAST_SQUARES:
+    case WEIGHTED_LEAST_SQUARES:
+      {
+        su2double weight = 1.0;
+        su2double dist_ij[MAXNDIM] = {0.0};
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          dist_ij[iDim] = geometry->node[jPoint]>GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
+        
+        if (kindRecon == WEIGHTED_LEAST_SQUARES) {
+          weight = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            weight += pow(dist_ij[iDim],2); 
+        }
+        weight = 1.0/weight;
+        auto Smat = reconstruction ? solver->GetNodes()->GetSmatrix_Aux(iPoint)
+                                   : solver->GetNodes()->GetSmatrix(iPoint);
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          for (auto jDim = 0; jDim < nDim; jDim++)
+            gradBasis[iDim] += Smat[iDim][jDim]*dist_ij[jDim];
+        break;
+      }
+  }
+
+}
+
 void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   
   //--- communicate the solution values via MPI

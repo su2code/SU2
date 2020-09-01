@@ -580,30 +580,9 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
-    su2double Weight = 0.0;
+    su2double Weight = 0.5*sign;
     su2double Basis[MAXNDIM] = {0.0};
-    if (gg) {
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-      Weight = 0.5*HalfOnVol*sign*signk;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Basis[iDim] = geometry->edge[kEdge]->GetNormal()[iDim];
-    }
-    else {
-      su2double dist_ik[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
-
-      Weight = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Weight += pow(dist_ik[iDim],2);
-      Weight = 0.5*sign/Weight;
-
-      const auto Smat = nodes->GetSmatrix(iPoint);
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          Basis[iDim] += Smat[iDim][jDim]*dist_ik[jDim];
-    }
+    GetGradBasis(Basis, geometry, solver[FLOW_SOL], config, iPoint, kPoint, false);
 
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
@@ -770,36 +749,14 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Pressure_k = nodes->GetPressure(kPoint);
     const su2double Phi_k      = Gamma_Minus_One/Density;
 
-    su2double Weight = 0.0;
     su2double Basis[MAXNDIM] = {0.0};
-    if (gg) {
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-      Weight = 0.5*HalfOnVol*sign*signk;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];
-    }
-    else {
-      su2double dist_ik[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
+    GetGradBasis(Basis, geometry, solver[FLOW_SOL], config, iPoint, kPoint, false);
 
-      Weight = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Weight += pow(dist_ik[iDim],2);
-      Weight = 0.5*sign/Weight;
-
-      const auto Smat = nodes->GetSmatrix(iPoint);
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          Basis[iDim] += Weight*Smat[iDim][jDim]*dist_ik[jDim];
-    }
-
-    Weight = 0.0;
+    su2double Weight = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
       Weight += Basis[iDim]*Vec[iDim];
 
-    Weight *= ConductivityOnR;
+    Weight *= 0.5*sign*ConductivityOnR;
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] += Weight*(-Pressure_k/(Density_k*Density_k)+0.5*Vel2_k*Phi_k);

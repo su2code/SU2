@@ -525,16 +525,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2double gradBasis_i[2] = {0.0}, gradBasis_j[2] = {0.0};
+  su2double reconBasis_i[2] = {0.0}, reconBasis_j[2] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
-    gradBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
+    reconBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
+    reconBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] = sign*(dFdU_i[iVar][jVar]*(*r_i)*(1.0-gradBasis_i[jVar])
-                             + dFdU_j[iVar][jVar]*(*r_j)*gradBasis_j[jVar])/(*r_n_i);
+      Jacobian_i[iVar][jVar] = sign*(dFdU_i[iVar][jVar]*(*r_i)*(1.0-reconBasis_i[jVar])
+                             + dFdU_j[iVar][jVar]*(*r_j)*reconBasis_j[jVar])/(*r_n_i);
     }
   }
 
@@ -561,8 +561,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
       }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      gradBasis_i[iVar] = 0.;
-      gradBasis_j[iVar] = 0.;
+      reconBasis_i[iVar] = 0.;
+      reconBasis_j[iVar] = 0.;
     }
 
   auto kPoint = node_i->GetPoint(iNeigh);
@@ -577,7 +577,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
           const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;
           for (auto iVar = 0; iVar < nVar; iVar++) {
             for (auto iDim = 0; iDim < nDim; iDim++) {
-              gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*limiter_i[iVar];
+              reconBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*limiter_i[iVar];
             }
           }
           break;
@@ -602,7 +602,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
           for (auto iVar = 0; iVar < nVar; iVar++) {
             for (auto iDim = 0; iDim < nDim; iDim++) {
               for (auto jDim = 0; jDim < nDim; jDim++) {
-                gradBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
+                reconBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
               }
             }
           }
@@ -612,8 +612,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_i[jVar]/(*r_n_i);
-        Jacobian_j[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_i[jVar]/(flowVar->GetDensity(kPoint));
+        Jacobian_i[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(*r_n_i);
+        Jacobian_j[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(flowVar->GetDensity(kPoint));
       }
     }
 
@@ -696,41 +696,15 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
     su2double Basis[MAXNDIM] = {0.0};
+    GetGradBasis(Basis, geometry, solver[TURB_SOL], config, iPoint, kPoint, false);
     const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
-    if (gg) {
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-      Weight = HalfOnVol*sign*signk/denom;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];
-
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto iVar = 0; iVar < nVar; iVar++)
-          Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
-    }
-    else {
-      const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
-
-      su2double dist_ik[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
-
-      Weight = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Weight += pow(dist_ik[iDim],2);
-      Weight = sign/Weight;
-
-      const auto Smat = nodes->GetSmatrix(iPoint);
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          Basis[iDim] += Weight*Smat[iDim][jDim]*dist_ik[jDim];
-
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          for (auto iVar = 0; iVar < nVar; iVar++) {
-            Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
-            Jacobian_j[iVar][iVar] -= Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
-          }
+    
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        Jacobian_i[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
+        Jacobian_j[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
+      }
+      if (wls) Jacobian_j[iVar][iVar] *= -1.0;
     }
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
