@@ -580,12 +580,11 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
-    const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-
     su2double Weight = 0.0;
     su2double Basis[MAXNDIM] = {0.0};
     if (gg) {
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
       Weight = 0.5*HalfOnVol*sign*signk;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Basis[iDim] = geometry->edge[kEdge]->GetNormal()[iDim];
@@ -597,7 +596,8 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
       Weight = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++)
-        Weight += 0.5*sign*pow(dist_ik[iDim],2);
+        Weight += pow(dist_ik[iDim],2);
+      Weight = 0.5*sign/Weight;
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
@@ -769,12 +769,12 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Density_k  = nodes->GetDensity(kPoint);
     const su2double Pressure_k = nodes->GetPressure(kPoint);
     const su2double Phi_k      = Gamma_Minus_One/Density;
-    const su2double signk      = 1.0 - 2.0*(iPoint > kPoint);
 
     su2double Weight = 0.0;
     su2double Basis[MAXNDIM] = {0.0};
     if (gg) {
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
       Weight = 0.5*HalfOnVol*sign*signk;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];
@@ -786,7 +786,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
       Weight = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++)
-        Weight += 0.5*sign*pow(dist_ik[iDim],2);
+        Weight += pow(dist_ik[iDim],2);
+      Weight = 0.5*sign/Weight;
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)

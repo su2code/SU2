@@ -3547,7 +3547,7 @@ void CEulerSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *
         for (auto iDim = 0; iDim < nDim; iDim++)
           weight += pow(dist_ij[iDim],2); 
       }
-      weight *= 0.5*(1.-kappa);
+      weight = 0.5*(1.-kappa)/weight;
 
       auto flowVar = solver[FLOW_SOL]->GetNodes();
       auto flowS_i = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
@@ -3801,7 +3801,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
             for (auto iDim = 0; iDim < nDim; iDim++)
               weight += pow(dist_ik[iDim],2); 
           }
-          weight *= 0.5*(1.-kappa);
+          weight = 0.5*(1.-kappa)/weight;
 
           auto flowSmat = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
                                         : flowVar->GetSmatrix(iPoint);

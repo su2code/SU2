@@ -590,10 +590,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
       const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-      Jacobian_i[1][0] += Weight*gradom*Basis[iDim];
-      Jacobian_i[1][1] += Weight*gradk*Basis[iDim];
-      Jacobian_j[1][0] += Weight*gradom*Basis[iDim];
-      Jacobian_j[1][1] += Weight*gradk*Basis[iDim];
+      Jacobian_i[1][0] += Weight*gradom*Basis[iDim]; Jacobian_i[1][1] += Weight*gradk*Basis[iDim];
+      Jacobian_j[1][0] += Weight*gradom*Basis[iDim]; Jacobian_j[1][1] += Weight*gradk*Basis[iDim];
     }// iDim
 
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {

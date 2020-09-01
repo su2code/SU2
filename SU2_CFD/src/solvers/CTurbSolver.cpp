@@ -560,7 +560,7 @@ void CTurbSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *c
         for (auto iDim = 0; iDim < nDim; iDim++)
           weight += pow(dist_ij[iDim],2); 
       }
-      weight *= 0.5*(1.-kappa);
+      weight = 0.5*(1.-kappa)/weight;
 
       auto var = solver[TURB_SOL]->GetNodes();
       auto S_i = reconRequired ? var->GetSmatrix_Aux(iPoint)
@@ -671,7 +671,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
             for (auto iDim = 0; iDim < nDim; iDim++)
               weight += pow(dist_ik[iDim],2); 
           }
-          weight *= 0.5*(1.-kappa);
+          weight = 0.5*(1.-kappa)/weight;
 
           auto Smat = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
                                     : turbVar->GetSmatrix(iPoint);
@@ -785,7 +785,6 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
           Jacobian_i[iVar][iVar] += Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
     }
     else {
-      const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
       const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
 
       su2double dist_ik[MAXNDIM] = {0.0};
@@ -795,6 +794,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       Weight = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Weight += sign*pow(dist_ik[iDim],2);
+      Weight = 1.0/Weight;
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
