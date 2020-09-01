@@ -3720,7 +3720,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     }
   }
 
-  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
   /*--------------------------------------------------------------------------*/
@@ -3841,7 +3841,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
         for (auto jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[nVar-1][iVar] *= -1.0;
 
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);

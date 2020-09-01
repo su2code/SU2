@@ -698,7 +698,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
         for (auto jVar = 0; jVar < nVar; jVar++)
           Jacobian_j[nVar-1][iVar] *= -1.0;
 
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
@@ -752,7 +752,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       }// iVertex
     }// iMarker
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
   }// physical boundary
@@ -812,7 +812,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_j);
 
   }// iNeigh

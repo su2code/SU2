@@ -535,8 +535,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
                                             CConfig *config,
                                             unsigned long iPoint) {
   
-  // if (config->GetKind_Gradient_Method() == GREEN_GAUSS && nodes->GetCrossDiff(iPoint) > CDKW_MIN) {
-
   const bool wasActive = AD::BeginPassive();
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
@@ -603,7 +601,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       Jacobian_j[1][1] *= -1.0;
     }
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_j);
   }// iNeigh
   
   /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/

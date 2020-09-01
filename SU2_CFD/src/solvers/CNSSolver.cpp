@@ -559,7 +559,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       Jacobian_i[nVar-1][0] -= Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(iPoint,iDim);
     }
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
@@ -646,7 +646,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_j);
   }// iNeigh
 
@@ -747,7 +747,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       }// not send-receive
     }// iMarker
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
@@ -835,7 +835,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
 
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_j);
   }// iNeigh
   
