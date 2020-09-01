@@ -716,7 +716,6 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
   su2double Weight = 0.0;
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
-  const bool ls  = config->GetKind_Gradient_Method() == LEAST_SQUARES;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   /*--- First we compute contributions of first neighbors to the Jacobian.
@@ -790,13 +789,9 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       for (auto iDim = 0; iDim < nDim; iDim++)
         dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
 
-      if (ls)
-        Weight = sign;
-      else {
-        Weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          Weight += sign*pow(dist_ik[iDim],2);
-      }
+      Weight = 0.0;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Weight += sign*pow(dist_ik[iDim],2);
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)

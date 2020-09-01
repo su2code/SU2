@@ -476,7 +476,6 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
 
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
-  const bool ls  = config->GetKind_Gradient_Method() == LEAST_SQUARES;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   /*--- Get norm of projection and distance vectors ---*/
@@ -593,13 +592,9 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       for (auto iDim = 0; iDim < nDim; iDim++)
         dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
 
-      if (ls)
-        Weight = 0.5*sign;
-      else {
-        Weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          Weight += 0.5*sign*pow(dist_ik[iDim],2);
-      }
+      Weight = 0.0;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Weight += 0.5*sign*pow(dist_ik[iDim],2);
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
@@ -651,7 +646,6 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
 
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
-  const bool ls  = config->GetKind_Gradient_Method() == LEAST_SQUARES;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
@@ -761,7 +755,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     su2double Basis[MAXNDIM] = {0.0};
     if (gg) {
       auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      Weight = HalfOnVol*sign*signk;
+      Weight = 0.5*HalfOnVol*sign*signk;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];
     }
@@ -770,13 +764,9 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       for (auto iDim = 0; iDim < nDim; iDim++)
         dist_ik[iDim] = geometry->node[kPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
 
-      if (ls)
-        Weight = sign;
-      else {
-        Weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          Weight += sign*pow(dist_ik[iDim],2);
-      }
+      Weight = 0.0;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        Weight += 0.5*sign*pow(dist_ik[iDim],2);
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
@@ -788,7 +778,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     for (auto iDim = 0; iDim < nDim; iDim++)
       Weight += Basis[iDim]*Vec[iDim];
 
-    Weight *= 0.5*ConductivityOnR;
+    Weight *= ConductivityOnR;
 
     /*--- Density Jacobian ---*/
     Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
