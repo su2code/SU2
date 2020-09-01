@@ -3258,7 +3258,7 @@ void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *s
                                    : solver->GetNodes()->GetSmatrix(iPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
           for (auto jDim = 0; jDim < nDim; jDim++)
-            gradBasis[iDim] += Smat[iDim][jDim]*dist_ij[jDim];
+            gradBasis[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
         break;
       }
   }
