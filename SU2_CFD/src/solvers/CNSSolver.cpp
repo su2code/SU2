@@ -784,7 +784,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
           Basis[iDim] += Weight*Smat[iDim][jDim]*dist_ik[jDim];
     }
 
-    su2double Weight = 0.0;
+    Weight = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
       Weight += Basis[iDim]*Vec[iDim];
 
