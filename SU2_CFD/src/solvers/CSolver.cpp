@@ -3235,16 +3235,16 @@ void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *s
       {
         const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
         auto iEdge = geometry->FindEdge(iPoint, jPoint);
-        const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
+        const su2double signk = 1.0 - 2.0*(iPoint > jPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
-          gradBasis[iDim] = signk*HalfOnVol*geometry->edge[kEdge]->GetNormal()[iDim];
+          gradBasis[iDim] = signk*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
         break;
       }
     case LEAST_SQUARES:
     case WEIGHTED_LEAST_SQUARES:
       {
         su2double weight = 1.0;
-        su2double dist_ij[MAXNDIM] = {0.0};
+        su2double dist_ij[3] = {0.0};
         for (auto iDim = 0; iDim < nDim; iDim++)
           dist_ij[iDim] = geometry->node[jPoint]>GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
         
