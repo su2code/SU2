@@ -3785,7 +3785,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
             for (auto iDim = 0; iDim < nDim; iDim++) {
               gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*l_i[iVar];
             }
-            gradBasis_j[iVar] = gradBasis_i[iVar];
           }
           break;
       }
@@ -3812,7 +3811,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
                 gradBasis_i[iVar] -= weight*flowSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
               }
             }
-            gradBasis_j[iVar] = -gradBasis_i[iVar];
           }
           if (tkeNeeded) {
             auto turbVar = solver[TURB_SOL]->GetNodes();
@@ -3823,7 +3821,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
                 gradBasis_i[nVar] -= weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[nVar];
               }
             }
-            gradBasis_j[nVar] = -gradBasis_i[nVar];
           }
           break;
         }
@@ -3834,10 +3831,15 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
         Jacobian_i[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
           Jacobian_i[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_i[kVar]*dVdU_i[kVar][jVar];
-          Jacobian_j[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_j[kVar]*dVdU_k[kVar][jVar];
+          Jacobian_j[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_i[kVar]*dVdU_k[kVar][jVar];
         }
       }
     }
+
+    if (wls)
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        for (auto jVar = 0; jVar < nVar; jVar++)
+          Jacobian_j[nVar-1][iVar] *= -1.0;
 
     Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);

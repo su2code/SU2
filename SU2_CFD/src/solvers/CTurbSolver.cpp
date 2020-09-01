@@ -655,7 +655,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
             for (auto iDim = 0; iDim < nDim; iDim++) {
               gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*limiter_i[iVar];
             }
-            gradBasis_j[iVar] = gradBasis_i[iVar];
           }
           break;
         }
@@ -682,7 +681,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
                 gradBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
               }
             }
-            gradBasis_j[iVar] = -gradBasis_i[iVar];
           }
           break;
         }
@@ -691,9 +689,14 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_i[jVar]/(*r_n_i);
-        Jacobian_j[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_j[jVar]/(flowVar->GetDensity(kPoint));
+        Jacobian_j[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_i[jVar]/(flowVar->GetDensity(kPoint));
       }
     }
+
+    if (wls)
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        for (auto jVar = 0; jVar < nVar; jVar++)
+          Jacobian_j[nVar-1][iVar] *= -1.0;
 
     Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
