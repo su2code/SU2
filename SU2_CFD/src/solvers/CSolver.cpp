@@ -3246,7 +3246,7 @@ void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *s
         su2double weight = 1.0;
         su2double dist_ij[3] = {0.0};
         for (auto iDim = 0; iDim < nDim; iDim++)
-          dist_ij[iDim] = geometry->node[jPoint]>GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
+          dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
         
         if (kindRecon == WEIGHTED_LEAST_SQUARES) {
           weight = 0.0;
