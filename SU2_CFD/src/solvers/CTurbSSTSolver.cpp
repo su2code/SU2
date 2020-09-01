@@ -579,12 +579,13 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       su2double w = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++)
         w += pow(dist_ij[iDim],2);
+      w = 2.0*Vol/w;
 
       const auto Vol = geometry->node[iPoint]->GetVolume();
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
         for (auto jDim = 0; jDim < nDim; jDim++)
-          Basis[iDim] += 2.0*w*Smat[iDim][jDim]*dist_ij[jDim]*Vol;
+          Basis[iDim] += w*Smat[iDim][jDim]*dist_ij[jDim];
     }
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
