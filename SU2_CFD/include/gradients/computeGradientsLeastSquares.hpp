@@ -73,7 +73,7 @@ void computeGradientsLeastSquares(CSolver* solver,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  const bool compute = (config->GetInnerIter() == 0) || (config->GetDiscrete_Adjoint());ß
+  const bool compute = (config.GetInnerIter() == 0) || (config.GetDiscrete_Adjoint());ß
 
   /*--- First loop over non-halo points of the grid. ---*/
 
