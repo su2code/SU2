@@ -523,23 +523,23 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double Weight = -0.5*HalfOnVol*sign;
+    const su2double Weight = -HalfOnVol*sign;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
-          const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           /*--- Get new projection vector to be multiplied by divergence terms ---*/
           ProjVec = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
-            ProjVec += Vec[iDim]*SurfNormal[iDim];
+            ProjVec += Vec[iDim]*Normal[iDim];
 
           /*--- Momentum flux Jacobian wrt momentum ---*/
           for (auto iDim = 0; iDim < nDim; iDim++)
             for (auto jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(SurfNormal[iDim]*Vec[jDim] 
-                                                - TWO3*SurfNormal[jDim]*Vec[iDim] 
+              Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Normal[iDim]*Vec[jDim] 
+                                                - TWO3*Normal[jDim]*Vec[iDim] 
                                                 + delta[iDim][jDim]*ProjVec);
         }// iVertex
       }// not send-receive
@@ -696,13 +696,13 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
-          const su2double *SurfNormal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           su2double Weight = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
-            Weight += SurfNormal[iDim]*Vec[iDim];
+            Weight += Normal[iDim]*Vec[iDim];
 
-          Weight *= -0.5*HalfOnVol*ConductivityOnR*sign;
+          Weight *= -HalfOnVol*ConductivityOnR*sign;
 
           /*--- Density Jacobian ---*/
           Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
