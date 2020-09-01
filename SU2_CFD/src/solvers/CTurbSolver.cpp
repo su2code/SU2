@@ -554,73 +554,38 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
       }
+    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       reconBasis_i[iVar] = 0.;
       reconBasis_j[iVar] = 0.;
     }
 
-  auto kPoint = node_i->GetPoint(iNeigh);
-  auto node_k = geometry->node[kPoint];
+    auto kPoint = node_i->GetPoint(iNeigh);
+    auto node_k = geometry->node[kPoint];
 
-  switch (kindRecon) {
-      case GREEN_GAUSS:
-        {
-          auto kEdge = node_i->GetEdge(iNeigh);
-          const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-          const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-          const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;
-          for (auto iVar = 0; iVar < nVar; iVar++) {
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              reconBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*limiter_i[iVar];
-            }
-          }
-          break;
-        }
-      case WEIGHTED_LEAST_SQUARES:
-      case LEAST_SQUARES:
-        {
-          su2double weight = 1.0;
-          su2double dist_ik[MAXNDIM] = {0.0};
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            dist_ik[iDim] = node_k->GetCoord(iDim) - node_i->GetCoord(iDim);
-          
-          if (kindRecon == WEIGHTED_LEAST_SQUARES) {
-            weight = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++)
-              weight += pow(dist_ik[iDim],2); 
-          }
-          weight = 0.5*(1.-kappa)/weight;
-
-          auto Smat = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
-                                    : turbVar->GetSmatrix(iPoint);
-          for (auto iVar = 0; iVar < nVar; iVar++) {
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              for (auto jDim = 0; jDim < nDim; jDim++) {
-                reconBasis_i[iVar] -= weight*Smat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*limiter_i[iVar];
-              }
-            }
-          }
-          break;
-        }
+    su2double Weight = sign*0.5*(1.-kappa);
+    su2double gradBasis[MAXNDIM] = {0.0};
+    SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint);
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        reconBasis_i[iVar] += Weight*gradBasis[iDim]*dist_ij[iDim]*limiter_i[iVar];
+      }
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(*r_n_i);
-        Jacobian_j[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(flowVar->GetDensity(kPoint));
+        Jacobian_i[iVar][jVar] = dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(*r_n_i);
+        Jacobian_j[iVar][jVar] = dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(flowVar->GetDensity(kPoint));
+        if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
+          Jacobian_i[iVar][jVar] *= -1.0;
       }
     }
-
-    if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        for (auto jVar = 0; jVar < nVar; jVar++)
-          Jacobian_j[nVar-1][iVar] *= -1.0;
 
     Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
@@ -687,11 +652,12 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
       }
+    }
 
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
@@ -701,18 +667,17 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
-        Jacobian_j[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
+        Jacobian_i[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
+        Jacobian_j[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
       }
-      if (wls) Jacobian_j[iVar][iVar] *= -1.0;
+      if (wls) Jacobian_i[iVar][iVar] *= -1.0;
     }
 
-    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, kPoint, Jacobian_i);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_j);
-
+    Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
 
   AD::EndPassive(wasActive);

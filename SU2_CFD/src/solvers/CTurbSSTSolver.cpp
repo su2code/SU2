@@ -567,7 +567,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
     su2double Basis[MAXNDIM] = {0.0};
-    SetGradBasis(Basis, geometry, solver[FLOW_SOL], config, iPoint, jPoint);
+    SetGradBasis(Basis, geometry, solver[TURB_SOL], config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
@@ -577,11 +577,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     }// iDim
 
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      Jacobian_j[1][0] *= -1.0;
-      Jacobian_j[1][1] *= -1.0;
+      Jacobian_i[1][0] *= -1.0;
+      Jacobian_i[1][1] *= -1.0;
     }
-    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_i);
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_j);
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
   
   /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/

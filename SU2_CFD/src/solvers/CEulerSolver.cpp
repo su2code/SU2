@@ -3540,9 +3540,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     l_i[nDim+2] = turbLimiter_i[0]; l_j[nDim+2] = turbLimiter_j[0];
   }
 
-  su2double gradBasis_i[MAXNVAR+1] = {0.0}, gradBasis_j[MAXNVAR+1] = {0.0};
+  su2double reconBasis_i[MAXNVAR+1] = {0.0}, reconBasis_j[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    gradBasis_i[iVar] = 0.5*kappa*l_i[iVar]; gradBasis_j[iVar] = 0.5*kappa*l_j[iVar];
+    reconBasis_i[iVar] = 0.5*kappa*l_i[iVar]; reconBasis_j[iVar] = 0.5*kappa*l_j[iVar];
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3611,8 +3611,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        Jacobian_i[iVar][jVar] += sign*(dFdV_i[iVar][kVar]*(1.0-gradBasis_i[kVar])
-                                + dFdV_j[iVar][kVar]*gradBasis_j[kVar])*dVdU_i[kVar][jVar];
+        Jacobian_i[iVar][jVar] += sign*(dFdV_i[iVar][kVar]*(1.0-reconBasis_i[kVar])
+                                + dFdV_j[iVar][kVar]*reconBasis_j[kVar])*dVdU_i[kVar][jVar];
       }
     }
   }
@@ -3639,8 +3639,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
       }
 
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-      gradBasis_i[iVar] = 0.;
-      gradBasis_j[iVar] = 0.;
+      reconBasis_i[iVar] = 0.;
+      reconBasis_j[iVar] = 0.;
     }
 
     auto kPoint = node_i->GetPoint(iNeigh);
@@ -3671,72 +3671,27 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     if (tkeNeeded)
       dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes()->GetPrimitive(kPoint,0)*inv_r_n_k;
 
-    switch (kindRecon) {
-      case GREEN_GAUSS:
-        {
-          auto kEdge = node_i->GetEdge(iNeigh);
-          const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-          const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-          const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;
-          for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*l_i[iVar];
-            }
-          }
-          break;
+    su2double Weight = sign*0.5*(1.-kappa);
+    su2double gradBasis[MAXNDIM] = {0.0};li
+    SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint);
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        reconBasis_i[iVar] += Weight*gradBasis[iDim]*dist_ij[iDim]*l_i[iVar];
       }
-      case WEIGHTED_LEAST_SQUARES:
-      case LEAST_SQUARES:
-        {
-          su2double weight = 1.0;
-          su2double dist_ik[MAXNDIM] = {0.0};
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            dist_ik[iDim] = node_k->GetCoord(iDim) - node_i->GetCoord(iDim);
-          
-          if (kindRecon == WEIGHTED_LEAST_SQUARES) {
-            weight = 0.0;
-            for (auto iDim = 0; iDim < nDim; iDim++)
-              weight += pow(dist_ik[iDim],2); 
-          }
-          weight = 0.5*(1.-kappa)/weight;
-
-          auto flowSmat = reconRequired ? flowVar->GetSmatrix_Aux(iPoint)
-                                        : flowVar->GetSmatrix(iPoint);
-          for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              for (auto jDim = 0; jDim < nDim; jDim++) {
-                gradBasis_i[iVar] -= weight*flowSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[iVar];
-              }
-            }
-          }
-          if (tkeNeeded) {
-            auto turbVar = solver[TURB_SOL]->GetNodes();
-            auto turbSmat = reconRequired ? turbVar->GetSmatrix_Aux(iPoint)
-                                          : turbVar->GetSmatrix(iPoint);
-            for (auto iDim = 0; iDim < nDim; iDim++) {
-              for (auto jDim = 0; jDim < nDim; jDim++) {
-                gradBasis_i[nVar] -= weight*turbSmat[iDim][jDim]*dist_ij[iDim]*dist_ik[jDim]*l_i[nVar];
-              }
-            }
-          }
-          break;
-        }
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-          Jacobian_i[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_i[kVar]*dVdU_i[kVar][jVar];
-          Jacobian_j[iVar][jVar] += sign*dFdV_i[iVar][kVar]*gradBasis_i[kVar]*dVdU_k[kVar][jVar];
+          Jacobian_i[iVar][jVar] += dFdV_i[iVar][kVar]*reconBasis_i[kVar]*dVdU_i[kVar][jVar];
+          Jacobian_j[iVar][jVar] += dFdV_i[iVar][kVar]*reconBasis_i[kVar]*dVdU_k[kVar][jVar];
         }
+        if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
+          Jacobian_i[iVar][jVar] *= -1.0;
       }
     }
-
-    if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        for (auto jVar = 0; jVar < nVar; jVar++)
-          Jacobian_j[nVar-1][iVar] *= -1.0;
 
     Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
