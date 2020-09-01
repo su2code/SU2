@@ -696,7 +696,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
     su2double Basis[MAXNDIM] = {0.0};
-    GetGradBasis(Basis, geometry, solver[TURB_SOL], config, iPoint, kPoint, false);
+    SetGradBasis(Basis, geometry, solver[TURB_SOL], config, iPoint, kPoint);
     const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
