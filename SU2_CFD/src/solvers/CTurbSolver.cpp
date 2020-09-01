@@ -651,7 +651,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
         {
           const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
           const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-          const su2double weight = 0.5*(1.-kappa)*HalfOnVol*sign*signk;
+          const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;
           for (auto iVar = 0; iVar < nVar; iVar++) {
             for (auto iDim = 0; iDim < nDim; iDim++) {
               gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*limiter_i[iVar];
@@ -691,8 +691,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = dFdU_i[iVar][jVar]*sign*(*r_i)*gradBasis_i[jVar]/(*r_n_i);
-        Jacobian_j[iVar][jVar] = dFdU_i[iVar][jVar]*sign*(*r_i)*gradBasis_j[jVar]/(flowVar->GetDensity(kPoint));
+        Jacobian_i[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_i[jVar]/(*r_n_i);
+        Jacobian_j[iVar][jVar] = sign*dFdU_i[iVar][jVar]*(*r_i)*gradBasis_j[jVar]/(flowVar->GetDensity(kPoint));
       }
     }
 

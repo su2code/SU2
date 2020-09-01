@@ -3781,7 +3781,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
         {
           const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
           const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-          const su2double weight = 0.5*(1.-kappa)*HalfOnVol*sign*signk;
+          const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;
           for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
             for (auto iDim = 0; iDim < nDim; iDim++) {
               gradBasis_i[iVar] += weight*geometry->edge[kEdge]->GetNormal()[iDim]*dist_ij[iDim]*l_i[iVar];
