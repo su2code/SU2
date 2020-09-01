@@ -160,9 +160,10 @@ void computeGradientsLeastSquares(CSolver* solver,
       }
     }
 
-    for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = 0; jDim < nDim; ++jDim)
-        AD::SetPreaccOut(Rmatrix(iPoint, iDim, jDim));
+    if (compute)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        for (size_t jDim = 0; jDim < nDim; ++jDim)
+          AD::SetPreaccOut(Rmatrix(iPoint, iDim, jDim));
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       for (size_t iDim = 0; iDim < nDim; ++iDim)

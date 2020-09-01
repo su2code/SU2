@@ -401,7 +401,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (bad_edge || !muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
-        if (geometry->node[iPoint]->GetDomain())
+        // if (geometry->node[iPoint]->GetDomain())
           SetExtrapolationJacobian(solver, geometry, config,
                                    &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
                                    &V_i[nDim+2], &V_j[nDim+2],
@@ -409,11 +409,11 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec,
                                    residual.jacobian_i, residual.jacobian_j,
                                    iPoint, jPoint);
-        else {
-          Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
-          Jacobian.SubtractBlock(jPoint, iPoint, residual.jacobian_i);
-        }
-        if (geometry->node[jPoint]->GetDomain())
+        // else {
+        //   Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
+        //   Jacobian.SubtractBlock(jPoint, iPoint, residual.jacobian_i);
+        // }
+        // if (geometry->node[jPoint]->GetDomain())
           SetExtrapolationJacobian(solver, geometry, config,
                                    &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
                                    &V_j[nDim+2], &V_i[nDim+2],
@@ -421,10 +421,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec,
                                    residual.jacobian_j, residual.jacobian_i,
                                    jPoint, iPoint);
-        else {
-          Jacobian.SubtractBlock(jPoint, jPoint, residual.jacobian_j);
-          Jacobian.AddBlock(iPoint, jPoint, residual.jacobian_j);
-        }
+        // else {
+        //   Jacobian.SubtractBlock(jPoint, jPoint, residual.jacobian_j);
+        //   Jacobian.AddBlock(iPoint, jPoint, residual.jacobian_j);
+        // }
       }
     }
 
@@ -501,9 +501,9 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
     if (config->GetUse_Accurate_Turb_Jacobians()) {
-      if (geometry->node[iPoint]->GetDomain())
+      // if (geometry->node[iPoint]->GetDomain())
         CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
-      if (geometry->node[jPoint]->GetDomain())
+      // if (geometry->node[jPoint]->GetDomain())
         CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
     }
   }
