@@ -401,20 +401,30 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (bad_edge || !muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
-        SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
-                                 &V_i[nDim+2], &V_j[nDim+2],
-                                 limiter ? nodes->GetLimiter(iPoint) : OneVec, 
-                                 limiter ? nodes->GetLimiter(jPoint) : OneVec,
-                                 residual.jacobian_i, residual.jacobian_j,
-                                 iPoint, jPoint);
-        SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
-                                 &V_j[nDim+2], &V_i[nDim+2],
-                                 limiter ? nodes->GetLimiter(jPoint) : OneVec, 
-                                 limiter ? nodes->GetLimiter(iPoint) : OneVec,
-                                 residual.jacobian_j, residual.jacobian_i,
-                                 jPoint, iPoint);
+        if (geometry->node[iPoint]->GetDomain())
+          SetExtrapolationJacobian(solver, geometry, config,
+                                   &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
+                                   &V_i[nDim+2], &V_j[nDim+2],
+                                   limiter ? nodes->GetLimiter(iPoint) : OneVec, 
+                                   limiter ? nodes->GetLimiter(jPoint) : OneVec,
+                                   residual.jacobian_i, residual.jacobian_j,
+                                   iPoint, jPoint);
+        else {
+          Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
+          Jacobian.SubtractBlock(jPoint, iPoint, residual.jacobian_i);
+        }
+        if (geometry->node[jPoint]->GetDomain())
+          SetExtrapolationJacobian(solver, geometry, config,
+                                   &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
+                                   &V_j[nDim+2], &V_i[nDim+2],
+                                   limiter ? nodes->GetLimiter(jPoint) : OneVec, 
+                                   limiter ? nodes->GetLimiter(iPoint) : OneVec,
+                                   residual.jacobian_j, residual.jacobian_i,
+                                   jPoint, iPoint);
+        else {
+          Jacobian.SubtractBlock(jPoint, jPoint, residual.jacobian_j);
+          Jacobian.AddBlock(iPoint, jPoint, residual.jacobian_j);
+        }
       }
     }
 

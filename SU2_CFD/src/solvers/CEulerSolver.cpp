@@ -3419,28 +3419,38 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             tke_n_i = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
             tke_n_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
           }
-          SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_i, Primitive_j,
-                                   V_i, V_j,
-                                   &tke_i, &tke_j,
-                                   &tke_n_i, &tke_n_j,
-                                   limiter ? nodes->GetLimiter(iPoint) : OneVec, 
-                                   limiter ? nodes->GetLimiter(jPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec,
-                                   residual.jacobian_i, residual.jacobian_j,
-                                   iPoint, jPoint);
-          SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_j, Primitive_i,
-                                   V_j, V_i,
-                                   &tke_j, &tke_i,
-                                   &tke_n_j, &tke_n_i,
-                                   limiter ? nodes->GetLimiter(jPoint) : OneVec, 
-                                   limiter ? nodes->GetLimiter(iPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec,
-                                   residual.jacobian_j, residual.jacobian_i,
-                                   jPoint, iPoint);
+          if (geometry->node[iPoint]->GetDomain())
+            SetExtrapolationJacobian(solver, geometry, config,
+                                     Primitive_i, Primitive_j,
+                                     V_i, V_j,
+                                     &tke_i, &tke_j,
+                                     &tke_n_i, &tke_n_j,
+                                     limiter ? nodes->GetLimiter(iPoint) : OneVec, 
+                                     limiter ? nodes->GetLimiter(jPoint) : OneVec, 
+                                     limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
+                                     limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec,
+                                     residual.jacobian_i, residual.jacobian_j,
+                                     iPoint, jPoint);
+          else {
+            Jacobian.AddBlock(iPoint, iPoint, residual.jacobian_i);
+            Jacobian.SubtractBlock(jPoint, iPoint, residual.jacobian_i);
+          }
+          if (geometry->node[jPoint]->GetDomain())
+            SetExtrapolationJacobian(solver, geometry, config,
+                                     Primitive_j, Primitive_i,
+                                     V_j, V_i,
+                                     &tke_j, &tke_i,
+                                     &tke_n_j, &tke_n_i,
+                                     limiter ? nodes->GetLimiter(jPoint) : OneVec, 
+                                     limiter ? nodes->GetLimiter(iPoint) : OneVec, 
+                                     limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
+                                     limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec,
+                                     residual.jacobian_j, residual.jacobian_i,
+                                     jPoint, iPoint);
+          else {
+            Jacobian.SubtractBlock(jPoint, jPoint, residual.jacobian_j);
+            Jacobian.AddBlock(iPoint, jPoint, residual.jacobian_j);
+          }
         }
       }
     }
