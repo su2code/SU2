@@ -3579,6 +3579,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
                                             const su2double *const *const dFdU_i,
                                             const su2double *const *const dFdU_j,
                                             unsigned long iPoint, unsigned long jPoint) {
+
+  const bool wasActive = AD::BeginPassive();
+
   const bool reconRequired = config->GetReconstructionGradientRequired();
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
@@ -3833,6 +3836,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
     Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
+
+  AD::EndPassive(wasActive);
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
