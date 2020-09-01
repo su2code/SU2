@@ -29,10 +29,11 @@
 #include "../../../include/numerics/turbulent/nemo_turb_sources.hpp"
 
 CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                                               unsigned short val_nVar_NEMO,
                                                unsigned short val_nPrimVar,
                                                unsigned short val_nPrimVarGrad,
                                                const CConfig* config):
-                                               CNEMONumerics(val_nDim, val_nVar,
+                                               CNEMONumerics(val_nDim, val_nVar, val_nVar_NEMO,
                                                              val_nPrimVar, val_nPrimVarGrad,
                                                              config),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
@@ -61,10 +62,11 @@ CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned
 }
 
 CNEMOSourcePieceWise_TurbSA::CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                                                         unsigned short val_nVar_NEMO,
                                                          unsigned short val_nPrimVar,
                                                          unsigned short val_nPrimVarGrad,
                                                          const CConfig* config):
-                                                         CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                         CNEMOSourceBase_TurbSA(val_nDim, val_nVar, val_nVar_NEMO,
                                                                                 val_nPrimVar, val_nPrimVarGrad,
                                                                                 config){
 
@@ -218,10 +220,11 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
 }
 
 CNEMOSourcePieceWise_TurbSA_COMP::CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                                                   unsigned short val_nVar_NEMO,
                                                                    unsigned short val_nPrimVar,
                                                                    unsigned short val_nPrimVarGrad,
                                                                    const CConfig* config):
-                                                                   CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                   CNEMOSourceBase_TurbSA(val_nDim, val_nVar, val_nVar_NEMO,
                                                                                           val_nPrimVar, val_nPrimVarGrad,
                                                                                           config), c5(3.5) { }
 
@@ -335,10 +338,11 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_COMP::ComputeResidual(cons
 }
 
 CNEMOSourcePieceWise_TurbSA_E::CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar,
+                                                             unsigned short val_nVar_NEMO,
                                                              unsigned short val_nPrimVar,
                                                              unsigned short val_nPrimVarGrad,
                                                              const CConfig* config):
-                                                             CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                             CNEMOSourceBase_TurbSA(val_nDim, val_nVar, val_nVar_NEMO,
                                                                                     val_nPrimVar, val_nPrimVarGrad,
                                                                                     config) { }
 
@@ -459,10 +463,11 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E::ComputeResidual(const C
 }
 
 CNEMOSourcePieceWise_TurbSA_E_COMP::CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                                                       unsigned short val_nVar_NEMO,
                                                                        unsigned short val_nPrimVar,
                                                                        unsigned short val_nPrimVarGrad,
                                                                        const CConfig* config):
-                                                                       CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                       CNEMOSourceBase_TurbSA(val_nDim, val_nVar, val_nVar_NEMO,
                                                                                               val_nPrimVar, val_nPrimVarGrad,
                                                                                               config) { }
 
@@ -596,10 +601,11 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_E_COMP::ComputeResidual(co
 }
 
 CNEMOSourcePieceWise_TurbSA_Neg::CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                                                                 unsigned short val_nVar_NEMO,
                                                                  unsigned short val_nPrimVar,
                                                                  unsigned short val_nPrimVarGrad,
                                                                  const CConfig* config):
-                                                                 CNEMOSourceBase_TurbSA(val_nDim, val_nVar,
+                                                                 CNEMOSourceBase_TurbSA(val_nDim, val_nVar, val_nVar_NEMO,
                                                                                         val_nPrimVar, val_nPrimVarGrad,
                                                                                         config) { }
 
@@ -742,13 +748,14 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA_Neg::ComputeResidual(const
 }
 
 CNEMOSourcePieceWise_TurbSST::CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                                                           unsigned short val_nVar_NEMO,
                                                            unsigned short val_nPrimVar,
                                                            unsigned short val_nPrimVarGrad,
                                                            const su2double *constants,
                                                            su2double val_kine_Inf,
                                                            su2double val_omega_Inf,
                                                            const CConfig* config):
-                                                           CNEMONumerics(val_nDim, val_nVar,
+                                                           CNEMONumerics(val_nDim, val_nVar, val_nVar_NEMO,
                                                                          val_nPrimVar, val_nPrimVarGrad,
                                                                          config) {
 

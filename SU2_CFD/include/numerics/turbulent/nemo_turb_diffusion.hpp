@@ -80,6 +80,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
+                      unsigned short val_nVar_NEMO,
                       unsigned short val_nPrimVar,
                       unsigned short val_nPrimVarGrad,
                       bool correct_gradient, const CConfig* config);
@@ -128,6 +129,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                      unsigned short val_nVar_NEMO,
                       unsigned short val_nPrimVar,
                       unsigned short val_nPrimVarGrad,
                       bool correct_gradient, const CConfig* config);
@@ -165,6 +167,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                          unsigned short val_nVar_NEMO,
                           unsigned short val_nPrimVar,
                           unsigned short val_nPrimVarGrad,
                           bool correct_gradient, const CConfig* config);
@@ -208,6 +211,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                       unsigned short val_nVar_NEMO,
                        unsigned short val_nPrimVar,
                        unsigned short val_nPrimVarGrad,
                        const su2double* constants, bool correct_grad,

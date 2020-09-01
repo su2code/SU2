@@ -29,15 +29,16 @@
 #include "../../../include/numerics/turbulent/nemo_turb_convection.hpp"
 
 CNEMOUpwScalar::CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar,
-                               unsigned short val_nPrimVar,
+                               unsigned short val_nVar_NEMO,unsigned short val_nPrimVar,
                                unsigned short val_nPrimVarGrad,
                                const CConfig* config) :
-                               CNEMONumerics(val_nDim, val_nVar, val_nPrimVar,
-                                             val_nPrimVarGrad, config),
+                               CNEMONumerics(val_nDim, val_nVar, val_nVar_NEMO,
+                                             val_nPrimVar, val_nPrimVarGrad, config),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
+
   Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
@@ -103,11 +104,11 @@ CNumerics::ResidualType<> CNEMOUpwScalar::ComputeResidual(const CConfig* config)
 }
 
 CNEMOUpwSca_TurbSA::CNEMOUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                                       unsigned short val_nPrimVar,
-                                       unsigned short val_nPrimVarGrad,
+                                       unsigned short val_nVar_NEMO,
+                                       unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
                                        const CConfig* config) :
-                                       CNEMOUpwScalar(val_nDim, val_nVar, val_nPrimVar,
-                                                      val_nPrimVarGrad, config) {}
+                                       CNEMOUpwScalar(val_nDim, val_nVar, val_nVar_NEMO,
+                                                      val_nPrimVar, val_nPrimVarGrad, config) {}
 
 void CNEMOUpwSca_TurbSA::ExtraADPreaccIn() {
   //TODO what is nDim+1
@@ -126,11 +127,11 @@ void CNEMOUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 }
 
 CNEMOUpwSca_TurbSST::CNEMOUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                                         unsigned short val_nPrimVar,
-                                         unsigned short val_nPrimVarGrad,
+                                         unsigned short val_nVar_NEMO,
+                                         unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
                                          const CConfig* config) :
-                                         CNEMOUpwScalar(val_nDim, val_nVar, val_nPrimVar,
-                                                        val_nPrimVarGrad, config) {}
+                                         CNEMOUpwScalar(val_nDim, val_nVar, val_nVar_NEMO,
+                                                        val_nPrimVar, val_nPrimVarGrad, config) {}
 
 void CNEMOUpwSca_TurbSST::ExtraADPreaccIn() {
   //TODO what is nDim+3

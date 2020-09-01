@@ -126,6 +126,13 @@ public:
   bool SetVorticity(void);
 
   /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override { Primitive(iPoint,EDDY_VISC_INDEX) = eddy_visc; }
+
+
+  /*!
    * \brief Get the species diffusion coefficient.
    * \return Value of the species diffusion coefficient.
    */
@@ -148,6 +155,12 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity_ve(unsigned long iPoint) const override { return ThermalCond_ve(iPoint); }
+
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,EDDY_VISC_INDEX); }
 
   /*!
    * \brief Set the temperature at the wall

@@ -29,10 +29,11 @@
 #include "../../../include/numerics/turbulent/nemo_turb_diffusion.hpp"
 
 CNEMOAvgGrad_Scalar::CNEMOAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar,
+                                         unsigned short val_nVar_NEMO,
                                          unsigned short val_nPrimVar,
                                          unsigned short val_nPrimVarGrad,
                                          bool correct_grad, const CConfig* config):
-                                         CNEMONumerics(val_nDim, val_nVar, val_nPrimVar,
+                                         CNEMONumerics(val_nDim, val_nVar, val_nVar_NEMO, val_nPrimVar,
                                                        val_nPrimVarGrad, config),
   correct_gradient(correct_grad),
   implicit(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT),
@@ -101,8 +102,9 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
   /*--- Mean gradient approximation ---*/
-  cout << "delete me TurbVar_Grad_i....." << TurbVar_Grad_i[0][0] << endl;
-  cout << "delete me nVARAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD   " <<nVar << endl;
+  //cout << "delete me TurbVar_Grad_i....." << TurbVar_Grad_i[0][0] << endl;
+  //cout << "delete me TurbVar_Grad_j....." << TurbVar_Grad_i[0][0] << endl;
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
@@ -132,10 +134,12 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
 }
 
 CNEMOAvgGrad_TurbSA::CNEMOAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                                         unsigned short val_nVarNEMO,
                                          unsigned short val_nPrimVar,
                                          unsigned short val_nPrimVarGrad,
                                          bool correct_gradient, const CConfig* config) :
-                                         CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nPrimVar,val_nPrimVarGrad,
+                                         CNEMOAvgGrad_Scalar(val_nDim, val_nVar, val_nVarNEMO,
+                                                             val_nPrimVar,val_nPrimVarGrad,
                                                              correct_gradient, config) { }
 
 void CNEMOAvgGrad_TurbSA::ExtraADPreaccIn() { }
@@ -160,10 +164,12 @@ void CNEMOAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
 }
 
 CNEMOAvgGrad_TurbSA_Neg::CNEMOAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                                                 unsigned short val_nVarNEMO,
                                                  unsigned short val_nPrimVar,
                                                  unsigned short val_nPrimVarGrad,
                                                  bool correct_gradient, const CConfig* config) :
-                                                 CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nPrimVar,val_nPrimVarGrad,
+                                                 CNEMOAvgGrad_Scalar(val_nDim, val_nVar, val_nVarNEMO,
+                                                                     val_nPrimVar,val_nPrimVarGrad,
                                                                      correct_gradient, config) { }
 
 void CNEMOAvgGrad_TurbSA_Neg::ExtraADPreaccIn() { }
@@ -201,11 +207,13 @@ void CNEMOAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
 }
 
 CNEMOAvgGrad_TurbSST::CNEMOAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                                           unsigned short val_nVarNEMO,
                                            unsigned short val_nPrimVar,
                                            unsigned short val_nPrimVarGrad,
                                            const su2double* constants, bool correct_grad,
                                            const CConfig* config) :
-                                           CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nPrimVar,val_nPrimVarGrad,
+                                           CNEMOAvgGrad_Scalar(val_nDim, val_nVar,val_nVarNEMO,
+                                                               val_nPrimVar,val_nPrimVarGrad,
                                                                correct_grad, config),
   sigma_k1(constants[0]),
   sigma_k2(constants[1]),

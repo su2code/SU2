@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CBaslineSolver.hpp
  * \brief Headers of the CBaselineSolver class
  * \author F. Palacios, T. Economon
@@ -42,6 +42,7 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
 
 public:
 

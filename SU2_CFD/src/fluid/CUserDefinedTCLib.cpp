@@ -12,7 +12,7 @@
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
- * modify it under the terMolarMass of the GNU Lesser General Public
+ * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
@@ -1441,8 +1441,6 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
       + rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
 }
 
-
-
 void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
 
   su2double v2, ef, rhoCvtr;
@@ -1478,7 +1476,6 @@ void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
   val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
 
 }    
-
 
 void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
 

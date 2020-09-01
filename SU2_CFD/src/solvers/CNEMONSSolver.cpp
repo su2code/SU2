@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
@@ -40,6 +40,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
+  Tke_Inf            = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(config->GetDirectDiff()) {
@@ -62,6 +63,100 @@ CNEMONSSolver::~CNEMONSSolver(void) {
   if (primitives_aux != nullptr) delete [] primitives_aux;
 
 }
+
+//void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+//                              unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
+//  unsigned long InnerIter   = config->GetInnerIter();
+//  bool cont_adjoint         = config->GetContinuous_Adjoint();
+//  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+//  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+//  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
+//  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+//  bool wall_functions       = config->GetWall_Functions();
+
+//  /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
+//  //CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+//  /*--- Compute gradient for MUSCL reconstruction. ---*/
+
+//  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+//    switch (config->GetKind_Gradient_Method_Recon()) {
+//      case GREEN_GAUSS:
+//        SetPrimitive_Gradient_GG(geometry, config, true); break;
+//      case LEAST_SQUARES:
+//      case WEIGHTED_LEAST_SQUARES:
+//        SetPrimitive_Gradient_LS(geometry, config, true); break;
+//      default: break;
+//    }
+//  }
+
+//  /*--- Compute gradient of the primitive variables ---*/
+
+//  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+//    SetPrimitive_Gradient_GG(geometry, config);
+//  }
+//  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+//    SetPrimitive_Gradient_LS(geometry, config);
+//  }
+
+//  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
+//   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+
+//  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+//    SetPrimitive_Limiter(geometry, config);
+//  }
+
+//  /*--- Evaluate the vorticity and strain rate magnitude ---*/
+
+//  SU2_OMP_MASTER
+//  {
+//    StrainMag_Max = 0.0;
+//    Omega_Max = 0.0;
+//  }
+//  SU2_OMP_BARRIER
+
+//  nodes->SetVorticity_StrainMag();
+
+//  su2double strainMax = 0.0, omegaMax = 0.0;
+
+//  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+//  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+//    su2double StrainMag = nodes->GetStrainMag(iPoint);
+//    const su2double* Vorticity = nodes->GetVorticity(iPoint);
+//    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+
+//    strainMax = max(strainMax, StrainMag);
+//    omegaMax = max(omegaMax, Omega);
+
+//  }
+//  SU2_OMP_CRITICAL
+//  {
+//    StrainMag_Max = max(StrainMag_Max, strainMax);
+//    Omega_Max = max(Omega_Max, omegaMax);
+//  }
+
+//  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+//    SU2_OMP_BARRIER
+//    SU2_OMP_MASTER
+//    {
+//      su2double MyOmega_Max = Omega_Max;
+//      su2double MyStrainMag_Max = StrainMag_Max;
+
+//      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+//      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+//    }
+//    SU2_OMP_BARRIER
+//  }
+
+//  /*--- Compute the TauWall from the wall functions ---*/
+
+//  if (wall_functions) {
+//    SetTauWall_WF(geometry, solver_container, config);
+//  }
+
+//}
 
 void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
@@ -114,7 +209,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig 
 }
 
 void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
-                                     CSolver **solution_container,
+                                     CSolver **solver_container,
                                      CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
@@ -197,7 +292,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
-                                                 CSolver **solution_container,
+                                                 CSolver **solver_container,
                                                  CNumerics *conv_numerics,
                                                  CNumerics *sour_numerics,
                                                  CConfig *config,
@@ -206,11 +301,11 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Local variables ---*/
   bool implicit;
   unsigned short iDim, iVar;
-  unsigned short T_INDEX, TVE_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, K_INDEX, KVE_INDEX, RHOCVTR_INDEX;
   unsigned long iVertex, iPoint, total_index;
   su2double dTdn, dTvedn, ktr, kve, pcontrol, Wall_HeatFlux;
   su2double *Normal, Area;
-  su2double **GradV;
+  su2double **GradV, *V;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -227,6 +322,9 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   /*--- Get the locations of the primitive variables ---*/
   T_INDEX    = nodes->GetTIndex();
   TVE_INDEX  = nodes->GetTveIndex();
+  //K_INDEX       = nodes->GetKIndex();
+  //KVE_INDEX     = nodes->GetKveIndex();
+  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -250,6 +348,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       /*--- Set the residual on the boundary with the specified heat flux ---*/
       // Note: Contributions from qtr and qve are used for proportional control
       //       to drive the solution toward the specified heatflux more quickly.
+      V      = nodes->GetPrimitive(iPoint);
       GradV  = nodes->GetGradient_Primitive(iPoint);
       dTdn   = 0.0;
       dTvedn = 0.0;
@@ -259,10 +358,34 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       }
       ktr = nodes->GetThermalConductivity(iPoint);
       kve = nodes->GetThermalConductivity_ve(iPoint);
+
+      /*--- Scale thermal conductivity with turb ---*/
+      //delete me, todo
+      // Need to determine proper way to incorporate eddy viscosity
+      // This is only scaling Kve by same factor as ktr
+      // Could add to fluid model?
+      su2double         Mass = 0.0;
+      vector<su2double> Ms   = FluidModel->GetMolarMass();
+      su2double tmp1, scl, Cptr;
+      su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
+      su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
+      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+        Mass += V[iSpecies]*Ms[iSpecies];
+      Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+      tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
+      scl  = tmp1/ktr;
+      ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
+      kve  = kve*(1.0+scl);
+      //delete me
+      cout << eddy_viscosity << endl;
+      //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
+      //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
+
       Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
                                       Wall_HeatFlux*Area;
       Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
                                       Wall_HeatFlux*Area;
+
       /*--- Apply viscous residual to the linear system ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
@@ -273,7 +396,9 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
+
       if (implicit) {
+        //TODO
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
         for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
@@ -285,7 +410,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
-                                     CSolver **solution_container,
+                                     CSolver **solver_container,
                                      CNumerics *conv_numerics,
                                      CNumerics *sour_numerics,
                                      CConfig *config,
@@ -307,7 +432,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     if (Marker_Tag == Catalytic_Tag){
 
       catalytic = true;
-      BC_HeatFluxCatalytic_Wall(geometry, solution_container, conv_numerics,
+      BC_HeatFluxCatalytic_Wall(geometry, solver_container, conv_numerics,
                                 sour_numerics, config, val_marker);
       break;
 
@@ -318,21 +443,21 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     }
   }
 
-  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                               sour_numerics, config, val_marker);
 
   
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
-                                              CSolver **solution_container,
+                                              CSolver **solver_container,
                                               CNumerics *conv_numerics,
                                               CNumerics *sour_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) {
 
   SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
-
+  //TODO delete me , scale kve with eddys visc
   /*--- Local variables ---*/
   bool implicit, catalytic;
   unsigned short iDim, iSpecies, iVar;
@@ -498,7 +623,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
-                                       CSolver **solution_container,
+                                       CSolver **solver_container,
                                        CNumerics *conv_numerics,
                                        CNumerics *sour_numerics,
                                        CConfig *config,
@@ -520,7 +645,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
     if (Marker_Tag == Catalytic_Tag){
 
       catalytic = true;
-      BC_IsothermalCatalytic_Wall(geometry, solution_container, conv_numerics,
+      BC_IsothermalCatalytic_Wall(geometry, solver_container, conv_numerics,
                                   sour_numerics, config, val_marker);
       break;
     } else {
@@ -528,21 +653,23 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
     }
   }
 
-  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  if(!catalytic) BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                                 sour_numerics, config, val_marker);
 }
 
 void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
-                                                   CSolver **solution_container,
+                                                   CSolver **solver_container,
                                                    CNumerics *conv_numerics,
                                                    CNumerics *sour_numerics,
                                                    CConfig *config,
                                                    unsigned short val_marker) {
 
   unsigned short iDim, iVar;
+  unsigned short RHOCVTR_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Ti, Tvei, Tj, Tvej, Twall, dij, theta,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
+  su2double *V;
 
   bool ionization = config->GetIonization();
 
@@ -617,6 +744,26 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       ktr     = nodes->GetThermalConductivity(iPoint);
       kve     = nodes->GetThermalConductivity_ve(iPoint);
 
+      /*--- Scale thermal conductivity with turb ---*/
+      //delete me, todo
+      // Need to determine proper way to incorporate eddy viscosity
+      // This is only scaling Kve by same factor as ktr
+      V = nodes->GetPrimitive(iPoint);
+      su2double         Mass = 0.0;
+      vector<su2double> Ms   = FluidModel->GetMolarMass();
+      su2double tmp1, scl, Cptr;
+      su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
+      su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
+      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+        Mass += V[iSpecies]*Ms[iSpecies];
+      Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+      tmp1 = Cptr*(eddy_viscosity/Prandtl_Turb);
+      scl  = tmp1/ktr;
+      ktr += Cptr*(eddy_viscosity/Prandtl_Turb);
+      kve  = kve*(1.0+scl);
+      //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
+      //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
+
       /*--- Apply to the linear system ---*/
       Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
@@ -625,6 +772,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
       //if (implicit) {
+      //todo
       //  for (iVar = 0; iVar < nVar; iVar++)
       //    for (jVar = 0; jVar < nVar; jVar++)
       //      Jacobian_i[iVar][jVar] = 0.0;
@@ -643,7 +791,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
-                                                CSolver **solution_container,
+                                                CSolver **solver_container,
                                                 CNumerics *conv_numerics,
                                                 CNumerics *sour_numerics,
                                                 CConfig *config,
@@ -652,7 +800,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   SU2_MPI::Error("BC_ISOTHERMAL with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
-  BC_IsothermalNonCatalytic_Wall(geometry, solution_container, conv_numerics,
+  BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
                                  sour_numerics, config, val_marker);
 
   ///////////// FINITE DIFFERENCE METHOD ///////////////
@@ -830,7 +978,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 }
 
 void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                                            CSolver **solution_container,
+                                            CSolver **solver_container,
                                             CNumerics *conv_numerics,
                                             CNumerics *visc_numerics,
                                             CConfig *config,

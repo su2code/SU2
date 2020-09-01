@@ -56,7 +56,12 @@ protected:
 
   CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
 
-  CNEMOEulerVariable* node_infty;
+  CNEMOEulerVariable* node_infty = nullptr;
+
+  /*!
+   * \brief Return nodes to allow CSolver::base_node_infty to be set.
+   */
+  inline CVariable* GetBaseClassPointerToNodeInfty() final { return node_infty; }
 
 public:
 
@@ -76,16 +81,6 @@ public:
      * \brief Destructor of the class.
      */
   ~CNEMOEulerSolver(void) override;
-
-
-  /*!
-   * \brief Allow outside access to the node_infty of the solver, containing conservatives, primitives, etc.
-   * \return Node_infty of the solver.
-   */
-  inline CNEMOEulerVariable* GetNode_Infty() {
-    assert(node_infty!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
-    return node_infty;
-  }
 
   /*!
      * \brief Set the maximum value of the eigenvalue.

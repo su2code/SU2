@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CRadSolver.hpp
  * \brief Declaration and inlines of the class to compute a generic radiation solver.
  * \author Ruben Sanchez
@@ -42,6 +42,7 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
 
 public:
 

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMONSSolver.hpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
@@ -181,7 +181,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
   */
   void BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                               CSolver **solution_container,
+                               CSolver **solver_container,
                                CNumerics *conv_numerics,
                                CNumerics *visc_numerics,
                                CConfig *config,

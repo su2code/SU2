@@ -69,6 +69,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                         unsigned short val_nVar_NEMO,
                          unsigned short val_nPrimVar,
                          unsigned short val_nPrimVarGrad,
                          const CConfig* config);
@@ -143,6 +144,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                              unsigned short val_nVar_NEMO,
                               unsigned short val_nPrimVar,
                               unsigned short val_nPrimVarGrad,
                               const CConfig* config);
@@ -181,6 +183,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                   unsigned short val_nVar_NEMO,
                                    unsigned short val_nPrimVar,
                                    unsigned short val_nPrimVarGrad,
                                    const CConfig* config);
@@ -218,6 +221,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar,
+                                unsigned short val_nVar_NEMO,
                                 unsigned short val_nPrimVar,
                                 unsigned short val_nPrimVarGrad,
                                 const CConfig* config);
@@ -256,6 +260,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar,
+                                     unsigned short val_nVar_NEMO,
                                      unsigned short val_nPrimVar,
                                      unsigned short val_nPrimVarGrad,
                                      const CConfig* config);
@@ -290,6 +295,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOSourcePieceWise_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
+                                  unsigned short val_nVar_NEMO,
                                   unsigned short val_nPrimVar,
                                   unsigned short val_nPrimVarGrad,
                                   const CConfig* config);
@@ -366,7 +372,7 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+  CNEMOSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nVar_NEMO,
                                unsigned short val_nPrimVar,unsigned short val_nPrimVarGrad,
                                const su2double* constants, su2double val_kine_Inf,
                                su2double val_omega_Inf, const CConfig* config);

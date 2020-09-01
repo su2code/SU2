@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CTemplateSolver.hpp
  * \brief Headers of the CTemplateSolver class
  * \author F. Palacios
@@ -44,6 +44,7 @@ private:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
 
 public:
 

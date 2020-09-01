@@ -76,11 +76,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar,
+                 unsigned short val_nVar_Nemo,
                  unsigned short val_nPrimVar,
                  unsigned short val_nPrimVarGrad,
                  const CConfig* config);
 
-  /*!
+  /*!cd
    * \brief Destructor of the class.
    */
   ~CNEMOUpwScalar(void) override;
@@ -121,6 +122,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
+                     unsigned short val_nVar_NEMO,
                      unsigned short val_nPrimVar,
                      unsigned short val_nPrimVarGrad,
                      const CConfig* config);
@@ -154,6 +156,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
+                      unsigned short val_nVar_NEMO,
                       unsigned short val_nPrimVar,
                       unsigned short val_nPrimVarGrad,
                       const CConfig* config);

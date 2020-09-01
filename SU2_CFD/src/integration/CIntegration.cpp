@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon

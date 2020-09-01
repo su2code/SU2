@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CFEM_DG_EulerSolver.hpp
  * \brief Headers of the CFEM_DG_EulerSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
@@ -268,6 +268,7 @@ private:
                                                  intensive part of the solver. */
 
   CVariable* GetBaseClassPointerToNodes() final {return nullptr;}
+  CVariable* GetBaseClassPointerToNodeInfty() override { return nullptr; } //TODO Delete me
 
 public:
 

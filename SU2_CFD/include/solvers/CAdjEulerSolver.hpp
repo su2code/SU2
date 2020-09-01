@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CAdjEulerSolver.hpp
  * \brief Headers of the CAdjEulerSolver class
  * \author F. Palacios
@@ -77,6 +77,8 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+  inline CVariable* GetBaseClassPointerToNodeInfty() override { return nodes; } //TODO Delete me
+
 
 public:
 
