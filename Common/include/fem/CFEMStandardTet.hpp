@@ -88,10 +88,40 @@ protected:
 private:
 
   /*!
+   * \brief Function, which computes the warping factors of a 3D triangular face,
+            needed to compute the LGL distribution of a tetrahedron.
+   * \param[in]  alpha - Blending factor for the given polynomial degree.
+   * \param[in]  L1    - Barycentric coordinate of the DOFs (I think).
+   * \param[in]  L2    - Barycentric coordinate of the DOFs (I think).
+   * \param[in]  L3    - Barycentric coordinate of the DOFs (I think).
+   * \param[out] dx    - Delta of the first parametric coordinate of the face.
+   * \param[out] dy    - Delta of the second parametric coordinate of the face.
+   */
+  void EvalShift(const passivedouble         alpha,
+                 const vector<passivedouble> &L1,
+                 const vector<passivedouble> &L2,
+                 const vector<passivedouble> &L3,
+                 vector<passivedouble>       &dx,
+                 vector<passivedouble>       &dy);
+
+  /*!
+   * \brief Function, which computes the 1D edge warping.
+   * \param[in]  xOut - Coordinates to which the 1D edge warping must be applied.
+   * \param[out] warp - Edge warping value for all the nodal DOFs.
+   */
+  void EvalWarp(const vector<passivedouble> &xOut,
+                vector<passivedouble>       &warp);
+
+  /*!
    * \brief Function, which determines the location of the grid DOFs of a tetrahedron
    *        for polynomial degree nPoly when an equidistant spacing is used.
+   * \param[out] r - Parametric r-coordinates of the DOFs.
+   * \param[out] s - Parametric s-coordinates of the DOFs.
+   * \param[out] t - Parametric t-coordinates of the DOFs.
    */
-  void LocationTetGridDOFsEquidistant();
+  void LocationTetGridDOFsEquidistant(vector<passivedouble> &r,
+                                      vector<passivedouble> &s,
+                                      vector<passivedouble> &t);
 
   /*!
    * \brief Function, which determines the location of the grid DOFs of a tetrahedron

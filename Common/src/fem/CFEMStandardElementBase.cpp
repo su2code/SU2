@@ -177,8 +177,8 @@ void CFEMStandardElementBase::LocationTriangleGridDOFsEquidistant(vector<passive
 void CFEMStandardElementBase::LocationTriangleGridDOFsLGL(vector<passivedouble> &r,
                                                           vector<passivedouble> &s) {
 
-  /*--- The code to determine the parametric coordinates of the DOFs of the triangle
-        is a translation of the Matlab code belonging to the book
+  /*--- The code to determine the parametric coordinates of the DOFs of the
+        triangle is a translation of the Matlab code belonging to the book
         Nodal Discontinuous Galerkin Methods, Algorithms, Analysis and Applications,
         written by Jan S. Hesthaven and Tim Warburton. ---*/
 
