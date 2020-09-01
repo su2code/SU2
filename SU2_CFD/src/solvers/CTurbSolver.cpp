@@ -793,8 +793,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
       Weight = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++)
-        Weight += sign*pow(dist_ik[iDim],2);
-      Weight = 1.0/Weight;
+        Weight += pow(dist_ik[iDim],2);
+      Weight = sign/Weight;
 
       const auto Smat = nodes->GetSmatrix(iPoint);
       for (auto iDim = 0; iDim < nDim; iDim++)
