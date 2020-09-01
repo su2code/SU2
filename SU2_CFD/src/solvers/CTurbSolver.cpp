@@ -571,12 +571,10 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
 
     su2double Weight = sign*0.5*(1.-kappa);
     su2double gradBasis[MAXNDIM] = {0.0};
-    SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint);
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      for (auto iDim = 0; iDim < nDim; iDim++) {
+    SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint, reconRequired);
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         reconBasis_i[iVar] += Weight*gradBasis[iDim]*dist_ij[iDim]*limiter_i[iVar];
-      }
-    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
