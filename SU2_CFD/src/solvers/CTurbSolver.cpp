@@ -615,7 +615,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         do not have a surface term. ---*/
 
   /*--- Common factors for all Jacobian terms --*/
-  const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+  const su2double OneOnVol = 1.0/geometry->node[iPoint]->GetVolume();
   const su2double sign      = 1.0 - 2.0*(iPoint > jPoint);
     
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
@@ -626,7 +626,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    Weight = -HalfOnVol*sign;
+    Weight = -OneOnVol*sign;
     
     /*--- Influence of boundary i on R(i,j) ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
