@@ -503,55 +503,6 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::SetGradBasis(CSolver** solver, CGeometry *geometry, CConfig *config,
-                               su2double* gradBasis_i, su2double* gradBasis_j,
-                               su2double* limiter_i, su2double* limiter_j,
-                               unsigned long iPoint, unsigned long jPoint) {
-  const bool reconRequired = config->GetReconstructionGradientRequired();
-  const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
-                                                 : config->GetKind_Gradient_Method();
-
-  const su2double kappa = config->GetMUSCL_Kappa();
-
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    gradBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
-    gradBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
-  }
-
-  auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
-  switch (kindRecon) {
-    case GREEN_GAUSS:
-      break;
-    case WEIGHTED_LEAST_SQUARES:
-    case LEAST_SQUARES:
-      su2double weight = 1.0;
-      su2double dist_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
-      if (kindRecon == WEIGHTED_LEAST_SQUARES) {
-        weight = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          weight += pow(dist_ij[iDim],2); 
-      }
-      weight = 0.5*(1.-kappa)/weight;
-
-      auto var = solver[TURB_SOL]->GetNodes();
-      auto S_i = reconRequired ? var->GetSmatrix_Aux(iPoint)
-                               : var->GetSmatrix(iPoint);
-      auto S_j = reconRequired ? var->GetSmatrix_Aux(jPoint)
-                               : var->GetSmatrix(jPoint);
-      for (auto iVar = 0; iVar < nVar; iVar++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          for (auto jDim = 0; jDim < nDim; jDim++) {
-            gradBasis_i[iVar] += weight*S_i[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_i[iVar];
-            gradBasis_j[iVar] += weight*S_j[iDim][jDim]*dist_ij[iDim]*dist_ij[jDim]*limiter_j[iVar];
-          }
-        }
-      }
-      break;
-  }
-}
-
 void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
                                            su2double *r_i, su2double *r_j,
                                            su2double *r_n_i, su2double *r_n_j,
