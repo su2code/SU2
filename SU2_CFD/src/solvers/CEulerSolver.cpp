@@ -3672,7 +3672,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
       dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes()->GetPrimitive(kPoint,0)*inv_r_n_k;
 
     su2double Weight = sign*0.5*(1.-kappa);
-    su2double gradBasis[MAXNDIM] = {0.0};li
+    su2double gradBasis[MAXNDIM] = {0.0};
     SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint);
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
       for (auto iDim = 0; iDim < nDim; iDim++) {
