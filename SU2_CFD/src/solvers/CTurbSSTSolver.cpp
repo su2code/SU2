@@ -559,35 +559,15 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
     const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
     const unsigned long iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
+    const auto Vol = geometry->node[iPoint]->GetVolume();
     const su2double r_j  = flowNodes->GetDensity(jPoint);
-    const su2double Weight = (1. - F1)*sigma_om2*r/(r_j*om);
+    const su2double Weight = 2.0*(1. - F1)*sigma_om2*r/(r_j*om)*Vol;
 
     Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
     su2double Basis[MAXNDIM] = {0.0};
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-      const su2double sign = (iPoint < jPoint) ? 1.0 : -1.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Basis[iDim] = sign*geometry->edge[iEdge]->GetNormal()[iDim];
-    }
-    else {
-      const auto Vol = geometry->node[iPoint]->GetVolume();
-      su2double dist_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
-
-      su2double w = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        w += pow(dist_ij[iDim],2);
-      w = 2.0*Vol/w;
-
-      const auto Smat = nodes->GetSmatrix(iPoint);
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        for (auto jDim = 0; jDim < nDim; jDim++)
-          Basis[iDim] += w*Smat[iDim][jDim]*dist_ij[jDim];
-    }
+    SetGradBasis(Basis, geometry, solver[FLOW_SOL], config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
