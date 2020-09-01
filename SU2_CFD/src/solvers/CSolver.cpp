@@ -3226,8 +3226,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
                                weighted, solution, 0, nVar, gradient, rmatrix, smatrix);
 }
 
-void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *solver, CConfig *config, 
-                           unsigned long iPoint, unsigned long jPoint, bool reconstruction) {
+void CSolver::SetGradWeights(su2double *gradWeight, CGeometry *geometry, CSolver *solver, CConfig *config, 
+                             unsigned long iPoint, unsigned long jPoint, bool reconstruction) {
   const unsigned short kindRecon = reconstruction ? config->GetKind_Gradient_Method_Recon()
                                                   : config->GetKind_Gradient_Method();
   switch (kindRecon) {
@@ -3237,7 +3237,7 @@ void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *s
         auto iEdge = geometry->FindEdge(iPoint, jPoint);
         const su2double signk = 1.0 - 2.0*(iPoint > jPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
-          gradBasis[iDim] = signk*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
+          gradWeight[iDim] = signk*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
         break;
       }
     case LEAST_SQUARES:
@@ -3258,7 +3258,7 @@ void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *s
                                    : solver->GetNodes()->GetSmatrix(iPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
           for (auto jDim = 0; jDim < nDim; jDim++)
-            gradBasis[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
+            gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];
         break;
       }
   }

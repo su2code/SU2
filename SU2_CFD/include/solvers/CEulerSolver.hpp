@@ -133,8 +133,8 @@ protected:
   ***DonorPrimVar = nullptr;     /*!< \brief Value of the donor variables at each boundary. */
 
   su2double
-  ***GradBasis = nullptr,        /*!< \brief Value of the gradient basis function at each boundary. */
-  ***GradBasis_Aux = nullptr;    /*!< \brief Value of the gradient basis function at each boundary. */
+  ***GradWeights = nullptr,        /*!< \brief Value of the gradient weight vector at each boundary. */
+  ***GradWeights_Aux = nullptr;    /*!< \brief Value of the gradient weight vector at each boundary. */
 
   su2double
   *Inflow_MassFlow = nullptr,    /*!< \brief Mass flow rate for each boundary. */

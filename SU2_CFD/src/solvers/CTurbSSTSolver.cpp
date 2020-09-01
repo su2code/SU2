@@ -561,19 +561,19 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     const unsigned long iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
     const auto Vol = geometry->node[iPoint]->GetVolume();
     const su2double r_j  = flowNodes->GetDensity(jPoint);
-    const su2double Weight = 2.0*(1. - F1)*sigma_om2*r/(r_j*om)*Vol;
+    const su2double factor = 2.0*(1. - F1)*sigma_om2*r/(r_j*om)*Vol;
 
     Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
-    su2double Basis[MAXNDIM] = {0.0};
-    SetGradBasis(Basis, geometry, solver[TURB_SOL], config, iPoint, jPoint);
+    su2double gradWeights[MAXNDIM] = {0.0};
+    SetGradWeights(gradWeights, geometry, solver[TURB_SOL], config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
       const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-      Jacobian_i[1][0] += Weight*gradom*Basis[iDim]; Jacobian_i[1][1] += Weight*gradk*Basis[iDim];
-      Jacobian_j[1][0] += Weight*gradom*Basis[iDim]; Jacobian_j[1][1] += Weight*gradk*Basis[iDim];
+      Jacobian_i[1][0] += factor*gradom*gradWeights[iDim]; Jacobian_i[1][1] += factor*gradk*gradWeights[iDim];
+      Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]; Jacobian_j[1][1] += factor*gradk*gradWeights[iDim];
     }// iDim
 
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
@@ -592,13 +592,13 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          const su2double Weight = -2.0*(1. - F1)*sigma_om2/om;
+          const su2double factor = -2.0*(1. - F1)*sigma_om2/om;
           for (auto iDim = 0; iDim < nDim; iDim++) {
             const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
             const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
 
-            Jacobian_i[1][0] += Weight*gradom*Normal[iDim];
-            Jacobian_i[1][1] += Weight*gradk*Normal[iDim];
+            Jacobian_i[1][0] += factor*gradom*Normal[iDim];
+            Jacobian_i[1][1] += factor*gradk*Normal[iDim];
           }// iDim
         }// iVertex
       }// not send-receive

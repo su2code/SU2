@@ -326,10 +326,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
 
-  /*--- Store the value of the gradient basis function at the boundaries ---*/
+  /*--- Store the value of the gradient weight vector at the boundaries ---*/
 
   if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
-    Alloc3D(nMarker, nVertex, nPrimVar, GradBasis_Aux);
+    Alloc3D(nMarker, nVertex, nPrimVar, GradWeights_Aux);
 
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
    used for IO with a donor cell ---*/
@@ -617,22 +617,22 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CharacPrimVar;
   }
 
-  if (GradBasis != NULL) {
+  if (GradWeights != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradBasis[iMarker][iVertex];
-      delete [] GradBasis[iMarker];
+        delete [] GradWeights[iMarker][iVertex];
+      delete [] GradWeights[iMarker];
     }
-    delete [] GradBasis;
+    delete [] GradWeights;
   }
 
-  if (GradBasis_Aux != NULL) {
+  if (GradWeights_Aux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradBasis_Aux[iMarker][iVertex];
-      delete [] GradBasis_Aux[iMarker];
+        delete [] GradWeights_Aux[iMarker][iVertex];
+      delete [] GradWeights_Aux[iMarker];
     }
-    delete [] GradBasis_Aux;
+    delete [] GradWeights_Aux;
   }
 
   if (SlidingState != NULL) {
@@ -3083,8 +3083,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
 
-  su2double GradBasis_i[MAXNVAR] = {0.0}, turbGradBasis_i[1] = {0.0};
-  su2double GradBasis_j[MAXNVAR] = {0.0}, turbGradBasis_j[1] = {0.0};
+  su2double GradWeights_i[MAXNVAR] = {0.0}, turbGradWeights_i[1] = {0.0};
+  su2double GradWeights_j[MAXNVAR] = {0.0}, turbGradWeights_j[1] = {0.0};
 
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -3540,9 +3540,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     l_i[nDim+2] = turbLimiter_i[0]; l_j[nDim+2] = turbLimiter_j[0];
   }
 
-  su2double reconBasis_i[MAXNVAR+1] = {0.0}, reconBasis_j[MAXNVAR+1] = {0.0};
+  su2double reconWeight_i[MAXNVAR+1] = {0.0}, reconWeight_j[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconBasis_i[iVar] = 0.5*kappa*l_i[iVar]; reconBasis_j[iVar] = 0.5*kappa*l_j[iVar];
+    reconWeight_i[iVar] = 0.5*kappa*l_i[iVar]; reconWeight_j[iVar] = 0.5*kappa*l_j[iVar];
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3611,8 +3611,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        Jacobian_i[iVar][jVar] += sign*(dFdV_i[iVar][kVar]*(1.0-reconBasis_i[kVar])
-                                + dFdV_j[iVar][kVar]*reconBasis_j[kVar])*dVdU_i[kVar][jVar];
+        Jacobian_i[iVar][jVar] += sign*(dFdV_i[iVar][kVar]*(1.0-reconWeight_i[kVar])
+                                + dFdV_j[iVar][kVar]*reconWeight_j[kVar])*dVdU_i[kVar][jVar];
       }
     }
   }
@@ -3639,8 +3639,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
       }
 
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-      reconBasis_i[iVar] = 0.;
-      reconBasis_j[iVar] = 0.;
+      reconWeight_i[iVar] = 0.;
+      reconWeight_j[iVar] = 0.;
     }
 
     auto kPoint = node_i->GetPoint(iNeigh);
@@ -3671,20 +3671,20 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     if (tkeNeeded)
       dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes()->GetPrimitive(kPoint,0)*inv_r_n_k;
 
-    su2double Weight = sign*0.5*(1.-kappa);
-    su2double gradBasis[MAXNDIM] = {0.0};
-    SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint, reconRequired);
+    su2double factor = sign*0.5*(1.-kappa);
+    su2double gradWeight[MAXNDIM] = {0.0};
+    SetGradWeights(gradWeight, geometry, solver[TURB_SOL], config, iPoint, kPoint, reconRequired);
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       for (auto iDim = 0; iDim < nDim; iDim++)
-        reconBasis_i[iVar] += Weight*gradBasis[iDim]*dist_ij[iDim]*l_i[iVar];
+        reconWeight_i[iVar] += factor*gradWeight[iDim]*dist_ij[iDim]*l_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-          Jacobian_i[iVar][jVar] += dFdV_i[iVar][kVar]*reconBasis_i[kVar]*dVdU_i[kVar][jVar];
-          Jacobian_j[iVar][jVar] += dFdV_i[iVar][kVar]*reconBasis_i[kVar]*dVdU_k[kVar][jVar];
+          Jacobian_i[iVar][jVar] += dFdV_i[iVar][kVar]*reconWeight_i[kVar]*dVdU_i[kVar][jVar];
+          Jacobian_j[iVar][jVar] += dFdV_i[iVar][kVar]*reconWeight_i[kVar]*dVdU_k[kVar][jVar];
         }
         if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
           Jacobian_i[iVar][jVar] *= -1.0;

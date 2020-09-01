@@ -72,10 +72,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
   };
 
-  /*--- Store the value of the gradient basis function at the boundaries ---*/
+  /*--- Store the value of the gradient weight vector at the boundaries ---*/
 
   if (config->GetUse_Accurate_Visc_Jacobians())
-    Alloc3D(nMarker, nVertex, nPrimVar, GradBasis);
+    Alloc3D(nMarker, nVertex, nPrimVar, GradWeights);
 
   /*--- Heat flux in all the markers ---*/
 
@@ -523,12 +523,12 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double Weight = -HalfOnVol*sign;
+    const su2double factor = -HalfOnVol*sign;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
 
           /*--- Get new projection vector to be multiplied by divergence terms ---*/
           ProjVec = 0.0;
@@ -538,9 +538,9 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
           /*--- Momentum flux Jacobian wrt momentum ---*/
           for (auto iDim = 0; iDim < nDim; iDim++)
             for (auto jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Normal[iDim]*Vec[jDim] 
-                                                - TWO3*Normal[jDim]*Vec[iDim] 
-                                                + delta[iDim][jDim]*ProjVec);
+              Jacobian_i[iDim+1][jDim+1] += factor*Xi*(gradWeight[iDim]*Vec[jDim] 
+                                          - TWO3*gradWeight[jDim]*Vec[iDim] 
+                                          + delta[iDim][jDim]*ProjVec);
         }// iVertex
       }// not send-receive
     }// iMarker
@@ -581,23 +581,23 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
-    su2double Weight = 0.5*sign;
-    su2double Basis[MAXNDIM] = {0.0};
-    SetGradBasis(Basis, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
+    su2double factor = 0.5*sign;
+    su2double gradWeight[MAXNDIM] = {0.0};
+    SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
 
     /*--- Get new projection vector to be multiplied by divergence terms ---*/
     ProjVec = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
-      ProjVec += Vec[iDim]*Basis[iDim];
+      ProjVec += Vec[iDim]*gradWeight[iDim];
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
     for (auto iDim = 0; iDim < nDim; iDim++) {
       for (auto jDim = 0; jDim < nDim; jDim++) {
-        Jacobian_i[iDim+1][jDim+1] += Weight*Xi*(Basis[iDim]*Vec[jDim] 
-                                    - TWO3*Basis[jDim]*Vec[iDim] 
+        Jacobian_i[iDim+1][jDim+1] += factor*Xi*(gradWeight[iDim]*Vec[jDim] 
+                                    - TWO3*gradWeight[jDim]*Vec[iDim] 
                                     + delta[iDim][jDim]*ProjVec);
-        Jacobian_j[iDim+1][jDim+1] += Weight*Xi_k*(Basis[iDim]*Vec[jDim] 
-                                    - TWO3*Basis[jDim]*Vec[iDim] 
+        Jacobian_j[iDim+1][jDim+1] += factor*Xi_k*(gradWeight[iDim]*Vec[jDim] 
+                                    - TWO3*gradWeight[jDim]*Vec[iDim] 
                                     + delta[iDim][jDim]*ProjVec);
       }
     }
@@ -696,23 +696,23 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          su2double Weight = 0.0;
+          su2double factor = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
-            Weight += Normal[iDim]*Vec[iDim];
+            factor += gradWeight[iDim]*Vec[iDim];
 
-          Weight *= -HalfOnVol*ConductivityOnR*sign;
+          factor *= -HalfOnVol*ConductivityOnR*sign;
 
           /*--- Density Jacobian ---*/
-          Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
+          Jacobian_i[nVar-1][0] += factor*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
 
           /*--- Momentum Jacobian ---*/
           for (auto jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(iPoint,jDim);
+            Jacobian_i[nVar-1][jDim+1] -= factor*Phi*nodesFlo->GetVelocity(iPoint,jDim);
 
           /*--- Energy Jacobian ---*/
-          Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
+          Jacobian_i[nVar-1][nVar-1] += factor*Phi;
 
           /*--- Tke term ---*/
           if (sst) {
@@ -722,8 +722,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
             const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
             const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
             const su2double tke = nodesTur->GetPrimitive(iPoint,0);
-            Weight /= ConductivityOnR;
-            Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
+            factor /= ConductivityOnR;
+            Jacobian_i[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
           }
         }// iVertex
       }// not send-receive
@@ -753,28 +753,28 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Pressure_k = nodes->GetPressure(kPoint);
     const su2double Phi_k      = Gamma_Minus_One/Density;
 
-    su2double Basis[MAXNDIM] = {0.0};
-    SetGradBasis(Basis, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
+    su2double gradWeight[MAXNDIM] = {0.0};
+    SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
 
-    su2double Weight = 0.0;
+    su2double factor = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
-      Weight += Basis[iDim]*Vec[iDim];
+      factor += gradWeight[iDim]*Vec[iDim];
 
-    Weight *= 0.5*sign*ConductivityOnR;
+    factor *= 0.5*sign*ConductivityOnR;
 
     /*--- Density Jacobian ---*/
-    Jacobian_i[nVar-1][0] += Weight*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
-    Jacobian_j[nVar-1][0] += Weight*(-Pressure_k/(Density_k*Density_k)+0.5*Vel2_k*Phi_k);
+    Jacobian_i[nVar-1][0] += factor*(-Pressure/(Density*Density)+0.5*Vel2*Phi);
+    Jacobian_j[nVar-1][0] += factor*(-Pressure_k/(Density_k*Density_k)+0.5*Vel2_k*Phi_k);
 
     /*--- Momentum Jacobian ---*/
     for (auto jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_i[nVar-1][jDim+1] -= Weight*Phi*nodesFlo->GetVelocity(iPoint,jDim);
-      Jacobian_j[nVar-1][jDim+1] -= Weight*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
+      Jacobian_i[nVar-1][jDim+1] -= factor*Phi*nodesFlo->GetVelocity(iPoint,jDim);
+      Jacobian_j[nVar-1][jDim+1] -= factor*Phi_k*nodesFlo->GetVelocity(kPoint,jDim);
     }
 
     /*--- Energy Jacobian ---*/
-    Jacobian_i[nVar-1][nVar-1] += Weight*Phi;
-    Jacobian_j[nVar-1][nVar-1] += Weight*Phi_k;
+    Jacobian_i[nVar-1][nVar-1] += factor*Phi;
+    Jacobian_j[nVar-1][nVar-1] += factor*Phi_k;
 
     /*--- Tke term ---*/
     if (sst) {
@@ -785,9 +785,9 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
       const su2double tke = nodesTur->GetPrimitive(iPoint,0);
       const su2double tke_k = nodesTur->GetPrimitive(kPoint,0);
-      Weight /= ConductivityOnR;
-      Jacobian_i[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
-      Jacobian_j[nVar-1][0] -= Weight*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke_k/Density_k;
+      factor /= ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke/Density;
+      Jacobian_j[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke_k/Density_k;
     }
 
     if (wls)

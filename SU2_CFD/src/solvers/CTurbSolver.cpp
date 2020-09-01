@@ -68,12 +68,12 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
     }
   };
 
-  /*--- Store the value of the gradient basis function at the boundaries ---*/
+  /*--- Store the value of the gradient weight vector at the boundaries ---*/
 
   if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
-    Alloc3D(nMarker, nVertex, nVar, GradBasis_Aux);
+    Alloc3D(nMarker, nVertex, nVar, GradWeights_Aux);
   if (config->GetUse_Accurate_Turb_Jacobians())
-    Alloc3D(nMarker, nVertex, nVar, GradBasis);
+    Alloc3D(nMarker, nVertex, nVar, GradWeights);
 
 #ifdef HAVE_OMP
   /*--- Get the edge coloring, see notes in CEulerSolver's constructor. ---*/
@@ -115,22 +115,22 @@ CTurbSolver::~CTurbSolver(void) {
     delete [] Inlet_TurbVars;
   }
 
-  if (GradBasis != NULL) {
+  if (GradWeights != NULL) {
     for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
       for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradBasis[iMarker][iVertex];
-      delete [] GradBasis[iMarker];
+        delete [] GradWeights[iMarker][iVertex];
+      delete [] GradWeights[iMarker];
     }
-    delete [] GradBasis;
+    delete [] GradWeights;
   }
 
-  if (GradBasis_Aux != NULL) {
+  if (GradWeights_Aux != NULL) {
     for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
       for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradBasis_Aux[iMarker][iVertex];
-      delete [] GradBasis_Aux[iMarker];
+        delete [] GradWeights_Aux[iMarker][iVertex];
+      delete [] GradWeights_Aux[iMarker];
     }
-    delete [] GradBasis_Aux;
+    delete [] GradWeights_Aux;
   }
 
   delete nodes;
@@ -159,7 +159,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   su2double ZeroVec[2] = {0.0}, OneVec[2]  = {0.0};
 
-  su2double GradBasis_i[2] = {0.0}, GradBasis_j[2] = {0.0};
+  su2double GradWeights_i[2] = {0.0}, GradWeights_j[2] = {0.0};
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -525,16 +525,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2double reconBasis_i[2] = {0.0}, reconBasis_j[2] = {0.0};
+  su2double reconWeight_i[2] = {0.0}, reconWeight_j[2] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    reconBasis_i[iVar] = 0.5*kappa*limiter_i[iVar];
-    reconBasis_j[iVar] = 0.5*kappa*limiter_j[iVar];
+    reconWeight_i[iVar] = 0.5*kappa*limiter_i[iVar];
+    reconWeight_j[iVar] = 0.5*kappa*limiter_j[iVar];
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] = sign*(dFdU_i[iVar][jVar]*(*r_i)*(1.0-reconBasis_i[jVar])
-                             + dFdU_j[iVar][jVar]*(*r_j)*reconBasis_j[jVar])/(*r_n_i);
+      Jacobian_i[iVar][jVar] = sign*(dFdU_i[iVar][jVar]*(*r_i)*(1.0-reconWeight_i[jVar])
+                             + dFdU_j[iVar][jVar]*(*r_j)*reconWeight_j[jVar])/(*r_n_i);
     }
   }
 
@@ -562,24 +562,24 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
     }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      reconBasis_i[iVar] = 0.;
-      reconBasis_j[iVar] = 0.;
+      reconWeight_i[iVar] = 0.;
+      reconWeight_j[iVar] = 0.;
     }
 
     auto kPoint = node_i->GetPoint(iNeigh);
     auto node_k = geometry->node[kPoint];
 
-    su2double Weight = sign*0.5*(1.-kappa);
-    su2double gradBasis[MAXNDIM] = {0.0};
-    SetGradBasis(gradBasis, geometry, solver[TURB_SOL], config, iPoint, kPoint, reconRequired);
+    su2double factor = sign*0.5*(1.-kappa);
+    su2double gradWeight[MAXNDIM] = {0.0};
+    SetGradWeights(gradWeight, geometry, solver[TURB_SOL], config, iPoint, kPoint, reconRequired);
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto iDim = 0; iDim < nDim; iDim++)
-        reconBasis_i[iVar] += Weight*gradBasis[iDim]*dist_ij[iDim]*limiter_i[iVar];
+        reconWeight_i[iVar] += factor*gradWeight[iDim]*dist_ij[iDim]*limiter_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(*r_n_i);
-        Jacobian_j[iVar][jVar] = dFdU_i[iVar][jVar]*(*r_i)*reconBasis_i[jVar]/(flowVar->GetDensity(kPoint));
+        Jacobian_i[iVar][jVar] = dFdU_i[iVar][jVar]*(*r_i)*reconWeight_i[jVar]/(*r_n_i);
+        Jacobian_j[iVar][jVar] = dFdU_i[iVar][jVar]*(*r_i)*reconWeight_i[jVar]/(flowVar->GetDensity(kPoint));
         if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
           Jacobian_i[iVar][jVar] *= -1.0;
       }
@@ -604,7 +604,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
   const bool wasActive = AD::BeginPassive();
 
-  su2double Weight = 0.0;
+  su2double factor = 0.0;
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
@@ -613,10 +613,6 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. Least squares gradients
         do not have a surface term. ---*/
-
-  /*--- Common factors for all Jacobian terms --*/
-  const su2double OneOnVol = 1.0/geometry->node[iPoint]->GetVolume();
-  const su2double sign      = 1.0 - 2.0*(iPoint > jPoint);
     
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
@@ -626,7 +622,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    Weight = -OneOnVol*sign;
+    const su2double sign   = 1.0 - 2.0*(iPoint > jPoint);
+    const su2double factor = -sign/geometry->node[iPoint]->GetVolume();
     
     /*--- Influence of boundary i on R(i,j) ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -635,7 +632,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (auto iDim = 0; iDim < nDim; iDim++)
           for (auto iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] += Weight*Jacobian_ic[iDim][iVar][iVar]*Normal[iDim];
+            Jacobian_i[iVar][iVar] += factor*Jacobian_ic[iDim][iVar][iVar]*Normal[iDim];
       }// iVertex
     }// iMarker
 
@@ -659,14 +656,14 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-    su2double Basis[MAXNDIM] = {0.0};
-    SetGradBasis(Basis, geometry, solver[TURB_SOL], config, iPoint, kPoint);
+    su2double gradWeight[MAXNDIM] = {0.0};
+    SetGradWeights(gradWeight, geometry, solver[TURB_SOL], config, iPoint, kPoint);
     const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim];
-        Jacobian_j[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*Basis[iDim]/denom;
+        Jacobian_i[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*gradWeight[iDim];
+        Jacobian_j[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*gradWeight[iDim]/denom;
       }
       if (wls) Jacobian_i[iVar][iVar] *= -1.0;
     }
