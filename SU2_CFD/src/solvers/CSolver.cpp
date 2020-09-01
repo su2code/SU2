@@ -3226,7 +3226,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
                                weighted, solution, 0, nVar, gradient, rmatrix, smatrix);
 }
 
-void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *solver, Config *config, 
+void CSolver::SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *solver, CConfig *config, 
                            unsigned long iPoint, unsigned long jPoint, bool reconstruction) {
   const unsigned short kindRecon = reconstruction ? config->GetKind_Gradient_Method_Recon()
                                                   : config->GetKind_Gradient_Method();

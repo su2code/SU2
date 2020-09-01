@@ -769,7 +769,7 @@ public:
    * \brief Compute the weighting function of the nodal gradient to obtain an accurate Jacobian
    *        for MUSCL extrapolation and viscous fluxes.
    */
-  void SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *solver, Config *config, 
+  void SetGradBasis(su2double *gradBasis, CGeometry *geometry, CSolver *solver, CConfig *config, 
                     unsigned long iPoint, unsigned long jPoint, bool reconstruction = false);
   
   /*!
