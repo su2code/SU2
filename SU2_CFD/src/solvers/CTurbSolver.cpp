@@ -928,7 +928,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio =  0.99;
+  const su2double allowableRatio =  0.5;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
@@ -948,10 +948,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
           const su2double invratio = fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps);
           localUnderRelaxation = min(allowableRatio*invratio, localUnderRelaxation);
         }
-        // if (iVar == 1 && nodes->GetSolution(iPoint, iVar)+LinSysSol[index] < lowerlimit[iVar]) {
-        //   const su2double ratio = (nodes->GetSolution(iPoint, iVar)-lowerlimit[iVar])/(fabs(LinSysSol[index])+eps);
-        //   localUnderRelaxation = min(ratio, localUnderRelaxation);
-        // }
       }
 
     }
