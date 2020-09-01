@@ -3747,8 +3747,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     }
 
     auto kPoint = node_i->GetPoint(iNeigh);
-    auto kEdge = node_i->GetEdge(iNeigh);
-
     auto node_k = geometry->node[kPoint];
 
     /*--- d{r,v,p,k}/dU, evaluated at node ---*/
@@ -3779,6 +3777,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     switch (kindRecon) {
       case GREEN_GAUSS:
         {
+          auto kEdge = node_i->GetEdge(iNeigh);
           const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
           const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
           const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;

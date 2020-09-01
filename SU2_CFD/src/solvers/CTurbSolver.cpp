@@ -642,13 +642,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
     }
 
   auto kPoint = node_i->GetPoint(iNeigh);
-  auto kEdge = node_i->GetEdge(iNeigh);
-
   auto node_k = geometry->node[kPoint];
 
   switch (kindRecon) {
       case GREEN_GAUSS:
         {
+          auto kEdge = node_i->GetEdge(iNeigh);
           const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
           const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
           const su2double weight = 0.5*(1.-kappa)*HalfOnVol*signk;
@@ -770,12 +769,11 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
 
-    auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-
     su2double Basis[MAXNDIM] = {0.0};
+    const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
     if (gg) {
+      auto kEdge = geometry->node[iPoint]->GetEdge(iNeigh);
       const su2double signk = 1.0 - 2.0*(iPoint > kPoint);
-      const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
       Weight = HalfOnVol*sign*signk/denom;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Basis[iDim] = Weight*geometry->edge[kEdge]->GetNormal()[iDim];

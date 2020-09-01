@@ -73,6 +73,8 @@ void computeGradientsLeastSquares(CSolver* solver,
                      omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
+  const bool compute = (config->GetInnerIter() == 0) || (config->GetDiscrete_Adjoint());ß
+
   /*--- First loop over non-halo points of the grid. ---*/
 
   SU2_OMP_FOR_DYN(chunkSize)
@@ -93,9 +95,10 @@ void computeGradientsLeastSquares(CSolver* solver,
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         gradient(iPoint, iVar, iDim) = 0.0;
 
-    for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = 0; jDim < nDim; ++jDim)
-        Rmatrix(iPoint, iDim, jDim) = 0.0;
+    if (compute)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        for (size_t jDim = 0; jDim < nDim; ++jDim)
+          Rmatrix(iPoint, iDim, jDim) = 0.0;
 
 
     for (size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
@@ -129,16 +132,18 @@ void computeGradientsLeastSquares(CSolver* solver,
       {
         weight = 1.0 / weight;
 
-        Rmatrix(iPoint,0,0) += dist_ij[0]*dist_ij[0]*weight;
-        Rmatrix(iPoint,0,1) += dist_ij[0]*dist_ij[1]*weight;
-        Rmatrix(iPoint,1,1) += dist_ij[1]*dist_ij[1]*weight;
+        if (compute) {
+          Rmatrix(iPoint,0,0) += dist_ij[0]*dist_ij[0]*weight;
+          Rmatrix(iPoint,0,1) += dist_ij[0]*dist_ij[1]*weight;
+          Rmatrix(iPoint,1,1) += dist_ij[1]*dist_ij[1]*weight;
 
-        if (nDim == 3)
-        {
-          Rmatrix(iPoint,0,2) += dist_ij[0]*dist_ij[2]*weight;
-          Rmatrix(iPoint,1,2) += dist_ij[1]*dist_ij[2]*weight;
-          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
-          Rmatrix(iPoint,2,2) += dist_ij[2]*dist_ij[2]*weight;
+          if (nDim == 3)
+          {
+            Rmatrix(iPoint,0,2) += dist_ij[0]*dist_ij[2]*weight;
+            Rmatrix(iPoint,1,2) += dist_ij[1]*dist_ij[2]*weight;
+            Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
+            Rmatrix(iPoint,2,2) += dist_ij[2]*dist_ij[2]*weight;
+          }
         }
 
         /*--- Entries of c:= transpose(A)*b ---*/
@@ -184,99 +189,101 @@ void computeGradientsLeastSquares(CSolver* solver,
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
-    /*--- Entries of upper triangular matrix R. ---*/
+    if (compute) {
+      /*--- Entries of upper triangular matrix R. ---*/
 
-    su2double r11 = Rmatrix(iPoint,0,0);
-    su2double r12 = Rmatrix(iPoint,0,1);
-    su2double r22 = Rmatrix(iPoint,1,1);
-    su2double r13 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+      su2double r11 = Rmatrix(iPoint,0,0);
+      su2double r12 = Rmatrix(iPoint,0,1);
+      su2double r22 = Rmatrix(iPoint,1,1);
+      su2double r13 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
 
-    AD::StartPreacc();
-    AD::SetPreaccIn(r11);
-    AD::SetPreaccIn(r12);
-    AD::SetPreaccIn(r22);
+      AD::StartPreacc();
+      AD::SetPreaccIn(r11);
+      AD::SetPreaccIn(r12);
+      AD::SetPreaccIn(r22);
 
-    if (r11 >= 0.0) r11 = sqrt(r11);
-    if (r11 >= 0.0) r12 /= r11; else r12 = 0.0;
-    su2double tmp = r22-r12*r12;
-    if (tmp >= 0.0) r22 = sqrt(tmp); else r22 = 0.0;
+      if (r11 >= 0.0) r11 = sqrt(r11);
+      if (r11 >= 0.0) r12 /= r11; else r12 = 0.0;
+      su2double tmp = r22-r12*r12;
+      if (tmp >= 0.0) r22 = sqrt(tmp); else r22 = 0.0;
 
-    if (nDim == 3) {
-      r13   = Rmatrix(iPoint,0,2);
-      r23_a = Rmatrix(iPoint,1,2);
-      r23_b = Rmatrix(iPoint,2,1);
-      r33   = Rmatrix(iPoint,2,2);
+      if (nDim == 3) {
+        r13   = Rmatrix(iPoint,0,2);
+        r23_a = Rmatrix(iPoint,1,2);
+        r23_b = Rmatrix(iPoint,2,1);
+        r33   = Rmatrix(iPoint,2,2);
 
-      AD::SetPreaccIn(r13);
-      AD::SetPreaccIn(r23_a);
-      AD::SetPreaccIn(r23_b);
-      AD::SetPreaccIn(r33);
+        AD::SetPreaccIn(r13);
+        AD::SetPreaccIn(r23_a);
+        AD::SetPreaccIn(r23_b);
+        AD::SetPreaccIn(r33);
 
-      if (r11 >= 0.0) r13 /= r11; else r13 = 0.0;
+        if (r11 >= 0.0) r13 /= r11; else r13 = 0.0;
 
-      if ((r22 >= 0.0) && (r11*r22 >= 0.0)) {
-        r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-      } else {
-        r23 = 0.0;
+        if ((r22 >= 0.0) && (r11*r22 >= 0.0)) {
+          r23 = r23_a/r22 - r23_b*r12/(r11*r22);
+        } else {
+          r23 = 0.0;
+        }
+
+        tmp = r33 - r23*r23 - r13*r13;
+        if (tmp >= 0.0) r33 = sqrt(tmp); else r33 = 0.0;
       }
 
-      tmp = r33 - r23*r23 - r13*r13;
-      if (tmp >= 0.0) r33 = sqrt(tmp); else r33 = 0.0;
-    }
+      /*--- Compute determinant ---*/
 
-    /*--- Compute determinant ---*/
+      su2double detR2 = (r11*r22)*(r11*r22);
+      if (nDim == 3) detR2 *= r33*r33;
 
-    su2double detR2 = (r11*r22)*(r11*r22);
-    if (nDim == 3) detR2 *= r33*r33;
+      /*--- Detect singular matrices ---*/
 
-    /*--- Detect singular matrices ---*/
+      bool singular = false;
 
-    bool singular = false;
+      if (detR2 <= EPS) {
+        detR2 = 1.0;
+        singular = true;
+      }
 
-    if (detR2 <= EPS) {
-      detR2 = 1.0;
-      singular = true;
-    }
+      /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
-    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-
-    if (singular) {
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        for (size_t jDim = 0; jDim < nDim; ++jDim)
-          Smatrix(iPoint,iDim,jDim) = 0.0;
-    }
-    else {
-      if (nDim == 2) {
-        Smatrix(iPoint,0,0) = (r12*r12+r22*r22)/detR2;
-        Smatrix(iPoint,0,1) = -r11*r12/detR2;
-        Smatrix(iPoint,1,0) = Smatrix(iPoint,0,1);
-        Smatrix(iPoint,1,1) = r11*r11/detR2;
+      if (singular) {
+        for (size_t iDim = 0; iDim < nDim; ++iDim)
+          for (size_t jDim = 0; jDim < nDim; ++jDim)
+            Smatrix(iPoint,iDim,jDim) = 0.0;
       }
       else {
-        su2double z11 = r22*r33;
-        su2double z12 =-r12*r33;
-        su2double z13 = r12*r23-r13*r22;
-        su2double z22 = r11*r33;
-        su2double z23 =-r11*r23;
-        su2double z33 = r11*r22;
+        if (nDim == 2) {
+          Smatrix(iPoint,0,0) = (r12*r12+r22*r22)/detR2;
+          Smatrix(iPoint,0,1) = -r11*r12/detR2;
+          Smatrix(iPoint,1,0) = Smatrix(iPoint,0,1);
+          Smatrix(iPoint,1,1) = r11*r11/detR2;
+        }
+        else {
+          su2double z11 = r22*r33;
+          su2double z12 =-r12*r33;
+          su2double z13 = r12*r23-r13*r22;
+          su2double z22 = r11*r33;
+          su2double z23 =-r11*r23;
+          su2double z33 = r11*r22;
 
-        Smatrix(iPoint,0,0) = (z11*z11+z12*z12+z13*z13)/detR2;
-        Smatrix(iPoint,0,1) = (z12*z22+z13*z23)/detR2;
-        Smatrix(iPoint,0,2) = (z13*z33)/detR2;
-        Smatrix(iPoint,1,0) = Smatrix(iPoint,0,1);
-        Smatrix(iPoint,1,1) = (z22*z22+z23*z23)/detR2;
-        Smatrix(iPoint,1,2) = (z23*z33)/detR2;
-        Smatrix(iPoint,2,0) = Smatrix(iPoint,0,2);
-        Smatrix(iPoint,2,1) = Smatrix(iPoint,1,2);
-        Smatrix(iPoint,2,2) = (z33*z33)/detR2;
+          Smatrix(iPoint,0,0) = (z11*z11+z12*z12+z13*z13)/detR2;
+          Smatrix(iPoint,0,1) = (z12*z22+z13*z23)/detR2;
+          Smatrix(iPoint,0,2) = (z13*z33)/detR2;
+          Smatrix(iPoint,1,0) = Smatrix(iPoint,0,1);
+          Smatrix(iPoint,1,1) = (z22*z22+z23*z23)/detR2;
+          Smatrix(iPoint,1,2) = (z23*z33)/detR2;
+          Smatrix(iPoint,2,0) = Smatrix(iPoint,0,2);
+          Smatrix(iPoint,2,1) = Smatrix(iPoint,1,2);
+          Smatrix(iPoint,2,2) = (z33*z33)/detR2;
+        }
       }
+
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        for (size_t jDim = 0; jDim < nDim; ++jDim)
+          AD::SetPreaccOut(Smatrix(iPoint,iDim,jDim));
+
+      AD::EndPreacc();
     }
-
-    for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = 0; jDim < nDim; ++jDim)
-        AD::SetPreaccOut(Smatrix(iPoint,iDim,jDim));
-
-    AD::EndPreacc();
 
     /*--- Computation of the gradient: S*c ---*/
 
@@ -306,8 +313,10 @@ void computeGradientsLeastSquares(CSolver* solver,
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
 
-    solver->InitiateComms(&geometry, &config, kindSmatComm);
-    solver->CompleteComms(&geometry, &config, kindSmatComm);
+    if (compute) {
+      solver->InitiateComms(&geometry, &config, kindSmatComm);
+      solver->CompleteComms(&geometry, &config, kindSmatComm);
+    }
   }
   SU2_OMP_BARRIER
 
