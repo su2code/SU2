@@ -604,7 +604,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
   const bool wasActive = AD::BeginPassive();
 
-  su2double factor = 0.0;
+  const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
@@ -622,7 +623,6 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double sign   = 1.0 - 2.0*(iPoint > jPoint);
     const su2double factor = -sign/geometry->node[iPoint]->GetVolume();
     
     /*--- Influence of boundary i on R(i,j) ---*/
