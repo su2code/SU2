@@ -718,7 +718,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   heat_flux_jac_j[0] =  conductivity_over_Rd * (-p_j/pow(rho_j,2) + 0.5*sqvel_j*phi_j);
   for (auto iDim = 0; iDim < nDim; iDim++) {
     heat_flux_jac_i[iDim+1] = -conductivity_over_Rd * (-phi_i*V_i[iDim+1]);
-    heat_flux_jac_j[iDim+1] = -conductivity_over_Rd * (-phi_j*V_j[iDim+1]);
+    heat_flux_jac_j[iDim+1] =  conductivity_over_Rd * (-phi_j*V_j[iDim+1]);
   }
   heat_flux_jac_i[nDim+1] = -conductivity_over_Rd * phi_i;
   heat_flux_jac_j[nDim+1] =  conductivity_over_Rd * phi_j;
