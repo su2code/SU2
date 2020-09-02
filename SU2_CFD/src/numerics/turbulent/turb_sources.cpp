@@ -48,6 +48,7 @@ CSourceBase_TurbSA::CSourceBase_TurbSA(unsigned short val_nDim,
   cb2   = 0.622;
   cb2_sigma = cb2/sigma;
   cw1 = cb1/k2+(1.0+cb2)/sigma;
+  cr1 = 0.5;
 
   /*--- Setup the Jacobian pointer, we need to return su2double** but
    *    we know the Jacobian is 1x1 so we use this "trick" to avoid
@@ -86,6 +87,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
   su2double Uinfty,Pinfty,roinfty,lRetheta,Ret,Nfactor;
   
   bool pressure_based = (config->GetKind_Incomp_System() == PRESSURE_BASED);
+
+  // Set the boolean here depending on whether the point is closest to a rough wall or not.
+  roughwall = (roughness_i > 0.0);
 
   if (incompressible) {
 	  if (pressure_based) {
@@ -135,11 +139,20 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSA::ComputeResidual(const CConfig
 
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
-    Ji = TurbVar_i[0]/nu;
+
+    /*--- Modified values for roughness ---*/
+    /*--- Ref: Aupoix, B. and Spalart, P. R., "Extensions of the Spalart-Allmaras Turbulence Model to Account for Wall Roughness,"
+     * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/
+    /* --- See https://turbmodels.larc.nasa.gov/spalart.html#sarough for detailed explanation. ---*/
+
+    Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+
+    /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
+    fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
+
     ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
