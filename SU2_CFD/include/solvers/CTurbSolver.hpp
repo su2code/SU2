@@ -116,6 +116,16 @@ private:
 
   /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] r_i - Density extrapolated from node i to face.
+   * \param[in] r_j - Density extrapolated from node j to face.
+   * \param[in] r_n_i - Density at node i.
+   * \param[in] limiter_i - Turbulent primitive slope limiter at node i.
+   * \param[in] limiter_j - Turbulent primitive slope limiter at node j.
+   * \param[in] dFdU_i - Flux Jacobian wrt left extrapolated state.
+   * \param[in] dFdU_j - Flux Jacobian wrt right extrapolated state.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
                                 su2double *r_i, su2double *r_j,

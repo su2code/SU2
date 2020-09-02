@@ -3398,10 +3398,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             tke_n_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
           }
           SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_i, Primitive_j,
-                                   V_i, V_j,
-                                   &tke_i, &tke_j,
-                                   &tke_n_i, &tke_n_j,
+                                   Primitive_i, Primitive_j, V_i,
+                                   &tke_i, &tke_j, &tke_n_i,
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
@@ -3409,10 +3407,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    residual.jacobian_i, residual.jacobian_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_j, Primitive_i,
-                                   V_j, V_i,
-                                   &tke_j, &tke_i,
-                                   &tke_n_j, &tke_n_i,
+                                   Primitive_j, Primitive_i, V_j,
+                                   &tke_j, &tke_i, &tke_n_j,
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
@@ -3477,10 +3473,8 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                            su2double *primvar_i, su2double *primvar_j,
-                                            su2double *primvar_n_i, su2double *primvar_n_j,
-                                            su2double *k_i, su2double *k_j,
-                                            su2double *k_n_i, su2double *k_n_j,
+                                            su2double *primvar_i, su2double *primvar_j, su2double *primvar_n_i,
+                                            su2double *k_i, su2double *k_j, su2double *k_n_i,
                                             su2double* limiter_i, su2double* limiter_j,
                                             su2double *turbLimiter_i, su2double* turbLimiter_j,
                                             const su2double *const *const dFdU_i,
@@ -3638,10 +3632,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
         Jacobian_j[iVar][jVar] = 0.0;
       }
 
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       reconWeight_i[iVar] = 0.;
-      reconWeight_j[iVar] = 0.;
-    }
 
     auto kPoint = node_i->GetPoint(iNeigh);
     auto node_k = geometry->node[kPoint];

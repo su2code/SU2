@@ -385,15 +385,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
-                                 &V_i[nDim+2], &V_j[nDim+2],
+                                 &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2], &V_i[nDim+2],
                                  limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                  limiter ? nodes->GetLimiter(jPoint) : OneVec,
                                  residual.jacobian_i, residual.jacobian_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
-                                 &V_j[nDim+2], &V_i[nDim+2],
+                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2], &V_j[nDim+2],
                                  limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                  limiter ? nodes->GetLimiter(iPoint) : OneVec,
                                  residual.jacobian_j, residual.jacobian_i,
@@ -504,8 +502,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 }
 
 void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                           su2double *r_i, su2double *r_j,
-                                           su2double *r_n_i, su2double *r_n_j,
+                                           su2double *r_i, su2double *r_j, su2double *r_n_i,
                                            su2double* limiter_i, su2double* limiter_j,
                                            const su2double *const *const dFdU_i,
                                            const su2double *const *const dFdU_j,
@@ -561,10 +558,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
       }
     }
 
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nVar; iVar++)
       reconWeight_i[iVar] = 0.;
-      reconWeight_j[iVar] = 0.;
-    }
 
     auto kPoint = node_i->GetPoint(iNeigh);
     auto node_k = geometry->node[kPoint];
