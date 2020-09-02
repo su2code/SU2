@@ -678,7 +678,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double Vel2_i     = nodes->GetVelocity2(iPoint);
   const su2double Density_i  = nodes->GetDensity(iPoint);
   const su2double Pressure_i = nodes->GetPressure(iPoint);
-  const su2double Phi_i      = Gamma_Minus_One/Density;
+  const su2double Phi_i      = Gamma_Minus_One/Density_i;
 
   /*--- First we compute contributions of first neighbors to the Jacobian.
         In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
@@ -783,7 +783,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
       const su2double F1_j = nodesTur->GetF1blending(jPoint);
       const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
       const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-      const su2double tke = nodesTur->GetPrimitive(iPoint,0);
+      const su2double tke_i = nodesTur->GetPrimitive(iPoint,0);
       const su2double tke_k = nodesTur->GetPrimitive(kPoint,0);
       factor /= ConductivityOnR;
       Jacobian_i[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke_i/Density_i;
