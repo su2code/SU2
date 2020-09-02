@@ -34,7 +34,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
-  
+
   tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   nPrimVarTot = nVar + tkeNeeded;
 
@@ -308,8 +308,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       P_Tensor[iVar][nVar]      = 0.0;
       invP_Tensor[nVar][iVar+1] = 0.0;
     }
-    P_Tensor[nVar-1][nVar] = Gamma - FIVE3;
-    // P_Tensor[nVar-1][nVar] = -TWO3;
+    // P_Tensor[nVar-1][nVar] = Gamma - FIVE3;
+    P_Tensor[nVar-1][nVar] = FIVE3;
     invP_Tensor[nVar][0]   = -RoeTke;
   }
 
