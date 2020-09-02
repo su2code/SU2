@@ -3228,16 +3228,16 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
 
 void CSolver::SetGradWeights(su2double *gradWeight, CGeometry *geometry, CSolver *solver, CConfig *config, 
                              unsigned long iPoint, unsigned long jPoint, bool reconstruction) {
-  const unsigned short kindRecon = reconstruction ? config->GetKind_Gradient_Method_Recon()
-                                                  : config->GetKind_Gradient_Method();
-  switch (kindRecon) {
+  const unsigned short kindGrad = reconstruction ? config->GetKind_Gradient_Method_Recon()
+                                                 : config->GetKind_Gradient_Method();
+  switch (kindGrad) {
     case GREEN_GAUSS:
       {
         const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
         auto iEdge = geometry->FindEdge(iPoint, jPoint);
-        const su2double signk = 1.0 - 2.0*(iPoint > jPoint);
+        const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
-          gradWeight[iDim] = signk*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
+          gradWeight[iDim] = sign*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
         break;
       }
     case LEAST_SQUARES:
@@ -3248,7 +3248,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CGeometry *geometry, CSolver
         for (auto iDim = 0; iDim < nDim; iDim++)
           dist_ij[iDim] = geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim);
         
-        if (kindRecon == WEIGHTED_LEAST_SQUARES) {
+        if (kindGrad == WEIGHTED_LEAST_SQUARES) {
           weight = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
             weight += pow(dist_ij[iDim],2); 
