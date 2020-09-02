@@ -533,7 +533,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
           /*--- Get new projection vector to be multiplied by divergence terms ---*/
           ProjVec = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
-            ProjVec += Vec[iDim]*Normal[iDim];
+            ProjVec += Vec[iDim]*gradWeight[iDim];
 
           /*--- Momentum flux Jacobian wrt momentum ---*/
           for (auto iDim = 0; iDim < nDim; iDim++)

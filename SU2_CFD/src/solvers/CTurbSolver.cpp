@@ -627,10 +627,10 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
       if (iVertex != -1) {
-        const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (auto iDim = 0; iDim < nDim; iDim++)
           for (auto iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] += factor*Jacobian_ic[iDim][iVar][iVar]*Normal[iDim];
+            Jacobian_i[iVar][iVar] += factor*Jacobian_ic[iDim][iVar][iVar]*gradWeight[iDim];
       }// iVertex
     }// iMarker
 
