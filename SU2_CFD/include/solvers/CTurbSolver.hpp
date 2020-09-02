@@ -119,19 +119,19 @@ private:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] r_i - Density extrapolated from node i to face.
-   * \param[in] r_j - Density extrapolated from node j to face.
-   * \param[in] r_n_i - Density at node i.
+   * \param[in] rho_l - Density extrapolated from node i to face.
+   * \param[in] rho_r - Density extrapolated from node j to face.
+   * \param[in] rho_i - Density at node i.
    * \param[in] limiter_i - Turbulent primitive slope limiter at node i.
    * \param[in] limiter_j - Turbulent primitive slope limiter at node j.
-   * \param[in] dFdU_i - Flux Jacobian wrt left extrapolated state.
-   * \param[in] dFdU_j - Flux Jacobian wrt right extrapolated state.
+   * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
+   * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *r_i, su2double *r_j, su2double *r_n_i,
+                                su2double *rho_l, su2double *rho_r, su2double *rho_i,
                                 su2double* limiter_i, su2double* limiter_j,
-                                const su2double *const *const dFdU_i,
-                                const su2double *const *const dFdU_j,
+                                const su2double *const *const dFdU_l,
+                                const su2double *const *const dFdU_r,
                                 unsigned long iPoint, unsigned long jPoint);
 
 public:

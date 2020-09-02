@@ -310,26 +310,26 @@ protected:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] primvar_i - Primitive vector extrapolated from node i to face.
-   * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
-   * \param[in] primvar_n_i - Primitive vector at node i.
-   * \param[in] k_i - Turbulent kinetic energy extrapolated from node i to face.
-   * \param[in] k_j - Turbulent kinetic energy extrapolated from node j to face.
-   * \param[in] k_n_i - Turbulent kinetic energy at node i.
+   * \param[in] primvar_l - Primitive vector extrapolated from node i to face.
+   * \param[in] primvar_r - Primitive vector extrapolated from node j to face.
+   * \param[in] primvar_i - Primitive vector at node i.
+   * \param[in] k_l - Turbulent kinetic energy extrapolated from node i to face.
+   * \param[in] k_r - Turbulent kinetic energy extrapolated from node j to face.
+   * \param[in] k_i - Turbulent kinetic energy at node i.
    * \param[in] limiter_i - Primitive slope limiter at node i.
    * \param[in] limiter_j - Primitive slope limiter at node j.
    * \param[in] turbLimiter_i - Turbulent slope limiter at node i.
    * \param[in] turbLimiter_j - Turbulent slope limiter at node j.
-   * \param[in] dFdU_i - Flux Jacobian wrt left extrapolated state.
-   * \param[in] dFdU_j - Flux Jacobian wrt right extrapolated state.
+   * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
+   * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *primvar_i, su2double *primvar_j, su2double *primvar_n_i,
-                                su2double *k_i, su2double *k_j, su2double *k_n_i,
+                                su2double *primvar_l, su2double *primvar_r, su2double *primvar_i,
+                                su2double *k_l, su2double *k_r, su2double *k_i,
                                 su2double* limiter_i, su2double* limiter_j,
                                 su2double *turbLimiter_i, su2double* turbLimiter_j,
-                                const su2double *const *const dFdU_i,
-                                const su2double *const *const dFdU_j,
+                                const su2double *const *const dFdU_l,
+                                const su2double *const *const dFdU_r,
                                 unsigned long iPoint, unsigned long jPoint);
 
   /*!

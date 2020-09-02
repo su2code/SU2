@@ -581,7 +581,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
-    su2double factor = 0.5*sign;
+    const su2double factor = 0.5*sign;
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
 
