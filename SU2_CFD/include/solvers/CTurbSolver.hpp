@@ -128,8 +128,7 @@ private:
    * \param[in] dFdU_j - Flux Jacobian wrt right extrapolated state.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *r_i, su2double *r_j,
-                                su2double *r_n_i, su2double *r_n_j,
+                                su2double *r_i, su2double *r_j, su2double *r_n_i,
                                 su2double* limiter_i, su2double* limiter_j,
                                 const su2double *const *const dFdU_i,
                                 const su2double *const *const dFdU_j,
