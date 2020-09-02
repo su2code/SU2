@@ -312,10 +312,8 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] primvar_l - Primitive vector extrapolated from node i to face.
    * \param[in] primvar_r - Primitive vector extrapolated from node j to face.
-   * \param[in] primvar_i - Primitive vector at node i.
    * \param[in] k_l - Turbulent kinetic energy extrapolated from node i to face.
    * \param[in] k_r - Turbulent kinetic energy extrapolated from node j to face.
-   * \param[in] k_i - Turbulent kinetic energy at node i.
    * \param[in] limiter_i - Primitive slope limiter at node i.
    * \param[in] limiter_j - Primitive slope limiter at node j.
    * \param[in] turbLimiter_i - Turbulent slope limiter at node i.
@@ -324,8 +322,8 @@ protected:
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *primvar_l, su2double *primvar_r, su2double *primvar_i,
-                                su2double *k_l, su2double *k_r, su2double *k_i,
+                                su2double *primvar_l, su2double *primvar_r,
+                                su2double *k_l, su2double *k_r,
                                 su2double* limiter_i, su2double* limiter_j,
                                 su2double *turbLimiter_i, su2double* turbLimiter_j,
                                 const su2double *const *const dFdU_l,

@@ -121,14 +121,13 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] rho_l - Density extrapolated from node i to face.
    * \param[in] rho_r - Density extrapolated from node j to face.
-   * \param[in] rho_i - Density at node i.
    * \param[in] limiter_i - Turbulent primitive slope limiter at node i.
    * \param[in] limiter_j - Turbulent primitive slope limiter at node j.
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
   void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *rho_l, su2double *rho_r, su2double *rho_i,
+                                su2double *rho_l, su2double *rho_r,
                                 su2double* limiter_i, su2double* limiter_j,
                                 const su2double *const *const dFdU_l,
                                 const su2double *const *const dFdU_r,

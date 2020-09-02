@@ -3392,14 +3392,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (bad_edge || !muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
-          su2double tke_n_i = 0, tke_n_j = 0;
-          if (tkeNeeded) {
-            tke_n_i = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
-            tke_n_j = solver[TURB_SOL]->GetNodes()->GetPrimitive(jPoint,0);
-          }
           SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_i, Primitive_j, V_i,
-                                   &tke_i, &tke_j, &tke_n_i,
+                                   Primitive_i, Primitive_j, 
+                                   &tke_i, &tke_j,
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
@@ -3407,8 +3402,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    residual.jacobian_i, residual.jacobian_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_j, Primitive_i, V_j,
-                                   &tke_j, &tke_i, &tke_n_j,
+                                   Primitive_j, Primitive_i, 
+                                   &tke_j, &tke_i,
                                    limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                    limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                    limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
@@ -3473,8 +3468,8 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                            su2double *primvar_l, su2double *primvar_r, su2double *primvar_i,
-                                            su2double *k_l, su2double *k_r, su2double *k_i,
+                                            su2double *primvar_l, su2double *primvar_r,
+                                            su2double *k_l, su2double *k_r,
                                             su2double* limiter_i, su2double* limiter_j,
                                             su2double *turbLimiter_i, su2double* turbLimiter_j,
                                             const su2double *const *const dFdU_l,
@@ -3488,6 +3483,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
                                                  : config->GetKind_Gradient_Method();
 
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+
+  CVariable* flowVar = solver[FLOW_SOL]->GetNodes();
+  CVariable* turbVar = nullptr;
+  if (tkeNeeded) turbVar = solver[TURB_SOL]->GetNodes();
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
@@ -3567,6 +3566,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
 
   /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
+  auto primvar_i = flowVar->GetPrimitive(iPoint);
+
   su2double inv_rho_i = 1.0/primvar_i[nDim+2];
   su2double vel_i[MAXNDIM] = {0.0};
   su2double sq_vel_i = 0.0;
@@ -3588,7 +3589,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
   dVdU_i[nDim+1][nDim+1] = Gamma_Minus_One;
 
   if (tkeNeeded)
-    dVdU_i[nDim+2][0] = -(*k_i)*inv_rho_i;
+    dVdU_i[nDim+2][0] = -turbVar->GetPrimitive(iPoint,0)*inv_rho_i;
 
   /*--- Now multiply them all together ---*/
 
@@ -3619,7 +3620,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
   /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  auto flowVar = solver[FLOW_SOL]->GetNodes();
   auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
   su2double dist_ij[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
@@ -3661,7 +3661,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
     dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
 
     if (tkeNeeded)
-      dVdU_k[nDim+2][0] = -solver[TURB_SOL]->GetNodes()->GetPrimitive(kPoint,0)*inv_rho_k;
+      dVdU_k[nDim+2][0] = -turbVar->GetPrimitive(kPoint,0)*inv_rho_k;
 
     const su2double factor = sign*0.5*(1.-kappa);
     su2double gradWeight[MAXNDIM] = {0.0};

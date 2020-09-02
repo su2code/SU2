@@ -385,13 +385,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2], &V_i[nDim+2],
+                                 &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
                                  limiter ? nodes->GetLimiter(iPoint) : OneVec, 
                                  limiter ? nodes->GetLimiter(jPoint) : OneVec,
                                  residual.jacobian_i, residual.jacobian_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2], &V_j[nDim+2],
+                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
                                  limiter ? nodes->GetLimiter(jPoint) : OneVec, 
                                  limiter ? nodes->GetLimiter(iPoint) : OneVec,
                                  residual.jacobian_j, residual.jacobian_i,
@@ -502,7 +502,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 }
 
 void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                           su2double *rho_l, su2double *rho_r, su2double *rho_i,
+                                           su2double *rho_l, su2double *rho_r,
                                            su2double* limiter_i, su2double* limiter_j,
                                            const su2double *const *const dFdU_l,
                                            const su2double *const *const dFdU_r,
@@ -514,9 +514,11 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
+  auto flowVar = solver[FLOW_SOL]->GetNodes(), turbVar = solver[TURB_SOL]->GetNodes();
+
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double inv_rho_i = 1.0/(*rho_i);
+  const su2double inv_rho_i = 1.0/flowVar->GetDensity(iPoint);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -544,7 +546,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  auto flowVar = solver[FLOW_SOL]->GetNodes(), turbVar = solver[TURB_SOL]->GetNodes();
   auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
 
   su2double dist_ij[MAXNDIM] = {0.0};
