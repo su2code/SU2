@@ -700,84 +700,37 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                                         const su2double val_eddy_viscosity,
                                         const su2double val_area,
                                         const su2double *val_normal) {
-  su2double sqvel, Density, Pressure;
-  su2double phi, R_dTdu0, R_dTdu1, R_dTdu2;
 
   const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
   const su2double conductivity_over_Rd = cpoR*heat_flux_factor*proj_vector_ij/dist_ij_2;
 
-  sqvel = 0.0;
+  const su2double p_i = V_i[nDim+1], rho_i = V_i[nDim+2], phi_i = Gamma_Minus_One/rho_i,
+                  p_j = V_j[nDim+1], rho_j = V_j[nDim+2], phi_j = Gamma_Minus_One/rho_j;
+
+  su2double sqvel_i = 0.0, sqvel_j = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    sqvel += V_i[iDim+1]*V_i[iDim+1];
+    sqvel_i += V_i[iDim+1]*V_i[iDim+1];
+    sqvel_j += V_j[iDim+1]*V_j[iDim+1];
   }
 
-  Density = V_i[nDim+2];
-  Pressure = V_i[nDim+1];
-  phi = Gamma_Minus_One/Density;
-
-  /*--- R times partial derivatives of temp. ---*/
-
-  R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
-  R_dTdu1 = -phi*V_i[1];
-  R_dTdu2 = -phi*V_i[2];
-
-  heat_flux_jac_i[0] = -conductivity_over_Rd * R_dTdu0;
-  heat_flux_jac_i[1] = -conductivity_over_Rd * R_dTdu1;
-  heat_flux_jac_i[2] = -conductivity_over_Rd * R_dTdu2;
-
-  if (nDim == 2) {
-
-    const su2double R_dTdu3 = phi;
-    heat_flux_jac_i[3] = -conductivity_over_Rd * R_dTdu3;
-
-  } else {
-
-    const su2double R_dTdu3 = -phi*V_i[3];
-    const su2double R_dTdu4 = phi;
-    heat_flux_jac_i[3] = -conductivity_over_Rd * R_dTdu3;
-    heat_flux_jac_i[4] = -conductivity_over_Rd * R_dTdu4;
-
+  heat_flux_jac_i[0] = -conductivity_over_Rd * (-p_i/pow(rho_i,2) + 0.5*sqvel_i*phi_i);
+  heat_flux_jac_j[0] =  conductivity_over_Rd * (-p_j/pow(rho_j,2) + 0.5*sqvel_j*phi_j);
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    heat_flux_jac_i[iDim+1] = -conductivity_over_Rd * (-phi_i*V_i[iDim+1]);
+    heat_flux_jac_j[iDim+1] = -conductivity_over_Rd * (-phi_j*V_j[iDim+1]);
   }
+  heat_flux_jac_i[nDim+1] = -conductivity_over_Rd * phi_i;
+  heat_flux_jac_j[nDim+1] =  conductivity_over_Rd * phi_j;
 
   /*--- Include TKE diffusion term ---*/
 
-  if (sst) heat_flux_jac_i[0] += (val_laminar_viscosity + 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j))*turb_ke_i/Density*proj_vector_ij/dist_ij_2;
-
-  /*--- Now repeat everything for node j ---*/
-  
-  sqvel = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    sqvel += V_j[iDim+1]*V_j[iDim+1];
+  if (sst) {
+    const su2double tke_turb_visc = 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j);
+    const su2double tke_visc = (val_laminar_viscosity + tke_turb_visc);
+    heat_flux_jac_i[0] += tke_visc*turb_ke_i/rho_i*proj_vector_ij/dist_ij_2;
+    heat_flux_jac_j[0] -= tke_visc*turb_ke_j/rho_j*proj_vector_ij/dist_ij_2;
   }
-
-  Density = V_j[nDim+2];
-  Pressure = V_j[nDim+1];
-  phi = Gamma_Minus_One/Density;
-
-  R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
-  R_dTdu1 = -phi*V_j[1];
-  R_dTdu2 = -phi*V_j[2];
-
-  heat_flux_jac_j[0] = conductivity_over_Rd * R_dTdu0;
-  heat_flux_jac_j[1] = conductivity_over_Rd * R_dTdu1;
-  heat_flux_jac_j[2] = conductivity_over_Rd * R_dTdu2;
-
-  if (nDim == 2) {
-
-    const su2double R_dTdu3 = phi;
-    heat_flux_jac_j[3] = conductivity_over_Rd * R_dTdu3;
-
-  } else {
-
-    const su2double R_dTdu3 = -phi*V_j[3];
-    const su2double R_dTdu4 = phi;
-    heat_flux_jac_j[3] = conductivity_over_Rd * R_dTdu3;
-    heat_flux_jac_j[4] = conductivity_over_Rd * R_dTdu4;
-
-  }
-
-  if (sst) heat_flux_jac_j[0] -= (val_laminar_viscosity + 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j))*turb_ke_j/Density*proj_vector_ij/dist_ij_2;
 }
 
 void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVar,
@@ -791,7 +744,6 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   su2double div_vel = 0.0;
   
   const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
-//  const su2double WF_Factor = 1.0;
   
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double Cv = Cp/Gamma;

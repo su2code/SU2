@@ -34,10 +34,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
-
-  muscl_kappa = 0.5*config->GetMUSCL_Kappa();
-  // muscl_kappa = 0.5;
-  muscl = val_muscl;
+  
   tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   nPrimVarTot = nVar + tkeNeeded;
 

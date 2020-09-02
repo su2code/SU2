@@ -7733,9 +7733,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
-        if (implicit){
+        if (implicit)
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-        }
         
       }
 

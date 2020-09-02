@@ -538,7 +538,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
     }
   }
 
-  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
   /*--------------------------------------------------------------------------*/
