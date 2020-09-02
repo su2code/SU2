@@ -751,7 +751,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     const su2double Vel2_k     = nodes->GetVelocity2(kPoint);
     const su2double Density_k  = nodes->GetDensity(kPoint);
     const su2double Pressure_k = nodes->GetPressure(kPoint);
-    const su2double Phi_k      = Gamma_Minus_One/Density;
+    const su2double Phi_k      = Gamma_Minus_One/Density_k;
 
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
