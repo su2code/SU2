@@ -507,6 +507,12 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   for (auto iDim = 0; iDim < nDim; iDim++)
     Mean_Velocity[iDim] = 0.5*(nodesFlo->GetVelocity(iPoint,iDim)+nodesFlo->GetVelocity(jPoint,iDim));
 
+  /*--- Reset first row of Jacobian now so we don't need to later ---*/
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[0][iVar] = 0.0;
+    Jacobian_j[0][iVar] = 0.0;
+  }
+
   /*--- First we compute contributions of first neighbors to the Jacobian.
         In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
@@ -514,7 +520,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
   if ((gg) && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 1; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
@@ -565,7 +571,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 1; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
@@ -659,8 +665,21 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double Pressure_i = nodes->GetPressure(iPoint);
   const su2double Phi_i      = Gamma_Minus_One/Density_i;
 
-  /*--- Reset whole Jacobian now so we can just reset last row later ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++) {
+  /*--- Additional factor if TKE flux is needed ---*/
+  su2double tke_i = 0., tke_visc = 0.;
+  if (sst) {
+    CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
+    const su2double F1_i = nodesTur->GetF1blending(iPoint);
+    const su2double F1_j = nodesTur->GetF1blending(jPoint);
+    const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
+    const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
+
+    tke_visc = (Mean_LaminarVisc + visc_k_i + visc_k_j);
+    tke_i = nodesTur->GetPrimitive(iPoint,0);
+  }
+
+  /*--- Reset most of Jacobian now so we don't need to later ---*/
+  for (auto iVar = 0; iVar < nVar-1; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
@@ -704,14 +723,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
           /*--- Tke term ---*/
           if (sst) {
-            CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
-            const su2double F1_i = nodesTur->GetF1blending(iPoint);
-            const su2double F1_j = nodesTur->GetF1blending(jPoint);
-            const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
-            const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-            const su2double tke_i = nodesTur->GetPrimitive(iPoint,0);
-            factor /= ConductivityOnR;
-            Jacobian_i[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke_i/Density_i;
+            factor *= tke_visc/ConductivityOnR;
+            Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i;
           }
         }// iVertex
       }// not send-receive
@@ -765,15 +778,10 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     /*--- Tke term ---*/
     if (sst) {
       CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
-      const su2double F1_i = nodesTur->GetF1blending(iPoint);
-      const su2double F1_j = nodesTur->GetF1blending(jPoint);
-      const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
-      const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
-      const su2double tke_i = nodesTur->GetPrimitive(iPoint,0);
       const su2double tke_k = nodesTur->GetPrimitive(kPoint,0);
-      factor /= ConductivityOnR;
-      Jacobian_i[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke_i/Density_i;
-      Jacobian_j[nVar-1][0] -= factor*(Mean_LaminarVisc + visc_k_i + visc_k_j)*tke_k/Density_k;
+      factor *= tke_visc/ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i;
+      Jacobian_j[nVar-1][0] -= factor*tke_k/Density_k;
     }
 
     if (wls)
