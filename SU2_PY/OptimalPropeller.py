@@ -1,3 +1,27 @@
+## \file OptimalPropeller.py
+#  \brief Python script for generating the ActuatorDisk.dat file.
+#  \author E. Saetta, L. Russo, R. Tognaccini
+#  \version 7.0.7 "Blackbird"
+#
+# SU2 Project Website: https://su2code.github.io
+# 
+# The SU2 Project is maintained by the SU2 Foundation 
+# (http://su2foundation.org)
+#
+# Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+# 
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 # ==============================================================================================
 # Name        : OptimalPropeller
 # Author      : Ettore Saetta, Lorenzo Russo, Renato Tognaccini
@@ -64,7 +88,7 @@ def Print_external_file(CTrs, CPrs):
 ###        Main        ###
 ##########################
 # Screen output
-print('------------------ Optimal Propeller vsn 1.0.0 ------------------')
+print('------------------ Optimal Propeller vsn 7.0.7 ------------------')
 print('| Computation of the optimal dCT/dr and dCP/dr distributions.   |')
 print('| Based on the inviscid theory of the optimal propeller.        |')
 print('|                                                               |')
@@ -88,22 +112,22 @@ print('')
 dStations = float(Stations)
 
 # Resize the vectors using the number of radial stations.
-r = [None]*Stations
-chi = [None]*Stations
-dCp = [None]*Stations
-w = [None]*Stations
-a_new = [None]*Stations
-a_old = [None]*Stations
-a_0 = [None]*Stations
-ap_old = [None]*Stations
-dCt_new = [None]*Stations
-dCt_old = [None]*Stations
-dCt_0 = [None]*Stations
-DeltaP = [None]*Stations
-F = [None]*Stations
-a_optimal = [None]*Stations
-ap_optimal = [None]*Stations
-dCt_optimal = [None]*Stations
+r = np.empty(Stations)
+chi = np.empty(Stations)
+dCp = np.empty(Stations)
+w = np.empty(Stations)
+a_new = np.empty(Stations)
+a_old = np.empty(Stations)
+a_0 = np.empty(Stations)
+ap_old = np.empty(Stations)
+dCt_new = np.empty(Stations)
+dCt_old = np.empty(Stations)
+dCt_0 = np.empty(Stations)
+DeltaP = np.empty(Stations)
+F = np.empty(Stations)
+a_optimal = np.empty(Stations)
+ap_optimal = np.empty(Stations)
+dCt_optimal = np.empty(Stations)
 
 # Thrust coefficient in input.
 Ct = float(input('CT (Renard definition): '))
