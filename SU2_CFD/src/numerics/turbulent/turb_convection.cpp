@@ -172,7 +172,7 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
   RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])/R_Plus_One;
   RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])/R_Plus_One;
-  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
+  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
