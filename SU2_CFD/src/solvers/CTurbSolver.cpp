@@ -624,13 +624,15 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     
     /*--- Influence of boundary i on R(i,j) ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
-      if (iVertex != -1) {
-        const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          for (auto iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] += factor*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim];
-      }// iVertex
+        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        if (iVertex != -1) {
+          const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            for (auto iVar = 0; iVar < nVar; iVar++)
+              Jacobian_i[iVar][iVar] += factor*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim];
+        }// iVertex
+      }// not send-receive
     }// iMarker
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);

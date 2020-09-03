@@ -5206,12 +5206,8 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
 void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
-  bool weighted;
-
-  if (reconstruction)
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-  else
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+  bool weighted = reconstruction? (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
+                                : (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
