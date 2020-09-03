@@ -842,7 +842,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = S2 - TWO3*zeta*diverg;
        
      /*--- k production Jacobian ---*/
-     Jacobian_i[0][0] = (S2/zeta-TWO3*diverg)*Volume;
+     // Jacobian_i[0][0] = (S2/zeta-TWO3*diverg)*Volume;
+     Jacobian_i[0][0] = -TWO3*diverg*Volume;
      // if (pk >= 0)
      //   Jacobian_i[0][0] -= TWO3*Volume*max(diverg,0.0);
      // if ((pk >= 0) && (TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
