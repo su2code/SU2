@@ -659,6 +659,14 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double Pressure_i = nodes->GetPressure(iPoint);
   const su2double Phi_i      = Gamma_Minus_One/Density_i;
 
+  /*--- Reset whole Jacobian now so we can just reset last row later ---*/
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto jVar = 0; jVar < nVar; jVar++) {
+      Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_j[iVar][jVar] = 0.0;
+    }
+  }
+
   /*--- First we compute contributions of first neighbors to the Jacobian.
         In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
@@ -667,8 +675,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   if ((gg) && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_i[nVar-1][iVar] = 0.0;
 
     const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
 
@@ -721,10 +728,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
+      Jacobian_i[nVar-1][iVar] = 0.0;
+      Jacobian_j[nVar-1][iVar] = 0.0;
     }
       
     auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
