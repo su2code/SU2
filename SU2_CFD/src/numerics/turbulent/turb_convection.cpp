@@ -90,8 +90,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++)
     Energy_i += 0.5*pow(Velocity_i[iDim],2);
   Enthalpy_i = Energy_i + Pressure_i/Density_i;
-  // Enthalpy_i = V_i[nDim+3];
-  // Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
@@ -104,8 +102,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++)
     Energy_j += 0.5*pow(Velocity_j[iDim],2);
   Enthalpy_j = Energy_j + Pressure_j/Density_j;
-  // Enthalpy_j = V_j[nDim+3];
-  // Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   R = sqrt(fabs(Density_j/Density_i));

@@ -464,7 +464,7 @@ void CNSSolver::CorrectJacobian(CGeometry           *geometry,
     Dist2   += EdgVec[iDim]*EdgVec[iDim];
   }
 
-  /*--- Get vector multiplied by Jacobian weights from CNumerics ---*/
+  /*--- Get vector to be multiplied by Jacobian weights ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
@@ -518,7 +518,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if ((gg) && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
     for (auto iVar = 1; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -691,7 +691,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if ((gg) && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       Jacobian_i[nVar-1][iVar] = 0.0;

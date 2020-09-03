@@ -534,6 +534,9 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   
   const bool wasActive = AD::BeginPassive();
 
+  const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
+  const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
+
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   const su2double sigma_om2 = constants[3];
   const su2double a1        = constants[7];
@@ -572,7 +575,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
       Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]; Jacobian_j[1][1] += factor*gradk*gradWeights[iDim];
     }// iDim
 
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    if (wls) {
       Jacobian_i[1][0] *= -1.0; Jacobian_i[1][1] *= -1.0;
     }
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
@@ -580,7 +583,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   }// iNeigh
   
   /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
     Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {

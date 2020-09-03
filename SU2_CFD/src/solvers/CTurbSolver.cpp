@@ -614,7 +614,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
-  if ((gg) && (geometry->node[iPoint]->GetPhysicalBoundary())) {
+  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)

@@ -50,7 +50,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   Conservatives_i = new su2double [nVar];
   Conservatives_j = new su2double [nVar];
   Lambda = new su2double [nPrimVarTot];
-  Epsilon = new su2double [nPrimVarTot];
+  Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nPrimVarTot];
   Jacobian_i = new su2double* [nVar];
@@ -137,8 +137,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   for (auto iDim = 0; iDim < nDim; iDim++)
     Energy_i += 0.5*pow(Velocity_i[iDim],2);
   Enthalpy_i = Energy_i + Pressure_i/Density_i;
-  // Enthalpy_i = V_i[nDim+3];
-  // Energy_i = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
 
   /*--- Primitive variables at point j ---*/
@@ -151,8 +149,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   for (auto iDim = 0; iDim < nDim; iDim++)
     Energy_j += 0.5*pow(Velocity_j[iDim],2);
   Enthalpy_j = Energy_j + Pressure_j/Density_j;
-  // Enthalpy_j = V_j[nDim+3];
-  // Energy_j = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
   /*--- Compute variables that are common to the derived schemes ---*/
@@ -229,17 +225,14 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
   Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
 
-  if (tkeNeeded) {
-    Lambda[nVar] = ProjVelocity;
-    Epsilon[nVar] = 4.0*max(0.0, max(Lambda[nVar]-ProjVelocity_i,ProjVelocity_j-Lambda[nVar]));
-  }
-
-  for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
       Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
     else
       Lambda[iVar] = fabs(Lambda[iVar]);
   }
+
+  if (tkeNeeded) Lambda[nVar] = Lambda[0];
 
   /*--- Reconstruct conservative variables ---*/
 
