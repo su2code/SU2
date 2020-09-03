@@ -650,7 +650,6 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-  const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
 
   /*--- Common factors for all Jacobian terms --*/
   const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
@@ -671,6 +670,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     CVariable *nodesTur  = solver[TURB_SOL]->GetNodes();
     const su2double F1_i = nodesTur->GetF1blending(iPoint);
     const su2double F1_j = nodesTur->GetF1blending(jPoint);
+    const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
     const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodesFlo->GetEddyViscosity(iPoint);
     const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodesFlo->GetEddyViscosity(jPoint);
 
