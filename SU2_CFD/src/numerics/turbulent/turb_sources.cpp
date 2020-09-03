@@ -842,10 +842,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      pw = S2 - TWO3*zeta*diverg;
        
      /*--- k production Jacobian ---*/
-     // Jacobian_i[0][0] = (S2/zeta-TWO3*diverg)*Volume;
-     Jacobian_i[0][0] = min(-TWO3*diverg,0.0)*Volume;
      // if (pk >= 0)
-     //   Jacobian_i[0][0] -= TWO3*Volume*max(diverg,0.0);
+     Jacobian_i[0][0] -= TWO3*Volume*max(diverg,0.0);
+     if ((TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
+       Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
      // if ((pk >= 0) && (TurbVar_i[1] > StrainMag_i*F2_i/a1) && (diverg > 0))
      //   Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
 
@@ -860,9 +860,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      // }
      
      /*--- omega production Jacobian ---*/
-     Jacobian_i[1][1] = min(-TWO3*alfa_blended*diverg,0.0)*Volume;
      // if ((pw >= 0) && (TurbVar_i[1] > StrainMag_i*F2_i/a1))
-     //   Jacobian_i[1][1] -= TWO3*alfa_blended*Volume*max(diverg,0.0);
+     if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
+       Jacobian_i[1][1] -= TWO3*alfa_blended*Volume*max(diverg,0.0);
 
      // if ((pw >= 0) && (TurbVar_i[1] > StrainMag_i*F2_i/a1))
      //   Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
@@ -911,18 +911,16 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /*--- Cross diffusion ---*/
 
    Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-   // Residual[1] += (1.0 - F1_i)*max(CDkw_i,CDKW_MIN)*Volume;
 
    /*--- Implicit part ---*/
 
-   // Jacobian_i[0][0] -= beta_star*TurbVar_i[1]*Volume;
-   // Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
-   Jacobian_i[0][0] -= 2.*beta_star*TurbVar_i[1]*Volume;
+   Jacobian_i[0][0] -= beta_star*TurbVar_i[1]*Volume;
+   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
    Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-   Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
    // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
-   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
+   Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
 
   }
   
