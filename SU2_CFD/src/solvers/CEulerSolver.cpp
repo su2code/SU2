@@ -5172,11 +5172,11 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
       /* We impose a limit on the maximum percentage that the
        density and energy can change over a nonlinear iteration. */
 
-      if ((iVar == 0) || (iVar == nVar-1)) {
+      // if ((iVar == 0) || (iVar == nVar-1)) {
         const unsigned long index = iPoint * nVar + iVar;
         if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
           localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
-      }
+      // }
     }
 
     /* Threshold the relaxation factor in the event that there is
