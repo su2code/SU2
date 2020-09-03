@@ -1,7 +1,7 @@
 ## \file OptimalPropeller.py
 #  \brief Python script for generating the ActuatorDisk.dat file.
 #  \author E. Saetta, L. Russo, R. Tognaccini
-#  \version 7.0.7 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -88,13 +88,13 @@ def Print_external_file(CTrs, CPrs):
 ###        Main        ###
 ##########################
 # Screen output
-print('------------------ Optimal Propeller vsn 7.0.7 ------------------')
+print('------------------ Optimal Propeller vsn 7.0.6 ------------------')
 print('| Computation of the optimal dCT/dr and dCP/dr distributions.   |')
 print('| Based on the inviscid theory of the optimal propeller.        |')
 print('|                                                               |')
 print('| This code is used to generate the actuator disk input data    |')
 print('| file needed for the VARIABLE_LOAD actuator disk type          |')
-print('| implemented in SU2 7.0.7.                                     |')
+print('| implemented in SU2 7.0.6.                                     |')
 print('|                                                               |')
 print('| Author: Ettore Saetta, Lorenzo Russo, Renato Tognaccini.      |')
 print('| Theoretical and Applied Aerodynamic Research Group (TAARG),   |')
