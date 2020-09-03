@@ -311,10 +311,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   const bool edge_limiter_turb  = config->GetEdgeLimiter_Turb();
 
   /*--- Clip omega ---*/
-  // const su2double eps = numeric_limits<passivedouble>::epsilon();
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   for (auto iVar = 0; iVar < nVar; iVar++)
-  //     nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), eps));
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), eps));
   
   SetPrimitive_Variables(solver);
   
@@ -577,8 +577,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     }// iDim
 
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      Jacobian_i[1][0] *= -1.0;
-      Jacobian_i[1][1] *= -1.0;
+      Jacobian_i[1][0] *= -1.0; Jacobian_i[1][1] *= -1.0;
     }
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);

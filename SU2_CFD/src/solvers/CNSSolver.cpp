@@ -618,7 +618,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     if (wls)
       for (auto iVar = 1; iVar < nVar; iVar++)
         for (auto jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][iVar] *= -1.0;
+          Jacobian_i[iVar][jVar] *= -1.0;
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
