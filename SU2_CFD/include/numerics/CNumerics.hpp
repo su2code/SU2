@@ -233,8 +233,6 @@ protected:
 
   su2double Volume_i, /*!< \brief Volume of the control volume around point i. */
             Volume_j; /*!< \brief Volume of the control volume around point j. */
-  su2double *GradBasis_i, /*!< \brief Basis function for the gradient at point i. */
-            *GradBasis_j; /*!< \brief Basis function for the gradient at point j. */
 
 public:
   /*!
@@ -250,16 +248,16 @@ public:
     const Vector_t residual;
     const Matrix_t jacobian_i;
     const Matrix_t jacobian_j;
-    const VecMat_t jacobian_ic;
-    const VecMat_t jacobian_jc;
+    const VecMat_t jacobianWeights_i;
+    const VecMat_t jacobianWeights_j;
 
     ResidualType() = delete;
     
     ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j) :
-    residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobian_ic(nullptr), jacobian_jc(nullptr) { }
+    residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobianWeights_i(nullptr), jacobianWeights_j(nullptr) { }
 
-    ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j, const VecMat_t& jac_ic, const VecMat_t& jac_jc) :
-      residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobian_ic(jac_ic), jacobian_jc(jac_jc) { }
+    ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j, const VecMat_t& jacWeight_i, const VecMat_t& jacWeight_j) :
+      residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobianWeights_i(jacWeight_i), jacobianWeights_j(jacWeight_j) { }
 
     /*!
      * \brief The object can be directly cast to the vector type, this
@@ -777,11 +775,6 @@ public:
   inline void SetVolume(su2double val_volume_i, su2double val_volume_j) {
     Volume_i = val_volume_i;
     Volume_j = val_volume_j;
-  }
-  
-  inline void SetGradBasisFunction(su2double *val_basis_i, su2double *val_basis_j) {
-    GradBasis_i = val_basis_i;
-    GradBasis_j = val_basis_j;
   }
 
   /*!

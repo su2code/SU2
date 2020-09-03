@@ -473,9 +473,9 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
     if (config->GetUse_Accurate_Turb_Jacobians()) {
       // if (geometry->node[iPoint]->GetDomain())
-        CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobian_ic);
+        CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobianWeights_i);
       // if (geometry->node[jPoint]->GetDomain())
-        CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobian_jc);
+        CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobianWeights_j);
     }
   }
   
@@ -599,7 +599,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
                                   CConfig             *config,
                                   const unsigned long iPoint,
                                   const unsigned long jPoint,
-                                  const su2double     *const *const *const Jacobian_ic) {
+                                  const su2double     *const *const *const jacobianWeights_i) {
 
   const bool wasActive = AD::BeginPassive();
 
@@ -631,7 +631,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (auto iDim = 0; iDim < nDim; iDim++)
           for (auto iVar = 0; iVar < nVar; iVar++)
-            Jacobian_i[iVar][iVar] += factor*Jacobian_ic[iDim][iVar][iVar]*gradWeight[iDim];
+            Jacobian_i[iVar][iVar] += factor*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim];
       }// iVertex
     }// iMarker
 
@@ -642,7 +642,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
 
   /*--- Next we compute contributions of neighbor nodes to the Jacobian.
         To reduce extra communication overhead, we only consider first neighbors on
-        the current rank. Note that Jacobian_ic is already weighted by 0.5 ---*/
+        the current rank. Note that jacobianWeights_i is already weighted by 0.5 ---*/
 
   for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 
@@ -661,8 +661,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*gradWeight[iDim];
-        Jacobian_j[iVar][iVar] += sign*Jacobian_ic[iDim][iVar][iVar]*gradWeight[iDim]/denom;
+        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim];
+        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim]/denom;
       }
       if (wls) Jacobian_i[iVar][iVar] *= -1.0;
     }
