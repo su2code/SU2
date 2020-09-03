@@ -492,8 +492,6 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
   /*--- Common factors for all Jacobian terms --*/
-  const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-
   const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
   const su2double Mean_EddyVisc = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
   const su2double Mean_Viscosity = Mean_LaminarVisc + Mean_EddyVisc;
@@ -520,6 +518,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
+    const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
     const su2double factor = -HalfOnVol*sign;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
@@ -648,8 +647,6 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
   const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
 
   /*--- Common factors for all Jacobian terms --*/
-  const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-
   const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
   const su2double Mean_EddyVisc    = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
 
@@ -672,6 +669,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
+
+    const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
 
     /*--- Influence of boundary nodes ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
