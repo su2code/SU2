@@ -446,38 +446,34 @@ public:
                        const su2double     *Normal);
 
   /*!
-   * \brief Correction to stress tensor Jacobian that accounts for GG Jacobian.
+   * \brief Correction to stress tensor Jacobian that accounts for nodal gradient Jacobian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
-   * \param[in] Normal - Normal vector of edge.
-   * \param[in] EdgVec - Vector of edge.
+   * \param[in] Vec - Corrected normal vector used in residual calculation
    */
   void StressTensorJacobian(CGeometry           *geometry,
                             CSolver             **solver,
                             CConfig             *config,
                             const unsigned long iPoint,
                             const unsigned long jPoint,
-                            const su2double     *Normal,
-                            const su2double     *EdgVec);
+                            const su2double     *Vec);
 
   /*!
-   * \brief Correction to heat flux Jacobian that accounts for GG Jacobian.
+   * \brief Correction to heat flux Jacobian that accounts for nodal gradient Jacobian.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
-   * \param[in] Normal - Normal vector of edge.
-   * \param[in] EdgVec - Vector of edge.
+   * \param[in] Vec - Corrected normal vector used in residual calculation.
    */
   void HeatFluxJacobian(CGeometry           *geometry,
                         CSolver             **solver,
                         CConfig             *config,
                         const unsigned long iPoint,
                         const unsigned long jPoint,
-                        const su2double     *Normal,
-                        const su2double     *EdgVec);
+                        const su2double     *Vec);
 
   /*!
    * \brief Get the skin friction coefficient.

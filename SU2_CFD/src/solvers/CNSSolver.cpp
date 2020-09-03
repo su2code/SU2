@@ -429,10 +429,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
       if (config->GetUse_Accurate_Visc_Jacobians()) {
-        // if (geometry->node[iPoint]->GetDomain())
-          CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
-        // if (geometry->node[jPoint]->GetDomain())
-          CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
       }
     }
   }
@@ -458,8 +456,22 @@ void CNSSolver::CorrectJacobian(CGeometry           *geometry,
   for (auto iDim = 0; iDim < nDim; iDim++)
     EdgVec[iDim] = geometry->node[jPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim);
 
-  StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
-  HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Normal, EdgVec);
+  /*--- Get norm of projection and distance vectors ---*/
+
+  su2double ProjVec = 0.0, Dist2 = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++){
+    ProjVec += Normal[iDim]*EdgVec[iDim];
+    Dist2   += EdgVec[iDim]*EdgVec[iDim];
+  }
+
+  /*--- Get vector multiplied by Jacobian weights from CNumerics ---*/
+
+  su2double Vec[MAXNDIM] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+
+  StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Vec);
+  HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Vec);
 
   AD::EndPassive(wasActive);
 }
@@ -469,28 +481,13 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
                                      CConfig             *config,
                                      const unsigned long iPoint,
                                      const unsigned long jPoint,
-                                     const su2double     *Normal,
-                                     const su2double     *EdgVec) {
+                                     const su2double     *Vec) {
 
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
 
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
-
-  /*--- Get norm of projection and distance vectors ---*/
-
-  su2double ProjVec = 0.0, Dist2 = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++){
-    ProjVec += Normal[iDim]*EdgVec[iDim];
-    Dist2   += EdgVec[iDim]*EdgVec[iDim];
-  }
-
-  /*--- Get vector multiplied by GG gradient in CNumerics ---*/
-
-  su2double Vec[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
@@ -530,17 +527,17 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-          /*--- Get new projection vector to be multiplied by divergence terms ---*/
-          ProjVec = 0.0;
+          /*--- Get projection to be multiplied by divergence terms ---*/
+          su2double diagTerm = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
-            ProjVec += Vec[iDim]*gradWeight[iDim];
+            diagTerm += Vec[iDim]*gradWeight[iDim];
 
           /*--- Momentum flux Jacobian wrt momentum ---*/
           for (auto iDim = 0; iDim < nDim; iDim++)
             for (auto jDim = 0; jDim < nDim; jDim++)
               Jacobian_i[iDim+1][jDim+1] += factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
                                           - TWO3*gradWeight[jDim]*Vec[iDim] 
-                                          + delta[iDim][jDim]*ProjVec);
+                                          + delta[iDim][jDim]*diagTerm);
         }// iVertex
       }// not send-receive
     }// iMarker
@@ -585,20 +582,20 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
 
-    /*--- Get new projection vector to be multiplied by divergence terms ---*/
-    ProjVec = 0.0;
+    /*--- Get projection to be multiplied by divergence terms ---*/
+    su2double diagTerm = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
-      ProjVec += Vec[iDim]*gradWeight[iDim];
+      diagTerm += Vec[iDim]*gradWeight[iDim];
 
     /*--- Momentum flux Jacobian wrt momentum ---*/
     for (auto iDim = 0; iDim < nDim; iDim++) {
       for (auto jDim = 0; jDim < nDim; jDim++) {
         Jacobian_i[iDim+1][jDim+1] += factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
                                     - TWO3*gradWeight[jDim]*Vec[iDim] 
-                                    + delta[iDim][jDim]*ProjVec);
+                                    + delta[iDim][jDim]*diagTerm);
         Jacobian_j[iDim+1][jDim+1] += factor*Xi_k*(gradWeight[iDim]*Vec[jDim] 
                                     - TWO3*gradWeight[jDim]*Vec[iDim] 
-                                    + delta[iDim][jDim]*ProjVec);
+                                    + delta[iDim][jDim]*diagTerm);
       }
     }
 
@@ -639,8 +636,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
                                  CConfig             *config,
                                  const unsigned long iPoint,
                                  const unsigned long jPoint,
-                                 const su2double     *Normal,
-                                 const su2double     *EdgVec) {
+                                 const su2double     *Vec) {
 
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   CVariable *nodesFlo  = solver[FLOW_SOL]->GetNodes();
@@ -650,20 +646,6 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
-
-  /*--- Get norm of projection and distance vectors ---*/
-
-  su2double ProjVec = 0.0, Dist2 = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++){
-    ProjVec += Normal[iDim]*EdgVec[iDim];
-    Dist2   += EdgVec[iDim]*EdgVec[iDim];
-  }
-
-  /*--- Get vector multiplied by gradient Jacobian from CNumerics ---*/
-
-  su2double Vec[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
   /*--- Common factors for all Jacobian terms --*/
   const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
