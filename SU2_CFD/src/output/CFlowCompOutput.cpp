@@ -574,7 +574,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    if (config->GetKind_RoeLowDiss() == DUCROS && config->GetHybrid_Central_Upwind()) {
+    if (config->GetKind_RoeLowDiss() == DUCROS && (config->GetHybrid_Central_Upwind() || config->GetKind_Centered() == JST_KE)) {
       SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetSensor(iPoint));
     }
     else{

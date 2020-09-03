@@ -267,8 +267,8 @@ void CCentJST_KE_Flow::DissipationTerm(su2double *val_residual, su2double **val_
   /*--- Compute dissipation coefficient ---*/
 
   sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
-  Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j);
-
+  Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
+  
   /*--- Compute viscous part of the residual ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
