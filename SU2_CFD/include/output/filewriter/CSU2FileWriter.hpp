@@ -45,11 +45,6 @@ public:
   CSU2FileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
   /*!
-   * \brief Destructor
-   */
-  ~CSU2FileWriter() override;
-
-  /*!
    * \brief Write sorted data to file in SU2 ASCII file format
    */
   void Write_Data() override;
