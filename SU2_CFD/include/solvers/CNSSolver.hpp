@@ -432,14 +432,14 @@ public:
 
   /*!
    * \brief Correction to viscous Jacobian that accounts for GG Jacobian.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] sign - Sign based on direction of edge.
    */
-  void CorrectJacobian(const CGeometry     *geometry,
-                       const CSolver       **solver,
+  void CorrectJacobian(CSolver             **solver,
+                       const CGeometry     *geometry,
                        const CConfig       *config,
                        const unsigned long iPoint,
                        const unsigned long jPoint,
@@ -447,14 +447,14 @@ public:
 
   /*!
    * \brief Correction to stress tensor Jacobian that accounts for nodal gradient Jacobian.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Vec - Corrected normal vector used in residual calculation
    */
-  void StressTensorJacobian(const CGeometry     *geometry,
-                            const CSolver       **solver,
+  void StressTensorJacobian(CSolver             **solver,
+                            const CGeometry     *geometry,
                             const CConfig       *config,
                             const unsigned long iPoint,
                             const unsigned long jPoint,
@@ -462,14 +462,14 @@ public:
 
   /*!
    * \brief Correction to heat flux Jacobian that accounts for nodal gradient Jacobian.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Vec - Corrected normal vector used in residual calculation.
    */
-  void HeatFluxJacobian(const CGeometry     *geometry,
-                        const CSolver       **solver,
+  void HeatFluxJacobian(CSolver             **solver,
+                        const CGeometry     *geometry,
                         const CConfig       *config,
                         const unsigned long iPoint,
                         const unsigned long jPoint,

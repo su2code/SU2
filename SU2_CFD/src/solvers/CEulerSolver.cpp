@@ -3431,7 +3431,7 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CEulerSolver::SetExtrapolationJacobian(const CSolver   **solver, 
+void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
                                             const CGeometry *geometry, 
                                             const CConfig   *config,
                                             const su2double *primvar_l, 

@@ -321,7 +321,7 @@ protected:
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
-  void SetExtrapolationJacobian(const CSolver   **solver, 
+  void SetExtrapolationJacobian(CSolver         **solver, 
                                 const CGeometry *geometry, 
                                 const CConfig   *config,
                                 const su2double *primvar_l, 

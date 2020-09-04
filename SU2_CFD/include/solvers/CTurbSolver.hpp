@@ -126,8 +126,8 @@ private:
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
-  void SetExtrapolationJacobian(const CSolver   **solver, 
-                                const CGeometry *geometry, 
+  void SetExtrapolationJacobian(CSolver         **solver,
+                                const CGeometry *geometry,
                                 const CConfig   *config,
                                 const su2double *rho_l, 
                                 const su2double *rho_r,
@@ -173,14 +173,14 @@ public:
 
   /*!
    * \brief Correction to viscous Jacobian that accounts for GG Jacobian.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] iPoint - Index of first point in residual calculation.
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Jacobian_ic - Jacobian term obtained from CNumerics for iPoint.
    */
-  void CorrectJacobian(const CGeometry     *geometry,
-                       const CSolver       **solver,
+  void CorrectJacobian(CSolver             **solver,
+                       const CGeometry     *geometry,
                        const CConfig       *config,
                        const unsigned long iPoint,
                        const unsigned long jPoint,

@@ -426,8 +426,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
     if (config->GetUse_Accurate_Turb_Jacobians()) {
-      CorrectJacobian(geometry, solver, config, iPoint, jPoint, residual.jacobianWeights_i);
-      CorrectJacobian(geometry, solver, config, jPoint, iPoint, residual.jacobianWeights_j);
+      CorrectJacobian(solver, geometry, config, iPoint, jPoint, residual.jacobianWeights_i);
+      CorrectJacobian(solver, geometry, config, jPoint, iPoint, residual.jacobianWeights_j);
     }
   }
   
@@ -453,13 +453,13 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::SetExtrapolationJacobian(const CSolver** solver, 
-                                           const CGeometry *geometry, 
-                                           const CConfig *config,
+void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
+                                           const CGeometry *geometry,
+                                           const CConfig   *config,
                                            const su2double *rho_l, 
                                            const su2double *rho_r,
-                                           const su2double* limiter_i, 
-                                           const su2double* limiter_j,
+                                           const su2double *limiter_i, 
+                                           const su2double *limiter_j,
                                            const su2double *const *const dFdU_l,
                                            const su2double *const *const dFdU_r,
                                            const unsigned long iPoint, 
@@ -552,8 +552,8 @@ void CTurbSolver::SetExtrapolationJacobian(const CSolver** solver,
   AD::EndPassive(wasActive);
 }
 
-void CTurbSolver::CorrectJacobian(const CGeometry     *geometry,
-                                  const CSolver       **solver,
+void CTurbSolver::CorrectJacobian(CSolver             **solver,
+                                  const CGeometry     *geometry,
                                   const CConfig       *config,
                                   const unsigned long iPoint,
                                   const unsigned long jPoint,

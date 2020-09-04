@@ -416,16 +416,16 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
       if (config->GetUse_Accurate_Visc_Jacobians()) {
-        CorrectJacobian(geometry, solver, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
-        CorrectJacobian(geometry, solver, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(solver, geometry, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(solver, geometry, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
       }
     }
   }
 
 }
 
-void CNSSolver::CorrectJacobian(const CGeometry     *geometry,
-                                const CSolver       **solver,
+void CNSSolver::CorrectJacobian(CSolver             **solver,
+                                const CGeometry     *geometry,
                                 const CConfig       *config,
                                 const unsigned long iPoint,
                                 const unsigned long jPoint,
@@ -457,14 +457,14 @@ void CNSSolver::CorrectJacobian(const CGeometry     *geometry,
   for (auto iDim = 0; iDim < nDim; iDim++)
     Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
 
-  StressTensorJacobian(geometry, solver, config, iPoint, jPoint, Vec);
-  HeatFluxJacobian(geometry, solver, config, iPoint, jPoint, Vec);
+  StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
+  HeatFluxJacobian(solver, geometry, config, iPoint, jPoint, Vec);
 
   AD::EndPassive(wasActive);
 }
 
-void CNSSolver::StressTensorJacobian(const CGeometry     *geometry,
-                                     const CSolver       **solver,
+void CNSSolver::StressTensorJacobian(CSolver             **solver,
+                                     const CGeometry     *geometry,
                                      const CConfig       *config,
                                      const unsigned long iPoint,
                                      const unsigned long jPoint,
@@ -626,8 +626,8 @@ void CNSSolver::StressTensorJacobian(const CGeometry     *geometry,
 
 }
 
-void CNSSolver::HeatFluxJacobian(const CGeometry     *geometry,
-                                 const CSolver       **solver,
+void CNSSolver::HeatFluxJacobian(CSolver             **solver,
+                                 const CGeometry     *geometry,
                                  const CConfig       *config,
                                  const unsigned long iPoint,
                                  const unsigned long jPoint,
