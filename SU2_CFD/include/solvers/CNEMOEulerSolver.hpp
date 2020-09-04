@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../variables/CNEMOEulerVariable.hpp"
-#include "../include/fluid/CNEMOGas.hpp"
+#include "../fluid/CNEMOGas.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 /*!
@@ -41,20 +41,29 @@
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
 protected:
 
+  su2double
+  Prandtl_Lam = 0.0,              /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
+
   unsigned short
-  nSpecies;                              /*!< \brief Number of species in the gas mixture. */
+  nSpecies;                       /*!< \brief Number of species in the gas mixture. */
                   
   su2double                  
-  Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
-  Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
-  const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
+  Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
+  Temperature_ve_Inf;             /*!< \brief Vib.-el. free stream temperature. */
+  const su2double *MassFrac_Inf;  /*!< \brief Free stream species mass fraction. */
 
-  su2double *Source;   /*!< \brief Auxiliary vector to store source terms. */
+  su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
   su2double
-  **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+  **LowMach_Precontioner;            /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
 
-  CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
+  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
+
+  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
+  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
+
+  CNEMOGas  *FluidModel;             /*!< \brief fluid model used in the solver */
 
   CNEMOEulerVariable* node_infty = nullptr;
 
@@ -161,6 +170,43 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \note The convective residual methods include a call to this for each edge,
+   *       this allows convective and viscous loops to be "fused".
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                       CNumerics *numerics, CConfig *config) { }
+
+  /*!
+   * \brief Generic implementation of explicit iterations (RK, Classic RK and EULER).
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SumEdgeFluxes(CGeometry* geometry);
+
+  /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -181,7 +227,7 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       bool Output); 
+                                       CConfig *config, bool Output);
 
   /*!
      * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.

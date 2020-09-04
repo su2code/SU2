@@ -51,8 +51,8 @@ private:
   *PrimVar_i, *PrimVar_j,       /*!< \brief Primitives variables at point i and 1. */
   **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
   *Mean_Diffusion_Coeff,        /*!< \brief Mean value of the species diffusion coefficient. */
-  Mean_Laminar_Viscosity,       /*!< \brief Mean value of the viscosity. */
-  Mean_Eddy_Viscosity,          /*!< \brief Mean value of the viscosity. */
+  Mean_Laminar_Viscosity,       /*!< \brief Mean value of the laminar viscosity. */
+  Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
   *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
@@ -106,6 +106,7 @@ private:
   *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
   *Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
   Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
 
