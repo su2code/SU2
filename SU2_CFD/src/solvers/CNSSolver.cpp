@@ -384,6 +384,9 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
                            nodes->GetVorticity(jPoint));
     numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
                            nodes->GetStrainMag(jPoint));
+    numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                              nodes->GetVorticityMag(jPoint));
+
   }
 
   /*--- Gradients. ---*/

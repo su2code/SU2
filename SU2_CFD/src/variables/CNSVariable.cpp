@@ -37,6 +37,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
 
   Vorticity.resize(nPoint,3) = su2double(0.0);
   StrainMag.resize(nPoint) = su2double(0.0);
+  VorticityMag.resize(nPoint) = su2double(0.0);
   Tau_Wall.resize(nPoint) = su2double(-1.0);
   Tau_Wall_Factor.resize(nPoint) = su2double(1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
@@ -63,6 +64,11 @@ bool CNSVariable::SetVorticity_StrainMag() {
       Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
       Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
     }
+
+    VorticityMag(iPoint) = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      VorticityMag(iPoint) += Vorticity(iPoint, iDim);
+    VorticityMag(iPoint) = sqrt(VorticityMag(iPoint));
 
     /*--- Strain Magnitude ---*/
 

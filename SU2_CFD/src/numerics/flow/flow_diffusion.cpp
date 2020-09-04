@@ -839,7 +839,8 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
   
     /*--- Jacobian wrt eddy viscosity ---*/
 
-    if (turb_omega_i > StrainMag_i*F2_i/a1) {
+    // if (turb_omega_i > StrainMag_i*F2_i/a1) {
+    if (turb_omega_i > VorticityMag_i*F2_i/a1) {
       const su2double factor = turb_ke_i/turb_omega_i;
       for (auto iDim = 0; iDim < nDim; iDim++) {
         for (auto jDim = 0; jDim < nDim; jDim++) {
@@ -850,7 +851,8 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
       }
     }
 
-    if (turb_omega_j > StrainMag_j*F2_j/a1) {
+    // if (turb_omega_j > StrainMag_j*F2_j/a1) {
+    if (turb_omega_j > VorticityMag_j*F2_j/a1) {
       const su2double factor = turb_ke_j/turb_omega_j;
       for (auto iDim = 0; iDim < nDim; iDim++) {
         for (auto jDim = 0; jDim < nDim; jDim++) {

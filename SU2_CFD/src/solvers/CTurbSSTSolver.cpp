@@ -398,10 +398,12 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
 
     const su2double F2 = nodes->GetF2blending(iPoint);
     const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
+    const su2double VorticityMag = flowNodes->GetVorticityMag(iPoint);
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    const su2double zeta  = max(omega, StrainMag*F2/a1);
+    // const su2double zeta  = max(omega, StrainMag*F2/a1);
+    const su2double zeta  = max(omega, VorticityMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
@@ -502,6 +504,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
       numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
+      numerics->SetVorticity(flowNodes->GetVorticity(iPoint), 0.0);
 
       /*--- Cross diffusion ---*/
 
@@ -852,6 +855,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
                                   flowNodes->GetVorticity(iPoint));
       visc_numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint),
                                   flowNodes->GetStrainMag(iPoint));
+      visc_numerics->SetVorticityMag(flowNodes->GetVorticityMag(iPoint),
+                                     flowNodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
       visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),

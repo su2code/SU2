@@ -41,6 +41,7 @@ private:
 
   MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
   VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  VectorType VorticityMag;    /*!< \brief Magnitude of vorticity vector. */
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType Tau_Wall_Factor; /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
@@ -145,6 +146,12 @@ public:
    * \return Value of the rate of strain magnitude.
    */
   inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
+
+  /*!
+   * \brief Get the value of the magnitude of vorticity.
+   * \return Value of the vorticity magnitude.
+   */
+  inline su2double GetVorticityMag(unsigned long iPoint) const override { return VorticityMag(iPoint); }
 
   /*!
    * \brief Set the derivative of temperature with respect to density (at constant internal energy).

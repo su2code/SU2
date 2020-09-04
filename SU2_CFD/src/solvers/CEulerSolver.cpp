@@ -7372,6 +7372,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
                                       nodes->GetVorticity(iPoint));
           visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
                                       nodes->GetStrainMag(iPoint));
+          visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                         nodes->GetVorticityMag(iPoint));
         }
         
         /*--- Set values for gradient Jacobian ---*/
@@ -7674,6 +7676,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
                                       nodes->GetVorticity(iPoint));
           visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
                                       nodes->GetStrainMag(iPoint));
+          visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                         nodes->GetVorticityMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -9907,6 +9911,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
                                       nodes->GetVorticity(iPoint));
           visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
                                       nodes->GetStrainMag(iPoint));
+          visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                         nodes->GetVorticityMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
@@ -10116,6 +10122,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
                                       nodes->GetVorticity(iPoint));
           visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
                                       nodes->GetStrainMag(iPoint));
+          visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
+                                         nodes->GetVorticityMag(iPoint));
         }
 
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
