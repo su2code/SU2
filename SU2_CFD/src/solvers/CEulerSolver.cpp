@@ -3431,14 +3431,21 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                            su2double *primvar_l, su2double *primvar_r,
-                                            su2double *k_l, su2double *k_r,
-                                            su2double* limiter_i, su2double* limiter_j,
-                                            su2double *turbLimiter_i, su2double* turbLimiter_j,
+void CEulerSolver::SetExtrapolationJacobian(const CSolver   **solver, 
+                                            const CGeometry *geometry, 
+                                            const CConfig   *config,
+                                            const su2double *primvar_l, 
+                                            const su2double *primvar_r,
+                                            const su2double *k_l, 
+                                            const su2double *k_r,
+                                            const su2double *limiter_i, 
+                                            const su2double *limiter_j,
+                                            const su2double *turbLimiter_i, 
+                                            const su2double *turbLimiter_j,
                                             const su2double *const *const dFdU_l,
                                             const su2double *const *const dFdU_r,
-                                            unsigned long iPoint, unsigned long jPoint) {
+                                            const unsigned long iPoint, 
+                                            const unsigned long jPoint) {
 
   const bool wasActive = AD::BeginPassive();
 

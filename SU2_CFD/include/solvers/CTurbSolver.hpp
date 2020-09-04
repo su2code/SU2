@@ -126,12 +126,17 @@ private:
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
-  void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *rho_l, su2double *rho_r,
-                                su2double* limiter_i, su2double* limiter_j,
+  void SetExtrapolationJacobian(const CSolver   **solver, 
+                                const CGeometry *geometry, 
+                                const CConfig   *config,
+                                const su2double *rho_l, 
+                                const su2double *rho_r,
+                                const su2double *limiter_i, 
+                                const su2double *limiter_j,
                                 const su2double *const *const dFdU_l,
                                 const su2double *const *const dFdU_r,
-                                unsigned long iPoint, unsigned long jPoint);
+                                const unsigned long iPoint, 
+                                const unsigned long jPoint);
 
 public:
 
@@ -174,12 +179,12 @@ public:
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Jacobian_ic - Jacobian term obtained from CNumerics for iPoint.
    */
-  void CorrectJacobian(CGeometry           *geometry,
-                       CSolver             **solver,
-                       CConfig             *config,
+  void CorrectJacobian(const CGeometry     *geometry,
+                       const CSolver       **solver,
+                       const CConfig       *config,
                        const unsigned long iPoint,
                        const unsigned long jPoint,
-                       const su2double     *const *const *const Jacobian_ic);
+                       const su2double     *const *const *const jacobianWeights_i);
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.

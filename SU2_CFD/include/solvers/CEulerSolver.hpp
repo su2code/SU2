@@ -321,14 +321,21 @@ protected:
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
    */
-  void SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                su2double *primvar_l, su2double *primvar_r,
-                                su2double *k_l, su2double *k_r,
-                                su2double* limiter_i, su2double* limiter_j,
-                                su2double *turbLimiter_i, su2double* turbLimiter_j,
+  void SetExtrapolationJacobian(const CSolver   **solver, 
+                                const CGeometry *geometry, 
+                                const CConfig   *config,
+                                const su2double *primvar_l, 
+                                const su2double *primvar_r,
+                                const su2double *k_l, 
+                                const su2double *k_r,
+                                const su2double *limiter_i, 
+                                const su2double *limiter_j,
+                                const su2double *turbLimiter_i, 
+                                const su2double *turbLimiter_j,
                                 const su2double *const *const dFdU_l,
                                 const su2double *const *const dFdU_r,
-                                unsigned long iPoint, unsigned long jPoint);
+                                const unsigned long iPoint, 
+                                const unsigned long jPoint);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.

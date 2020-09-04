@@ -438,9 +438,9 @@ public:
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] sign - Sign based on direction of edge.
    */
-  void CorrectJacobian(CGeometry           *geometry,
-                       CSolver             **solver,
-                       CConfig             *config,
+  void CorrectJacobian(const CGeometry     *geometry,
+                       const CSolver       **solver,
+                       const CConfig       *config,
                        const unsigned long iPoint,
                        const unsigned long jPoint,
                        const su2double     *Normal);
@@ -453,9 +453,9 @@ public:
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Vec - Corrected normal vector used in residual calculation
    */
-  void StressTensorJacobian(CGeometry           *geometry,
-                            CSolver             **solver,
-                            CConfig             *config,
+  void StressTensorJacobian(const CGeometry     *geometry,
+                            const CSolver       **solver,
+                            const CConfig       *config,
                             const unsigned long iPoint,
                             const unsigned long jPoint,
                             const su2double     *Vec);
@@ -468,9 +468,9 @@ public:
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Vec - Corrected normal vector used in residual calculation.
    */
-  void HeatFluxJacobian(CGeometry           *geometry,
-                        CSolver             **solver,
-                        CConfig             *config,
+  void HeatFluxJacobian(const CGeometry     *geometry,
+                        const CSolver       **solver,
+                        const CConfig       *config,
                         const unsigned long iPoint,
                         const unsigned long jPoint,
                         const su2double     *Vec);

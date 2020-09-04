@@ -453,12 +453,17 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry, CConfig *config,
-                                           su2double *rho_l, su2double *rho_r,
-                                           su2double* limiter_i, su2double* limiter_j,
+void CTurbSolver::SetExtrapolationJacobian(const CSolver** solver, 
+                                           const CGeometry *geometry, 
+                                           const CConfig *config,
+                                           const su2double *rho_l, 
+                                           const su2double *rho_r,
+                                           const su2double* limiter_i, 
+                                           const su2double* limiter_j,
                                            const su2double *const *const dFdU_l,
                                            const su2double *const *const dFdU_r,
-                                           unsigned long iPoint, unsigned long jPoint) {
+                                           const unsigned long iPoint, 
+                                           const unsigned long jPoint) {
 
   const bool wasActive = AD::BeginPassive();
 
@@ -547,9 +552,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   AD::EndPassive(wasActive);
 }
 
-void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
-                                  CSolver             **solver,
-                                  CConfig             *config,
+void CTurbSolver::CorrectJacobian(const CGeometry     *geometry,
+                                  const CSolver       **solver,
+                                  const CConfig       *config,
                                   const unsigned long iPoint,
                                   const unsigned long jPoint,
                                   const su2double     *const *const *const jacobianWeights_i) {

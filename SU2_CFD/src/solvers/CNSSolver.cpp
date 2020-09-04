@@ -424,9 +424,9 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
 }
 
-void CNSSolver::CorrectJacobian(CGeometry           *geometry,
-                                CSolver             **solver,
-                                CConfig             *config,
+void CNSSolver::CorrectJacobian(const CGeometry     *geometry,
+                                const CSolver       **solver,
+                                const CConfig       *config,
                                 const unsigned long iPoint,
                                 const unsigned long jPoint,
                                 const su2double     *Normal) {
@@ -463,9 +463,9 @@ void CNSSolver::CorrectJacobian(CGeometry           *geometry,
   AD::EndPassive(wasActive);
 }
 
-void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
-                                     CSolver             **solver,
-                                     CConfig             *config,
+void CNSSolver::StressTensorJacobian(const CGeometry     *geometry,
+                                     const CSolver       **solver,
+                                     const CConfig       *config,
                                      const unsigned long iPoint,
                                      const unsigned long jPoint,
                                      const su2double     *Vec) {
@@ -626,9 +626,9 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
 
 }
 
-void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
-                                 CSolver             **solver,
-                                 CConfig             *config,
+void CNSSolver::HeatFluxJacobian(const CGeometry     *geometry,
+                                 const CSolver       **solver,
+                                 const CConfig       *config,
                                  const unsigned long iPoint,
                                  const unsigned long jPoint,
                                  const su2double     *Vec) {
