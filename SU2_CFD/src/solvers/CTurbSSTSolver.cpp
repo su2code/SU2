@@ -504,7 +504,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
       numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
-      numerics->SetVorticity(flowNodes->GetVorticity(iPoint), 0.0);
+      numerics->SetVorticityMag(flowNodes->GetVorticityMag(iPoint), 0.0);
 
       /*--- Cross diffusion ---*/
 
