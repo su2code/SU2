@@ -558,7 +558,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  if (node_i->GetDomain())
+  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 1; iVar < nVar; iVar++) {
@@ -730,7 +730,7 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  if (node_i->GetDomain())
+  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {

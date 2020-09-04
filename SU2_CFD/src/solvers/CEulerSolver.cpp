@@ -3588,7 +3588,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-  if (node_i->GetDomain())
+  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++) {

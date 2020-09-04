@@ -504,7 +504,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-  if (node_i->GetDomain())
+  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -601,7 +601,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider first neighbors on
         the current rank. Note that jacobianWeights_i is already weighted by 0.5 ---*/
 
-  if (node_i->GetDomain())
+  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
