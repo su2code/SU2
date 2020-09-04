@@ -215,10 +215,12 @@ void computeGradientsLeastSquares(CSolver* solver,
       const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
+
       /*--- Distance vector from iPoint to jPoint ---*/
 
       su2double dist_ij[nDim] = {0.0};
       GeometryToolbox::Distance(nDim, coord_j, coord_i, dist_ij);
+
 
       /*--- Compute inverse weight, default 1 (unweighted). ---*/
 
