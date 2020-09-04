@@ -174,11 +174,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
         auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-        if (limiter) {
-          Limiter_i = nodes->GetLimiter(iPoint);
-          Limiter_j = nodes->GetLimiter(jPoint);
-        }
-
         for (iVar = 0; iVar < nVar; iVar++) {
           
           const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
@@ -199,21 +194,24 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           /*--- Edge-based limiters ---*/
 
           if (limiter) {
+            auto Limiter_i = nodes->GetLimiter(iPoint)[iVar];
+            auto Limiter_j = nodes->GetLimiter(jPoint)[iVar];
+
             switch(config->GetKind_SlopeLimit_Turb()) {
               case VAN_ALBADA_EDGE:
-                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+                Limiter_i = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+                Limiter_j = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
                 break;
               case PIPERNO:
-                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+                Limiter_i = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+                Limiter_j = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
                 break;
             }
 
             /*--- Limit projection ---*/
 
-            Project_Grad_i *= Limiter_i[iVar];
-            Project_Grad_j *= Limiter_j[iVar];
+            Project_Grad_i *= Limiter_i;
+            Project_Grad_j *= Limiter_j;
           }
 
           solution_i[iVar] = T_i[iVar] + Project_Grad_i;
@@ -238,11 +236,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
         auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
-        if (limiterFlow) {
-          Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-          Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-        }
-
         for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
 
           const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
@@ -263,21 +256,24 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           /*--- Edge-based limiters ---*/
 
           if (limiterFlow) {
+            auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint)[iVar];
+            auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint)[iVar];
+
             switch(config->GetKind_SlopeLimit_Flow()) {
               case VAN_ALBADA_EDGE:
-                Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-                Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+                Limiter_i = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+                Limiter_j = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
                 break;
               case PIPERNO:
-                Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-                Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+                Limiter_i = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+                Limiter_j = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
                 break;
             }
 
             /*--- Limit projection ---*/
 
-            Project_Grad_i *= Limiter_i[iVar];
-            Project_Grad_j *= Limiter_j[iVar];
+            Project_Grad_i *= Limiter_i;
+            Project_Grad_j *= Limiter_j;
           }
 
           flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
