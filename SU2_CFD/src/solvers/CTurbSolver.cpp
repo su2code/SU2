@@ -49,32 +49,6 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
-  /*--- Allocates a 2D array with variable "outer" sizes and init to 0. ---*/
-
-  auto Alloc2D = [](unsigned long M, const unsigned long* N, su2double**& X) {
-    X = new su2double* [M];
-    for(unsigned long i = 0; i < M; ++i)
-      X[i] = new su2double [N[i]] ();
-  };
-
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
-    X = new su2double** [M];
-    for(unsigned long i = 0; i < M; ++i) {
-      X[i] = new su2double* [N[i]];
-      for(unsigned long j = 0; j < N[i]; ++j)
-        X[i][j] = new su2double [P] ();
-    }
-  };
-
-  /*--- Store the value of the gradient weight vector at the boundaries ---*/
-
-  if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
-    Alloc3D(nMarker, nVertex, nVar, GradWeights_Aux);
-  if (config->GetUse_Accurate_Turb_Jacobians())
-    Alloc3D(nMarker, nVertex, nVar, GradWeights);
-
 #ifdef HAVE_OMP
   /*--- Get the edge coloring, see notes in CEulerSolver's constructor. ---*/
   su2double parallelEff = 1.0;
@@ -113,24 +87,6 @@ CTurbSolver::~CTurbSolver(void) {
       }
     }
     delete [] Inlet_TurbVars;
-  }
-
-  if (GradWeights != NULL) {
-    for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradWeights[iMarker][iVertex];
-      delete [] GradWeights[iMarker];
-    }
-    delete [] GradWeights;
-  }
-
-  if (GradWeights_Aux != NULL) {
-    for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (auto iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradWeights_Aux[iMarker][iVertex];
-      delete [] GradWeights_Aux[iMarker];
-    }
-    delete [] GradWeights_Aux;
   }
 
   delete nodes;
@@ -331,8 +287,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         const bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
         const bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
 
-        su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
-        su2double R_Plus_One = R+1.;
+        const su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
+        const su2double R_Plus_One = R+1.;
         su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/R_Plus_One;
@@ -340,12 +296,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           SqVel_i += pow(flowPrimVar_i[iDim+1],2);
           SqVel_j += pow(flowPrimVar_j[iDim+1],2);
         }
-        su2double Energy_i = flowPrimVar_i[nDim+1]/(Gamma_Minus_One*flowPrimVar_i[nDim+2])+solution_i[0]+0.5*SqVel_i;
-        su2double Energy_j = flowPrimVar_j[nDim+1]/(Gamma_Minus_One*flowPrimVar_j[nDim+2])+solution_j[0]+0.5*SqVel_j;
-        su2double Enthalpy_i = Energy_i+flowPrimVar_i[nDim+1]/flowPrimVar_i[nDim+2];
-        su2double Enthalpy_j = Energy_j+flowPrimVar_j[nDim+1]/flowPrimVar_j[nDim+2];
-        su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-        su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
+        const su2double Energy_i = flowPrimVar_i[nDim+1]/(Gamma_Minus_One*flowPrimVar_i[nDim+2])+solution_i[0]+0.5*SqVel_i;
+        const su2double Energy_j = flowPrimVar_j[nDim+1]/(Gamma_Minus_One*flowPrimVar_j[nDim+2])+solution_j[0]+0.5*SqVel_j;
+        const su2double Enthalpy_i = Energy_i+flowPrimVar_i[nDim+1]/flowPrimVar_i[nDim+2];
+        const su2double Enthalpy_j = Energy_j+flowPrimVar_j[nDim+1]/flowPrimVar_j[nDim+2];
+        const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
+        const su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
 
         const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 

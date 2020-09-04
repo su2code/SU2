@@ -61,22 +61,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       X[i] = new su2double [N[i]] ();
   };
 
-  /*--- Allocates a 3D array with variable "middle" sizes and init to 0. ---*/
-
-  auto Alloc3D = [](unsigned long M, const unsigned long* N, unsigned long P, su2double***& X) {
-    X = new su2double** [M];
-    for(unsigned long i = 0; i < M; ++i) {
-      X[i] = new su2double* [N[i]];
-      for(unsigned long j = 0; j < N[i]; ++j)
-        X[i][j] = new su2double [P] ();
-    }
-  };
-
-  /*--- Store the value of the gradient weight vector at the boundaries ---*/
-
-  if (config->GetUse_Accurate_Visc_Jacobians())
-    Alloc3D(nMarker, nVertex, nPrimVar, GradWeights);
-
   /*--- Heat flux in all the markers ---*/
 
   Alloc2D(nMarker, nVertex, HeatFlux);

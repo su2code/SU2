@@ -326,11 +326,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Alloc3D(nMarker, nVertex, nPrimVar, CharacPrimVar);
 
-  /*--- Store the value of the gradient weight vector at the boundaries ---*/
-
-  if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
-    Alloc3D(nMarker, nVertex, nPrimVar, GradWeights_Aux);
-
   /*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
    used for IO with a donor cell ---*/
 
@@ -615,24 +610,6 @@ CEulerSolver::~CEulerSolver(void) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
-  }
-
-  if (GradWeights != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradWeights[iMarker][iVertex];
-      delete [] GradWeights[iMarker];
-    }
-    delete [] GradWeights;
-  }
-
-  if (GradWeights_Aux != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] GradWeights_Aux[iMarker][iVertex];
-      delete [] GradWeights_Aux[iMarker];
-    }
-    delete [] GradWeights_Aux;
   }
 
   if (SlidingState != NULL) {
@@ -3290,20 +3267,21 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const bool neg_pres_or_rho_i = (Primitive_i[nDim+1] < 0.0) || (Primitive_i[nDim+2] < 0.0);
       const bool neg_pres_or_rho_j = (Primitive_j[nDim+1] < 0.0) || (Primitive_j[nDim+2] < 0.0);
 
-      su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+      const su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
+      const su2double R_Plus_One = R+1.;
       su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/(R+1);
+        su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/R_Plus_One;
         RoeSqVel += pow(RoeVelocity, 2);
         SqVel_i += pow(Primitive_i[iDim+1],2);
         SqVel_j += pow(Primitive_j[iDim+1],2);
       }
-      su2double Energy_i = Primitive_i[nDim+1]/(Gamma_Minus_One*Primitive_i[nDim+2])+tke_i+0.5*SqVel_i;
-      su2double Energy_j = Primitive_j[nDim+1]/(Gamma_Minus_One*Primitive_j[nDim+2])+tke_j+0.5*SqVel_j;
-      su2double Enthalpy_i = Energy_i+Primitive_i[nDim+1]/Primitive_i[nDim+2];
-      su2double Enthalpy_j = Energy_j+Primitive_j[nDim+1]/Primitive_j[nDim+2];
-      su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-      su2double RoeTke = (R*tke_j+tke_i)/(R+1);
+      const su2double Energy_i = Primitive_i[nDim+1]/(Gamma_Minus_One*Primitive_i[nDim+2])+tke_i+0.5*SqVel_i;
+      const su2double Energy_j = Primitive_j[nDim+1]/(Gamma_Minus_One*Primitive_j[nDim+2])+tke_j+0.5*SqVel_j;
+      const su2double Enthalpy_i = Energy_i+Primitive_i[nDim+1]/Primitive_i[nDim+2];
+      const su2double Enthalpy_j = Energy_j+Primitive_j[nDim+1]/Primitive_j[nDim+2];
+      const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
+      const su2double RoeTke = (R*tke_j+tke_i)/R_Plus_One;
 
       const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
@@ -3540,8 +3518,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometr
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
 
-  dUdV_l[0][0] = 1.0;
-  dUdV_r[0][0] = 1.0;
+  dUdV_l[0][0] = dUdV_r[0][0] = 1.0;
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
     dUdV_l[iDim+1][0] = vel_l[iDim];
