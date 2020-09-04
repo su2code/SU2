@@ -472,7 +472,7 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point);
+  long FindEdge(unsigned long first_point, unsigned long second_point) const;
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.

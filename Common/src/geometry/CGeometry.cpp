@@ -1550,7 +1550,7 @@ su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, s
 
 }
 
-long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) {
+long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) const {
   unsigned long iPoint = 0;
   unsigned short iNode;
   for (iNode = 0; iNode < node[first_point]->GetnPoint(); iNode++) {

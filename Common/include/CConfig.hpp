@@ -3952,7 +3952,7 @@ public:
    * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
    * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
    */
-  bool GetReconstructionGradientRequired(void) { return ReconstructionGradientRequired; }
+  bool GetReconstructionGradientRequired(void) const { return ReconstructionGradientRequired; }
 
   /*!
    * \brief Get flag for whether a least-squares gradient method is being applied.
