@@ -75,7 +75,7 @@ void computeLimiters_impl(CSolver* solver,
                           FieldType& limiter)
 {
   constexpr size_t MAXNDIM = 3;
-  constexpr size_t MAXNVAR = 8;
+  constexpr size_t MAXNVAR = 30;
 
   if (varEnd > MAXNVAR)
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
