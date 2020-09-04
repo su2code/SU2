@@ -109,13 +109,14 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
       cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
     }
   }
+
+  nSpecies = config->GetnSpecies();
+
 }
 
 CNEMOCompOutput::~CNEMOCompOutput(void) {}
 
 void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
-
-  unsigned short nSpecies = config -> GetnSpecies();
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   if (nSpecies == 2){
@@ -350,17 +351,10 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Auxiliary variables for post-processment
-  if (nSpecies == 2){
-    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+     Species = std::to_string(iSpecies);
+     AddVolumeOutput("MASSFRAC_" + Species,  "MassFrac_" + Species,  "AUXILIARY", "MassFrac_" + Species);
   }
-  if (nSpecies == 5){
-    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASSFRAC_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
-    AddVolumeOutput("MASSFRAC_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
-    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
-    AddVolumeOutput("MASSFRAC_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
-  } 
 
   // Grid velocity
   if (config->GetGrid_Movement()){
@@ -496,17 +490,11 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
   }
 
-  if (nSpecies == 2){
-    SetVolumeOutputValue("MASSFRAC_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASSFRAC_N",    iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+     Species = std::to_string(iSpecies);
+     SetVolumeOutputValue("MASSFRAC_" + Species, iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
   }
-  if (nSpecies == 5){
-    SetVolumeOutputValue("MASSFRAC_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASSFRAC_O2",   iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASSFRAC_NO",   iPoint, Node_Flow->GetSolution(iPoint, 2)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASSFRAC_N",    iPoint, Node_Flow->GetSolution(iPoint, 3)/Node_Flow->GetDensity(iPoint));
-    SetVolumeOutputValue("MASSFRAC_O",    iPoint, Node_Flow->GetSolution(iPoint, 4)/Node_Flow->GetDensity(iPoint));
-  } 
+
 
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, nSpecies));
   SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(iPoint, nSpecies+1));
