@@ -634,8 +634,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
-  SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
-                    Mean_Eddy_Viscosity);
+  SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (sst) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
@@ -770,10 +769,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     v2_j += V_j[iDim+1]*V_j[iDim+1];
   }
 
-  const su2double T_i = V_i[0],
-                  T_j = V_j[0],
-                  r_i = V_i[nDim+2],
-                  r_j = V_j[nDim+2];
+  const su2double T_i = V_i[0], r_i = V_i[nDim+2],
+                  T_j = V_j[0], r_j = V_j[nDim+2];
   
   const su2double dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
                            * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),

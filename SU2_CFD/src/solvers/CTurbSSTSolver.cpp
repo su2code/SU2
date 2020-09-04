@@ -397,12 +397,10 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
     /*--- Compute the eddy viscosity ---*/
 
     const su2double F2 = nodes->GetF2blending(iPoint);
-    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
     const su2double VorticityMag = flowNodes->GetVorticityMag(iPoint);
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    // const su2double zeta  = max(omega, StrainMag*F2/a1);
     const su2double zeta  = max(omega, VorticityMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
@@ -541,15 +539,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
-  const su2double sigma_om2 = constants[3];
-  const su2double a1        = constants[7];
-  const su2double StrainMag = nodes->GetStrainMag(iPoint);
   
   const su2double F1 = nodes->GetF1blending(iPoint);
   const su2double F2 = nodes->GetF2blending(iPoint);
   const su2double r  = flowNodes->GetDensity(iPoint);
   const su2double om = nodes->GetPrimitive(iPoint,1);
-  const su2double z  = max(om, StrainMag*F2/a1);
   
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
   Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -1983,10 +1977,10 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   const su2double a1          = constants[7];
   const su2double CDkw        = varTur->GetCrossDiff(iPoint);
 
-  const su2double StrainMag = varFlo->GetStrainMag(iPoint);
+  const su2double VorticityMag = varFlo->GetVorticityMag(iPoint);
 
-  const su2double lim = (omega > StrainMag*F1/a1) ? 1.0 : 0.0;
-  const su2double zeta = max(omega,StrainMag*F1/a1);
+  const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+  const su2double zeta = max(omega,VorticityMag*F1/a1);
 
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0 ; jDim < nDim; jDim++) {
