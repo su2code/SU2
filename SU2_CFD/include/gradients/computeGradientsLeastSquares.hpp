@@ -93,7 +93,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
         Rmatrix(iPoint, iDim, jDim) = 0.0;
-
+  
 
     for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
     {
@@ -102,12 +102,14 @@ void computeGradientsLeastSquares(CSolver* solver,
       const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
+
       /*--- Distance vector from iPoint to jPoint ---*/
 
       su2double dist_ij[MAXNDIM] = {0.0};
 
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = coord_j[iDim] - coord_i[iDim];
+
 
       /*--- Compute inverse weight, default 1 (unweighted). ---*/
 
@@ -173,6 +175,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
     }
   }
+
 
   /*--- Second loop over points of the grid to compute final gradient. ---*/
 
