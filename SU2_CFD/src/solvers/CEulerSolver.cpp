@@ -3436,8 +3436,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
                                             const CConfig   *config,
                                             const su2double *primvar_l, 
                                             const su2double *primvar_r,
-                                            const su2double *k_l, 
-                                            const su2double *k_r,
+                                            const su2double *tke_l, 
+                                            const su2double *tke_r,
                                             const su2double *limiter_i, 
                                             const su2double *limiter_j,
                                             const su2double *turbLimiter_i, 
@@ -3524,8 +3524,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
     dUdV_r[nDim+1][iDim+1] = rho_r*vel_r[iDim];
   }
 
-  dUdV_l[nDim+1][0] = 0.5*sq_vel_l+(*k_l);
-  dUdV_r[nDim+1][0] = 0.5*sq_vel_r+(*k_r);
+  dUdV_l[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
+  dUdV_r[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
 
   dUdV_l[nDim+1][nDim+1] = dUdV_r[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
 
@@ -3590,12 +3590,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
   /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
   su2double dist_ij[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -3606,12 +3605,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       reconWeight_l[iVar] = 0.;
 
-    auto kPoint = node_i->GetPoint(iNeigh);
-    auto node_k = geometry->node[kPoint];
+    const auto kPoint = node_i->GetPoint(iNeigh);
 
     /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
-    su2double inv_rho_k = 1.0/flowVar->GetDensity(kPoint);
+    const su2double inv_rho_k = 1.0/flowVar->GetDensity(kPoint);
     su2double vel_k[MAXNDIM] = {0.0};
     su2double sq_vel_k = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {

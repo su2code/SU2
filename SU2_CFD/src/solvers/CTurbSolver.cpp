@@ -156,8 +156,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     bool bad_i = false, bad_j = false, bad_edge = false;
 
     if (muscl) {
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
       const auto Coord_i = geometry->node[iPoint]->GetCoord();
       const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
@@ -503,13 +501,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
   /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
+  const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
 
   su2double dist_ij[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -521,8 +518,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
     for (auto iVar = 0; iVar < nVar; iVar++)
       reconWeight_l[iVar] = 0.;
 
-    auto kPoint = node_i->GetPoint(iNeigh);
-    auto node_k = geometry->node[kPoint];
+    const auto kPoint = node_i->GetPoint(iNeigh);
 
     const su2double inv_rho_k = 1.0/flowVar->GetDensity(kPoint);
 
@@ -606,7 +602,6 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
         To reduce extra communication overhead, we only consider first neighbors on
         the current rank. Note that jacobianWeights_i is already weighted by 0.5 ---*/
 
-  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -616,7 +611,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       }
     }
 
-    auto kPoint = node_i->GetPoint(iNeigh);
+    const auto kPoint = node_i->GetPoint(iNeigh);
 
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);

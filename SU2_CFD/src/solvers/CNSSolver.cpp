@@ -558,7 +558,6 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 1; iVar < nVar; iVar++) {
@@ -568,7 +567,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
       }
     }
 
-    auto kPoint = node_i->GetPoint(iNeigh);
+    const auto kPoint = node_i->GetPoint(iNeigh);
 
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
@@ -730,7 +729,6 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  // if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -738,7 +736,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
       Jacobian_j[nVar-1][iVar] = 0.0;
     }
       
-    auto kPoint = node_i->GetPoint(iNeigh);
+    const auto kPoint = node_i->GetPoint(iNeigh);
 
     const su2double Vel2_k     = nodes->GetVelocity2(kPoint);
     const su2double Density_k  = nodes->GetDensity(kPoint);

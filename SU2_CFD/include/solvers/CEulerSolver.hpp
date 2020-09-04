@@ -312,8 +312,8 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] primvar_l - Primitive vector extrapolated from node i to face.
    * \param[in] primvar_r - Primitive vector extrapolated from node j to face.
-   * \param[in] k_l - Turbulent kinetic energy extrapolated from node i to face.
-   * \param[in] k_r - Turbulent kinetic energy extrapolated from node j to face.
+   * \param[in] tke_l - Turbulent kinetic energy extrapolated from node i to face.
+   * \param[in] tke_r - Turbulent kinetic energy extrapolated from node j to face.
    * \param[in] limiter_i - Primitive slope limiter at node i.
    * \param[in] limiter_j - Primitive slope limiter at node j.
    * \param[in] turbLimiter_i - Turbulent slope limiter at node i.
@@ -326,8 +326,8 @@ protected:
                                 const CConfig   *config,
                                 const su2double *primvar_l, 
                                 const su2double *primvar_r,
-                                const su2double *k_l, 
-                                const su2double *k_r,
+                                const su2double *tke_l, 
+                                const su2double *tke_r,
                                 const su2double *limiter_i, 
                                 const su2double *limiter_j,
                                 const su2double *turbLimiter_i, 
