@@ -333,7 +333,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
-  Alloc2D(nMarker, nVertex, DonorGlobalIndex);
+  DonorGlobalIndex = new unsigned long* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) { 
+    DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]](); 
+  }
 
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
@@ -3159,8 +3162,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
           /*--- Limit projection ---*/
 
-          Project_Grad_i *= Limiter_i[0];
-          Project_Grad_j *= Limiter_j[0];
+          Project_Grad_i *= Limiter_i;
+          Project_Grad_j *= Limiter_j;
 
         }
 
