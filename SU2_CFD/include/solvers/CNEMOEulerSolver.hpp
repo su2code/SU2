@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../variables/CNEMOEulerVariable.hpp"
-#include "../include/fluid/CNEMOGas.hpp"
+#include "../fluid/CNEMOGas.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 /*!
@@ -43,8 +43,8 @@ protected:
 
   unsigned short
   nSpecies;                              /*!< \brief Number of species in the gas mixture. */
-                  
-  su2double                  
+
+  su2double
   Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
   Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
   const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
@@ -83,7 +83,7 @@ public:
      * \param[in] config - Definition of the particular problem.
      */
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-  
+
    /*!
   * \brief Compute the time step for solving the Euler equations.
   * \param[in] geometry - Geometrical definition of the problem.
@@ -176,7 +176,7 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       bool Output); 
+                                       bool Output);
 
   /*!
      * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
