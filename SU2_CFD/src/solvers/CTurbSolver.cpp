@@ -110,8 +110,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
-  su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
-  su2double solution_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
+  su2double turbPrimVar_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
+  su2double turbPrimVar_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
   su2double ZeroVec[2] = {0.0}, OneVec[2]  = {0.0};
 
@@ -214,19 +214,19 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
             Project_Grad_j *= Limiter_j[iVar];
           }
 
-          solution_i[iVar] = T_i[iVar] + Project_Grad_i;
-          solution_j[iVar] = T_j[iVar] - Project_Grad_j;
+          turbPrimVar_i[iVar] = T_i[iVar] + Project_Grad_i;
+          turbPrimVar_j[iVar] = T_j[iVar] - Project_Grad_j;
 
-          bad_i = (solution_i[iVar] < 0.0) || (bad_i);
-          bad_j = (solution_j[iVar] < 0.0) || (bad_j);
+          bad_i = (turbPrimVar_i[iVar] < 0.0) || (bad_i);
+          bad_j = (turbPrimVar_j[iVar] < 0.0) || (bad_j);
 
         }
 
       }
       else {
         for (iVar = 0; iVar < nVar; iVar++) {
-          solution_i[iVar] = T_i[iVar];
-          solution_j[iVar] = T_j[iVar];
+          turbPrimVar_i[iVar] = T_i[iVar];
+          turbPrimVar_j[iVar] = T_j[iVar];
         }
       }
 
@@ -292,12 +292,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           SqVel_i += pow(flowPrimVar_i[iDim+1],2);
           SqVel_j += pow(flowPrimVar_j[iDim+1],2);
         }
-        const su2double Energy_i = flowPrimVar_i[nDim+1]/(Gamma_Minus_One*flowPrimVar_i[nDim+2])+solution_i[0]+0.5*SqVel_i;
-        const su2double Energy_j = flowPrimVar_j[nDim+1]/(Gamma_Minus_One*flowPrimVar_j[nDim+2])+solution_j[0]+0.5*SqVel_j;
+        const su2double Energy_i = flowPrimVar_i[nDim+1]/(Gamma_Minus_One*flowPrimVar_i[nDim+2])+turbPrimVar_i[0]+0.5*SqVel_i;
+        const su2double Energy_j = flowPrimVar_j[nDim+1]/(Gamma_Minus_One*flowPrimVar_j[nDim+2])+turbPrimVar_j[0]+0.5*SqVel_j;
         const su2double Enthalpy_i = Energy_i+flowPrimVar_i[nDim+1]/flowPrimVar_i[nDim+2];
         const su2double Enthalpy_j = Energy_j+flowPrimVar_j[nDim+1]/flowPrimVar_j[nDim+2];
         const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-        const su2double RoeTke = (R*solution_j[0]+solution_i[0])/R_Plus_One;
+        const su2double RoeTke = (R*turbPrimVar_j[0]+turbPrimVar_i[0])/R_Plus_One;
 
         const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
@@ -318,8 +318,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, 
                              bad_edge ? V_j : flowPrimVar_j);
-      numerics->SetTurbVar(bad_edge ? T_i : solution_i, 
-                           bad_edge ? T_j : solution_j);
+      numerics->SetTurbVar(bad_edge ? T_i : turbPrimVar_i, 
+                           bad_edge ? T_j : turbPrimVar_j);
     }
 
     /*--- Update convective residual value ---*/
