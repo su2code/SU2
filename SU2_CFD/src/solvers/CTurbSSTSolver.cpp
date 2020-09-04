@@ -542,8 +542,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   
   const su2double F1        = nodes->GetF1blending(iPoint);
   const su2double sigma_om2 = constants[3];
-  const su2double r         = flowNodes->GetDensity(iPoint);
-  const su2double om        = nodes->GetPrimitive(iPoint,1);
+  const su2double r_i       = flowNodes->GetDensity(iPoint);
+  const su2double om_i      = nodes->GetPrimitive(iPoint,1);
   
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
   Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
@@ -557,7 +557,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     const unsigned long iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
     const auto Vol = geometry->node[iPoint]->GetVolume();
     const su2double r_j  = flowNodes->GetDensity(jPoint);
-    const su2double factor = 2.0*(1. - F1)*sigma_om2*r/(r_j*om)*Vol;
+    const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
 
     Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
@@ -568,8 +568,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
       const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-      Jacobian_i[1][0] += factor*gradom*gradWeights[iDim]; Jacobian_i[1][1] += factor*gradk*gradWeights[iDim];
-      Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]; Jacobian_j[1][1] += factor*gradk*gradWeights[iDim];
+      Jacobian_i[1][0] += factor*gradom*gradWeights[iDim]/r_i; Jacobian_i[1][1] += factor*gradk*gradWeights[iDim]/r_i;
+      Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]/r_j; Jacobian_j[1][1] += factor*gradk*gradWeights[iDim]/r_j;
     }// iDim
 
     if (wls) {
@@ -587,7 +587,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
         const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          const su2double factor = -2.0*(1. - F1)*sigma_om2/om;
+          const su2double factor = -2.0*(1. - F1)*sigma_om2/om_i;
           for (auto iDim = 0; iDim < nDim; iDim++) {
             const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
             const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
