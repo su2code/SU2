@@ -3636,7 +3636,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
 
     const su2double factor = sign*0.5*(1.-kappa);
     su2double gradWeight[MAXNDIM] = {0.0};
-    SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint, reconRequired);
+    SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       for (auto iDim = 0; iDim < nDim; iDim++)
         reconWeight_l[iVar] += factor*gradWeight[iDim]*dist_ij[iDim]*l_i[iVar];

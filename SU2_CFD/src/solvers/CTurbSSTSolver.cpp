@@ -562,7 +562,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
     su2double gradWeights[MAXNDIM] = {0.0};
-    SetGradWeights(gradWeights, geometry, solver[TURB_SOL], config, iPoint, jPoint);
+    SetGradWeights(gradWeights, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);

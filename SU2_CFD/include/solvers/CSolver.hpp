@@ -769,8 +769,8 @@ public:
    * \brief Compute the weighting function of the nodal gradient to obtain an accurate Jacobian
    *        for MUSCL extrapolation and viscous fluxes.
    */
-  void SetGradWeights(su2double *gradWeight, CGeometry *geometry, CSolver *solver, CConfig *config, 
-                      unsigned long iPoint, unsigned long jPoint, bool reconstruction = false);
+  void SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeometry *geometry, const CConfig *config, 
+                      const unsigned long iPoint, const unsigned long jPoint, const bool reconstruction = false);
   
   /*!
    * \brief Compute the Green-Gauss Hessian of the solution.

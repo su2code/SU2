@@ -575,7 +575,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
 
     const su2double factor = 0.5*sign;
     su2double gradWeight[MAXNDIM] = {0.0};
-    SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
+    SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
     /*--- Get projection to be multiplied by divergence terms ---*/
     su2double diagTerm = 0.0;
@@ -746,7 +746,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     const su2double Phi_k      = Gamma_Minus_One/Density_k;
 
     su2double gradWeight[MAXNDIM] = {0.0};
-    SetGradWeights(gradWeight, geometry, solver[FLOW_SOL], config, iPoint, kPoint);
+    SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
     su2double factor = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
