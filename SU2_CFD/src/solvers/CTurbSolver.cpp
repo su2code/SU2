@@ -611,7 +611,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       }
     }
 
-    auto kPoint = node_i]->GetPoint(iNeigh);
+    auto kPoint = node_i->GetPoint(iNeigh);
 
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, geometry, solver[TURB_SOL], config, iPoint, kPoint);
