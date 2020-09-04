@@ -538,6 +538,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
+  const auto node_i = geometry->node[iPoint];
+
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   const su2double F1        = nodes->GetF1blending(iPoint);
@@ -549,10 +551,10 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
   
   /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
-  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-    const unsigned long jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-    const unsigned long iEdge = geometry->node[iPoint]->GetEdge(iNeigh);
-    const auto Vol = geometry->node[iPoint]->GetVolume();
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+    const unsigned long jPoint = node_i->GetPoint(iNeigh);
+    const unsigned long iEdge = node_i->GetEdge(iNeigh);
+    const auto Vol = node_i->GetVolume();
     const su2double r_j  = flowNodes->GetDensity(jPoint);
     const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
 
@@ -577,11 +579,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   }// iNeigh
   
   /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
-  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && node_i->GetPhysicalBoundary()) {
     Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           const su2double factor = -2.0*(1. - F1)*sigma_om2/om_i;

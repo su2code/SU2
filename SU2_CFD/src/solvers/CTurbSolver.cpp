@@ -504,6 +504,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver** solver, CGeometry *geometry
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
+  if (node_i->GetDomain())
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -560,6 +561,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
+  const auto node_i = geometry->node[iPoint];
+
   /*--- First we compute contributions of first neighbors to the Jacobian.
         In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
@@ -568,18 +571,18 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
     
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
-  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && node_i->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double factor = -sign/geometry->node[iPoint]->GetVolume();
+    const su2double factor = -sign/node_i->GetVolume();
     
     /*--- Influence of boundary i on R(i,j) ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
           for (auto iDim = 0; iDim < nDim; iDim++)
@@ -598,7 +601,8 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider first neighbors on
         the current rank. Note that jacobianWeights_i is already weighted by 0.5 ---*/
 
-  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  if (node_i->GetDomain())
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -607,7 +611,7 @@ void CTurbSolver::CorrectJacobian(CGeometry           *geometry,
       }
     }
 
-    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    auto kPoint = node_i]->GetPoint(iNeigh);
 
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, geometry, solver[TURB_SOL], config, iPoint, kPoint);

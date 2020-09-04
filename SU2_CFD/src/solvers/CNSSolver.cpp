@@ -476,6 +476,8 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
   const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
+  const auto node_i = geometry->node[iPoint];
+
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
   /*--- Common factors for all Jacobian terms --*/
@@ -505,17 +507,17 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && node_i->GetPhysicalBoundary()) {
 
     for (auto iVar = 1; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+    const su2double HalfOnVol = 0.5/node_i->GetVolume();
     const su2double factor = -HalfOnVol*sign;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+        const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -556,7 +558,8 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  if (node_i->GetDomain())
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 1; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -565,7 +568,7 @@ void CNSSolver::StressTensorJacobian(CGeometry           *geometry,
       }
     }
 
-    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    auto kPoint = node_i->GetPoint(iNeigh);
 
     const su2double Density_k = nodes->GetDensity(kPoint);
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
@@ -638,6 +641,8 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
 
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
+  const auto node_i = geometry->node[iPoint];
+
   /*--- Common factors for all Jacobian terms --*/
   const su2double Mean_LaminarVisc = 0.5*(nodesFlo->GetLaminarViscosity(iPoint)+nodesFlo->GetLaminarViscosity(jPoint));
   const su2double Mean_EddyVisc    = 0.5*(nodesFlo->GetEddyViscosity(iPoint)+nodesFlo->GetEddyViscosity(jPoint));
@@ -678,17 +683,17 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
         the Jacobian if iPoint is on a physical boundary. ---*/
 
-  if (gg && geometry->node[iPoint]->GetPhysicalBoundary()) {
+  if (gg && node_i->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       Jacobian_i[nVar-1][iVar] = 0.0;
 
-    const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
+    const su2double HalfOnVol = 0.5/node_i->GetVolume();
 
     /*--- Influence of boundary nodes ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-      const long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
 
@@ -725,14 +730,15 @@ void CNSSolver::HeatFluxJacobian(CGeometry           *geometry,
         To reduce extra communication overhead, we only consider nodes on
         the current rank. ---*/
 
-  for (auto iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+  if (node_i->GetDomain())
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       Jacobian_i[nVar-1][iVar] = 0.0;
       Jacobian_j[nVar-1][iVar] = 0.0;
     }
       
-    auto kPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    auto kPoint = node_i->GetPoint(iNeigh);
 
     const su2double Vel2_k     = nodes->GetVelocity2(kPoint);
     const su2double Density_k  = nodes->GetDensity(kPoint);
