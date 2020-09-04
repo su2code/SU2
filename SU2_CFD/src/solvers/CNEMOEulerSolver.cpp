@@ -672,11 +672,21 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
+      default:
+        break;
       }
     } else {
-      ModelTable << "-" << "-";
+      ModelTable << "-" ;
     }
 
+    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
+    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
+    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
+    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
+    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    Unit.str("");
     switch(config->GetKind_FluidModel()){
     case USER_DEFINED_NONEQ:
       ModelTable << "Park Two-Temperature";
@@ -690,15 +700,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
     NonDimTable.PrintHeader();
 
-    NonDimTable << "Mixture" << "-" << "-"<< "-"<< config->GetGasModel();
-    Unit.str("");
-    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
-    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
-    Unit.str("");
-    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
-    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    NonDimTable << "Mixture" << config->GetGasModel() << "-"<< "-"<< config->GetGasModel();
     Unit.str("");
 
     if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
@@ -711,11 +713,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "K";
     else if (config->GetSystemMeasurements() == US) Unit << "R";
-    NonDimTable << " Translational Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
+    NonDimTable << " T-R Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "K";
     else if (config->GetSystemMeasurements() == US) Unit << "R";
-    NonDimTable << " Vibrational Temperature" << config->GetTemperature_ve_FreeStream() << config->GetTemperature_ve_Ref() << Unit.str() << config->GetTemperature_ve_FreeStreamND();
+    NonDimTable << " V-E Temperature" << config->GetTemperature_ve_FreeStream() << config->GetTemperature_ve_Ref() << Unit.str() << config->GetTemperature_ve_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
     else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
