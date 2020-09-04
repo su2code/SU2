@@ -540,10 +540,10 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
-  const su2double F1 = nodes->GetF1blending(iPoint);
-  const su2double F2 = nodes->GetF2blending(iPoint);
-  const su2double r  = flowNodes->GetDensity(iPoint);
-  const su2double om = nodes->GetPrimitive(iPoint,1);
+  const su2double F1        = nodes->GetF1blending(iPoint);
+  const su2double sigma_om2 = constants[3];
+  const su2double r         = flowNodes->GetDensity(iPoint);
+  const su2double om        = nodes->GetPrimitive(iPoint,1);
   
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
   Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
