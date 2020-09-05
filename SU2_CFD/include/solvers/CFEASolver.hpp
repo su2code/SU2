@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
 /*!
