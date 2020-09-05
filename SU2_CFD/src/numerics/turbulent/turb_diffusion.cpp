@@ -106,10 +106,10 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        jacobianWeights_i[iVar][jVar][iDim] = 0.0;
-        jacobianWeights_j[iVar][jVar][iDim] = 0.0;
-      }
+    }
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      jacobianWeights_i[iVar][iDim] = 0.0;
+      jacobianWeights_j[iVar][iDim] = 0.0;
     }
   }
 
