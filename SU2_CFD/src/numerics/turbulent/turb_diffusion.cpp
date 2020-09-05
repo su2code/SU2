@@ -44,17 +44,13 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
-  jacobianWeights_i = new su2double** [nVar];
-  jacobianWeights_j = new su2double** [nVar];
+  jacobianWeights_i = new su2double* [nVar];
+  jacobianWeights_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
-    jacobianWeights_i[iVar] = new su2double* [nVar];
-    jacobianWeights_j[iVar] = new su2double* [nVar];
-    for (auto jVar = 0; jVar < nVar; jVar++) {
-      jacobianWeights_i[iVar][jVar] = new su2double [nDim];
-      jacobianWeights_j[iVar][jVar] = new su2double [nDim];
-    }
+    jacobianWeights_i[iVar] = new su2double [nDim];
+    jacobianWeights_j[iVar] = new su2double [nDim];
   }
 }
 
@@ -69,10 +65,6 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
     for (auto iVar = 0; iVar < nVar; iVar++) {
       delete [] Jacobian_i[iVar];
       delete [] Jacobian_j[iVar];
-      for (auto jVar = 0; jVar < nVar; jVar++) {
-        delete [] jacobianWeights_i[iVar][jVar];
-        delete [] jacobianWeights_j[iVar][jVar];
-      }
       delete [] jacobianWeights_i[iVar];
       delete [] jacobianWeights_j[iVar];
     }
@@ -341,8 +333,8 @@ void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
  
   for (auto iVar= 0; iVar < nVar; iVar++) {
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      jacobianWeights_i[iVar][iVar][iDim] = -0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
-      jacobianWeights_j[iVar][iVar][iDim] =  0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
+      jacobianWeights_i[iVar][iDim] = -0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_i[iVar][iVar];      
+      jacobianWeights_j[iVar][iDim] =  0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim])*Jacobian_j[iVar][iVar];
     }
   }
 }

@@ -242,21 +242,20 @@ public:
    * change after instantiation, nor can it be used to change the data.
    */
   template<class Vector_t = const su2double*,
-           class Matrix_t = const Vector_t*,
-           class VecMat_t = const Matrix_t*>
+           class Matrix_t = const Vector_t*>
   struct ResidualType {
     const Vector_t residual;
     const Matrix_t jacobian_i;
     const Matrix_t jacobian_j;
-    const VecMat_t jacobianWeights_i;
-    const VecMat_t jacobianWeights_j;
+    const Matrix_t jacobianWeights_i;
+    const Matrix_t jacobianWeights_j;
 
     ResidualType() = delete;
     
     ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j) :
     residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobianWeights_i(nullptr), jacobianWeights_j(nullptr) { }
 
-    ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j, const VecMat_t& jacWeight_i, const VecMat_t& jacWeight_j) :
+    ResidualType(const Vector_t& res, const Matrix_t& jac_i, const Matrix_t& jac_j, const Matrix_t& jacWeight_i, const Matrix_t& jacWeight_j) :
       residual(res), jacobian_i(jac_i), jacobian_j(jac_j), jacobianWeights_i(jacWeight_i), jacobianWeights_j(jacWeight_j) { }
 
     /*!
