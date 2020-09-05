@@ -1,13 +1,12 @@
 /*!
- * \file SU2_MSH.hpp
- * \brief Headers of the main subroutines of the code SU2_MSH.
- *        The subroutines and functions are in the <i>SU2_MSH.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CFreeFormBlending.cpp
+ * \brief Parent class for FFD Blending functions
+ * \author F. Palacios, T. Economon, S. Padron
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -26,18 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/grid_movement/CFreeFormBlending.hpp"
 
-#pragma once
+CFreeFormBlending::CFreeFormBlending(){}
 
-#include "../../Common/include/mpi_structure.hpp"
-
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-
-#include "../../Common/include/geometry/CPhysicalGeometry.hpp"
-#include "../../Common/include/CConfig.hpp"
-#include "../../Common/include/grid_adaptation_structure.hpp"
-
-using namespace std;
+CFreeFormBlending::~CFreeFormBlending(){}

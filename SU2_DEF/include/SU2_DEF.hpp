@@ -41,6 +41,5 @@
 #include "../../SU2_CFD/include/output/CMeshOutput.hpp"
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;

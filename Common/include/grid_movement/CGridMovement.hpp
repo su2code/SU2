@@ -1,8 +1,7 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file CGridMovement.hpp
+ * \brief Headers of the CGridMovement class
+ * \author F. Palacios
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,23 +24,41 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
-#include "CLI11.hpp"
+#include "../geometry/CGeometry.hpp"
+#include "../CConfig.hpp"
 
-#include "drivers/CDriver.hpp"
-#include "drivers/CSinglezoneDriver.hpp"
-#include "drivers/CMultizoneDriver.hpp"
-#include "drivers/CDiscAdjSinglezoneDriver.hpp"
-#include "drivers/CDiscAdjMultizoneDriver.hpp"
-#include "drivers/CDummyDriver.hpp"
-#include "output/COutput.hpp"
-#include "../../Common/include/fem/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry/CGeometry.hpp"
-#include "../../Common/include/CConfig.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/interfaces/CInterface.hpp"
+/*!
+ * \class CGridMovement
+ * \brief Class for moving the surface and volumetric
+ *        numerical grid (2D and 3D problems).
+ * \author F. Palacios
+ */
+class CGridMovement {
 
-using namespace std;
+protected:
+  int rank,  /*!< \brief MPI Rank. */
+  size;      /*!< \brief MPI Size. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CGridMovement(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CGridMovement(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
+
+};
