@@ -2,7 +2,7 @@
  * \file CADTElemClass.cpp
  * \brief Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

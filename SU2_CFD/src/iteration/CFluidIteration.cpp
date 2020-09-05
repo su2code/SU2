@@ -2,7 +2,7 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,6 +76,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case DISC_ADJ_EULER:
     case INC_EULER:
     case DISC_ADJ_INC_EULER:
+    case NEMO_EULER:
       config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
       break;
 
@@ -83,6 +84,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case DISC_ADJ_NAVIER_STOKES:
     case INC_NAVIER_STOKES:
     case DISC_ADJ_INC_NAVIER_STOKES:
+    case NEMO_NAVIER_STOKES:
       config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
       break;
 

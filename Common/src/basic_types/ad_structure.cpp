@@ -2,7 +2,7 @@
  * \file ad_structure.cpp
  * \brief Main subroutines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

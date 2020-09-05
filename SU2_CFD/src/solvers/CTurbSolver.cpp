@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -274,6 +274,11 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
     numerics->SetF1blending(nodes->GetF1blending(iPoint),
                             nodes->GetF1blending(jPoint));
+
+  /*--- Roughness heights. ---*/
+    if (config->GetKind_Turb_Model() == SA)
+      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint),
+                             geometry->nodes->GetRoughnessHeight(jPoint));
 
   /*--- Compute residual, and Jacobians ---*/
 
@@ -646,7 +651,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) {
+void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) {
 
   /* Only apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
@@ -660,9 +665,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  su2double localUnderRelaxation    =  1.00;
-  const su2double allowableDecrease = -0.99;
-  const su2double allowableIncrease =  0.99;
+  su2double localUnderRelaxation =  1.00;
+  const su2double allowableRatio =  0.99;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -674,12 +678,10 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, CConf
         /* We impose a limit on the maximum percentage that the
          turbulence variables can change over a nonlinear iteration. */
 
-        const unsigned long index = iPoint*nVar + iVar;
-        su2double ratio = LinSysSol[index]/(nodes->GetSolution(iPoint, iVar)+EPS);
-        if (ratio > allowableIncrease) {
-          localUnderRelaxation = min(allowableIncrease/ratio, localUnderRelaxation);
-        } else if (ratio < allowableDecrease) {
-          localUnderRelaxation = min(fabs(allowableDecrease)/ratio, localUnderRelaxation);
+        const unsigned long index = iPoint * nVar + iVar;
+        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+        if (ratio > allowableRatio) {
+          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
         }
 
       }

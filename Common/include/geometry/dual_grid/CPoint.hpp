@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -85,6 +85,7 @@ private:
   su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
   su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
+  su2activevector RoughnessHeight;          /*!< \brief Roughness of the nearest wall. */
 
   su2matrix<int> AD_InputIndex;           /*!< \brief Indices of Coord variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;          /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
@@ -399,6 +400,20 @@ public:
    * \return Value of the distance to the nearest wall.
    */
   inline su2double GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
+
+  /*!
+   * \brief Set the value of the distance to the nearest wall.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] distance - Value of the distance.
+   */
+  inline void SetRoughnessHeight(unsigned long iPoint, su2double roughheight) { RoughnessHeight(iPoint) = roughheight; }
+
+  /*!
+   * \brief Get the value of the distance to the nearest wall.
+   * \param[in] iPoint - Index of the point.
+   * \return Value of the distance to the nearest wall.
+   */
+  inline su2double GetRoughnessHeight(unsigned long iPoint) const { return RoughnessHeight(iPoint); }
 
   /*!
    * \brief Set the value of the distance to a sharp edge.

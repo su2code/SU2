@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -137,8 +137,8 @@ protected:
 
 #if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
   vector<vector<unsigned long> > adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
-  idx_t *adjacency{nullptr}; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
-  idx_t *xadj{nullptr};      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
+  vector<idx_t> adjacency; /*!< \brief Local adjacency array to be input into ParMETIS for partitioning (idx_t is a ParMETIS type defined in their headers). */
+  vector<idx_t> xadj;      /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to interpret the adjacency array).  */
 #endif
 
   /*--- Turbomachinery variables ---*/
@@ -751,13 +751,13 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Check_IntElem_Orientation(CConfig *config) {}
+  inline virtual void Check_IntElem_Orientation(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Check_BoundElem_Orientation(CConfig *config) {}
+  inline virtual void Check_BoundElem_Orientation(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
@@ -769,7 +769,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetColorGrid_Parallel(CConfig *config) {}
+  inline virtual void SetColorGrid_Parallel(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.
@@ -789,7 +789,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_domain - Number of domains for parallelization purposes.
    */
-  inline virtual void SetSendReceive(CConfig *config) {}
+  inline virtual void SetSendReceive(const CConfig *config) {}
 
   /*!
    * \brief A virtual member.

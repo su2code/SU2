@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -300,7 +300,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  const su2double cv1_3 = 7.1*7.1*7.1;
+  const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
   const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
 
@@ -314,8 +314,15 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
     su2double nu  = mu/rho;
     su2double nu_hat = nodes->GetSolution(iPoint,0);
+    su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
+    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    su2double Ji   = nu_hat/nu;
+    dist += rough_const*roughness;
+
+    su2double Ji   = nu_hat/nu ;
+    if (roughness > 1.0e-10)
+      Ji+= cR1*roughness/(dist+EPS);
+
     su2double Ji_3 = Ji*Ji*Ji;
     su2double fv1  = Ji_3/(Ji_3+cv1_3);
 
@@ -329,6 +336,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 }
 
+
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
@@ -337,6 +345,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -379,9 +388,22 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
 
+    /*--- For the SA model, wall roughness is accounted by modifying the computed wall distance
+       *                              d_new = d + 0.03 k_s
+       *    where k_s is the equivalent sand grain roughness height that is specified in cfg file.
+       *    For smooth walls, wall roughness is zero and computed wall distance remains the same. */
+
+      su2double modifiedWallDistance = geometry->nodes->GetWall_Distance(iPoint);
+
+      modifiedWallDistance += 0.03*geometry->nodes->GetRoughnessHeight(iPoint);
+
       /*--- Set distance to the surface ---*/
 
-      numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
+      numerics->SetDistance(modifiedWallDistance, 0.0);
+
+      /*--- Set the roughness of the closest wall. ---*/
+
+      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), 0.0 );
 
     } else {
 
@@ -442,10 +464,16 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     SU2_OMP_BARRIER
     return;
   }
+  
+  bool rough_wall = false;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker); 
+  unsigned short WallType; su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == ROUGH ) rough_wall = true;
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
-   first point of the wall. ---*/
+   first point of the wall  ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -455,18 +483,49 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
+      if (!rough_wall) {
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          nodes->SetSolution_Old(iPoint,iVar,0.0);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        nodes->SetSolution_Old(iPoint,iVar,0.0);
+        LinSysRes.SetBlock_Zero(iPoint);
 
-      LinSysRes.SetBlock_Zero(iPoint);
+        /*--- Includes 1 in the diagonal ---*/
 
-      /*--- Includes 1 in the diagonal ---*/
+        Jacobian.DeleteValsRowi(iPoint);
+       } else {
+         /*--- For rough walls, the boundary condition is given by
+          * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+          * where \nu is the solution variable, $n$ is the wall normal direction
+          * and k_s is the equivalent sand grain roughness specified. ---*/
 
-      Jacobian.DeleteValsRowi(iPoint);
+         /*--- Compute dual-grid area and boundary normal ---*/
+         su2double Normal[MAXNDIM] = {0.0};
+         for (auto iDim = 0u; iDim < nDim; iDim++)
+           Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+          
+         su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+         /*--- Get laminar_viscosity and density ---*/
+         su2double sigma = 2.0/3.0;
+         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+         su2double nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
+
+         su2double coeff = (nu_total/sigma);
+         su2double RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+
+         su2double Res_Wall;// = new su2double [nVar];
+         Res_Wall = coeff*RoughWallBC*Area;
+         LinSysRes.SubtractBlock(iPoint, &Res_Wall);
+
+         su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+         Jacobian_i += 2.0*RoughWallBC*Area/sigma;
+         Jacobian_i = -Jacobian_i;
+         Jacobian.AddVal2Diag(iPoint, Jacobian_i);
+      }
     }
   }
-
 }
 
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -1850,7 +1909,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
+void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
 
@@ -1862,9 +1921,8 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
                                           string val_marker,
-                                          CGeometry *geometry,
-                                          CConfig *config) const {
-
+                                          const CGeometry *geometry,
+                                          const CConfig *config) const {
   /*--- Local variables ---*/
 
   unsigned short iMarker, iDim;
@@ -1919,7 +1977,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 
 }
 
-void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
 
   for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
     Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;

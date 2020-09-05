@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -891,8 +891,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double *Flow_Dir,  Vel_Mag;
-  su2double *V_inlet, *V_domain;
+  su2double Vel_Mag, *V_inlet, *V_domain;
 
   bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
                || (config->GetKind_Solver() == INC_RANS)
@@ -936,7 +935,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Retrieve the specified velocity for the inlet. ---*/
 
         Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
         V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
