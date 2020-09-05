@@ -1963,15 +1963,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
+  unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
   su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, WallShearStress, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve,
+            thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve = 0.0,
             MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor,
             delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
-  su2double **Grad_PrimVar, dTn, dTven;
+  su2double **Grad_PrimVar = nullptr, dTn, dTven;
 
   string Marker_Tag, Monitoring_Tag;
 

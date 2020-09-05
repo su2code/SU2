@@ -51,11 +51,6 @@ public:
                      unsigned short valiZone, unsigned short valnZone);
 
   /*!
-   * \brief Destructor
-   */
-  ~CSU2MeshFileWriter() override;
-
-  /*!
    * \brief Write sorted data to file in SU2 mesh file format
    * \param[in] - The name of the file
    * \param[in] - The parallel sorted data to write
