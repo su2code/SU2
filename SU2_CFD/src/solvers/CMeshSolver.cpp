@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/adt_structure.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/variables/CMeshBoundVariable.hpp"
