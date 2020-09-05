@@ -1,7 +1,7 @@
 /*!
- * \file CSU2FileWriter.hpp
- * \brief Headers fo the CSV file writer class.
- * \author T. Albring
+ * \file CGridMovement.hpp
+ * \brief Headers of the CGridMovement class
+ * \author F. Palacios
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,28 +26,39 @@
  */
 
 #pragma once
-#include "CFileWriter.hpp"
 
-class CSU2FileWriter final: public CFileWriter{
+#include "../geometry/CGeometry.hpp"
+#include "../CConfig.hpp"
+
+/*!
+ * \class CGridMovement
+ * \brief Class for moving the surface and volumetric
+ *        numerical grid (2D and 3D problems).
+ * \author F. Palacios
+ */
+class CGridMovement {
+
+protected:
+  int rank,  /*!< \brief MPI Rank. */
+  size;      /*!< \brief MPI Size. */
 
 public:
 
   /*!
-   * \brief File extension
+   * \brief Constructor of the class.
    */
-  const static string fileExt;
+  CGridMovement(void);
 
   /*!
-   * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valFileName - The name of the file
-   * \param[in] valDataSorter - The parallel sorted data to write
+   * \brief Destructor of the class.
    */
-  CSU2FileWriter(string valFileName, CParallelDataSorter* valDataSorter);
+  virtual ~CGridMovement(void);
 
   /*!
-   * \brief Write sorted data to file in SU2 ASCII file format
+   * \brief A pure virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
-  void Write_Data() override;
+  inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
 
 };
-

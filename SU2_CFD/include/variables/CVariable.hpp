@@ -36,10 +36,10 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid/CFluidModel.hpp"
-#include "../fluid/CNEMOGas.hpp"
-#include "../../../Common/include/containers/C2DContainer.hpp"
 #include "../../../Common/include/containers/container_decorators.hpp"
+
+class CFluidModel;
+class CNEMOGas;
 
 using namespace std;
 

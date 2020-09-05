@@ -57,10 +57,6 @@ if BUILD_DOT
 SUBDIRS +=SU2_DOT/obj
 endif
 
-if BUILD_MSH
-SUBDIRS +=SU2_MSH/obj
-endif
-
 if BUILD_DEF
 SUBDIRS +=SU2_DEF/obj
 endif
