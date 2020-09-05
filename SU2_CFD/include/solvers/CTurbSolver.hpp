@@ -184,7 +184,7 @@ public:
                        const CConfig       *config,
                        const unsigned long iPoint,
                        const unsigned long jPoint,
-                       const su2double     *const *const *const jacobianWeights_i);
+                       const su2double     *const *const jacobianWeights_i);
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
