@@ -939,13 +939,15 @@ enum ENUM_WALL_FUNCTIONS {
   NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
   EQUILIBRIUM_WALL_MODEL    = 2,   /*!< \brief Equilibrium wall model for LES. */
-  LOGARITHMIC_WALL_MODEL    = 3    /*!< \brief Logarithmic law-of-the-wall model for LES. */
+  LOGARITHMIC_WALL_MODEL    = 3,   /*!< \brief Reichardt's law-of-the-wall model for LES. */
+  ALGEBRAIC_WALL_MODEL      = 4    /*!< \brief Algebraic wall model for LES. */
 };
 static const MapType<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = {
   MakePair("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
   MakePair("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
   MakePair("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
   MakePair("LOGARITHMIC_WALL_MODEL",    LOGARITHMIC_WALL_MODEL)
+  MakePair("ALGEBRAIC_WALL_MODEL",      ALGEBRAIC_WALL_MODEL)
 };
 
 /*!
