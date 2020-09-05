@@ -291,8 +291,6 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, con
 void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j, const CConfig* config) {
 
-  unsigned short iVar, jVar, kVar;
-
   /*--- Compute inverse P tensor ---*/
   GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeTke, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 
@@ -322,7 +320,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     for (auto jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (kVar = 0; kVar < nPrimVarTot; kVar++)
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       /*--- Update residual and Jacobians ---*/

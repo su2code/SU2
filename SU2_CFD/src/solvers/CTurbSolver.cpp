@@ -586,9 +586,9 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
         const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            for (auto iVar = 0; iVar < nVar; iVar++)
-              Jacobian_i[iVar][iVar] += factor*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim];
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            for (auto iDim = 0; iDim < nDim; iDim++)
+              Jacobian_i[iVar][iVar] += factor*jacobianWeights_i[iVar][iVar][iDim]*gradWeight[iDim];
         }// iVertex
       }// not send-receive
     }// iMarker
@@ -619,8 +619,8 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim];
-        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iDim][iVar][iVar]*gradWeight[iDim]/denom;
+        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iVar][iDim]*gradWeight[iDim];
+        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iVar][iDim]*gradWeight[iDim]/denom;
       }
       if (wls) Jacobian_i[iVar][iVar] *= -1.0;
     }
