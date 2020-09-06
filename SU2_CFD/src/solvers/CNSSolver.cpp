@@ -2853,11 +2853,21 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        su2double dirTan[3] = {0.0, 0.0, 0.0};
        for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = VelTang[iDim]/VelTangMod;
 
+       /*--- Pressure gradient in the tangent direction: ---*/
+
+       su2double Grad_P[3] = {0.0, 0.0, 0.0};
+       for(iDim = 0; iDim<nDim; iDim++)
+         Grad_P[iDim] = nodes->GetGradient_Primitive(iPoint, nDim+1, iDim);
+
+       su2double dPds = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+          dPds += Grad_P[iDim] * dirTan[iDim];
+
        /* Compute the wall shear stress and heat flux vector using
         the wall model. */
        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
        WallModel->UpdateExchangeLocation(WallDistMod);
-       WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal,
+       WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal, dPds,
                                              Wall_HeatFlux, HeatFlux_Prescribed,
                                              Wall_Temperature, Temperature_Prescribed,
                                              GetFluidModel(), tauWall, qWall, ViscosityWall,

@@ -66,6 +66,7 @@ public:
    * \param[in]  velExchange            - Velocity at the exchange location.
    * \param[in]  muExchange             - Laminar viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
+   * \param[in]  dPds                   - Pressure gradient in the tangent direction.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
    * \param[in]  Wall_Temperature       - Value of the wall temperature, if prescribed.
@@ -81,6 +82,7 @@ public:
                                           const su2double velExchange,
                                           const su2double muExchange,
                                           const su2double pExchange,
+                                          const su2double dPds,
                                           const su2double Wall_HeatFlux,
                                           const bool      HeatFlux_Prescribed,
                                           const su2double TWall,
@@ -139,6 +141,7 @@ public:
    * \param[in]  velExchange            - Velocity at the exchange location.
    * \param[in]  muExchange             - Laminar viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
+   * \param[in]  dPds                   - Pressure gradient in the tangent direction.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
    * \param[in]  Wall_Temperature       - Value of the wall temperature, if prescribed.
@@ -154,6 +157,7 @@ public:
                                   const su2double velExchange,
                                   const su2double muExchange,
                                   const su2double pExchange,
+                                  const su2double dPds,
                                   const su2double Wall_HeatFlux,
                                   const bool      HeatFlux_Prescribed,
                                   const su2double Wall_Temperature,
@@ -210,6 +214,7 @@ public:
    * \param[in]  velExchange            - Velocity at the exchange location.
    * \param[in]  muExchange             - Laminar Viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
+   * \param[in]  dPds                   - Pressure gradient in the tangent direction.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
    * \param[in]  Wall_Temperature       - Value of the wall temperature, if prescribed.
@@ -225,6 +230,7 @@ public:
                                   const su2double velExchange,
                                   const su2double muExchange,
                                   const su2double pExchange,
+                                  const su2double dPds,
                                   const su2double Wall_HeatFlux,
                                   const bool      HeatFlux_Prescribed,
                                   const su2double Wall_Temperature,
@@ -277,6 +283,7 @@ public:
    * \param[in]  velExchange            - Velocity at the exchange location.
    * \param[in]  muExchange             - Laminar Viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
+   * \param[in]  dPds                   - Pressure gradient in the tangent direction.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
    * \param[in]  Wall_Temperature       - Value of the wall temperature, if prescribed.
@@ -292,6 +299,7 @@ public:
                                   const su2double velExchange,
                                   const su2double muExchange,
                                   const su2double pExchange,
+                                  const su2double dPds,
                                   const su2double Wall_HeatFlux,
                                   const bool      HeatFlux_Prescribed,
                                   const su2double Wall_Temperature,
