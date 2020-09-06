@@ -61,6 +61,7 @@ void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                             const su2double velExchange,
                                             const su2double muExchange,
                                             const su2double pExchange,
+                                            const su2double dPds,
                                             const su2double Wall_HeatFlux,
                                             const bool      HeatFlux_Prescribed,
                                             const su2double Wall_Temperature,
@@ -118,6 +119,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
                                                 const su2double velExchange,
                                                 const su2double muExchange,
                                                 const su2double pExchange,
+                                                const su2double dPds,
                                                 const su2double Wall_HeatFlux,
                                                 const bool      HeatFlux_Prescribed,
                                                 const su2double Wall_Temperature,
@@ -369,6 +371,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
                                                   const su2double velExchange,
                                                   const su2double muExchange,
                                                   const su2double pExchange,
+                                                  const su2double dPds,
                                                   const su2double Wall_HeatFlux,
                                                   const bool      HeatFlux_Prescribed,
                                                   const su2double Wall_Temperature,
@@ -467,6 +470,7 @@ void CWallModelAlgebraic::WallShearStressAndHeatFlux(const su2double tExchange,
                                                   const su2double velExchange,
                                                   const su2double muExchange,
                                                   const su2double pExchange,
+                                                  const su2double dPds,
                                                   const su2double Wall_HeatFlux,
                                                   const bool      HeatFlux_Prescribed,
                                                   const su2double Wall_Temperature,
@@ -523,7 +527,7 @@ void CWallModelAlgebraic::WallShearStressAndHeatFlux(const su2double tExchange,
     /* Newton method */
     const su2double newton_step = fval/fprime;
     u_tau = u_tau0 - newton_step;
-    
+
     /* Define a norm */
     if (fabs(1.0 - u_tau/u_tau0) < tol) converged = true;
   }
