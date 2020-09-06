@@ -200,6 +200,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           case LOGARITHMIC_WALL_MODEL:
             WallModel = new CWallModelLogLaw(config,WallFunctionsMarker_[0]);
             break;
+          case ALGEBRAIC_WALL_MODEL:
+            WallModel = new CWallModelAlgebraic(config,WallFunctionsMarker_[0]);
+            break;
           default:
             break;
         }
@@ -2696,6 +2699,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
      switch (config->GetWallFunction_Treatment(Marker_Tag)) {
        case EQUILIBRIUM_WALL_MODEL:
        case LOGARITHMIC_WALL_MODEL:
+       case ALGEBRAIC_WALL_MODEL:
          CalculateWallModel = true;
          break;
 
@@ -2864,6 +2868,13 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        qWall   /= (config->GetPressure_Ref() * config->GetVelocity_Ref());
        ViscosityWall /= (config->GetPressure_Ref()/config->GetVelocity_Ref());
        nodes->SetLaminarViscosity(iPoint, ViscosityWall);
+
+       /*--- If WALE SGS Model, force the eddy viscosity to zero.
+       The main idea is recover the correct asymptotic behavior for
+       wall bounded flows---*/
+       if (config->GetKind_SGS_Model() == WALE){
+         nodes->SetEddyViscosity(iPoint, 0.0);
+       }
 
        /*--- Set tau wall value and flag for flux computation---*/
        nodes->SetTauWall_Flag(iPoint,true);

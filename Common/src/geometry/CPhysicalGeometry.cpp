@@ -10059,6 +10059,11 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
       dotProduct += (Normal[iDim]/area)*(edgeVector[iDim]/distance);
     }
 
+    /*--- The function acos must receive an argument between [-1,1].
+    Otherwise, nan is returned.---*/
+
+    dotProduct = max(min(dotProduct, 0.999999), -0.999999);
+
     /*--- The definition of orthogonality is an area-weighted average of
      90 degrees minus the angle between the face area unit normal and
      the vector between i & j. If the two are perfectly aligned, then

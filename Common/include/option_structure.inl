@@ -1995,8 +1995,10 @@ public:
             must be specified. Hence the counter must be updated
             accordingly. ---*/
       switch( typeWF ) {
-        case EQUILIBRIUM_WALL_MODEL: counter += 3; break;
-        case LOGARITHMIC_WALL_MODEL: counter += 3; break;
+        case EQUILIBRIUM_WALL_MODEL:
+        case LOGARITHMIC_WALL_MODEL:
+        case ALGEBRAIC_WALL_MODEL:
+          counter += 3; break;
         default: break;
       }
 
@@ -2045,6 +2047,8 @@ public:
             is needed, which is extracted from option_value. ---*/
       switch( this->walltype[i] ) {
 
+        case ALGEBRAIC_WALL_MODEL:
+        case LOGARITHMIC_WALL_MODEL:
         case EQUILIBRIUM_WALL_MODEL: {
 
           /* LES equilibrium wall model. The exchange distance, stretching
@@ -2069,32 +2073,6 @@ public:
 
           break;
         }
-
-        case LOGARITHMIC_WALL_MODEL: {
-
-          /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
-           factor and number of points in the wall model must be specified. */
-          this->intInfo[i]    = new unsigned short[1];
-          this->doubleInfo[i] = new su2double[2];
-
-          istringstream ss_1st(option_value[counter++]);
-          if (!(ss_1st >> this->doubleInfo[i][0])) {
-            return badValue(option_value, "su2double", this->name);
-          }
-
-          istringstream ss_2nd(option_value[counter++]);
-          if (!(ss_2nd >> this->doubleInfo[i][1])) {
-            return badValue(option_value, "su2double", this->name);
-          }
-
-          istringstream ss_3rd(option_value[counter++]);
-          if (!(ss_3rd >> this->intInfo[i][0])) {
-            return badValue(option_value, "unsigned short", this->name);
-          }
-
-          break;
-        }
-
         default: // Just to avoid a compiler warning.
           break;
       }
