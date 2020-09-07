@@ -572,6 +572,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
           config_container[targetZone]->GetKind_Solver() == INC_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
+          *interpolator_container[donorZone][targetZone].get(),
           solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
           solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
           geometry_container[donorZone][INST_0][MESH_0],
@@ -631,6 +632,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   if(donorSolver >= 0 && targetSolver >= 0) {
     interface_container[donorZone][targetZone]->BroadcastData(
+      *interpolator_container[donorZone][targetZone].get(),
       solver_container[donorZone][INST_0][MESH_0][donorSolver],
       solver_container[targetZone][INST_0][MESH_0][targetSolver],
       geometry_container[donorZone][INST_0][MESH_0],

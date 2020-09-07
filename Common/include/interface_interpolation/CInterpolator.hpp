@@ -78,14 +78,30 @@ protected:
   CGeometry* const target_geometry;  /*! \brief Target geometry. */
 
 public:
+  struct CDonorInfo {
+    vector<int> processor;
+    vector<unsigned long> globalPoint;
+    vector<su2double> coefficient;
+
+    unsigned long nDonor() const { return processor.size(); }
+
+    void resize(size_t nDonor) {
+      processor.resize(nDonor);
+      globalPoint.resize(nDonor);
+      coefficient.resize(nDonor);
+    }
+  };
+  vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
+
   /*!
    * \brief Constructor of the class.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone
-   * \param[in] jZone - index of the target zone
+   * \param[in] iZone - index of the donor zone.
+   * \param[in] jZone - index of the target zone.
    */
-  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry ****geometry_container, const CConfig* const* config,
+                unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief No default construction allowed to force zones and geometry to always be set.
