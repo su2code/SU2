@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,9 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CIncNSVariable.hpp"
-
+#include "../../include/fluid/CFluidModel.hpp"
 
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :

@@ -30,25 +30,14 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
 
-namespace detail {
-template <class VariableType>
-constexpr size_t flowSolMaxnVar() {
-  return 12;
-}
-// template<>
-// constexpr size_t flowSolMaxnVar<"your variable type">() { return "your size"; }
-}  // namespace detail
-
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
  protected:
-  enum : size_t { MAXNDIM = 3 }; /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t {
-    MAXNVAR = detail::flowSolMaxnVar<VariableType>()
-  }; /*!< \brief Max number of variables, used in some static arrays. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
 
-  enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
-  enum : size_t { OMP_MIN_SIZE = 32 };  /*!< \brief Min chunk size for edge loops (max is color group size). */
+  static constexpr size_t OMP_MAX_SIZE = 512; /*!< \brief Max chunk size for light point loops. */
+  static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
@@ -245,7 +234,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
+  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
 
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -254,7 +243,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
+  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
 
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -328,7 +317,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                    CConfig* config, unsigned short val_marker) final;
+                    CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.

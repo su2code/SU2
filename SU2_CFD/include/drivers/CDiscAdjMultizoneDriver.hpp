@@ -40,8 +40,6 @@ protected:
                                           solution update. */
     OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
                                           w.r.t. solver variables (from all zones). */
-    ZONE_SPECIFIC_TAPE        /*!< \brief Record only the dependence of the solution update in a
-                                          specified zone w.r.t. solver variables (from all zones). */
   };
 
   /*!
@@ -58,8 +56,7 @@ protected:
                                               that it can be connected to a solver update evaluation. */
   };
 
-  int RecordingState;             /*!< \brief The kind of recording that the tape currently holds. */
-  bool retape;                    /*!< \brief Boolean whether a full tape can be kept in memory. */
+  int RecordingState = NONE;      /*!< \brief The kind of recording that the tape currently holds. */
 
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
   int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
