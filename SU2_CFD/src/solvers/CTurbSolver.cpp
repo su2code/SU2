@@ -113,9 +113,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double turbPrimVar_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double turbPrimVar_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
-  su2double ZeroVec[2] = {0.0}, OneVec[2]  = {0.0};
+  su2double ZeroVec[MAXNVAR] = {0.0}, OneVec[MAXNVAR]  = {0.0};
 
-  su2double GradWeights_i[2] = {0.0}, GradWeights_j[2] = {0.0};
+  su2double GradWeights_i[MAXNVAR] = {0.0}, GradWeights_j[MAXNVAR] = {0.0};
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -480,7 +480,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
   /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2double reconWeight_l[2] = {0.0}, reconWeight_r[2] = {0.0};
+  su2double reconWeight_l[MAXNVAR] = {0.0}, reconWeight_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     reconWeight_l[iVar] = 0.5*kappa*limiter_i[iVar];
     reconWeight_r[iVar] = 0.5*kappa*limiter_j[iVar];

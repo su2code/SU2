@@ -3060,8 +3060,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
 
-  su2double GradWeights_i[MAXNVAR] = {0.0}, turbGradWeights_i[1] = {0.0};
-  su2double GradWeights_j[MAXNVAR] = {0.0}, turbGradWeights_j[1] = {0.0};
+  su2double GradWeights_i[MAXNVAR] = {0.0}, GradWeights_j[MAXNVAR] = {0.0};
 
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -3495,13 +3494,17 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
 
   /*--- Store limiters in single vector in proper order ---*/
   su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
-  l_i[0] = limiter_i[nDim+2]; l_j[0] = limiter_j[nDim+2];
+  l_i[0] = limiter_i[nDim+2];
+  l_j[0] = limiter_j[nDim+2];
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    l_i[iDim+1] = limiter_i[iDim+1]; l_j[iDim+1] = limiter_j[iDim+1];
+    l_i[iDim+1] = limiter_i[iDim+1];
+    l_j[iDim+1] = limiter_j[iDim+1];
   }
-  l_i[nDim+1] = limiter_i[nDim+1]; l_j[nDim+1] = limiter_j[nDim+1];
+  l_i[nDim+1] = limiter_i[nDim+1];
+  l_j[nDim+1] = limiter_j[nDim+1];
   if (tkeNeeded) {
-    l_i[nDim+2] = turbLimiter_i[0]; l_j[nDim+2] = turbLimiter_j[0];
+    l_i[nDim+2] = turbLimiter_i[0];
+    l_j[nDim+2] = turbLimiter_j[0];
   }
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
