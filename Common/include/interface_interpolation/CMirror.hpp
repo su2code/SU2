@@ -33,16 +33,21 @@
  * \note Requires that the opposing mesh has already run interpolation (jZone > iZone), otherwise throws.
  */
 class CMirror final : public CInterpolator {
+private:
+  const CInterpolator* const transpInterpolator; /*! \brief The transpose interpolator (from j to i). */
+
 public:
   /*!
    * \brief Constructor of the class.
    * \note Data is set in geometry[targetZone].
    * \param[in] geometry_container
    * \param[in] config - config container
+   * \param[in] interpolator - Transpose interpolator
    * \param[in] iZone - First zone
    * \param[in] jZone - Second zone
    */
-  CMirror(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CMirror(CGeometry ****geometry_container, const CConfig* const* config,
+          const CInterpolator* interpolator, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes

@@ -1006,8 +1006,7 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint,                  /*!< \brief AD-based discrete adjoint mode. */
-  FullTape;                              /*!< \brief Full tape mode for coupled discrete adjoints. */
+  bool DiscreteAdjoint;                  /*!< \brief AD-based discrete adjoint mode. */
   unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
@@ -1845,6 +1844,7 @@ public:
    * \return Dimensionalized freestream velocity vector.
    */
   su2double* GetVelocity_FreeStream(void) { return Velocity_FreeStream; }
+  const su2double* GetVelocity_FreeStream(void) const { return Velocity_FreeStream; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream temperature.
@@ -1869,6 +1869,7 @@ public:
    * \return Non-dimensionalized freestream velocity vector.
    */
   su2double* GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
+  const su2double* GetVelocity_FreeStreamND(void) const { return Velocity_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream energy.
@@ -8404,12 +8405,6 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
-
-  /*!
-  * \brief Get the indicator whether we want to use full (coupled) tapes.
-  * \return the full tape indicator.
-  */
-  bool GetFull_Tape(void) const { return FullTape; }
 
   /*!
    * \brief Get the number of subiterations while a ramp is applied.
