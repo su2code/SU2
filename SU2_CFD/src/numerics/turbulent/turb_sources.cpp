@@ -1104,7 +1104,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
   for (iDim = 0; iDim < nDim; iDim++){
     for (jDim =0; jDim < nDim; jDim++){
       StrainRate[iDim][jDim] = MeanPerturbedRSM[iDim][jDim]
-      - TWO3 * turb_ke * delta[iDim][jDim];
+      - TWO3 * turb_ke * delta3[iDim][jDim];
       StrainRate[iDim][jDim] = - StrainRate[iDim][jDim] * Density_i / (2 * Eddy_Viscosity_i);
     }
   }

@@ -104,24 +104,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     tau[iDim] = new su2double [nDim];
   }
 
-  delta = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delta[iDim] = new su2double [nDim];
-  }
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    for (jDim = 0; jDim < nDim; jDim++) {
-      if (iDim == jDim) delta[iDim][jDim] = 1.0;
-      else delta[iDim][jDim]=0.0;
-    }
-  }
-
   delta3 = new su2double* [3];
   for (iDim = 0; iDim < 3; iDim++) {
     delta3[iDim] = new su2double [3];
-  }
-
-  for (iDim = 0; iDim < 3; iDim++) {
     for (jDim = 0; jDim < 3; jDim++) {
       if (iDim == jDim) delta3[iDim][jDim] = 1.0;
       else delta3[iDim][jDim]=0.0;

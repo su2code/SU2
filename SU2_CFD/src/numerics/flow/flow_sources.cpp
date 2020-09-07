@@ -211,7 +211,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
         for (jDim = 0 ; jDim < nDim; jDim++)
           tau[iDim][jDim] = (total_viscosity*(PrimVar_Grad_i[jDim+1][iDim] +
                                               PrimVar_Grad_i[iDim+1][jDim] )
-                             -TWO3*total_viscosity*div_vel*delta[iDim][jDim]);
+                             -TWO3*total_viscosity*div_vel*delta3[iDim][jDim]);
 
       /*--- Viscous terms. ---*/
 
