@@ -318,17 +318,11 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   // Solution variables
-  if (nSpecies == 2){
-    AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
-    AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+     Species = std::to_string(iSpecies);
+     AddVolumeOutput("DENSITY_" + Species,  "Density_" + Species,  "SOLUTION", "Density_" + Species);
   }
-  if (nSpecies == 5){
-    AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
-    AddVolumeOutput("DENSITY_O2",  "Density_O2",  "SOLUTION", "Density_N");
-    AddVolumeOutput("DENSITY_NO",  "Density_NO",  "SOLUTION", "Density_NO");
-    AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
-    AddVolumeOutput("DENSITY_O",   "Density_O",   "SOLUTION", "Density_O");
-  }
+
 
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
   AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
@@ -489,6 +483,12 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 3));
     SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
   }
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+     Species = std::to_string(iSpecies);
+     SetVolumeOutputValue("DENSITY_" + Species, iPoint, Node_Flow->GetSolution(iPoint, iSpecies));
+  }
+  
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
      Species = std::to_string(iSpecies);
