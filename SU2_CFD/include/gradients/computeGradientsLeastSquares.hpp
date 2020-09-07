@@ -3,7 +3,7 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,7 +50,7 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   MPI_QUANTITIES kindMpiComm,
                                   PERIODIC_QUANTITIES kindPeriodicComm,
                                   CGeometry& geometry,
-                                  CConfig& config,
+                                  const CConfig& config,
                                   bool weighted,
                                   const FieldType& field,
                                   size_t varBegin,
@@ -93,7 +93,7 @@ void computeGradientsLeastSquares(CSolver* solver,
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)
         Rmatrix(iPoint, iDim, jDim) = 0.0;
-
+  
 
     for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
     {
@@ -102,12 +102,14 @@ void computeGradientsLeastSquares(CSolver* solver,
       const su2double* coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
+
       /*--- Distance vector from iPoint to jPoint ---*/
 
       su2double dist_ij[MAXNDIM] = {0.0};
 
       for (size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = coord_j[iDim] - coord_i[iDim];
+
 
       /*--- Compute inverse weight, default 1 (unweighted). ---*/
 
@@ -165,7 +167,6 @@ void computeGradientsLeastSquares(CSolver* solver,
 
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
-  SU2_OMP_MASTER
   if (solver != nullptr)
   {
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
@@ -174,7 +175,7 @@ void computeGradientsLeastSquares(CSolver* solver,
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
     }
   }
-  SU2_OMP_BARRIER
+
 
   /*--- Second loop over points of the grid to compute final gradient. ---*/
 
@@ -297,7 +298,6 @@ void computeGradientsLeastSquares(CSolver* solver,
 
   /*--- If no solver was provided we do not communicate ---*/
 
-  SU2_OMP_MASTER
   if (solver != nullptr)
   {
     /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
@@ -305,6 +305,5 @@ void computeGradientsLeastSquares(CSolver* solver,
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
-  SU2_OMP_BARRIER
 
 }

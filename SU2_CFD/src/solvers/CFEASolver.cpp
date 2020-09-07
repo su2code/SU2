@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -769,10 +769,8 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool dynamic = config->GetTime_Domain();
-  const bool first_iter = (config->GetInnerIter() == 0);
   const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
-  const bool fsi = config->GetFSI_Simulation();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*
@@ -817,11 +815,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
   /*--- Clear external forces. ---*/
   nodes->Clear_SurfaceLoad_Res();
-
-  /*
-   * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
-   */
-  if (fsi && first_iter && (idxIncrement==0)) Integrate_FSI_Loads(geometry, config);
 
   /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
   initial_calc = false;
@@ -921,7 +914,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
-            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Kab, simp_penalty);
           }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
@@ -1081,8 +1074,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   /*--- Never record this method as the mass matrix is passive (but the mass residual is not). ---*/
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1157,7 +1149,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
 
   } // end SU2_OMP_PARALLEL
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1330,8 +1322,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Never record this method as atm it is not differentiable. ---*/
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   const bool prestretch_fem = config->GetPrestretch();
 
@@ -1610,7 +1601,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   }
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1947,18 +1938,21 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*---  Compute the residual Ax-f ---*/
 
 #ifndef CODI_FORWARD_TYPE
-    CSysVector<passivedouble> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
+    CSysVector<su2mixedfloat> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #else
     CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
 #endif
 
+#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+    /*---  We need temporaries to interface with the passive matrix. ---*/
+    CSysVector<su2mixedfloat> sol, res;
+#endif
+
     SU2_OMP_PARALLEL
     {
-#ifndef CODI_REVERSE_TYPE
+#if !(defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)) || defined(CODI_FORWARD_TYPE)
     Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
 #else
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<passivedouble> sol, res;
     sol.PassiveCopy(LinSysSol);
     res.PassiveCopy(LinSysRes);
     Jacobian.ComputeResidual(sol, res, LinSysAux);
@@ -2239,72 +2233,6 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
 
 }
 
-void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config) {
-
-  /*--- The conservative approach transfers forces directly, no integration needed. ---*/
-  if (config->GetConservativeInterpolation()) return;
-
-  unordered_map<unsigned long, su2double> vertexArea;
-  unordered_set<short> processedMarkers({-1});
-
-  /*--- Compute current area associated with each vertex. ---*/
-
-  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair. ---*/
-    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
-    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
-    if (processedMarkers.count(iMarker) > 0) continue;
-    processedMarkers.insert(iMarker);
-
-    for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
-      /*--- Define the boundary element. ---*/
-      unsigned long nodeList[MAXNNODE_2D] = {0};
-      su2double coords[MAXNNODE_2D][MAXNDIM] = {{0.0}};
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      auto nNode = quad? 4u : nDim;
-
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (auto iDim = 0u; iDim < nDim; ++iDim)
-          coords[iNode][iDim] = geometry->nodes->GetCoord(nodeList[iNode], iDim)+
-                                nodes->GetSolution(nodeList[iNode],iDim);
-      }
-
-      /*--- Compute the area contribution to each node. ---*/
-      su2double normal[MAXNDIM] = {0.0};
-
-      switch (nNode) {
-        case 2: LineNormal(coords, normal); break;
-        case 3: TriangleNormal(coords, normal); break;
-        case 4: QuadrilateralNormal(coords, normal); break;
-      }
-
-      su2double area = Norm(int(MAXNDIM),normal) / nNode;
-
-      /*--- Update area of nodes. ---*/
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        auto iPoint = nodeList[iNode];
-        if (vertexArea.count(iPoint) == 0)
-          vertexArea[iPoint] = area;
-        else
-          vertexArea[iPoint] += area;
-      }
-    }
-  }
-
-  /*--- Integrate tractions. ---*/
-
-  for (auto it = vertexArea.begin(); it != vertexArea.end(); ++it) {
-    auto iPoint = it->first;
-    su2double area = it->second;
-    su2double force[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      force[iDim] = nodes->Get_FlowTraction(iPoint,iDim)*area;
-    nodes->Set_FlowTraction(iPoint, force);
-  }
-
-}
-
 su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, const CConfig *config){
 
   su2double LoadCoeff = 1.0;
@@ -2507,13 +2435,12 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
       }
     }
 
+    /*--- Perform the MPI communication of the solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
+
   } // end SU2_OMP_PARALLEL
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
-
 }
 
 void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) {
@@ -2559,12 +2486,9 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    SU2_OMP_MASTER
-    {
-      InitiateComms(geometry, config, SOLUTION_FEA);
-      CompleteComms(geometry, config, SOLUTION_FEA);
-    }
-    SU2_OMP_BARRIER
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
 
     /*--- After the solution has been communicated, set the 'old' predicted solution as the solution. ---*/
     /*--- Loop over n points (as we have already communicated everything. ---*/

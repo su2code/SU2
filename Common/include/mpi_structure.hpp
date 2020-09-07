@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 #include <map>
 #endif
 
-#include "./datatype_structure.hpp"
+#include "basic_types/datatype_structure.hpp"
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -50,35 +50,21 @@
 #include <medi/medi.hpp>
 using namespace medi;
 
+#include <codi/externals/codiMpiTypes.hpp>
+
 class CMediMPIWrapper;
 typedef CMediMPIWrapper SU2_MPI;
 
-#if defined CODI_REVERSE_TYPE
-#include <codi/externals/codiMediPackTypes.hpp>
-#if CODI_PRIMAL_INDEX_TAPE
-typedef CoDiPackToolPrimalRestore<su2double> MediTool;
-#else
-typedef CoDiPackTool<su2double> MediTool;
-#endif // defined CODI_REVERSE_TYPE
-#elif defined CODI_FORWARD_TYPE
-#include <codi/externals/codiForwardMediPackTypes.hpp>
-typedef CoDiPackForwardTool<su2double> MediTool;
-#endif // defined CODI_FORWARD_TYPE
-#define AMPI_ADOUBLE ((medi::MpiTypeInterface*)MediTool::MPI_TYPE)
+typedef CoDiMpiTypes<su2double> MediTypes;
+typedef MediTypes::Tool MediTool;
+
+extern MediTypes* mediTypes;
+#define AMPI_ADOUBLE ((medi::MpiTypeInterface*)mediTypes->MPI_TYPE)
 
 #else
 class CBaseMPIWrapper;
 typedef CBaseMPIWrapper SU2_MPI;
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
-
-/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
-template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
-
-/*--- In AD we specialize for the passive wrapper. ---*/
-#if defined CODI_REVERSE_TYPE
-class CBaseMPIWrapper;
-template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
-#endif
 
 /*!
  * \class CMPIWrapper
@@ -323,6 +309,7 @@ public:
 #define MPI_UNSIGNED_LONG 1
 #define MPI_LONG 2
 #define MPI_UNSIGNED_SHORT 3
+#define MPI_FLOAT 4
 #define MPI_DOUBLE 4
 #define MPI_ANY_SOURCE 5
 #define MPI_SUM 6
@@ -425,7 +412,7 @@ public:
                         void *recvbuf, int recvcnt, Datatype recvtype, Comm comm);
 
   static void Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                         void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm);
+                         void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
@@ -450,6 +437,17 @@ public:
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
 
+#endif
+
+/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
+template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
+
+/*--- In AD we specialize for the passive wrapper. ---*/
+#if defined CODI_REVERSE_TYPE
+template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#if defined USE_MIXED_PRECISION
+template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
+#endif
 #endif
 
 /* Depending on the compiler, define the correct macro to get the current function name */

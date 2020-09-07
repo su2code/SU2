@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,9 @@
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CVariable {
+public:
+  static constexpr size_t MAXNVAR = 12;
+
 protected:
   VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType HB_Source;     /*!< \brief harmonic balance source term. */

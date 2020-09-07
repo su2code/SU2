@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #pragma once
 
 #include "allocation_toolbox.hpp"
-#include "../datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 #include <utility>
 #include <type_traits>
@@ -595,3 +595,36 @@ struct C3DDummyMiddleView
     return data(i,k);
   }
 };
+
+/*!
+ * \class C3DContainerDecorator
+ * \brief Decorate a vector type (Storage) with 3 dimensions. *
+ */
+template<class Storage>
+struct C3DContainerDecorator {
+  using Scalar = typename Storage::Scalar;
+  using Index = typename Storage::Index;
+
+  Storage storage;
+  Index M, N;
+
+  C3DContainerDecorator() = default;
+
+  C3DContainerDecorator(Index length, Index rows, Index cols, Scalar value = 0) {
+    resize(length, rows, cols, value);
+  }
+
+  void resize(Index length, Index rows, Index cols, Scalar value = 0) {
+    M = rows;
+    N = cols;
+    storage.resize(length*rows*cols) = value;
+  }
+
+  Scalar& operator() (Index i, Index j, Index k) { return storage(i*M*N + j*N + k); }
+  const Scalar& operator() (Index i, Index j, Index k) const { return storage(i*M*N + j*N + k); }
+};
+
+/* Define an alias for a 3D int matrix, we use su2vector to store the integers contiguously
+ * and the container decorator to create the access semantics we want. */
+using C3DIntMatrix = C3DContainerDecorator<su2vector<int> >;
+using C3DDoubleMatrix = C3DContainerDecorator<su2vector<double> >;

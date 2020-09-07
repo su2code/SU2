@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,8 @@
 #include "../../include/drivers/CMultizoneDriver.hpp"
 #include "../../include/definition_structure.hpp"
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIteration.hpp"
 
 CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
                   CDriver(confFile, val_nZone, MPICommunicator, false) {
@@ -77,6 +79,9 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       fluid_zone = true;
       break;
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+      fluid_zone = true;
+      break;  
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
@@ -161,8 +166,9 @@ void CMultizoneDriver::StartSolver() {
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+  }
 
   if (rank == MASTER_NODE){
     cout << endl <<"Simulation Run using the Multizone Driver" << endl;
@@ -255,7 +261,6 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                              solver_container[iZone][INST_0],
                                                                              config_container[iZone], TimeIter);
     }
-
   }
 
 #ifdef HAVE_MPI
@@ -568,6 +573,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
           config_container[targetZone]->GetKind_Solver() == INC_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
+          *interpolator_container[donorZone][targetZone].get(),
           solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
           solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
           geometry_container[donorZone][INST_0][MESH_0],
@@ -627,6 +633,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   if(donorSolver >= 0 && targetSolver >= 0) {
     interface_container[donorZone][targetZone]->BroadcastData(
+      *interpolator_container[donorZone][targetZone].get(),
       solver_container[donorZone][INST_0][MESH_0][donorSolver],
       solver_container[targetZone][INST_0][MESH_0][targetSolver],
       geometry_container[donorZone][INST_0][MESH_0],
@@ -692,4 +699,8 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
 
   return StopCalc;
 
+}
+
+bool CMultizoneDriver::GetTimeConvergence() const{
+  return driver_output->GetTimeConvergence();
 }

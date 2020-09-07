@@ -1,7 +1,7 @@
 /*!
  * \file CInterpolatorFactory.cpp
  * \brief Factory to generate interpolator objects.
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,8 +34,9 @@
 #include "../../include/interface_interpolation/CSlidingMesh.hpp"
 
 namespace CInterpolatorFactory {
-CInterpolator* createInterpolator(CGeometry ****geometry_container,
+CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
+                                  const CInterpolator* transpInterpolator,
                                   unsigned iZone, unsigned jZone, bool verbose) {
 
   CInterpolator* interpolator = nullptr;
@@ -59,7 +60,7 @@ CInterpolator* createInterpolator(CGeometry ****geometry_container,
   }
   else if (config[jZone]->GetConservativeInterpolation()) {
     if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
-    interpolator = new CMirror(geometry_container, config, iZone, jZone);
+    interpolator = new CMirror(geometry_container, config, transpInterpolator, iZone, jZone);
   }
   else {
     switch(type) {

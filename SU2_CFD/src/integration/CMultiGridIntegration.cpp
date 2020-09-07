@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,6 +43,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   switch (config[iZone]->GetKind_Solver()) {
     case EULER:
     case NAVIER_STOKES:
+    case NEMO_EULER:
+    case NEMO_NAVIER_STOKES:
     case RANS:
     case FEM_EULER:
     case FEM_NAVIER_STOKES:
@@ -103,6 +105,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+  
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
@@ -172,6 +175,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
 
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+
 
       if (iRKStep == 0) {
 
@@ -357,12 +361,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   /*--- MPI the set solution old ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
-    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
-  }
-  SU2_OMP_BARRIER
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
 
   /// TODO: Need to check for possible race condition here (multiple coarse points setting the same fine).
 
@@ -469,12 +469,8 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   /*--- MPI the new interpolated solution ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_fine->InitiateComms(geo_fine, config, SOLUTION);
-    sol_fine->CompleteComms(geo_fine, config, SOLUTION);
-  }
-  SU2_OMP_BARRIER
+  sol_fine->InitiateComms(geo_fine, config, SOLUTION);
+  sol_fine->CompleteComms(geo_fine, config, SOLUTION);
 
 }
 
@@ -632,12 +628,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
   /*--- MPI the new interpolated solution ---*/
 
-  SU2_OMP_MASTER
-  {
-    sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-    sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
-  }
-  SU2_OMP_BARRIER
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
 
 }
 

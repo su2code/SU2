@@ -2,7 +2,7 @@
  * \file CRadP1Solver.hpp
  * \brief Declaration and inlines of the class to compute a P1 radiation problem.
  * \author Ruben Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

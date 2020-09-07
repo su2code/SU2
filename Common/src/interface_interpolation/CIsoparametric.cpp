@@ -2,7 +2,7 @@
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
  * \author P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,8 +46,9 @@ struct DonorInfo {
   bool operator< (const DonorInfo& other) const { return distance < other.distance; }
 };
 
-CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                               unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CIsoparametric::CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config,
+                               unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -66,6 +67,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
   const auto nDim = donor_geometry->GetnDim();
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+  /*--- Make space for donor info. ---*/
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
 
   /*--- Init stats. ---*/
   MaxDistance = 0.0; ErrorCounter = 0;
@@ -107,6 +112,7 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Collect coordinates and global point indices. ---*/
     Collect_VertexInfo(markDonor, markTarget, nVertexDonor, nDim);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     /*--- Compress the vertex information, and build a map of global point to "compressed
      *    index" to then reconstruct the donor elements in local index space. ---*/
@@ -173,8 +179,8 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0u; iVertexTarget < nVertexTarget; ++iVertexTarget) {
 
-      auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
-      const auto iPoint = target_vertex->GetNode();
+      auto& target_vertex = targetVertices[markTarget][iVertexTarget];
+      const auto iPoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
 
       if (!target_geometry->nodes->GetDomain(iPoint)) continue;
       totalCount += 1;
@@ -195,10 +201,10 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
       if (minDist < matchingVertexTol) {
         /*--- Perfect match. ---*/
-        target_vertex->Allocate_DonorInfo(1);
-        target_vertex->SetDonorCoeff(0, 1.0);
-        target_vertex->SetInterpDonorPoint(0, donorPoint[iClosestVertex]);
-        target_vertex->SetInterpDonorProcessor(0, donorProc[iClosestVertex]);
+        target_vertex.resize(1);
+        target_vertex.coefficient[0] = 1.0;
+        target_vertex.globalPoint[0] = donorPoint[iClosestVertex];
+        target_vertex.processor[0] = donorProc[iClosestVertex];
         continue;
       }
 
@@ -249,13 +255,13 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
 
       const auto nNode = elemNumNodes[donor.iElem];
 
-      target_vertex->Allocate_DonorInfo(nNode);
+      target_vertex.resize(nNode);
 
       for (auto iNode = 0u; iNode < nNode; ++iNode) {
         const auto iVertex = elemIdxNodes(donor.iElem, iNode);
-        target_vertex->SetDonorCoeff(iNode, donor.isoparams[iNode]);
-        target_vertex->SetInterpDonorPoint(iNode, donorPoint[iVertex]);
-        target_vertex->SetInterpDonorProcessor(iNode, donorProc[iVertex]);
+        target_vertex.coefficient[iNode] = donor.isoparams[iNode];
+        target_vertex.globalPoint[iNode] = donorPoint[iVertex];
+        target_vertex.processor[iNode] = donorProc[iVertex];
       }
 
     }
@@ -384,8 +390,8 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
 
   /*--- Finding Xi and Eta is a "third order" effect that we do not
    *    differentiate (also because we need to iterate). ---*/
-  const bool tapeActive = AD::TapeActive();
-  AD::StopRecording();
+
+  const bool wasActive = AD::BeginPassive();
 
   for (int iter = 0; iter < NITER; ++iter) {
 
@@ -431,7 +437,7 @@ int CIsoparametric::QuadrilateralIsoparameters(const su2double X[][3], const su2
     if (eps < tol) break;
   }
 
-  if (tapeActive) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
   int outOfBounds = 0;
 
