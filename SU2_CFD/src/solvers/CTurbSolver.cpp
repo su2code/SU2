@@ -604,7 +604,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
-  /*---         To reduce extra communication overhead, we only consider   ---*/
+  /*---         To prevent extra communication overhead, we only consider  ---*/
   /*---         neighbors on the current rank. Note that jacobianWeights_i ---*/
   /*---         is already weighted by 0.5.                                ---*/
   /*--------------------------------------------------------------------------*/

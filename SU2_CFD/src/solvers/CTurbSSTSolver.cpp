@@ -459,7 +459,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
+
     if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
 
       /*--- Conservative variables w/o reconstruction ---*/
@@ -540,10 +540,44 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
   const su2double r_i       = flowNodes->GetDensity(iPoint);
   const su2double om_i      = nodes->GetPrimitive(iPoint,1);
   
+  /*--- Reset first row of Jacobian now so we don't need to later ---*/
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
   Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
+  /*---         In Green-Gauss, the weight of the surface node             ---*/
+  /*---         contribution is (0.5*Sum(n_v)+n_s)/r. Least squares        ---*/
+  /*---         gradients do not have a surface term.                      ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if (gg && node_i->GetPhysicalBoundary()) {
+    Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
+    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const long iVertex = node_i->GetVertex(iMarker);
+        if (iVertex != -1) {
+          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          const su2double factor = -2.0*(1. - F1)*sigma_om2/om_i;
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
+            const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
+
+            Jacobian_i[1][0] += factor*gradom*Normal[iDim];
+            Jacobian_i[1][1] += factor*gradk*Normal[iDim];
+          }// iDim
+        }// iVertex
+      }// not send-receive
+    }// iMarker
+    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+  }// if physical boundary
   
-  /*--- Contribution of TurbVar_{i,j} to cross diffusion gradient Jacobian at i ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
+  /*---         To prevent extra communication overhead, we only consider  ---*/
+  /*---         neighbors on the current rank.                             ---*/
+  /*--------------------------------------------------------------------------*/
+
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const unsigned long jPoint = node_i->GetPoint(iNeigh);
     const unsigned long iEdge = node_i->GetEdge(iNeigh);
@@ -570,28 +604,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
-  
-  /*--- Boundary contribution to cross diffusion gradient Jacobian at i ---*/
-  if (gg && node_i->GetPhysicalBoundary()) {
-    Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
-    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = node_i->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          const su2double factor = -2.0*(1. - F1)*sigma_om2/om_i;
-          for (auto iDim = 0; iDim < nDim; iDim++) {
-            const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
-            const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-
-            Jacobian_i[1][0] += factor*gradom*Normal[iDim];
-            Jacobian_i[1][1] += factor*gradk*Normal[iDim];
-          }// iDim
-        }// iVertex
-      }// not send-receive
-    }// iMarker
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-  }// if physical boundary
 
   AD::EndPassive(wasActive);
   

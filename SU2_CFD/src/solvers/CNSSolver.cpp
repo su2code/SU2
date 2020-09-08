@@ -558,7 +558,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
-  /*---         To reduce extra communication overhead, we only consider   ---*/
+  /*---         To prevent extra communication overhead, we only consider  ---*/
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -709,7 +709,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
           factor *= -HalfOnVol*ConductivityOnR*sign;
 
           /*--- Density Jacobian ---*/
-          Jacobian_i[nVar-1][0] += factor*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i*Phi_i);
+          Jacobian_i[nVar-1][0] += factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
 
           /*--- Momentum Jacobian ---*/
           for (auto jDim = 0; jDim < nDim; jDim++)
@@ -733,7 +733,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
-  /*---         To reduce extra communication overhead, we only consider   ---*/
+  /*---         To prevent extra communication overhead, we only consider  ---*/
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -761,8 +761,8 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     factor *= 0.5*sign*ConductivityOnR;
 
     /*--- Density Jacobian ---*/
-    Jacobian_i[nVar-1][0] += factor*(-Pressure_i/(Density_i*Density_i)+0.5*Vel2_i*Phi_i);
-    Jacobian_j[nVar-1][0] += factor*(-Pressure_k/(Density_k*Density_k)+0.5*Vel2_k*Phi_k);
+    Jacobian_i[nVar-1][0] += factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
+    Jacobian_j[nVar-1][0] += factor*(-Pressure_k/pow(Density_k,2.0)+0.5*Vel2_k*Phi_k);
 
     /*--- Momentum Jacobian ---*/
     for (auto jDim = 0; jDim < nDim; jDim++) {
