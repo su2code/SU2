@@ -36,6 +36,7 @@
 namespace CInterpolatorFactory {
 CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
                                   const CConfig* const* config,
+                                  const CInterpolator* transpInterpolator,
                                   unsigned iZone, unsigned jZone, bool verbose) {
 
   CInterpolator* interpolator = nullptr;
@@ -59,7 +60,7 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
   }
   else if (config[jZone]->GetConservativeInterpolation()) {
     if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
-    interpolator = new CMirror(geometry_container, config, iZone, jZone);
+    interpolator = new CMirror(geometry_container, config, transpInterpolator, iZone, jZone);
   }
   else {
     switch(type) {

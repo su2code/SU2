@@ -39,7 +39,8 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   bool discrete_adjoint   = config->GetDiscrete_Adjoint();
   bool refgeom            = config->GetRefGeom(); // Reference geometry needs to be stored
   bool dynamic_analysis   = config->GetTime_Domain();
-  bool fsi_analysis       = config->GetFSI_Simulation();
+  bool multizone          = config->GetMultizone_Problem();
+  bool fsi_analysis       = config->GetFSI_Simulation() || multizone;
 
   VonMises_Stress.resize(nPoint) = su2double(0.0);
 
@@ -85,7 +86,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
 
   if (prestretch_fem) Prestretch.resize(nPoint,nVar);
 
-  if (config->GetMultizone_Problem()) Set_BGSSolution_k();
+  if (multizone) Set_BGSSolution_k();
 
   if (config->GetTopology_Optimization()) AuxVar.resize(nPoint);
 }

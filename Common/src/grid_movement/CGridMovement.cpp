@@ -1,12 +1,12 @@
 /*!
- * \file grid_adaptation_structure.inl
- * \brief In-Line subroutines of the <i>grid_adaptation_structure.hpp</i> file.
- * \author F. Palacios
+ * \file CGridMovement.cpp
+ * \brief Parent class for grid movement classes
+ * \author F. Palacios, T. Economon, S. Padron
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -24,6 +24,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#pragma once
 
+#include "../../include/grid_movement/CGridMovement.hpp"
+
+CGridMovement::CGridMovement(void) { }
+
+CGridMovement::~CGridMovement(void) { }

@@ -27,23 +27,26 @@
  */
 
 #include "../../../include/interfaces/fsi/CDiscAdjFlowTractionInterface.hpp"
-
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                             CConfig *config, bool integrate_tractions_) :
-  CFlowTractionInterface(val_nVar, val_nConst, config, integrate_tractions_) {
-
+                                                             const CConfig *config, bool conservative_) :
+  CFlowTractionInterface(val_nVar, val_nConst, config, conservative_) {
 }
 
 void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
                                                           CGeometry *flow_geometry, CGeometry *struct_geometry,
-                                                          CConfig *flow_config, CConfig *struct_config){
+                                                          const CConfig *flow_config, const CConfig *struct_config){
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   struct_solution->GetNodes()->Clear_FlowTraction();
 
   Preprocess(flow_config);
+
+  if (!conservative) ComputeVertexAreas(struct_config, struct_geometry, struct_solution);
 
   /*--- No ramp applied ---*/
   Physical_Constants[1] = 1.0;
