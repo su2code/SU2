@@ -7135,6 +7135,9 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
+
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i,
             *V_reflected,
@@ -7270,8 +7273,8 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
       
       if (tkeNeeded)
-        conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                            solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
+        conv_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                            turbNodes->GetPrimitive(iPoint,0));
 
       /*--- Compute the residual using an upwind scheme. ---*/
 
@@ -7373,21 +7376,17 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), Grad_Reflected);
 
         /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == SST) {
-          visc_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
-          visc_numerics->SetTurbSpecificDissipation(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
-                                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
-          visc_numerics->SetTurbVarGradient(solver[TURB_SOL]->GetNodes()->GetGradient(iPoint),
-                                            solver[TURB_SOL]->GetNodes()->GetGradient(iPoint));
-          visc_numerics->SetF1blending(solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
-                                       solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
-          visc_numerics->SetF2blending(solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
-                                       solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
-          visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
-                                      nodes->GetVorticity(iPoint));
-          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
-                                      nodes->GetStrainMag(iPoint));
+        if (tkeNeeded) {
+          visc_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                              turbNodes->GetPrimitive(iPoint,0));
+          visc_numerics->SetTurbSpecificDissipation(turbNodes->GetPrimitive(iPoint,1),
+                                                    turbNodes->GetPrimitive(iPoint,1));
+          visc_numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
+                                            turbNodes->GetGradient(iPoint));
+          visc_numerics->SetF1blending(turbNodes->GetF1blending(iPoint),
+                                       turbNodes->GetF1blending(iPoint));
+          visc_numerics->SetF2blending(turbNodes->GetF2blending(iPoint),
+                                       turbNodes->GetF2blending(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
         }
@@ -7427,9 +7426,6 @@ void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
-
   su2double *GridVel;
   su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
   su2double Density, Pressure, Energy,  Velocity[3] = {0.0,0.0,0.0};
@@ -7444,18 +7440,21 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
   su2double *U_domain;
   su2double U_infty[MAXNVAR] = {0.0};
 
-  su2double Gas_Constant     = config->GetGas_ConstantND();
+  su2double Gas_Constant = config->GetGas_ConstantND();
 
-  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  bool viscous        = config->GetViscous();
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool implicit  = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  const bool viscous   = config->GetViscous();
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   su2double *Normal = new su2double[nDim];
 
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
@@ -7466,12 +7465,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       /*--- Index of the closest interior node ---*/
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (auto iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
@@ -7487,10 +7486,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
          boundary nodes. ---*/
 
       Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt(Area);
 
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Store primitive variables (density, velocities, velocity squared,
@@ -7501,7 +7500,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Density_Bound = V_domain[nDim+2];
       Vel2_Bound = 0.0; Vn_Bound = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Vel_Bound[iDim] = V_domain[iDim+1];
         Vel2_Bound     += Vel_Bound[iDim]*Vel_Bound[iDim];
         Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
@@ -7516,7 +7515,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Density_Infty = GetDensity_Inf();
       Vel2_Infty = 0.0; Vn_Infty = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Vel_Infty[iDim] = GetVelocity_Inf(iDim);
         Vel2_Infty     += Vel_Infty[iDim]*Vel_Infty[iDim];
         Vn_Infty       += Vel_Infty[iDim]*UnitNormal[iDim];
@@ -7530,7 +7529,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       Qn_Infty = Vn_Infty;
       if (dynamic_grid) {
         GridVel = geometry->node[iPoint]->GetGridVel();
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Qn_Infty -= GridVel[iDim]*UnitNormal[iDim];
       }
 
@@ -7581,12 +7580,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       if (Qn_Infty > 0.0)   {
         /*--- Outflow conditions ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Bound[iDim] + (Vn-Vn_Bound)*UnitNormal[iDim];
         Entropy = Entropy_Bound;
       } else  {
         /*--- Inflow conditions ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = Vel_Infty[iDim] + (Vn-Vn_Infty)*UnitNormal[iDim];
         Entropy = Entropy_Infty;
       }
@@ -7595,7 +7594,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Density = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,1.0/Gamma_Minus_One);
       Velocity2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
@@ -7603,7 +7602,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       if (tkeNeeded) {
         if (Qn_Infty > 0.0) {
           /*--- Outflow conditions ---*/
-          Kine_Infty = solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0);
+          Kine_Infty = turbNodes->GetPrimitive(iPoint,0);
         }
         else {
           const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
@@ -7615,7 +7614,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       /*--- Store new primitive state for computing the flux. ---*/
 
       V_infty[0] = Pressure/(Gas_Constant*Density);
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = Velocity[iDim];
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
@@ -7624,7 +7623,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
 
       if (tkeNeeded)
-        conv_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
+        conv_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
                                             Kine_Infty);
 
       /*--- Set various quantities in the numerics class ---*/
@@ -7678,20 +7677,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
         /*--- Turbulent kinetic energy ---*/
 
         if (tkeNeeded) {
-          visc_numerics->SetTurbKineticEnergy(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0),
-                                              solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,0));
-          visc_numerics->SetTurbSpecificDissipation(solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1),
-                                                    solver[TURB_SOL]->GetNodes()->GetPrimitive(iPoint,1));
-          visc_numerics->SetTurbVarGradient(solver[TURB_SOL]->GetNodes()->GetGradient(iPoint),
-                                            solver[TURB_SOL]->GetNodes()->GetGradient(iPoint));
-          visc_numerics->SetF1blending(solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint),
-                                       solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
-          visc_numerics->SetF2blending(solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
-                                       solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
-          visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
-                                      nodes->GetVorticity(iPoint));
-          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
-                                      nodes->GetStrainMag(iPoint));
+          visc_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                              turbNodes->GetPrimitive(iPoint,0));
+          visc_numerics->SetTurbSpecificDissipation(turbNodes->GetPrimitive(iPoint,1),
+                                                    turbNodes->GetPrimitive(iPoint,1));
+          visc_numerics->SetTurbVarGradient(turbNodes->GetGradient(iPoint),
+                                            turbNodes->GetGradient(iPoint));
+          visc_numerics->SetF1blending(turbNodes->GetF1blending(iPoint),
+                                       turbNodes->GetF1blending(iPoint));
+          visc_numerics->SetF2blending(turbNodes->GetF2blending(iPoint),
+                                       turbNodes->GetF2blending(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
         }
@@ -9923,10 +9918,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver,
                                        solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
           visc_numerics->SetF2blending(solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
-          visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
-                                      nodes->GetVorticity(iPoint));
-          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
-                                      nodes->GetStrainMag(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
         }
@@ -10134,10 +10125,6 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
                                        solver[TURB_SOL]->GetNodes()->GetF1blending(iPoint));
           visc_numerics->SetF2blending(solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint),
                                        solver[TURB_SOL]->GetNodes()->GetF2blending(iPoint));
-          visc_numerics->SetVorticity(nodes->GetVorticity(iPoint),
-                                      nodes->GetVorticity(iPoint));
-          visc_numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
-                                      nodes->GetStrainMag(iPoint));
           visc_numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                                          nodes->GetVorticityMag(iPoint));
         }

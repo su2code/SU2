@@ -744,7 +744,6 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, C
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
   const su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
   su2double Vn_Infty = 0., Velocity2 = 0.;
@@ -756,13 +755,14 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
   Normal = new su2double[nDim];
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    auto node_i = geometry->node[iPoint];
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (node_i->GetDomain()) {
 
       /*--- Allocate the value at the infinity ---*/
 
@@ -812,8 +812,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       /*--- Grid Movement ---*/
 
       if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(node_i->GetGridVel(),
+                                  node_i->GetGridVel());
 
       /*--- Compute residuals and Jacobians ---*/
 
@@ -826,8 +826,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
       /*--- Viscous contribution ---*/
       
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                              geometry->node[iPoint]->GetCoord());
+      visc_numerics->SetCoord(node_i->GetCoord(),
+                              node_i->GetCoord());
       visc_numerics->SetNormal(Normal);
 
       /*--- Conservative variables w/o reconstruction ---*/
@@ -857,8 +857,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
                                      flowNodes->GetVorticityMag(iPoint));
 
       /*--- Set values for gradient Jacobian ---*/
-      visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-                               geometry->node[iPoint]->GetVolume());
+      visc_numerics->SetVolume(node_i->GetVolume(),
+                               node_i->GetVolume());
 
       /*--- Compute residual, and Jacobians ---*/
       auto visc_residual = visc_numerics->ComputeResidual(config);

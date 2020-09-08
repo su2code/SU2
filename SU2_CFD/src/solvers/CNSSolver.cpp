@@ -307,13 +307,15 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
-  auto iPoint = geometry->edge[iEdge]->GetNode(0);
-  auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  auto edge_i = geometry->edge[iEdge]
+
+  auto iPoint = edge_i->GetNode(0);
+  auto jPoint = edge_i->GetNode(1);
 
   numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                      geometry->node[jPoint]->GetCoord());
 
-  numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+  numerics->SetNormal(edge_i->GetNormal());
 
   /*--- Primitive and secondary variables. ---*/
 
@@ -341,10 +343,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
                             turbNodes->GetF1blending(jPoint));
     numerics->SetF2blending(turbNodes->GetF2blending(iPoint),
                             turbNodes->GetF2blending(jPoint));
-    numerics->SetVorticity(nodes->GetVorticity(iPoint),
-                           nodes->GetVorticity(jPoint));
-    numerics->SetStrainMag(nodes->GetStrainMag(iPoint),
-                           nodes->GetStrainMag(jPoint));
     numerics->SetVorticityMag(nodes->GetVorticityMag(iPoint),
                               nodes->GetVorticityMag(jPoint));
 
@@ -377,8 +375,8 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
       if (config->GetUse_Accurate_Visc_Jacobians()) {
-        CorrectJacobian(solver, geometry, config, iPoint, jPoint, geometry->edge[iEdge]->GetNormal());
-        CorrectJacobian(solver, geometry, config, jPoint, iPoint, geometry->edge[iEdge]->GetNormal());
+        CorrectJacobian(solver, geometry, config, iPoint, jPoint, edge_i->GetNormal());
+        CorrectJacobian(solver, geometry, config, jPoint, iPoint, edge_i->GetNormal());
       }
     }
   }
