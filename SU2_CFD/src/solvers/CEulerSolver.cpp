@@ -2701,15 +2701,13 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, dist;
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iVar, iMarker;
 
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    auto node_i = geometry->node[iPoint];
+    const auto node_i = geometry->node[iPoint];
 
     /*--- Set maximum eigenvalues to zero. ---*/
 
@@ -2718,7 +2716,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     if (viscous)
       nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = node_i->GetVolume();
     if (Vol == 0.0) continue;
 
     /*--- Loop over the neighbors of point i. ---*/
@@ -2726,8 +2724,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
 
-      jPoint = node_i->GetPoint(iNeigh);
-      auto node_j = geometry->node[jPoint];
+      const auto jPoint = node_i->GetPoint(iNeigh);
+      const auto node_j = geometry->node[jPoint];
 
       iEdge = node_i->GetEdge(iNeigh);
       Normal = geometry->edge[iEdge]->GetNormal();
@@ -2744,7 +2742,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         const su2double *GridVel_i = node_i->GetGridVel();
         const su2double *GridVel_j = node_j->GetGridVel();
 
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
 
@@ -2771,24 +2769,25 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
   /*--- Loop boundary edges ---*/
 
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const auto node_i = geometry->node[iPoint];
 
-        if (!geometry->node[iPoint]->GetDomain()) continue;
+        if (!node_i->GetDomain()) continue;
 
-        Vol = geometry->node[iPoint]->GetVolume();
+        Vol = node_i->GetVolume();
         if (Vol == 0.0) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
         /*--- Mean Values ---*/
 
@@ -2798,9 +2797,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         /*--- Adjustment for grid movement ---*/
 
         if (dynamic_grid) {
-          const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          const su2double *GridVel = node_i->GetGridVel();
 
-          for (iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0; iDim < nDim; iDim++)
             Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
         }
 
@@ -2832,7 +2831,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     su2double minDt = 1e30, maxDt = 0.0;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       Vol = geometry->node[iPoint]->GetVolume();
 
@@ -2897,7 +2896,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
       nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
       nodes->SetDelta_Time(iPoint, Global_Delta_Time);
     }
@@ -2912,7 +2911,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
     su2double glbDtND = 1e30;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
       glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
     }
     SU2_OMP_CRITICAL
@@ -2933,7 +2932,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
   if (dual_time && !implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
       nodes->SetDelta_Time(iPoint, Local_Delta_Time);
     }

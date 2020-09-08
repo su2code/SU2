@@ -1558,15 +1558,13 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
   su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     auto node_i = geometry->node[iPoint];
 
@@ -1581,12 +1579,12 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
     for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
     {
-      jPoint = node_i->GetPoint(iNeigh);
-      auto node_j = geometry->node[jPoint];
+      const auto jPoint = node_i->GetPoint(iNeigh);
+      const auto node_j = geometry->node[jPoint];
 
-      iEdge = node_i->GetEdge(iNeigh);
+      const auto iEdge = node_i->GetEdge(iNeigh);
       Normal = geometry->edge[iEdge]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
       /*--- Mean Values ---*/
 
@@ -1599,7 +1597,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         const su2double *GridVel_i = node_i->GetGridVel();
         const su2double *GridVel_j = node_j->GetGridVel();
 
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (auto iDim = 0; iDim < nDim; iDim++)
           Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
       }
 
@@ -1634,24 +1632,25 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
   /*--- Loop boundary edges ---*/
 
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        const auto node_i = geometry->node[iPoint];
 
-        if (!geometry->node[iPoint]->GetDomain()) continue;
+        if (!node_i->GetDomain()) continue;
 
-        Vol = geometry->node[iPoint]->GetVolume();
+        Vol = node_i->GetVolume();
         if (Vol == 0.0) continue;
 
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
         /*--- Mean Values ---*/
 
@@ -1661,9 +1660,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         /*--- Adjustment for grid movement ---*/
 
         if (dynamic_grid) {
-          const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+          const su2double *GridVel = node_i->GetGridVel();
 
-          for (iDim = 0; iDim < nDim; iDim++)
+          for (auto iDim = 0; iDim < nDim; iDim++)
             Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
         }
 
@@ -1698,7 +1697,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
     su2double minDt = 1e30, maxDt = 0.0;
 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       Vol = geometry->node[iPoint]->GetVolume();
 
@@ -1746,10 +1745,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
 void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
   
-  unsigned long iPoint, total_index;
-  unsigned short iVar;
-  unsigned short iDim;
-  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
+  su2double Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
   
   const su2double kappa = 0.41;
   const su2double B = 5.0;
@@ -1760,8 +1756,11 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   /*--- Set K and Omega at the first point of the wall ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    const auto node_i = geometry->node[iPoint];
+
+    if (node_i->GetBool_Wall_Neighbor()) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
       bool converged = true;
@@ -1769,9 +1768,9 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
       su2double T_Wall = 0.;
-      const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
+      const unsigned short nDonors = node_i->GetWall_nNode();
       for (auto iNode = 0; iNode < nDonors; iNode++) {
-        const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
+        const su2double donorCoeff = node_i->GetWall_Interpolation_Weights()[iNode];
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
@@ -1792,7 +1791,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       const su2double Phi  = asin(-1.0*Beta/Q);
 
       VelMod = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
       VelMod = sqrt(VelMod);
 
       const su2double Up  = VelMod/U_Tau;
@@ -1814,8 +1813,8 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       
 //      Eddy_Visc = flowNodes->GetEddyViscosity(iPoint);
       
-      Density_Normal  = flowNodes->GetDensity(iPoint);
-      distance = geometry->node[iPoint]->GetWall_Distance();
+      const su2double Density_Normal = flowNodes->GetDensity(iPoint);
+      const su2double distance = node_i->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
       const su2double Omega = sqrt(pow(Omega_0, 2.) + pow(Omega_i, 2.));
@@ -1831,8 +1830,8 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        const unsigned long total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
       
@@ -1842,10 +1841,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
 
 void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, CConfig *config) {
   
-  unsigned long iPoint, total_index;
-  unsigned short iVar;
-  unsigned short iDim;
-  su2double distance, Density_Normal = 0.0, Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
+  su2double Lam_Visc_Normal = 0.0, Eddy_Visc = 0.0, VelMod = 0.0;
   
   const su2double kappa = 0.41;
   const su2double B = 5.0;
@@ -1853,17 +1849,20 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   /*--- Set K and Omega at the first point of the wall ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->node[iPoint]->GetBool_Wall_Neighbor()) {
+  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    const auto node_i = geometry->node[iPoint];
+    
+    if (node_i->GetBool_Wall_Neighbor()) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
       bool converged = true;
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
-      const unsigned short nDonors = geometry->node[iPoint]->GetWall_nNode();
+      const unsigned short nDonors = node_i->GetWall_nNode();
       for (auto iNode = 0; iNode < nDonors; iNode++) {
-        const su2double donorCoeff = geometry->node[iPoint]->GetWall_Interpolation_Weights()[iNode];
+        const su2double donorCoeff = node_i->GetWall_Interpolation_Weights()[iNode];
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
@@ -1875,7 +1874,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       }
 
       VelMod = 0.;
-      for (iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+      for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
       VelMod = sqrt(VelMod);
 
       const su2double Up = VelMod/U_Tau;
@@ -1884,8 +1883,8 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       /*--- Disable calculation if Y+ is too small or large ---*/
       if (Yp > 500.) continue;
       
-      Density_Normal  = flowNodes->GetDensity(iPoint);
-      distance = geometry->node[iPoint]->GetWall_Distance();
+      const su2double Density_Normal = flowNodes->GetDensity(iPoint);
+      const su2double distance = node_i->GetWall_Distance();
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
       const su2double Omega_0 = U_Tau / (0.3 * 0.41 * distance);
       const su2double Omega_b1 = Omega_i + Omega_0;
@@ -1907,8 +1906,8 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        const unsigned long total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
       
