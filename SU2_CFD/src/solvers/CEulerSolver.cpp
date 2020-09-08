@@ -3102,7 +3102,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Get primitive and secondary variables ---*/
 
     auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
-    auto U_i = nodes->GetSolution(iPoint);  auto U_j = nodes->GetSolution(jPoint);
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
     bool bad_edge = false;
@@ -3119,7 +3118,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
         su2double Vector_ij[MAXNDIM] = {0.0};
         for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
+          Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
         }
 
         auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[0];
@@ -3179,7 +3178,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
+        Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
       }
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -3289,10 +3288,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       bad_edge = bad_i || bad_j;
 
-      numerics->SetPrimitive(bad_edge ? V_i : Primitive_i, 
-                             bad_edge ? V_j : Primitive_j);
-      numerics->SetSecondary(bad_edge ? S_i : Secondary_i, 
-                             bad_edge ? S_j : Secondary_j);
+      numerics->SetPrimitive(bad_i ? V_i : Primitive_i, 
+                             bad_j ? V_j : Primitive_j);
+      numerics->SetSecondary(bad_i ? S_i : Secondary_i, 
+                             bad_j ? S_j : Secondary_j);
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
@@ -3300,8 +3299,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       if (tkeNeeded) {
         CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
-        numerics->SetTurbKineticEnergy(bad_edge ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-                                       bad_edge ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
+                                       bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
       }
 
     }
@@ -3352,25 +3351,32 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set implicit computation ---*/
       if (implicit) {
-        if (bad_edge || !muscl)
+        if (!muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
+          auto flowLim_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec;
+          auto flowLim_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
+          const su2double *turLim_i = nullptr, turLim_j = nullptr;
+          if (tkeNeeded) {
+            turbLim_i = limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec;
+            turbLim_j = limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec;
+          }
           SetExtrapolationJacobian(solver, geometry, config,
                                    Primitive_i, Primitive_j, 
                                    &tke_i, &tke_j,
-                                   limiter ? nodes->GetLimiter(iPoint) : OneVec, 
-                                   limiter ? nodes->GetLimiter(jPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec,
+                                   bad_i ? ZeroVec : flowLim_i, 
+                                   bad_j ? ZeroVec : flowLim_j, 
+                                   bad_i ? ZeroVec : turbLim_i, 
+                                   bad_j ? ZeroVec : turbLim_j,
                                    residual.jacobian_i, residual.jacobian_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
                                    Primitive_j, Primitive_i, 
                                    &tke_j, &tke_i,
-                                   limiter ? nodes->GetLimiter(jPoint) : OneVec, 
-                                   limiter ? nodes->GetLimiter(iPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec, 
-                                   limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec,
+                                   bad_j ? ZeroVec : flowLim_j, 
+                                   bad_i ? ZeroVec : flowLim_i, 
+                                   bad_j ? ZeroVec : turbLim_j, 
+                                   bad_i ? ZeroVec : turbLim_i,
                                    residual.jacobian_j, residual.jacobian_i,
                                    jPoint, iPoint);
         }

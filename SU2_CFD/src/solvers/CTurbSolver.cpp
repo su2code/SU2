@@ -314,10 +314,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store extrapolated state ---*/
 
-      numerics->SetPrimitive(bad_edge ? V_i : flowPrimVar_i, 
-                             bad_edge ? V_j : flowPrimVar_j);
-      numerics->SetTurbVar(bad_edge ? T_i : turbPrimVar_i, 
-                           bad_edge ? T_j : turbPrimVar_j);
+      numerics->SetPrimitive(bad_i ? V_i : flowPrimVar_i, 
+                             bad_j ? V_j : flowPrimVar_j);
+      numerics->SetTurbVar(bad_i ? T_i : turbPrimVar_i, 
+                           bad_j ? T_j : turbPrimVar_j);
     }
 
     /*--- Update convective residual value ---*/
@@ -331,19 +331,22 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (bad_edge || !muscl)
+      if (!muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
+        auto lim_i = limiter ? nodes->GetLimiter(iPoint) : OneVec;
+        auto lim_j = limiter ? nodes->GetLimiter(jPoint) : OneVec;
+
         SetExtrapolationJacobian(solver, geometry, config,
                                  &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
-                                 limiter ? nodes->GetLimiter(iPoint) : OneVec, 
-                                 limiter ? nodes->GetLimiter(jPoint) : OneVec,
+                                 bad_i ? ZeroVec : lim_i, 
+                                 bad_j ? ZeroVec : lim_j,
                                  residual.jacobian_i, residual.jacobian_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
                                  &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
-                                 limiter ? nodes->GetLimiter(jPoint) : OneVec, 
-                                 limiter ? nodes->GetLimiter(iPoint) : OneVec,
+                                 bad_j ? ZeroVec : lim_j, 
+                                 bad_i ? ZeroVec : lim_i,
                                  residual.jacobian_j, residual.jacobian_i,
                                  jPoint, iPoint);
       }
