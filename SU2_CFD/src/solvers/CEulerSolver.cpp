@@ -7630,7 +7630,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       /*--- Set various quantities in the numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
-      conv_numerics->SetConservative(U_domain, U_infty);
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(node_i->GetGridVel(),
