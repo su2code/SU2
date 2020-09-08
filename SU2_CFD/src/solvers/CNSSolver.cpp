@@ -229,46 +229,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
-  SU2_OMP_MASTER
-  {
-    StrainMag_Max = 0.0;
-    Omega_Max = 0.0;
-  }
-  SU2_OMP_BARRIER
-
   nodes->SetVorticity_StrainMag();
-
-  su2double strainMax = 0.0, omegaMax = 0.0;
-
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    su2double StrainMag = nodes->GetStrainMag(iPoint);
-    const su2double* Vorticity = nodes->GetVorticity(iPoint);
-    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
-
-    strainMax = max(strainMax, StrainMag);
-    omegaMax = max(omegaMax, Omega);
-
-  }
-  SU2_OMP_CRITICAL
-  {
-    StrainMag_Max = max(StrainMag_Max, strainMax);
-    Omega_Max = max(Omega_Max, omegaMax);
-  }
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
-      su2double MyOmega_Max = Omega_Max;
-      su2double MyStrainMag_Max = StrainMag_Max;
-
-      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    }
-    SU2_OMP_BARRIER
-  }
 
   /*--- Compute the TauWall from the wall functions ---*/
 
