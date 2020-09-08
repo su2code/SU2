@@ -567,13 +567,14 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
   const auto node_i = geometry->node[iPoint];
 
-  /*--- First we compute contributions of first neighbors to the Jacobian.
-        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
-        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
-        the Jacobian if iPoint is on a physical boundary. Least squares gradients
-        do not have a surface term. ---*/
-    
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
+  /*---         In Green-Gauss, the weight of the surface node             ---*/
+  /*---         contribution is (0.5*Sum(n_v)+n_s)/r. Least squares        ---*/
+  /*---         gradients do not have a surface term.                      ---*/
+  /*--------------------------------------------------------------------------*/
 
   if (gg && node_i->GetPhysicalBoundary()) {
 
@@ -601,9 +602,12 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
   }// physical boundary
 
-  /*--- Next we compute contributions of neighbor nodes to the Jacobian.
-        To reduce extra communication overhead, we only consider first neighbors on
-        the current rank. Note that jacobianWeights_i is already weighted by 0.5 ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
+  /*---         To reduce extra communication overhead, we only consider   ---*/
+  /*---         neighbors on the current rank. Note that jacobianWeights_i ---*/
+  /*---         is already weighted by 0.5.                                ---*/
+  /*--------------------------------------------------------------------------*/
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 

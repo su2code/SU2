@@ -502,10 +502,12 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     Jacobian_j[0][iVar] = 0.0;
   }
 
-  /*--- First we compute contributions of first neighbors to the Jacobian.
-        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
-        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
-        the Jacobian if iPoint is on a physical boundary. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
+  /*---         In Green-Gauss, the weight of the surface node             ---*/
+  /*---         contribution is (0.5*Sum(n_v)+n_s)/r. Least squares        ---*/
+  /*---         gradients do not have a surface term.                      ---*/
+  /*--------------------------------------------------------------------------*/
 
   if (gg && node_i->GetPhysicalBoundary()) {
 
@@ -554,9 +556,11 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
-  /*--- Next we compute contributions of second neighbors to the Jacobian.
-        To reduce extra communication overhead, we only consider nodes on
-        the current rank. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
+  /*---         To reduce extra communication overhead, we only consider   ---*/
+  /*---         neighbors on the current rank.                             ---*/
+  /*--------------------------------------------------------------------------*/
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
@@ -677,10 +681,12 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     }
   }
 
-  /*--- First we compute contributions of first neighbors to the Jacobian.
-        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
-        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
-        the Jacobian if iPoint is on a physical boundary. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
+  /*---         In Green-Gauss, the weight of the surface node             ---*/
+  /*---         contribution is (0.5*Sum(n_v)+n_s)/r. Least squares        ---*/
+  /*---         gradients do not have a surface term.                      ---*/
+  /*--------------------------------------------------------------------------*/
 
   if (gg && node_i->GetPhysicalBoundary()) {
 
@@ -725,9 +731,11 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
-  /*--- Next we compute contributions of second neighbors to the Jacobian.
-        To reduce extra communication overhead, we only consider nodes on
-        the current rank. ---*/
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Compute contributions of neighbor nodes to the Jacobian.   ---*/
+  /*---         To reduce extra communication overhead, we only consider   ---*/
+  /*---         neighbors on the current rank.                             ---*/
+  /*--------------------------------------------------------------------------*/
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 

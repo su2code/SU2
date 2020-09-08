@@ -3044,6 +3044,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool musclTurb   = config->GetMUSCL_Turb() && muscl;
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
+
   su2double tke_i = 0, tke_j = 0;
 
   /*--- Non-physical counter. ---*/
@@ -3108,7 +3111,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     if (tkeNeeded) {
 
-      CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
       tke_i = turbNodes->GetPrimitive(iPoint,0);
       tke_j = turbNodes->GetPrimitive(jPoint,0);
       numerics->SetTurbKineticEnergy(tke_i, tke_j);
@@ -3298,7 +3300,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        CVariable* turbNodes = solver[TURB_SOL]->GetNodes();
         numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
                                        bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
       }
@@ -3358,8 +3359,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           auto flowLim_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
           const su2double *turbLim_i = nullptr, *turbLim_j = nullptr;
           if (tkeNeeded) {
-            turbLim_i = limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec;
-            turbLim_j = limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec;
+            turbLim_i = limiterTurb ? turbNodes->GetLimiter(iPoint) : OneVec;
+            turbLim_j = limiterTurb ? turbNodes->GetLimiter(jPoint) : OneVec;
           }
           SetExtrapolationJacobian(solver, geometry, config,
                                    Primitive_i, Primitive_j, 
