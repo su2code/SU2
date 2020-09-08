@@ -3298,6 +3298,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     if (hybrid_central_upwind)
     {
+      su2double LowerBound = config->GetMin_LowDissipation();
       su2double Ortho = min(geometry->Orthogonality[iPoint],
                         geometry->Orthogonality[jPoint]) * PI_NUMBER / 180.;
       su2double Sigma = pow(cos(Ortho),2.0);
@@ -3308,7 +3309,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                         nodes->GetSensor(jPoint));
       }
 
-      Sigma = max(Sigma, Ducros_ij);
+      Sigma = min(max(Sigma, Ducros_ij), 1.0);
+      Sigma = max(LowerBound, Sigma);
+
+      if (nodes->GetNon_Physical(iPoint) ||
+          nodes->GetNon_Physical(jPoint)) Sigma = 1.0;
 
       for (iVar = 0; iVar < nVar; iVar++)
       {

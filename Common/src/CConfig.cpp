@@ -2706,7 +2706,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
-  /* DESCRIPTION: DES Constant */
+  /* DESCRIPTION: Time filtering value for WMLES */
   addDoubleOption("TIMEFILTER_WMLES", TimeFilter_WMLES, 1.0);
 
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
@@ -2714,6 +2714,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
+
+  /* DESCRIPTION: Lower bound for the hybrid central upwind scheme */
+  addDoubleOption("MIN_LOW_DISSIPATION", Min_LowDissipation, 0.05);
 
   /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
   addBoolOption("SA_QCR", QCR, false);
@@ -3205,7 +3208,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
       else if (Kind_WallFunctions[iMarker] == LOGARITHMIC_WALL_MODEL ||
                Kind_WallFunctions[iMarker] == EQUILIBRIUM_WALL_MODEL ||
-               Kind_WallFunctions[iMarker] == ALGEBRAIC_WALL_MODEL){
+               Kind_WallFunctions[iMarker] == ALGEBRAIC_WALL_MODEL   ||
+               Kind_WallFunctions[iMarker] == APGLL_WALL_MODEL){
         Wall_Models = true; break;
       }
     }
