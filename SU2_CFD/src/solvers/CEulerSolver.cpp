@@ -7455,13 +7455,14 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
   for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    auto node_i = geometry->node[iPoint];
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (node_i->GetDomain()) {
 
       /*--- Index of the closest interior node ---*/
 
@@ -7528,7 +7529,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       Qn_Infty = Vn_Infty;
       if (dynamic_grid) {
-        GridVel = geometry->node[iPoint]->GetGridVel();
+        GridVel = node_i->GetGridVel();
         for (auto iDim = 0; iDim < nDim; iDim++)
           Qn_Infty -= GridVel[iDim]*UnitNormal[iDim];
       }
@@ -7632,8 +7633,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       conv_numerics->SetConservative(U_domain, U_infty);
 
       if (dynamic_grid) {
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(node_i->GetGridVel(),
+                                  node_i->GetGridVel());
       }
 
       /*--- Compute the convective residual using an upwind scheme ---*/
@@ -7665,8 +7666,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[iPoint]->GetCoord());
+        visc_numerics->SetCoord(node_i->GetCoord(),
+                                node_i->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
 
@@ -7697,8 +7698,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
         /*--- Set values for gradient Jacobian ---*/
 
-        visc_numerics->SetVolume(geometry->node[iPoint]->GetVolume(),
-                                 geometry->node[iPoint]->GetVolume());
+        visc_numerics->SetVolume(node_i->GetVolume(),
+                                 node_i->GetVolume());
 
         /*--- Compute and update viscous residual ---*/
 

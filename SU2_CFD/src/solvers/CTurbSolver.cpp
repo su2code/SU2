@@ -407,8 +407,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                             nodes->GetF2blending(jPoint));
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
                            flowNodes->GetVorticity(jPoint));
-    numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint),
-                           flowNodes->GetStrainMag(jPoint));
     numerics->SetVorticityMag(flowNodes->GetVorticityMag(iPoint),
                               flowNodes->GetVorticityMag(jPoint));
   }
