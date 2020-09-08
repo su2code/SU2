@@ -143,8 +143,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    const auto T_i = (sst) ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
-    const auto T_j = (sst) ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
+    const auto T_i = sst ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
+    const auto T_j = sst ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
     numerics->SetTurbVar(T_i, T_j);
 
     /*--- Grid Movement ---*/
@@ -161,7 +161,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = (Coord_j[iDim] - Coord_i[iDim]);
+        Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
       }
 
       const su2double Kappa = config->GetMUSCL_Kappa();
