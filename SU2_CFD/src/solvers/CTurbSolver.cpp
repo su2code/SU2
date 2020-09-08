@@ -126,8 +126,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto iEdge = color.indices[k];
 
-    unsigned short iDim, iVar;
-
     /*--- Points in edge and normal vectors ---*/
 
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -160,7 +158,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
       }
 
@@ -172,14 +170,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
         auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0; iVar < nVar; iVar++) {
           
           const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
           su2double Project_Grad_i = -T_ij;
           su2double Project_Grad_j = -T_ij;
 
-          for (iDim = 0; iDim < nDim; iDim++) {
+          for (auto iDim = 0; iDim < nDim; iDim++) {
             Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
             Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
           }
@@ -222,7 +220,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       }
       else {
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0; iVar < nVar; iVar++) {
           turbPrimVar_i[iVar] = T_i[iVar];
           turbPrimVar_j[iVar] = T_j[iVar];
         }
@@ -234,14 +232,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
         auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
-        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+        for (auto iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
 
           const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
           su2double Project_Grad_i = -V_ij;
           su2double Project_Grad_j = -V_ij;
 
-          for (iDim = 0; iDim < nDim; iDim++) {
+          for (auto iDim = 0; iDim < nDim; iDim++) {
             Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
             Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
           }
@@ -284,7 +282,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         const su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
         const su2double R_Plus_One = R+1.;
         su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/R_Plus_One;
           RoeSqVel += pow(RoeVelocity, 2);
           SqVel_i += pow(flowPrimVar_i[iDim+1],2);
@@ -304,7 +302,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       }
       else {
-        for (iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+        for (auto iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
           flowPrimVar_i[iVar] = V_i[iVar];
           flowPrimVar_j[iVar] = V_j[iVar];
         }

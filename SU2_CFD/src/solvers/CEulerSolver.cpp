@@ -2727,9 +2727,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       const auto jPoint = node_i->GetPoint(iNeigh);
       const auto node_j = geometry->node[jPoint];
 
-      iEdge = node_i->GetEdge(iNeigh);
+      const auto iEdge = node_i->GetEdge(iNeigh);
       Normal = geometry->edge[iEdge]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+      Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
       /*--- Mean Values ---*/
 
@@ -3073,8 +3073,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto iEdge = color.indices[k];
 
-    unsigned short iDim, iVar;
-
     /*--- Points in edge and normal vectors ---*/
 
     auto iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -3089,7 +3087,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     if (roe_turkel) {
       su2double sqvel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim ++)
+      for (auto iDim = 0; iDim < nDim; iDim ++)
         sqvel += pow(config->GetVelocity_FreeStream()[iDim], 2);
       numerics->SetVelocity2_Inf(sqvel);
     }
@@ -3118,7 +3116,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         /*--- Reconstruct turbulence variables. ---*/
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
         }
 
@@ -3132,7 +3130,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_i = -T_ij;
         su2double Project_Grad_j = -T_ij;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
           Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
         }
@@ -3178,7 +3176,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
       }
 
@@ -3187,14 +3185,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const su2double Kappa = config->GetMUSCL_Kappa();
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
         su2double Project_Grad_i = -V_ij;
         su2double Project_Grad_j = -V_ij;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
           Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
@@ -3255,7 +3253,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double R = sqrt(fabs(Primitive_j[nDim+2]/Primitive_i[nDim+2]));
       const su2double R_Plus_One = R+1.;
       su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R*Primitive_j[iDim+1]+Primitive_i[iDim+1])/R_Plus_One;
         RoeSqVel += pow(RoeVelocity, 2);
         SqVel_i += pow(Primitive_i[iDim+1],2);
