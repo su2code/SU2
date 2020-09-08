@@ -37,8 +37,6 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
       nPrimVar(val_nPrimVar),
       correct_gradient(val_correct_grad) {
 
-  unsigned short iVar, iDim;
-
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
@@ -47,7 +45,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   Mean_PrimVar = new su2double [nPrimVar];
 
   Mean_GradPrimVar = new su2double* [nPrimVar];
-  for (iVar = 0; iVar < nPrimVar; iVar++)
+  for (auto iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
   Mean_GradTurbVar = new su2double [nDim];
@@ -56,7 +54,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     tau_jacobian_i[iDim] = new su2double [nVar];
     tau_jacobian_j[iDim] = new su2double [nVar];
   }
@@ -147,7 +145,6 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
                            const su2double val_laminar_viscosity,
                            const su2double val_eddy_viscosity) {
 
-  unsigned short iDim, jDim;
   const su2double Density = val_primvar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 
@@ -158,14 +155,14 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
 
   if (using_uq){
-    for (iDim = 0 ; iDim < nDim; iDim++)
-      for (jDim = 0 ; jDim < nDim; jDim++)
+    for (auto iDim = 0 ; iDim < nDim; iDim++)
+      for (auto jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
         - TWO3*val_laminar_viscosity*div_vel*delta3[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
 
   } else {
-    for (iDim = 0 ; iDim < nDim; iDim++)
-      for (jDim = 0 ; jDim < nDim; jDim++)
+    for (auto iDim = 0 ; iDim < nDim; iDim++)
+      for (auto jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
                         - TWO3*total_viscosity*div_vel*delta3[iDim][jDim] - TWO3*Density*val_turb_ke*delta3[iDim][jDim];
   }
@@ -836,7 +833,6 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
   
     /*--- Jacobian wrt eddy viscosity ---*/
 
-    // if (turb_omega_i > StrainMag_i*F2_i/a1) {
     if (turb_omega_i > VorticityMag_i*F2_i/a1) {
       const su2double factor = turb_ke_i/turb_omega_i;
       for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -848,7 +844,6 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
       }
     }
 
-    // if (turb_omega_j > StrainMag_j*F2_j/a1) {
     if (turb_omega_j > VorticityMag_j*F2_j/a1) {
       const su2double factor = turb_ke_j/turb_omega_j;
       for (auto iDim = 0; iDim < nDim; iDim++) {

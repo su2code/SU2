@@ -61,18 +61,17 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
   delete [] Proj_Mean_GradTurbVar;
 
   delete [] Flux;
-  if (Jacobian_i != nullptr) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      delete [] Jacobian_i[iVar];
-      delete [] Jacobian_j[iVar];
-      delete [] jacobianWeights_i[iVar];
-      delete [] jacobianWeights_j[iVar];
-    }
-    delete [] Jacobian_i;
-    delete [] Jacobian_j;
-    delete [] jacobianWeights_i;
-    delete [] jacobianWeights_j;
+  
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+    delete [] jacobianWeights_i[iVar];
+    delete [] jacobianWeights_j[iVar];
   }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
+  delete [] jacobianWeights_i;
+  delete [] jacobianWeights_j;
 }
 
 CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config) {
