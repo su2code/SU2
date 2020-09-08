@@ -1003,6 +1003,7 @@ private:
   unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   su2double TimeFilter_WMLES;          /*!< \brief WMLES Time Filter value. */
+  su2double Min_LowDissipation;        /*!< \brief Lower bound for the hybrid central upwind. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
@@ -8957,6 +8958,12 @@ public:
    * \return Value of the WMLES time filter.
    */
   su2double GetTimeFilter_WMLES(void) const { return TimeFilter_WMLES; }
+
+  /*!
+   * \brief Get the lower bound of the hybrid central upwind.
+   * \return Value of the hybridization.
+   */
+  su2double GetMin_LowDissipation(void) const { return Min_LowDissipation; }
 
   /*!
    * \brief Get QCR (SA-QCR2000).
