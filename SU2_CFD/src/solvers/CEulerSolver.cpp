@@ -3104,7 +3104,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
-    bool bad_edge = false;
+    bool bad_i = false, bad_j = false, bad_edge = false;
 
     if (tkeNeeded) {
 
@@ -3269,8 +3269,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
 
-      bool bad_i = bad_roe || neg_pres_or_rho_i;
-      bool bad_j = bad_roe || neg_pres_or_rho_j;
+      bad_i = bad_roe || neg_pres_or_rho_i;
+      bad_j = bad_roe || neg_pres_or_rho_j;
 
       if (tkeNeeded) {
         bad_i = bad_i || (tke_i < 0);
@@ -3356,7 +3356,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         else {
           auto flowLim_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec;
           auto flowLim_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
-          const su2double *turLim_i = nullptr, turLim_j = nullptr;
+          const su2double *turbLim_i = nullptr, *turbLim_j = nullptr;
           if (tkeNeeded) {
             turbLim_i = limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(iPoint) : OneVec;
             turbLim_j = limiterTurb ? solver[TURB_SOL]->GetNodes()->GetLimiter(jPoint) : OneVec;
