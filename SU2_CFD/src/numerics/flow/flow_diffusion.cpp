@@ -149,7 +149,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 
   su2double div_vel = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
+  for (auto iDim = 0 ; iDim < nDim; iDim++)
     div_vel += val_gradprimvar[iDim+1][iDim];
 
   /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
@@ -197,35 +197,34 @@ void CAvgGrad_Base::AddQCR(const su2double* const *val_gradprimvar) {
 void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
                                const su2double val_tau_wall) {
 
-  unsigned short iDim, jDim;
   su2double TauNormal, TauElem[3], TauTangent[3];
 
   /*--- First, compute wall shear stress as the magnitude of the wall-tangential
    component of the shear stress tensor---*/
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     TauElem[iDim] = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++)
+    for (auto jDim = 0; jDim < nDim; jDim++)
       TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
   }
 
   TauNormal = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 
   WallShearStress = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     WallShearStress += TauTangent[iDim]*TauTangent[iDim];
   WallShearStress = sqrt(WallShearStress);
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
    to the computed representation of the shear stress ---*/
 
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
+  for (auto iDim = 0 ; iDim < nDim; iDim++)
+    for (auto jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
 }
 
@@ -535,12 +534,10 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     AD::SetPreaccIn(TurbVar_Grad_j[0], nDim);
     AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
   }
-  
-  unsigned short iVar, jVar, iDim;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
+    
+  for (auto iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
-    for (jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       Jacobian_j[iVar][jVar] = 0.0;
     }
@@ -548,7 +545,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     heat_flux_jac_i[iVar] = 0.0;
     heat_flux_jac_j[iVar] = 0.0;
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       tau_jacobian_i[iDim][iVar] = 0.0;
       tau_jacobian_j[iDim][iVar] = 0.0;
     }
@@ -557,17 +554,17 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /*--- Normalized normal vector ---*/
 
   Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
 
-  for (iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   PrimVar_i = V_i;
   PrimVar_j = V_j;
 
-  for (iVar = 0; iVar < nPrimVar; iVar++) {
+  for (auto iVar = 0; iVar < nPrimVar; iVar++) {
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
 
@@ -575,7 +572,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = (correct_gradient) ? Coord_j[iDim]-Coord_i[iDim] : Normal[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
@@ -594,14 +591,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Mean gradient approximation ---*/
 
-  for (iVar = 0; iVar < nDim+1; iVar++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
+  for (auto iVar = 0; iVar < nDim+1; iVar++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
     }
   }
 
   if (sst) {
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0; iDim < nDim; iDim++) {
       Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim] + TurbVar_Grad_j[0][iDim]);
     }
   }
