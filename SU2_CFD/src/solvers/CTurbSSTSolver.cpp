@@ -511,8 +511,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      // if (config->GetUse_Accurate_Turb_Jacobians())
-      if (config->GetUse_Accurate_Turb_Jacobians() && (nodes->GetCrossDiff(iPoint) > CDKW_MIN))
+      if (config->GetUse_Accurate_Turb_Jacobians())
+      // if (config->GetUse_Accurate_Turb_Jacobians() && (nodes->GetCrossDiff(iPoint) > CDKW_MIN))
         CrossDiffusionJacobian(geometry, solver, config, iPoint);
       
     }// if dist
@@ -658,47 +658,47 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
       }
       else {
       
-        const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        // const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
         
-        distance = geometry->node[donorPoint]->GetWall_Distance();
+        // distance = geometry->node[donorPoint]->GetWall_Distance();
         
-        Density_Normal  = flowNodes->GetDensity(donorPoint);
-        Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
+        // Density_Normal  = flowNodes->GetDensity(donorPoint);
+        // Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
 
-        // const su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        // su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
-        // for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
+        const su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
 
-        // unsigned short nDonors = 0;
-        // for (auto iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-        //   const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
-        //   if(!geometry->node[donorPoint]->GetSolidBoundary())
-        //     nDonors++;
-        // }
+        unsigned short nDonors = 0;
+        for (auto iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+          const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
+          if(!geometry->node[donorPoint]->GetSolidBoundary())
+            nDonors++;
+        }
       
 
-        // distance = 0.0;
-        // Density_Normal = 0.0;
-        // Lam_Visc_Normal = 0.0;
-        // su2double suminvdist = 0.0;
-        // for (auto iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-        //   const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
-        //   if(!geometry->node[donorPoint]->GetSolidBoundary()) {
-        //     su2double dist = 0.0;
-        //     for (auto iDim = 0; iDim < nDim; iDim++)
-        //       dist += pow((geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim))
-        //                  *(1.-UnitNormal[iDim]),2);
-        //     dist = (nDonors > 1) ? su2double(sqrt(dist)+eps) : su2double(1.0);
-        //     suminvdist += 1./dist;
+        distance = 0.0;
+        Density_Normal = 0.0;
+        Lam_Visc_Normal = 0.0;
+        su2double suminvdist = 0.0;
+        for (auto iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+          const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
+          if(!geometry->node[donorPoint]->GetSolidBoundary()) {
+            su2double dist = 0.0;
+            for (auto iDim = 0; iDim < nDim; iDim++)
+              dist += pow((geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim))
+                         *(1.-UnitNormal[iDim]),2);
+            dist = (nDonors > 1) ? su2double(sqrt(dist)+eps) : su2double(1.0);
+            suminvdist += 1./dist;
 
-        //     Density_Normal  += flowNodes->GetDensity(donorPoint)/dist;
-        //     Lam_Visc_Normal += flowNodes->GetLaminarViscosity(donorPoint)/dist;
-        //     distance        += geometry->node[donorPoint]->GetWall_Distance()/dist;
-        //   }
-        // }
-        // Density_Normal  /= suminvdist;
-        // Lam_Visc_Normal /= suminvdist;
-        // distance        /= suminvdist;
+            Density_Normal  += flowNodes->GetDensity(donorPoint)/dist;
+            Lam_Visc_Normal += flowNodes->GetLaminarViscosity(donorPoint)/dist;
+            distance        += geometry->node[donorPoint]->GetWall_Distance()/dist;
+          }
+        }
+        Density_Normal  /= suminvdist;
+        Lam_Visc_Normal /= suminvdist;
+        distance        /= suminvdist;
 
       }
       
