@@ -3602,16 +3602,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      reconWeight_l[iVar] = 0.;
-
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
     const auto kPoint = node_i->GetPoint(iNeigh);
 
     /*--- d{r,v,p,k}/dU, evaluated at node ---*/
@@ -3642,9 +3633,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
     const su2double factor = sign*0.5*(1.-kappa);
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      for (auto iDim = 0; iDim < nDim; iDim++)
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+      reconWeight_l[iVar] = 0.;
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         reconWeight_l[iVar] += factor*gradWeight[iDim]*dist_ij[iDim]*l_i[iVar];
+      }
+    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
