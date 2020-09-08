@@ -513,7 +513,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
       // if (config->GetUse_Accurate_Turb_Jacobians())
       if (config->GetUse_Accurate_Turb_Jacobians() && (nodes->GetCrossDiff(iPoint) > CDKW_MIN))
-        CrossDiffusionJacobian(geometry, solver, config, iPoint);
+        CrossDiffusionJacobian(solver, geometry, solver, config, iPoint);
       
     }// if dist
 
@@ -521,10 +521,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
   
 }
 
-void CTurbSSTSolver::CrossDiffusionJacobian(CGeometry *geometry,
-                                            CSolver **solver,
-                                            CConfig *config,
-                                            unsigned long iPoint) {
+void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
+                                            const CGeometry *geometry,
+                                            const CConfig   *config,
+                                            const unsigned long iPoint) {
   
   const bool wasActive = AD::BeginPassive();
 
