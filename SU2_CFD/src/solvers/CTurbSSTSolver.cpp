@@ -458,7 +458,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
   /*--- Loop over all points. ---*/
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  // for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     
     if (geometry->node[iPoint]->GetWall_Distance() > 1.0e-10) {
 
