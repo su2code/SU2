@@ -113,7 +113,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double turbPrimVar_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
   su2double turbPrimVar_j[MAXNVAR] = {0.0}, flowPrimVar_j[MAXNVARFLOW] = {0.0};
 
-  su2double ZeroVec[MAXNVAR] = {0.0}, OneVec[MAXNVAR]  = {0.0};
+  su2double ZeroVec[MAXNVAR] = {0.0}, OneVec[MAXNVAR]  = {1.0};
 
   su2double GradWeights_i[MAXNVAR] = {0.0}, GradWeights_j[MAXNVAR] = {0.0};
 
