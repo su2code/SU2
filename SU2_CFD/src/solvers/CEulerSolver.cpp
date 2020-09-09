@@ -3250,7 +3250,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, bad_i, bad_j);
+      CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, bad_i, bad_j);
 
       nodes->SetNon_Physical(iPoint, bad_i);
       nodes->SetNon_Physical(jPoint, bad_j);
