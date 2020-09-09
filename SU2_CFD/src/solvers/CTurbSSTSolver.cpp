@@ -617,8 +617,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
 
   su2double distance, Density_Wall = 0.0, Lam_Visc_Wall = 0.0;
   su2double Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
-  su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
-  su2double UnitNormal[3];
+  su2double Vel[MAXNDIM] = {0.0};
+  su2double UnitNormal[MAXNDIM] = {0.0};
   const su2double beta_1 = constants[4];
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   
@@ -647,7 +647,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         Kine_Normal    = 0.;
         Lam_Visc_Normal = 0.;
 
-        VelMod = 0.;
+        su2double VelMod = 0.;
         for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
 
         for (auto iNode = 0; iNode < nDonors; iNode++) {

@@ -1336,7 +1336,8 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double *Normal, Area, UnitNormal[3] = {0.0, 0.0, 0.0};
+  su2double *Normal, Area, UnitNormal[3] = {0.0};
+  su2double *GridVel;
 
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -1412,14 +1413,11 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       if (dynamic_grid) {
 
-        su2double tau_vel[3] = {0.0, 0.0, 0.0},
-                  Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
-                  tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
+        su2double tau_vel[3] = {0.0}, Grad_Vel[3][3] = {0.0}, tau[3][3] = {0.0},
                   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
         /*--- Get the grid velocity at the current boundary node ---*/
 
-        const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
         su2double ProjGridVel = 0.0;
         for (auto iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
