@@ -216,8 +216,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Compute absolute value with Mavriplis' entropy correction ---*/
 
-  MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-  Delta = config->GetEntropyFix_Coeff();
+  const su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+  const su2double Delta = config->GetEntropyFix_Coeff();
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
