@@ -3439,7 +3439,7 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
   const su2double RoeTke = (R*(*tke_j)+(*tke_i))/R_Plus_One;
 
-  const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
+  const bool bad_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke < 0.0);
 
   bad_i = bad_i || bad_roe || neg_pres_or_rho_i;
   bad_j = bad_j || bad_roe || neg_pres_or_rho_j;
