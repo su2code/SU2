@@ -615,8 +615,6 @@ void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver, CNum
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex, total_index;
-  unsigned short iVar, iDim;
   su2double distance, Density_Wall = 0.0, Lam_Visc_Wall = 0.0;
   su2double Density_Normal = 0.0, Energy_Normal = 0.0, Kine_Normal = 0.0, Lam_Visc_Normal = 0.0;
   su2double Vel[3] = {0.0, 0.0, 0.0}, VelMod = 0.;
@@ -626,11 +624,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto node_i = geometry->node[iPoint];
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (node_i->GetDomain()) {
       
       if (geometry->vertex[val_marker][iVertex]->GetDonorFound()){
 
@@ -649,7 +648,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         Lam_Visc_Normal = 0.;
 
         VelMod = 0.;
-        for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
+        for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] = 0.;
 
         for (auto iNode = 0; iNode < nDonors; iNode++) {
           const unsigned long donorPoint = geometry->vertex[val_marker][iVertex]->GetInterpDonorPoint(iNode);
@@ -659,9 +658,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
           Energy_Normal  += donorCoeff*flowNodes->GetSolution(donorPoint, nDim+1)/donorCoeff*flowNodes->GetSolution(donorPoint, 0);
           Kine_Normal    += donorCoeff*nodes->GetPrimitive(donorPoint, 0);
 
-          for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
+          for (auto iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*flowNodes->GetVelocity(donorPoint,iDim);
         }
-        for (iDim = 0; iDim < nDim; iDim++) VelMod += Vel[iDim]*Vel[iDim];
+        for (auto iDim = 0; iDim < nDim; iDim++) VelMod += Vel[iDim]*Vel[iDim];
         Energy_Normal -= Kine_Normal + 0.5*VelMod;
         
         solver[FLOW_SOL]->GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
@@ -677,12 +676,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         // Lam_Visc_Normal = flowNodes->GetLaminarViscosity(donorPoint);
 
         const su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+        su2double Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
         for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
 
         unsigned short nDonors = 0;
-        for (auto iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
+        for (auto iNode = 0; iNode < node_i->GetnPoint(); iNode++) {
+          const unsigned long donorPoint = node_i->GetPoint(iNode);
           if(!geometry->node[donorPoint]->GetSolidBoundary())
             nDonors++;
         }
@@ -692,12 +691,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
         Density_Normal = 0.0;
         Lam_Visc_Normal = 0.0;
         su2double suminvdist = 0.0;
-        for (auto iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
-          const unsigned long donorPoint = geometry->node[iPoint]->GetPoint(iNode);
-          if(!geometry->node[donorPoint]->GetSolidBoundary()) {
+        for (auto iNode = 0; iNode < node_i->GetnPoint(); iNode++) {
+          const unsigned long donorPoint = node_i->GetPoint(iNode);
+          const auto node_donor = geometry->node[donorPoint];
+          if(!node_donor->GetSolidBoundary()) {
             su2double dist = 0.0;
             for (auto iDim = 0; iDim < nDim; iDim++)
-              dist += pow((geometry->node[donorPoint]->GetCoord(iDim)-geometry->node[iPoint]->GetCoord(iDim))
+              dist += pow((node_donor->GetCoord(iDim)-node_i->GetCoord(iDim))
                          *(1.-UnitNormal[iDim]),2);
             dist = (nDonors > 1) ? su2double(sqrt(dist)+eps) : su2double(1.0);
             suminvdist += 1./dist;
@@ -724,8 +724,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        const unsigned long total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
     }
