@@ -222,6 +222,16 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     }
 
     if (musclFlow) {
+      const auto Coord_i = geometry->node[iPoint]->GetCoord();
+      const auto Coord_j = geometry->node[jPoint]->GetCoord();
+
+      su2double Vector_ij[MAXNDIM] = {0.0};
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
+      }
+
+      const su2double Kappa = config->GetMUSCL_Kappa();
+
       /*--- Reconstruct mean flow primitive variables. ---*/
 
       const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
@@ -278,6 +288,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, bad_i, bad_j);
+
     }
     else {
       for (auto iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
