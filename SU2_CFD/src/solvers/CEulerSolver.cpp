@@ -3638,15 +3638,16 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
     if (tkeNeeded)
       dVdU_k[nDim+2][0] = -turbVar->GetPrimitive(kPoint,0)*inv_rho_k;
 
-    const su2double factor = sign*0.5*(1.-kappa);
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-      reconWeight_l[iVar] = 0.;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        reconWeight_l[iVar] += factor*gradWeight[iDim]*dist_ij[iDim]*l_i[iVar];
-      }
-    }
+
+    su2double gradWeightDotDist = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
+
+    const su2double factor = sign*0.5*(1.-kappa);
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+      reconWeight_l[iVar] = factor*gradWeightDotDist*l_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {

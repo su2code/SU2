@@ -497,15 +497,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
 
     const su2double inv_rho_k = 1.0/flowVar->GetDensity(kPoint);
 
-    const su2double factor = sign*0.5*(1.-kappa);
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      reconWeight_l[iVar] = 0.;
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        reconWeight_l[iVar] += factor*gradWeight[iDim]*dist_ij[iDim]*limiter_i[iVar];
-      }
-    }
+
+    su2double gradWeightDotDist = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
+
+    const su2double factor = sign*0.5*(1.-kappa);
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      reconWeight_l[iVar] = factor*gradWeightDotDist*limiter_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
