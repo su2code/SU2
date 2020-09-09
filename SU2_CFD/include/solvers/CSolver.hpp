@@ -307,6 +307,18 @@ public:
    * \brief Move the mesh in time
    */
   inline virtual void SetDualTime_Mesh(void){ }
+
+
+  /*!
+   * \brief Check if the kappa scheme extrapolation gives physical L and R states.
+   */
+  virtual void CheckExtrapolatedState(const CConfig   *config,
+                                      const su2double *primvar_i, 
+                                      const su2double *primvar_j, 
+                                      const su2double *tke_i, 
+                                      const su2double *tke_j, 
+                                      bool bad_i, 
+                                      bool bad_j) {}
   
   /*!
    * \brief Correct the gradient at symmetry planes.

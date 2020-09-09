@@ -314,12 +314,13 @@ protected:
    * \param[out] bad_i - Whether the extrapolated state from node i is bad.
    * \param[out] bad_j - Whether the extrapolated state from node j is bad.
    */
-  void CheckExtrapolatedState(const su2double *primvar_i, 
+  void CheckExtrapolatedState(const CConfig   *config,
+                              const su2double *primvar_i, 
                               const su2double *primvar_j, 
                               const su2double *tke_i, 
                               const su2double *tke_j, 
                               bool bad_i, 
-                              bool bad_j);
+                              bool bad_j) override;
 
   /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
