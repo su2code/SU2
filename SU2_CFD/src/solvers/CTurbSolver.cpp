@@ -372,8 +372,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Points in edge ---*/
 
-  auto iPoint = geometry->edge[iEdge]->GetNode(0);
-  auto jPoint = geometry->edge[iEdge]->GetNode(1);
+  const auto iPoint = geometry->edge[iEdge]->GetNode(0);
+  const auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
   /*--- Points coordinates, and normal vector ---*/
 
