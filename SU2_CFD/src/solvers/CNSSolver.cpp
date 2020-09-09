@@ -1348,8 +1348,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
   /*--- Get the specified wall heat flux from config as well as the
         wall function treatment.---*/
 
-  const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
