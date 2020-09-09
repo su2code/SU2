@@ -677,7 +677,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
 
         const su2double *Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         su2double Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
-        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
+        for (auto iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = fabs(Normal[iDim])/Area;
 
         unsigned short nDonors = 0;
         for (auto iNode = 0; iNode < node_i->GetnPoint(); iNode++) {
