@@ -1336,33 +1336,24 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim, jDim, iVar, jVar;
-  unsigned long iVertex, iPoint, Point_Normal, total_index;
+  su2double *Normal, Area, UnitNormal[3] = {0.0, 0.0, 0.0};
 
-  su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
-  su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
-  su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0;
-  su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0, 0.0, 0.0}, UnitNormal[3] = {0.0, 0.0, 0.0};
-  su2double laminar_viscosity = 0.0, eddy_viscosity = 0.0, Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
-  tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}};
-  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
-
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Identify the boundary by string name ---*/
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Get the specified wall heat flux from config as well as the
         wall function treatment.---*/
 
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -1377,16 +1368,16 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
       Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
 
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0; iVar < nVar; iVar++) {
         Res_Conv[iVar] = 0.0;
         Res_Visc[iVar] = 0.0;
       }
@@ -1396,9 +1387,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       if (dynamic_grid) {
         GridVel = geometry->node[iPoint]->GetGridVel();
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
+        for (auto iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
       } else {
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       }
 
       /*--- Impose the value of the velocity as a strong boundary
@@ -1407,7 +1398,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       nodes->SetVelocity_Old(iPoint,Vector);
 
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
@@ -1421,35 +1412,40 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
       if (dynamic_grid) {
 
+        su2double tau_vel[3] = {0.0, 0.0, 0.0},
+                  Grad_Vel[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
+                  tau[3][3] = {{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}},
+                  delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+
         /*--- Get the grid velocity at the current boundary node ---*/
 
-        GridVel = geometry->node[iPoint]->GetGridVel();
-        ProjGridVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
+        const su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        su2double ProjGridVel = 0.0;
+        for (auto iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
 
         /*--- Retrieve other primitive quantities and viscosities ---*/
 
-        Density  = nodes->GetDensity(iPoint);
-        Pressure = nodes->GetPressure(iPoint);
-        laminar_viscosity = nodes->GetLaminarViscosity(iPoint);
-        eddy_viscosity    = nodes->GetEddyViscosity(iPoint);
-        total_viscosity   = laminar_viscosity + eddy_viscosity;
+        const su2double Density  = nodes->GetDensity(iPoint);
+        const su2double Pressure = nodes->GetPressure(iPoint);
+        const su2double laminar_viscosity = nodes->GetLaminarViscosity(iPoint);
+        const su2double eddy_viscosity    = nodes->GetEddyViscosity(iPoint);
+        const su2double total_viscosity   = laminar_viscosity + eddy_viscosity;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0 ; jDim < nDim; jDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint,iDim+1, jDim);
           }
         }
 
         /*--- Divergence of the velocity ---*/
 
-        div_vel = 0.0; for (iDim = 0 ; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+        su2double div_vel = 0.0; for (auto iDim = 0 ; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
 
         /*--- Compute the viscous stress tensor ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          for (auto jDim = 0; jDim < nDim; jDim++) {
             tau[iDim][jDim] = total_viscosity*( Grad_Vel[jDim][iDim]+Grad_Vel[iDim][jDim] ) -
                               TWO3*total_viscosity*div_vel*delta[iDim][jDim];
           }
@@ -1457,16 +1453,16 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
         /*--- Dot product of the stress tensor with the grid velocity ---*/
 
-        for (iDim = 0 ; iDim < nDim; iDim++) {
+        for (auto iDim = 0 ; iDim < nDim; iDim++) {
           tau_vel[iDim] = 0.0;
-          for (jDim = 0 ; jDim < nDim; jDim++)
+          for (auto jDim = 0 ; jDim < nDim; jDim++)
             tau_vel[iDim] += tau[iDim][jDim]*GridVel[jDim];
         }
 
         /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
 
         Res_Conv[nDim+1] = Pressure*ProjGridVel;
-        for (iDim = 0 ; iDim < nDim; iDim++)
+        for (auto iDim = 0 ; iDim < nDim; iDim++)
           Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
 
         /*--- Implicit Jacobian contributions due to moving walls ---*/
@@ -1475,14 +1471,14 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
           /*--- Jacobian contribution related to the pressure term ---*/
 
-          GridVel2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
+          su2double GridVel2 = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
             GridVel2 += GridVel[iDim]*GridVel[iDim];
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            for (auto jVar = 0; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_i[nDim+1][0] = 0.5*(Gamma-1.0)*GridVel2*ProjGridVel;
-          for (jDim = 0; jDim < nDim; jDim++)
+          for (auto jDim = 0; jDim < nDim; jDim++)
             Jacobian_i[nDim+1][jDim+1] = -(Gamma-1.0)*GridVel[jDim]*ProjGridVel;
           Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*ProjGridVel;
 
@@ -1492,54 +1488,54 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
 
           /*--- Now the Jacobian contribution related to the shear stress ---*/
 
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            for (auto jVar = 0; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
 
           /*--- Compute closest normal neighbor ---*/
 
-          Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+          const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
           /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-          Coord_i = geometry->node[iPoint]->GetCoord();
-          Coord_j = geometry->node[Point_Normal]->GetCoord();
+          const auto Coord_i = geometry->node[iPoint]->GetCoord();
+          const auto Coord_j = geometry->node[Point_Normal]->GetCoord();
 
-          dist_ij = 0;
-          for (iDim = 0; iDim < nDim; iDim++)
+          su2double dist_ij = 0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
             dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
           dist_ij = sqrt(dist_ij);
 
-          theta2 = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
+          su2double theta2 = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
             theta2 += UnitNormal[iDim]*UnitNormal[iDim];
 
-          factor = total_viscosity*Area/(Density*dist_ij);
+          const su2double factor = total_viscosity*Area/(Density*dist_ij);
 
           if (nDim == 2) {
-            thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
-            thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+            const su2double thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+            const su2double thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
 
-            etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+            const su2double etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
 
-            pix = GridVel[0]*thetax + GridVel[1]*etaz;
-            piy = GridVel[0]*etaz   + GridVel[1]*thetay;
+            const su2double pix = GridVel[0]*thetax + GridVel[1]*etaz;
+            const su2double piy = GridVel[0]*etaz   + GridVel[1]*thetay;
 
             Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]);
             Jacobian_i[nDim+1][1] -= factor*pix;
             Jacobian_i[nDim+1][2] -= factor*piy;
           } else {
-            thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
-            thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
-            thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
+            const su2double thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
+            const su2double thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
+            const su2double thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
 
-            etaz = UnitNormal[0]*UnitNormal[1]/3.0;
-            etax = UnitNormal[1]*UnitNormal[2]/3.0;
-            etay = UnitNormal[0]*UnitNormal[2]/3.0;
+            const su2double etaz = UnitNormal[0]*UnitNormal[1]/3.0;
+            const su2double etax = UnitNormal[1]*UnitNormal[2]/3.0;
+            const su2double etay = UnitNormal[0]*UnitNormal[2]/3.0;
 
-            pix = GridVel[0]*thetax + GridVel[1]*etaz   + GridVel[2]*etay;
-            piy = GridVel[0]*etaz   + GridVel[1]*thetay + GridVel[2]*etax;
-            piz = GridVel[0]*etay   + GridVel[1]*etax   + GridVel[2]*thetaz;
+            const su2double pix = GridVel[0]*thetax + GridVel[1]*etaz   + GridVel[2]*etay;
+            const su2double piy = GridVel[0]*etaz   + GridVel[1]*thetay + GridVel[2]*etax;
+            const su2double piz = GridVel[0]*etay   + GridVel[1]*etax   + GridVel[2]*thetaz;
 
             Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]+piz*GridVel[2]);
             Jacobian_i[nDim+1][1] -= factor*pix;
@@ -1566,8 +1562,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNumeric
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
       if (implicit) {
-        for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
+        for (auto iVar = 1; iVar <= nDim; iVar++) {
+          const unsigned long total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
       }
