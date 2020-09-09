@@ -748,7 +748,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
   su2double Vn_Infty = 0., Velocity2 = 0.;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
   su2double Kine_Infty, Omega_Infty;
-  unsigned short iVar, iDim;
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -775,18 +774,18 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
+      for (auto iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (auto iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
       
       /*--- Set primitive state based on flow direction ---*/
       
       Vn_Infty = 0;
-      for (iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
+      for (auto iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
 
       if (Vn_Infty > 0.0) {
         /*--- Outflow conditions ---*/
@@ -796,7 +795,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       else {
         /*--- Inflow conditions ---*/
         Velocity2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
+        for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
         const su2double Rho_Infty = V_infty[nDim+2];
         const su2double muT_Infty = V_infty[nDim+6];
         Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
