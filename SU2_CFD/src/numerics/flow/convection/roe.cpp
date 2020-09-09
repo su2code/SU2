@@ -216,27 +216,27 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Compute absolute value with Mavriplis' entropy correction ---*/
 
-  const su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-  const su2double Delta = config->GetEntropyFix_Coeff();
+  // const su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+  // const su2double Delta = config->GetEntropyFix_Coeff();
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
-   }
+  // for (auto iVar = 0; iVar < nVar; iVar++) {
+  //   Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
+  // }
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
-  // for (auto iDim = 0; iDim < nDim; iDim++)
-  //   Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
 
-  // Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
-  // Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+  Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
+  Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
 
-  // for (auto iVar = 0; iVar < nVar; iVar++) {
-  //   if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-  //     Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
-  //   else
-  //     Lambda[iVar] = fabs(Lambda[iVar]);
-  // }
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+      Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
+    else
+      Lambda[iVar] = fabs(Lambda[iVar]);
+  }
 
   if (tkeNeeded) Lambda[nVar] = Lambda[0];
 
