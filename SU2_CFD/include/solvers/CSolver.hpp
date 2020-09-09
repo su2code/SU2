@@ -312,8 +312,7 @@ public:
   /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.
    */
-  virtual void CheckExtrapolatedState(const CConfig   *config,
-                                      const su2double *primvar_i, 
+  virtual void CheckExtrapolatedState(const su2double *primvar_i, 
                                       const su2double *primvar_j, 
                                       const su2double *tke_i, 
                                       const su2double *tke_j, 

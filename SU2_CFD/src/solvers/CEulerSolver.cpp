@@ -3410,15 +3410,12 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
-                                          const su2double *primvar_i, 
+void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i, 
                                           const su2double *primvar_j, 
                                           const su2double *tke_i, 
                                           const su2double *tke_j, 
                                           bool bad_i, 
                                           bool bad_j) {
-
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   const bool neg_pres_or_rho_i = (primvar_i[nDim+1] < 0.0) || (primvar_i[nDim+2] < 0.0);
   const bool neg_pres_or_rho_j = (primvar_j[nDim+1] < 0.0) || (primvar_j[nDim+2] < 0.0);
