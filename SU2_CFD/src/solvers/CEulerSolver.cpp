@@ -7429,11 +7429,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double Kine_Infty = 0., Omega_Infty = 0.;
   su2double RiemannPlus, RiemannMinus;
-  su2double *V_infty, *V_domain;
-  su2double *U_domain;
-  su2double U_infty[MAXNVAR] = {0.0};
 
-  su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
 
   const bool implicit  = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const bool viscous   = config->GetViscous();
@@ -7447,11 +7444,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    auto node_i = geometry->node[iPoint];
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto node_i = geometry->node[iPoint];
 
     /*--- Allocate the value at the infinity ---*/
-    V_infty = GetCharacPrimVar(val_marker, iVertex);
+    const auto V_infty = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -7459,7 +7456,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       /*--- Index of the closest interior node ---*/
 
-      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -7468,7 +7465,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       conv_numerics->SetNormal(Normal);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = nodes->GetPrimitive(iPoint);
+      const auto V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Construct solution state at infinity for compressible flow by
          using Riemann invariants, and then impose a weak boundary condition

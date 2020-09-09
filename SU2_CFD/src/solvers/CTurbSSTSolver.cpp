@@ -743,7 +743,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver, C
 void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics *conv_numerics,
                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  su2double *Normal, *V_infty, *V_domain;
+  su2double *Normal;
   const su2double *Vel_Infty = config->GetVelocity_FreeStreamND();
   su2double Vn_Infty = 0., Velocity2 = 0.;
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream();
@@ -755,8 +755,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
   for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    auto node_i = geometry->node[iPoint];
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    const auto node_i = geometry->node[iPoint];
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -764,11 +764,11 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
       /*--- Allocate the value at the infinity ---*/
 
-      V_infty = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      const auto V_infty = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      V_domain = flowNodes->GetPrimitive(iPoint);
+      const auto V_domain = flowNodes->GetPrimitive(iPoint);
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
