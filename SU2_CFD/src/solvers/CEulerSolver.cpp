@@ -3071,17 +3071,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
-    auto iEdge = color.indices[k];
+    const auto iEdge = color.indices[k];
 
     /*--- Points in edge and normal vectors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    const auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    const auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    auto Coord_i = geometry->node[iPoint]->GetCoord();
-    auto Coord_j = geometry->node[jPoint]->GetCoord();
+    const auto Coord_i = geometry->node[iPoint]->GetCoord();
+    const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
     /*--- Roe Turkel preconditioning ---*/
 
@@ -3101,8 +3101,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Get primitive and secondary variables ---*/
 
-    auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
-    auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
+    const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
+    const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
     bool bad_i = false, bad_j = false, bad_edge = false;
 
@@ -3120,8 +3120,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
         }
 
-        auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[0];
-        auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[0];
+        const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[0];
+        const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[0];
 
         const su2double Kappa = config->GetMUSCL_Kappa();
           
@@ -3180,8 +3180,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
       }
 
-      auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      const auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      const auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       const su2double Kappa = config->GetMUSCL_Kappa();
 
@@ -3352,8 +3352,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (!muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
-          auto flowLim_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec;
-          auto flowLim_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
+          const auto flowLim_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec;
+          const auto flowLim_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
           const su2double *turbLim_i = nullptr, *turbLim_j = nullptr;
           if (tkeNeeded) {
             turbLim_i = limiterTurb ? turbNodes->GetLimiter(iPoint) : OneVec;
@@ -3544,7 +3544,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
 
   /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
-  auto primvar_i = flowVar->GetPrimitive(iPoint);
+  const auto primvar_i = flowVar->GetPrimitive(iPoint);
 
   su2double inv_rho_i = 1.0/primvar_i[nDim+2];
   su2double vel_i[MAXNDIM] = {0.0};
@@ -3604,15 +3604,17 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
+
+    /*--- d{r,v,p,k}/dU, evaluated at neighbor node ---*/
+
     const auto kPoint = node_i->GetPoint(iNeigh);
+    const auto primvar_k = flowVar->GetPrimitive(kPoint);
 
-    /*--- d{r,v,p,k}/dU, evaluated at node ---*/
-
-    const su2double inv_rho_k = 1.0/flowVar->GetDensity(kPoint);
+    const su2double inv_rho_k = 1.0/primvar_k[nDim+2];
     su2double vel_k[MAXNDIM] = {0.0};
     su2double sq_vel_k = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      vel_k[iDim] = flowVar->GetVelocity(kPoint,iDim);
+      vel_k[iDim] = primvar_k[iDim+1];
       sq_vel_k += pow(vel_k[iDim],2);
     }
 

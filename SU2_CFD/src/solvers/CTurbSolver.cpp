@@ -124,12 +124,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
 
-    auto iEdge = color.indices[k];
+    const auto iEdge = color.indices[k];
 
     /*--- Points in edge and normal vectors ---*/
 
-    auto iPoint = geometry->edge[iEdge]->GetNode(0);
-    auto jPoint = geometry->edge[iEdge]->GetNode(1);
+    const auto iPoint = geometry->edge[iEdge]->GetNode(0);
+    const auto jPoint = geometry->edge[iEdge]->GetNode(1);
 
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
@@ -167,8 +167,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (muscl) {
         /*--- Reconstruct turbulence variables. ---*/
 
-        auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-        auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+        const auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+        const auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
         for (auto iVar = 0; iVar < nVar; iVar++) {
           
@@ -229,8 +229,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (muscl) {
         /*--- Reconstruct mean flow primitive variables. ---*/
 
-        auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
-        auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+        const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
+        const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
         for (auto iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
 
@@ -332,8 +332,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (!muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
-        auto lim_i = limiter ? nodes->GetLimiter(iPoint) : OneVec;
-        auto lim_j = limiter ? nodes->GetLimiter(jPoint) : OneVec;
+        const auto lim_i = limiter ? nodes->GetLimiter(iPoint) : OneVec;
+        const auto lim_j = limiter ? nodes->GetLimiter(jPoint) : OneVec;
 
         SetExtrapolationJacobian(solver, geometry, config,
                                  &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
