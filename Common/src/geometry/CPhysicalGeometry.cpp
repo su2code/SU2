@@ -26,7 +26,7 @@
  */
 
 #include "../../include/geometry/CPhysicalGeometry.hpp"
-#include "../../include/adt_structure.hpp"
+#include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
@@ -1092,7 +1092,6 @@ void CPhysicalGeometry::DistributePoints(const CConfig *config, CGeometry *geome
 
   unsigned short iDim;
   unsigned long iPoint, iNeighbor, jPoint, iProcessor;
-  vector<unsigned long>::iterator it;
 
   SU2_MPI::Request *colorSendReq = nullptr, *idSendReq = nullptr, *coordSendReq = nullptr;
   SU2_MPI::Request *colorRecvReq = nullptr, *idRecvReq = nullptr, *coordRecvReq = nullptr;
@@ -2587,7 +2586,6 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
   vector<vector<unsigned long> > BoundQuad_List;
 
   vector<unsigned long> Marker_Local;
-  vector<unsigned long>::iterator it;
 
   /*--- Compute how many markers we have local to this rank by looping
    through the global marker numbers of each local surface element and

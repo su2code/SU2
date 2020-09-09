@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
 /*!
@@ -448,13 +449,6 @@ public:
                     CNumerics *numerics,
                     const CConfig *config,
                     unsigned short val_marker) final;
-
-  /*!
-   * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Iterate using an implicit Newmark solver.

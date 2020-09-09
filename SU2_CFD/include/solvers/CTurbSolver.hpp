@@ -99,6 +99,7 @@ private:
                         CSolver **solver_container,
                         CNumerics *numerics,
                         CConfig *config);
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.

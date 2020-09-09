@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,9 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CIncEulerVariable.hpp"
-
+#include "../../include/fluid/CFluidModel.hpp"
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature, unsigned long npoint,
                                      unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
@@ -102,13 +101,13 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
-  
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-  
+
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-  
+
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
 
   if (config->GetMultizone_Problem())
@@ -126,11 +125,11 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
-  
+
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
-  
+
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

@@ -27,7 +27,7 @@
 
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/omp_structure.hpp"
-
+#include "../../include/fluid/CFluidModel.hpp"
 
 CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double energy,
                          unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :

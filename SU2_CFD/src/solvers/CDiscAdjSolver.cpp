@@ -806,10 +806,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
-    if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
-       || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
-       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL
-       || config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+    if(config->GetSolid_Wall(iMarker)) {
 
       Sens = 0.0;
 
