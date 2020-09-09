@@ -493,7 +493,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set vorticity and strain rate magnitude ---*/
 
-      numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
       numerics->SetStrainMag(flowNodes->GetStrainMag(iPoint), 0.0);
       numerics->SetVorticityMag(flowNodes->GetVorticityMag(iPoint), 0.0);
 
@@ -569,7 +568,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
         }// iVertex
       }// not send-receive
     }// iMarker
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
   }// if physical boundary
   
   /*--------------------------------------------------------------------------*/
@@ -601,7 +600,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     if (wls) {
       Jacobian_i[1][0] *= -1.0; Jacobian_i[1][1] *= -1.0;
     }
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
 

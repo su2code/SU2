@@ -492,7 +492,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
     }
   }
 
-  Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
   /*--------------------------------------------------------------------------*/
@@ -530,10 +530,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
       }
     }
 
-    Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
 
@@ -586,7 +585,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       }// not send-receive
     }// iMarker
 
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
   }// physical boundary
@@ -621,10 +620,9 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       if (wls) Jacobian_i[iVar][iVar] *= -1.0;
     }
 
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
 

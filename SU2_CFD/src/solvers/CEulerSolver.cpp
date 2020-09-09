@@ -3513,7 +3513,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]; reconWeight_r[iVar] = 0.5*kappa*l_j[iVar];
+    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]; 
+    reconWeight_r[iVar] = 0.5*kappa*l_j[iVar];
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3589,7 +3590,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
     }
   }
 
-  Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
   /*--------------------------------------------------------------------------*/
@@ -3653,10 +3654,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver         **solver,
       }
     }
 
-    Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
 
