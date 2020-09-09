@@ -306,6 +306,22 @@ protected:
   void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
+   * \brief Check if the kappa scheme extrapolation gives physical L and R states.
+   * \param[in] primvar_i - Primitive vector extrapolated from node i to face.
+   * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
+   * \param[in] tke_i - Turbulent kinetic energy extrapolated from node i to face.
+   * \param[in] tke_j - Turbulent kinetic energy extrapolated from node j to face.
+   * \param[out] bad_i - Whether the extrapolated state from node i is bad.
+   * \param[out] bad_j - Whether the extrapolated state from node j is bad.
+   */
+  void CheckExtrapolatedState(const su2double *primvar_i, 
+                              const su2double *primvar_j, 
+                              const su2double *tke_i, 
+                              const su2double *tke_j, 
+                              bool bad_i, 
+                              bool bad_j);
+
+  /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.

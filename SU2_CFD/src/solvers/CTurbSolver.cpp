@@ -276,29 +276,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
         }
 
-        const bool neg_pres_or_rho_i = (flowPrimVar_i[nDim+1] < 0.0) || (flowPrimVar_i[nDim+2] < 0.0);
-        const bool neg_pres_or_rho_j = (flowPrimVar_j[nDim+1] < 0.0) || (flowPrimVar_j[nDim+2] < 0.0);
+        /*--- Check for non-physical solutions after reconstruction. If found, use the
+         cell-average value of the solution. This is a locally 1st order approximation,
+         which is typically only active during the start-up of a calculation. ---*/
 
-        const su2double R = sqrt(fabs(flowPrimVar_j[nDim+2]/flowPrimVar_i[nDim+2]));
-        const su2double R_Plus_One = R+1.;
-        su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          su2double RoeVelocity = (R*flowPrimVar_j[iDim+1]+flowPrimVar_i[iDim+1])/R_Plus_One;
-          RoeSqVel += pow(RoeVelocity, 2);
-          SqVel_i += pow(flowPrimVar_i[iDim+1],2);
-          SqVel_j += pow(flowPrimVar_j[iDim+1],2);
-        }
-        const su2double Energy_i = flowPrimVar_i[nDim+1]/(Gamma_Minus_One*flowPrimVar_i[nDim+2])+turbPrimVar_i[0]+0.5*SqVel_i;
-        const su2double Energy_j = flowPrimVar_j[nDim+1]/(Gamma_Minus_One*flowPrimVar_j[nDim+2])+turbPrimVar_j[0]+0.5*SqVel_j;
-        const su2double Enthalpy_i = Energy_i+flowPrimVar_i[nDim+1]/flowPrimVar_i[nDim+2];
-        const su2double Enthalpy_j = Energy_j+flowPrimVar_j[nDim+1]/flowPrimVar_j[nDim+2];
-        const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-        const su2double RoeTke = (R*turbPrimVar_j[0]+turbPrimVar_i[0])/R_Plus_One;
-
-        const bool bad_roe = (Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke) < 0.0);
-
-        bad_i = neg_pres_or_rho_i || bad_roe || bad_i;
-        bad_j = neg_pres_or_rho_j || bad_roe || bad_j;
+        const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
+        const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
+        solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, bad_i, bad_j);
 
       }
       else {
@@ -403,8 +387,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                             nodes->GetF1blending(jPoint));
     numerics->SetF2blending(nodes->GetF2blending(iPoint),
                             nodes->GetF2blending(jPoint));
-    numerics->SetVorticity(flowNodes->GetVorticity(iPoint),
-                           flowNodes->GetVorticity(jPoint));
     numerics->SetVorticityMag(flowNodes->GetVorticityMag(iPoint),
                               flowNodes->GetVorticityMag(jPoint));
   }
