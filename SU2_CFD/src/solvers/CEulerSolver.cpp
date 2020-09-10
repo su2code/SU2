@@ -3520,7 +3520,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
     reconWeight_l[iVar] = bad_i ? 0.0 : su2double(0.5*kappa*l_i[iVar]); 
-    reconWeight_r[iVar] = bad_i ? 0.0 : su2double(0.5*kappa*l_j[iVar]);
+    reconWeight_r[iVar] = bad_j ? 0.0 : su2double(0.5*kappa*l_j[iVar]);
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
