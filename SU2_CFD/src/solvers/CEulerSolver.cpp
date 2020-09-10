@@ -3486,17 +3486,13 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters in single vector in proper order ---*/
 
-  su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
-  su2double *limiter_i = OneVec, *turbLimiter_i = OneVec,
-            *limiter_j = OneVec, *turbLimiter_j = OneVec;
+  su2double OneVec[MAXNDIM+3]  = {1.0};
+  su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, *turbLimiter_i = nullptr, 
+            *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec, *turbLimiter_j = nullptr;
 
-  if (limiter) {
-    limiter_i = bad_i ? ZeroVec : nodes->GetLimiter_Primitive(iPoint);
-    limiter_j = bad_j ? ZeroVec : nodes->GetLimiter_Primitive(jPoint);
-  }
-  if (limiterTurb && tkeNeeded) {
-    turbLimiter_i = bad_i ? ZeroVec : turbNodes->GetLimiter(iPoint);
-    turbLimiter_j = bad_j ? ZeroVec : turbNodes->GetLimiter(jPoint);
+  if (tkeNeeded) {
+    turbLimiter_i = limiterTurb ? turbNodes->GetLimiter(iPoint) : OneVec;
+    turbLimiter_j = limiterTurb ? turbNodes->GetLimiter(jPoint) : OneVec;
   }
 
   su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
@@ -3517,8 +3513,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]; 
-    reconWeight_r[iVar] = 0.5*kappa*l_j[iVar];
+    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]*bad_i; 
+    reconWeight_r[iVar] = 0.5*kappa*l_j[iVar]*bad_j;
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3646,7 +3642,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa);
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      reconWeight_l[iVar] = factor*gradWeightDotDist*l_i[iVar];
+      reconWeight_l[iVar] = factor*gradWeightDotDist*l_i[iVar]*bad_i;
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {

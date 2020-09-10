@@ -465,20 +465,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters ---*/
 
-  su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
-  su2double *limiter_i = OneVec, *limiter_j = OneVec;
-
-  if (limiter) {
-    limiter_i = bad_i ? ZeroVec : nodes->GetLimiter(iPoint);
-    limiter_j = bad_j ? ZeroVec : nodes->GetLimiter(jPoint);
-  }
+  su2double OneVec[MAXNVAR] = {1.0};
+  su2double *limiter_i = limiter ? nodes->GetLimiter(iPoint) : OneVec, 
+            *limiter_j = limiter ? nodes->GetLimiter(jPoint) : OneVec;
 
   /*--- Store reconstruction weights ---*/
 
   su2double reconWeight_l[MAXNVAR] = {0.0}, reconWeight_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*limiter_i[iVar];
-    reconWeight_r[iVar] = 0.5*kappa*limiter_j[iVar];
+    reconWeight_l[iVar] = 0.5*kappa*limiter_i[iVar]*bad_i;
+    reconWeight_r[iVar] = 0.5*kappa*limiter_j[iVar]*bad_j;
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -516,7 +512,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa);
     for (auto iVar = 0; iVar < nVar; iVar++)
-      reconWeight_l[iVar] = factor*gradWeightDotDist*limiter_i[iVar];
+      reconWeight_l[iVar] = factor*gradWeightDotDist*limiter_i[iVar]*bad_i;
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
