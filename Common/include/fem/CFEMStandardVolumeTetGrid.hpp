@@ -61,15 +61,6 @@ public:
   ~CFEMStandardVolumeTetGrid() = default;
 
   /*!
-   * \brief Function to determine whether the point distribution of the element is LGL.
-   * \param[in] matCoor - Matrix that contains the coordinates of the grid DOFs.
-   * \param[in] ldb     - Leading dimension of matCoor (gemm convention).
-   * \return True if the coordinates are LGL and false otherwise.
-   */
-  bool CoordinatesAreLGL(const ColMajorMatrix<su2double> &matCoor,
-                         const unsigned short            ldb) const override;
-
-  /*!
    * \brief Function, which computes the data and/or derivatives in the
    *        integration points from the known data in the DOFs.
    * \param[in]  matB    - Matrix that contains the input data.
@@ -101,6 +92,27 @@ public:
    * \return The VTK type of the given face type.
    */
   unsigned short GetVTK_TypeFace(unsigned short ind) const override {return TRIANGLE;}
+
+  /*!
+   * \brief Function, which computes the mininum and maximum value of the Jacobian of
+   *        the transformation to the standard element.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
+   * \param[in]  ldb             - Leading dimension of matCoor (gemm convention).
+   * \param[in]  ldc             - Leading dimension of matMetricTerms (gemm convention).
+   * \param[out] matMetricTerms  - Vector of matrices to compute the metric terms.
+   * \param[out] Jacobians       - Vector to store the Jacobians of the transformation.
+   * \param[out] jacMin          - Minimum value of the Jacobian.
+   * \param[out] jacMax          - Maximum value of the Jacobian.
+   */
+  void MinMaxJacobians(const bool                         LGLDistribution,
+                       const ColMajorMatrix<su2double>    &matCoor,
+                       const unsigned short               ldb,
+                       const unsigned short               ldc,
+                       vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                       su2activevector                    &Jacobians,
+                       su2double                          &jacMin,
+                       su2double                          &jacMax) const override;
 
 private:
 

@@ -410,16 +410,16 @@ public:
   inline virtual void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) {}
 
   /*!
-   * \brief Virtual function to get whether or not the LGL distribution is used.
-   * \return True if the LGL distribution is used and false otherwise.
+   * \brief Virtual function to return the location of the grid DOFs.
+   * \return Just a dummy, because this function must be overwritten.
    */
-  inline virtual bool GetLGLDistribution(void) { return false; }
+  inline virtual ENUM_FEM_GRID_LOCATION GetLocationGridDOFs(void) { return NO_PREFERRED_LOCATION; }
 
   /*!
-   * \brief Virtual function to set the value of LGLDistribution.
-   * \param[in] val_LGLDistribution - The value to be set for LGLDistribution.
+   * \brief Virtual function to set the location of the grid DOFs.
+   * \param[in] val_GridLocation - The value to be set for the grid location
    */
-  inline virtual void SetLGLDistribution(bool val_LGLDistribution) {}
+  inline virtual void SetLocationGridDOFs(ENUM_FEM_GRID_LOCATION val_GridLocation) {}
 
   /*!
    * \brief Virtual function to correct the offset of the global DOFs.

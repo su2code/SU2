@@ -46,11 +46,9 @@ private:
   unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
   unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
 
-  bool JacobianConsideredConstant;   /*!< \brief Whether or not the Jacobian of the transformation to
-                                                 is (almost) constant. */
-  bool LGLDistribution;              /*!< \brief Whether or not the grid points follow the
-                                                 Legendre-Gauss-Lobatto (LGL) distribution.
-                                                 If not, equidistant is assumed. */
+  bool JacobianConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation to
+                                                    is (almost) constant. */
+  ENUM_FEM_GRID_LOCATION gridLocation;  /*!< \brief The location of the grid DOFs in the element. */
 
 public:
 
@@ -197,16 +195,16 @@ public:
                                            unsigned long  faceConn[6][4]);
 
   /*!
-   * \brief Function to get whether or not the LGL distribution is used.
-   * \return True if the LGL distribution is used and false otherwise.
+   * \brief Function to return the location of the grid DOFs.
+   * \return The value of gridLocation.
    */
-  inline bool GetLGLDistribution(void) override {return LGLDistribution;}
+  inline ENUM_FEM_GRID_LOCATION GetLocationGridDOFs(void) override {return gridLocation;}
 
   /*!
-   * \brief Function to set the value of LGLDistribution.
-   * \param[in] val_LGLDistribution - The value to be set for LGLDistribution.
+   * \brief Function to set the location of the grid DOFs.
+   * \param[in] val_GridLocation - The value to be set for the grid location
    */
-  inline void SetLGLDistribution(bool val_LGLDistribution) override {LGLDistribution = val_LGLDistribution;}
+  inline void SetLocationGridDOFs(ENUM_FEM_GRID_LOCATION val_GridLocation) override {gridLocation = val_GridLocation;}
 
 private:
 

@@ -37,13 +37,6 @@ CFEMStandardVolumeQuadGrid::CFEMStandardVolumeQuadGrid(const unsigned short val_
 
 }
 
-bool CFEMStandardVolumeQuadGrid::CoordinatesAreLGL(const ColMajorMatrix<su2double> &matCoor,
-                                                   const unsigned short            ldb) const {
-
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-  return false;
-}
-
 void CFEMStandardVolumeQuadGrid::DataIntegrationPoints(const ColMajorMatrix<su2double>    &matB,
                                                        const unsigned short               ldb,
                                                        const unsigned short               ldc,
@@ -51,6 +44,18 @@ void CFEMStandardVolumeQuadGrid::DataIntegrationPoints(const ColMajorMatrix<su2d
                                                        ColMajorMatrix<su2double>          *matC,
                                                        vector<ColMajorMatrix<su2double> > *matDerC,
                                                        const CConfig                      *config) const {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+void CFEMStandardVolumeQuadGrid::MinMaxJacobians(const bool                         LGLDistribution,
+                                                 const ColMajorMatrix<su2double>    &matCoor,
+                                                 const unsigned short               ldb,
+                                                 const unsigned short               ldc,
+                                                 vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                                 su2activevector                    &Jacobians,
+                                                 su2double                          &jacMin,
+                                                 su2double                          &jacMax) const {
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

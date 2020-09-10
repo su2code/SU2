@@ -344,10 +344,12 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
           coordinates and the metric terms. ---*/
     ColMajorMatrix<su2double> matCoor(sizeDOF, nDim);
     vector<ColMajorMatrix<su2double> > matMetricTerms(nDim, ColMajorMatrix<su2double>(sizeInt, nDim));
+    su2activevector Jacobians(sizeInt);
 
     /*--- Fill these matrices with the default values to avoid
           problems later on. ---*/
     matCoor.setConstant(0.0);
+    Jacobians.setConstant(0.0);
 
     for(unsigned short iDim=0; iDim<nDim; ++iDim) {
       matMetricTerms[iDim].setConstant(0.0);
@@ -386,21 +388,47 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
           matCoor(j,k) = nodes->GetCoord(ind, k);
       }
 
-      /*--- Determine whether the LGL or equidistant distribution
-            of the grid points is used. ---*/
-      const bool LGLDistribution = standardVolumeElements[ii]->CoordinatesAreLGL(matCoor, sizeDOF);
-      elem[i]->SetLGLDistribution(LGLDistribution);
+      /*--- Determine the minimum and maximum values of the Jacobians of the
+            transformation to the standard element for the LGL and equidistant
+            distribution of the grid DOFs. ---*/
+      su2double jacMinLGL, jacMaxLGL, jacMinEq, jacMaxEq;
+      standardVolumeElements[ii]->MinMaxJacobians(true, matCoor, sizeDOF, sizeInt,
+                                                  matMetricTerms, Jacobians,
+                                                  jacMinLGL, jacMaxLGL);
 
-      /*--- Carry out the matrix products to determine the derivatives of
-            the coordinates w.r.t. the parametric coordinates. The fifth
-            argument is the null pointer, because the coordinates of the
-            integration points are not needed. The last argument is the
-            null pointer, such that this gemm call is ignored in the
-            profiling. Replace by config if if should be included ---*/
-      standardVolumeElements[ii]->DataIntegrationPoints(matCoor, sizeDOF, sizeInt, nDim,
-                                                        nullptr, &matMetricTerms,nullptr);
+      standardVolumeElements[ii]->MinMaxJacobians(false, matCoor, sizeDOF, sizeInt,
+                                                  matMetricTerms, Jacobians,
+                                                  jacMinEq, jacMaxEq);
 
+      /*--- Check if at least one point distribution gives valid Jacobians.
+            If not, terminate. ---*/
+      if((jacMinLGL <= 0.0) && (jacMinEq <= 0.0))
+        SU2_MPI::Error("Negative Jacobian found", CURRENT_FUNCTION);
 
+      /*--- Determine the ratio of the maximum and minimum Jacobian. ---*/
+      const su2double ratioJacLGL = jacMaxLGL/jacMinLGL;
+      const su2double ratioJacEq  = jacMaxEq /jacMinEq;
+
+      /*--- Determine the point distribution for this element. ---*/
+      ENUM_FEM_GRID_LOCATION gridLocation;
+      if(jacMinEq <= 0.0)                      gridLocation = LGL_ONLY;
+      else if(jacMinLGL <= 0.0)                gridLocation = EQUI_ONLY;
+      else if(ratioJacEq/ratioJacLGL >= 1.001) gridLocation = LGL_PREFERRED;
+      else if(ratioJacLGL/ratioJacEq >= 1.001) gridLocation = EQUI_PREFERRED;
+      else                                     gridLocation = NO_PREFERRED_LOCATION;
+
+      /*--- Store the grid location for this element. ---*/
+      elem[i]->SetLocationGridDOFs(gridLocation);
+
+      /*--- Set the value of the minimum Jacobian and the Jacobian ratio. ---*/
+      su2double jacMin, ratioJac;
+      if((gridLocation == NO_PREFERRED_LOCATION) || (gridLocation == LGL_PREFERRED) ||
+         (gridLocation == LGL_ONLY)) {jacMin = jacMinLGL; ratioJac = ratioJacLGL;}
+      else                           {jacMin = jacMinEq;  ratioJac = ratioJacEq;}
+
+      /*--- Determine whether or not the Jacobian can be considered constant. ---*/
+      bool constJacobian = (ratioJac <= 1.000001);
+      elem[i]->SetJacobianConsideredConstant(constJacobian);
     }
 
 

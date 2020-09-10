@@ -72,19 +72,6 @@ public:
 public:
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
-   * \param[in] matCoor - Matrix that contains the coordinates of the grid DOFs.
-   * \param[in] ldb     - Leading dimension of matCoor (gemm convention).
-   * \return True if the coordinates are LGL and false otherwise.
-   */
-  virtual bool CoordinatesAreLGL(const ColMajorMatrix<su2double> &matCoor,
-                                 const unsigned short            ldb) const {
-    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
-                   CURRENT_FUNCTION);
-    return false;
-  }
-
-  /*!
-   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \param[in]  matB    - Matrix that contains the input data.
    * \param[in]  ldb     - Leading dimension of matB (gemm convention).
    * \param[in]  ldc     - Leading dimension of matC (gemm convention).
@@ -160,6 +147,29 @@ public:
    * \return  The type of the element using the VTK convention.
    */
   inline unsigned short GetVTK_Type(void) const {return VTK_Type;}
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
+   * \param[in]  ldb             - Leading dimension of matCoor (gemm convention).
+   * \param[in]  ldc             - Leading dimension of matMetricTerms (gemm convention).
+   * \param[out] matMetricTerms  - Vector of matrices to compute the metric terms.
+   * \param[out] Jacobians       - Vector to store the Jacobians of the transformation.
+   * \param[out] jacMin          - Minimum value of the Jacobian.
+   * \param[out] jacMax          - Maximum value of the Jacobian.
+   */
+  virtual void MinMaxJacobians(const bool                         LGLDistribution,
+                               const ColMajorMatrix<su2double>    &matCoor,
+                               const unsigned short               ldb,
+                               const unsigned short               ldc,
+                               vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                               su2activevector                    &Jacobians,
+                               su2double                          &jacMin,
+                               su2double                          &jacMax) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.

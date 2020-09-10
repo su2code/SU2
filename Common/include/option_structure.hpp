@@ -774,6 +774,17 @@ static const MapType<string, ENUM_FEM> FEM_Map = {
 };
 
 /*!
+ * \brief Types of grid DOFs location for the high order FEM solver.
+ */
+enum ENUM_FEM_GRID_LOCATION {
+  NO_PREFERRED_LOCATION = 0,  /*!< \brief LGL and equidistant is equally preferred. */
+  LGL_PREFERRED         = 1,  /*!< \brief LGL is preferred, but equidistant is possible. */
+  EQUI_PREFERRED        = 2,  /*!< \brief Equidistant is preferred, but LGL is possible. */
+  LGL_ONLY              = 3,  /*!< \brief Only LGL leads to a valid mapping to standard element. */
+  EQUI_ONLY             = 4   /*!< \brief Only equidistant leads to a valid mapping to standard element. */
+};
+
+/*!
  * \brief Types of shock capturing method in Discontinuous Galerkin numerical method.
  */
 enum ENUM_SHOCK_CAPTURING_DG {
