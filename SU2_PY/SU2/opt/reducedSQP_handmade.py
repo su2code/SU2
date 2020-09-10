@@ -67,8 +67,8 @@ def SQPconstrained(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_
             xb = [-1e-1, 1e-1]
         Id = np.identity(len(p))
         if np.size(C) > 0:
-            G = cvxopt.matrix(np.block([[D_C], [-Id], [Id]]))
-            h = cvxopt.matrix(np.append(-C, np.append([-xb[0]]*len(p), [xb[1]]*len(p))))
+            G = cvxopt.matrix(np.block([[-D_C], [-Id], [Id]]))
+            h = cvxopt.matrix(np.append(C, np.append([-xb[0]]*len(p), [xb[1]]*len(p))))
         else:
             G = cvxopt.matrix(np.block([[-Id], [Id]]))
             h = cvxopt.matrix(np.append([-xb[0]]*len(p), [xb[1]]*len(p)))
@@ -126,7 +126,7 @@ def SQPequalconstrained(x0, func, f_eqcons, fprime, fprime_eqcons, fdotdot, para
     H_F = fdotdot(p, parameter)
 
     # set the inout parameters
-    nu = np.array([1.0]*np.size(E))
+    nu = np.sign(E)
     err = 2*acc+1
     step = 1
 
@@ -164,7 +164,7 @@ def SQPequalconstrained(x0, func, f_eqcons, fprime, fprime_eqcons, fdotdot, para
 
         # get the solution
         delta_p = sol[0:len(p)]
-        nu_temp = sol[-len(nu):]
+        nu_temp = sol[-np.size(nu):]
 
         # line search
         delta_p = linesearch(p, delta_p, F, func, E, f_eqcons, nu, nu_temp, parameter, acc)
