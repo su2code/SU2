@@ -3644,9 +3644,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    const su2double factor = sign*0.5*(1.-kappa);
+    const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      reconWeight_l[iVar] = factor*gradWeightDotDist*l_i[iVar]*good_i;
+      reconWeight_l[iVar] = factor*l_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
