@@ -3060,10 +3060,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
-  su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
-
-  su2double GradWeights_i[MAXNVAR] = {0.0}, GradWeights_j[MAXNVAR] = {0.0};
-
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
