@@ -3100,7 +3100,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
     const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
-    bool bad_i = false, bad_j = false, bad_edge = false;
+    bool good_i = true, good_j = true, good_edge = true;
 
     if (tkeNeeded) {
 
@@ -3162,8 +3162,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         tke_i += Project_Grad_i;
         tke_j -= Project_Grad_j;
 
-        bad_i = (tke_i < 0.0);
-        bad_j = (tke_j < 0.0);
+        good_i = (tke_i >= 0.0);
+        good_j = (tke_j >= 0.0);
       }
     }
 
@@ -3244,31 +3244,29 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, bad_i, bad_j);
+      CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
-      nodes->SetNon_Physical(iPoint, bad_i);
-      nodes->SetNon_Physical(jPoint, bad_j);
+      nodes->SetNon_Physical(iPoint, !good_i);
+      nodes->SetNon_Physical(jPoint, !good_j);
 
       /*--- Get updated state, in case the point recovered after the set. ---*/
-      // bad_i = nodes->GetNon_Physical(iPoint);
-      // bad_j = nodes->GetNon_Physical(jPoint);
+      // good_i = !nodes->GetNon_Physical(iPoint);
+      // good_j = !nodes->GetNon_Physical(jPoint);
 
-      counter_local += bad_i+bad_j;
+      counter_local += (!good_i+!good_j);
 
-      bad_edge = bad_i || bad_j;
-
-      numerics->SetPrimitive(bad_i ? V_i : Primitive_i, 
-                             bad_j ? V_j : Primitive_j);
-      numerics->SetSecondary(bad_i ? S_i : Secondary_i, 
-                             bad_j ? S_j : Secondary_j);
+      numerics->SetPrimitive(good_i ? Primitive_i : V_i, 
+                             good_j ? Primitive_j : V_j);
+      numerics->SetSecondary(good_i ? Secondary_i : S_i, 
+                             good_j ? Secondary_j : S_j);
 
       /*--- Store values for limiter, even if limiter isn't being used ---*/
 
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        numerics->SetTurbKineticEnergy(bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i,
-                                       bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j);
+        numerics->SetTurbKineticEnergy(good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0),
+                                       good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0));
       }
     }
     else {
@@ -3321,23 +3319,23 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (!muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
-          su2double *primvar_i = bad_i ? V_i : Primitive_i,
-                    *primvar_j = bad_j ? V_j : Primitive_j;
+          su2double *primvar_i = good_i ? Primitive_i : V_i,
+                    *primvar_j = good_j ? Primitive_j : V_j;
           if (tkeNeeded) {
-            tke_i = bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
-            tke_j = bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
+            tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
+            tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
           }
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_i, primvar_j,
                                    &tke_i, &tke_j,
                                    residual.jacobian_i, residual.jacobian_j,
-                                   bad_i, bad_j,
+                                   good_i, good_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_j, primvar_i,
                                    &tke_j, &tke_i,
                                    residual.jacobian_j, residual.jacobian_i,
-                                   bad_j, bad_i,
+                                   good_j, good_i,
                                    jPoint, iPoint);
         }
       }
@@ -3400,11 +3398,11 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
                                           const su2double *primvar_j, 
                                           const su2double *tke_i, 
                                           const su2double *tke_j, 
-                                          bool bad_i, 
-                                          bool bad_j) {
+                                          bool good_i, 
+                                          bool good_j) {
 
-  const bool neg_pres_or_rho_i = (primvar_i[nDim+1] < 0.0) || (primvar_i[nDim+2] < 0.0);
-  const bool neg_pres_or_rho_j = (primvar_j[nDim+1] < 0.0) || (primvar_j[nDim+2] < 0.0);
+  const bool good_prim_i = (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
+  const bool good_prim_j = (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
 
   const su2double R = sqrt(fabs(primvar_j[nDim+2]/primvar_i[nDim+2]));
   const su2double R_Plus_One = R+1.;
@@ -3422,10 +3420,10 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
   const su2double RoeTke = (R*(*tke_j)+(*tke_i))/R_Plus_One;
 
-  const bool bad_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke < 0.0);
+  const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 
-  bad_i = bad_i || bad_roe || neg_pres_or_rho_i;
-  bad_j = bad_j || bad_roe || neg_pres_or_rho_j;
+  good_i = good_i && good_roe && good_prim_i;
+  good_j = good_j && good_roe && good_prim_j;
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
@@ -3437,8 +3435,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
                                             const su2double     *tke_r,
                                             const su2double     *const *const dFdU_l,
                                             const su2double     *const *const dFdU_r,
-                                            const bool          bad_i,
-                                            const bool          bad_j,
+                                            const bool          good_i,
+                                            const bool          good_j,
                                             const unsigned long iPoint, 
                                             const unsigned long jPoint) {
 
@@ -3519,8 +3517,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]*(!bad_i);
-    reconWeight_r[iVar] = 0.5*kappa*l_j[iVar]*(!bad_j);
+    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]*good_i;
+    reconWeight_r[iVar] = 0.5*kappa*l_j[iVar]*good_j;
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3648,7 +3646,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa);
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      reconWeight_l[iVar] = factor*gradWeightDotDist*l_i[iVar]*(!bad_i);
+      reconWeight_l[iVar] = factor*gradWeightDotDist*l_i[iVar]*good_i;
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {

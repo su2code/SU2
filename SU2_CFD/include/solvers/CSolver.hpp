@@ -316,8 +316,8 @@ public:
                                       const su2double *primvar_j, 
                                       const su2double *tke_i, 
                                       const su2double *tke_j, 
-                                      bool bad_i, 
-                                      bool bad_j) {}
+                                      bool good_i, 
+                                      bool good_j) {}
   
   /*!
    * \brief Correct the gradient at symmetry planes.

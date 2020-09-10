@@ -123,8 +123,8 @@ private:
    * \param[in] rho_r - Density extrapolated from node j to face.
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
-   * \param[in] bad_i - Whether the extrapolation from node i was bad.
-   * \param[in] bad_j - Whether the extrapolation from node j was bad.
+   * \param[in] good_i - Whether the extrapolation from node i is good.
+   * \param[in] good_j - Whether the extrapolation from node j is good.
    */
   void SetExtrapolationJacobian(CSolver             **solver,
                                 const CGeometry     *geometry,
@@ -133,8 +133,8 @@ private:
                                 const su2double     *rho_r,
                                 const su2double     *const *const dFdU_l,
                                 const su2double     *const *const dFdU_r,
-                                const bool          bad_i,
-                                const bool          bad_j,
+                                const bool          good_i,
+                                const bool          good_j,
                                 const unsigned long iPoint, 
                                 const unsigned long jPoint);
 

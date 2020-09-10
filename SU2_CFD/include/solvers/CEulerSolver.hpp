@@ -311,15 +311,15 @@ protected:
    * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
    * \param[in] tke_i - Turbulent kinetic energy extrapolated from node i to face.
    * \param[in] tke_j - Turbulent kinetic energy extrapolated from node j to face.
-   * \param[out] bad_i - Whether the extrapolated state from node i is bad.
-   * \param[out] bad_j - Whether the extrapolated state from node j is bad.
+   * \param[out] good_i - Whether the extrapolated state from node i is good.
+   * \param[out] good_j - Whether the extrapolated state from node j is good.
    */
   void CheckExtrapolatedState(const su2double *primvar_i, 
                               const su2double *primvar_j, 
                               const su2double *tke_i, 
                               const su2double *tke_j, 
-                              bool bad_i, 
-                              bool bad_j) override;
+                              bool good_i, 
+                              bool good_j) override;
 
   /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
@@ -332,8 +332,8 @@ protected:
    * \param[in] tke_r - Turbulent kinetic energy extrapolated from node j to face.
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
-   * \param[in] bad_i - Whether the extrapolation from node i was bad.
-   * \param[in] bad_j - Whether the extrapolation from node j was bad.
+   * \param[in] good_i - Whether the extrapolation from node i is good.
+   * \param[in] good_j - Whether the extrapolation from node j is good.
    */
   void SetExtrapolationJacobian(CSolver             **solver, 
                                 const CGeometry     *geometry, 
@@ -344,8 +344,8 @@ protected:
                                 const su2double     *tke_r,
                                 const su2double     *const *const dFdU_l,
                                 const su2double     *const *const dFdU_r,
-                                const bool          bad_i,
-                                const bool          bad_j,
+                                const bool          good_i,
+                                const bool          good_j,
                                 const unsigned long iPoint, 
                                 const unsigned long jPoint);
 

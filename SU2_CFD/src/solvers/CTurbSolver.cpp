@@ -148,7 +148,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool bad_i = false, bad_j = false, bad_edge = false;
+    bool good_i = true, good_j = true, good_edge = true;
 
     if (muscl) {
       const auto Coord_i = geometry->node[iPoint]->GetCoord();
@@ -210,8 +210,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         turbPrimVar_j[iVar] = T_j[iVar] - Project_Grad_j;
 
         if (!sa_neg) {
-          bad_i = (turbPrimVar_i[iVar] < 0.0) || (bad_i);
-          bad_j = (turbPrimVar_j[iVar] < 0.0) || (bad_j);
+          good_i = (turbPrimVar_i[iVar] > 0.0) && (good_i);
+          good_j = (turbPrimVar_j[iVar] > 0.0) && (good_j);
         }
       }
     }
@@ -288,7 +288,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
-      solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, bad_i, bad_j);
+      solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
 
     }
     else {
@@ -298,14 +298,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
     }
 
-    bad_edge = bad_i || bad_j;
+    good_edge = good_i && good_j;
 
     /*--- Store the state ---*/
 
-    numerics->SetPrimitive(bad_i ? V_i : flowPrimVar_i, 
-                           bad_j ? V_j : flowPrimVar_j);
-    numerics->SetTurbVar(bad_i ? T_i : turbPrimVar_i, 
-                         bad_j ? T_j : turbPrimVar_j);
+    numerics->SetPrimitive(good_i ? flowPrimVar_i : V_i, 
+                           good_j ? flowPrimVar_j : V_j);
+    numerics->SetTurbVar(good_i ? turbPrimVar_i : T_i, 
+                         good_j ? turbPrimVar_j : T_j);
 
     /*--- Update convective residual value ---*/
 
@@ -321,17 +321,17 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (!muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
-        const su2double rho_i = bad_i ? V_i[nDim+2] : flowPrimVar_i[nDim+2],
-                        rho_j = bad_j ? V_j[nDim+2] : flowPrimVar_j[nDim+2];
+        const su2double rho_i = good_i ? flowPrimVar_i[nDim+2] : V_i[nDim+2],
+                        rho_j = good_j ? flowPrimVar_j[nDim+2] : V_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,
                                  &rho_i, &rho_j,
                                  residual.jacobian_i, residual.jacobian_j,
-                                 bad_i, bad_j,
+                                 good_i, good_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
                                  &rho_j, &rho_i,
                                  residual.jacobian_j, residual.jacobian_i,
-                                 bad_j, bad_i,
+                                 good_j, good_i,
                                  jPoint, iPoint);
       }
     }
@@ -441,8 +441,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
                                            const su2double     *rho_r,
                                            const su2double     *const *const dFdU_l,
                                            const su2double     *const *const dFdU_r,
-                                           const bool          bad_i,
-                                           const bool          bad_j,
+                                           const bool          good_i,
+                                           const bool          good_j,
                                            const unsigned long iPoint, 
                                            const unsigned long jPoint) {
 
@@ -475,8 +475,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR] = {0.0}, reconWeight_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*limiter_i[iVar]*(!bad_i);
-    reconWeight_r[iVar] = 0.5*kappa*limiter_j[iVar]*(!bad_j);
+    reconWeight_l[iVar] = 0.5*kappa*limiter_i[iVar]*good_i;
+    reconWeight_r[iVar] = 0.5*kappa*limiter_j[iVar]*good_j;
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -514,7 +514,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa);
     for (auto iVar = 0; iVar < nVar; iVar++)
-      reconWeight_l[iVar] = factor*gradWeightDotDist*limiter_i[iVar]*(!bad_i);
+      reconWeight_l[iVar] = factor*gradWeightDotDist*limiter_i[iVar]*good_i;
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
