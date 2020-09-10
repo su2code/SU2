@@ -331,7 +331,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                  bad_i, bad_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],s
+                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
                                  residual.jacobian_j, residual.jacobian_i,
                                  bad_j, bad_i,
                                  jPoint, iPoint);

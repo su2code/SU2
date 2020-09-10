@@ -3505,7 +3505,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     limiter_i = bad_i ? ZeroVec : nodes->GetLimiter_Primitive(iPoint);
     limiter_j = bad_j ? ZeroVec : nodes->GetLimiter_Primitive(jPoint);
   }
-  if (turbLimiter && tkeNeeded) {
+  if (limiterTurb && tkeNeeded) {
     turbLimiter_i = bad_i ? ZeroVec : turbNodes->GetLimiter(iPoint);
     turbLimiter_j = bad_j ? ZeroVec : turbNodes->GetLimiter(jPoint);
   }
