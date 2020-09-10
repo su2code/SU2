@@ -540,7 +540,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
       const unsigned long kk = startingIndRanksInPoint[source] + j;
 
       for(int k=0; k<dimension; ++k)
-        localPointCoordinates[k][kk] = coorRecvBuf[jj+k];
+        localPointCoordinates[k][kk] = SU2_TYPE::GetValue(coorRecvBuf[jj+k]);
     }
   }
 

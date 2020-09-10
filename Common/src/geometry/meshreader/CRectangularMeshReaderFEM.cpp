@@ -70,10 +70,6 @@ void CRectangularMeshReaderFEM::ComputeRectangularPointCoordinates() {
   /*--- Set the global count of points based on the grid dimensions. ---*/
   numberOfGlobalPoints = nNode*mNode;
 
-  /*--- Determine the step size in the two directions. ---*/
-  const passivedouble dx = Lx/((passivedouble)(nNode-1));
-  const passivedouble dy = Ly/((passivedouble)(mNode-1));
-
   /*--- Loop over the local elements to determine the global
         point IDs to be stored on this rank. --*/
   unsigned long ind = 0;
@@ -112,8 +108,8 @@ void CRectangularMeshReaderFEM::ComputeRectangularPointCoordinates() {
     const unsigned long iNode = globalPointIDs[i] - jNode*nNode;
 
     /*--- Store the coordinates of the point. ---*/
-    localPointCoordinates[0][i] = Ox + iNode*dx;
-    localPointCoordinates[1][i] = Oy + jNode*dy;
+    localPointCoordinates[0][i] = SU2_TYPE::GetValue(Lx*((su2double)iNode)/((su2double)(nNode-1))+Ox); 
+    localPointCoordinates[1][i] = SU2_TYPE::GetValue(Ly*((su2double)jNode)/((su2double)(mNode-1))+Oy);
   }
 }
 

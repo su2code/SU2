@@ -294,8 +294,10 @@ void CFEMStandardTet::EvalShift(const passivedouble         alpha,
   dx.resize(nDOFs);
   dy.resize(nDOFs);
 
-  const passivedouble cos1 = cos(2.0*PI_NUMBER/3.0), cos2 = cos(4.0*PI_NUMBER/3.0);
-  const passivedouble sin1 = sin(2.0*PI_NUMBER/3.0), sin2 = sin(4.0*PI_NUMBER/3.0);
+  const passivedouble cos1 = cos(SU2_TYPE::GetValue(TWO3*PI_NUMBER));
+  const passivedouble cos2 = cos(SU2_TYPE::GetValue(FOUR3*PI_NUMBER));
+  const passivedouble sin1 = sin(SU2_TYPE::GetValue(TWO3*PI_NUMBER));
+  const passivedouble sin2 = sin(SU2_TYPE::GetValue(FOUR3*PI_NUMBER));
 
   for(unsigned short i=0; i<nDOFs; ++i) {
     dx[i] = warp1[i] + cos1*warp2[i] + cos2*warp3[i];

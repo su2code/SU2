@@ -104,7 +104,7 @@ void CFEMStandardElementBase::Location1DGridDOFsLGL(vector<passivedouble> &r) {
 
   /*--- Constants used in the initial guess of the roots in the loop below. ---*/
   const passivedouble t1 = 1.0 - 3.0*(nPoly-1)/(8.0*nPoly*nPoly*nPoly);
-  const passivedouble t2 = PI_NUMBER/(4.0*nPoly + 1.0);
+  const passivedouble t2 = SU2_TYPE::GetValue(PI_NUMBER)/(4.0*nPoly + 1.0);
 
   /*--- The remaing points must be computed. These are the roots of P'_{n-1}(x),
         P_n is the classic Legendre polynomial of order n. Loop over roots to
