@@ -260,11 +260,6 @@ bool CFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeom
   return output->GetConvergence();
 }
 
-void CFEAIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
-                                CSolver***** solver, CNumerics****** numerics, CConfig** config,
-                                CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
-                                CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {}
-
 void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
@@ -273,8 +268,9 @@ void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeomet
   Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
           val_iInst);
 
-  /*--- Write the convergence history for the structure (only screen output) ---*/
-  //  if (multizone) output->SetConvHistory_Body(geometry, solver, config, integration, false, 0.0, val_iZone, INST_0);
+  if (multizone && !config[val_iZone]->GetTime_Domain()) {
+    Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), false, val_iZone, val_iInst);
+  }
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
   integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(false);

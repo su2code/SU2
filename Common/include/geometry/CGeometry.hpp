@@ -60,7 +60,7 @@ extern "C" {
 
 #include "../CConfig.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
-#include "../adt_structure.hpp"
+#include "../adt/CADTElemClass.hpp"
 
 using namespace std;
 

@@ -30,7 +30,9 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../../Common/include/grid_movement_structure.hpp"
+#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
+#include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
 #include "../../../Common/include/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
 
@@ -79,12 +81,10 @@ class CIteration {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
-   * \param[in] IntIter - Current sudo time iteration number.
-   * \param[in] ExtIter - Current physical time iteration number.
+   * \param[in] IntIter - Current psuedo time iteration number.
+   * \param[in] TimeIter - Current physical time iteration number.
    */
   virtual void SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surface_movement,
                                 CVolumetricMovement* grid_movement, CSolver*** solver, CConfig* config,
@@ -94,8 +94,7 @@ class CIteration {
    * \author R. Sanchez
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Index of the zone.
+   * \param[in] config_container - Definition of the particular problem.
    * \param[in] kind_recording - Current kind of recording.
    */
   void SetMesh_Deformation(CGeometry** geometry, CSolver** solver_container, CNumerics*** numerics_container,
@@ -112,6 +111,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -129,6 +130,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -146,6 +149,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                      CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -163,6 +168,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                       CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -180,6 +187,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Predictor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                          CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -197,6 +206,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Relaxation(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -205,7 +216,17 @@ class CIteration {
 
   /*!
    * \brief A virtual member.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration - Container vector with all the integration methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual bool Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
@@ -216,7 +237,14 @@ class CIteration {
 
   /*!
    * \brief A virtual member.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] InnerIter - Current psuedo time iteration number.
+   * \param[in] StopCalc - Boolean storing whether to stop the simulation
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   void Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config, unsigned long InnerIter,
               bool StopCalc, unsigned short val_iZone, unsigned short val_iInst);
@@ -232,6 +260,8 @@ class CIteration {
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the instantiation.
    */
   virtual void Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,

@@ -83,7 +83,6 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
 
   unsigned long *row_ptr = nullptr, nnz;
   unsigned short *nNeigh = nullptr;
-  vector<unsigned long>::iterator it;
   vector<unsigned long> vneighs;
 
   /*--- Don't delete *row_ptr, *col_ind because they are

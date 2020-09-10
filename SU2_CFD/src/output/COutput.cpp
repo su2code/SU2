@@ -2014,6 +2014,7 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
+
 }
 
 void COutput::LoadCommonHistoryData(CConfig *config){
