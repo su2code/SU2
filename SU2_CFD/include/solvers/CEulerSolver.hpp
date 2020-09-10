@@ -311,8 +311,8 @@ protected:
    * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
    * \param[in] tke_i - Turbulent kinetic energy extrapolated from node i to face.
    * \param[in] tke_j - Turbulent kinetic energy extrapolated from node j to face.
-   * \param[out] good_i - Whether the extrapolated state from node i is good.
-   * \param[out] good_j - Whether the extrapolated state from node j is good.
+   * \param[in/out] good_i - Whether the extrapolated state from node i is good.
+   * \param[in/out] good_j - Whether the extrapolated state from node j is good.
    */
   void CheckExtrapolatedState(const su2double *primvar_i, 
                               const su2double *primvar_j, 
