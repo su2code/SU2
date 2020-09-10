@@ -475,8 +475,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR] = {0.0}, reconWeight_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    reconWeight_l[iVar] = bad_i ? 0.0 : 0.5*kappa*limiter_i[iVar];
-    reconWeight_r[iVar] = bad_j ? 0.0 : 0.5*kappa*limiter_j[iVar];
+    reconWeight_l[iVar] = bad_i ? 0.0 : su2double(0.5*kappa*limiter_i[iVar]);
+    reconWeight_r[iVar] = bad_j ? 0.0 : su2double(0.5*kappa*limiter_j[iVar]);
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -514,7 +514,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa);
     for (auto iVar = 0; iVar < nVar; iVar++)
-      reconWeight_l[iVar] = bad_i ? 0.0 : factor*gradWeightDotDist*limiter_i[iVar];
+      reconWeight_l[iVar] = bad_i ? 0.0 : su2double(factor*gradWeightDotDist*limiter_i[iVar]);
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
