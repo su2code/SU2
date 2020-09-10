@@ -321,13 +321,15 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (!muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
+        const su2double rho_i = bad_i ? V_i[nDim+2] : flowPrimVar_i[nDim+2],
+                        rho_j = bad_j ? V_j[nDim+2] : flowPrimVar_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
+                                 &rho_i, &rho_j,
                                  residual.jacobian_i, residual.jacobian_j,
                                  bad_i, bad_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
+                                 &rho_j, &rho_i,
                                  residual.jacobian_j, residual.jacobian_i,
                                  bad_j, bad_i,
                                  jPoint, iPoint);

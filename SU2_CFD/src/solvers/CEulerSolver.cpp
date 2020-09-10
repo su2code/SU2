@@ -3321,14 +3321,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (!muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
+          su2double *primvar_i = bad_i ? V_i : Primitive_i,
+                    *primvar_j = bad_j ? V_j : Primitive_j;
+          if (tkeNeeded) {
+            tke_i = bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
+            tke_j = bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
+          }
           SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_i, Primitive_j,
+                                   primvar_i, primvar_j,
                                    &tke_i, &tke_j,
                                    residual.jacobian_i, residual.jacobian_j,
                                    bad_i, bad_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
-                                   Primitive_j, Primitive_i,
+                                   primvar_j, primvar_i,
                                    &tke_j, &tke_i,
                                    residual.jacobian_j, residual.jacobian_i,
                                    bad_j, bad_i,
@@ -3486,13 +3492,13 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters in single vector in proper order ---*/
 
-  su2double OneVec[MAXNDIM+3]  = {1.0};
-  su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, *turbLimiter_i = nullptr, 
-            *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec, *turbLimiter_j = nullptr;
+  su2double OneVec[MAXNVAR]  = {1.0};
+  su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, turbLimiter_i = 0.0, 
+            *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec, turbLimiter_j = 0.0;
 
   if (tkeNeeded) {
-    turbLimiter_i = limiterTurb ? turbNodes->GetLimiter(iPoint) : OneVec;
-    turbLimiter_j = limiterTurb ? turbNodes->GetLimiter(jPoint) : OneVec;
+    turbLimiter_i = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
+    turbLimiter_j = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
   }
 
   su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
@@ -3505,8 +3511,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   l_i[nDim+1] = limiter_i[nDim+1];
   l_j[nDim+1] = limiter_j[nDim+1];
   if (tkeNeeded) {
-    l_i[nDim+2] = turbLimiter_i[0];
-    l_j[nDim+2] = turbLimiter_j[0];
+    l_i[nDim+2] = turbLimiter_i;
+    l_j[nDim+2] = turbLimiter_j;
   }
 
   /*--- Store reconstruction weights ---*/
