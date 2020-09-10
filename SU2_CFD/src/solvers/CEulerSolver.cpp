@@ -3265,8 +3265,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        numerics->SetTurbKineticEnergy(good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0),
-                                       good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0));
+        tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
     else {
@@ -3321,10 +3322,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         else {
           su2double *primvar_i = good_i ? Primitive_i : V_i,
                     *primvar_j = good_j ? Primitive_j : V_j;
-          if (tkeNeeded) {
-            tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
-            tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
-          }
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_i, primvar_j,
                                    &tke_i, &tke_j,
