@@ -3536,7 +3536,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   dUdV_l[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
   dUdV_r[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
 
-  dUdV_l[nDim+1][nDim+1] = dUdV_r[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
+  dUdV_l[nDim+1][nDim+1] = dUdV_r[nDim+1][nDim+1] = 1.0;
 
   if (tkeNeeded) {
     dUdV_l[nDim+1][nDim+2] = rho_l;
@@ -3560,12 +3560,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++) {
     dVdU_i[iDim+1][0] = -vel_i[iDim]*inv_rho_i;
     dVdU_i[iDim+1][iDim+1] = inv_rho_i;
-    dVdU_i[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
+    dVdU_i[nDim+1][iDim+1] = -vel_i[iDim];
   }
 
-  dVdU_i[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
+  dVdU_i[nDim+1][0] = 0.5*sq_vel_i;
 
-  dVdU_i[nDim+1][nDim+1] = Gamma_Minus_One;
+  dVdU_i[nDim+1][nDim+1] = 1.0;
 
   if (tkeNeeded)
     dVdU_i[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
@@ -3624,12 +3624,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++) {
       dVdU_k[iDim+1][0] = -vel_k[iDim]*inv_rho_k;
       dVdU_k[iDim+1][iDim+1] = inv_rho_k;
-      dVdU_k[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
+      dVdU_k[nDim+1][iDim+1] = -vel_k[iDim];
     }
 
-    dVdU_k[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
+    dVdU_k[nDim+1][0] = 0.5*sq_vel_k;
 
-    dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
+    dVdU_k[nDim+1][nDim+1] = 1.0;
 
     if (tkeNeeded)
       dVdU_k[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
