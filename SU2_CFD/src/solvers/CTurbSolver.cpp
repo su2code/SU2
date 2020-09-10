@@ -210,8 +210,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         turbPrimVar_j[iVar] = T_j[iVar] - Project_Grad_j;
 
         if (!sa_neg) {
-          good_i = (turbPrimVar_i[iVar] > 0.0) && (good_i);
-          good_j = (turbPrimVar_j[iVar] > 0.0) && (good_j);
+          good_i = (turbPrimVar_i[iVar] >= 0.0) && (good_i);
+          good_j = (turbPrimVar_j[iVar] >= 0.0) && (good_j);
         }
       }
     }
