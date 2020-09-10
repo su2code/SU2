@@ -3321,22 +3321,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         if (!muscl)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
-          const su2double *primvar_i = bad_i ? V_i : Primitive_i;
-          const su2double *primvar_j = bad_j ? V_j : Primitive_j;
-          su2double turbvar_i = 0.0, turbvar_j = 0.0;
-          if (tkeNeeded) {
-            turbvar_i = bad_i ? turbNodes->GetPrimitive(iPoint,0) : tke_i;
-            turbvar_j = bad_j ? turbNodes->GetPrimitive(jPoint,0) : tke_j;
-          }
           SetExtrapolationJacobian(solver, geometry, config,
-                                   primvar_i, primvar_j,
-                                   &turbvar_i, &turbvar_j,
+                                   Primitive_i, Primitive_j,
+                                   &tke_i, &tke_j,
                                    residual.jacobian_i, residual.jacobian_j,
                                    bad_i, bad_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
-                                   primvar_j, primvar_i,
-                                   &turbvar_j, &turbvar_i,
+                                   Primitive_j, Primitive_i,
+                                   &tke_j, &tke_i,
                                    residual.jacobian_j, residual.jacobian_i,
                                    bad_j, bad_i,
                                    jPoint, iPoint);
