@@ -330,26 +330,22 @@ protected:
    * \param[in] primvar_r - Primitive vector extrapolated from node j to face.
    * \param[in] tke_l - Turbulent kinetic energy extrapolated from node i to face.
    * \param[in] tke_r - Turbulent kinetic energy extrapolated from node j to face.
-   * \param[in] limiter_i - Primitive slope limiter at node i.
-   * \param[in] limiter_j - Primitive slope limiter at node j.
-   * \param[in] turbLimiter_i - Turbulent slope limiter at node i.
-   * \param[in] turbLimiter_j - Turbulent slope limiter at node j.
    * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
+   * \param[in] bad_i - Whether the extrapolation from node i was bad.
+   * \param[in] bad_j - Whether the extrapolation from node j was bad.
    */
-  void SetExtrapolationJacobian(CSolver         **solver, 
-                                const CGeometry *geometry, 
-                                const CConfig   *config,
-                                const su2double *primvar_l, 
-                                const su2double *primvar_r,
-                                const su2double *tke_l, 
-                                const su2double *tke_r,
-                                const su2double *limiter_i, 
-                                const su2double *limiter_j,
-                                const su2double *turbLimiter_i, 
-                                const su2double *turbLimiter_j,
-                                const su2double *const *const dFdU_l,
-                                const su2double *const *const dFdU_r,
+  void SetExtrapolationJacobian(CSolver             **solver, 
+                                const CGeometry     *geometry, 
+                                const CConfig       *config,
+                                const su2double     *primvar_l, 
+                                const su2double     *primvar_r,
+                                const su2double     *tke_l, 
+                                const su2double     *tke_r,
+                                const su2double     *const *const dFdU_l,
+                                const su2double     *const *const dFdU_r,
+                                const bool          bad_i,
+                                const bool          bad_j,
                                 const unsigned long iPoint, 
                                 const unsigned long jPoint);
 

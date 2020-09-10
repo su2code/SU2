@@ -97,7 +97,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
-  const bool sst = ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST));
+
+  const unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
+  const bool sa_neg = (turbModel == SA_NEG);
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = (config->GetMUSCL_Flow()) && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
@@ -210,8 +213,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         turbPrimVar_i[iVar] = T_i[iVar] + Project_Grad_i;
         turbPrimVar_j[iVar] = T_j[iVar] - Project_Grad_j;
 
-        bad_i = (turbPrimVar_i[iVar] < 0.0) || (bad_i);
-        bad_j = (turbPrimVar_j[iVar] < 0.0) || (bad_j);
+        if (!sa_neg) {
+          bad_i = (turbPrimVar_i[iVar] < 0.0) || (bad_i);
+          bad_j = (turbPrimVar_j[iVar] < 0.0) || (bad_j);
+        }
       }
     }
     else {
@@ -320,20 +325,15 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (!muscl)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
-        const auto lim_i = limiter ? nodes->GetLimiter(iPoint) : OneVec;
-        const auto lim_j = limiter ? nodes->GetLimiter(jPoint) : OneVec;
-
         SetExtrapolationJacobian(solver, geometry, config,
                                  &flowPrimVar_i[nDim+2], &flowPrimVar_j[nDim+2],
-                                 bad_i ? ZeroVec : lim_i, 
-                                 bad_j ? ZeroVec : lim_j,
                                  residual.jacobian_i, residual.jacobian_j,
+                                 bad_i, bad_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],
-                                 bad_j ? ZeroVec : lim_j, 
-                                 bad_i ? ZeroVec : lim_i,
+                                 &flowPrimVar_j[nDim+2], &flowPrimVar_i[nDim+2],s
                                  residual.jacobian_j, residual.jacobian_i,
+                                 bad_j, bad_i,
                                  jPoint, iPoint);
       }
     }
@@ -436,15 +436,15 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
 }
 
-void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
-                                           const CGeometry *geometry,
-                                           const CConfig   *config,
-                                           const su2double *rho_l, 
-                                           const su2double *rho_r,
-                                           const su2double *limiter_i, 
-                                           const su2double *limiter_j,
-                                           const su2double *const *const dFdU_l,
-                                           const su2double *const *const dFdU_r,
+void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
+                                           const CGeometry     *geometry,
+                                           const CConfig       *config,
+                                           const su2double     *rho_l, 
+                                           const su2double     *rho_r,
+                                           const su2double     *const *const dFdU_l,
+                                           const su2double     *const *const dFdU_r,
+                                           const bool          bad_i,
+                                           const bool          bad_j,
                                            const unsigned long iPoint, 
                                            const unsigned long jPoint) {
 
@@ -454,16 +454,30 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
-  auto flowVar = solver[FLOW_SOL]->GetNodes(), turbVar = solver[TURB_SOL]->GetNodes();
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
+
+  auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double inv_rho_i = 1.0/flowVar->GetDensity(iPoint);
+  const su2double inv_rho_i = 1.0/flowNodes->GetDensity(iPoint);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
   /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
   /*--------------------------------------------------------------------------*/
+
+  /*--- Store limiters ---*/
+
+  su2double ZeroVec[MAXNDIM+3] = {0.0}, OneVec[MAXNDIM+3]  = {1.0};
+  su2double *limiter_i = OneVec, *limiter_j = OneVec;
+
+  if (limiter) {
+    limiter_i = bad_i ? ZeroVec : nodes->GetLimiter(iPoint);
+    limiter_j = bad_j ? ZeroVec : nodes->GetLimiter(jPoint);
+  }
+
+  /*--- Store reconstruction weights ---*/
 
   su2double reconWeight_l[MAXNVAR] = {0.0}, reconWeight_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -495,7 +509,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver         **solver,
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
     const auto kPoint = node_i->GetPoint(iNeigh);
 
-    const su2double inv_rho_k = 1.0/flowVar->GetDensity(kPoint);
+    const su2double inv_rho_k = 1.0/flowNodes->GetDensity(kPoint);
 
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
@@ -561,7 +575,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
     
     /*--- Influence of boundary i on R(i,j) ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
         const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();

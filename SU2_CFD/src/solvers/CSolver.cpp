@@ -3230,7 +3230,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
     case GREEN_GAUSS:
       {
         const su2double HalfOnVol = 0.5/geometry->node[iPoint]->GetVolume();
-        auto iEdge = geometry->FindEdge(iPoint, jPoint);
+        const auto iEdge = geometry->FindEdge(iPoint, jPoint);
         const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
           gradWeight[iDim] = sign*HalfOnVol*geometry->edge[iEdge]->GetNormal()[iDim];
@@ -3250,8 +3250,8 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
             weight += pow(dist_ij[iDim],2); 
         }
         weight = 1.0/weight;
-        auto Smat = reconstruction ? solver->GetNodes()->GetSmatrix_Aux(iPoint)
-                                   : solver->GetNodes()->GetSmatrix(iPoint);
+        const auto Smat = reconstruction ? solver->GetNodes()->GetSmatrix_Aux(iPoint)
+                                         : solver->GetNodes()->GetSmatrix(iPoint);
         for (auto iDim = 0; iDim < nDim; iDim++)
           for (auto jDim = 0; jDim < nDim; jDim++)
             gradWeight[iDim] += weight*Smat[iDim][jDim]*dist_ij[jDim];

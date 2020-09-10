@@ -656,7 +656,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     /*--- Influence of boundary nodes ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-      const long iVertex = node_i->GetVertex(iMarker);
+        const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
 
