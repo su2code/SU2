@@ -2526,7 +2526,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     Old_Func = New_Func;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
-    if (config->GetInnerIter() == 0) {
+    if (config->GetInnerIter() == config->GetStartConv_Iter()) {
       for (auto iVar = 0; iVar < nVar; iVar++)
         solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
       if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
@@ -2558,7 +2558,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Increment the counter, if we hit the max size, then start over. */
 
-    NonLinRes_Counter++;
+    if (config->GetInnerIter() > config->GetStartConv_Iter())
+      NonLinRes_Counter++;
     // if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
 
     /* Sum the total change in nonlinear residuals over the previous
