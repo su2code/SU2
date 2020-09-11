@@ -3488,29 +3488,29 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- Store limiters in single vector in proper order ---*/
 
   su2double OneVec[MAXNVAR]  = {1.0};
-  su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, turbLimiter_i = 0.0, 
-            *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec, turbLimiter_j = 0.0;
+  su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, 
+            *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
 
-  su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
-  l_i[0] = limiter_i[nDim+2];
-  l_j[0] = limiter_j[nDim+2];
+  su2double lim_i[MAXNVAR+1] = {0.0}, lim_j[MAXNVAR+1] = {0.0};
+  lim_i[0] = limiter_i[nDim+2];
+  lim_j[0] = limiter_j[nDim+2];
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    l_i[iDim+1] = limiter_i[iDim+1];
-    l_j[iDim+1] = limiter_j[iDim+1];
+    lim_i[iDim+1] = limiter_i[iDim+1];
+    lim_j[iDim+1] = limiter_j[iDim+1];
   }
-  l_i[nDim+1] = limiter_i[nDim+1];
-  l_j[nDim+1] = limiter_j[nDim+1];
+  lim_i[nDim+1] = limiter_i[nDim+1];
+  lim_j[nDim+1] = limiter_j[nDim+1];
   if (tkeNeeded) {
-    l_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
-    l_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
+    lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
+    lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
   }
 
   /*--- Store reconstruction weights ---*/
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*l_i[iVar]*good_i;
-    reconWeight_r[iVar] = 0.5*kappa*l_j[iVar]*good_j;
+    reconWeight_l[iVar] = 0.5*kappa*lim_i[iVar]*good_i;
+    reconWeight_r[iVar] = 0.5*kappa*lim_j[iVar]*good_j;
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3638,7 +3638,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      reconWeight_l[iVar] = factor*l_i[iVar];
+      reconWeight_l[iVar] = factor*lim_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
