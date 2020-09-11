@@ -3505,10 +3505,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   }
   l_i[nDim+1] = limiter_i[nDim+1];
   l_j[nDim+1] = limiter_j[nDim+1];
-  // if (tkeNeeded) {
-  //   l_i[nDim+2] = turbLimiter_i;
-  //   l_j[nDim+2] = turbLimiter_j;
-  // }
+  if (tkeNeeded) {
+    l_i[nDim+2] = turbLimiter_i;
+    l_j[nDim+2] = turbLimiter_j;
+  }
 
   /*--- Store reconstruction weights ---*/
 
@@ -3538,10 +3538,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   dUdV_l[nDim+1][nDim+1] = dUdV_r[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
 
-  // if (tkeNeeded) {
-  //   dUdV_l[nDim+1][nDim+2] = rho_l;
-  //   dUdV_r[nDim+1][nDim+2] = rho_r;
-  // }
+  if (tkeNeeded) {
+    dUdV_l[nDim+1][nDim+2] = rho_l;
+    dUdV_r[nDim+1][nDim+2] = rho_r;
+  }
 
   /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
@@ -3564,13 +3564,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   }
 
   dVdU_i[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
-  if (tkeNeeded)
-    dVdU_i[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(iPoint,0);
 
   dVdU_i[nDim+1][nDim+1] = Gamma_Minus_One;
 
-  // if (tkeNeeded)
-  //   dVdU_i[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
+  if (tkeNeeded)
+    dVdU_i[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
 
   /*--- Now multiply them all together ---*/
 
@@ -3630,13 +3628,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     }
 
     dVdU_k[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
-    if (tkeNeeded)
-      dVdU_k[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(kPoint,0);
 
     dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
 
-    // if (tkeNeeded)
-    //   dVdU_k[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
+    if (tkeNeeded)
+      dVdU_k[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
 
     su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
