@@ -2558,7 +2558,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Increment the counter, if we hit the max size, then start over. */
 
-    if (config->GetInnerIter() > config->GetStartConv_Iter())
+    if (config->GetInnerIter() >= config->GetStartConv_Iter())
       NonLinRes_Counter++;
     // if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
 
