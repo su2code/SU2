@@ -860,13 +860,13 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
    SA_NEG model is more robust due to allowing for negative nu_tilde,
    so the under-relaxation is not applied to that variant. */
 
-  bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
-                   (config->GetKind_Turb_Model() == SA_E)      ||
-                   (config->GetKind_Turb_Model() == SA_COMP)   ||
-                   (config->GetKind_Turb_Model() == SA_E_COMP));
+  const bool sa_model = ((config->GetKind_Turb_Model() == SA)        ||
+                         (config->GetKind_Turb_Model() == SA_E)      ||
+                         (config->GetKind_Turb_Model() == SA_COMP)   ||
+                         (config->GetKind_Turb_Model() == SA_E_COMP));
   
-  bool sst_model = ((config->GetKind_Turb_Model() == SST)      ||
-                    (config->GetKind_Turb_Model() == SST_SUST));
+  const bool sst_model = ((config->GetKind_Turb_Model() == SST)      ||
+                          (config->GetKind_Turb_Model() == SST_SUST));
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
@@ -903,7 +903,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
 
-    if (localUnderRelaxation < 0.1 && nodes->GetLocalCFL(iPoint) > CFLMin*CFLInc) localUnderRelaxation = 0.0;
+    if (localUnderRelaxation < 1.0e-10 && nodes->GetLocalCFL(iPoint) > CFLMin*CFLInc) localUnderRelaxation = 0.0;
 
     /* Store the under-relaxation factor for this point. */
 
