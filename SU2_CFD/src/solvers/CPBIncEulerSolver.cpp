@@ -2579,34 +2579,34 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         V_infty[nDim+2] = nodes->GetLaminarViscosity(iPoint);
         V_infty[nDim+3] = nodes->GetEddyViscosity(iPoint);
       }
-      if (viscous && !inflow) {
+      /*if (viscous && !inflow) {
 
-        /*--- Set the normal vector and the coordinates ---*/
+        /*--- Set the normal vector and the coordinates ---/
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                                 geometry->nodes->GetCoord(Point_Normal));
 
-        /*--- Primitive variables, and gradient ---*/
+        /*--- Primitive variables, and gradient ---/
         visc_numerics->SetPrimitive(V_domain, V_domain);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
 
-        /*--- Turbulent kinetic energy ---*/
+        /*--- Turbulent kinetic energy ---/
         if ((turb_model == SST) || (turb_model == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
-        /*--- Compute and update residual ---*/
+        /*--- Compute and update residual ---/
         auto residual = visc_numerics->ComputeResidual(config);
 
         LinSysRes.SubtractBlock(iPoint, residual);
 
-        /*--- Jacobian contribution for implicit integration ---*/
+        /*--- Jacobian contribution for implicit integration ---/
         if (implicit)
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-      }
+      }*/
     }
   }
 
@@ -2758,7 +2758,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       V_domain = nodes->GetPrimitive(iPoint);
 
       V_outlet = GetCharacPrimVar(val_marker, iVertex);
-      
+
       if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
