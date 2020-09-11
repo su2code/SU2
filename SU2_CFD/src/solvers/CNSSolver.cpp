@@ -582,7 +582,6 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
-
   }// iNeigh
 
 }
@@ -652,8 +651,6 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
       Jacobian_i[nVar-1][iVar] = 0.0;
 
     const su2double HalfOnVol = 0.5/node_i->GetVolume();
-
-    /*--- Influence of boundary nodes ---*/
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
         const long iVertex = node_i->GetVertex(iMarker);

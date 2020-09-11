@@ -565,9 +565,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double factor = -sign/node_i->GetVolume();
-    
-    /*--- Influence of boundary i on R(i,j) ---*/
+    const su2double factor = -sign/node_i->GetVolume();    
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
         const long iVertex = node_i->GetVertex(iMarker);
@@ -582,7 +580,6 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-
   }// physical boundary
 
   /*--------------------------------------------------------------------------*/
