@@ -47,6 +47,8 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   Conservatives_i = new su2double [nVar];
   Conservatives_j = new su2double [nVar];
   Lambda = new su2double [nPrimVarTot];
+  Lambda_i = new su2double [nPrimVarTot];
+  Lambda_j = new su2double [nPrimVarTot];
   Epsilon = new su2double [nVar];
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nPrimVarTot];
@@ -71,6 +73,8 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
   delete [] Conservatives_i;
   delete [] Conservatives_j;
   delete [] Lambda;
+  delete [] Lambda_i;
+  delete [] Lambda_j;
   delete [] Epsilon;
   for (auto iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
@@ -233,12 +237,28 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-      Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
+      Lambda_i[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
     else
-      Lambda[iVar] = fabs(Lambda[iVar]);
+      Lambda_i[iVar] = fabs(Lambda[iVar]);
   }
 
-  if (tkeNeeded) Lambda[nVar] = Lambda[0];
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_j, ProjVelocity_i-Lambda[iDim]));
+
+  Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_j+SoundSpeed_j),(ProjVelocity_i+SoundSpeed_i)-Lambda[nVar-2]));
+  Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_j-SoundSpeed_j),(ProjVelocity_i-SoundSpeed_i)-Lambda[nVar-1]));
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+      Lambda_i[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
+    else
+      Lambda_i[iVar] = fabs(Lambda[iVar]);
+  }
+
+  if (tkeNeeded) {
+    Lambda_i[nVar] = Lambda_i[0];
+    Lambda_j[nVar] = Lambda_j[0];
+  }
 
   /*--- Reconstruct conservative variables ---*/
 
@@ -325,16 +345,18 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
-      su2double Proj_ModJac_Tensor_ij = 0.0;
-      for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
-        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
+      su2double Proj_ModJac_Tensor_ij = 0.0, Proj_ModJac_Tensor_ji = 0.0;;
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
+        Proj_ModJac_Tensor_ji += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
+      }
 
       /*--- Update residual and Jacobians ---*/
       val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*Dissipation_ij;
 
       if(implicit){
         val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*Dissipation_ij;
-        val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*Dissipation_ij;
+        val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ji*Area*Dissipation_ij;
       }
     }
   }
