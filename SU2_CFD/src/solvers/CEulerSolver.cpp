@@ -3491,11 +3491,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, turbLimiter_i = 0.0, 
             *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec, turbLimiter_j = 0.0;
 
-  if (tkeNeeded) {
-    turbLimiter_i = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
-    turbLimiter_j = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
-  }
-
   su2double l_i[MAXNVAR+1] = {0.0}, l_j[MAXNVAR+1] = {0.0};
   l_i[0] = limiter_i[nDim+2];
   l_j[0] = limiter_j[nDim+2];
@@ -3506,8 +3501,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   l_i[nDim+1] = limiter_i[nDim+1];
   l_j[nDim+1] = limiter_j[nDim+1];
   if (tkeNeeded) {
-    l_i[nDim+2] = turbLimiter_i;
-    l_j[nDim+2] = turbLimiter_j;
+    l_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
+    l_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
   }
 
   /*--- Store reconstruction weights ---*/
