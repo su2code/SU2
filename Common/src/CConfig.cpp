@@ -1811,7 +1811,7 @@ void CConfig::SetConfig_Options() {
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
-  addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, false);
+  addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
@@ -4916,6 +4916,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    gradients for uwpind reconstruction. Set additional booleans to
    minimize overhead as appropriate. */
 
+  if (!ContinuousAdjoint) MUSCL_AdjFlow = false;
   if (MUSCL_Flow || MUSCL_Turb || MUSCL_Heat || MUSCL_AdjFlow) {
 
     ReconstructionGradientRequired = true;
