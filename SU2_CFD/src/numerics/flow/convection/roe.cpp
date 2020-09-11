@@ -250,9 +250,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-      Lambda_i[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
+      Lambda_j[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
     else
-      Lambda_i[iVar] = fabs(Lambda[iVar]);
+      Lambda_j[iVar] = fabs(Lambda[iVar]);
   }
 
   if (tkeNeeded) {
