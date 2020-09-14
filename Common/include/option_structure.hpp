@@ -858,7 +858,8 @@ enum ENUM_SGS_MODEL {
   IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
   SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
   WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
-  VREMAN       = 4  /*!< \brief Vreman SGS model. */
+  VREMAN       = 4, /*!< \brief Vreman SGS model. */
+  SIGMA        = 5  /*!< \brief Sigma SGS model. */
 };
 static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
   MakePair("NONE",         NO_SGS_MODEL)
@@ -866,6 +867,7 @@ static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
   MakePair("SMAGORINSKY",  SMAGORINSKY)
   MakePair("WALE",         WALE)
   MakePair("VREMAN",       VREMAN)
+  MakePair("SIGMA",        SIGMA)
 };
 
 

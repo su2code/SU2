@@ -137,6 +137,11 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
         SGSModelUsed = true;
         break;
 
+      case SIGMA:
+        SGSModel     = new CSIGMAModel;
+        SGSModelUsed = true;
+        break;
+
       default:
         SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
     }
