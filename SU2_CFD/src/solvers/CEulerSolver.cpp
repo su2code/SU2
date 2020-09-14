@@ -137,7 +137,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nDim = geometry->GetnDim();
 
   nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  // nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+3;
   nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
