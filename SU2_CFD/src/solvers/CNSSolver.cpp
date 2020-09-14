@@ -521,6 +521,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
+  su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 1; iVar < nVar; iVar++) {
@@ -536,7 +537,6 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     const su2double Xi_k = WF_Factor*Mean_Viscosity/Density_k;
 
     const su2double factor = 0.5*sign;
-    su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
     /*--- Get projection to be multiplied by divergence terms ---*/
@@ -692,6 +692,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
+  su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -706,7 +707,6 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     const su2double Pressure_k = nodes->GetPressure(kPoint);
     const su2double Phi_k      = Gamma_Minus_One/Density_k;
 
-    su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint);
 
     su2double factor = 0.0;

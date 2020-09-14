@@ -3595,7 +3595,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
-  su2double dist_ij[MAXNDIM] = {0.0};
+  su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
@@ -3629,7 +3629,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     if (tkeNeeded)
       dVdU_k[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
 
-    su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
     su2double gradWeightDotDist = 0.0;

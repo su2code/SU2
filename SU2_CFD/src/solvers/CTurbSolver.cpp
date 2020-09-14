@@ -496,7 +496,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
 
-  su2double dist_ij[MAXNDIM] = {0.0};
+  su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
@@ -589,6 +589,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
   /*---         is already weighted by 0.5.                                ---*/
   /*--------------------------------------------------------------------------*/
 
+  su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -600,7 +601,6 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
     const auto kPoint = node_i->GetPoint(iNeigh);
 
-    su2double gradWeight[MAXNDIM] = {0.0};
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
     
