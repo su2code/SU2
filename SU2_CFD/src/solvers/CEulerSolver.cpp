@@ -3185,7 +3185,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
 
         auto Normal_ij = geometry->edge[iEdge]->GetNormal();
-        numerics->GetInviscidProjFlux_KEEP(Primitive_i , Primitive_j, Normal_ij, Proj_Flux, Proj_Flux_Jac_i);
+        numerics->GetInviscidProjFlux_KEEP(V_i , V_j, Normal_ij, Proj_Flux, Proj_Flux_Jac_i);
 
         for (iVar = 0; iVar < nVar; iVar++){
           for (jVar = 0; jVar < nVar; jVar++){

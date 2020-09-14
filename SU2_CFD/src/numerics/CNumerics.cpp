@@ -338,6 +338,12 @@ void CNumerics::GetInviscidProjFlux_KEEP(su2double *val_primitive_i,
                                          su2double *val_Proj_Flux,
                                          su2double **val_Proj_Jac_tensor) {
 
+  /* Although the consistent kinetic energy flux performed better on the wmles of the
+  turbulent channel flow, the formulation was unstable on WMLES of complex geometries
+  with unstructured meshes (tetra, prims and hexas) if the primitive variables are reconstructed
+  with a MUSCL scheme. Instead, a simple arithmetic flux is used.
+  */
+  bool consistent_tke = true;
   unsigned short iDim, jDim;
 
   /*--- Primitive variables at point i ---*/
@@ -383,29 +389,35 @@ void CNumerics::GetInviscidProjFlux_KEEP(su2double *val_primitive_i,
   su2double MeanStaticEnergy = 0.5 * (StaticEnergy_i + StaticEnergy_j);
   su2double MeanPressure     = 0.5 * (Pressure_i + Pressure_j);
   su2double MeanEnergy       = 0.5 * (Energy_i + Energy_j);
+  su2double MeanEnthalpy     = 0.5 * (Enthalpy_i + Enthalpy_j);
 
   // With Consistent Kinetic Energy Flux
-  val_Proj_Flux[0]  =  MeanDensity * MeanVelocity[0] * val_normal[0];
-  val_Proj_Flux[1]  = (MeanDensity * MeanVelocity[0] * MeanVelocity[0] + MeanPressure) * val_normal[0];
-  val_Proj_Flux[2]  = (MeanDensity * MeanVelocity[0] * MeanVelocity[1]               ) * val_normal[0];
-  val_Proj_Flux[3]  = (MeanDensity * MeanVelocity[0] * MeanVelocity[2]               ) * val_normal[0];
-  val_Proj_Flux[4]  = (MeanDensity * MeanVelocity[0] * MeanStaticEnergy + MeanPressureDiffusion[0]) * val_normal[0];
+  if (consistent_tke){
+    val_Proj_Flux[0]  =  MeanDensity * MeanVelocity[0] * val_normal[0];
+    val_Proj_Flux[1]  = (MeanDensity * MeanVelocity[0] * MeanVelocity[0] + MeanPressure) * val_normal[0];
+    val_Proj_Flux[2]  = (MeanDensity * MeanVelocity[0] * MeanVelocity[1]               ) * val_normal[0];
+    val_Proj_Flux[3]  = (MeanDensity * MeanVelocity[0] * MeanVelocity[2]               ) * val_normal[0];
+    val_Proj_Flux[4]  = (MeanDensity * MeanVelocity[0] * MeanStaticEnergy + MeanPressureDiffusion[0]) * val_normal[0];
 
-  val_Proj_Flux[0] +=  MeanDensity * MeanVelocity[1] * val_normal[1];
-  val_Proj_Flux[1] += (MeanDensity * MeanVelocity[1] * MeanVelocity[0]               ) * val_normal[1];
-  val_Proj_Flux[2] += (MeanDensity * MeanVelocity[1] * MeanVelocity[1] + MeanPressure) * val_normal[1];
-  val_Proj_Flux[3] += (MeanDensity * MeanVelocity[1] * MeanVelocity[2]               ) * val_normal[1];
-  val_Proj_Flux[4] += (MeanDensity * MeanVelocity[1] * MeanStaticEnergy + MeanPressureDiffusion[1]) * val_normal[1];
+    val_Proj_Flux[0] +=  MeanDensity * MeanVelocity[1] * val_normal[1];
+    val_Proj_Flux[1] += (MeanDensity * MeanVelocity[1] * MeanVelocity[0]               ) * val_normal[1];
+    val_Proj_Flux[2] += (MeanDensity * MeanVelocity[1] * MeanVelocity[1] + MeanPressure) * val_normal[1];
+    val_Proj_Flux[3] += (MeanDensity * MeanVelocity[1] * MeanVelocity[2]               ) * val_normal[1];
+    val_Proj_Flux[4] += (MeanDensity * MeanVelocity[1] * MeanStaticEnergy + MeanPressureDiffusion[1]) * val_normal[1];
 
-  val_Proj_Flux[0] +=  MeanDensity * MeanVelocity[2] * val_normal[2];
-  val_Proj_Flux[1] += (MeanDensity * MeanVelocity[2] * MeanVelocity[0]               ) * val_normal[2];
-  val_Proj_Flux[2] += (MeanDensity * MeanVelocity[2] * MeanVelocity[1]               ) * val_normal[2];
-  val_Proj_Flux[3] += (MeanDensity * MeanVelocity[2] * MeanVelocity[2] + MeanPressure) * val_normal[2];
-  val_Proj_Flux[4] += (MeanDensity * MeanVelocity[2] * MeanStaticEnergy + MeanPressureDiffusion[2]) * val_normal[2];
+    val_Proj_Flux[0] +=  MeanDensity * MeanVelocity[2] * val_normal[2];
+    val_Proj_Flux[1] += (MeanDensity * MeanVelocity[2] * MeanVelocity[0]               ) * val_normal[2];
+    val_Proj_Flux[2] += (MeanDensity * MeanVelocity[2] * MeanVelocity[1]               ) * val_normal[2];
+    val_Proj_Flux[3] += (MeanDensity * MeanVelocity[2] * MeanVelocity[2] + MeanPressure) * val_normal[2];
+    val_Proj_Flux[4] += (MeanDensity * MeanVelocity[2] * MeanStaticEnergy + MeanPressureDiffusion[2]) * val_normal[2];
 
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      val_Proj_Flux[4] += (MeanDensity * MeanVelocity[iDim] * 0.5 * (Velocity_i[jDim]*Velocity_j[jDim])) * val_normal[iDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        val_Proj_Flux[4] += (MeanDensity * MeanVelocity[iDim] * 0.5 * (Velocity_i[jDim]*Velocity_j[jDim])) * val_normal[iDim];
+  }
+  else{
+    GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, val_normal, val_Proj_Flux);
+  }
 
  GetInviscidProjJac(MeanVelocity, &MeanEnergy, val_normal, 0.5, val_Proj_Jac_tensor);
 
