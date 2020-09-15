@@ -739,12 +739,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   const su2double muref = config->GetMu_RefND();
   const su2double Tref = config->GetMu_Temperature_RefND();
   const su2double Sref = config->GetMu_SND();
-  
-  su2double div_vel = 0.0;
-  for (auto iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += Mean_GradPrimVar[iDim+1][iDim];
 
-  su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0;
+  su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, div_vel = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0; jDim < nDim; jDim++)
       proj_stress[iDim] += WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
@@ -752,6 +748,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
 
     proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
     proj_heat_flux    += (heat_flux_factor*Mean_GradPrimVar[0][iDim] + Mean_GradTurbVar[iDim]) * Normal[iDim];
+    div_vel           += Mean_GradPrimVar[iDim+1][iDim];
   }
 
   /*--- Jacobian wrt laminar viscosity ---*/
@@ -809,11 +806,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     const su2double heat_flux_factor = Cp/Prandtl_Turb;
     
-    su2double div_vel = 0.0;
-    for (auto iDim = 0 ; iDim < nDim; iDim++)
-      div_vel += Mean_GradPrimVar[iDim+1][iDim];
-    
-    su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, proj_tke_flux;
+    su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, proj_tke_flux = 0.0, div_vel = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       for (auto jDim = 0; jDim < nDim; jDim++)
         proj_stress[iDim] += WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
@@ -822,6 +815,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
       proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
       proj_heat_flux    += heat_flux_factor*Mean_GradPrimVar[0][iDim]*Normal[iDim];
       proj_tke_flux     += Mean_GradTurbVar[iDim] * Normal[iDim];
+      div_vel           += Mean_GradPrimVar[iDim+1][iDim];
     }
   
     /*--- Jacobian wrt eddy viscosity ---*/
