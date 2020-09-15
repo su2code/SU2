@@ -556,20 +556,18 @@ void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_
 void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2double *k,
                            const su2double *c, const su2double *n, su2double **p) {
 
-  su2double c2, alpha, kappag1, kappa53, phi2, theta;
+  const su2double c2    = pow(*c,2);
+  const su2double alpha = 1.0/(2.*c2);
+  const su2double kappag1 = (Gamma_Minus_One)*(*k);
+  const su2double kappa23 = TWO3*(*k)
 
-  c2    = pow(*c,2);
-  alpha = 1.0/(2.*c2);
-  kappag1 = (Gamma_Minus_One)*(*k);
-  kappa23 = TWO3*(*k)
-
-  // kappa = FIVE3*(*k);
-  // kappa = TWO3*(*k);
+  // const su2double kappa = FIVE3*(*k);
+  // const su2double kappa = TWO3*(*k);
 
 
   if (nDim == 2) {
-    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]);
-    theta = v[0]*n[0]+v[1]*n[1];
+    const su2double phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]);
+    const su2double theta = v[0]*n[0]+v[1]*n[1];
 
     p[0][0] = 1.0;
     p[0][1] = 0.0;
@@ -592,8 +590,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[3][3] = alpha*((phi2+c2+kappag1)/Gamma_Minus_One+kappa23-(*c)*theta);
   }
   else {
-    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-    theta = v[0]*n[0]+v[1]*n[1]+v[2]*n[2];
+    const su2double phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+    const su2double theta = v[0]*n[0]+v[1]*n[1]+v[2]*n[2];
 
     p[0][0] = n[0];
     p[0][1] = n[1];
