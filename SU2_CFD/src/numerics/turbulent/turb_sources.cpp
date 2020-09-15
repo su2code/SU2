@@ -987,8 +987,8 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
 
   for (iDim = 0; iDim < 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - Eddy_Viscosity_i / Density_i * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta[iDim][jDim]
+      - Eddy_Viscosity_i / Density_i * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
     }
   }
 
@@ -1005,7 +1005,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig*
 
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta[iDim][jDim] / 3.0;
       Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
     }
   }
@@ -1088,7 +1088,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig*
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2. * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = 2. * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
       uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
@@ -1109,7 +1109,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
   for (iDim = 0; iDim < nDim; iDim++){
     for (jDim =0; jDim < nDim; jDim++){
       StrainRate[iDim][jDim] = MeanPerturbedRSM[iDim][jDim]
-      - TWO3 * turb_ke * delta3[iDim][jDim];
+      - TWO3 * turb_ke * delta[iDim][jDim];
       StrainRate[iDim][jDim] = - StrainRate[iDim][jDim] * Density_i / (2 * Eddy_Viscosity_i);
     }
   }

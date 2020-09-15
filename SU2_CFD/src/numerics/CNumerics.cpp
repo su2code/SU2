@@ -42,7 +42,6 @@ CNumerics::CNumerics(void) {
 
   tau    = NULL;
   delta  = NULL;
-  delta3 = NULL;
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
@@ -73,7 +72,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   tau    = NULL;
   delta  = NULL;
-  delta3 = NULL;
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
@@ -104,12 +102,12 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     tau[iDim] = new su2double [nDim];
   }
 
-  delta3 = new su2double* [3];
+  delta = new su2double* [3];
   for (iDim = 0; iDim < 3; iDim++) {
-    delta3[iDim] = new su2double [3];
+    delta[iDim] = new su2double [3];
     for (jDim = 0; jDim < 3; jDim++) {
-      if (iDim == jDim) delta3[iDim][jDim] = 1.0;
-      else delta3[iDim][jDim]=0.0;
+      if (iDim == jDim) delta[iDim][jDim] = 1.0;
+      else delta[iDim][jDim]=0.0;
     }
   }
 
@@ -193,13 +191,6 @@ CNumerics::~CNumerics(void) {
       delete [] delta[iDim];
     }
     delete [] delta;
-  }
-
-  if (delta3 != NULL) {
-    for (auto iDim = 0; iDim < 3; iDim++) {
-      delete [] delta3[iDim];
-    }
-    delete [] delta3;
   }
 
   if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;

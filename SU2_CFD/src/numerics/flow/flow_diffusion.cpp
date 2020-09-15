@@ -158,13 +158,13 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
     for (auto iDim = 0 ; iDim < nDim; iDim++)
       for (auto jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-        - TWO3*val_laminar_viscosity*div_vel*delta3[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
+        - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * MeanPerturbedRSM[iDim][jDim];
 
   } else {
     for (auto iDim = 0 ; iDim < nDim; iDim++)
       for (auto jDim = 0 ; jDim < nDim; jDim++)
         tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-                        - TWO3*total_viscosity*div_vel*delta3[iDim][jDim] - TWO3*Density*val_turb_ke*delta3[iDim][jDim];
+                        - TWO3*total_viscosity*div_vel*delta[iDim][jDim] - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   }
 }
 
@@ -281,8 +281,8 @@ void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
 
   for (iDim = 0; iDim < 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta[iDim][jDim]
+      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
     }
   }
 
@@ -299,7 +299,7 @@ void CAvgGrad_Base::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
 
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta[iDim][jDim] / 3.0;
       Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
     }
   }
@@ -382,7 +382,7 @@ void CAvgGrad_Base::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
       uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
@@ -408,10 +408,10 @@ void CAvgGrad_Base::SetTauJacobian() {
       // Jacobian w.r.t. momentum
       tau_jacobian_i[iDim][jDim+1] = -xi_i*(Edge_Vector[iDim]*Normal[jDim] 
                                           - TWO3*Edge_Vector[jDim]*Normal[iDim] 
-                                          + delta3[iDim][jDim]*proj_vector_ij);
+                                          + delta[iDim][jDim]*proj_vector_ij);
       tau_jacobian_j[iDim][jDim+1] =  xi_j*(Edge_Vector[iDim]*Normal[jDim] 
                                           - TWO3*Edge_Vector[jDim]*Normal[iDim] 
-                                          + delta3[iDim][jDim]*proj_vector_ij);
+                                          + delta[iDim][jDim]*proj_vector_ij);
     }
     // Jacobian w.r.t. density
     tau_jacobian_i[iDim][0] = 0;
@@ -437,7 +437,7 @@ void CAvgGrad_Base::SetIncTauJacobian(const su2double val_laminar_viscosity,
   for (auto iDim = 0; iDim < nDim; iDim++) {
     tau_jacobian_i[iDim][0] = 0;
     for (auto jDim = 0; jDim < nDim; jDim++) {
-      tau_jacobian_i[iDim][jDim+1] = -xi*(delta3[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
+      tau_jacobian_i[iDim][jDim+1] = -xi*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
     }
     tau_jacobian_i[iDim][nDim+1] = 0;
   }
@@ -744,7 +744,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0; jDim < nDim; jDim++)
       proj_stress[iDim] += WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
-                                       - TWO3*div_vel*delta3[iDim][jDim] ) * Normal[jDim];
+                                       - TWO3*div_vel*delta[iDim][jDim] ) * Normal[jDim];
 
     proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
     proj_heat_flux    += (heat_flux_factor*Mean_GradPrimVar[0][iDim] + Mean_GradTurbVar[iDim]) * Normal[iDim];
@@ -810,7 +810,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     for (auto iDim = 0; iDim < nDim; iDim++) {
       for (auto jDim = 0; jDim < nDim; jDim++)
         proj_stress[iDim] += WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
-                                         - TWO3*div_vel*delta3[iDim][jDim] ) * Normal[jDim];
+                                         - TWO3*div_vel*delta[iDim][jDim] ) * Normal[jDim];
 
       proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
       proj_heat_flux    += heat_flux_factor*Mean_GradPrimVar[0][iDim]*Normal[iDim];

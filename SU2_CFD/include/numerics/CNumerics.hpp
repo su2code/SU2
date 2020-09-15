@@ -62,8 +62,7 @@ protected:
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double
   **tau,      /*!< \brief Viscous stress tensor. */
-  **delta,    /*!< \brief Identity matrix. */
-  **delta3;   /*!< \brief 3 row Identity matrix. */
+  **delta;    /*!< \brief Identity matrix. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
