@@ -548,6 +548,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     /*--- Now get density and energy Jacobians for kPoint ---*/
+    Jacobian_i[nVar-1][0] = Jacobian_j[nVar-1][0] = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Jacobian_i[iDim+1][0] = Jacobian_i[nVar-1][iDim+1] = 0.0;
       Jacobian_j[iDim+1][0] = Jacobian_j[nVar-1][iDim+1] = 0.0;
@@ -562,8 +563,8 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
       }
 
       /*--- Energy Jacobian wrt density ---*/
-      Jacobian_i[nVar-1][0] = -Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(iPoint,iDim);
-      Jacobian_j[nVar-1][0] = -Jacobian_j[nVar-1][iDim+1]*nodesFlo->GetVelocity(kPoint,iDim);
+      Jacobian_i[nVar-1][0] -= Jacobian_i[nVar-1][iDim+1]*nodesFlo->GetVelocity(iPoint,iDim);
+      Jacobian_j[nVar-1][0] -= Jacobian_j[nVar-1][iDim+1]*nodesFlo->GetVelocity(kPoint,iDim);
     }
 
     if (wls)
