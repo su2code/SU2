@@ -3528,7 +3528,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     dUdV_l[nDim+1][iDim+1] = rho_l*vel_l[iDim];
     dUdV_r[nDim+1][iDim+1] = rho_r*vel_r[iDim];
   }
-
   dUdV_l[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
   dUdV_r[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
 
@@ -3596,7 +3595,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
-  su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0};
+  su2double dist_ij[MAXNDIM] = {0.0}, gradWeight[MAXNDIM] = {0.0}, vel_k[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
@@ -3608,7 +3607,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto primvar_k = nodes->GetPrimitive(kPoint);
 
     const su2double inv_rho_k = 1.0/primvar_k[nDim+2];
-    su2double vel_k[MAXNDIM] = {0.0};
     su2double sq_vel_k = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       vel_k[iDim] = primvar_k[iDim+1];
@@ -3616,17 +3614,13 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     }
 
     dVdU_k[0][0] = 1.0;
-
     for (auto iDim = 0; iDim < nDim; iDim++) {
       dVdU_k[iDim+1][0] = -vel_k[iDim]*inv_rho_k;
       dVdU_k[iDim+1][iDim+1] = inv_rho_k;
       dVdU_k[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
     }
-
     dVdU_k[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
-
     dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
-
     if (tkeNeeded)
       dVdU_k[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
 

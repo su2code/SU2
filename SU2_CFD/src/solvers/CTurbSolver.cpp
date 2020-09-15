@@ -502,10 +502,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
     const auto kPoint = node_i->GetPoint(iNeigh);
-
     const su2double inv_rho_k = 1.0/flowNodes->GetDensity(kPoint);
-
-    su2double gradWeight[MAXNDIM] = {0.0};
+    
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
     su2double gradWeightDotDist = 0.0;
