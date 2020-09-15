@@ -740,7 +740,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   const su2double Tref = config->GetMu_Temperature_RefND();
   const su2double Sref = config->GetMu_SND();
 
-  su2double dive_vel = 0.0;
+  su2double div_vel = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++)
     div_vel += Mean_GradPrimVar[iDim+1][iDim];
 
