@@ -57,7 +57,6 @@ bool CNSVariable::SetVorticity_StrainMag() {
     /*--- Vorticity ---*/
 
     Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
-
     Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
 
     if (nDim == 3) {
@@ -65,9 +64,9 @@ bool CNSVariable::SetVorticity_StrainMag() {
       Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
     }
 
-    VorticityMag(iPoint) = 0.0;
-    for (unsigned long iDim = 0; iDim < 3; iDim++)
-      VorticityMag(iPoint) += pow(Vorticity(iPoint, iDim),2.0);
+    VorticityMag(iPoint) = pow(Vorticity(iPoint,2),2.0);
+    if (nDim == 3)
+      VorticityMag(iPoint) += pow(Vorticity(iPoint,0),2.0) + pow(Vorticity(iPoint,1),2.0);
     VorticityMag(iPoint) = sqrt(VorticityMag(iPoint));
 
     /*--- Strain Magnitude ---*/
@@ -83,12 +82,11 @@ bool CNSVariable::SetVorticity_StrainMag() {
 
     /*--- Add diagonal part ---*/
 
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
       StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
-    }
-    if (nDim == 2) {
+
+    if (nDim == 2)
       StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
-    }
 
     /*--- Add off diagonals ---*/
 
