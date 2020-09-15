@@ -287,7 +287,7 @@ void CNEMONSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, C
   auto residual = numerics->ComputeResidual(config);
 
   /*--- Check for NaNs before applying the residual to the linear system ---*/
-  //CGarbacz: is it just me who thinks this next block of code doesn't make sense?
+  //CGarbacz: is it just me who thinks this next block of code doesn't make sense? TODO
   err = false;
   for (iVar = 0; iVar < nVar; iVar++)
     if (residual[iVar] != residual[iVar]) err = true;
