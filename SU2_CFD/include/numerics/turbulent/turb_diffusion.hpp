@@ -48,8 +48,8 @@ class CAvgGrad_Scalar : public CNumerics {
 protected:
   su2double
   Edge_Vector[MAXNDIM] = {0.0},             /*!< \brief Vector from node i to node j. */
-  *Proj_Mean_GradTurbVar_Normal = nullptr,  /*!< \brief Mean_gradTurbVar DOT normal. */
-  *Proj_Mean_GradTurbVar_Edge = nullptr,    /*!< \brief Mean_gradTurbVar DOT Edge_Vector. */
+  Proj_Mean_GradTurbVar_Normal = 0.0,       /*!< \brief Mean_gradTurbVar DOT normal. */
+  Proj_Mean_GradTurbVar_Edge = 0.0,         /*!< \brief Mean_gradTurbVar DOT Edge_Vector. */
   *Proj_Mean_GradTurbVar = nullptr,         /*!< \brief Mean_gradTurbVar DOT normal, corrected if required. */
   Proj_Mean_GradRho_Normal = 0.0,           /*!< \brief Mean_gradRho DOT normal. */
   Proj_Mean_GradRho_Edge = 0.0,             /*!< \brief Mean_gradRho DOT Edge_Vector. */

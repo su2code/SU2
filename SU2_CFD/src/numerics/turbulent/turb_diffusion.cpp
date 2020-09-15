@@ -37,8 +37,6 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   correct_jacobian(correct_grad && config->GetUse_Accurate_Turb_Jacobians()),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
 {
-  Proj_Mean_GradTurbVar_Normal = new su2double [nVar];
-  Proj_Mean_GradTurbVar_Edge = new su2double [nVar];
   Proj_Mean_GradTurbVar = new su2double [nVar];
 
   Flux = new su2double [nVar];
@@ -56,8 +54,6 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
 
 CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
-  delete [] Proj_Mean_GradTurbVar_Normal;
-  delete [] Proj_Mean_GradTurbVar_Edge;
   delete [] Proj_Mean_GradTurbVar;
 
   delete [] Flux;
@@ -125,21 +121,21 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   /*--- Mean gradient approximation ---*/
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
-    Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
+    Proj_Mean_GradTurbVar_Normal = 0.0;
+    Proj_Mean_GradTurbVar_Edge   = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       su2double Mean_GradTurbVar = 0.5*(TurbVar_Grad_i[iVar][iDim] +
                                         TurbVar_Grad_j[iVar][iDim]);
 
-      Proj_Mean_GradTurbVar_Normal[iVar] += Mean_GradTurbVar * Normal[iDim];
+      Proj_Mean_GradTurbVar_Normal += Mean_GradTurbVar * Normal[iDim];
 
       if (correct_gradient)
-        Proj_Mean_GradTurbVar_Edge[iVar] += Mean_GradTurbVar * Edge_Vector[iDim];
+        Proj_Mean_GradTurbVar_Edge += Mean_GradTurbVar * Edge_Vector[iDim];
     }
-    Proj_Mean_GradTurbVar[iVar] = Proj_Mean_GradTurbVar_Normal[iVar];
+    Proj_Mean_GradTurbVar[iVar] = Proj_Mean_GradTurbVar_Normal;
     
     if (correct_gradient) {
-      Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge[iVar]*proj_vector_ij -
+      Proj_Mean_GradTurbVar[iVar] -= Proj_Mean_GradTurbVar_Edge*proj_vector_ij -
                                     (TurbVar_j[iVar]-TurbVar_i[iVar])*proj_vector_ij;
     }
   }
@@ -210,7 +206,7 @@ void CAvgGrad_TurbSA_Neg::FinishResidualCalc(const CConfig* config) {
     nu_e = nu_ij + fn*nu_tilde_ij;
   }
 
-  Flux[0] = nu_e*Proj_Mean_GradTurbVar_Normal[0]/sigma;
+  Flux[0] = nu_e*Proj_Mean_GradTurbVar[0]/sigma;
 
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
