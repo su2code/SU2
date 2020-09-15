@@ -2579,7 +2579,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
-          interface[donor][target] = new CDisplacementsInterface(nDim, 0);
+          if (!config[donor]->GetTime_Domain()) interface[donor][target] = new CDisplacementsInterface(nDim, 0);
+          else interface[donor][target] = new CDisplacementsInterface(2*nDim, 0);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {

@@ -990,6 +990,10 @@ public:
                                    CNumerics *numerics,
                                    const CConfig *config,
                                    unsigned short val_marker) { }
+  inline virtual void BC_Velocity(CGeometry *geometry,
+                                   CNumerics *numerics,
+                                   const CConfig *config,
+                                   unsigned short val_marker) { }
 
   /*!
    * \brief A virtual member.

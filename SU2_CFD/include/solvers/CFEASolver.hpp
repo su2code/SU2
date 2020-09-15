@@ -449,7 +449,10 @@ public:
                     CNumerics *numerics,
                     const CConfig *config,
                     unsigned short val_marker) final;
-
+  void BC_Velocity(CGeometry *geometry,
+                    CNumerics *numerics,
+                    const CConfig *config,
+                    unsigned short val_marker) final;
   /*!
    * \brief Iterate using an implicit Newmark solver.
    * \param[in] geometry - Geometrical definition of the problem.

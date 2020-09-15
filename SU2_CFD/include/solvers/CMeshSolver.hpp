@@ -86,6 +86,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeGridVelocity(CGeometry *geometry, CConfig *config);
+  void ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config);
 
   /*!
    * \brief Update the coarse multigrid levels after the grid movement.
@@ -100,6 +101,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+  void SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics, CConfig *config);
 
 public:
   /*!

@@ -2435,13 +2435,14 @@ public:
    * \return Value of the boundary displacement.
    */
   inline virtual su2double GetBound_Disp(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual su2double GetBound_Vel(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, const su2double *val_BoundDisp) { }
-
+  inline virtual void SetBound_Vel(unsigned long iPoint, const su2double *val_BoundDisp) { }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
@@ -2449,6 +2450,7 @@ public:
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
+  inline virtual void SetBound_Vel(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.

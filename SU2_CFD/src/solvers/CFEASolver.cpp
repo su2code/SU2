@@ -2233,6 +2233,26 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
 
 }
 
+void CFEASolver::BC_Velocity(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker){
+
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+    auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Retrieve the boundary velocity ---*/
+    su2double Vel[MAXNVAR] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Vel[iDim] = nodes->GetBound_Vel(iNode,iDim);
+
+    /*--- Set and enforce solution ---*/
+    LinSysSol.SetBlock(iNode, Vel);
+    Jacobian.EnforceSolutionAtNode(iNode, Vel, LinSysRes);
+
+  }
+
+}
+
 su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, const CConfig *config){
 
   su2double LoadCoeff = 1.0;
