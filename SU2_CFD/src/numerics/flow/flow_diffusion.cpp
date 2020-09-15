@@ -733,7 +733,6 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
                                                 const CConfig   *config) {
     
   const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
-  
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double Cv = Cp/Gamma;
   const su2double heat_flux_factor = Cp/Prandtl_Lam;
@@ -805,14 +804,8 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
                                              const CConfig   *config) {
   
   if (sst) {
-    
     const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
-        
     const su2double a1 = 0.31;
-
-    su2double stress_tensor[3][3];
-    su2double heat_flux_vec[3];
-    su2double div_vel = 0.0;
     const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     const su2double heat_flux_factor = Cp/Prandtl_Turb;
     
