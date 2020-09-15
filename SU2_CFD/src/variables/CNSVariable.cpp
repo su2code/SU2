@@ -66,7 +66,7 @@ bool CNSVariable::SetVorticity_StrainMag() {
     }
 
     VorticityMag(iPoint) = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+    for (unsigned long iDim = 0; iDim < 3; iDim++)
       VorticityMag(iPoint) += pow(Vorticity(iPoint, iDim),2.0);
     VorticityMag(iPoint) = sqrt(VorticityMag(iPoint));
 
