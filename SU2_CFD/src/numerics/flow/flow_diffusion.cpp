@@ -746,12 +746,12 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
 
   su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
+    proj_stress[iDim] = -TWO3*div_vel*Normal[iDim];
     for (auto jDim = 0; jDim < nDim; jDim++)
-      proj_stress[iDim] += WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
-                                       - TWO3*div_vel*delta[iDim][jDim] ) * Normal[jDim];
+      proj_stress[iDim] += WF_Factor*( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim])*Normal[jDim];
 
     proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
-    proj_heat_flux    += (heat_flux_factor*Mean_GradPrimVar[0][iDim] + Mean_GradTurbVar[iDim]) * Normal[iDim];
+    proj_heat_flux    += (heat_flux_factor*Mean_GradPrimVar[0][iDim] + Mean_GradTurbVar[iDim])*Normal[iDim];
   }
 
   /*--- Jacobian wrt laminar viscosity ---*/
@@ -813,13 +813,13 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
 
     su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, proj_tke_flux = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
+      proj_stress[iDim] = -TWO3*div_vel*Normal[iDim];
       for (auto jDim = 0; jDim < nDim; jDim++)
-        proj_stress[iDim] += WF_Factor * ( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim]
-                                         - TWO3*div_vel*delta[iDim][jDim] ) * Normal[jDim];
+        proj_stress[iDim] += WF_Factor*( Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim])*Normal[jDim];
 
       proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
       proj_heat_flux    += heat_flux_factor*Mean_GradPrimVar[0][iDim]*Normal[iDim];
-      proj_tke_flux     += Mean_GradTurbVar[iDim] * Normal[iDim];
+      proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
     }
   
     /*--- Jacobian wrt eddy viscosity ---*/
