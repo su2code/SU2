@@ -528,11 +528,12 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   const bool wasActive = AD::BeginPassive();
 
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
-  const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   const auto node_i = geometry->node[iPoint];
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
+
+  const su2double sign_grad_i = 1.0 - 2.0*(!gg);
   
   const su2double F1        = nodes->GetF1blending(iPoint);
   const su2double sigma_om2 = constants[3];
@@ -593,13 +594,12 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
       const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-      Jacobian_i[1][0] += factor*gradom*gradWeights[iDim]/r_i; Jacobian_i[1][1] += factor*gradk*gradWeights[iDim]/r_i;
-      Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]/r_j; Jacobian_j[1][1] += factor*gradk*gradWeights[iDim]/r_j;
+      Jacobian_i[1][0] += factor*gradom*gradWeights[iDim]/r_i*sign_grad_i;
+      Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]/r_j;
+      Jacobian_i[1][1] += factor*gradk*gradWeights[iDim]/r_i*sign_grad_i;
+      Jacobian_j[1][1] += factor*gradk*gradWeights[iDim]/r_j;
     }// iDim
-
-    if (wls) {
-      Jacobian_i[1][0] *= -1.0; Jacobian_i[1][1] *= -1.0;
-    }
+    
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh

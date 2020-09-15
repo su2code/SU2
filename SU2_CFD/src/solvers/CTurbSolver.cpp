@@ -458,6 +458,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
+  const su2double sign_grad_i = 1.0 - 2.0*(kindRecon != GREEN_GAUSS);
   const su2double inv_rho_i = 1.0/flowNodes->GetDensity(iPoint);
 
   /*--------------------------------------------------------------------------*/
@@ -516,10 +517,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = dFdU_l[iVar][jVar]*(*rho_l)*reconWeight_l[jVar]*inv_rho_i;
+        Jacobian_i[iVar][jVar] = dFdU_l[iVar][jVar]*(*rho_l)*reconWeight_l[jVar]*inv_rho_i*sign_grad_i;
         Jacobian_j[iVar][jVar] = dFdU_l[iVar][jVar]*(*rho_l)*reconWeight_l[jVar]*inv_rho_k;
-        if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
-          Jacobian_i[iVar][jVar] *= -1.0;
       }
     }
 
@@ -541,14 +540,14 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
   const bool wasActive = AD::BeginPassive();
 
-  const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-
   const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
-  const bool wls = config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES;
 
   const auto node_i = geometry->node[iPoint];
 
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
+
+  const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
+  const su2double sign_grad_i = 1.0 - 2.0*(!gg);
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -604,10 +603,9 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       Jacobian_i[iVar][iVar] = 0.0;
       Jacobian_j[iVar][iVar] = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim];
+        Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*sign_grad_i;
         Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]/denom;
       }
-      if (wls) Jacobian_i[iVar][iVar] *= -1.0;
     }
 
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);

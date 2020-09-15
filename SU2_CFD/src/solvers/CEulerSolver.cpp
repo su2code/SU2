@@ -3454,6 +3454,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
+  const su2double sign_grad_i = 1.0 - 2.0*(kindRecon != GREEN_GAUSS);
 
   const unsigned long nPrimVarTot = nVar + tkeNeeded;
 
@@ -3639,11 +3640,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-          Jacobian_i[iVar][jVar] += dFdV_l[iVar][kVar]*reconWeight_l[kVar]*dVdU_i[kVar][jVar];
+          Jacobian_i[iVar][jVar] += dFdV_l[iVar][kVar]*reconWeight_l[kVar]*dVdU_i[kVar][jVar]*sign_grad_i;
           Jacobian_j[iVar][jVar] += dFdV_l[iVar][kVar]*reconWeight_l[kVar]*dVdU_k[kVar][jVar];
         }
-        if (kindRecon == LEAST_SQUARES || kindRecon == WEIGHTED_LEAST_SQUARES)
-          Jacobian_i[iVar][jVar] *= -1.0;
       }
     }
 
