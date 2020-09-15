@@ -583,6 +583,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
   /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
   SU2_OMP_PARALLEL {
     LinSysRes.SetValZero();
+    LinSysSol.SetValZero();
   }
 
   /*--- Impose boundary conditions including bouundary velocity ---*/
@@ -596,6 +597,10 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
     }
   }
+
+  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 }
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
@@ -752,15 +757,6 @@ void CMeshSolver::SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics
         (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
       BC_Clamped(geometry, numerics, config, iMarker);
-    }
-  }
-
-  /*--- Impose displacement boundary conditions. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-        (config->GetMarker_All_Moving(iMarker) == YES)) {
-
-      BC_Deforming(geometry, numerics, config, iMarker);
     }
   }
 
