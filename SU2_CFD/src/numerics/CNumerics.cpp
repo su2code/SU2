@@ -559,7 +559,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   const su2double c2    = pow(*c,2);
   const su2double alpha = 1.0/(2.*c2);
   const su2double kappag1 = (Gamma_Minus_One)*(*k);
-  const su2double kappa23 = TWO3*(*k)
+  const su2double kappa23 = TWO3*(*k);
 
   // const su2double kappa = FIVE3*(*k);
   // const su2double kappa = TWO3*(*k);
