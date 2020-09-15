@@ -503,7 +503,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
     const auto kPoint = node_i->GetPoint(iNeigh);
     const su2double inv_rho_k = 1.0/flowNodes->GetDensity(kPoint);
-    
+
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
     su2double gradWeightDotDist = 0.0;
@@ -550,6 +550,13 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto jVar = 0; jVar < nVar; jVar++) {
+      Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_j[iVar][jVar] = 0.0;
+    }
+  }
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute contributions of surface terms to the Jacobian.    ---*/
   /*---         In Green-Gauss, the weight of the surface node             ---*/
@@ -560,8 +567,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
   if (gg && node_i->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
+      Jacobian_i[iVar][iVar] = 0.0;
 
     const su2double factor = -sign/node_i->GetVolume();    
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -589,20 +595,14 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
 
   su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
-
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
-
     const auto kPoint = node_i->GetPoint(iNeigh);
+    const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
-    const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar][iVar] = 0.0;
+      Jacobian_j[iVar][iVar] = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++) {
         Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim];
         Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]/denom;
