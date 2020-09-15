@@ -807,7 +807,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
     const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
     const su2double heat_flux_factor = Cp/Prandtl_Turb;
 
-    su2double dive_vel = 0.0;
+    su2double div_vel = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
       div_vel += Mean_GradPrimVar[iDim+1][iDim];
 
