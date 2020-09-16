@@ -453,7 +453,7 @@ CWallModelAlgebraic::CWallModelAlgebraic(CConfig      *config,
                                    const string &Marker_Tag)
   :  CWallModel(config) {
 
-  C = 5.2; /* Constant to match the Reichardt BL profile ->  C = 4.1;  or 5.25. */
+  C = 5.2; /* Constant to match the BL profile. */
 
   /* Retrieve the floating point information for this boundary marker
      and set the exchange height. */
@@ -530,6 +530,125 @@ void CWallModelAlgebraic::WallShearStressAndHeatFlux(const su2double tExchange,
 
     /* Define a norm */
     if (fabs(1.0 - u_tau/u_tau0) < tol) converged = true;
+  }
+
+  tauWall = rho_wall * pow(u_tau,2.0);
+
+  if (Temperature_Prescribed){
+    /* The Kader's law will be used to approximate the variations of the temperature inside the boundary layer.
+     */
+    const su2double y_plus = u_tau*h_wm/nu_wall;
+    const su2double lhs = - ((tExchange - TWall) * rho_wall * Cp * u_tau);
+    const su2double Gamma = - (0.01 * (pow(Pr_lam * y_plus,4.0))/(1.0 + 5.0*y_plus*pow(Pr_lam,3.0)));
+    const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
+    const su2double rhs_2 = (2.12*log(1.0+y_plus) + pow((3.85*pow(Pr_lam,(1.0/3.0)) - 1.3),2.0) + 2.12*log(Pr_lam)) * exp(1./Gamma);
+    qWall = lhs/(rhs_1 + rhs_2);
+  }
+  else{
+    qWall = Wall_HeatFlux;
+  }
+
+  ViscosityWall = mu_wall;
+  kOverCvWall   = (mu_wall*Cp/Pr_lam)/Cv;
+}
+
+CWallModelAPGLL::CWallModelAPGLL(CConfig      *config,
+                                   const string &Marker_Tag)
+  :  CWallModel(config) {
+
+  C = 5.2; /* Constant to match the BL profile. */
+
+  /* Retrieve the floating point information for this boundary marker
+     and set the exchange height. */
+  const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+  h_wm = doubleInfo[0];
+
+}
+
+void CWallModelAPGLL::UpdateExchangeLocation(const su2double h_wm_new){
+  h_wm = h_wm_new;
+}
+
+void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double tExchange,
+                                                  const su2double velExchange,
+                                                  const su2double muExchange,
+                                                  const su2double pExchange,
+                                                  const su2double dPds,
+                                                  const su2double Wall_HeatFlux,
+                                                  const bool      HeatFlux_Prescribed,
+                                                  const su2double Wall_Temperature,
+                                                  const bool      Temperature_Prescribed,
+                                                  CFluidModel     *FluidModel,
+                                                  su2double       &tauWall,
+                                                  su2double       &qWall,
+                                                  su2double       &ViscosityWall,
+                                                  su2double       &kOverCvWall) {
+
+  /* Set the wall temperature, depending whether or not the temperature
+     was prescribed and initialize the fluid model. */
+  const su2double TWall = Temperature_Prescribed ? Wall_Temperature : tExchange;
+
+  FluidModel->SetTDState_PT(pExchange/Pref, TWall/Tref);
+
+  /* Get the required data from the fluid model.
+   */
+  const su2double mu_wall  = FluidModel->GetLaminarViscosity() * Pref / Uref;;
+  const su2double rho_wall = pExchange / (TWall * RGas);
+  const su2double nu_wall  = mu_wall / rho_wall;
+
+  /* Initial guess of the friction velocity. */
+  su2double u_tau = max(0.01*velExchange, 1.e-5);
+
+  /* Set parameters for control of the Newton iteration. */
+  bool converged = false;
+  unsigned short iter = 0, max_iter = 50;
+  const su2double tol=1e-3;
+
+  /* Van Driest damping constant */
+  const su2double a_plus = 26.0;
+
+  /* Tangential wall pressure gradient */
+  const su2double u_p = pow(dPds * nu_wall / rho_wall, 1./3.);
+
+  while (converged == false){
+
+    iter += 1;
+    if (iter == max_iter){
+      converged = true;
+    }
+
+    const su2double u_tau0 = u_tau;
+    const su2double y_plus = u_tau0*h_wm/nu_wall;
+
+    /* Adverse Pressure Gradient Log Law (APGLL)
+       fprime is the differentiation with repect to u_tau.
+     */
+
+    const su2double fval = + velExchange/u_tau0
+                           - (1.0 - exp(-y_plus/a_plus))*(C + 2.0*(sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) - 1.0)/karman
+                           + 1.0*log(y_plus)/karman - 2.0*log(0.5*sqrt(1.0 +  y_plus*pow(u_p/u_tau0, 3.0)) + 0.5)/karman);
+
+
+    // const su2double fprime = -velExchange/pow(u_tau0, 2) - (1.0 - exp(-y_plus/a_plus))*(1.0/(karman*u_tau0)
+    //                          - 2.0*h_wm*pow(u_p/u_tau0, 3.0)*pow(1.0 + y_plus*pow(u_p/u_tau0, 3.0), -0.5)/(karman*nu_wall)
+    //                          + 1.0*h_wm*pow(u_p/u_tau0, 3.0)*pow(1.0 + y_plus*pow(u_p/u_tau0, 3.0), -0.5)/(karman*nu_wall*(0.5*sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) + 0.5)))
+    //                          - h_wm*(C + 2.0*(sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) - 1.0)/karman + 1.0*log(y_plus)/karman - 2.0*log(0.5*sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) + 0.5)/karman)
+    //                          *exp(-y_plus/a_plus)/(a_plus*nu_wall);
+
+    const su2double fprime =-velExchange/pow(u_tau0, 2) - (1.0 - exp(-y_plus/a_plus))*(1.0/(karman*u_tau0));
+
+    /* Newton method */
+    const su2double newton_step = fval/fprime;
+    u_tau = u_tau0 - newton_step;
+
+    u_tau = max(u_tau,1e-10);
+
+    /* Define a norm */
+    if (fabs(1.0 - u_tau/u_tau0) < tol) converged = true;
+
+    if (std::isnan(u_tau)){
+      SU2_MPI::Error("u_tau is nan at APGLL Wall Model", CURRENT_FUNCTION);
+    }
   }
 
   tauWall = rho_wall * pow(u_tau,2.0);

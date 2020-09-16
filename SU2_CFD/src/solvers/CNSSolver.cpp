@@ -207,6 +207,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           case ALGEBRAIC_WALL_MODEL:
             WallModel = new CWallModelAlgebraic(config,WallFunctionsMarker_[0]);
             break;
+          case APGLL_WALL_MODEL:
+            WallModel = new CWallModelAPGLL(config,WallFunctionsMarker_[0]);
+            break;
+
           default:
             break;
         }
@@ -2705,6 +2709,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        case EQUILIBRIUM_WALL_MODEL:
        case LOGARITHMIC_WALL_MODEL:
        case ALGEBRAIC_WALL_MODEL:
+       case APGLL_WALL_MODEL:
          CalculateWallModel = true;
          break;
 

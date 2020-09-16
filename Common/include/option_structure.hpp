@@ -942,7 +942,8 @@ enum ENUM_WALL_FUNCTIONS {
   STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
   EQUILIBRIUM_WALL_MODEL    = 2,   /*!< \brief Equilibrium wall model for LES. */
   LOGARITHMIC_WALL_MODEL    = 3,   /*!< \brief Reichardt's law-of-the-wall model for LES. */
-  ALGEBRAIC_WALL_MODEL      = 4    /*!< \brief Algebraic wall model for LES. */
+  ALGEBRAIC_WALL_MODEL      = 4,    /*!< \brief Algebraic wall model for LES. */
+  APGLL_WALL_MODEL          = 5     /*!< \brief Adverse Pressure Gradient Wall Model for LES. */
 };
 static const MapType<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = {
   MakePair("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
@@ -950,6 +951,7 @@ static const MapType<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = {
   MakePair("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
   MakePair("LOGARITHMIC_WALL_MODEL",    LOGARITHMIC_WALL_MODEL)
   MakePair("ALGEBRAIC_WALL_MODEL",      ALGEBRAIC_WALL_MODEL)
+  MakePair("APGLL_WALL_MODEL",          APGLL_WALL_MODEL)
 };
 
 /*!
