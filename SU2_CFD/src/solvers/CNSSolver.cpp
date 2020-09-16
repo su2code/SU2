@@ -433,9 +433,6 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
 
   const auto node_i = geometry->node[iPoint];
 
-  CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
-
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = 1.0 - 2.0*(!gg);
   const su2double delta[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
@@ -589,7 +586,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
   const auto node_i = geometry->node[iPoint];
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
+  if (sst) turbNodes = solver[TURB_SOL]->GetNodes();
 
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = 1.0 - 2.0*(!gg);
