@@ -842,11 +842,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve;
   su2double Ti, Tvei, Tj, Tvej;
-  su2double Twall, Tslip, dij;
+  su2double Twall, Tslip, Tslip_ve, dij;
   su2double Pi;
   su2double Area, *Normal, UnitNormal[3];
   su2double *Coord_i, *Coord_j;
-  su2double C;
+  su2double C, alpha_V, alpha_T;
 
   su2double TMAC, TAC;
   su2double Viscosity, Lambda;
@@ -855,6 +855,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double **Grad_PrimVar;
   su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
   su2double dTn, dTven;
+  su2double rhoCv, rhoCvve;
 
   su2double TauElem[3], TauTangent[3];
   su2double Tau[3][3];
@@ -872,6 +873,10 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
   /*--- Define 'proportional control' constant ---*/
   C = 5;
+
+  /*---Define under-relaxation factors --- */
+  alpha_V = 0.01;
+  alpha_T = 0.25;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -899,7 +904,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
       for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
+        UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Compute closest normal neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -932,11 +937,19 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       ktr  = nodes->GetThermalConductivity(iPoint);
       kve  = nodes->GetThermalConductivity_ve(iPoint);
 
+      /*--- Retrieve Cv*density ---*/
+      rhoCv=nodes->GetRhoCv_tr(iPoint);
+      rhoCvve=nodes->GetRhoCv_ve(iPoint);
+
+
       /*--- Retrieve Flow Data ---*/
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Density = nodes->GetDensity(iPoint);
 
       Ms = FluidModel->GetMolarMass();
+
+      /*--- Retrieve Primitive Gradients ---*/
+      Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
       /*--- Calculate specific gas constant --- */
       GasConstant=0;
@@ -944,14 +957,18 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
       
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
-      dTn   = - (Ti-Tj)/dij;
-      dTven = - (Tvei-Tvej)/dij;
+      dTn = 0.0; dTven = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+        dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
+      }
 
       /*--- Calculate molecular mean free path ---*/
       Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2*GasConstant*Ti));
 
       /*--- Calculate Temperature Slip ---*/
-      Tslip = ((2-TAC)/TAC)*2*Gamma/(Gamma+1)/Prandtl_Lam*Lambda*dTn+Twall;
+      Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
+      Tslip_ve = (Tslip-Twall)*(kve*rhoCv/dTn)/(ktr*rhoCvve/dTven)+Twall;
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
@@ -964,7 +981,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Calculate Heatflux tangent to surface ---*/
       for (iDim = 0; iDim < nDim; iDim++) 
-        Vector_Tangent_HF[iDim] = ktr*Vector_Tangent_dT[iDim]+kve*Vector_Tangent_dTve[iDim];
+        Vector_Tangent_HF[iDim] = -ktr*Vector_Tangent_dT[iDim]-kve*Vector_Tangent_dTve[iDim];
       
       /*--- Initialize viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar ++)
@@ -996,7 +1013,15 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Store the Slip Velocity at the wall */
       for (iDim = 0; iDim < nDim; iDim++)
-        Vector[iDim] = - Lambda/Viscosity*(2-TMAC)/TMAC*(TauTangent[iDim])-3/4*(Gamma-1)/Gamma*Prandtl_Lam/Pi*Vector_Tangent_HF[iDim];
+        Vector[iDim] = Lambda/Viscosity*(2.0-TMAC)/TMAC*(TauTangent[iDim])-3.0/4.0*(Gamma-1.0)/Gamma*Prandtl_Lam/Pi*Vector_Tangent_HF[iDim];
+
+      /*--- Apply under-relaxation ---*/
+      Tslip    = (1.0-alpha_T)*nodes->GetTemperature(iPoint)+(alpha_T)*Tslip;
+      Tslip_ve = (1.0-alpha_T)*nodes->GetTemperature_ve(iPoint)+(alpha_T)*Tslip_ve;
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        Vector[iDim] = (1.0-alpha_V)*nodes->GetVelocity(iPoint,iDim)+(alpha_V)*Vector[iDim];
+      }
 
       nodes->SetVelocity_Old(iPoint,Vector);
 
