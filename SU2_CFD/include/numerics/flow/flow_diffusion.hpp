@@ -75,7 +75,7 @@ protected:
   
   bool sst = false;
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
-  su2double sigma_k_i, sigma_k_j;
+  su2double sigma_k_i = 0.0, sigma_k_j = 0.0;
   su2double F1_i, F1_j;
   su2double F2_i, F2_j;
 
