@@ -3511,8 +3511,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*lim_i[iVar]*good_i;
-    reconWeight_r[iVar] = 0.5*kappa*lim_j[iVar]*good_j;
+    reconWeight_l[iVar] = 1.0 - 0.5*kappa*lim_i[iVar]*good_i;
+    reconWeight_r[iVar] =       0.5*kappa*lim_j[iVar]*good_j;
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3581,8 +3581,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        Jacobian_i[iVar][jVar] += sign*(dFdV_l[iVar][kVar]*(1.0-reconWeight_l[kVar])
-                                + dFdV_r[iVar][kVar]*reconWeight_r[kVar])*dVdU_i[kVar][jVar];
+        Jacobian_i[iVar][jVar] += sign*(dFdV_l[iVar][kVar]*reconWeight_l[kVar]
+                                      + dFdV_r[iVar][kVar]*reconWeight_r[kVar])*dVdU_i[kVar][jVar];
       }
     }
   }

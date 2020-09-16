@@ -459,7 +459,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = 1.0 - 2.0*(kindRecon != GREEN_GAUSS);
-  const su2double inv_rho_i = 1.0/flowNodes->GetDensity(iPoint);
+  const su2double dUdV_l = *rho_l;
+  const su2double dUdV_r = *rho_r;
+  const su2double dVdU_i = 1.0/flowNodes->GetDensity(iPoint);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -476,14 +478,14 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR] = {0.0}, reconWeight_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    reconWeight_l[iVar] = 0.5*kappa*limiter_i[iVar]*good_i;
-    reconWeight_r[iVar] = 0.5*kappa*limiter_j[iVar]*good_j;
+    reconWeight_l[iVar] = 1.0 - 0.5*kappa*limiter_i[iVar]*good_i;
+    reconWeight_r[iVar] =       0.5*kappa*limiter_j[iVar]*good_j;
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] = sign*(dFdU_l[iVar][jVar]*(*rho_l)*(1.0-reconWeight_l[jVar])
-                             + dFdU_r[iVar][jVar]*(*rho_r)*reconWeight_r[jVar])*inv_rho_i;
+      Jacobian_i[iVar][jVar] = sign*(dFdU_l[iVar][jVar]*dUdV_l*reconWeight_l[jVar]
+                                   + dFdU_r[iVar][jVar]*dUdV_r*reconWeight_r[jVar])*dVdU_i;
     }
   }
 
@@ -503,7 +505,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
     const auto kPoint = node_i->GetPoint(iNeigh);
-    const su2double inv_rho_k = 1.0/flowNodes->GetDensity(kPoint);
+    const su2double dVdU_k = 1.0/flowNodes->GetDensity(kPoint);
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
@@ -517,8 +519,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = dFdU_l[iVar][jVar]*(*rho_l)*reconWeight_l[jVar]*inv_rho_i*sign_grad_i;
-        Jacobian_j[iVar][jVar] = dFdU_l[iVar][jVar]*(*rho_l)*reconWeight_l[jVar]*inv_rho_k;
+        Jacobian_i[iVar][jVar] = dFdU_l[iVar][jVar]*dUdV_l*reconWeight_l[jVar]*dVdU_i*sign_grad_i;
+        Jacobian_j[iVar][jVar] = dFdU_l[iVar][jVar]*dUdV_l*reconWeight_l[jVar]*dVdU_k;
       }
     }
 
