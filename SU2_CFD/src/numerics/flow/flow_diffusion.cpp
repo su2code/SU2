@@ -784,7 +784,7 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     Jacobian_j[iDim+1][nDim+1] += factor_j*proj_stress[iDim];
 
     Jacobian_i[nDim+1][iDim+1] += -factor_i*V_i[iDim+1]*(proj_stress_dot_v + proj_heat_flux);
-    Jacobian_j[nDim+1][iDim+1] += -factor_j*V_i[iDim+1]*(proj_stress_dot_v + proj_heat_flux);
+    Jacobian_j[nDim+1][iDim+1] += -factor_j*V_j[iDim+1]*(proj_stress_dot_v + proj_heat_flux);
   }
 
   Jacobian_i[nDim+1][0]      += factor_i*(v2_i/2. - Cv*T_i)*proj_heat_flux;

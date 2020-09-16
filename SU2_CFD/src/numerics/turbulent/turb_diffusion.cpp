@@ -297,14 +297,13 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double Tref  = config->GetMu_Temperature_RefND();
   const su2double Sref  = config->GetMu_SND();
   
-  const su2double T_i      = V_i[0],
+  const su2double T_i      = V_i[0], 
+                  T_j      = V_j[0],
                   dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
                            * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),
-                  factor_i = dmudT_i/(Density_i*Cv);
-  
-  const su2double T_j      = V_j[0],
                   dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
                            * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.)),
+                  factor_i = dmudT_i/(Density_i*Cv),
                   factor_j = dmudT_j/(Density_j*Cv);
   
   for (auto iVar = 0; iVar < nVar; iVar++) {
