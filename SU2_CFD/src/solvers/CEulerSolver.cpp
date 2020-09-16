@@ -3511,8 +3511,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = 1.0 - 0.5*kappa*lim_i[iVar]*good_i;
-    reconWeight_r[iVar] =       0.5*kappa*lim_j[iVar]*good_j;
+    reconWeight_l[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
+    reconWeight_r[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3539,6 +3539,17 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     dUdV_r[nDim+1][nDim+2] = rho_r;
   }
 
+  /*--- dF/d{r,v,p,k}, evaluated at face ---*/
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
+      for (auto kVar = 0; kVar < nVar; kVar++) {
+        dFdV_l[iVar][jVar] += dFdU_l[iVar][kVar]*dUdV_l[kVar][jVar];
+        dFdV_r[iVar][jVar] += dFdU_r[iVar][kVar]*dUdV_r[kVar][jVar];
+      }
+    }
+  }
+
   /*--- d{r,v,p,k}/dU, evaluated at node ---*/
 
   const auto primvar_i = nodes->GetPrimitive(iPoint);
@@ -3552,37 +3563,22 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   }
 
   dVdU_i[0][0] = 1.0;
-
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    dVdU_i[iDim+1][0] = -vel_i[iDim]*inv_rho_i;
+    dVdU_i[iDim+1][0]      = -vel_i[iDim]*inv_rho_i;
     dVdU_i[iDim+1][iDim+1] = inv_rho_i;
     dVdU_i[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
   }
-
   dVdU_i[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
-
   dVdU_i[nDim+1][nDim+1] = Gamma_Minus_One;
-
   if (tkeNeeded)
     dVdU_i[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
-
-  /*--- Now multiply them all together ---*/
-
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
-      for (auto kVar = 0; kVar < nVar; kVar++) {
-        dFdV_l[iVar][jVar] += dFdU_l[iVar][kVar]*dUdV_l[kVar][jVar];
-        dFdV_r[iVar][jVar] += dFdU_r[iVar][kVar]*dUdV_r[kVar][jVar];
-      }
-    }
-  }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        Jacobian_i[iVar][jVar] += sign*(dFdV_l[iVar][kVar]*reconWeight_l[kVar]
-                                      + dFdV_r[iVar][kVar]*reconWeight_r[kVar])*dVdU_i[kVar][jVar];
+        Jacobian_i[iVar][jVar] += (dFdV_l[iVar][kVar]*reconWeight_l[kVar]
+                                 + dFdV_r[iVar][kVar]*reconWeight_r[kVar])*dVdU_i[kVar][jVar];
       }
     }
   }
@@ -3616,7 +3612,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     dVdU_k[0][0] = 1.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      dVdU_k[iDim+1][0] = -vel_k[iDim]*inv_rho_k;
+      dVdU_k[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
       dVdU_k[iDim+1][iDim+1] = inv_rho_k;
       dVdU_k[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
     }
