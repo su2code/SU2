@@ -307,10 +307,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     // }
     // P_Tensor[nVar-1][nVar] = -TWO3;
     // invP_Tensor[nVar][0]   = RoeTke;
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      P_Tensor[iVar][nVar]      = 0.0;
-      invP_Tensor[nVar][iVar] = 0.0;
-    }
+    for (auto iVar = 0; iVar < nVar-1; iVar++)
+      P_Tensor[iVar][nVar] = 0.0;
     P_Tensor[nVar-1][nVar] = RoeTke/RoeSoundSpeed2;
 
     su2double RoeVelocity2 = 0.0;
