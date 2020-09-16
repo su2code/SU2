@@ -319,6 +319,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     invP_Tensor[nVar][0] = -0.5*Gamma_Minus_One*RoeVelocity2;
     for (auto iDim = 0; iDim < nDim; iDim++)
       invP_Tensor[nVar][iDim+1] = Gamma_Minus_One*RoeVelocity[iDim];
+    invP_Tensor[nVar][nDim+1] = -Gamma_Minus_One;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
