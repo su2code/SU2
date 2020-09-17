@@ -3492,7 +3492,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double lim_i[MAXNVAR+1] = {0.0}, lim_j[MAXNVAR+1] = {0.0};
   for (auto iDim = 0; iDim < nDim+2; iDim++) {
     lim_i[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint)[iDim+1] : 1.0;
-    lim_j[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint)[iDim+1] : 1.0;
+    lim_j[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint)[iDim+1] : 1.0;
   }
   if (tkeNeeded) {
     lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
