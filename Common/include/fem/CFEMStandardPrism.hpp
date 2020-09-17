@@ -94,5 +94,14 @@ protected:
   vector<passivedouble> wTriangleInt;      /*!< \brief Weights of the integration points of the
                                                        triangle. */
 
-
+  /*!
+   * \brief Function, which computes the parametric coordinates of all
+   *        the integration points.
+   * \param[out] rInt - Parametric r-coordinates of the integration points.
+   * \param[out] sInt - Parametric s-coordinates of the integration points.
+   * \param[out] tInt - Parametric t-coordinates of the integration points.
+   */
+  void LocationAllIntegrationPoints(vector<passivedouble> &rInt,
+                                    vector<passivedouble> &sInt,
+                                    vector<passivedouble> &tInt);
 };

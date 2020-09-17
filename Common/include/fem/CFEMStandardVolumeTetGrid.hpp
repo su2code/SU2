@@ -116,4 +116,79 @@ public:
 
 private:
 
+  ColMajorMatrix<passivedouble> lagBasisIntEqui; /*!< \brief The values of the Lagrangian basis functions
+                                                             in the integration points for the equidistant
+                                                             point distribution. */
+  ColMajorMatrix<passivedouble> lagBasisIntLGL;  /*!< \brief The values of the Lagrangian basis functions
+                                                             in the integration points for the LGL
+                                                             point distribution. */
+
+  vector<ColMajorMatrix<passivedouble> > derLagBasisIntEqui; /*!< \brief The values of the derivatives of the Lagrangian
+                                                                         basis functions in the integration points for the
+                                                                         equidistant point distribution. It is a vector,
+                                                                         because there are derivatives in three directions. */
+  vector<ColMajorMatrix<passivedouble> > derLagBasisIntLGL;  /*!< \brief The values of the derivatives of the Lagrangian
+                                                                         basis functions in the integration points for the
+                                                                         LGL point distribution. It is a vector, because
+                                                                         there are derivatives in three directions. */
+
+  /*!
+   * \brief Function, which computes the values of the derivatives of the Lagrangian
+   *        basis functions of a tetrahedron in the integration points for the given
+   *        location of the DOFs.
+   * \param[in]  rDOFs  - Vector, which contains the parametric r-locations of the DOFs.
+   * \param[in]  sDOFs  - Vector, which contains the parametric s-locations of the DOFs.
+   * \param[in]  tDOFs  - Vector, which contains the parametric t-locations of the DOFs.
+   * \param[out] derLag - Matrix, which contains the values of derivatives of all the
+   *                      Lagrangian basis functions in all the integration points.
+   */
+  void DerLagBasisIntPointsTet(const vector<passivedouble>            &rDOFs,
+                               const vector<passivedouble>            &sDOFs,
+                               const vector<passivedouble>            &tDOFs,
+                               vector<ColMajorMatrix<passivedouble> > &derLag);
+
+  /*!
+   * \brief Function, which computes the values of the Lagrangian basis functions
+   *        of a tetrahedron in the integration points for the given location of the DOFs.
+   * \param[in]  rDOFs - Vector, which contains the parametric r-locations of the DOFs.
+   * \param[in]  sDOFs - Vector, which contains the parametric s-locations of the DOFs.
+   * \param[in]  tDOFs - Vector, which contains the parametric t-locations of the DOFs.
+   * \param[out] lag   - Matrix, which contains the values of all the Lagrangian
+   *                     basis functions in all the integration points.
+   */
+  void LagBasisIntPointsTet(const vector<passivedouble>   &rDOFs,
+                            const vector<passivedouble>   &sDOFs,
+                            const vector<passivedouble>   &tDOFs,
+                            ColMajorMatrix<passivedouble> &lag);
+
+  /*!
+   * \brief Function, which computes the gradients of the Vandermonde matrix for a standard tetrahedron.
+   * \param[in]  r   - Parametric r-coordinates for which the Vandermonde matrix must be computed.
+   * \param[in]  s   - Parametric s-coordinates for which the Vandermonde matrix must be computed
+   * \param[in]  t   - Parametric t-coordinates for which the Vandermonde matrix must be computed
+   * \param[out] VDr - Matrix to store the derivative in r-direction of the Vandermonde matrix
+   *                   in all r,s,t-locations.
+   * \param[out] VDs - Matrix to store the derivative in s-direction of the Vandermonde matrix
+   *                   in all r,s,t-locations.
+   * \param[out] VDt - Matrix to store the derivative in t-direction of the Vandermonde matrix
+   *                   in all r,s,t-locations.
+   */
+  void GradVandermondeTetrahedron(const vector<passivedouble>   &r,
+                                  const vector<passivedouble>   &s,
+                                  const vector<passivedouble>   &t,
+                                  ColMajorMatrix<passivedouble> &VDr,
+                                  ColMajorMatrix<passivedouble> &VDs,
+                                  ColMajorMatrix<passivedouble> &VDt);
+
+  /*!
+   * \brief Function, which computes the Vandermonde matrix for a standard tetrahedron.
+   * \param[in]  r  - Parametric r-coordinates for which the Vandermonde matrix must be computed.
+   * \param[in]  s  - Parametric s-coordinates for which the Vandermonde matrix must be computed
+   * \param[in]  t  - Parametric t-coordinates for which the Vandermonde matrix must be computed
+   * \param[out] V  - Matrix to store the Vandermonde matrix in all r,s,t-locations.
+   */
+  void VandermondeTetrahedron(const vector<passivedouble>   &r,
+                              const vector<passivedouble>   &s,
+                              const vector<passivedouble>   &t,
+                              ColMajorMatrix<passivedouble> &V);
 };

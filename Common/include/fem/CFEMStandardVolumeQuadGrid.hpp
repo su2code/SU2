@@ -115,4 +115,18 @@ public:
                        su2double                          &jacMax) const override;
 
 private:
+
+  ColMajorMatrix<passivedouble> lagBasisLineIntEqui; /*!< \brief The values of the 1D Lagrangian basis functions
+                                                                 in the integration points for the equidistant
+                                                                 point distribution. */
+  ColMajorMatrix<passivedouble> lagBasisLineIntLGL;  /*!< \brief The values of the 1D Lagrangian basis functions
+                                                                 in the integration points for the LGL
+                                                                 point distribution. */
+
+  ColMajorMatrix<passivedouble> derLagBasisLineIntEqui; /*!< \brief The values of the derivatives of the 1D Lagrangian
+                                                                    basis functions in the integration points for the
+                                                                    equidistant point distribution. */
+  ColMajorMatrix<passivedouble> derLagBasisLineIntLGL;  /*!< \brief The values of the derivatives of the 1D Lagrangian
+                                                                    basis functions in the integration points for the
+                                                                    LGL point distribution. */
 };

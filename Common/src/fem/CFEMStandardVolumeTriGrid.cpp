@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardVolumeTriGrid.hpp"
+#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardVolumeTriGrid.                   */
@@ -35,6 +36,15 @@ CFEMStandardVolumeTriGrid::CFEMStandardVolumeTriGrid(const unsigned short val_nP
                                                      const unsigned short val_orderExact)
   : CFEMStandardTri(val_nPoly, val_orderExact) {
 
+  /*--- Compute the values of the Lagrangian basis functions in the integration
+        points for both the equidistant and LGL point distribution. ---*/
+  LagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, lagBasisIntEqui);
+  LagBasisIntPointsTriangle(rTriangleDOFsLGL,  sTriangleDOFsLGL,  lagBasisIntLGL);
+
+  /*--- Compute the values of the derivatives of the Lagrangian basis functions in
+        the integration points for both the equidistant and LGL point distribution. ---*/
+  DerLagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, derLagBasisIntEqui);
+  DerLagBasisIntPointsTriangle(rTriangleDOFsLGL,  sTriangleDOFsLGL,  derLagBasisIntLGL);
 }
 
 void CFEMStandardVolumeTriGrid::DataIntegrationPoints(const ColMajorMatrix<su2double>    &matB,
@@ -58,4 +68,89 @@ void CFEMStandardVolumeTriGrid::MinMaxJacobians(const bool                      
                                                 su2double                          &jacMax) const {
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+void CFEMStandardVolumeTriGrid::DerLagBasisIntPointsTriangle(const vector<passivedouble>            &rDOFs,
+                                                             const vector<passivedouble>            &sDOFs,
+                                                             vector<ColMajorMatrix<passivedouble> > &derLag) {
+
+  /*--- Determine the padded number of the total number of integration points. ---*/
+  const unsigned short nIntTot    = rTriangleInt.size();
+  const unsigned short nIntTotPad = ((nIntTot+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the gradient of the Vandermonde matrix of the integration points. Make
+        sure to allocate the number of rows to nIntTotPad and initialize them to zero. ---*/
+  ColMajorMatrix<passivedouble> VDr(nIntTotPad,rDOFs.size()),
+                                VDs(nIntTotPad,rDOFs.size());
+  VDr.setConstant(0.0);
+  VDs.setConstant(0.0);
+
+  GradVandermondeTriangle(rTriangleInt, sTriangleInt, VDr, VDs);
+
+  /*--- The gradients of the Lagrangian basis functions can be obtained by
+        multiplying VDr, VDs and VInv. ---*/
+  derLag.resize(2);
+  VInv.MatMatMult('R', VDr, derLag[0]);
+  VInv.MatMatMult('R', VDs, derLag[1]);
+
+  /*--- Check if the sum of the elements of the relevant rows of derLag is 0. ---*/
+  for(unsigned short i=0; i<nIntTot; ++i) {
+    passivedouble rowSumDr = 0.0, rowSumDs = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSumDr += derLag[0](i,j);
+      rowSumDs += derLag[1](i,j);
+    }
+
+    assert(fabs(rowSumDr) < 1.e-6);
+    assert(fabs(rowSumDs) < 1.e-6);
+  }
+}
+
+void CFEMStandardVolumeTriGrid::LagBasisIntPointsTriangle(const vector<passivedouble>   &rDOFs,
+                                                          const vector<passivedouble>   &sDOFs,
+                                                          ColMajorMatrix<passivedouble> &lag) {
+
+  /*--- Determine the padded number of the total number of integration points. ---*/
+  const unsigned short nIntTot    = rTriangleInt.size();
+  const unsigned short nIntTotPad = ((nIntTot+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Vandermonde matrix of the integration points. Make sure to
+        allocate the number of rows to nIntTotPad and initialize them to zero. ---*/ 
+  ColMajorMatrix<passivedouble> V(nIntTotPad,rDOFs.size());
+  V.setConstant(0.0);
+  VandermondeTriangle(rTriangleInt, sTriangleInt, V);
+
+  /*--- The Lagrangian basis functions can be obtained by multiplying
+        V and VInv. ---*/
+  VInv.MatMatMult('R', V, lag);
+
+  /*--- Check if the sum of the elements of the relevant rows of lag is 1. ---*/
+  for(unsigned short i=0; i<nIntTot; ++i) {
+    passivedouble rowSum = -1.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) rowSum += lag(i,j);
+    assert(fabs(rowSum) < 1.e-6);
+  }
+}
+
+void CFEMStandardVolumeTriGrid::GradVandermondeTriangle(const vector<passivedouble>   &r,
+                                                        const vector<passivedouble>   &s,
+                                                        ColMajorMatrix<passivedouble> &VDr,
+                                                        ColMajorMatrix<passivedouble> &VDs) {
+
+}
+
+void CFEMStandardVolumeTriGrid::VandermondeTriangle(const vector<passivedouble>   &r,
+                                                    const vector<passivedouble>   &s,
+                                                    ColMajorMatrix<passivedouble> &V) {
+
 }

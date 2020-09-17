@@ -93,6 +93,37 @@ CFEMStandardPyra::CFEMStandardPyra(const unsigned short val_nPoly,
         wIntegration(ii) = 0.25*wLineIntGL[i]*wLineIntGL[j]*wLineIntGJ[k];
 }
 
+void CFEMStandardPyra::LocationAllIntegrationPoints(vector<passivedouble> &rInt,
+                                                    vector<passivedouble> &sInt,
+                                                    vector<passivedouble> &tInt) {
+
+  /*--- Determine the number of 1D integration points for GL and GJ. ---*/
+  const unsigned short nGL = rLineIntGL.size();
+  const unsigned short nGJ = rLineIntGJ.size();
+
+  /*--- Determine the total number of integration points and determine the
+        parametric coordinates of all integration points. ---*/
+  const unsigned short nIntTot = nGL*nGL*nGJ;
+  rInt.resize(nIntTot);
+  sInt.resize(nIntTot);
+  tInt.resize(nIntTot);
+
+  unsigned short ii = 0;
+  for(unsigned short k=0; k<nGJ; ++k) {
+    const passivedouble zeta = rLineIntGJ[k];
+    for(unsigned short j=0; j<nGL; ++j) {
+      const passivedouble eta = rLineIntGL[j];
+      for(unsigned short i=0; i<nGL; ++i, ++ii) {
+        const passivedouble xi = rLineIntGL[i];
+
+        rInt[ii] = 0.5*(1.0-zeta)*xi;
+        sInt[ii] = 0.5*(1.0-zeta)*eta;
+        tInt[ii] = zeta;
+      }
+    }
+  }
+}
+
 void CFEMStandardPyra::LocationPyramidGridDOFsEquidistant() {
 
   /*--- As the number of grid DOFs near the bottom is bigger

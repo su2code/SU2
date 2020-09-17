@@ -220,6 +220,8 @@ protected:
                                  vector<passivedouble> &sTriangle,
                                  vector<passivedouble> &wTriangle);
 
+
+
   /*!
    * \brief Function, which determines the location of the 1D grid DOFs for polynomial
    *        degree nPoly when an equidistant spacing is used.
@@ -253,15 +255,46 @@ protected:
   void LocationTriangleGridDOFsLGL(vector<passivedouble> &r,
                                    vector<passivedouble> &s);
 
-private:
   /*!
-   * \brief Function, which computes the value of the unscaled Legendre polynomial for the given x-coordinate.
-   * \param[in] n     - Order of the Jacobi polynomial.
-   * \param[in] x     - Coordinate (-1 <= x <= 1) for which the Legendre polynomial must be evaluated
-   * \return            The value of the unscaled Legendre polynomial of order n for the given value of x
+   * \brief Function, which computes the values of the derivatives Lagrangian
+   *        basis functions of a line in the given integration points for the
+   *        given location of the DOFs.
+   * \param[in]  rDOFs  - Vector, which contains the parametric locations of the DOFs.
+   * \param[in]  rInt   - Vector, which contains the parametric locations of the
+   *                      integration points.
+   * \param[out] derLag - Matrix, which contains the values of derivatives of all the
+   *                      Lagrangian basis functions in all the integration points.
    */
-  passivedouble Legendre(unsigned short n,
-                         passivedouble  x);
+  void DerLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
+                                const vector<passivedouble>   &rInt,
+                                ColMajorMatrix<passivedouble> &derLag);
+
+  /*!
+   * \brief Function, which computes the values of the Lagrangian basis functions
+   *        of a line in the given integration points for the given location
+   *        of the DOFs.
+   * \param[in]  rDOFs - Vector, which contains the parametric locations of the DOFs.
+   * \param[in]  rInt  - Vector, which contains the parametric locations of the
+   *                     integration points.
+   * \param[out] lag   - Matrix, which contains the values of all the Lagrangian
+   *                     basis functions in all the integration points.
+   */
+  void LagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
+                             const vector<passivedouble>   &rInt,
+                             ColMajorMatrix<passivedouble> &lag);
+
+  /*!
+   * \brief Function, which computes the value of the gradient of the Jacobi polynomial for the given x-coordinate.
+   * \param[in] n     - Order of the Jacobi polynomial.
+   * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
+   * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
+   * \param[in] x     - Coordinate (-1 <= x <= 1) for which the gradient of the Jacobi polynomial must be evaluated.
+   * \return            The value of the gradient of the normalized Jacobi polynomial of order n for the given value of x.
+   */
+  passivedouble GradNormJacobi(unsigned short n,
+                               unsigned short alpha,
+                               unsigned short beta,
+                               passivedouble  x);
 
   /*!
    * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
@@ -275,6 +308,24 @@ private:
                            unsigned short alpha,
                            unsigned short beta,
                            passivedouble  x);
+private:
+  /*!
+   * \brief Function, which computes the value of the unscaled Legendre polynomial for the given x-coordinate.
+   * \param[in] n     - Order of the Jacobi polynomial.
+   * \param[in] x     - Coordinate (-1 <= x <= 1) for which the Legendre polynomial must be evaluated
+   * \return            The value of the unscaled Legendre polynomial of order n for the given value of x
+   */
+  passivedouble Legendre(unsigned short n,
+                         passivedouble  x);
+
+  /*!
+   * \brief Function, which computes the gradient of the Vandermonde matrix for a standard 1D edge.
+   * \param[in]  r  -  Parametric coordinates for which the gradient of the Vandermonde
+   *                   matrix must be computed.
+   * \param[out] VDr - Matrix to store the gradient of the Vandermonde matrix in all r-locations.
+   */
+  void GradVandermonde1D(const vector<passivedouble>   &r,
+                         ColMajorMatrix<passivedouble> &VDr);
 
   /*!
    * \brief Function, which computes the Vandermonde matrix for a standard 1D edge.

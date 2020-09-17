@@ -257,6 +257,70 @@ void CFEMStandardElementBase::LocationTriangleGridDOFsLGL(vector<passivedouble> 
   }
 }
 
+void CFEMStandardElementBase::DerLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
+                                                       const vector<passivedouble>   &rInt,
+                                                       ColMajorMatrix<passivedouble> &derLag) {
+
+  /*--- Determine the number of integration points along the line
+        and its padded value. ---*/
+  const unsigned short nIntLine    = rInt.size();
+  const unsigned short nIntPadLine = ((nIntLine+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
+  CGeneralSquareMatrixCM VInv(nPoly+1);
+  Vandermonde1D(rDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the gradient of the Vandermonde matrix of rInt. Make sure to
+        allocate the number of rows to nIntPadLine and initialize them to zero. ---*/ 
+  ColMajorMatrix<passivedouble> gradV(nIntPadLine,nPoly+1);
+  gradV.setConstant(0.0);
+  GradVandermonde1D(rInt, gradV);
+
+  /*--- The derivatives of the Lagrangian basis functions can be obtained
+        by multiplying gradV and VInv. ---*/
+  VInv.MatMatMult('R', gradV, derLag);
+
+  /*--- Check if the sum of the elements of the relevant rows of derLag is 0. ---*/
+  for(unsigned short i=0; i<nIntLine; ++i) {
+    passivedouble rowsum = 0.0;
+    for(unsigned short j=0; j<=nPoly; ++j) rowsum += derLag(i,j);
+    assert(fabs(rowsum) < 1.e-6);
+  }
+}
+
+void CFEMStandardElementBase::LagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
+                                                    const vector<passivedouble>   &rInt,
+                                                    ColMajorMatrix<passivedouble> &lag) {
+
+  /*--- Determine the number of integration points along the line
+        and its padded value. ---*/
+  const unsigned short nIntLine    = rInt.size();
+  const unsigned short nIntPadLine = ((nIntLine+vecLen-1)/vecLen)*vecLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
+  CGeneralSquareMatrixCM VInv(nPoly+1);
+  Vandermonde1D(rDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Vandermonde matrix of rInt. Make sure to allocate
+        the number of rows to nIntPadLine and initialize them to zero. ---*/ 
+  ColMajorMatrix<passivedouble> V(nIntPadLine,nPoly+1);
+  V.setConstant(0.0);
+  Vandermonde1D(rInt, V);
+
+  /*--- The Lagrangian basis functions can be obtained by multiplying
+        V and VInv. ---*/
+  VInv.MatMatMult('R', V, lag);
+
+  /*--- Check if the sum of the elements of the relevant rows of lag is 1. ---*/
+  for(unsigned short i=0; i<nIntLine; ++i) {
+    passivedouble rowsum = -1.0;
+    for(unsigned short j=0; j<=nPoly; ++j) rowsum += lag(i,j);
+    assert(fabs(rowsum) < 1.e-6);
+  }
+}
+
 passivedouble CFEMStandardElementBase::Legendre(unsigned short n,
                                                 passivedouble  x) {
 
@@ -280,6 +344,25 @@ passivedouble CFEMStandardElementBase::Legendre(unsigned short n,
 
   /*--- Return Pn. ---*/
   return Pn;
+}
+
+passivedouble CFEMStandardElementBase::GradNormJacobi(unsigned short n,
+                                                      unsigned short alpha,
+                                                      unsigned short beta,
+                                                      passivedouble  x) {
+
+  /*--- Make a distinction for n == 0 and n > 0. For n == 0 the derivative is
+        zero, because the polynomial itself is constant. ---*/
+  passivedouble grad;
+  if(n == 0) grad = 0.0;
+  else
+  {
+    passivedouble tmp = n*(n+alpha+beta+1.0);
+    grad              = sqrt(tmp)*NormJacobi(n-1, alpha+1, beta+1, x);
+  }
+
+  /*--- Return the gradient. ---*/
+  return grad;
 }
 
 passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
@@ -336,6 +419,15 @@ passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
 
   /*--- Return Pn. ---*/
   return Pn;
+}
+
+void CFEMStandardElementBase::GradVandermonde1D(const vector<passivedouble>   &r,
+                                                ColMajorMatrix<passivedouble> &VDr) {
+
+  /*--- Compute the gradient of the 1D Vandermonde matrix. ---*/
+  for(unsigned short j=0; j<=nPoly; ++j)
+    for(unsigned short i=0; i<r.size(); ++i)
+      VDr(i,j) = GradNormJacobi(j, 0, 0, r[i]);
 }
 
 void CFEMStandardElementBase::Vandermonde1D(const vector<passivedouble>   &r,

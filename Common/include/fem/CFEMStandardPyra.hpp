@@ -88,6 +88,17 @@ protected:
                                                      Gauss-Jacobi integration points. */
   vector<passivedouble> wLineIntGJ;      /*!< \brief Weights of the 1D Gauss-Jacobi
                                                      integration points. */
+
+  /*!
+   * \brief Function, which computes the parametric coordinates of all
+   *        the integration points.
+   * \param[out] rInt - Parametric r-coordinates of the integration points.
+   * \param[out] sInt - Parametric s-coordinates of the integration points.
+   * \param[out] tInt - Parametric t-coordinates of the integration points.
+   */
+  void LocationAllIntegrationPoints(vector<passivedouble> &rInt,
+                                    vector<passivedouble> &sInt,
+                                    vector<passivedouble> &tInt);
 private:
 
   /*!

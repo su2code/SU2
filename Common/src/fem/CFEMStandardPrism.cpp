@@ -90,3 +90,23 @@ CFEMStandardPrism::CFEMStandardPrism(const unsigned short val_nPoly,
     for(unsigned short i=0; i<nIntTriangle; ++i, ++ii)
         wIntegration(ii) = wTriangleInt[i]*wLineInt[j];
 }
+
+void CFEMStandardPrism::LocationAllIntegrationPoints(vector<passivedouble> &rInt,
+                                                     vector<passivedouble> &sInt,
+                                                     vector<passivedouble> &tInt) {
+
+  /*--- Allocate the memory for rInt, sInt and tInt. ---*/
+  rInt.resize(nIntegration);
+  sInt.resize(nIntegration);
+  tInt.resize(nIntegration);
+
+  /*--- Determine the location of all the integration points. ---*/
+  unsigned short ii = 0;
+  for(unsigned short k=0; k<rLineInt.size(); ++k) {
+    for(unsigned short j=0; j<rTriangleInt.size(); ++j, ++ii) {
+      rInt[ii] = rTriangleInt[j];
+      sInt[ii] = sTriangleInt[j];
+      tInt[ii] = rLineInt[k];
+    }
+  }
+}
