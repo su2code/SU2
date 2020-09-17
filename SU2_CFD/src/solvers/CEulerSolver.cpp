@@ -3128,8 +3128,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_j = -T_ij;
 
         for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim][0];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim][0];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[0][iDim];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[0][iDim];
         }
 
         /*--- Blend upwind and centered differences ---*/
