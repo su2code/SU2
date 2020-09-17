@@ -3489,19 +3489,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters in single vector in proper order ---*/
 
-  su2double OneVec[MAXNVAR]  = {1.0};
-  su2double *limiter_i = limiter ? nodes->GetLimiter_Primitive(iPoint) : OneVec, 
-            *limiter_j = limiter ? nodes->GetLimiter_Primitive(jPoint) : OneVec;
-
   su2double lim_i[MAXNVAR+1] = {0.0}, lim_j[MAXNVAR+1] = {0.0};
-  lim_i[0] = limiter_i[nDim+2];
-  lim_j[0] = limiter_j[nDim+2];
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    lim_i[iDim+1] = limiter_i[iDim+1];
-    lim_j[iDim+1] = limiter_j[iDim+1];
+  for (auto iDim = 0; iDim < nDim+2; iDim++) {
+    lim_i[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint)[iDim+1] : 1.0;
+    lim_j[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint)[iDim+1] : 1.0;
   }
-  lim_i[nDim+1] = limiter_i[nDim+1];
-  lim_j[nDim+1] = limiter_j[nDim+1];
   if (tkeNeeded) {
     lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
     lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
