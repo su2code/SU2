@@ -503,7 +503,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const auto kPoint = node_i->GetPoint(iNeigh);
     const su2double dVdU_k = 1.0/flowNodes->GetDensity(kPoint);
 
