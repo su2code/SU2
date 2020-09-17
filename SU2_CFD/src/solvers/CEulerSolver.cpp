@@ -3117,8 +3117,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
         }
 
-        const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[0];
-        const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[0];
+        const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint,0);
+        const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint,0);
 
         const su2double Kappa = config->GetMUSCL_Kappa();
           
@@ -3487,16 +3487,16 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     sq_vel_r += pow(vel_r[iDim], 2.0);
   }
 
-  /*--- Store limiters in single vector in proper order ---*/
+  /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
 
   su2double lim_i[MAXNVAR+1] = {0.0}, lim_j[MAXNVAR+1] = {0.0};
-  for (auto iDim = 0; iDim < nDim+2; iDim++) {
-    lim_i[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint)[iDim+1] : 1.0;
-    lim_j[(iDim+1)%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint)[iDim+1] : 1.0;
+  for (auto iVar = 1; iVar < nDim+3; iDim++) {
+    lim_i[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint,iVar) : 1.0;
+    lim_j[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint,iVar) : 1.0;
   }
   if (tkeNeeded) {
-    lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint)[0] : 1.0;
-    lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint)[0] : 1.0;
+    lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint,0) : 1.0;
+    lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint,0) : 1.0;
   }
 
   /*--- Store reconstruction weights ---*/
