@@ -3117,8 +3117,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
         }
 
-        const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint,0);
-        const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint,0);
+        const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint);
+        const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint);
 
         const su2double Kappa = config->GetMUSCL_Kappa();
           
@@ -3128,8 +3128,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         su2double Project_Grad_j = -T_ij;
 
         for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim][0];
+          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim][0];
         }
 
         /*--- Blend upwind and centered differences ---*/
