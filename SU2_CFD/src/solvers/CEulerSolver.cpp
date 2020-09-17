@@ -3495,8 +3495,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     lim_j[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint,iVar) : 1.0;
   }
   if (tkeNeeded) {
-    lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint,0);
-    lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint,0);
+    lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint,0) : 1.0;
+    lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint,0) : 1.0;
   }
 
   /*--- Store reconstruction weights ---*/
