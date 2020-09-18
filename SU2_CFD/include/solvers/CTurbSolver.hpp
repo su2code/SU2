@@ -121,8 +121,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] rho_l - Density extrapolated from node i to face.
    * \param[in] rho_r - Density extrapolated from node j to face.
-   * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
-   * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
+   * \param[in] dFl_dUl - Flux Jacobian wrt left extrapolated state.
+   * \param[in] dFr_dUr - Flux Jacobian wrt right extrapolated state.
    * \param[in] good_i - Whether the extrapolation from node i is good.
    * \param[in] good_j - Whether the extrapolation from node j is good.
    */
@@ -131,8 +131,8 @@ private:
                                 const CConfig       *config,
                                 const su2double     *rho_l, 
                                 const su2double     *rho_r,
-                                const su2double     *const *const dFdU_l,
-                                const su2double     *const *const dFdU_r,
+                                const su2double     *const *const dFl_dUl,
+                                const su2double     *const *const dFr_dUr,
                                 const bool          good_i,
                                 const bool          good_j,
                                 const unsigned long iPoint, 

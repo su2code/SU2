@@ -330,8 +330,8 @@ protected:
    * \param[in] primvar_r - Primitive vector extrapolated from node j to face.
    * \param[in] tke_l - Turbulent kinetic energy extrapolated from node i to face.
    * \param[in] tke_r - Turbulent kinetic energy extrapolated from node j to face.
-   * \param[in] dFdU_l - Flux Jacobian wrt left extrapolated state.
-   * \param[in] dFdU_r - Flux Jacobian wrt right extrapolated state.
+   * \param[in] dFl_dUl - Flux Jacobian wrt left extrapolated state.
+   * \param[in] dFr_dUr - Flux Jacobian wrt right extrapolated state.
    * \param[in] good_i - Whether the extrapolation from node i is good.
    * \param[in] good_j - Whether the extrapolation from node j is good.
    */
@@ -342,8 +342,8 @@ protected:
                                 const su2double     *primvar_r,
                                 const su2double     *tke_l, 
                                 const su2double     *tke_r,
-                                const su2double     *const *const dFdU_l,
-                                const su2double     *const *const dFdU_r,
+                                const su2double     *const *const dFl_dUl,
+                                const su2double     *const *const dFr_dUr,
                                 const bool          good_i,
                                 const bool          good_j,
                                 const unsigned long iPoint, 

@@ -3431,8 +3431,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
                                             const su2double     *primvar_r,
                                             const su2double     *tke_l, 
                                             const su2double     *tke_r,
-                                            const su2double     *const *const dFdU_l,
-                                            const su2double     *const *const dFdU_r,
+                                            const su2double     *const *const dFl_dUl,
+                                            const su2double     *const *const dFr_dUr,
                                             const bool          good_i,
                                             const bool          good_j,
                                             const unsigned long iPoint, 
@@ -3460,12 +3460,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   constexpr size_t MAXNVAR = 5;
 
-  su2double dFdV_l[MAXNVAR][MAXNVAR+1] = {0.0},
-            dFdV_r[MAXNVAR][MAXNVAR+1] = {0.0},
-            dUdV_l[MAXNVAR][MAXNVAR+1] = {0.0},
-            dUdV_r[MAXNVAR][MAXNVAR+1] = {0.0},
-            dVdU_i[MAXNVAR+1][MAXNVAR] = {0.0},
-            dVdU_k[MAXNVAR+1][MAXNVAR] = {0.0};
+  su2double dFl_dVl[MAXNVAR][MAXNVAR+1] = {0.0},
+            dFr_dVr[MAXNVAR][MAXNVAR+1] = {0.0},
+            dUl_dVl[MAXNVAR][MAXNVAR+1] = {0.0},
+            dUr_dVr[MAXNVAR][MAXNVAR+1] = {0.0},
+            dVi_dUi[MAXNVAR+1][MAXNVAR] = {0.0},
+            dVk_dUk[MAXNVAR+1][MAXNVAR] = {0.0};
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -3501,34 +3501,34 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store reconstruction weights ---*/
 
-  su2double reconWeight_l[MAXNVAR+1] = {0.0}, reconWeight_r[MAXNVAR+1] = {0.0};
+  su2double dVl_dVi[MAXNVAR+1] = {0.0}, dVr_dVi[MAXNVAR+1] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    reconWeight_l[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
-    reconWeight_r[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
+    dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
+    dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
 
-  dUdV_l[0][0] = dUdV_r[0][0] = 1.0;
+  dUl_dVl[0][0] = dUr_dVr[0][0] = 1.0;
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    dUdV_l[iDim+1][0] = vel_l[iDim];
-    dUdV_r[iDim+1][0] = vel_r[iDim];
+    dUl_dVl[iDim+1][0] = vel_l[iDim];
+    dUr_dVr[iDim+1][0] = vel_r[iDim];
 
-    dUdV_l[iDim+1][iDim+1] = rho_l;
-    dUdV_r[iDim+1][iDim+1] = rho_r;
+    dUl_dVl[iDim+1][iDim+1] = rho_l;
+    dUr_dVr[iDim+1][iDim+1] = rho_r;
 
-    dUdV_l[nDim+1][iDim+1] = rho_l*vel_l[iDim];
-    dUdV_r[nDim+1][iDim+1] = rho_r*vel_r[iDim];
+    dUl_dVl[nDim+1][iDim+1] = rho_l*vel_l[iDim];
+    dUr_dVr[nDim+1][iDim+1] = rho_r*vel_r[iDim];
   }
-  dUdV_l[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
-  dUdV_r[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
+  dUl_dVl[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
+  dUr_dVr[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
 
-  dUdV_l[nDim+1][nDim+1] = dUdV_r[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
+  dUl_dVl[nDim+1][nDim+1] = dUr_dVr[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
 
   if (tkeNeeded) {
-    dUdV_l[nDim+1][nDim+2] = rho_l;
-    dUdV_r[nDim+1][nDim+2] = rho_r;
+    dUl_dVl[nDim+1][nDim+2] = rho_l;
+    dUr_dVr[nDim+1][nDim+2] = rho_r;
   }
 
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
@@ -3536,8 +3536,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
       for (auto kVar = 0; kVar < nVar; kVar++) {
-        dFdV_l[iVar][jVar] += dFdU_l[iVar][kVar]*dUdV_l[kVar][jVar];
-        dFdV_r[iVar][jVar] += dFdU_r[iVar][kVar]*dUdV_r[kVar][jVar];
+        dFl_dVl[iVar][jVar] += dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
+        dFr_dVr[iVar][jVar] += dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
       }
     }
   }
@@ -3554,23 +3554,23 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     sq_vel_i += pow(vel_i[iDim],2);
   }
 
-  dVdU_i[0][0] = 1.0;
+  dVi_dUi[0][0] = 1.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    dVdU_i[iDim+1][0]      = -vel_i[iDim]*inv_rho_i;
-    dVdU_i[iDim+1][iDim+1] = inv_rho_i;
-    dVdU_i[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
+    dVi_dUi[iDim+1][0]      = -vel_i[iDim]*inv_rho_i;
+    dVi_dUi[iDim+1][iDim+1] = inv_rho_i;
+    dVi_dUi[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
   }
-  dVdU_i[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
-  dVdU_i[nDim+1][nDim+1] = Gamma_Minus_One;
+  dVi_dUi[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
+  dVi_dUi[nDim+1][nDim+1] = Gamma_Minus_One;
   if (tkeNeeded)
-    dVdU_i[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
+    dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-        Jacobian_i[iVar][jVar] += (dFdV_l[iVar][kVar]*reconWeight_l[kVar]
-                                 + dFdV_r[iVar][kVar]*reconWeight_r[kVar])*dVdU_i[kVar][jVar];
+        Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
+                                 + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
       }
     }
   }
@@ -3602,16 +3602,16 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       sq_vel_k += pow(vel_k[iDim],2);
     }
 
-    dVdU_k[0][0] = 1.0;
+    dVk_dUk[0][0] = 1.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      dVdU_k[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
-      dVdU_k[iDim+1][iDim+1] = inv_rho_k;
-      dVdU_k[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
+      dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
+      dVk_dUk[iDim+1][iDim+1] = inv_rho_k;
+      dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
     }
-    dVdU_k[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
-    dVdU_k[nDim+1][nDim+1] = Gamma_Minus_One;
+    dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
+    dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
     if (tkeNeeded)
-      dVdU_k[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
+      dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
 
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
@@ -3621,15 +3621,15 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      reconWeight_l[iVar] = factor*lim_i[iVar];
+      dVl_dVi[iVar] = factor*lim_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = 0.0;
         Jacobian_j[iVar][jVar] = 0.0;
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
-          Jacobian_i[iVar][jVar] += dFdV_l[iVar][kVar]*reconWeight_l[kVar]*dVdU_i[kVar][jVar]*sign_grad_i;
-          Jacobian_j[iVar][jVar] += dFdV_l[iVar][kVar]*reconWeight_l[kVar]*dVdU_k[kVar][jVar];
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
+          Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
         }
       }
     }
