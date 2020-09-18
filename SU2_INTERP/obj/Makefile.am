@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_SOL
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.6 "Blackbird"
+# \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -40,23 +40,23 @@
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-bin_PROGRAMS = ../bin/SU2_SOL
+bin_PROGRAMS = ../bin/SU2_INTERP
 
-___bin_SU2_SOL_SOURCES = \
-  ../include/SU2_SOL.hpp \
-  ../src/SU2_SOL.cpp
+___bin_SU2_INTERP_SOURCES = \
+  ../include/SU2_INTERP.hpp \
+  ../src/SU2_INTERP.cpp
 
-___bin_SU2_SOL_CXXFLAGS =
-___bin_SU2_SOL_LDADD = \
-  ../../SU2_CFD/obj/libSU2Core_a \
+___bin_SU2_INTERP_CXXFLAGS =
+___bin_SU2_INTERP_LDADD = \
+  ../../SU2_CFD/src/libSU2Core_a \
   ../../Common/lib/libSU2.a
 
 # always link to built dependencies from ./externals
-___bin_SU2_SOL_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_SOL_LDADD += @su2_externals_LIBS@
-___bin_SU2_SOL_LDADD += @su2_externals_LIBPTHREAD@
+___bin_SU2_INTERP_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_INTERP_LDADD += @su2_externals_LIBS@
+___bin_SU2_INTERP_LDADD += @su2_externals_LIBPTHREAD@
 
 # if BUILD_MUTATIONPP
-___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
+___bin_SU2_INTERP_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_INTERP_LDADD += @MUTATIONPP_LD@
 # endif
