@@ -458,7 +458,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double sign_grad_i = 1.0 - 2.0*(kindRecon != GREEN_GAUSS);
+  const su2double sign_grad_i = -1.0 + 2.0*(kindRecon == GREEN_GAUSS);
   const su2double dUdV_l = *rho_l;
   const su2double dUdV_r = *rho_r;
   const su2double dVdU_i = 1.0/flowNodes->GetDensity(iPoint);
@@ -551,7 +551,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
   CVariable *nodesFlo = solver[FLOW_SOL]->GetNodes();
 
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double sign_grad_i = 1.0 - 2.0*(!gg);
+  const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
