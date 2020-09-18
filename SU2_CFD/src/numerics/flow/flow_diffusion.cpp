@@ -38,7 +38,7 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
       correct_gradient(val_correct_grad) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   TauWall_i = -1.0; TauWall_j = -1.0;
 
@@ -127,7 +127,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     }
   }
 
-  if (sst) {
+  if (tkeNeeded) {
     su2double GradTurbVar_Edge = 0.0, 
               Delta = turb_ke_j - turb_ke_i;
     for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -529,7 +529,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(Volume_i);
-  if (sst) {
+  if (tkeNeeded) {
     AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
     AD::SetPreaccIn(TurbVar_Grad_j[0], nDim);
     AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
@@ -597,7 +597,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
-  if (sst) {
+  if (tkeNeeded) {
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Mean_GradTurbVar[iDim] = 0.5*(TurbVar_Grad_i[0][iDim] + TurbVar_Grad_j[0][iDim]);
     }
@@ -629,7 +629,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (sst) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity);
+  if (tkeNeeded) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
@@ -718,7 +718,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- Include TKE diffusion term ---*/
 
-  if (sst) {
+  if (tkeNeeded) {
     const su2double tke_turb_visc = 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j);
     const su2double tke_visc = (val_laminar_viscosity + tke_turb_visc);
     heat_flux_jac_i[0] += tke_visc*turb_ke_i/rho_i*proj_vector_ij/dist_ij_2;
@@ -800,7 +800,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
                                              const su2double *val_normal,
                                              const CConfig   *config) {
   
-  if (sst) {
+  if (tkeNeeded) {
     const su2double WF_Factor = (Mean_TauWall > 0) ? Mean_TauWall/WallShearStress : su2double(1.0);
     const su2double a1 = 0.31;
     const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;

@@ -580,13 +580,13 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
                                  const unsigned long jPoint,
                                  const su2double     *Vec) {
 
-  const bool gg  = config->GetKind_Gradient_Method() == GREEN_GAUSS;
-  const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool gg = config->GetKind_Gradient_Method() == GREEN_GAUSS;
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   const auto node_i = geometry->node[iPoint];
 
   CVariable* turbNodes = nullptr;
-  if (sst) turbNodes = solver[TURB_SOL]->GetNodes();
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
   const su2double sign = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = 1.0 - 2.0*(!gg);
@@ -606,7 +606,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
 
   /*--- Additional factor if TKE flux is needed ---*/
   su2double tke_i = 0., tke_visc = 0.;
-  if (sst) {
+  if (tkeNeeded) {
     const su2double F1_i = turbNodes->GetF1blending(iPoint);
     const su2double F1_j = turbNodes->GetF1blending(jPoint);
     const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
@@ -661,7 +661,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
           Jacobian_i[nVar-1][nVar-1] += factor*Phi_i;
 
           /*--- Tke term ---*/
-          if (sst) {
+          if (tkeNeeded) {
             factor *= tke_visc/ConductivityOnR;
             Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i;
           }
@@ -712,7 +712,7 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     Jacobian_j[nVar-1][nVar-1] = factor*Phi_k;
 
     /*--- Tke term ---*/
-    if (sst) {
+    if (tkeNeeded) {
       const su2double tke_k = turbNodes->GetPrimitive(kPoint,0);
       factor *= tke_visc/ConductivityOnR;
       Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i*sign_grad_i;
