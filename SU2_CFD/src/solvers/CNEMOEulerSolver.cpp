@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
@@ -453,7 +453,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
   const bool viscous       = config->GetViscous();
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetGrid_Movement();
   bool time_steping = config->GetTime_Marching() == TIME_STEPPING;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -485,7 +485,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
     Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
 
     /*--- Adjustment for grid movement ---*/
-    if (grid_movement) {
+    if (dynamic_grid) {
       su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
       su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
       ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -543,7 +543,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
         Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
 
         /*--- Adjustment for grid movement ---*/
-        if (grid_movement) {
+        if (dynamic_grid) {
           su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
           ProjVel = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
@@ -1310,7 +1310,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   bool unsteady           = (config->GetTime_Marching() != NO);
   bool viscous            = config->GetViscous();
-  bool grid_movement      = config->GetGrid_Movement();
+  bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = false;
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
@@ -1331,10 +1331,13 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Temperature_FreeStream     = config->GetTemperature_FreeStream();
   Temperature_ve_FreeStream  = config->GetTemperature_ve_FreeStream();
 
+  /*---                                     ---*/
   /*--- Compressible non dimensionalization ---*/
+  /*---                                     ---*/
 
   /*--- Set mixture state based on pressure, mass fractions and temperatures ---*/
-  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf, Temperature_FreeStream, Temperature_ve_FreeStream);
+  FluidModel->SetTDStatePTTv(Pressure_FreeStream, MassFrac_Inf,
+                             Temperature_FreeStream, Temperature_ve_FreeStream);
 
   /*--- Compute Gas Constant ---*/
   GasConstant_Inf = FluidModel->GetGasConstant();
@@ -1383,7 +1386,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       /*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
 
-      if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
+      if (dynamic_grid) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
       else Velocity_Reynolds = ModVel_FreeStream;
 
       /*--- For viscous flows, pressure will be computed from a density
@@ -1401,8 +1404,9 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       config->SetPressure_FreeStream(Pressure_FreeStream);
     }
 
-    /*--- Thermodynamics quantities based initialization ---*/
     else {
+
+      /*--- Thermodynamics quantities based initialization ---*/
       Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
       Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
       Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
@@ -1450,7 +1454,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     Pressure_Ref       = Mach*Mach*Gamma*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
     Density_Ref        = Density_FreeStream;                  // Density_FreeStream = 1.0
     Temperature_Ref    = Temperature_FreeStream;              // Temp_FreeStream = 1.0
-    Temperature_ve_Ref = Temperature_ve_FreeStream;        // Temp_ve_FreeStream = 1.0
+    Temperature_ve_Ref = Temperature_ve_FreeStream;           // Temp_ve_FreeStream = 1.0
   }
   config->SetPressure_Ref(Pressure_Ref);
   config->SetDensity_Ref(Density_Ref);
@@ -1508,7 +1512,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
 
     /*--- Sutherland's model ---*/
-
     config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
     config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
@@ -1540,188 +1543,162 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       cout << "and pressure using the the equation of state for multi-species and multi-temperatures." << endl;
     }
 
-    if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
+    if (dynamic_grid) cout << "Force coefficients computed using MACH_MOTION." << endl;
     else cout << "Force coefficients computed using free-stream values." << endl;
 
-    cout <<"-- Input conditions:"<< endl;
+    stringstream NonDimTableOut, ModelTableOut;
+    stringstream Unit;
 
-    switch (config->GetKind_FluidModel()) {
+    cout << endl;
+    PrintingToolbox::CTablePrinter ModelTable(&ModelTableOut);
+    ModelTableOut <<"-- Models:"<< endl;
 
-    case USER_DEFINED_NONEQ:
-      cout << "Fluid Model: USER_DEFINED_NONEQ "<< endl;
-      break;
-    case MUTATIONPP:
-      cout << "Fluid Model: MUTATIONPP "<< endl;
-      break;
-    }  
+    ModelTable.AddColumn("Transport Model", 38);
+    ModelTable.AddColumn("Fluid Model", 38);
+    ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    ModelTable.PrintHeader();
 
-    cout << "Mixture: " << config->GetGasModel() << endl;
-    cout << "Specific gas constant: " << config->GetGas_Constant();
-    if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-    cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-  
+    PrintingToolbox::CTablePrinter NonDimTable(&NonDimTableOut);
+    NonDimTable.AddColumn("Name", 22);
+    NonDimTable.AddColumn("Dim. value", 14);
+    NonDimTable.AddColumn("Ref. value", 14);
+    NonDimTable.AddColumn("Unit", 10);
+    NonDimTable.AddColumn("Non-dim. value", 14);
+    NonDimTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+
+    NonDimTableOut <<"-- Fluid properties:"<< endl;
+
+    NonDimTable.PrintHeader();
+
     if (viscous) {
-      switch (config->GetKind_TransCoeffModel()) {
 
+      switch(config->GetKind_TransCoeffModel()){
       case WILKE:
-        cout << "Transport model: WILKE "<< endl;
-        cout << "Laminar Viscosity freestream: " << config->GetMu_Constant();
-        if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-        cout << "Laminar Viscosity freestream (non-dim): " << config->GetMu_ConstantND() << endl;
+      ModelTable << "Wilke-Blottner-Eucken ";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2.";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2.";
+        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
         break;
 
       case GUPTAYOS:
-        cout << "Transport model: GUPTAYOS "<< endl;
-        cout << "Laminar Viscosity freestream: " << config->GetMu_Constant();
-        if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-        cout << "Laminar Viscosity freestream (non-dim): " << config->GetMu_ConstantND()<< endl;
-        break;  
+        ModelTable << "Gupta-Yos";
+        if      (config->GetSystemMeasurements() == SI) Unit << " N.s/m^2." ;
+        else if (config->GetSystemMeasurements() == US) Unit << " lbf.s/ft^2.";
+        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      default:
+        break;
+      }
+    } else {
+      ModelTable << "-" ;
+    }
+
+    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
+    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
+    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
+    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
+    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    Unit.str("");
+    switch(config->GetKind_FluidModel()){
+    case USER_DEFINED_NONEQ:
+      ModelTable << "Park Two-Temperature";
+      break;
+    case MUTATIONPP:
+      ModelTable << "Mutation++ Library";
+      break;
+    }
+
+    NonDimTable.PrintFooter();
+    NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
+    NonDimTable.PrintHeader();
+
+    NonDimTable << "Mixture" << config->GetGasModel() << "-"<< "-"<< config->GetGasModel();
+    Unit.str("");
+
+    if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
+    else if (config->GetSystemMeasurements() == US) Unit << "psf";
+    NonDimTable << "Static Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "kg/m^3";
+    else if (config->GetSystemMeasurements() == US) Unit << "slug/ft^3";
+    NonDimTable << "Density" << config->GetDensity_FreeStream() << config->GetDensity_Ref() << Unit.str() << config->GetDensity_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "K";
+    else if (config->GetSystemMeasurements() == US) Unit << "R";
+    NonDimTable << " T-R Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "K";
+    else if (config->GetSystemMeasurements() == US) Unit << "R";
+    NonDimTable << " V-E Temperature" << config->GetTemperature_ve_FreeStream() << config->GetTemperature_ve_Ref() << Unit.str() << config->GetTemperature_ve_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
+    else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
+    NonDimTable << "Total Energy" << config->GetEnergy_FreeStream() << config->GetEnergy_Ref() << Unit.str() << config->GetEnergy_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "m/s";
+    else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
+    NonDimTable << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
+    NonDimTable << "Velocity-Y" << config->GetVelocity_FreeStream()[1] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[1];
+    if (nDim == 3){
+      NonDimTable << "Velocity-Z" << config->GetVelocity_FreeStream()[2] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[2];
+    }
+    NonDimTable << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
+    Unit.str("");
+
+    if (viscous){
+      NonDimTable.PrintFooter();
+      if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+      else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+      NonDimTable << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
+      Unit.str("");
+      if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
+      else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
+      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      Unit.str("");
+      if (turbulent){
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
+        NonDimTable << "Turb. Kin. Energy" << config->GetTke_FreeStream() << config->GetTke_FreeStream()/config->GetTke_FreeStreamND() << Unit.str() << config->GetTke_FreeStreamND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "1/s";
+        NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
       }
     }
 
-    cout << "Free-stream static pressure: " << config->GetPressure_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
-    cout << "Free-stream total pressure: " << config->GetPressure_FreeStream() * pow( 1.0+Mach*Mach*0.5*(Gamma-1.0), Gamma/(Gamma-1.0) );
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
-    cout << "Free-stream translational temperature: " << config->GetTemperature_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-
-    cout << "Free-stream vibrational temperature: " << config->GetTemperature_ve_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-
-
-    cout << "Free-stream density: " << config->GetDensity_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-
-    if (nDim == 2) {
-      cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      cout << config->GetVelocity_FreeStream()[1] << ")";
-    }
-    if (nDim == 3) {
-      cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      cout << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
-    }
-    if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
-
-    cout << "Magnitude: "   << config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s (" << config->GetModVel_FreeStream()*1.94384 << " KTS)." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s (" << config->GetModVel_FreeStream()*0.592484 << " KTS)." << endl;
-
-    cout << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-
-    if (viscous) {
-      cout << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
-      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-      if (turbulent) {
-        cout << "Free-stream turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
-        if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-        cout << "Free-stream specific dissipation: " << config->GetOmega_FreeStream();
-        if (config->GetSystemMeasurements() == SI) cout << " 1/s." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
-      }
-    }
-
-    if (unsteady) { cout << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << endl; }
-
-    /*--- Print out reference values. ---*/
-
-    cout <<"-- Reference values:"<< endl;
-
-    cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-
-    cout << "Reference pressure: " << config->GetPressure_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
-    cout << "Reference temperature: " << config->GetTemperature_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-
-    cout << "Reference density: " << config->GetDensity_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-
-    cout << "Reference velocity: " << config->GetVelocity_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
-    cout << "Reference energy per unit mass: " << config->GetEnergy_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-
-    if (viscous) {
-      cout << "Reference viscosity: " << config->GetViscosity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-      cout << "Reference conductivity: " << config->GetConductivity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " W/m^2.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf/ft.s.R." << endl;
-    }
-
-    if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
-
-    /*--- Print out resulting non-dim values here. ---*/
-
-    cout << "-- Resulting non-dimensional state:" << endl;
-    cout << "Mach number (non-dim): " << config->GetMach() << endl;
-    if (viscous) {
-      cout << "Reynolds number (non-dim): " << config->GetReynolds() <<". Re length: " << config->GetLength_Reynolds();
-      if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " ft." << endl;
+    NonDimTable.PrintFooter();
+    NonDimTable << "Mach Number" << "-" << "-" << "-" << config->GetMach();
+    if (viscous){
+      NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();
     }
     if (gravity) {
-      cout << "Froude number (non-dim): " << Froude << endl;
-      cout << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+      NonDimTable << "Froude Number" << "-" << "-" << "-" << Froude;
+      NonDimTable << "Wave Length"   << "-" << "-" << "-" << 2.0*PI_NUMBER*Froude*Froude;
+    }
+    NonDimTable.PrintFooter();
+    ModelTable.PrintFooter();
+
+    if (unsteady){
+      NonDimTableOut << "-- Unsteady conditions" << endl;
+      NonDimTable.PrintHeader();
+      NonDimTable << "Total Time" << config->GetMax_Time() << config->GetTime_Ref() << "s" << config->GetMax_Time()/config->GetTime_Ref();
+      Unit.str("");
+      NonDimTable << "Time Step" << config->GetTime_Step() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
     }
 
-    cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
-    cout << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << endl;
+    cout << ModelTableOut.str();
+    cout << NonDimTableOut.str();
 
-    cout << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << endl;
-
-    cout << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << endl;
-
-    if (nDim == 2) {
-      cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      cout << config->GetVelocity_FreeStreamND()[1] << "). ";
-    } else {
-      cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
-    }
-    cout << "Magnitude: "    << config->GetModVel_FreeStreamND() << endl;
-
-    cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
-
-    if (viscous) {
-      cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
-      if (turbulent) {
-        cout << "Free-stream turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << endl;
-        cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
-      }
-    }
-
-    if (unsteady) {
-      cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
-      cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
-    }
-    cout << endl;
  }
 }
 
@@ -2023,7 +2000,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       alpha, aa, bb, cc, dd, Area, UnitaryNormal[3];
   const su2double *Flow_Dir;    
 
-  bool grid_movement        = config->GetGrid_Movement();
+  bool dynamic_grid         = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
@@ -2232,7 +2209,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetConservative(U_domain, U_inlet);
 
-      if (grid_movement)
+      if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
@@ -2287,7 +2264,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   rhos.resize(nSpecies,0.0);
 
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
-  bool grid_movement      = config->GetGrid_Movement();
+  bool dynamic_grid       = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
 
   su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
@@ -2444,7 +2421,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       conv_numerics->SetConservative(U_domain, U_outlet);
       conv_numerics->SetPrimitive(V_domain,V_outlet);
 
-      if (grid_movement)
+      if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Passing supplementary information to CNumerics ---*/
@@ -2534,7 +2511,7 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 //  su2double Gas_Constant = config->GetGas_ConstantND();
 //
 //  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-//  bool grid_movement  = config->GetGrid_Movement();
+//  bool dynamic_grid  = config->GetGrid_Movement();
 //  bool viscous              = config->GetViscous();
 //  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 //
@@ -2684,7 +2661,7 @@ SU2_MPI::Error("BC_SUPERSONIC_INLET: Not operational in NEMO.", CURRENT_FUNCTION
 //      conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
 //      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
 //
-//      if (grid_movement)
+//      if (dynamic_grid)
 //        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
 //                                  geometry->nodes->GetGridVel(iPoint));
 //
@@ -2738,7 +2715,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   su2double *V_outlet, *V_domain;
   su2double *U_outlet, *U_domain;
 
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
@@ -2778,7 +2755,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
       conv_numerics->SetEve( nodes->GetEve(iPoint),       nodes->GetEve(iPoint));
       conv_numerics->SetCvve( nodes->GetCvve(iPoint),       nodes->GetCvve(iPoint));
 
-      if (grid_movement)
+      if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                   geometry->nodes->GetGridVel(iPoint));
 
@@ -2816,7 +2793,7 @@ void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
   su2double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool Grid_Movement = config->GetGrid_Movement();
+  bool dynamic_grid = config->GetGrid_Movement();
 
   /*--- loop over points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2827,7 +2804,7 @@ void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
     U_time_nP1 = nodes->GetSolution(iPoint);
 
     /*--- Volume at time n-1 and n ---*/
-    if (Grid_Movement) {
+    if (dynamic_grid) {
       Volume_nM1 = geometry->nodes->GetVolume_nM1(iPoint);
       Volume_n = geometry->nodes->GetVolume_n(iPoint);
       Volume_nP1 = geometry->nodes->GetVolume(iPoint);
@@ -2875,7 +2852,7 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
-  bool grid_movement  = config->GetGrid_Movement();
+  bool dynamic_grid  = config->GetGrid_Movement();
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
   bool static_fsi = ((config->GetTime_Marching() == STEADY) &&
@@ -2934,7 +2911,7 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      if (grid_movement && val_update_geo) {
+      if (dynamic_grid && val_update_geo) {
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
@@ -3014,7 +2991,7 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
   }
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
-  if (grid_movement && val_update_geo) {
+  if (dynamic_grid && val_update_geo) {
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
@@ -3070,7 +3047,7 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
 
 
   /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time && grid_movement)
+  if (dual_time && dynamic_grid)
     Restart_OldGeometry(geometry[MESH_0], config);
 
   delete [] Coord;
