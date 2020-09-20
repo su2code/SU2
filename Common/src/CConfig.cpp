@@ -2603,6 +2603,24 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Free surface damping coefficient */
   addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
 
+  /* DESCRIPTION: Procedure to prevent self-intersections within the FFD box based on Jacobian determinant */
+  addBoolOption("FFD_INTPREV", FFD_IntPrev, NO);
+
+  /* DESCRIPTION: Number of total iterations in the convexity check procedure */
+  addUnsignedShortOption("FFD_INTPREV_ITER", FFD_IntPrev_Iter, 10);
+
+  /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
+  addUnsignedShortOption("FFD_INTPREV_DEPTH", FFD_IntPrev_Depth, 3);
+
+  /* DESCRIPTION: Convexity check on all mesh elements */
+  addBoolOption("CONVEXITY_CHECK", ConvexityCheck, NO);
+
+  /* DESCRIPTION: Number of total iterations in the convexity check procedure */
+  addUnsignedShortOption("CONVEXITY_CHECK_ITER", ConvexityCheck_Iter, 10);
+
+  /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
+  addUnsignedShortOption("CONVEXITY_CHECK_DEPTH", ConvexityCheck_Depth, 3);
+
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
 

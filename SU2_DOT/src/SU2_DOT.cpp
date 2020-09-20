@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
 
   unsigned short iZone, iInst;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  su2double **TotalDeformation;
+  unsigned short iDV, iDV_Value;
 
   char config_file_name[MAX_STRING_SIZE];
 
@@ -131,6 +133,17 @@ int main(int argc, char *argv[]) {
    differential equation on a single block, unstructured mesh. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+     /*- Initialize total deformation of design variables to zero. ---*/
+     TotalDeformation = new su2double*[config_container[iZone]->GetnDV()];
+
+     for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
+       TotalDeformation[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)];
+       for (iDV_Value = 0; iDV_Value < config_container[iZone]->GetnDV_Value(iDV); iDV_Value++){
+         TotalDeformation[iDV][iDV_Value] = 0.0;
+       }
+     }
+     config_container[iZone]->Initialize_TotalDeformation(TotalDeformation);
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
@@ -345,6 +358,9 @@ int main(int argc, char *argv[]) {
 
   if (rank == MASTER_NODE)
     cout << "\n------------------------- Solver Postprocessing -------------------------" << endl;
+
+  delete TotalDeformation;
+  TotalDeformation = nullptr;
 
   if (geometry_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {

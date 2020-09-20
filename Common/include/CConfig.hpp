@@ -108,6 +108,13 @@ private:
   unsigned short FFD_Blending;    /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order;   /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;              /*!< \brief Tolerance in the point inversion problem. */
+  bool FFD_IntPrev;               /*!< \brief Enables self-intersection prevention procedure within the FFD box. */
+  unsigned short FFD_IntPrev_Iter; /*!< \brief Amount of iterations for FFD box self-intersection prevention procedure. */
+  unsigned short FFD_IntPrev_Depth; /*!< \brief Maximum recursion depth for FFD box self-intersection procedure. */
+  bool ConvexityCheck;            /*!< \brief Enables convexity check on all mesh elements. */
+  unsigned short ConvexityCheck_Iter; /*!< \brief Amount of iterations for convexity check in deformations. */
+  unsigned short ConvexityCheck_Depth; /*!< \brief Maximum recursion depth for convexity check in deformations.*/
+  su2double** TotalDeformation;   /*!< \brief Total deformation of the design variables. */
   su2double Opt_RelaxFactor;      /*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound; /*!< \brief Bounds for the line search. */
   su2double StartTime;
@@ -8170,6 +8177,72 @@ public:
    * \return Tolerance of the point inversion algorithm.
    */
   su2double GetFFD_Tol(void) const { return FFD_Tol; }
+
+  /*!
+   * \brief Get information about whether to do a check on self-intersections within the FFD box based on value of the Jacobian determinant.
+   * \return <code>TRUE</code> if FFD intersection prevention is active; otherwise <code>FALSE</code>.
+   */
+  bool GetFFD_IntPrev(void) const { return FFD_IntPrev; }
+
+  /*!
+   * \brief Get the maximum number of iterations in the recursive convexity check procedure in deformation.
+   * \return Maximum number of iterations.
+   */
+  unsigned short GetFFD_IntPrev_Iter(void) const { return FFD_IntPrev_Iter; }
+
+  /*!
+   * \brief Get the maximum recursion depth in the recursive convexity check procedure in deformation.
+   * \return Maximum recursion depth.
+   */
+  unsigned short GetFFD_IntPrev_Depth(void) const { return FFD_IntPrev_Depth; }
+
+  /*!
+   * \brief Get information about whether to do a check on convexity of the mesh elements.
+   * \return <code>TRUE</code> if convexity check is active; otherwise <code>FALSE</code>.
+   */
+  bool GetConvexity_Check(void) const { return ConvexityCheck; }
+
+  /*!
+   * \brief Get the maximum number of iterations in the recursive convexity check procedure in deformation.
+   * \return Maximum number of iterations.
+   */
+  unsigned short GetConvexityCheck_Iter(void) const { return ConvexityCheck_Iter; }
+
+  /*!
+   * \brief Get the maximum recursion depth in the recursive convexity check procedure in deformation.
+   * \return Maximum recursion depth.
+   */
+  unsigned short GetConvexityCheck_Depth(void) const { return ConvexityCheck_Depth; }
+
+  /*!
+   * \brief Set the initial values for the total deformation of the design variables.
+   * \param[in] totalDef - total deformation of all design variables
+   */
+  void Initialize_TotalDeformation(su2double** totalDef) { TotalDeformation = totalDef; }
+
+  /*!
+   * \brief Set the total deformation value of each design variable.
+   * \param[in] val_dv - design variable
+   * \param[in] val_ind - index of design variable
+   * \param[in] val - value of deformation magnitude
+   */
+  void SetTotalDeformation(unsigned short val_dv, unsigned short val_ind, su2double val) {TotalDeformation[val_dv][val_ind] = val; }
+
+  /*!
+   * \brief Add a value to the total deformation value of each design variable.
+   * \param[in] val_dv - design variable
+   * \param[in] val_ind - index of design variable
+   * \param[in] val - value of deformation magnitude that is added
+   */
+  void AddTotalDeformation(unsigned short val_dv, unsigned short val_ind, su2double val) {TotalDeformation[val_dv][val_ind] += val; }
+
+  /*!
+   * \brief Get information about the total deformation of the design variables.
+   * \param[in] val_dv - design variable number
+   * \param[in] val_val - design variable number
+   * \return Value of total deformation for one design variable.
+   */
+  su2double GetTotalDeformation(unsigned short val_dv, unsigned short val_val = 0) const { return TotalDeformation[val_dv][val_val]; }
 
   /*!
    * \brief Get the scale factor for the line search.

@@ -36,6 +36,11 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank, size;
   string str;
+  unsigned short convexityCheckIter;
+  unsigned short recursionDepth = 0;
+  su2double deformationFactor = 1.0;
+  su2double deformationDifference = 1.0;
+  su2double** initialDeformation;
 
   /*--- MPI initialization ---*/
 
@@ -261,6 +266,19 @@ int main(int argc, char *argv[]) {
   /*--- Surface grid deformation using design variables ---*/
   
   for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- Initialize total deformation of design variables to zero ---*/
+    su2double **TotalDeformation;
+    unsigned short iDV, iDV_Value;
+    TotalDeformation = new su2double*[config_container[iZone]->GetnDV()];
+
+    for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
+      TotalDeformation[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)];
+      for (iDV_Value = 0; iDV_Value < config_container[iZone]->GetnDV_Value(iDV); iDV_Value++){
+        TotalDeformation[iDV][iDV_Value] = 0.0;
+      }
+    }
+    config_container[iZone]->Initialize_TotalDeformation(TotalDeformation);
     
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
       
@@ -316,10 +334,105 @@ int main(int argc, char *argv[]) {
           if (rank == MASTER_NODE)
             cout << "Performing the deformation of the volumetric grid." << endl;
           grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false);
-          
+
+          /*--- Recursively change deformations if there are nonconvex elements. ---*/
+          if (config_container[iZone]->GetConvexity_Check() && geometry_container[iZone]->GetnNonconvexElements() > 0) {
+            if (rank == MASTER_NODE) { 
+              cout << "Nonconvex elements present after deformation. " << endl;
+              cout << "Recursively lowering deformation magnitude." << endl;
+            }
+
+            /*--- Load initial deformation values ---*/
+            initialDeformation = new su2double*[config_container[iZone]->GetnDV()];
+            for (iDV = 0; iDV < config_container[iZone]->GetnDV(); iDV++) {
+              initialDeformation[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)];
+              for (iDV_Value = 0; iDV_Value < config_container[iZone]->GetnDV_Value(iDV); iDV_Value++) {
+                initialDeformation[iDV][iDV_Value] = config_container[iZone]->GetTotalDeformation(iDV, iDV_Value);
+              }
+            }
+
+            for (convexityCheckIter = 1; convexityCheckIter <= config->GetConvexityCheck_Iter(); convexityCheckIter++) {
+
+              /*--- Recursively change deformation magnitude: decrease if there are nonconvex elements, increase otherwise ---*/
+              deformationDifference /= 2.0;
+
+              if (geometry_container[iZone]->GetnNonconvexElements() > 0) {
+                deformationFactor -= deformationDifference;
+              } else {
+                recursionDepth += 1;
+
+                if (recursionDepth == config_container[iZone]->GetConvexityCheck_Depth()) {
+                  if (rank == MASTER_NODE) {
+                    cout << "Maximum recursion depth reached." << endl;
+                    cout << "Remaining amount of original deformation: " << deformationFactor*100.0 << " percent. " << endl;
+                  }
+                  break;
+                }
+
+                deformationFactor += deformationDifference;              
+              }
+
+              /*--- Load mesh to start every iteration with an undeformed grid 
+              (there must be an easier way to do this with less output, but how?) ---*/
+              CGeometry *geometry_aux = NULL;
+              geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+              geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+              delete geometry_aux;
+              geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+              geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+              geometry_container[iZone]->SetPoint_Connectivity();
+              geometry_container[iZone]->SetBoundVolume();
+              if (config_container[iZone]->GetReorientElements()) {
+                geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+                geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+              }
+              geometry_container[iZone]->SetEdges(); 
+              geometry_container[iZone]->SetVertex(config_container[iZone]);
+
+              if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+                geometry_container[iZone]->SetCoord_CG();
+                geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], UPDATE);
+              }
+              geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
+
+              /*--- Set deformation magnitude as percentage of initial deformation ---*/
+              surface_movement[iZone]->SetDeformationMagnitude(geometry_container[iZone], config_container[iZone], deformationFactor, initialDeformation);
+
+              /*--- Surface grid deformation ---*/
+              if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
+
+              surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
+
+              if (rank == MASTER_NODE)
+                cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;
+
+              if (rank == MASTER_NODE)
+                cout << "Performing the deformation of the volumetric grid." << endl;
+              grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false);
+
+              if (rank == MASTER_NODE) {
+                cout << "Number of nonconvex elements for iteration " << convexityCheckIter << ": " << geometry_container[iZone]->GetnNonconvexElements() << endl;
+                cout << "Remaining amount of original deformation: " << deformationFactor*100.0 << " percent. " << endl;
+              }
+
+            }
+
+            for (iDV = 0; iDV < config_container[iZone]->GetnDV(); iDV++) {
+              delete initialDeformation[iDV];
+            }
+            delete [] initialDeformation;
+
+          }
+
         }
         
       }
+
+    for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
+      delete TotalDeformation[iDV];
+    }
+    delete [] TotalDeformation;
       
     }
     

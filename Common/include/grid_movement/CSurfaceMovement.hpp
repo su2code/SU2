@@ -484,4 +484,22 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set magnitude of the deformation of all design variables
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] deformationFactor - Remaining amount of original deformation (between 0 and 1).
+   * \param[in] totalDeformation_initial - Initial deformation magnitude of all design variables.
+   */
+  void SetDeformationMagnitude(CGeometry *geometry, CConfig *config, su2double deformationFactor, su2double** totalDeformation_initial);
+
+  /*!
+   * \brief Calculate the determinant of the Jacobian matrix for the FFD problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Free form deformation box.
+   * \return Number of points with negative Jacobian determinant.
+   */
+  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox);
 };
