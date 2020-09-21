@@ -710,12 +710,12 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
   if (turb_model != NONE) {
-    // SetHistoryOutputValue("MIN_CFL_TURB", turb_solver->GetMin_CFL_Local());
-    // SetHistoryOutputValue("MAX_CFL_TURB", turb_solver->GetMax_CFL_Local());
-    // SetHistoryOutputValue("AVG_CFL_TURB", turb_solver->GetAvg_CFL_Local());
-    SetHistoryOutputValue("MIN_CFL_TURB", flow_solver->GetMin_CFL_Local()*config->GetCFLRedCoeff_Turb());
-    SetHistoryOutputValue("MAX_CFL_TURB", flow_solver->GetMax_CFL_Local()*config->GetCFLRedCoeff_Turb());
-    SetHistoryOutputValue("AVG_CFL_TURB", flow_solver->GetAvg_CFL_Local()*config->GetCFLRedCoeff_Turb());
+    SetHistoryOutputValue("MIN_CFL_TURB", turb_solver->GetMin_CFL_Local());
+    SetHistoryOutputValue("MAX_CFL_TURB", turb_solver->GetMax_CFL_Local());
+    SetHistoryOutputValue("AVG_CFL_TURB", turb_solver->GetAvg_CFL_Local());
+    // SetHistoryOutputValue("MIN_CFL_TURB", flow_solver->GetMin_CFL_Local()*config->GetCFLRedCoeff_Turb());
+    // SetHistoryOutputValue("MAX_CFL_TURB", flow_solver->GetMax_CFL_Local()*config->GetCFLRedCoeff_Turb());
+    // SetHistoryOutputValue("AVG_CFL_TURB", flow_solver->GetAvg_CFL_Local()*config->GetCFLRedCoeff_Turb());
   }
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
