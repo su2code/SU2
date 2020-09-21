@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../variables/CNEMOEulerVariable.hpp"
-#include "../include/fluid/CNEMOGas.hpp"
+#include "../fluid/CNEMOGas.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 /*!
@@ -55,6 +55,8 @@ protected:
   **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
 
   CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
+
+  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
   CNEMOEulerVariable* node_infty;
 
@@ -156,6 +158,17 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
+  /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.

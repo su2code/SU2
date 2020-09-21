@@ -25,11 +25,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CNEMOEulerSolver.hpp"
+#include "../../include/variables/CNEMONSVariable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
-#include "../../include/variables/CNEMONSVariable.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -48,19 +49,21 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   unsigned long iPoint, counter_local, counter_global = 0;
   unsigned short iDim, iMarker, iSpecies, nLineLets;
   unsigned short nZone = geometry->GetnZone();
+  su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   unsigned short direct_diff = config->GetDirectDiff();
   int Unst_RestartIter = 0;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING; 
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
-  su2double *Mvec_Inf;
-  su2double Alpha, Beta;
+
   bool check_infty, nonPhys;
-  su2double Soundspeed_Inf, sqvel;
   vector<su2double> Energies_Inf;
+
+  /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
+  dynamic_grid = config->GetDynamic_Grid();
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -90,6 +93,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   }
 
+  //TOD: we dont need this in NEMO delete me
   LowMach_Precontioner = nullptr;
 
   /*--- Set the gamma value ---*/
@@ -346,6 +350,58 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
   }
 }
 
+void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
+  bool cont_adjoint     = config->GetContinuous_Adjoint();
+  bool disc_adjoint     = config->GetDiscrete_Adjoint();
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
+                          (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
+  bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
+  bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
+  bool fixed_cl         = config->GetFixed_CL_Mode();
+  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
+  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
+                              (config->GetKind_Upwind_Flow() == ROE ||
+                               config->GetKind_Upwind_Flow() == SLAU ||
+                               config->GetKind_Upwind_Flow() == SLAU2);
+
+
+  /*--- Set the primitive variables ---*/
+  ErrorCounter = 0;
+  ErrorCounter = SetPrimitive_Variables(solver_container, Output);
+
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    {
+      unsigned long tmp = ErrorCounter;
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      config->SetNonphysical_Points(ErrorCounter);
+    }
+    SU2_OMP_BARRIER
+  }
+
+  /*--- Artificial dissipation ---*/
+
+  if (center && !Output) {
+    SetMax_Eigenvalue(geometry, config);
+    if (center_jst) SetUndivided_Laplacian(geometry, config);
+    if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
+  }
+
+  /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
+   *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
+
+  if(!ReducerStrategy && !Output) {
+    LinSysRes.SetValZero();
+    if (implicit) Jacobian.SetValZero();
+  }
+}
 void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
@@ -354,20 +410,17 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   unsigned long ErrorCounter = 0;
 
   unsigned long InnerIter = config->GetInnerIter();
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool muscl            = config->GetMUSCL_Flow();
-  bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool center           = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  const bool viscous    = config->GetViscous();
+  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool muscl              = config->GetMUSCL_Flow();
+  bool limiter            = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(config->GetFrozen_Limiter_Disc()));
+  bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
-  /*--- Set the primitive variables ---*/
+  /*--- Common preprocessing steps ---*/
 
-  ErrorCounter = SetPrimitive_Variables(solver_container, Output);
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  /*--- Upwind second order reconstruction ---*/
+    /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
     /*--- Calculate the gradients ---*/
@@ -382,38 +435,6 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
     if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
       SetSolution_Limiter(geometry, config);
     }
-
-  }
-
-  /*--- Primitive gradient computation if viscous flow ---*/
-  if (viscous){
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config);
-    }
-  }
-
-  /*--- Artificial dissipation ---*/
-  if (center && !Output){
-    SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
-  }
-
-  /*--- Initialize the jacobian matrices ---*/
-  if (implicit && !disc_adjoint) Jacobian.SetValZero();
-
-  /*--- Error message ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
 }
 

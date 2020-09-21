@@ -65,7 +65,15 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   ThermalCond_ve.resize(nPoint)  = su2double(0.0);
 
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0); //Cat this should only exist in NSNEMO variable
-    
+  inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
+
+  Vorticity.resize(nPoint,3) = su2double(0.0);
+  StrainMag.resize(nPoint) = su2double(0.0);
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Roe_Dissipation.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint) = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 }
 
 bool CNEMONSVariable::SetVorticity(void) {
