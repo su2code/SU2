@@ -82,27 +82,33 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   /*--- Primitive variables at point i ---*/
 
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
-  Pressure_i = V_i[nDim+1];
-  Density_i  = V_i[nDim+2];
-  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    Energy_i += 0.5*pow(Velocity_i[iDim],2);
-  Enthalpy_i = Energy_i + Pressure_i/Density_i;
-  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-
-  /*--- Primitive variables at point j ---*/
-
-  for (auto iDim = 0; iDim < nDim; iDim++)
     Velocity_j[iDim] = V_j[iDim+1];
+  }
+
+  Pressure_i = V_i[nDim+1];
   Pressure_j = V_j[nDim+1];
+
+  Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
+
+  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
   Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
-  for (auto iDim = 0; iDim < nDim; iDim++)
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    Energy_i += 0.5*pow(Velocity_i[iDim],2);
     Energy_j += 0.5*pow(Velocity_j[iDim],2);
+  }
+
+  Enthalpy_i = Energy_i + Pressure_i/Density_i;
   Enthalpy_j = Energy_j + Pressure_j/Density_j;
+
+  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
+    
+  /*--- Compute variables that are common to the derived schemes ---*/
+
+  /*--- Roe-averaged variables at interface between i & j ---*/
 
   R = sqrt(fabs(Density_j/Density_i));
   R_Plus_One = R+1.;
@@ -163,8 +169,8 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                  CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  AD::SetPreaccIn(V_i, nDim+4);
-  AD::SetPreaccIn(V_j, nDim+4);
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {

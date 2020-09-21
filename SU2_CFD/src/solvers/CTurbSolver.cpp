@@ -494,7 +494,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
-  /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
+  /*---         gradient projection (0.5*(1-kappa)*gradV_i*dist_ij).       ---*/
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];

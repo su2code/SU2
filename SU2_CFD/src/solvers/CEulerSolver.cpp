@@ -3250,8 +3250,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetSecondary(good_i ? Secondary_i : S_i, 
                              good_j ? Secondary_j : S_j);
 
-      /*--- Store values for limiter, even if limiter isn't being used ---*/
-
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
@@ -3458,13 +3456,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
             dVi_dUi[MAXNVAR+1][MAXNVAR] = {0.0},
             dVk_dUk[MAXNVAR+1][MAXNVAR] = {0.0};
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
-  /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Store primitives ---*/
-
   const su2double rho_l = primvar_l[nDim+2], rho_r = primvar_r[nDim+2];
   su2double vel_l[MAXNDIM] = {0.0}, vel_r[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -3477,6 +3468,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     sq_vel_l += pow(vel_l[iDim], 2.0);
     sq_vel_r += pow(vel_r[iDim], 2.0);
   }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
+  /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
+  /*--------------------------------------------------------------------------*/
 
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
 
@@ -3571,7 +3567,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
-  /*---         gradient term (0.5*(1-kappa)*gradV_i*dist_ij).             ---*/
+  /*---         gradient projection (0.5*(1-kappa)*gradV_i*dist_ij).       ---*/
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
