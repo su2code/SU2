@@ -551,7 +551,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   const su2double alpha = 1.0/(2.*c2);
 
   // const su2double kappa = FIVE3*(*k);
-  const  su2double kappa = (*k);
+  const  su2double kappa = TWO3*(*k);
 
   su2double phi2 = 0.0, theta = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -560,6 +560,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   }
   phi2 *= 0.5*Gamma_Minus_One;
 
+  const su2double h = (phi2+c2)/Gamma_Minus_One + (*k);
 
   if (nDim == 2) {
     p[0][0] = 1.0;
@@ -578,10 +579,10 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[2][3] = alpha*(v[1]-(*c)*n[1]);
 
     // p[3][0] = (phi2/Gamma_Minus_One+kappa);
-    p[3][0] = phi2/Gamma_Minus_One;
+    p[3][0] = (phi2/Gamma_Minus_One+kappa);
     p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[3][2] = alpha*((phi2+c2)/Gamma_Minus_One+kappa+(*c)*theta);
-    p[3][3] = alpha*((phi2+c2)/Gamma_Minus_One+kappa-(*c)*theta);
+    p[3][2] = alpha*(h+kappa+(*c)*theta);
+    p[3][3] = alpha*(h+kappa-(*c)*theta);
   }
   else {
     p[0][0] = n[0];
@@ -608,14 +609,11 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[3][3] = alpha*(v[2]+(*c)*n[2]);
     p[2][4] = alpha*(v[2]-(*c)*n[2]);
 
-    // p[4][0] = (phi2/Gamma_Minus_One+kappa)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    // p[4][1] = (phi2/Gamma_Minus_One+kappa)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    // p[4][2] = (phi2/Gamma_Minus_One+kappa)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[4][0] = phi2/Gamma_Minus_One*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    p[4][1] = phi2/Gamma_Minus_One*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    p[4][2] = phi2/Gamma_Minus_One*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[4][3] = alpha*((phi2+c2)/Gamma_Minus_One+kappa+(*c)*theta);
-    p[4][4] = alpha*((phi2+c2)/Gamma_Minus_One+kappa-(*c)*theta);
+    p[4][0] = (phi2/Gamma_Minus_One+kappa)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    p[4][1] = (phi2/Gamma_Minus_One+kappa)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    p[4][2] = (phi2/Gamma_Minus_One+kappa)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    p[4][3] = alpha*(h+kappa+(*c)*theta);
+    p[4][4] = alpha*(h+kappa-(*c)*theta);
   }
 
 }
