@@ -60,9 +60,6 @@ protected:
 
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
-  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
-  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
-
   CNEMOGas  *FluidModel;             /*!< \brief fluid model used in the solver */
 
   CNEMOEulerVariable* node_infty = nullptr;
@@ -165,35 +162,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                       CNumerics **numerics_container, CConfig *config,
                        unsigned short iMesh) final;
-  /*!
-   * \brief Compute the viscous contribution for a particular edge.
-   * \note The convective residual methods include a call to this for each edge,
-   *       this allows convective and viscous loops to be "fused".
-   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *numerics, CConfig *config) { }
-
-  /*!
-   * \brief Generic implementation of explicit iterations (RK, Classic RK and EULER).
-   */
-  template<ENUM_TIME_INT IntegrationType>
-  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
