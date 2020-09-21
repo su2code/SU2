@@ -693,14 +693,16 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity, su2d
 void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2double *k,
                                const su2double *c, const su2double *n, su2double **invp) {
 
-  su2double c2, beta, phi2, theta;
+  const su2double c2 = pow(*c,2);
 
-  c2 = pow(*c,2);
+  su2double phi2 = 0.0, theta = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    phi2  += pow(v[iDim],2);
+    theta += v[iDim]*n[iDim];
+  }
+  phi2 *= 0.5*Gamma_Minus_One;
 
   if (nDim == 2) {
-    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]);
-    theta = v[0]*n[0]+v[1]*n[1];
-
     invp[0][0] = (1.0-phi2/c2);
     invp[0][1] = Gamma_Minus_One*v[0]/c2;
     invp[0][2] = Gamma_Minus_One*v[1]/c2;
@@ -722,9 +724,6 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     invp[3][3] = Gamma_Minus_One;
   }
   else {
-    phi2  = Gamma_Minus_One*0.5*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-    theta = v[0]*n[0]+v[1]*n[1]+v[2]*n[2];
-
     invp[0][0] = (1.0-phi2/c2)*n[0]-(v[1]*n[2]-v[2]*n[1])/(*r);
     invp[0][1] = Gamma_Minus_One*v[0]*n[0]/c2;
     invp[0][2] = Gamma_Minus_One*v[1]*n[0]/c2+n[2]/(*r);
