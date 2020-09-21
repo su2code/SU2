@@ -2487,9 +2487,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     // CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
     /* Total number of variables between all solvers */
-    unsigned short nVarTot = solverFlow->GetnVar();
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-      nVarTot += solverTurb->GetnVar();
+    // unsigned short nVarTot = solverFlow->GetnVar();
+    // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+    //   nVarTot += solverTurb->GetnVar();
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
