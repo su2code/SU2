@@ -3236,9 +3236,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
-      good_i = good_i && good_j;
-      good_j = good_i;
-
       nodes->SetNon_Physical(iPoint, !good_i);
       nodes->SetNon_Physical(jPoint, !good_j);
 
