@@ -112,7 +112,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
   // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
   nVar         = nSpecies + nDim + 2;
-  nPrimVar     = nSpecies + nDim + 8;
+  nPrimVar     = nSpecies + nDim + 10;
   nPrimVarGrad = nSpecies + nDim + 8;
 
   /*--- Initialize nVarGrad for deallocation ---*/

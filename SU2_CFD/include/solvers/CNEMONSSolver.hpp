@@ -49,6 +49,15 @@ private:
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   su2double *primitives_aux; /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
 
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       CConfig *config, bool Output);
 public:
 
   /*!

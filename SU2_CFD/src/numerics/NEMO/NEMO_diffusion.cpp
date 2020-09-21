@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file NEMO_diffusion.cpp
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
@@ -103,10 +103,13 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
                                           Diffusion_Coeff_j[iSpecies]);
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
                                 Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity          = 0.5*(Eddy_Viscosity_i +
+                                      Eddy_Viscosity_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
                                    Thermal_Conductivity_j);
   Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
                                       Thermal_Conductivity_ve_j);
+  //Mean_Eddy_Viscosity=0.0;//delete me
 
   /*--- Mean gradient approximation ---*/
   // Mass fraction
@@ -144,7 +147,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
 
   /*--- Get projected flux tensor ---*/
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
-                     Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
+                     Mean_Diffusion_Coeff, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
   
@@ -291,10 +294,13 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
                                           Diffusion_Coeff_j[iSpecies]);
   Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
                                           Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity              = 0.5*(Eddy_Viscosity_i +
+                                          Eddy_Viscosity_j);
   Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
                                           Thermal_Conductivity_j);
   Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
                                           Thermal_Conductivity_ve_j);
+  //Mean_Eddy_Viscosity=0.0;//delete me
 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
@@ -312,6 +318,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
                      Normal, Mean_Diffusion_Coeff,
                      Mean_Laminar_Viscosity,
+                     Mean_Eddy_Viscosity,
                      Mean_Thermal_Conductivity,
                      Mean_Thermal_Conductivity_ve,
                      config);

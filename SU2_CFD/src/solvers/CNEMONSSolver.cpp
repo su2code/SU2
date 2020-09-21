@@ -192,6 +192,44 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig 
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
 
+unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output) {
+
+  unsigned long iPoint, nonPhysicalPoints = 0;
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+
+  bool nonphysical = true;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Retrieve the value of the kinetic energy (if needed). ---*/
+
+    su2double eddy_visc = 0.0, turb_ke = 0.0;
+
+    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
+      eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+
+       nodes->SetEddyViscosity(iPoint, eddy_visc);
+    }
+
+    /*--- Incompressible flow, primitive variables ---*/
+
+    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+
+    /* Check for non-realizable states for reporting. */
+
+    if (nonphysical) nonPhysicalPoints++;
+
+    /*--- Initialize the convective, source and viscous residual vector ---*/
+
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  return nonPhysicalPoints;
+}
+
 void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CSolver **solution_container,
                                      CNumerics **numerics_container,

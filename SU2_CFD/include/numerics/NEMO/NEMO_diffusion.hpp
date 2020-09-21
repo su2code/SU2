@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
@@ -51,6 +51,7 @@ private:
   **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
   *Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
   Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
 
@@ -105,6 +106,7 @@ private:
   *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
   *Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
   Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
 
