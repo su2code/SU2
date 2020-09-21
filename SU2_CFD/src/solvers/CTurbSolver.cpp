@@ -804,29 +804,13 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   if (!adjoint) {
 
-    /*--- Update the turbulent solution. Only SST variants are clipped. ---*/
+    /*--- Update the turbulent solution. ---*/
 
-    switch (config->GetKind_Turb_Model()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++)
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
 
-      case SA: case SA_E: case SA_COMP: case SA_E_COMP: case SA_NEG:
-
-        SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          nodes->AddSolution(iPoint, 0, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint]);
-        }
-        break;
-
-      case SST: case SST_SUST:
-
-        SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-          for (auto iVar = 0; iVar < nVar; iVar++)
-            nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-        }
-        break;
-
-    }
   }
 
   SU2_OMP_MASTER
