@@ -148,7 +148,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool good_i = true, good_j = true, good_edge = true;
+    bool good_i = true, good_j = true;
 
     if (muscl) {
       const auto Coord_i = geometry->node[iPoint]->GetCoord();
@@ -297,10 +297,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         flowPrimVar_j[iVar] = V_j[iVar];
       }
     }
-
-    // good_edge = good_i && good_j;
-    good_i = good_i && good_j;
-    good_j = good_i;
 
     /*--- Store the state ---*/
 
