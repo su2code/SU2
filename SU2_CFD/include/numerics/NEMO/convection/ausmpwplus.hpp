@@ -36,7 +36,6 @@
  * \author F. Palacios, W.Maier, C. Garbacz
  * \version 7.0.6 "Falcon"
  */
-
 class CUpwAUSMPWplus_NEMO : public CNEMONumerics {
 private:
   su2double *FcL, *FcR;

@@ -308,7 +308,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
   
   /*--- Scale thermal conductivity with turb visc ---*/
-  //delete me
+  //delete me todo
   // Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
   su2double Mass = 0.0;

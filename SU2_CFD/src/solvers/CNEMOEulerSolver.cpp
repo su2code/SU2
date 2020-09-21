@@ -657,8 +657,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
         ModelTable << "Wilke-Blottner-Eucken ";
-        if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2.";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2.";
         NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
@@ -666,13 +666,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
       case GUPTAYOS:
         ModelTable << "Gupta-Yos";
-        if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2.";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2.";
         NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
-        break;
-      default:
         break;
       }
     } else {

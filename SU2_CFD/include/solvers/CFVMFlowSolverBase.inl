@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
  * \version 7.0.6 "Blackbird"

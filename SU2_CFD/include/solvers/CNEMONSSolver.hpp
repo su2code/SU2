@@ -212,8 +212,18 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *numerics, CConfig *config) override;
+//  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+//                        CNumerics *numerics, CConfig *config) override;
 
-
+  /*!
+   * \brief Compute the viscous residuals.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
 };
