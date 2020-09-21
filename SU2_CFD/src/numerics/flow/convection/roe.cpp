@@ -145,7 +145,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   Enthalpy_i = Energy_i + Pressure_i/Density_i;
   Enthalpy_j = Energy_j + Pressure_j/Density_j;
-  
+
   SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
   SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
 
@@ -308,8 +308,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       P_Tensor[iVar][nVar]      = 0.0;
       invP_Tensor[nVar][iVar+1] = 0.0;
     }
-    P_Tensor[nVar-1][nVar] = -TWO3;
-    invP_Tensor[nVar][0]   = RoeTke;
+    // P_Tensor[nVar-1][nVar] = -TWO3;
+    // invP_Tensor[nVar][0]   = RoeTke;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/

@@ -80,7 +80,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     turb_ke_j = TurbVar_j[0];
   }
 
-  /*--- Primitive variables at point i ---*/
+  /*--- Primitive variables ---*/
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
