@@ -101,15 +101,14 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
-  Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
-                                Laminar_Viscosity_j);
-  Mean_Eddy_Viscosity          = 0.5*(Eddy_Viscosity_i +
-                                      Eddy_Viscosity_j);
-  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
-                                   Thermal_Conductivity_j);
-  Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
-                                      Thermal_Conductivity_ve_j);
-  //Mean_Eddy_Viscosity=0.0;//delete me
+  Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
+                                          Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity              = 0.5*(Eddy_Viscosity_i +
+                                          Eddy_Viscosity_j);
+  Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
+                                          Thermal_Conductivity_j);
+  Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
+                                          Thermal_Conductivity_ve_j);
 
   /*--- Mean gradient approximation ---*/
   // Mass fraction
@@ -300,8 +299,6 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
                                           Thermal_Conductivity_j);
   Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
                                           Thermal_Conductivity_ve_j);
-  //Mean_Eddy_Viscosity=0.0;//delete me
-
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {

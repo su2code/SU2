@@ -93,7 +93,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   }
 
-  //TOD: we dont need this in NEMO delete me
+  //TODO: we dont need this in NEMO delete me
   LowMach_Precontioner = nullptr;
 
   /*--- Set the gamma value ---*/
@@ -111,9 +111,12 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   //     U: [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
   //     V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
   // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
+  // Viscous: append [mu, mu_t]^T
   nVar         = nSpecies + nDim + 2;
-  nPrimVar     = nSpecies + nDim + 10;
+  if (navier_stokes) { nPrimVar   = nSpecies + nDim + 10; }
+  else {               nPrimVar   = nSpecies +nDim +8;    }
   nPrimVarGrad = nSpecies + nDim + 8;
+  //todo, need to clean up?
 
   /*--- Initialize nVarGrad for deallocation ---*/
   nVarGrad     = nPrimVarGrad;
@@ -353,37 +356,22 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
-                          (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
-  bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
-  bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
-  bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
-  bool fixed_cl         = config->GetFixed_CL_Mode();
-  unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
-  bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) &&
-                              (config->GetKind_Upwind_Flow() == ROE ||
-                               config->GetKind_Upwind_Flow() == SLAU ||
-                               config->GetKind_Upwind_Flow() == SLAU2);
-
 
   /*--- Set the primitive variables ---*/
   ErrorCounter = 0;
-  ErrorCounter = SetPrimitive_Variables(solver_container, Output);
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
+
       unsigned long tmp = ErrorCounter;
       SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
       config->SetNonphysical_Points(ErrorCounter);
-    }
-    SU2_OMP_BARRIER
+
   }
 
   /*--- Artificial dissipation ---*/
@@ -402,6 +390,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
     if (implicit) Jacobian.SetValZero();
   }
 }
+
 void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
@@ -438,7 +427,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   }
 }
 
-unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, bool Output) {
+unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   bool nonphysical = true;

@@ -41,24 +41,28 @@
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
 protected:
 
+  su2double
+  Prandtl_Lam = 0.0,              /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
+
   unsigned short
-  nSpecies;                              /*!< \brief Number of species in the gas mixture. */
+  nSpecies;                       /*!< \brief Number of species in the gas mixture. */
                   
   su2double                  
-  Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
-  Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
-  const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
+  Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
+  Temperature_ve_Inf;             /*!< \brief Vib.-el. free stream temperature. */
+  const su2double *MassFrac_Inf;  /*!< \brief Free stream species mass fraction. */
 
-  su2double *Source;   /*!< \brief Auxiliary vector to store source terms. */
+  su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
   su2double
-  **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-
-  CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
+  **LowMach_Precontioner;            /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
 
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
-  CNEMOEulerVariable* node_infty;
+  CNEMOGas  *FluidModel;             /*!< \brief fluid model used in the solver */
+
+  CNEMOEulerVariable* node_infty = nullptr;
 
 public:
 
@@ -189,7 +193,7 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       bool Output); 
+                                       CConfig *config, bool Output);
 
   /*!
      * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.

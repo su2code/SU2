@@ -43,10 +43,11 @@
 class CNEMONSSolver final : public CNEMOEulerSolver {
 private:
 
-  su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
-  Prandtl_Turb;            /*!< \brief Turbulent Prandtl number. */
+  su2double Prandtl_Lam,     /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb;              /*!< \brief Turbulent Prandtl number. */
  
-  su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  su2double StrainMag_Max,
+  Omega_Max;                 /*!< \brief Maximum Strain Rate magnitude and Omega. */
   su2double *primitives_aux; /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
 
   /*!
@@ -98,6 +99,7 @@ public:
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
                                 const CConfig *config,
                                 bool reconstruction = false) override;
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -114,6 +116,7 @@ public:
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
                     bool Output) override;
+
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -204,8 +207,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
   */
-  void BC_Smoluchowski_Maxwell(CGeometry *geometry,
-                               CSolver **solution_container,
+  void BC_Smoluchowski_Maxwell(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics,
                                CNumerics *visc_numerics,
                                CConfig *config,
@@ -222,5 +224,4 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
-
 };
