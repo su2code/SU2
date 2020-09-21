@@ -32,7 +32,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
 
   nDim = val_nDim;
   unsigned short maxEl = 0;
-  su2double mf = 0;
+  su2double mf = 0.0;
 
   const auto MassFrac_Freestream = config->GetGas_Composition();
 

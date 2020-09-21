@@ -131,7 +131,6 @@ public:
    */
   inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override { Primitive(iPoint,EDDY_VISC_INDEX) = eddy_visc; }
 
-
   /*!
    * \brief Get the species diffusion coefficient.
    * \return Value of the species diffusion coefficient.

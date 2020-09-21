@@ -38,7 +38,6 @@ CNEMOUpwScalar::CNEMOUpwScalar(unsigned short val_nDim, unsigned short val_nVar,
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
-
   Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];

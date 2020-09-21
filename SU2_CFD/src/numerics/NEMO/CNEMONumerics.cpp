@@ -80,6 +80,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
                              const CConfig* config) :
                              CNumerics(val_nDim, val_nVar, config) {
 
+    cout<<"THIS shouldnt be called delete me" << endl;
     nSpecies     = val_nVar_NEMO - nDim - 2;
     nPrimVar     = val_nPrimVar;
     nPrimVarGrad = val_nPrimVarGrad;
