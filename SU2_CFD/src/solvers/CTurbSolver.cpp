@@ -298,7 +298,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
     }
 
-    good_edge = good_i && good_j;
+    // good_edge = good_i && good_j;
+    good_i = good_i && good_j;
+    good_j = good_i;
 
     /*--- Store the state ---*/
 

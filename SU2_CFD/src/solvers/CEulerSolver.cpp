@@ -3101,72 +3101,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
     const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
+    su2double tke_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint,0) : 0.0;
+    su2double tke_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint,0) : 0.0;
+
     bool good_i = true, good_j = true, good_edge = true;
-
-    if (tkeNeeded) {
-
-      tke_i = turbNodes->GetPrimitive(iPoint,0);
-      tke_j = turbNodes->GetPrimitive(jPoint,0);
-      numerics->SetTurbKineticEnergy(tke_i, tke_j);
-
-      if (muscl) {
-        /*--- Reconstruct turbulence variables. ---*/
-
-        su2double Vector_ij[MAXNDIM] = {0.0};
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
-        }
-
-        const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint);
-        const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint);
-
-        const su2double Kappa = config->GetMUSCL_Kappa();
-          
-        const su2double T_ij = 0.5*(tke_j - tke_i);
-
-        su2double Project_Grad_i = -T_ij;
-        su2double Project_Grad_j = -T_ij;
-
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[0][iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[0][iDim];
-        }
-
-        /*--- Blend upwind and centered differences ---*/
-
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
-
-        /*--- Edge-based limiters ---*/
-
-        if (limiterTurb) {
-          auto Limiter_i = turbNodes->GetLimiter(iPoint);
-          auto Limiter_j = turbNodes->GetLimiter(jPoint);
-
-          switch(config->GetKind_SlopeLimit_Turb()) {
-            case VAN_ALBADA_EDGE:
-              Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-              Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
-              break;
-            case PIPERNO:
-              Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-              Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
-              break;
-          }
-
-          /*--- Limit projection ---*/
-
-          Project_Grad_i *= Limiter_i[0];
-          Project_Grad_j *= Limiter_j[0];
-        }
-
-        tke_i += Project_Grad_i;
-        tke_j -= Project_Grad_j;
-
-        good_i = (tke_i >= 0.0);
-        good_j = (tke_j >= 0.0);
-      }
-    }
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
@@ -3228,6 +3166,57 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
       }
 
+      if (tkeNeeded) {
+        /*--- Reconstruct turbulent kinetic energy. ---*/
+
+        const auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+        const auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+          
+        const su2double T_ij = 0.5*(tke_j - tke_i);
+
+        su2double Project_Grad_i = -T_ij;
+        su2double Project_Grad_j = -T_ij;
+
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
+          Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
+        }
+
+        /*--- Blend upwind and centered differences ---*/
+
+        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+
+        /*--- Edge-based limiters ---*/
+
+        if (limiterTurb) {
+          auto Limiter_i = turbNodes->GetLimiter(iPoint);
+          auto Limiter_j = turbNodes->GetLimiter(jPoint);
+
+          switch(config->GetKind_SlopeLimit_Turb()) {
+            case VAN_ALBADA_EDGE:
+              Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+              Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+              break;
+            case PIPERNO:
+              Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+              Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+              break;
+          }
+
+          /*--- Limit projection ---*/
+
+          Project_Grad_i *= Limiter_i[0];
+          Project_Grad_j *= Limiter_j[0];
+        }
+
+        tke_i += Project_Grad_i;
+        tke_j -= Project_Grad_j;
+
+        good_i = (tke_i >= 0.0);
+        good_j = (tke_j >= 0.0);
+      }
+
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
       if (!ideal_gas || low_mach_corr) {
@@ -3246,6 +3235,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        which is typically only active during the start-up of a calculation. ---*/
 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
+
+      good_i = good_i && good_j;
+      good_j = good_i;
 
       nodes->SetNon_Physical(iPoint, !good_i);
       nodes->SetNon_Physical(jPoint, !good_j);
@@ -3275,6 +3267,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
+      if (tkeNeeded)
+        numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
     }
 
