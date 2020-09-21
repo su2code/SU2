@@ -4736,7 +4736,7 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
       VerificationSolution = new CTGVSolution(nDim, nVar, MGLevel, config); break;
     case INC_TAYLOR_GREEN_VORTEX:
       VerificationSolution = new CIncTGVSolution(nDim, nVar, MGLevel, config); break;
-    case TURBULENT_CHANNEL:
+    case TURBULENT_CHANNEL: case PERIODIC_HILL:
       VerificationSolution = new CTurbChannelSolution(nDim, nVar, MGLevel, config); break;
     case MMS_NS_UNIT_QUAD:
       VerificationSolution = new CMMSNSUnitQuadSolution(nDim, nVar, MGLevel, config); break;

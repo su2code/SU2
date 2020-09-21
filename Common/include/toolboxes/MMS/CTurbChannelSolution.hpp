@@ -96,6 +96,7 @@ protected:
   vector<su2double> WaveNumbers, DeltaWave;
   su2double max_lengthEnergetic, max_velocity, min_lengthNyquist;
 
+  unsigned short Verification_Solution;
 public:
 
   /*!
