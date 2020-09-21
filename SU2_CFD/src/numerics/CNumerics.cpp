@@ -579,7 +579,6 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[2][2] = alpha*(v[1]+(*c)*n[1]);
     p[2][3] = alpha*(v[1]-(*c)*n[1]);
 
-    // p[3][0] = (phi2/Gamma_Minus_One+kappa);
     p[3][0] = (phi2/Gamma_Minus_One+kappa);
     p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
     p[3][2] = alpha*(h+kappa+(*c)*theta);
