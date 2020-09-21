@@ -551,7 +551,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
   const su2double alpha = 1.0/(2.*c2);
 
   // const su2double kappa = FIVE3*(*k);
-  const  su2double kappa = TWO3*(*k);
+  // const  su2double kappa = TWO3*(*k);
+  const su2double kappa = 0.0;
 
   su2double phi2 = 0.0, theta = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
