@@ -195,8 +195,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
 
+  su2double ProjGridVel = 0.0;
   if (dynamic_grid) {
-    ProjGridVel = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
     }
