@@ -99,8 +99,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  su2double ProjGridVel = 0.0, Energy_i, Energy_j;
-
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3); 
   AD::SetPreaccIn(Normal, nDim);
@@ -136,8 +134,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
 
-  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
-  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
+  su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
+  su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Energy_i += 0.5*pow(Velocity_i[iDim],2);
     Energy_j += 0.5*pow(Velocity_j[iDim],2);
@@ -198,7 +196,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
 
   if (dynamic_grid) {
-    su2double ProjGridVel = 0.0;
+    ProjGridVel = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
     }
@@ -310,12 +308,6 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     }
     P_Tensor[nVar-1][nVar] = -TWO3;
     invP_Tensor[nVar][0]   = RoeTke;
-    // const su2double factor = Gamma_Minus_One/RoeSoundSpeed2;
-    // P_Tensor[nVar-1][nVar] = RoeTke;
-    // invP_Tensor[nVar][0]   = -0.5*factor*RoeSqVel-TWO3;
-    // for (auto iDim = 0; iDim < nDim; iDim++)
-    //   invP_Tensor[nVar][iDim+1] = factor*RoeVelocity[iDim];
-    // invP_Tensor[nVar][nVar-1] = -factor;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
