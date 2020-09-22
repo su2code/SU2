@@ -308,14 +308,14 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
       P_Tensor[iVar][nVar]      = 0.0;
       invP_Tensor[nVar][iVar+1] = 0.0;
     }
-    // P_Tensor[nVar-1][nVar] = -TWO3;
-    // invP_Tensor[nVar][0]   = RoeTke;
-    const su2double factor = Gamma_Minus_One/RoeSoundSpeed2;
-    P_Tensor[nVar-1][nVar] = RoeTke;
-    invP_Tensor[nVar][0]   = -0.5*factor*RoeSqVel-TWO3;
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      invP_Tensor[nVar][iDim+1] = factor*RoeVelocity[iDim];
-    invP_Tensor[nVar][nVar-1] = -factor;
+    P_Tensor[nVar-1][nVar] = -TWO3;
+    invP_Tensor[nVar][0]   = RoeTke;
+    // const su2double factor = Gamma_Minus_One/RoeSoundSpeed2;
+    // P_Tensor[nVar-1][nVar] = RoeTke;
+    // invP_Tensor[nVar][0]   = -0.5*factor*RoeSqVel-TWO3;
+    // for (auto iDim = 0; iDim < nDim; iDim++)
+    //   invP_Tensor[nVar][iDim+1] = factor*RoeVelocity[iDim];
+    // invP_Tensor[nVar][nVar-1] = -factor;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
