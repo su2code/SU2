@@ -213,15 +213,6 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
   Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
 
-  /*--- Compute absolute value with Mavriplis' entropy correction ---*/
-
-  // const su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
-  // const su2double Delta = config->GetEntropyFix_Coeff();
-
-  // for (auto iVar = 0; iVar < nVar; iVar++) {
-  //   Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
-  // }
-
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
   for (auto iDim = 0; iDim < nDim; iDim++)
@@ -303,8 +294,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Last column of P tensor and row of inverse P tensor if using TKE ---*/
   if (tkeNeeded) {
     // P_Tensor[nVar-1][nVar] = -FIVE3;
-    // P_Tensor[nVar-1][nVar] = -1.0;
-    // invP_Tensor[nVar][0]   = RoeTke;
+    P_Tensor[nVar-1][nVar] = -1.0;
+    invP_Tensor[nVar][0]   = RoeTke;
     // P_Tensor[0][nVar] = Gamma_Minus_One*RoeTke/RoeSoundSpeed2;
     // invP_Tensor[nVar][0] = -0.5*RoeSqVel;
     // for (auto iDim = 0; iDim < nDim; iDim++)
