@@ -7399,6 +7399,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
   const bool implicit  = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const bool viscous   = config->GetViscous();
+  const bool turbulent = (config->GetKind_Turb_Model() != NONE);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   su2double *Normal = new su2double[nDim];
@@ -7615,7 +7616,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
           
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
         V_infty[nDim+5] = GetFluidModel()->GetLaminarViscosity();
-        V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+        if (turbulent) V_infty[nDim+6] = V_infty[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
         
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -9925,6 +9926,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
   su2double Gas_Constant  = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
+  bool turbulent = (config->GetKind_Turb_Model() != NONE);
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   su2double *Normal = new su2double[nDim];
 
@@ -10054,7 +10056,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver,
           
         GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
         V_outlet[nDim+5] = GetFluidModel()->GetLaminarViscosity();
-        V_outlet[nDim+6] = V_outlet[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
+        if (turbulent) V_outlet[nDim+6] = V_outlet[nDim+5]*config->GetTurb2LamViscRatio_FreeStream();
 
         /*--- Set the normal vector and the coordinates ---*/
 
