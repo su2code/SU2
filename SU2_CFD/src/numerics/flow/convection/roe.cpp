@@ -303,8 +303,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Last column of P tensor and row of inverse P tensor if using TKE ---*/
   if (tkeNeeded) {
     // P_Tensor[nVar-1][nVar] = -FIVE3;
-    P_Tensor[nVar-1][nVar] = -1.0;
-    invP_Tensor[nVar][0]   = RoeTke;
+    // P_Tensor[nVar-1][nVar] = -1.0;
+    // invP_Tensor[nVar][0]   = RoeTke;
     // P_Tensor[0][nVar] = Gamma_Minus_One*RoeTke/RoeSoundSpeed2;
     // invP_Tensor[nVar][0] = -0.5*RoeSqVel;
     // for (auto iDim = 0; iDim < nDim; iDim++)
