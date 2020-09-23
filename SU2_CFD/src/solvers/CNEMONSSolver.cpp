@@ -104,7 +104,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
-    SetPrimitive_Limiter(geometry, config);
+    SetSolution_Limiter(geometry, config);
   }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
