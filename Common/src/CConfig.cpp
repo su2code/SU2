@@ -4645,7 +4645,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        nRough_Wall = nWall;
        Roughness_Height = new su2double [nWall];
        Kind_Wall = new unsigned short [nWall];
-       for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+       for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
          Kind_Wall[iMarker] = SMOOTH;
        }

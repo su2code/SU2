@@ -75,6 +75,54 @@ unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
   return nDOFs;
 }
 
+void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool                         LGLDistribution,
+                                                         const ColMajorMatrix<su2double>    &matCoor,
+                                                         vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                                         su2activevector                    &Jacobians) const {
+
+  /*--- Compute the derivatives of the coordinates in the volume integration points.
+        The matrix matMetricTerms is used as storage for this data. ---*/
+  DerivativesCoorVolumeIntPoints(LGLDistribution, matCoor, matMetricTerms);
+
+  /*--- Check the dimension of the problem. ---*/
+  if(matMetricTerms.size() == 2) {
+
+    /*--- 2D problem. Loop over the integration points to compute
+          the 2D metric terms. ---*/
+
+
+  }
+  else {
+
+    /*--- 3D problem. Loop over the integration points to compute
+          the 3D metric terms. ---*/
+
+  }
+}
+
+void CFEMStandardElementBase::MinMaxJacobians(const bool                         LGLDistribution,
+                                              const ColMajorMatrix<su2double>    &matCoor,
+                                              vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                              su2activevector                    &Jacobians,
+                                              su2double                          &jacMin,
+                                              su2double                          &jacMax) const {
+
+  /*--- Compute the metric terms in the volume integration points. ---*/
+  MetricTermsVolumeIntPoints(LGLDistribution, matCoor, matMetricTerms, Jacobians);
+
+  /*--- Loop over the integration points and determine the minimum
+        and maximum value of the Jacobian. ---*/
+  jacMin = jacMax = Jacobians(0);
+  for(unsigned short i=0; i<nIntegration; ++i) {
+    jacMin = min(jacMin, Jacobians(i));
+    jacMax = max(jacMax, Jacobians(i));
+  }
+}
+
+/*----------------------------------------------------------------------------------*/
+/*          Protected member functions of CFEMStandardElementBase.                  */
+/*----------------------------------------------------------------------------------*/
+
 void CFEMStandardElementBase::Location1DGridDOFsEquidistant(vector<passivedouble> &r) {
 
   /*--- Allocate the memory and set the location of the DOFs using
@@ -321,31 +369,6 @@ void CFEMStandardElementBase::LagBasisIntPointsLine(const vector<passivedouble> 
   }
 }
 
-passivedouble CFEMStandardElementBase::Legendre(unsigned short n,
-                                                passivedouble  x) {
-
-  /*--- Initialization of the polynomials Pnm1 and Pn. ---*/
-  passivedouble Pnm1 = 1.0;
-  passivedouble Pn   = x;
-
-  /*--- Take care of the special situation of n == 0. ---*/
-  if(n == 0) Pn = Pnm1;
-  else {
-
-    /*--- Recursive definition of Pn. ---*/
-    for(unsigned short i=2; i<=n; ++i)
-    {
-      const passivedouble tmp = Pnm1;
-      Pnm1 = Pn;
-
-      Pn = ((2*i-1)*x*Pn - (i-1)*tmp)/i;
-    }
-  }
-
-  /*--- Return Pn. ---*/
-  return Pn;
-}
-
 passivedouble CFEMStandardElementBase::GradNormJacobi(unsigned short n,
                                                       unsigned short alpha,
                                                       unsigned short beta,
@@ -414,6 +437,35 @@ passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
       Pnm1 = Pn;
 
       Pn = ((x-bi)*Pn - aim1*tmp)/ai;
+    }
+  }
+
+  /*--- Return Pn. ---*/
+  return Pn;
+}
+
+/*----------------------------------------------------------------------------------*/
+/*          Private member functions of CFEMStandardElementBase.                    */
+/*----------------------------------------------------------------------------------*/
+
+passivedouble CFEMStandardElementBase::Legendre(unsigned short n,
+                                                passivedouble  x) {
+
+  /*--- Initialization of the polynomials Pnm1 and Pn. ---*/
+  passivedouble Pnm1 = 1.0;
+  passivedouble Pn   = x;
+
+  /*--- Take care of the special situation of n == 0. ---*/
+  if(n == 0) Pn = Pnm1;
+  else {
+
+    /*--- Recursive definition of Pn. ---*/
+    for(unsigned short i=2; i<=n; ++i)
+    {
+      const passivedouble tmp = Pnm1;
+      Pnm1 = Pn;
+
+      Pn = ((2*i-1)*x*Pn - (i-1)*tmp)/i;
     }
   }
 

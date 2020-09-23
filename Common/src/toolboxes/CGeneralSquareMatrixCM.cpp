@@ -45,6 +45,7 @@ extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
                        const passivedouble*, const passivedouble*,
                        const int *, const passivedouble*, const int*,
                        const passivedouble*, passivedouble*, const int*);
+#define DGEMM dgemm_
 #endif
 
 void CGeneralSquareMatrixCM::Transpose() {
@@ -149,8 +150,8 @@ void CGeneralSquareMatrixCM::MatMatMult(const char                          side
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    dgemm_(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M,
-           mat_in.data(), &M, &beta, mat_out.data(), &M);
+    DGEMM(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M,
+          mat_in.data(), &M, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {
@@ -179,8 +180,8 @@ void CGeneralSquareMatrixCM::MatMatMult(const char                          side
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    dgemm_(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M,
-           mat.data(), &N, &beta, mat_out.data(), &M);
+    DGEMM(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M,
+          mat.data(), &N, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {

@@ -47,26 +47,9 @@ CFEMStandardVolumePrismGrid::CFEMStandardVolumePrismGrid(const unsigned short va
   DerLagBasisIntPointsPrism(rTriangleDOFsLGL,  sTriangleDOFsLGL,  rLineDOFsLGL,  derLagBasisIntLGL);
 }
 
-void CFEMStandardVolumePrismGrid::DataIntegrationPoints(const ColMajorMatrix<su2double>    &matB,
-                                                        const unsigned short               ldb,
-                                                        const unsigned short               ldc,
-                                                        const unsigned short               n,
-                                                        ColMajorMatrix<su2double>          *matC,
-                                                        vector<ColMajorMatrix<su2double> > *matDerC,
-                                                        const CConfig                      *config) const {
-
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
-void CFEMStandardVolumePrismGrid::MinMaxJacobians(const bool                         LGLDistribution,
-                                                  const ColMajorMatrix<su2double>    &matCoor,
-                                                  const unsigned short               ldb,
-                                                  const unsigned short               ldc,
-                                                  vector<ColMajorMatrix<su2double> > &matMetricTerms,
-                                                  su2activevector                    &Jacobians,
-                                                  su2double                          &jacMin,
-                                                  su2double                          &jacMax) const {
-
+void CFEMStandardVolumePrismGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
+                                                                 const ColMajorMatrix<su2double>    &matCoor,
+                                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) const {
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 

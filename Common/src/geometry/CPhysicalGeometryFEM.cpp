@@ -333,29 +333,50 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       }
     }
 
-    /*--- Determine the sizes of the help matrices needed. ---*/
-    unsigned short sizeDOF = 0, sizeInt = 0;
+    /*--- Define the matrices used to store the coordinates, its derivatives and
+          the Jacobians. Every standard element get its own set of matrices, such
+          that the performance is maximized. Not so important here, but it is
+          compatible with the approach used in the computationally intensive part. ---*/
+    vector<su2activevector> matricesJacobians;
+    vector<ColMajorMatrix<su2double> > matricesCoor;
+    vector<vector<ColMajorMatrix<su2double> > > matricesDerCoor;
+
+    matricesJacobians.resize(standardVolumeElements.size());
+    matricesCoor.resize(standardVolumeElements.size());
+    matricesDerCoor.resize(standardVolumeElements.size());
+
+    /*--- Loop over the standard elements and allocate the memory for the
+          matrices defined above. ---*/
     for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
-      sizeDOF = max(sizeDOF, standardVolumeElements[i]->GetNDOFsPad());
-      sizeInt = max(sizeInt, standardVolumeElements[i]->GetNIntegrationPad());
-    }
 
-    /*--- Define the help matrices needed for the desired storage of the
-          coordinates and the metric terms. ---*/
-    ColMajorMatrix<su2double> matCoor(sizeDOF, nDim);
-    vector<ColMajorMatrix<su2double> > matMetricTerms(nDim, ColMajorMatrix<su2double>(sizeInt, nDim));
-    su2activevector Jacobians(sizeInt);
+      /*--- Get the dimensions from the standard element. ---*/
+      const unsigned short sizeDOF = standardVolumeElements[i]->GetNDOFsPad();
+      const unsigned short sizeInt = standardVolumeElements[i]->GetNIntegrationPad();
 
-    /*--- Fill these matrices with the default values to avoid
-          problems later on. ---*/
-    matCoor.setConstant(0.0);
-    Jacobians.setConstant(0.0);
+      /*--- Allocate the memory for the Jacobians and the coordinates
+            for this standard element. Fill these matrices with the
+            default values to avoid problems later on. ---*/
+      matricesJacobians[i].resize(sizeInt);
+      matricesCoor[i].resize(sizeDOF, nDim);
 
-    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-      matMetricTerms[iDim].setConstant(0.0);
+      matricesJacobians[i].setConstant(0.0);
+      matricesCoor[i].setConstant(0.0);
 
-      for(unsigned short i=0; i<sizeInt; ++i)
-        matMetricTerms[iDim](i,iDim) = 1.0;
+      /*--- Allocate the memory second index of matricesDerCoor. ---*/
+      matricesDerCoor[i].resize(nDim);
+
+      /*--- Loop over the number of dimensions and allocate the
+            memory for the actual matrix for the derivatives
+            of the coordinates. ---*/
+      for(unsigned short iDim=0; iDim<nDim; ++iDim) { 
+        matricesDerCoor[i][iDim].resize(sizeInt, nDim);
+
+        /*--- Set the default values to avoid problems later on. ---*/
+        matricesDerCoor[i][iDim].setConstant(0.0);
+
+        for(unsigned short j=0; j<sizeInt; ++j)
+          matricesDerCoor[i][iDim](j,iDim) = 1.0;
+      }
     }
 
     /*--- Loop over the local volume elements. ---*/
@@ -377,27 +398,29 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       /*--- Retrieve the number of grid DOFs for this element. ---*/
       const unsigned short nDOFs = standardVolumeElements[ii]->GetNDOFs();
 
-      /*--- Copy the coordinates into matCoor, such that the gemm routines
-            can be used to compute the metric terms. ---*/
+      /*--- Copy the coordinates into matricesCoor[ii], such that the gemm
+            routines can be used to compute the derivatives. ---*/
       for(unsigned short j=0; j<nDOFs; ++j) {
         unsigned long nodeID = elem[i]->GetNode(j);
 
         map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
         unsigned long ind = MI->second;
         for(unsigned short k=0; k<nDim; ++k)
-          matCoor(j,k) = nodes->GetCoord(ind, k);
+          matricesCoor[ii](j,k) = nodes->GetCoord(ind, k);
       }
 
       /*--- Determine the minimum and maximum values of the Jacobians of the
             transformation to the standard element for the LGL and equidistant
             distribution of the grid DOFs. ---*/
       su2double jacMinLGL, jacMaxLGL, jacMinEq, jacMaxEq;
-      standardVolumeElements[ii]->MinMaxJacobians(true, matCoor, sizeDOF, sizeInt,
-                                                  matMetricTerms, Jacobians,
+      standardVolumeElements[ii]->MinMaxJacobians(true, matricesCoor[ii],
+                                                  matricesDerCoor[ii],
+                                                  matricesJacobians[ii],
                                                   jacMinLGL, jacMaxLGL);
 
-      standardVolumeElements[ii]->MinMaxJacobians(false, matCoor, sizeDOF, sizeInt,
-                                                  matMetricTerms, Jacobians,
+      standardVolumeElements[ii]->MinMaxJacobians(false, matricesCoor[ii],
+                                                  matricesDerCoor[ii],
+                                                  matricesJacobians[ii],
                                                   jacMinEq, jacMaxEq);
 
       /*--- Check if at least one point distribution gives valid Jacobians.
