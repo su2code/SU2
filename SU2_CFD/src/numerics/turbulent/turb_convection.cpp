@@ -198,15 +198,6 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
     Lambda[1] = Lambda[0] + RoeSoundSpeed;
     Lambda[2] = Lambda[0] - RoeSoundSpeed;
 
-    /*--- Compute absolute value with Mavriplis' entropy correction ---*/
-
-    // const su2double MaxLambda = fabs(Lambda[0]) + RoeSoundSpeed;
-    // const su2double Delta = config->GetEntropyFix_Coeff();
-
-    // for (auto iVar = 0; iVar < 3; iVar++) {
-    //   Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
-    // }
-
     /*--- Harten and Hyman (1983) entropy correction ---*/
 
     Epsilon[0] = 4.0*max(0.0, max(Lambda[0]-ProjVel_i, ProjVel_j-Lambda[0]));
