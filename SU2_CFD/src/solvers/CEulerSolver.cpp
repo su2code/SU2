@@ -3623,9 +3623,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       }
     }
 
-    // Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
-    // Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
 
