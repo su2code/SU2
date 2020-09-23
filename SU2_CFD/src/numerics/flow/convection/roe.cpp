@@ -305,7 +305,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     // P_Tensor[nVar-1][nVar] = -FIVE3;
     // P_Tensor[nVar-1][nVar] = -1.0;
     // invP_Tensor[nVar][0]   = RoeTke;
-    P_Tensor[0][nVar] = Gamma_Minus_One*RoeTke/RoeSoundSpeed2
+    P_Tensor[0][nVar] = Gamma_Minus_One*RoeTke/RoeSoundSpeed2;
     invP_Tensor[nVar][0] = -0.5*RoeSqVel;
     for (auto iDim = 0; iDim < nDim; iDim++)
       invP_Tensor[nVar][iDim+1] = RoeVelocity[iDim];
