@@ -1341,7 +1341,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /*--- Moment with respect to the reference axis ---*/
 
-          if (iDim == 3) {
+          if (nDim == 3) {
             MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
             MomentX_Force[1] += (-Force[1]*Coord[2]);
             MomentX_Force[2] += (Force[2]*Coord[1]);
