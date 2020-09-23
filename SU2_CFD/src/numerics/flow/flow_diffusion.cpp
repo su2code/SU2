@@ -421,9 +421,9 @@ void CAvgGrad_Base::SetTauJacobian() {
       tau_jacobian_i[iDim][0] -= tau_jacobian_i[iDim][jDim+1]*V_i[jDim+1];
       tau_jacobian_j[iDim][0] -= tau_jacobian_j[iDim][jDim+1]*V_j[jDim+1];
     }
-    tau_jacobian_i[iDim][0] -= WF_Factor*TWO3*turb_ke_i*Normal[iDim];
-    tau_jacobian_j[iDim][0] -= WF_Factor*TWO3*turb_ke_j*Normal[iDim];
-    
+    tau_jacobian_i[iDim][0] -= WF_Factor*ONE3*turb_ke_i*Normal[iDim];
+    tau_jacobian_j[iDim][0] -= WF_Factor*ONE3*turb_ke_j*Normal[iDim];
+
     // Jacobian w.r.t. energy
     tau_jacobian_i[iDim][nDim+1] = 0;
     tau_jacobian_j[iDim][nDim+1] = 0;
