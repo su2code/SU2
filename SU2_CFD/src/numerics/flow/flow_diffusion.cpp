@@ -755,8 +755,6 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
     proj_heat_flux    += (heat_flux_factor*Mean_GradPrimVar[0][iDim] + Mean_GradTurbVar[iDim])*Normal[iDim];
   }
-
-  /*--- Jacobian wrt laminar viscosity ---*/
   
   su2double v2_i = 0., v2_j = 0.;
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -823,29 +821,20 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
       proj_heat_flux    += heat_flux_factor*Mean_GradPrimVar[0][iDim]*Normal[iDim];
       proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
     }
-  
-    /*--- Jacobian wrt eddy viscosity ---*/
 
-    // if (turb_omega_i > VorticityMag_i*F2_i/a1) {
-      // const su2double factor = 0.5*turb_ke_i/turb_omega_i;
-      const su2double zeta_i = max(turb_omega_i, VorticityMag_i*F2_i/a1),
-                      zeta_j = max(turb_omega_j, VorticityMag_j*F2_j/a1);
+    const su2double zeta_i = max(turb_omega_i, VorticityMag_i*F2_i/a1),
+                    zeta_j = max(turb_omega_j, VorticityMag_j*F2_j/a1);
 
-      const su2double factor_i = 0.5*turb_ke_i/zeta_i,
-                      factor_j = 0.5*turb_ke_j/zeta_j;
-                      
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Jacobian_i[iDim+1][0] += factor_i*proj_stress[iDim];
-      Jacobian_i[nDim+1][0] += factor_i*(proj_stress_dot_v + proj_heat_flux + sigma_k_i*proj_tke_flux);
-    // }
-
-    // if (turb_omega_j > VorticityMag_j*F2_j/a1) {
-      // const su2double factor = 0.5*turb_ke_j/turb_omega_j;
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        Jacobian_j[iDim+1][0] += factor_j*proj_stress[iDim];
-      Jacobian_j[nDim+1][0] += factor_j*(proj_stress_dot_v + proj_heat_flux + sigma_k_j*proj_tke_flux);
+    const su2double factor_i = 0.5*turb_ke_i/zeta_i,
+                    factor_j = 0.5*turb_ke_j/zeta_j;
+                    
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      Jacobian_i[iDim+1][0] += factor_i*proj_stress[iDim];
+      Jacobian_j[iDim+1][0] += factor_j*proj_stress[iDim];
     }
-  // }
+    Jacobian_i[nDim+1][0] += factor_i*(proj_stress_dot_v + proj_heat_flux + sigma_k_i*proj_tke_flux);
+    Jacobian_j[nDim+1][0] += factor_j*(proj_stress_dot_v + proj_heat_flux + sigma_k_j*proj_tke_flux);
+  }
   
 }
 
