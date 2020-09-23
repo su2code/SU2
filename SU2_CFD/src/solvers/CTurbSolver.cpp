@@ -597,7 +597,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
   su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const auto kPoint = node_i->GetPoint(iNeigh);
-    const su2double denom = nodesFlo->GetDensity(kPoint)/nodesFlo->GetDensity(iPoint);
+    const su2double ratio_k = nodesFlo->GetDensity(iPoint)/nodesFlo->GetDensity(kPoint);
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     
@@ -606,7 +606,7 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       Jacobian_j[iVar][iVar] = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++) {
         Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*sign_grad_i;
-        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]/denom;
+        Jacobian_j[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*ratio_k;
       }
     }
 
