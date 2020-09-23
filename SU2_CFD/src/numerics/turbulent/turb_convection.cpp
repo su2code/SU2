@@ -36,12 +36,12 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
-  Flux = new su2double [nVar];
+  Flux = new su2double [nVar] ();
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
   }
 }
 
@@ -240,8 +240,6 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
     Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk)*Area;
     Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;
-    Jacobian_i[0][1] = 0.0;
-    Jacobian_j[0][1] = 0.0;
     Jacobian_i[1][0] =  0.5*Diss_ro_rk*Area;
     Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area;
     Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;

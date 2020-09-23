@@ -40,26 +40,26 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
 
   roe_low_dissipation = val_low_dissipation;
 
-  Flux = new su2double [nVar];
-  Diff_U = new su2double [nPrimVarTot];
-  ProjFlux_i = new su2double [nVar];
-  ProjFlux_j = new su2double [nVar];
-  Conservatives_i = new su2double [nVar];
-  Conservatives_j = new su2double [nVar];
-  Lambda = new su2double [nPrimVarTot];
-  Epsilon = new su2double [nVar];
+  Flux = new su2double [nVar] ();
+  Diff_U = new su2double [nPrimVarTot] ();
+  ProjFlux_i = new su2double [nVar] ();
+  ProjFlux_j = new su2double [nVar] ();
+  Conservatives_i = new su2double [nVar] ();
+  Conservatives_j = new su2double [nVar] ();
+  Lambda = new su2double [nPrimVarTot] ();
+  Epsilon = new su2double [nVar] ();
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nPrimVarTot];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nPrimVarTot];
-    invP_Tensor[iVar] = new su2double [nVar];
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
+    P_Tensor[iVar] = new su2double [nPrimVarTot] ();
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
   }
 
-  if (tkeNeeded) invP_Tensor[nVar] = new su2double[nVar];
+  for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+    invP_Tensor[iVar] = new su2double [nVar] ();
 }
 
 CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
@@ -302,10 +302,6 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Last column of P tensor and row of inverse P tensor if using TKE ---*/
   if (tkeNeeded) {
-    for (auto iVar = 0; iVar < nVar-1; iVar++) {
-      P_Tensor[iVar][nVar]      = 0.0;
-      invP_Tensor[nVar][iVar+1] = 0.0;
-    }
     P_Tensor[nVar-1][nVar] = -FIVE3;
     invP_Tensor[nVar][0]   = RoeTke;
   }
