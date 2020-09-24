@@ -214,6 +214,7 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   const su2double rkv_i = Density_i*TurbVar_i[0]*ProjVel_i;
   const su2double rkv_j = Density_j*TurbVar_j[0]*ProjVel_j;
+  
   const su2double rov_i = Density_i*TurbVar_i[1]*ProjVel_i;
   const su2double rov_j = Density_j*TurbVar_j[1]*ProjVel_j;
 

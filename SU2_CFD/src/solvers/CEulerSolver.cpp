@@ -3575,6 +3575,38 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
+  if (gg && node_i->GetPhysicalBoundary()) {
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
+
+    const su2double OneOnVol = 1.0/node_i->GetVolume();
+    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+        const long iVertex = node_i->GetVertex(iMarker);
+        if (iVertex != -1) {
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            gradWeight[iDim] = -OneOnVol*geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
+
+          su2double gradWeightDotDist = 0.0;
+          for (auto iDim = 0; iDim < nDim; iDim++)
+            gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
+
+          const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+          for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+            dVl_dVi[iVar] = factor*lim_i[iVar];
+
+          for (auto iVar = 0; iVar < nVar; iVar++)
+            for (auto jVar = 0; jVar < nVar; jVar++)
+              for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
+                Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
+        }
+      }
+    }
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+  }
+
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
 
     /*--- d{r,v,p,k}/dU, evaluated at neighbor node ---*/
