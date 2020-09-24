@@ -3391,11 +3391,6 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
   const bool good_prim_i = (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
   const bool good_prim_j = (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
 
-  good_i = good_i && good_prim_i;
-  good_j = good_j && good_prim_j;
-
-  if (!good_i || !good_j) return;
-
   const su2double R = sqrt(fabs(primvar_j[nDim+2]/primvar_i[nDim+2]));
   const su2double R_Plus_One = R+1.;
   su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
@@ -3414,8 +3409,8 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
 
   const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 
-  good_i = good_i && good_roe;
-  good_j = good_j && good_roe;
+  good_i = good_i && good_prim_i && good_roe;
+  good_j = good_j && good_prim_j && good_roe;
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
