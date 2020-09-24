@@ -3433,6 +3433,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
+  const bool gg = (kindRecon == GREEN_GAUSS);
+
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
@@ -3443,7 +3445,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double sign_grad_i = -1.0 + 2.0*(kindRecon == GREEN_GAUSS);
+  const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
   const unsigned long nPrimVarTot = nVar + tkeNeeded;
 

@@ -450,13 +450,15 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
+  const bool gg = (kindRecon == GREEN_GAUSS);
+  
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
 
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
   const su2double kappa = config->GetMUSCL_Kappa();
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
-  const su2double sign_grad_i = -1.0 + 2.0*(kindRecon == GREEN_GAUSS);
+  const su2double sign_grad_i = -1.0 + 2.0*(gg);
   const su2double dUl_dVl = *rho_l;
   const su2double dUr_dVr = *rho_r;
   const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
