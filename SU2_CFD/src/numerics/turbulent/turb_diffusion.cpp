@@ -45,10 +45,10 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
   jacobianWeights_i = new su2double* [nVar];
   jacobianWeights_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
-    jacobianWeights_i[iVar] = new su2double [nDim];
-    jacobianWeights_j[iVar] = new su2double [nDim];
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
+    jacobianWeights_i[iVar] = new su2double [nDim] ();
+    jacobianWeights_j[iVar] = new su2double [nDim] ();
   }
 }
 

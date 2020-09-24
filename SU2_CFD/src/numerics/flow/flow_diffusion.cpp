@@ -41,31 +41,29 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   TauWall_i = -1.0; TauWall_j = -1.0;
 
-  Mean_PrimVar = new su2double [nPrimVar];
+  Mean_PrimVar = new su2double [nPrimVar] ();
 
   Mean_GradPrimVar = new su2double* [nPrimVar];
   for (auto iVar = 0; iVar < nPrimVar; iVar++)
-    Mean_GradPrimVar[iVar] = new su2double [nDim];
+    Mean_GradPrimVar[iVar] = new su2double [nDim] ();
 
-  Mean_GradTurbVar = new su2double [nDim];
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    Mean_GradTurbVar[iDim] = 0.0;
+  Mean_GradTurbVar = new su2double [nDim] ();
 
   tau_jacobian_i = new su2double* [nDim];
   tau_jacobian_j = new su2double* [nDim];
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    tau_jacobian_i[iDim] = new su2double [nVar];
-    tau_jacobian_j[iDim] = new su2double [nVar];
+    tau_jacobian_i[iDim] = new su2double [nVar] ();
+    tau_jacobian_j[iDim] = new su2double [nVar] ();
   }
 
-  heat_flux_jac_i = new su2double[nVar];
-  heat_flux_jac_j = new su2double[nVar];
+  heat_flux_jac_i = new su2double[nVar] ();
+  heat_flux_jac_j = new su2double[nVar] ();
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar];
-    Jacobian_j[iVar] = new su2double [nVar];
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
   }
 
 }
