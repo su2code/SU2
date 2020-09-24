@@ -162,7 +162,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1.);
   RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
 
-  /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
+  /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
 
   if (RoeSoundSpeed2 <= 0.0) {
     for (auto iVar = 0; iVar < nVar; iVar++) {
