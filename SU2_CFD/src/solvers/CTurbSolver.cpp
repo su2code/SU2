@@ -521,7 +521,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
             gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
           const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
-          for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+          for (auto iVar = 0; iVar < nVar; iVar++)
             dVl_dVi[iVar] = factor*lim_i[iVar];
 
           for (auto iVar = 0; iVar < nVar; iVar++)
