@@ -58,7 +58,7 @@ private:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config, bool Output);
+                                       CConfig *config, bool Output) override;
 public:
 
   /*!

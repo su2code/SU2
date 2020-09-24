@@ -55,9 +55,6 @@ protected:
 
   su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
-  su2double
-  **LowMach_Precontioner;            /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
   CNEMOGas  *FluidModel;             /*!< \brief fluid model used in the solver */
@@ -192,15 +189,8 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config, bool Output);
-
-  /*!
-     * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
-     * \param[in] iPoint - Index of the grid point
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPreconditioner(CConfig *config, unsigned short iPoint);
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                               CConfig *config, bool Output);
 
   /*!
    * \brief Set the fluid solver nondimensionalization.

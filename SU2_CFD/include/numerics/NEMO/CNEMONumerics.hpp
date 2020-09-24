@@ -43,7 +43,7 @@ public:
   su2double a_j, P_j, h_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
-  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+  su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
 
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
   
@@ -64,6 +64,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of primitive grad. variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,

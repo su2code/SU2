@@ -55,7 +55,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   int Unst_RestartIter = 0;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING; 
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
 
@@ -92,9 +92,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     Read_SU2_Restart_Metadata(geometry, config, false, filename_);
 
   }
-
-  //TODO: we dont need this in NEMO delete me
-  LowMach_Precontioner = nullptr;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -290,12 +287,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
 CNEMOEulerSolver::~CNEMOEulerSolver(void) {
   unsigned short iVar;
-
-  if (LowMach_Precontioner != nullptr) {
-    for (iVar = 0; iVar < nVar; iVar ++)
-      delete [] LowMach_Precontioner[iVar];
-    delete [] LowMach_Precontioner;
-  }
 
   delete node_infty;
   delete FluidModel;
@@ -1709,57 +1700,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     cout << NonDimTableOut.str();
 
  }
-}
-
-void CNEMOEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
-  unsigned short iDim, jDim, iVar, jVar;
-  su2double local_Mach, rho, enthalpy, soundspeed, sq_vel;
-  su2double *U_i = nullptr, Mach_infty2, Mach_lim2, aux, parameter;
-
-  cout << "This dont work" << endl;
-  /*--- Variables to calculate the preconditioner parameter Beta ---*/
-  local_Mach = sqrt(nodes->GetVelocity2(iPoint))/nodes->GetSoundSpeed(iPoint);
-
-  /*--- Weiss and Smith Preconditionng ---*/
-  su2double Beta_max = config->GetmaxTurkelBeta();
-  Mach_infty2 = pow(config->GetMach(),2.0);
-  Mach_lim2   = pow(0.00001,2.0);
-  aux         = max(pow(local_Mach,2.0),Mach_lim2);
-  parameter   = min(1.0, max(aux,Beta_max*Mach_infty2));
-
-  U_i = nodes->GetSolution(iPoint);
-
-  rho = U_i[0];
-  enthalpy = nodes->GetEnthalpy(iPoint);
-  soundspeed = nodes->GetSoundSpeed(iPoint);
-  sq_vel = nodes->GetVelocity2(iPoint);
-
-  /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-  LowMach_Precontioner[0][0] = 0.5*sq_vel;
-  LowMach_Precontioner[0][nVar-1] = 1.0;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Precontioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
-
-  for (iDim = 0; iDim < nDim; iDim ++) {
-    LowMach_Precontioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-    LowMach_Precontioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
-    for (jDim = 0; jDim < nDim; jDim ++) {
-      LowMach_Precontioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
-    }
-  }
-
-  LowMach_Precontioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
-  LowMach_Precontioner[nVar-1][nVar-1] = enthalpy;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Precontioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
-
-  for (iVar = 0; iVar < nVar; iVar ++ ) {
-    for (jVar = 0; jVar < nVar; jVar ++ ) {
-      LowMach_Precontioner[iVar][jVar] = (parameter - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*LowMach_Precontioner[iVar][jVar];
-      if (iVar == jVar)
-        LowMach_Precontioner[iVar][iVar] += 1.0;
-    }
-  }
 }
 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
