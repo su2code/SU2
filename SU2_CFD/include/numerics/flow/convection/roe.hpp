@@ -47,7 +47,7 @@ protected:
   su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeTke, ProjVelocity, RoeSoundSpeed2, RoeSqVel, kappa;
   su2double SoundSpeed_i, SoundSpeed_j, ProjVelocity_i, ProjVelocity_j;
   su2double muscl_kappa;
-  bool muscl, tkeNeeded;
+  bool muscl;
   unsigned short nPrimVarTot;
 
   su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */

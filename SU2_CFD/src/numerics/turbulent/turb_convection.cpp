@@ -75,11 +75,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   for (auto iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
-    turb_ke_i = TurbVar_i[0];
-    turb_ke_j = TurbVar_j[0];
-  }
-
   /*--- Primitive variables ---*/
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -92,6 +87,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
+
+  turb_ke_i = tkeNeeded ? TurbVar_i[0] : 0.0;
+  turb_ke_j = tkeNeeded ? TurbVar_j[0] : 0.0;
 
   Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
   Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
@@ -214,7 +212,7 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   const su2double rkv_i = Density_i*TurbVar_i[0]*ProjVel_i;
   const su2double rkv_j = Density_j*TurbVar_j[0]*ProjVel_j;
-  
+
   const su2double rov_i = Density_i*TurbVar_i[1]*ProjVel_i;
   const su2double rov_j = Density_j*TurbVar_j[1]*ProjVel_j;
 

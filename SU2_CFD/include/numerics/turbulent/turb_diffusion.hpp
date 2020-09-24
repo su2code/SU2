@@ -62,7 +62,7 @@ protected:
   **jacobianWeights_i = nullptr,            /*!< \brief Flux Jacobian correction term weights w.r.t. node i. */
   **jacobianWeights_j = nullptr;            /*!< \brief Flux Jacobian correction term weights w.r.t. node j. */
 
-  const bool correct_gradient = false, correct_jacobian = false, implicit = false, incompressible = false;
+  const bool correct_gradient = false, correct_jacobian = false, incompressible = false;
 
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD

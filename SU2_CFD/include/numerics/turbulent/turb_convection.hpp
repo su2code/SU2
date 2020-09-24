@@ -62,7 +62,7 @@ protected:
   su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0};
   su2double R, R_Plus_One, RoeSqVel, RoeEnthalpy, RoeTke, RoeOmega, RoeSoundSpeed2, RoeSoundSpeed;
 
-  const bool implicit = false, incompressible = false, dynamic_grid = false;
+  const bool incompressible = false, dynamic_grid = false;
 
   /*!
    * \brief A pure virtual function; Adds any extra variables to AD

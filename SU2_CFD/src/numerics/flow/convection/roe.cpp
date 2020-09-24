@@ -35,7 +35,6 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   dynamic_grid = config->GetDynamic_Grid();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
-  tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   nPrimVarTot = nVar + tkeNeeded;
 
   roe_low_dissipation = val_low_dissipation;
@@ -221,12 +220,9 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
   Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-      Lambda[iVar] = 0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]);
-    else
-      Lambda[iVar] = fabs(Lambda[iVar]);
-  }
+  for (auto iVar = 0; iVar < nVar; iVar++)
+    Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
+                                                        : su2double(fabs(Lambda[iVar]));
 
   if (tkeNeeded)
     Lambda[nVar] = Lambda[0];

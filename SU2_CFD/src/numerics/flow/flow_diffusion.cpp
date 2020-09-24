@@ -38,7 +38,6 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
       correct_gradient(val_correct_grad) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
   TauWall_i = -1.0; TauWall_j = -1.0;
 
