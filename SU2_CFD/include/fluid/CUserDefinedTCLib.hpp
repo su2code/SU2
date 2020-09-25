@@ -128,7 +128,7 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves) final;
+  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
 
   /*!
    * \brief Get species diffusion coefficients.

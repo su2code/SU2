@@ -937,7 +937,7 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
 

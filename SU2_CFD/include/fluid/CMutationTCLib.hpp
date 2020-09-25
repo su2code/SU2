@@ -39,7 +39,12 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
-   std::unique_ptr<Mutation::Mixture> mixture; /*!< \brief Pointer to object Mixture from Mutation++ library. */
+  std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
+
+  vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
+  es,                                     /*!< \brief Species energies. */
+  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
+  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
 
 public:
 
@@ -94,7 +99,7 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves) final;
+  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
 
   /*!
    * \brief Get species diffusion coefficients.

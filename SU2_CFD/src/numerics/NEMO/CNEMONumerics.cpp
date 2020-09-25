@@ -62,8 +62,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-      cout << "Delete Me, Calling Mutation" << endl;
+      fluidmodel = new CMutationTCLib(config);
       break;
       case USER_DEFINED_NONEQ:
       fluidmodel = new CUserDefinedTCLib(config, nDim, false);
@@ -235,7 +234,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
-  su2double rho, T;
+  su2double rho, T, Tve;
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -251,10 +250,11 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
+  Tve  = val_primvar[TVE_INDEX];
   V   = val_primvar;
   GV  = val_gradprimvar;
 
-  hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
+  hs = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_eve);
   
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
