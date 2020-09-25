@@ -561,7 +561,8 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
 
   const su2double five3k = FIVE3*(*k);
   const su2double two3k  = TWO3*(*k);
-  const su2double h = c2/Gamma_Minus_One + q2 + (*k);
+  // const su2double h = c2/Gamma_Minus_One + q2 + (*k);
+  const su2double h = c2/(Gamma_Minus_One) + q2;
 
   if (nDim == 2) {
     p[0][0] = 1.0;
@@ -579,10 +580,14 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[2][2] = alpha*(v[1]+(*c)*n[1]);
     p[2][3] = alpha*(v[1]-(*c)*n[1]);
 
-    p[3][0] = q2+five3k;
+    // p[3][0] = q2+five3k;
+    // p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
+    // p[3][2] = alpha*(h+two3k+(*c)*theta);
+    // p[3][3] = alpha*(h+two3k-(*c)*theta);
+    p[3][0] = q2-(Gamma-FIVE3)*(*k);
     p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[3][2] = alpha*(h+two3k+(*c)*theta);
-    p[3][3] = alpha*(h+two3k-(*c)*theta);
+    p[3][2] = alpha*(h-(Gamma-FIVE3)*(*k)+(*c)*theta);
+    p[3][3] = alpha*(h-(Gamma-FIVE3)*(*k)-(*c)*theta);
   }
   else {
     p[0][0] = n[0];
