@@ -39,7 +39,7 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
-  Mutation::Mixture mix;  //cat: maybe no need for Mutation::
+   std::unique_ptr<Mutation::Mixture> mixture; /*!< \brief Pointer to object Mixture from Mutation++ library. */
 
 public:
 
