@@ -290,8 +290,16 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
 
-      if (!good_i) {cout << "Turb[" << geometry->node[iPoint]->GetGlobalIndex() << "]: k_i= " << turbPrimVar_i[0] << ", omega_i= " << turbPrimVar_i[1] << ", r_i= " << flowPrimVar_i[nDim+2] << ", p_i= " << flowPrimVar_i[nDim+1] << endl;}
-      if (!good_j) {cout << "Turb[" << geometry->node[jPoint]->GetGlobalIndex() << "]: k_j= " << turbPrimVar_j[0] << ", omega_j= " << turbPrimVar_j[1] << ", r_j= " << flowPrimVar_j[nDim+2] << ", p_j= " << flowPrimVar_j[nDim+1] << endl;}
+      if (!good_i) {cout << "Turb[" << geometry->node[iPoint]->GetGlobalIndex() 
+                                    << "]: k_i= " << turbPrimVar_i[0] 
+                                    << ", omega_i= " << turbPrimVar_i[1] 
+                                    << ", r_i= " << flowPrimVar_i[nDim+2] 
+                                    << ", p_i= " << flowPrimVar_i[nDim+1] << endl;}
+      if (!good_j) {cout << "Turb[" << geometry->node[jPoint]->GetGlobalIndex() 
+                                    << "]: k_j= " << turbPrimVar_j[0] 
+                                    << ", omega_j= " << turbPrimVar_j[1] 
+                                    << ", r_j= " << flowPrimVar_j[nDim+2] 
+                                    << ", p_j= " << flowPrimVar_j[nDim+1] << endl;}
 
     }
     else {
