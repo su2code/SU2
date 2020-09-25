@@ -290,6 +290,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
 
+      if (!good_i) {cout << "Turb[" << iPoint << "]: k_i= " << turbPrimVar_i[0] << ", omega_i= " << turbPrimVar_i[1] << ", r_i= " << Primitive_i[nDim+2] << ", p_i= " << primvar_i[nDim+1] << endl;}
+      if (!good_j) {cout << "Turb[" << jPoint << "]: k_j= " << turbPrimVar_j[0] << ", omega_j= " << turbPrimVar_j[1] << ", r_j= " << Primitive_j[nDim+2] << ", p_j= " << primvar_j[nDim+1] << endl;}
+
     }
     else {
       for (auto iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {

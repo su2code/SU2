@@ -3236,6 +3236,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
+      if (!good_i) {cout << "Flow[" << iPoint << "]: k_i= " << (tke_i) << ", r_i= " << Primitive_i[nDim+2] << ", p_i= " << primvar_i[nDim+1] << endl;}
+      if (!good_j) {cout << "Flow[" << jPoint << "]: k_j= " << (tke_j) << ", r_j= " << Primitive_j[nDim+2] << ", p_j= " << primvar_j[nDim+1] << endl;}
+
       nodes->SetNon_Physical(iPoint, !good_i);
       nodes->SetNon_Physical(jPoint, !good_j);
 
@@ -3415,9 +3418,6 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
 
   good_i = good_i && good_prim_i && good_roe;
   good_j = good_j && good_prim_j && good_roe;
-
-  if (!good_i) {cout << "k_i= " << (*tke_i) << ", r_i= " << primvar_i[nDim+2] << ", p_i= " << primvar_i[nDim+1] << endl;}
-  if (!good_j) {cout << "k_j= " << (*tke_j) << ", r_j= " << primvar_j[nDim+2] << ", p_j= " << primvar_j[nDim+1] << endl;}
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
