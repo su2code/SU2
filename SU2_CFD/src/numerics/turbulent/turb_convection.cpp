@@ -132,6 +132,29 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     }
   }
 
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
+  RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
+  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
+
+  /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
+
+  if (RoeSoundSpeed2 <= 0.0) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      Flux[iVar] = 0.0;
+      for (auto jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
+      }
+    }
+
+    AD::SetPreaccOut(Flux, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  }
+
+  /*--- Positive RoeSoundSpeed^2, compute fluxes and Jacobian ---*/
+
   FinishResidualCalc(config);
   
   AD::SetPreaccOut(Flux, nVar);
@@ -173,27 +196,8 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
-  RoeTke = (R*TurbVar_j[0]+TurbVar_i[0])*inv_R_Plus_One;
   RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])*inv_R_Plus_One;
-  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
-
-  /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
-
-  if (RoeSoundSpeed2 <= 0.0) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      Flux[iVar] = 0.0;
-      for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
-    return;
-  }
-
-  /*--- Positive RoeSoundSpeed^2, compute fluxes and Jacobian ---*/
-
-  RoeSoundSpeed  = sqrt(RoeSoundSpeed2);
+  RoeSoundSpeed = sqrt(RoeSoundSpeed2);
 
   Lambda[1] = Lambda[0] + RoeSoundSpeed;
   Lambda[2] = Lambda[0] - RoeSoundSpeed;
