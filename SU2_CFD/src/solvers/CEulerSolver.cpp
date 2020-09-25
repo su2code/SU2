@@ -3415,6 +3415,9 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
 
   good_i = good_i && good_prim_i && good_roe;
   good_j = good_j && good_prim_j && good_roe;
+
+  if (!good_i) {cout << "k_i= " << (*tke_i) << ", r_i= " << primvar_i[nDim+2] << ", p_i= " << primvar_i[nDim+1] << endl;}
+  if (!good_j) {cout << "k_j= " << (*tke_j) << ", r_j= " << primvar_j[nDim+2] << ", p_j= " << primvar_j[nDim+1] << endl;}
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
