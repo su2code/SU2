@@ -47,7 +47,7 @@ CFEMStandardVolumeQuadGrid::CFEMStandardVolumeQuadGrid(const unsigned short val_
 }
 
 void CFEMStandardVolumeQuadGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                                const ColMajorMatrix<su2double>    &matCoor,
-                                                                vector<ColMajorMatrix<su2double> > &matDerCoor) const {
+                                                                ColMajorMatrix<su2double>          &matCoor,
+                                                                vector<ColMajorMatrix<su2double> > &matDerCoor) {
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

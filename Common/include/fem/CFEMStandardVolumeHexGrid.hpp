@@ -68,8 +68,8 @@ public:
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
    */
   void DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                      const ColMajorMatrix<su2double>    &matCoor,
-                                      vector<ColMajorMatrix<su2double> > &matDerCoor) const override;
+                                      ColMajorMatrix<su2double>          &matCoor,
+                                      vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
    * \brief Function, that returns the number of different face types

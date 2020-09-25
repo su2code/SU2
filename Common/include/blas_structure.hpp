@@ -57,16 +57,17 @@ public:
   /*!
    * \brief Function, which carries out a dense matrix product. It is a
             limited version of the BLAS gemm functionality..
-   * \param[in]  M  - Number of rows of A and C.
-   * \param[in]  N  - Number of columns of B and C.
-   * \param[in]  K  - Number of columns of A and number of rows of B.
-   * \param[in]  A  - Input matrix in the multiplication.
-   * \param[in]  B  - Input matrix in the multiplication.
-   * \param[out] C  - Result of the matrix product A*B.
+   * \param[in]  M      - Number of rows of A and C.
+   * \param[in]  N      - Number of columns of B and C.
+   * \param[in]  K      - Number of columns of A and number of rows of B.
+   * \param[in]  A      - Input matrix in the multiplication.
+   * \param[in]  B      - Input matrix in the multiplication.
+   * \param[out] C      - Result of the matrix product A*B.
+   * \param[out] config - Object used for the timing of the gemm call.
    */
-  void gemm(const int M,        const int N,        const int K,
-            const su2double *A, const su2double *B, su2double *C,
-            const CConfig *config);
+  void gemm(const int M,            const int N,        const int K,
+            const passivedouble *A, const su2double *B, su2double *C,
+            const CConfig *config) const;
 
   /*!
    * \brief Function, which carries out a dense matrix vector product
@@ -77,8 +78,8 @@ public:
    * \param[in]  x  - Input vector in the multiplication.
    * \param[out] y  - Result of the product A x.
    */
-  void gemv(const int M,        const int N,   const su2double *A,
-            const su2double *x, su2double *y);
+  void gemv(const int M,        const int N,   const passivedouble *A,
+            const su2double *x, su2double *y) const;
 
   /*!
    * \brief Function, to carry out the axpy operation, i.e y += a*x.
@@ -92,11 +93,11 @@ public:
    * param[in]    incy - Specifies the increment of y.
    */
   void axpy(const int n,    const su2double a,  const su2double *x,
-            const int incx, su2double *y,       const int incy);
+            const int incx, su2double *y,       const int incy) const;
 
 private:
 
-#if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL))
     /* Blocking parameters for the outer kernel.  We multiply mc x kc blocks of
      the matrix A with kc x nc panels of the matrix B (this approach is referred
      to as `gebp` in the literature). */
@@ -105,7 +106,7 @@ private:
   const int nc;
 
   /*!
-   * \brief Function, which perform the implementation of the gemm functionality.
+   * \brief Function, which performs the implementation of the gemm functionality.
    * \param[in]  m  - Number of rows of a and c.
    * \param[in]  n  - Number of columns of b and c.
    * \param[in]  k  - Number of columns of a and number of rows of b.
@@ -113,8 +114,8 @@ private:
    * \param[in]  b  - Input matrix in the multiplication.
    * \param[out] c  - Result of the matrix product a*b.
    */
-  void gemm_imp(const int m,        const int n,        const int k,
-                const su2double *a, const su2double *b, su2double *c);
+  void gemm_imp(const int m,            const int n,        const int k,
+                const passivedouble *a, const su2double *b, su2double *c) const;
 
   /*!
    * \brief Compute a portion of the c matrix one block at a time.
@@ -129,8 +130,8 @@ private:
    * \param[out] c   - Result of the matrix product a*b.
    * \param[in]  ldc - Leading dimension of the matrix c.
    */
-  void gemm_inner(int m, int n, int k, const su2double *a, int lda,
-                  const su2double *b, int ldb, su2double *c, int ldc);
+  void gemm_inner(int m, int n, int k, const passivedouble *a, int lda,
+                  const su2double *b, int ldb, su2double *c, int ldc) const;
 
   /*!
    * \brief Naive gemm implementation to handle arbitrary sized matrices.
@@ -144,7 +145,7 @@ private:
    * \param[out] c   - Result of the matrix product a*b.
    * \param[in]  ldc - Leading dimension of the matrix c.
    */
-  void gemm_arbitrary(int m, int n, int k, const su2double *a, int lda,
-                      const su2double *b, int ldb, su2double *c, int ldc);
+  void gemm_arbitrary(int m, int n, int k, const passivedouble *a, int lda,
+                      const su2double *b, int ldb, su2double *c, int ldc) const;
 #endif
 };

@@ -350,7 +350,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
 
       /*--- Get the dimensions from the standard element. ---*/
-      const unsigned short sizeDOF = standardVolumeElements[i]->GetNDOFsPad();
+      const unsigned short sizeDOF = standardVolumeElements[i]->GetNDOFs();
       const unsigned short sizeInt = standardVolumeElements[i]->GetNIntegrationPad();
 
       /*--- Allocate the memory for the Jacobians and the coordinates
@@ -465,6 +465,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
   for(unsigned long i=0; i<standardFaceElements.size(); ++i)
     delete standardFaceElements[i];
 
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
 }
 

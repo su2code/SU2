@@ -27,6 +27,28 @@
 
 #include "../../include/fem/CFEMStandardElementBase.hpp"
 #include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/omp_structure.hpp"
+
+/*----------------------------------------------------------------------------------*/
+/*          Constructor and destructor of CFEMStandardElementBase.                  */
+/*----------------------------------------------------------------------------------*/
+
+CFEMStandardElementBase::CFEMStandardElementBase() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  jitter = nullptr;
+#endif
+}
+
+CFEMStandardElementBase::~CFEMStandardElementBase() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  if( jitter ) {
+    mkl_jit_destroy(jitter);
+    jitter = nullptr;
+  }
+#endif
+}
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardElementBase.                     */
@@ -76,9 +98,9 @@ unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
 }
 
 void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool                         LGLDistribution,
-                                                         const ColMajorMatrix<su2double>    &matCoor,
+                                                         ColMajorMatrix<su2double>          &matCoor,
                                                          vector<ColMajorMatrix<su2double> > &matMetricTerms,
-                                                         su2activevector                    &Jacobians) const {
+                                                         su2activevector                    &Jacobians) {
 
   /*--- Compute the derivatives of the coordinates in the volume integration points.
         The matrix matMetricTerms is used as storage for this data. ---*/
@@ -87,25 +109,106 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
   /*--- Check the dimension of the problem. ---*/
   if(matMetricTerms.size() == 2) {
 
-    /*--- 2D problem. Loop over the integration points to compute
-          the 2D metric terms. ---*/
+    /*--- 2D problem. Set the references to the derivatives of the Cartesian
+          coordinates w.r.t. the parametric coordinates, which are currently
+          stored in matMetricTerms. ---*/
+    ColMajorMatrix<su2double> &dCoorDr = matMetricTerms[0];
+    ColMajorMatrix<su2double> &dCoorDs = matMetricTerms[1];
 
+    /*--- Set the references to store the derivatives of the parametric coordinates
+          w.r.t. the Cartesian coordinates. ---*/
+    ColMajorMatrix<su2double> &dParDx = matMetricTerms[0];
+    ColMajorMatrix<su2double> &dParDy = matMetricTerms[1];
 
+    /*--- Loop over the padded number of integration points
+          to compute the 2D metric terms. ---*/
+    SU2_OMP_SIMD
+    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+
+      /*--- Easier storage of the derivatives of the Cartesian coordinates
+            w.r.t. the parametric coordinates. ---*/
+      const su2double dxdr = dCoorDr(i,0);
+      const su2double dydr = dCoorDr(i,1);
+
+      const su2double dxds = dCoorDs(i,0);
+      const su2double dyds = dCoorDs(i,1);
+
+      /*--- Compute the Jacobian. ---*/
+      Jacobians(i) = dxdr*dyds - dxds*dydr;
+
+      /*--- Compute the derivatives of the parametric coordinates w.r.t.
+            to the Cartesian coordinates. They are multiplied by the Jacobian
+            to avoid a division by this Jacobian at this stage. ---*/
+      dParDx(i,0) =  dyds;   // J drdx
+      dParDx(i,1) = -dydr;   // J dsdx
+
+      dParDy(i,0) = -dxds;   // J drdy
+      dParDy(i,1) =  dxdr;   // J dsdy
+    }
   }
   else {
 
-    /*--- 3D problem. Loop over the integration points to compute
-          the 3D metric terms. ---*/
+    /*--- 3D problem. Set the references to the derivatives of the Cartesian
+          coordinates w.r.t. the parametric coordinates, which are currently
+          stored in matMetricTerms. ---*/
+    ColMajorMatrix<su2double> &dCoorDr = matMetricTerms[0];
+    ColMajorMatrix<su2double> &dCoorDs = matMetricTerms[1];
+    ColMajorMatrix<su2double> &dCoorDt = matMetricTerms[2];
 
+    /*--- Set the references to store the derivatives of the parametric coordinates
+          w.r.t. the Cartesian coordinates. ---*/
+    ColMajorMatrix<su2double> &dParDx = matMetricTerms[0];
+    ColMajorMatrix<su2double> &dParDy = matMetricTerms[1];
+    ColMajorMatrix<su2double> &dParDz = matMetricTerms[2];
+
+    /*--- Loop over the padded number of integration points
+          to compute the 3D metric terms. ---*/
+    SU2_OMP_SIMD
+    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+
+      /*--- Easier storage of the derivatives of the Cartesian coordinates
+            w.r.t. the parametric coordinates. ---*/
+      const su2double dxdr = dCoorDr(i,0);
+      const su2double dydr = dCoorDr(i,1);
+      const su2double dzdr = dCoorDr(i,2);
+
+      const su2double dxds = dCoorDs(i,0);
+      const su2double dyds = dCoorDs(i,1);
+      const su2double dzds = dCoorDs(i,2);
+
+      const su2double dxdt = dCoorDt(i,0);
+      const su2double dydt = dCoorDt(i,1);
+      const su2double dzdt = dCoorDt(i,2);
+
+      /*--- Compute the Jacobian. ---*/
+      Jacobians(i) = dxdr*(dyds*dzdt - dzds*dydt)
+                   - dxds*(dydr*dzdt - dzdr*dydt)
+                   + dxdt*(dydr*dzds - dzdr*dyds);
+
+      /*--- Compute the derivatives of the parametric coordinates w.r.t.
+            to the Cartesian coordinates. They are multiplied by the Jacobian
+            to avoid a division by this Jacobian at this stage. ---*/
+      dParDx(i,0) = dyds*dzdt - dzds*dydt;  // J drdx
+      dParDx(i,1) = dzdr*dydt - dydr*dzdt;  // J dsdx
+      dParDx(i,2) = dydr*dzds - dzdr*dyds;  // J dtdx
+
+      dParDy(i,0) = dzds*dxdt - dxds*dzdt;  // J drdy
+      dParDy(i,1) = dxdr*dzdt - dzdr*dxdt;  // J dsdy
+      dParDy(i,2) = dzdr*dxds - dxdr*dzds;  // J dtdy
+
+      dParDz(i,0) = dxds*dydt - dyds*dxdt;  // J drdz
+      dParDz(i,1) = dydr*dxdt - dxdr*dydt;  // J dsdz
+      dParDz(i,2) = dxdr*dyds - dydr*dxds;  // J dtdz
+    }
   }
 }
 
 void CFEMStandardElementBase::MinMaxJacobians(const bool                         LGLDistribution,
-                                              const ColMajorMatrix<su2double>    &matCoor,
+                                              ColMajorMatrix<su2double>          &matCoor,
                                               vector<ColMajorMatrix<su2double> > &matMetricTerms,
                                               su2activevector                    &Jacobians,
                                               su2double                          &jacMin,
-                                              su2double                          &jacMax) const {
+                                              su2double                          &jacMax) {
 
   /*--- Compute the metric terms in the volume integration points. ---*/
   MetricTermsVolumeIntPoints(LGLDistribution, matCoor, matMetricTerms, Jacobians);
@@ -442,6 +545,60 @@ passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
 
   /*--- Return Pn. ---*/
   return Pn;
+}
+
+void CFEMStandardElementBase::OwnGemm(const int                     M,
+                                      const int                     N,
+                                      const int                     K,
+                                      ColMajorMatrix<passivedouble> &A,
+                                      ColMajorMatrix<su2double>     &B,
+                                      ColMajorMatrix<su2double>     &C,
+                                      const CConfig                 *config) {
+
+  /*--- Check if the jitted gemm call can be used. ---*/
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+
+  /*--- Carry out the timing, if desired and call the jitted gemm function. ---*/
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->GEMM_Tick(&timeGemm);
+#endif
+
+  my_dgemm(jitter, A.data(), B.data(), C.data());
+
+#ifdef PROFILE
+  if( config ) config->GEMM_Tock(timeGemm, M, N, K);
+#endif
+
+#else
+
+  /*--- Use the interface to the more standard BLAS functionality. ---*/
+  blasFunctions.gemm(M, N, K, A.data(), B.data(), C.data(), config);
+
+#endif
+}
+
+void CFEMStandardElementBase::SetUpJittedGEMM(const int M,
+                                              const int N,
+                                              const int K) {
+
+  /*--- Check if the jitted GEMM call can be created. ---*/
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+
+  /*--- Create the GEMM Kernel and check if it went okay. ---*/
+  passivedouble alpha = 1.0;
+  passivedouble beta  = 0.0;
+  mkl_jit_status_t status = mkl_jit_create_dgemm(&jitter, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS,
+                                                 M, N, K, alpha, M, K, beta, M);
+
+  if(status == MKL_JIT_ERROR)
+    SU2_MPI::Error(string("Jitted gemm kernel could not be created"), CURRENT_FUNCTION);
+
+  /*--- Retrieve the function pointer to the DGEMM kernel
+        void my_dgemm(void*, double*, double*, double*). ---*/
+  my_dgemm = mkl_jit_get_dgemm_ptr(jitter);
+
+#endif
 }
 
 /*----------------------------------------------------------------------------------*/

@@ -35,6 +35,12 @@
 #include "../CConfig.hpp"
 #include "../toolboxes/C2DContainer.hpp"
 
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+#include "mkl.h"
+#else
+#include "../blas_structure.hpp"
+#endif
+
 using namespace std;
 
 /*!
@@ -58,16 +64,23 @@ protected:
 
   su2passivevector wIntegration;    /*!< \brief The weights of the integration points for this standard element. */
 
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  void *jitter;                 /*!< \brief Pointer to the data for the jitted gemm function. */
+  dgemm_jit_kernel_t my_dgemm;  /*!< \brief Pointer to the function to carry out the jitted gemm call. */
+#else
+  CBlasStructure blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
+#endif
+
 public:
   /*!
-  * \brief Constructor. Nothing to be done.
+  * \brief Constructor.
   */
-  CFEMStandardElementBase() = default;
+  CFEMStandardElementBase();
 
   /*!
-  * \brief Destructor. Nothing to be done.
+  * \brief Destructor.
   */
-  virtual ~CFEMStandardElementBase() = default;
+  virtual ~CFEMStandardElementBase();
 
 public:
   /*!
@@ -95,8 +108,8 @@ public:
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
    */
   virtual void DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                              const ColMajorMatrix<su2double>    &matCoor,
-                                              vector<ColMajorMatrix<su2double> > &matDerCoor) const {
+                                              ColMajorMatrix<su2double>          &matCoor,
+                                              vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
@@ -167,9 +180,9 @@ public:
    * \param[out] Jacobians       - Vector to store the Jacobians of the transformation.
    */
   void MetricTermsVolumeIntPoints(const bool                         LGLDistribution,
-                                  const ColMajorMatrix<su2double>    &matCoor,
+                                  ColMajorMatrix<su2double>          &matCoor,
                                   vector<ColMajorMatrix<su2double> > &matMetricTerms,
-                                  su2activevector                    &Jacobians) const;
+                                  su2activevector                    &Jacobians);
 
   /*!
    * \brief Function, which computes the mininum and maximum value of the Jacobian of
@@ -182,11 +195,11 @@ public:
    * \param[out] jacMax          - Maximum value of the Jacobian.
    */
   void MinMaxJacobians(const bool                         LGLDistribution,
-                       const ColMajorMatrix<su2double>    &matCoor,
+                       ColMajorMatrix<su2double>          &matCoor,
                        vector<ColMajorMatrix<su2double> > &matMetricTerms,
                        su2activevector                    &Jacobians,
                        su2double                          &jacMin,
-                       su2double                          &jacMax) const;
+                       su2double                          &jacMax);
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.
@@ -325,6 +338,37 @@ protected:
                            unsigned short alpha,
                            unsigned short beta,
                            passivedouble  x);
+
+  /*!
+   * \brief Function, which is an interface to the actual gemm functionality.
+   * \param[in]  M      - First matrix dimension of A and C in the gemm call.
+   * \param[in]  N      - Second matrix dimension of B and C in the gemm call.
+   * \param[in]  K      - First matrix dimension of B and second matrix dimension
+   *                      of A in the gemm call.
+   * \param[in]  A      - Matrix A in the gemm call.
+   * \param[in]  B      - Matrix B in the gemm call.
+   * \param[out] C      - Matrix C in the gemm call.
+   * \param[out] config - Object used for the timing of the gemm call.
+   */
+  void OwnGemm(const int                     M,
+               const int                     N,
+               const int                     K,
+               ColMajorMatrix<passivedouble> &A,
+               ColMajorMatrix<su2double>     &B,
+               ColMajorMatrix<su2double>     &C,
+               const CConfig                 *config);
+
+  /*!
+   * \brief Function, which sets up the jitted GEMM call when MKL is used.
+   * \param[in] M - First matrix dimension of A and C in the gemm call.
+   * \param[in] N - Second matrix dimension of B and C in the gemm call.
+   * \param[in] K - First matrix dimension of B and second matrix dimension
+   *                of A in the gemm call.
+   */
+  void SetUpJittedGEMM(const int M,
+                       const int N,
+                       const int K);
+
 private:
   /*!
    * \brief Function, which computes the value of the unscaled Legendre polynomial for the given x-coordinate.

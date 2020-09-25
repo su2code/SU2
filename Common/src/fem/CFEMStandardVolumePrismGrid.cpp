@@ -45,12 +45,33 @@ CFEMStandardVolumePrismGrid::CFEMStandardVolumePrismGrid(const unsigned short va
         the integration points for both the equidistant and LGL point distribution. ---*/
   DerLagBasisIntPointsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui, derLagBasisIntEqui);
   DerLagBasisIntPointsPrism(rTriangleDOFsLGL,  sTriangleDOFsLGL,  rLineDOFsLGL,  derLagBasisIntLGL);
+
+  /*--- Set up the jitted gemm call, if supported. For this particular standard
+        element the derivative of the coordinates are computed, which is 3. ---*/
+  SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
 }
 
 void CFEMStandardVolumePrismGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                                 const ColMajorMatrix<su2double>    &matCoor,
-                                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) const {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+                                                                 ColMajorMatrix<su2double>          &matCoor,
+                                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function OwnGemm 3 times to compute the derivatives
+          of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[2], matCoor, matDerCoor[2], nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function OwnGemm 3 times to compute the derivatives
+          of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[2], matCoor, matDerCoor[2], nullptr);
+  }
 }
 
 void CFEMStandardVolumePrismGrid::DerLagBasisIntPointsPrism(const vector<passivedouble>            &rTriangleDOFs,

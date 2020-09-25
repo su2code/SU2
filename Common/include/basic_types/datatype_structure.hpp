@@ -72,6 +72,7 @@ using su2double = codi::RealReverse;
 using su2double = codi::RealForward;
 
 #else // primal / direct / no AD
+#define PRIMAL_SOLVER
 using su2double = double;
 #endif
 
