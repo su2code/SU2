@@ -293,19 +293,20 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       if (!good_i) {cout << "Turb[" << geometry->node[iPoint]->GetGlobalIndex() 
                                     << "]: k_i= " << turbPrimVar_i[0] 
                                     << ", omega_i= " << turbPrimVar_i[1] ;
-                    cout << "gradk_i= (";
+                    cout << ", gradk_i= (";
                     for (auto iDim = 0; iDim < nDim; iDim++)
                       cout << nodes->GetGradient_Reconstruction(iPoint,0,iDim) << ", ";
+                    cout << "), gradom_i= (";
                     for (auto iDim = 0; iDim < nDim; iDim++)
                       cout << nodes->GetGradient_Reconstruction(iPoint,1,iDim) << ", ";
                     cout << ")" << endl;}
       if (!good_j) {cout << "Turb[" << geometry->node[jPoint]->GetGlobalIndex() 
                                     << "]: k_j= " << turbPrimVar_j[0] 
                                     << ", omega_j= " << turbPrimVar_j[1] ;
-                    cout << "gradk_j= (";
+                    cout << ", gradk_j= (";
                     for (auto iDim = 0; iDim < nDim; iDim++)
                       cout << nodes->GetGradient_Reconstruction(jPoint,0,iDim) << ", ";
-                    cout << "), gradom_j= ("
+                    cout << "), gradom_j= (";
                     for (auto iDim = 0; iDim < nDim; iDim++)
                       cout << nodes->GetGradient_Reconstruction(jPoint,1,iDim) << ", ";
                     cout << ")" << endl;}
