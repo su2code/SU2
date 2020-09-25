@@ -160,8 +160,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   }
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
   RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
-  // RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
-  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel);
+  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
 
@@ -291,9 +290,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Last column of P tensor and row of inverse P tensor if using TKE ---*/
   if (tkeNeeded) {
-    // P_Tensor[nVar-1][nVar] = -FIVE3;
-    // invP_Tensor[nVar][0]   = RoeTke;
-    P_Tensor[nVar-1][nVar] = Gamma-FIVE3;
+    P_Tensor[nVar-1][nVar] = -FIVE3;
     invP_Tensor[nVar][0]   = RoeTke;
   }
 

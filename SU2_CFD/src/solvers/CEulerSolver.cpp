@@ -3411,8 +3411,7 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
   const su2double RoeTke = (R*(*tke_j)+(*tke_i))/R_Plus_One;
 
-  // const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
-  const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel > 0.0);
+  const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 
   good_i = good_i && good_prim_i && good_roe;
   good_j = good_j && good_prim_j && good_roe;
