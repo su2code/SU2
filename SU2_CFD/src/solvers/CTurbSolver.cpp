@@ -292,14 +292,23 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       if (!good_i) {cout << "Turb[" << geometry->node[iPoint]->GetGlobalIndex() 
                                     << "]: k_i= " << turbPrimVar_i[0] 
-                                    << ", omega_i= " << turbPrimVar_i[1] 
-                                    << ", r_i= " << flowPrimVar_i[nDim+2] 
-                                    << ", p_i= " << flowPrimVar_i[nDim+1] << endl;}
+                                    << ", omega_i= " << turbPrimVar_i[1] ;
+                    cout << "gradk_i= (";
+                    for (auto iDim = 0; iDim < nDim; iDim++)
+                      cout << nodes->GetGradient_Reconstruction(iPoint,0,iDim) << ", ";
+                    for (auto iDim = 0; iDim < nDim; iDim++)
+                      cout << nodes->GetGradient_Reconstruction(iPoint,1,iDim) << ", ";
+                    cout << ")" << endl;}
       if (!good_j) {cout << "Turb[" << geometry->node[jPoint]->GetGlobalIndex() 
                                     << "]: k_j= " << turbPrimVar_j[0] 
-                                    << ", omega_j= " << turbPrimVar_j[1] 
-                                    << ", r_j= " << flowPrimVar_j[nDim+2] 
-                                    << ", p_j= " << flowPrimVar_j[nDim+1] << endl;}
+                                    << ", omega_j= " << turbPrimVar_j[1] ;
+                    cout << "gradk_j= (";
+                    for (auto iDim = 0; iDim < nDim; iDim++)
+                      cout << nodes->GetGradient_Reconstruction(jPoint,0,iDim) << ", ";
+                    cout << "), gradom_j= ("
+                    for (auto iDim = 0; iDim < nDim; iDim++)
+                      cout << nodes->GetGradient_Reconstruction(jPoint,1,iDim) << ", ";
+                    cout << ")" << endl;}
 
     }
     else {
