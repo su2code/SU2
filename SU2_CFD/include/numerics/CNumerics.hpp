@@ -80,11 +80,11 @@ protected:
   Cp_i,               /*!< \brief Cp at point i. */
   Cp_j;               /*!< \brief Cp at point j. */
   su2double
-  Eddy_Viscosity_i = 0,  /*!< \brief Eddy viscosity at point i. */
-  Eddy_Viscosity_j = 0;  /*!< \brief Eddy viscosity at point j. */
+  Eddy_Viscosity_i = 0.0,  /*!< \brief Eddy viscosity at point i. */
+  Eddy_Viscosity_j = 0.0;  /*!< \brief Eddy viscosity at point j. */
   su2double
-  turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
-  turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
+  turb_ke_i = 0.0,  /*!< \brief Turbulent kinetic energy at point i. */
+  turb_ke_j = 0.0;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
   turb_omega_i,  /*!< \brief Turbulent specific dissipation at point i. */
   turb_omega_j;  /*!< \brief Turbulent specific dissipation at point j. */
@@ -115,6 +115,9 @@ protected:
   su2double
   Enthalpy_i,  /*!< \brief Enthalpy at point i. */
   Enthalpy_j;  /*!< \brief Enthalpy at point j. */
+  su2double
+  Energy_i,  /*!< \brief Energy at point i. */
+  Energy_j;  /*!< \brief Energy at point j. */
   su2double
   dist_i,  /*!< \brief Distance of point i to the nearest wall. */
   dist_j;  /*!< \brief Distance of point j to the nearest wall. */

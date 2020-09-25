@@ -133,8 +133,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
 
-  su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
-  su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
+  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
+  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Energy_i += 0.5*pow(Velocity_i[iDim],2);
     Energy_j += 0.5*pow(Velocity_j[iDim],2);
@@ -150,15 +150,16 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Roe-averaged variables at interface between i & j ---*/
 
-  su2double R = sqrt(fabs(Density_j/Density_i));
+  const su2double R = sqrt(fabs(Density_j/Density_i));
+  const su2double inv_R_Plus_One = 1.0/(R + 1.0);
   RoeDensity = R*Density_i;
   RoeSqVel = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1.);
+    RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One;
     RoeSqVel += RoeVelocity[iDim]*RoeVelocity[iDim];
   }
-  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1.);
-  RoeTke = (R*turb_ke_j+turb_ke_i)/(R+1.);
+  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
+  RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
   RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
@@ -290,13 +291,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Last column of P tensor and row of inverse P tensor if using TKE ---*/
   if (tkeNeeded) {
     P_Tensor[nVar-1][nVar] = -FIVE3;
-    // P_Tensor[nVar-1][nVar] = -1.0;
     invP_Tensor[nVar][0]   = RoeTke;
-    // P_Tensor[0][nVar] = Gamma_Minus_One*RoeTke/RoeSoundSpeed2;
-    // invP_Tensor[nVar][0] = -0.5*RoeSqVel;
-    // for (auto iDim = 0; iDim < nDim; iDim++)
-    //   invP_Tensor[nVar][iDim+1] = RoeVelocity[iDim];
-    // invP_Tensor[nVar][nVar-1] = -1.0;
   }
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/

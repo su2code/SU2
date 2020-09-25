@@ -196,8 +196,7 @@ private:
   su2double *ProjFlux_i, *ProjFlux_j;
   su2double *Lambda, *Epsilon;
   su2double **absPeJac, **invRinvPe, **R_Tensor, **Matrix, **Art_Visc;
-  su2double sq_vel, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoePressure, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+  su2double sq_vel, R, RoePressure, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
   su2double Beta, Beta_min, Beta_max;
@@ -249,9 +248,7 @@ private:
   su2double *delta_wave, *delta_vel;
   su2double *Lambda, *Epsilon, MaxLambda, Delta;
   su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2,
+  su2double sq_vel, Proj_ModJac_Tensor_ij, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, kappa;
   unsigned short iDim, iVar, jVar, kVar;
 

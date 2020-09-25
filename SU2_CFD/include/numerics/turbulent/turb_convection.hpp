@@ -57,10 +57,8 @@ protected:
   su2double muscl_kappa;
   bool muscl;
 
-  su2double Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-            Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j;
   su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0};
-  su2double R, R_Plus_One, RoeSqVel, RoeEnthalpy, RoeTke, RoeOmega, RoeSoundSpeed2, RoeSoundSpeed;
+  su2double R, inv_R_Plus_One, RoeSqVel, RoeEnthalpy, RoeTke, RoeOmega, RoeSoundSpeed2, RoeSoundSpeed;
 
   const bool incompressible = false, dynamic_grid = false;
 
