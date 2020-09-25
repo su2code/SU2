@@ -218,24 +218,25 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
 
-  const su2double Delta_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
-  const su2double Delta_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
+  const su2double Diff_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
+  const su2double Diff_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
 
   const su2double Lambda_G = (Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])*(Gamma - FIVE3)/RoeSoundSpeed2; 
 
-  const su2double Diss_rk = Lambda[0]+RoeTke*Lambda_G;
-  const su2double Diss_ro = Lambda[0];
+  const su2double Diss_rk_rk = Lambda[0]+RoeTke*Lambda_G;
+  const su2double Diss_ro_ro = Lambda[0];
   const su2double Diss_ro_rk = RoeOmega*Lambda_G;
 
-  Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk*Delta_rk)*Area;
-  Flux[1] = 0.5*(rov_i+rov_j-Diss_ro*Delta_ro-Diss_ro_rk*Delta_rk)*Area;
+  Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk_rk*Diff_rk)*Area;
+  Flux[1] = 0.5*(rov_i+rov_j-Diss_ro_rk*Diff_rk
+                            -Diss_ro_ro*Diff_ro)*Area;
 
-  Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk)*Area;
-  Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk)*Area;
+  Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk_rk)*Area;
+  Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk_rk)*Area;
 
   Jacobian_i[1][0] =  0.5*Diss_ro_rk*Area;
   Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area;
 
-  Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro)*Area;
-  Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro)*Area;
+  Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro_ro)*Area;
+  Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro_ro)*Area;
 }
