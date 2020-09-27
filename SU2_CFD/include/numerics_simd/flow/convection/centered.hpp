@@ -170,8 +170,8 @@ public:
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
-    Base::updateFlux(iEdge, iPoint, jPoint, avgV, V, solution_, geometry,
-                     config, area, unitNormal, implicit, flux, jac_i, jac_j);
+    Base::viscousTerms(iEdge, iPoint, jPoint, avgV, V, solution_, geometry,
+                       config, area, unitNormal, implicit, flux, jac_i, jac_j);
 
     /*--- Stop preaccumulation. ---*/
 

@@ -58,7 +58,7 @@ protected:
    * the decorated class can pass them to avoid expensive data accesses.
    */
   template<class... Ts>
-  void updateFlux(Ts&...) const {}
+  void viscousTerms(Ts&...) const {}
 };
 
 /*!
@@ -98,21 +98,21 @@ protected:
    * \brief Add viscous contributions to flux and jacobians.
    */
   template<class PrimVarType, size_t nVar>
-  FORCEINLINE void updateFlux(Int iEdge,
-                              Int iPoint,
-                              Int jPoint,
-                              const PrimVarType& avgV,
-                              const CPair<PrimVarType>& V,
-                              const CVariable& solution_,
-                              const VectorDbl<nDim>& vector_ij,
-                              const CGeometry& geometry,
-                              const CConfig& config,
-                              Double area,
-                              const VectorDbl<nDim>& unitNormal,
-                              bool implicit,
-                              VectorDbl<nVar>& flux,
-                              MatrixDbl<nVar>& jac_i,
-                              MatrixDbl<nVar>& jac_j) const {
+  FORCEINLINE void viscousTerms(Int iEdge,
+                                Int iPoint,
+                                Int jPoint,
+                                const PrimVarType& avgV,
+                                const CPair<PrimVarType>& V,
+                                const CVariable& solution_,
+                                const VectorDbl<nDim>& vector_ij,
+                                const CGeometry& geometry,
+                                const CConfig& config,
+                                Double area,
+                                const VectorDbl<nDim>& unitNormal,
+                                bool implicit,
+                                VectorDbl<nVar>& flux,
+                                MatrixDbl<nVar>& jac_i,
+                                MatrixDbl<nVar>& jac_j) const {
 
     static_assert(PrimVarType::nVar <= nPrimVar,"");
 
@@ -201,36 +201,36 @@ protected:
    * \overload Average primitives if not provided yet.
    */
   template<class PrimVarType, class... Ts>
-  FORCEINLINE void updateFlux(Int iEdge,
-                              Int iPoint,
-                              Int jPoint,
-                              const CPair<PrimVarType>& V,
-                              Ts&... args) const {
+  FORCEINLINE void viscousTerms(Int iEdge,
+                                Int iPoint,
+                                Int jPoint,
+                                const CPair<PrimVarType>& V,
+                                Ts&... args) const {
     PrimVarType avgV;
     for (size_t iVar = 0; iVar < PrimVarType::nVar; ++iVar) {
       avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
     }
 
     /*--- Continue calculation. ---*/
-    updateFlux(iEdge, iPoint, jPoint, avgV, V, args...);
+    viscousTerms(iEdge, iPoint, jPoint, avgV, V, args...);
   }
 
   /*!
    * \overload Compute the i-j vector if not provided yet.
    */
   template<class PrimVarType, class... Ts>
-  FORCEINLINE void updateFlux(Int iEdge,
-                              Int iPoint,
-                              Int jPoint,
-                              const PrimVarType& avgV,
-                              const CPair<PrimVarType>& V,
-                              const CVariable& solution_,
-                              const CGeometry& geometry,
-                              Ts&... args) const {
+  FORCEINLINE void viscousTerms(Int iEdge,
+                                Int iPoint,
+                                Int jPoint,
+                                const PrimVarType& avgV,
+                                const CPair<PrimVarType>& V,
+                                const CVariable& solution_,
+                                const CGeometry& geometry,
+                                Ts&... args) const {
 
     const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
 
     /*--- Continue calculation. ---*/
-    updateFlux(iEdge, iPoint, jPoint, avgV, V, solution_, vector_ij, geometry, args...);
+    viscousTerms(iEdge, iPoint, jPoint, avgV, V, solution_, vector_ij, geometry, args...);
   }
 };
