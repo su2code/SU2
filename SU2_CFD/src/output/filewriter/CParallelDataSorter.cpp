@@ -324,7 +324,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
   /*--- Allocate the data buffer to hold the sorted data. We have to make it large enough
    * to hold passivedoubles and su2doubles ---*/
   unsigned short maxSize = max(sizeof(passivedouble), sizeof(su2double));
-  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize];
+  dataBuffer = new char[VARS_PER_POINT*nPoint_Recv[size]*maxSize] {};
 
   /*--- doubleBuffer and passiveDouble buffer use the same memory allocated above using the dataBuffer. ---*/
 
