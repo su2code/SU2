@@ -833,6 +833,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
          minus the coordinates of the reference mesh file ---*/
         su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
+        su2double vel = Restart_Data[index+iDim+6];
+        if (time_domain && !config->GetWrt_Slice()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, Restart_Data[index+iDim+6]);
       }
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -868,7 +870,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   UpdateDualGrid(geometry[MESH_0], config);
 
   /*--- For time-domain problems, we need to compute the grid velocities ---*/
-  if (time_domain){
+  if (time_domain && config->GetWrt_Slice()){
     /*--- Update the old geometry (coordinates n and n-1) ---*/
     Restart_OldGeometry(geometry[MESH_0], config);
     /*--- Once Displacement_n and Displacement_n1 are filled,
