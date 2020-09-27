@@ -2680,6 +2680,9 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver, CConfig *co
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+
+  const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
   const bool viscous       = config->GetViscous();
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
@@ -2702,6 +2705,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, dist;
+
+  /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
 
@@ -2734,8 +2743,55 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-      Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+      if (muscl) {
+        /*--- Extrapolate the state ---*/
+
+        su2double tke_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint,0) : 0.0;
+        su2double tke_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint,0) : 0.0;
+        ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, &tke_i, &tke_j);
+
+        /*--- Check the extrapolation ---*/
+
+        bool good_i = true, good_j = true;
+        if (tkeNeeded) {
+          good_i = (tke_i >= 0.0);
+          good_j = (tke_j >= 0.0);
+        }
+        CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
+
+        /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
+        /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
+
+        su2double ProjVel_i = 0, SoundSpeed_i = 0;
+        su2double ProjVel_j = 0, SoundSpeed_j = 0;
+
+        if (good_i) {
+          for (auto iDim = 0; iDim < nDim; iDim++) ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+          SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
+        }
+        else {
+          ProjVel_i = nodes->GetProjVel(iPoint,Normal);
+          SoundSpeed_i = nodes->GetSoundSpeed(iPoint);
+        }
+
+        if (good_j) {
+          for (auto iDim = 0; iDim < nDim; iDim++) ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+          SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
+        }
+        else {
+          ProjVel_j = nodes->GetProjVel(jPoint,Normal);
+          SoundSpeed_j = nodes->GetSoundSpeed(jPoint);
+        }
+
+        /*--- Compute the mean values ---*/
+
+        Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+        Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
+      }
+      else {
+        Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+      }
 
       /*--- Adjustment for grid movement ---*/
 
@@ -3036,18 +3092,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   const unsigned short turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool viscous     = config->GetViscous();
-  const bool musclTurb   = config->GetMUSCL_Turb() && muscl;
-  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
-
-  su2double tke_i = 0, tke_j = 0;
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -3111,111 +3161,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (muscl) {
       /*--- Reconstruction ---*/
 
-      su2double Vector_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
-      }
-
-      const auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      const auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
-
-      const su2double Kappa = config->GetMUSCL_Kappa();
-
-      for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
-
-        const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
-
-        su2double Project_Grad_i = -V_ij;
-        su2double Project_Grad_j = -V_ij;
-
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
-
-        /*--- Blend upwind and centered differences ---*/
-
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
-
-        /*--- Edge-based limiters ---*/
-
-        if (limiter) {
-          auto Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-          auto Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-
-          switch(config->GetKind_SlopeLimit_Flow()) {
-            case VAN_ALBADA_EDGE:
-              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
-              break;
-            case PIPERNO:
-              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
-              break;
-          }
-
-          /*--- Limit projection ---*/
-
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
-          
-        }
-
-        Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] - Project_Grad_j;
-      }
-
-      if (tkeNeeded) {
-        /*--- Reconstruct turbulent kinetic energy. ---*/
-
-        const auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-        const auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
-          
-        const su2double T_ij = 0.5*(tke_j - tke_i);
-
-        su2double Project_Grad_i = -T_ij;
-        su2double Project_Grad_j = -T_ij;
-
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
-          Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
-        }
-
-        /*--- Blend upwind and centered differences ---*/
-
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
-
-        /*--- Edge-based limiters ---*/
-
-        if (limiterTurb) {
-          auto Limiter_i = turbNodes->GetLimiter(iPoint);
-          auto Limiter_j = turbNodes->GetLimiter(jPoint);
-
-          switch(config->GetKind_SlopeLimit_Turb()) {
-            case VAN_ALBADA_EDGE:
-              Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-              Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
-              break;
-            case PIPERNO:
-              Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-              Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
-              break;
-          }
-
-          /*--- Limit projection ---*/
-
-          Project_Grad_i *= Limiter_i[0];
-          Project_Grad_j *= Limiter_j[0];
-        }
-
-        tke_i += Project_Grad_i;
-        tke_j -= Project_Grad_j;
-
-        good_i = (tke_i >= 0.0);
-        good_j = (tke_j >= 0.0);
-      }
+      ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, &tke_i, &tke_j);
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
@@ -3233,6 +3179,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
+
+      if (tkeNeeded) {
+        good_i = (tke_i >= 0.0);
+        good_j = (tke_j >= 0.0);
+      }
 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
@@ -3388,6 +3339,137 @@ void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
     }
   }
 
+}
+
+void CEulerSolver::ExtrapolateState(CSolver             **solver, 
+                                    const CGeometry     *geometry, 
+                                    const CConfig       *config, 
+                                    const unsigned long iPoint, 
+                                    const unsigned long jPoint, 
+                                    su2double           *primvar_i, 
+                                    su2double           *primvar_j,
+                                    su2double           *tke_i, 
+                                    su2double           *tke_j) {
+
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+
+  const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
+  const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+
+  CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes solver[TURB_SOL]->GetNodes();
+
+  const auto V_i = flowNodes->GetPrimitive(iPoint);
+  const auto V_j = flowNodes->GetPrimitive(jPoint);
+
+  const auto Coord_i = geometry->node[iPoint]->GetCoord();
+  const auto Coord_j = geometry->node[jPoint]->GetCoord();
+
+  su2double Vector_ij[MAXNDIM] = {0.0};
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
+  }
+
+  const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
+  const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+
+  const su2double Kappa = config->GetMUSCL_Kappa();
+
+  for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+
+    const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
+
+    su2double Project_Grad_i = -V_ij;
+    su2double Project_Grad_j = -V_ij;
+
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+      Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+    }
+
+    /*--- Blend upwind and centered differences ---*/
+
+    Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
+    Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+
+    /*--- Edge-based limiters ---*/
+
+    if (limiter) {
+      auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+      auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
+
+      switch(config->GetKind_SlopeLimit_Flow()) {
+        case VAN_ALBADA_EDGE:
+          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+          break;
+        case PIPERNO:
+          Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+          Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+          break;
+      }
+
+      /*--- Limit projection ---*/
+
+      Project_Grad_i *= Limiter_i[iVar];
+      Project_Grad_j *= Limiter_j[iVar];
+      
+    }
+
+    primvar_i[iVar] = V_i[iVar] + Project_Grad_i;
+    primvar_j[iVar] = V_j[iVar] - Project_Grad_j;
+  }
+
+  if (tkeNeeded) {
+    /*--- Reconstruct turbulent kinetic energy. ---*/
+
+    const auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
+    const auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+      
+    const su2double T_ij = 0.5*(*tke_j - *tke_i);
+
+    su2double Project_Grad_i = -T_ij;
+    su2double Project_Grad_j = -T_ij;
+
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
+      Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
+    }
+
+    /*--- Blend upwind and centered differences ---*/
+
+    Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+    Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+
+    /*--- Edge-based limiters ---*/
+
+    if (limiterTurb) {
+      auto Limiter_i = turbNodes->GetLimiter(iPoint);
+      auto Limiter_j = turbNodes->GetLimiter(jPoint);
+
+      switch(config->GetKind_SlopeLimit_Turb()) {
+        case VAN_ALBADA_EDGE:
+          Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+          Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+          break;
+        case PIPERNO:
+          Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+          Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+          break;
+      }
+
+      /*--- Limit projection ---*/
+
+      Project_Grad_i *= Limiter_i[0];
+      Project_Grad_j *= Limiter_j[0];
+    }
+
+    *tke_i += Project_Grad_i;
+    *tke_j -= Project_Grad_j;
+
+  }
 }
 
 void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i, 

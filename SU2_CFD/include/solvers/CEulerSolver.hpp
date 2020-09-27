@@ -306,6 +306,26 @@ protected:
   void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
+   * \brief Extrapolate the states from nodes i and j to the face.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] primvar_i - Primitive vector extrapolated from node i to face.
+   * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
+   * \param[in] tke_i - Turbulent kinetic energy extrapolated from node i to face.
+   * \param[in] tke_j - Turbulent kinetic energy extrapolated from node j to face.
+   */
+  void ExtrapolateState(CSolver             **solver, 
+                       const CGeometry     *geometry, 
+                       const CConfig       *config, 
+                       const unsigned long iPoint, 
+                       const unsigned long jPoint, 
+                       su2double           *primvar_i, 
+                       su2double           *primvar_j,
+                       su2double           *tke_i, 
+                       su2double           *tke_j);
+
+  /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.
    * \param[in] primvar_i - Primitive vector extrapolated from node i to face.
    * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
