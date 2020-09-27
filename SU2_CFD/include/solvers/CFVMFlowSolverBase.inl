@@ -1556,7 +1556,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
               SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
               SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
               SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
-              SurfaceInvCoeff.CEff[iMarker_Monitoring] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+              SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
               SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
               SurfaceInvCoeff.CFy[iMarker_Monitoring] += InvCoeff.CFy[iMarker];
               SurfaceInvCoeff.CFz[iMarker_Monitoring] += InvCoeff.CFz[iMarker];
@@ -1675,7 +1675,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
     SurfaceCoeff.CEff[iMarker_Monitoring] =
-        SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
     SurfaceCoeff.CFx[iMarker_Monitoring] = SurfaceInvCoeff.CFx[iMarker_Monitoring];
     SurfaceCoeff.CFy[iMarker_Monitoring] = SurfaceInvCoeff.CFy[iMarker_Monitoring];
     SurfaceCoeff.CFz[iMarker_Monitoring] = SurfaceInvCoeff.CFz[iMarker_Monitoring];
@@ -1891,7 +1891,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
             SurfaceMntCoeff.CL[iMarker_Monitoring] += MntCoeff.CL[iMarker];
             SurfaceMntCoeff.CD[iMarker_Monitoring] += MntCoeff.CD[iMarker];
             SurfaceMntCoeff.CSF[iMarker_Monitoring] += MntCoeff.CSF[iMarker];
-            SurfaceMntCoeff.CEff[iMarker_Monitoring] = MntCoeff.CL[iMarker] / (MntCoeff.CD[iMarker] + EPS);
+            SurfaceMntCoeff.CEff[iMarker_Monitoring] = SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
             SurfaceMntCoeff.CFx[iMarker_Monitoring] += MntCoeff.CFx[iMarker];
             SurfaceMntCoeff.CFy[iMarker_Monitoring] += MntCoeff.CFy[iMarker];
             SurfaceMntCoeff.CFz[iMarker_Monitoring] += MntCoeff.CFz[iMarker];
@@ -1999,8 +1999,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
     SurfaceCoeff.CL[iMarker_Monitoring] += SurfaceMntCoeff.CL[iMarker_Monitoring];
     SurfaceCoeff.CD[iMarker_Monitoring] += SurfaceMntCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring] += SurfaceMntCoeff.CSF[iMarker_Monitoring];
-    SurfaceCoeff.CEff[iMarker_Monitoring] +=
-        SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
+    SurfaceCoeff.CEff[iMarker_Monitoring] =
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
     SurfaceCoeff.CFx[iMarker_Monitoring] += SurfaceMntCoeff.CFx[iMarker_Monitoring];
     SurfaceCoeff.CFy[iMarker_Monitoring] += SurfaceMntCoeff.CFy[iMarker_Monitoring];
     SurfaceCoeff.CFz[iMarker_Monitoring] += SurfaceMntCoeff.CFz[iMarker_Monitoring];
@@ -2392,7 +2392,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
           SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];
           SurfaceViscCoeff.CSF[iMarker_Monitoring] += ViscCoeff.CSF[iMarker];
-          SurfaceViscCoeff.CEff[iMarker_Monitoring] += ViscCoeff.CEff[iMarker];
+          SurfaceViscCoeff.CEff[iMarker_Monitoring] = SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
           SurfaceViscCoeff.CFx[iMarker_Monitoring] += ViscCoeff.CFx[iMarker];
           SurfaceViscCoeff.CFy[iMarker_Monitoring] += ViscCoeff.CFy[iMarker];
           SurfaceViscCoeff.CFz[iMarker_Monitoring] += ViscCoeff.CFz[iMarker];
@@ -2515,7 +2515,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     SurfaceCoeff.CD[iMarker_Monitoring] += SurfaceViscCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring] += SurfaceViscCoeff.CSF[iMarker_Monitoring];
     SurfaceCoeff.CEff[iMarker_Monitoring] =
-        SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
     SurfaceCoeff.CFx[iMarker_Monitoring] += SurfaceViscCoeff.CFx[iMarker_Monitoring];
     SurfaceCoeff.CFy[iMarker_Monitoring] += SurfaceViscCoeff.CFy[iMarker_Monitoring];
     SurfaceCoeff.CFz[iMarker_Monitoring] += SurfaceViscCoeff.CFz[iMarker_Monitoring];
@@ -2545,9 +2545,6 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
         break;
       case SIDEFORCE_COEFFICIENT:
         objFun += weight * SurfaceCoeff.CSF[iMarker];
-        break;
-      case EFFICIENCY:
-        objFun += weight * SurfaceCoeff.CEff[iMarker];
         break;
       case MOMENT_X_COEFFICIENT:
         objFun += weight * SurfaceCoeff.CMx[iMarker];
@@ -2586,6 +2583,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
   const auto weight = config.GetWeight_ObjFunc(0);
 
   switch (config.GetKind_ObjFunc(0)) {
+    case EFFICIENCY:
+      objFun += weight * TotalCoeff.CEff;
+      break;
     case INVERSE_DESIGN_PRESSURE:
       objFun += weight * Total_CpDiff;
       break;
