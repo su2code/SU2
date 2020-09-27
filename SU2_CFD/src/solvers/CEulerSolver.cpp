@@ -2621,7 +2621,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver, CC
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  const unsigned long InnerIter = config->GetInnerIter();
+  const auto InnerIter         = config->GetInnerIter();
   const bool cont_adjoint      = config->GetContinuous_Adjoint();
   const bool muscl             = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   const bool limiter           = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
@@ -2680,9 +2680,9 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver, CConfig *co
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
-  const unsigned short turb_model = config->GetKind_Turb_Model();
-
+  const auto turb_model    = config->GetKind_Turb_Model();
   const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
+  const bool muscl         = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool viscous       = config->GetViscous();
   const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
@@ -3091,9 +3091,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool low_mach_corr    = config->Low_Mach_Correction();
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
-  const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-
-  const unsigned short turb_model = config->GetKind_Turb_Model();
+  const bool muscl       = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  const auto turb_model  = config->GetKind_Turb_Model();
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
 
   CVariable* turbNodes = nullptr;
@@ -3351,15 +3350,15 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
                                     su2double           *tke_i, 
                                     su2double           *tke_j) {
 
-  const unsigned short turb_model = config->GetKind_Turb_Model();
-
+  const auto InnerIter   = config->GetInnerIter();
+  const auto turb_model  = config->GetKind_Turb_Model();
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes solver[TURB_SOL]->GetNodes();
+  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
   const auto V_i = flowNodes->GetPrimitive(iPoint);
   const auto V_j = flowNodes->GetPrimitive(jPoint);
