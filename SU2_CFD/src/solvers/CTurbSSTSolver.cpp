@@ -1596,6 +1596,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         /*--- Extrapolate the state ---*/
 
         su2double tke_i = 0.0, tke_j = 0.0;
+        const unsigned long nPrimVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
         const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
         solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
                                            &tke_i, &tke_j, nPrimVarGrad, nTurbVarGrad);
