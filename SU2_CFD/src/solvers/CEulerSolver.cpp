@@ -5060,7 +5060,12 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   const bool low_mach_prec = config->Low_Mach_Preconditioning();
 
   /*--- Local matrix for preconditioning. ---*/
-  su2double LowMachPrec[MAXNVAR][MAXNVAR] = {0.0};
+  su2double** LowMachPrec = nullptr;
+  if (roe_turkel || low_mach_prec) {
+    LowMachPrec = new su2double* [nVar];
+    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
+      LowMachPrec[iVar] = new su2double [nVar];
+  }
 
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
@@ -5144,6 +5149,13 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
       LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  /*--- Free local preconditioner. ---*/
+  if (LowMachPrec) {
+    for(unsigned short iVar = 0; iVar < nVar; ++iVar)
+      delete [] LowMachPrec[iVar];
+    delete [] LowMachPrec;
   }
 
   /*--- Solve or smooth the linear system. ---*/
