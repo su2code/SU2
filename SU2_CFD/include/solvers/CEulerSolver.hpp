@@ -323,7 +323,9 @@ protected:
                         su2double           *primvar_i, 
                         su2double           *primvar_j,
                         su2double           &tke_i, 
-                        su2double           &tke_j) override;
+                        su2double           &tke_j,
+                        const unsigned long nFlowVarGrad,
+                        const unsigned long nTurbVarGrad) override;
 
   /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.
