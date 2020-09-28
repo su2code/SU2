@@ -2512,7 +2512,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     su2double maxLinResid = max(linResFlow, linResTurb);
     if (maxLinResid > 0.5) {
       reduceCFL = true;
-      cout << "maxLinRes" << endl;
+      if (linResFlow > 0.5) cout << "linResFlow" << endl;
+      if (linResTurb > 0.5) cout << "linResTurb" << endl;
     }
     // if (ResLinSolver > 0.5) {
     //   reduceCFL = true;
