@@ -3377,6 +3377,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   const su2double Kappa = config->GetMUSCL_Kappa();
 
+  /*--- Reconstruct flow primitive variables. ---*/
+
   for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
 
     const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
@@ -3422,53 +3424,57 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     primvar_j[iVar] = V_j[iVar] - Project_Grad_j;
   }
 
-  for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
-    /*--- Reconstruct turbulent primitive variables. ---*/
+  /*--- Reconstruct turbulent primitive variables. ---*/
+
+  if (turb) {
 
     const auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
     const auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
-      
-    const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
-    su2double Project_Grad_i = -T_ij;
-    su2double Project_Grad_j = -T_ij;
+    for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
 
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[iVar][iDim];
-      Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[iVar][iDim];
-    }
+      const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
-    /*--- Blend upwind and centered differences ---*/
+      su2double Project_Grad_i = -T_ij;
+      su2double Project_Grad_j = -T_ij;
 
-    Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-    Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
-
-    /*--- Edge-based limiters ---*/
-
-    if (limiterTurb) {
-      auto Limiter_i = turbNodes->GetLimiter(iPoint);
-      auto Limiter_j = turbNodes->GetLimiter(jPoint);
-
-      switch(config->GetKind_SlopeLimit_Turb()) {
-        case VAN_ALBADA_EDGE:
-          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
-          break;
-        case PIPERNO:
-          Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-          Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
-          break;
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[iVar][iDim];
+        Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[iVar][iDim];
       }
 
-      /*--- Limit projection ---*/
+      /*--- Blend upwind and centered differences ---*/
 
-      Project_Grad_i *= Limiter_i[iVar];
-      Project_Grad_j *= Limiter_j[iVar];
+      Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+      Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+
+      /*--- Edge-based limiters ---*/
+
+      if (limiterTurb) {
+        auto Limiter_i = turbNodes->GetLimiter(iPoint);
+        auto Limiter_j = turbNodes->GetLimiter(jPoint);
+
+        switch(config->GetKind_SlopeLimit_Turb()) {
+          case VAN_ALBADA_EDGE:
+            Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+            Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+            break;
+          case PIPERNO:
+            Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+            Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+            break;
+        }
+
+        /*--- Limit projection ---*/
+
+        Project_Grad_i *= Limiter_i[iVar];
+        Project_Grad_j *= Limiter_j[iVar];
+      }
+
+      turbvar_i[iVar] = T_i[iVar] + Project_Grad_i;
+      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j;
+
     }
-
-    turbvar_i[iVar] = T_i[iVar] + Project_Grad_i;
-    turbvar_j[iVar] = T_j[iVar] - Project_Grad_j;
-
   }
 }
 
