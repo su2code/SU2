@@ -107,7 +107,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
   const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
 
-  const auto nPrimVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
+  const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -154,7 +154,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     if (muscl) {
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-                                         turbPrimVar_i, turbPrimVar_j, nPrimVarGrad, nVar);
+                                         turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
@@ -172,7 +172,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
     }
     else {
-      for (auto iVar = 0; iVar < solver[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+      for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
         flowPrimVar_i[iVar] = V_i[iVar];
         flowPrimVar_j[iVar] = V_j[iVar];
       }
