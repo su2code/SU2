@@ -375,9 +375,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     }
   }
 
-  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-  Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
   /*---         gradient projection (0.5*(1-kappa)*gradV_i*dist_ij).       ---*/
@@ -394,30 +391,27 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double OneOnVol = 1.0/node_i->GetVolume();
+    const su2double invVol = 1.0/node_i->GetVolume();
+    su2double gradWeightDotDist = 0.0;
     for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
         const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           for (auto iDim = 0; iDim < nDim; iDim++)
-            gradWeight[iDim] = -OneOnVol*geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
+            gradWeight[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim]*invVol;
 
-          su2double gradWeightDotDist = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
             gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
-
-          const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
-          for (auto iVar = 0; iVar < nVar; iVar++)
-            dVl_dVi[iVar] = factor*lim_i[iVar];
-
-          for (auto iVar = 0; iVar < nVar; iVar++)
-            for (auto jVar = 0; jVar < nVar; jVar++)
-              Jacobian_i[iVar][jVar] += dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVi_dUi;
         }
       }
     }
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+    const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      dVl_dVi[iVar] = factor*lim_i[iVar];
+
+    for (auto iVar = 0; iVar < nVar; iVar++)
+      for (auto jVar = 0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] += dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVi_dUi;
   }
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
@@ -436,16 +430,17 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
-        Jacobian_j[iVar][jVar] = dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVk_dUk;
+        Jacobian_i[iVar][jVar] += dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
+        Jacobian_j[iVar][jVar]  = dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVk_dUk;
       }
     }
 
-    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(iPoint, kPoint, Jacobian_j);
-    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
+
+  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
   AD::EndPassive(wasActive);
 }
