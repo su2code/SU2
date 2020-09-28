@@ -1640,8 +1640,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
       }
       else {
-        Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-        Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+        Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
+        Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
       }
 
       /*--- Adjustment for grid movement ---*/
