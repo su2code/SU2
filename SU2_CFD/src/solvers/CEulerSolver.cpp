@@ -2746,9 +2746,10 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       if (muscl) {
         /*--- Extrapolate the state ---*/
 
-        su2double tke_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint,0) : 0.0;
-        su2double tke_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint,0) : 0.0;
-        ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, &tke_i, &tke_j);
+        su2double tke_i = tke_j = 0.0;
+        const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
+        ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+                         &tke_i, &tke_j, nPrimVarGrad, nTurbVarGrad);
 
         /*--- Check the extrapolation ---*/
 
@@ -3110,6 +3111,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
+  su2double tke_i = 0.0, tke_j = 0.0;
+
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -3150,9 +3153,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
     const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
-    su2double tke_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint,0) : 0.0;
-    su2double tke_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint,0) : 0.0;
-
     bool good_i = true, good_j = true, good_edge = true;
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
@@ -3160,7 +3160,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (muscl) {
       /*--- Reconstruction ---*/
 
-      ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, &tke_i, &tke_j);
+      const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
+      ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+                       &tke_i, &tke_j, nPrimVarGrad, nTurbVarGrad);
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
@@ -3185,15 +3187,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
-
-      // if (!good_i) {cout << "Flow[" << geometry->node[iPoint]->GetGlobalIndex() 
-      //                    << "]: k_i= " << (tke_i) 
-      //                    << ", r_i= " << Primitive_i[nDim+2] 
-      //                    << ", p_i= " << Primitive_i[nDim+1] << endl;}
-      // if (!good_j) {cout << "Flow[" << geometry->node[jPoint]->GetGlobalIndex() 
-      //                    << "]: k_j= " << (tke_j) 
-      //                    << ", r_j= " << Primitive_j[nDim+2] 
-      //                    << ", p_j= " << Primitive_j[nDim+1] << endl;}
 
       nodes->SetNon_Physical(iPoint, !good_i);
       nodes->SetNon_Physical(jPoint, !good_j);
@@ -3221,8 +3214,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
-      if (tkeNeeded)
-        numerics->SetTurbKineticEnergy(tke_i, tke_j);
+      if (tkeNeeded) numerics->SetTurbKineticEnergy(tke_i, tke_j);
 
     }
 
@@ -3347,21 +3339,30 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
                                     const unsigned long jPoint, 
                                     su2double           *primvar_i, 
                                     su2double           *primvar_j,
-                                    su2double           *tke_i, 
-                                    su2double           *tke_j) {
+                                    su2double           *turbvar_i, 
+                                    su2double           *turbvar_j,
+                                    const unsigned long nFlowVarGrad,
+                                    const unsigned long nTurbVarGrad) {
 
   const auto InnerIter   = config->GetInnerIter();
   const auto turb_model  = config->GetKind_Turb_Model();
+  const bool turb        = (turb_model != NONE) && (nTurbVarGrad > 0);
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
+  if (turb) turbNodes = solver[TURB_SOL]->GetNodes();
 
   const auto V_i = flowNodes->GetPrimitive(iPoint);
   const auto V_j = flowNodes->GetPrimitive(jPoint);
+
+  const su2double *T_i, *T_j;
+  if (turb) {
+    T_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
+    T_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
+  }
 
   const auto Coord_i = geometry->node[iPoint]->GetCoord();
   const auto Coord_j = geometry->node[jPoint]->GetCoord();
@@ -3376,7 +3377,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   const su2double Kappa = config->GetMUSCL_Kappa();
 
-  for (auto iVar = 0; iVar < nPrimVarGrad; iVar++) {
+  for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
 
     const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
@@ -3421,20 +3422,20 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     primvar_j[iVar] = V_j[iVar] - Project_Grad_j;
   }
 
-  if (tkeNeeded) {
-    /*--- Reconstruct turbulent kinetic energy. ---*/
+  for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
+    /*--- Reconstruct turbulent primitive variables. ---*/
 
     const auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
     const auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
       
-    const su2double T_ij = 0.5*(*tke_j - *tke_i);
+    const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
     su2double Project_Grad_i = -T_ij;
     su2double Project_Grad_j = -T_ij;
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[0][iDim];
-      Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[0][iDim];
+      Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[iVar][iDim];
+      Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[iVar][iDim];
     }
 
     /*--- Blend upwind and centered differences ---*/
@@ -3450,23 +3451,23 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       switch(config->GetKind_SlopeLimit_Turb()) {
         case VAN_ALBADA_EDGE:
-          Limiter_i[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-          Limiter_j[0] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
+          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
           break;
         case PIPERNO:
-          Limiter_i[0] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-          Limiter_j[0] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+          Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+          Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
           break;
       }
 
       /*--- Limit projection ---*/
 
-      Project_Grad_i *= Limiter_i[0];
-      Project_Grad_j *= Limiter_j[0];
+      Project_Grad_i *= Limiter_i[iVar];
+      Project_Grad_j *= Limiter_j[iVar];
     }
 
-    *tke_i += Project_Grad_i;
-    *tke_j -= Project_Grad_j;
+    turbvar_i[iVar] = T_i[iVar] + Project_Grad_i;
+    turbvar_j[iVar] = T_j[iVar] - Project_Grad_j;
 
   }
 }

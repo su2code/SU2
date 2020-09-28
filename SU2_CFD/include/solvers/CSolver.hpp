@@ -308,6 +308,18 @@ public:
    */
   inline virtual void SetDualTime_Mesh(void){ }
 
+  /*!
+   * \brief Extrapolate the states from nodes i and j to the face.
+   */
+  virtual void ExtrapolateState(CSolver             **solver, 
+                                const CGeometry     *geometry, 
+                                const CConfig       *config, 
+                                const unsigned long iPoint, 
+                                const unsigned long jPoint, 
+                                su2double           *primvar_i, 
+                                su2double           *primvar_j,
+                                su2double           &tke_i, 
+                                su2double           &tke_j) {}
 
   /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.

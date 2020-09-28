@@ -316,14 +316,14 @@ protected:
    * \param[in] tke_j - Turbulent kinetic energy extrapolated from node j to face.
    */
   void ExtrapolateState(CSolver             **solver, 
-                       const CGeometry     *geometry, 
-                       const CConfig       *config, 
-                       const unsigned long iPoint, 
-                       const unsigned long jPoint, 
-                       su2double           *primvar_i, 
-                       su2double           *primvar_j,
-                       su2double           *tke_i, 
-                       su2double           *tke_j);
+                        const CGeometry     *geometry, 
+                        const CConfig       *config, 
+                        const unsigned long iPoint, 
+                        const unsigned long jPoint, 
+                        su2double           *primvar_i, 
+                        su2double           *primvar_j,
+                        su2double           &tke_i, 
+                        su2double           &tke_j) override;
 
   /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.
