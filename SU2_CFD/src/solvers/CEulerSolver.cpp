@@ -3129,9 +3129,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
 
-    const auto Coord_i = geometry->node[iPoint]->GetCoord();
-    const auto Coord_j = geometry->node[jPoint]->GetCoord();
-
     /*--- Roe Turkel preconditioning ---*/
 
     if (roe_turkel) {
@@ -3230,7 +3227,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                             nodes->GetSensor(jPoint));
       }
       if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
-        numerics->SetCoord(Coord_i, Coord_j);
+        numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                           geometry->node[jPoint]->GetCoord());
       }
     }
 
