@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Destructor. Nothing to be done.
    */
-  virtual ~CFEMStandardVolumeHexGrid() = default;
+  ~CFEMStandardVolumeHexGrid() = default;
 
   /*!
    * \brief Function, which computes the derivatives of the coordinates in the volume

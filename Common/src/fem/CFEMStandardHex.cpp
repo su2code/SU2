@@ -77,5 +77,52 @@ CFEMStandardHex::CFEMStandardHex(const unsigned short val_nPoly,
     for(unsigned short j=0; j<nInt1D; ++j)
       for(unsigned short i=0; i<nInt1D; ++i, ++ii)
         wIntegration(ii) = wLineInt[i]*wLineInt[j]*wLineInt[k];
-  
+
+  /*--- Create the map with the function pointers to carry out the tensor product
+        to compute the data in the 3D integration points of the hexahedron. ---*/
+  map<CUnsignedShort2T, TPI3D> mapFunctions;
+  CreateMapTensorProductVolumeIntPoints3D(mapFunctions);
+
+  /*--- Try to find the combination of the number of 1D DOFs and integration points
+        in mapFunctions. If not found, write a clear error message that this
+        tensor product is not supported. ---*/
+  CUnsignedShort2T nDOFsAndInt(nDOFs1D, nInt1D);
+  auto MI = mapFunctions.find(nDOFsAndInt);
+  if(MI == mapFunctions.end()) {
+    std::ostringstream message;
+    message << "The tensor product TensorProductVolumeIntPoints3D_" << nDOFs1D
+            << "_" << nInt1D << " not created by the automatic source code "
+            << "generator. Modify this automatic source code creator";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Set the function pointer to carry out tensor product. ---*/
+  TensorProductDataVolIntPoints = MI->second;
+}
+
+/*----------------------------------------------------------------------------------*/
+/*                Protected member functions of CFEMStandardHex.                    */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardHex::TensorProductIntegrationPoints(const int                           N,
+                                                     const ColMajorMatrix<passivedouble> &Ai,
+                                                     const ColMajorMatrix<passivedouble> &Aj,
+                                                     const ColMajorMatrix<passivedouble> &Ak,
+                                                     const ColMajorMatrix<su2double>     &B,
+                                                     ColMajorMatrix<su2double>           &C,
+                                                     const CConfig                       *config) {
+
+  /*--- Call the function to which TensorProductDataVolIntPoints points to carry out
+        the actual tensor product. Perform the timing, if desired. ---*/
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->TensorProduct_Tick(&timeGemm);
+#endif
+
+  TensorProductDataVolIntPoints(N, B.rows(), C.rows(), Ai.data(), Aj.data(), Ak.data(),
+                                B.data(), C.data());
+
+#ifdef PROFILE
+  if( config ) config->TensorProduct_Tock(timeGemm, 3, N, nDOFs1D, nInt1D);
+#endif
 }

@@ -29,6 +29,7 @@
 #pragma once 
 
 #include "CFEMStandardElementBase.hpp"
+#include "../tensor_products/TensorProductVolumeIntPoints3D.hpp"
 
 /*!
  * \class CFEMStandardHex
@@ -72,4 +73,27 @@ protected:
   vector<passivedouble> rLineInt;      /*!< \brief 1D parametric coordinates of the
                                                    integration points. */
   vector<passivedouble> wLineInt;      /*!< \brief Weights of the 1D integration points. */
+
+  /*!
+   * \brief Function, which serves as an interface to carry out the tensor product C = A*B
+   *        to obtain the data in the volume integration points.
+   * \param[in]  N      - Number of values to be computed in the integration points.
+   * \param[in]  Ai     - 1D matrix for the i-component of the A tensor.
+   * \param[in]  Aj     - 1D matrix for the j-component of the A tensor.
+   * \param[in]  Ak     - 1D matrix for the k-component of the A tensor.
+   * \param[in]  B      - B tensor stored as a matrix.
+   * \param[out] C      - C tensor stored as a matrix.
+   * \param[out] config - Object used for the timing of the tensor product call.
+   */
+  void TensorProductIntegrationPoints(const int                           N,
+                                      const ColMajorMatrix<passivedouble> &Ai,
+                                      const ColMajorMatrix<passivedouble> &Aj,
+                                      const ColMajorMatrix<passivedouble> &Ak,
+                                      const ColMajorMatrix<su2double>     &B,
+                                      ColMajorMatrix<su2double>           &C,
+                                      const CConfig                       *config);
+
+private:
+  TPI3D TensorProductDataVolIntPoints; /*!< \brief Function pointer to carry out the tensor product
+                                                   to compute the data in the volume integration points. */
 };

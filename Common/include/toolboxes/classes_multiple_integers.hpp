@@ -1,5 +1,5 @@
 /*!
- * \file printing_toolbox.hpp
+ * \file classes_multiple_integers.hpp
  * \brief Header file for the classes that consists of multiple integer types.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"

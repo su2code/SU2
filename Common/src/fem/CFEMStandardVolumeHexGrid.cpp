@@ -49,5 +49,28 @@ CFEMStandardVolumeHexGrid::CFEMStandardVolumeHexGrid(const unsigned short val_nP
 void CFEMStandardVolumeHexGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
                                                                ColMajorMatrix<su2double>          &matCoor,
                                                                vector<ColMajorMatrix<su2double> > &matDerCoor) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+/*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
+          derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    TensorProductIntegrationPoints(3, derLagBasisLineIntLGL, lagBasisLineIntLGL, lagBasisLineIntLGL,
+                                   matCoor, matDerCoor[0], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntLGL, derLagBasisLineIntLGL, lagBasisLineIntLGL,
+                                   matCoor, matDerCoor[1], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntLGL, lagBasisLineIntLGL, derLagBasisLineIntLGL,
+                                   matCoor, matDerCoor[2], nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
+          derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    TensorProductIntegrationPoints(3, derLagBasisLineIntEqui, lagBasisLineIntEqui, lagBasisLineIntEqui,
+                                   matCoor, matDerCoor[0], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntEqui, derLagBasisLineIntEqui, lagBasisLineIntEqui,
+                                   matCoor, matDerCoor[1], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntEqui, lagBasisLineIntEqui, derLagBasisLineIntEqui,
+                                   matCoor, matDerCoor[2], nullptr);
+  }
 }
