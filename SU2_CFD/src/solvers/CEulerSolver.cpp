@@ -2706,7 +2706,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2, dist;
 
-  /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
+  /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
   CVariable* turbNodes = nullptr;

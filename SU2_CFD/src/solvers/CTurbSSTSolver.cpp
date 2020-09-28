@@ -1557,6 +1557,9 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
   su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
 
+  /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+  
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Loop domain points. ---*/
@@ -1586,8 +1589,56 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       /*--- Mean Values ---*/
 
-      Mean_ProjVel    = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
-      Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
+      if (muscl) {
+        /*--- Extrapolate the state ---*/
+
+        su2double tke_i = 0.0, tke_j = 0.0;
+        const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
+        solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+                                           &tke_i, &tke_j, nPrimVarGrad, nTurbVarGrad);
+
+        /*--- Check the extrapolation ---*/
+
+        bool good_i = true, good_j = true;
+        if (tkeNeeded) {
+          good_i = (tke_i >= 0.0);
+          good_j = (tke_j >= 0.0);
+        }
+        solver[FLOW_SOL]->CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
+
+        /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
+        /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
+
+        su2double ProjVel_i = 0, SoundSpeed_i = 0;
+        su2double ProjVel_j = 0, SoundSpeed_j = 0;
+
+        if (good_i) {
+          for (auto iDim = 0; iDim < nDim; iDim++) ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+          SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
+        }
+        else {
+          ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
+          SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
+        }
+
+        if (good_j) {
+          for (auto iDim = 0; iDim < nDim; iDim++) ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+          SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
+        }
+        else {
+          ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
+          SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
+        }
+
+        /*--- Compute the mean values ---*/
+
+        Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+        Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
+      }
+      else {
+        Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
+      }
 
       /*--- Adjustment for grid movement ---*/
 
