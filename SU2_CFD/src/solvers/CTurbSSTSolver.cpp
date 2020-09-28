@@ -1561,7 +1561,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
 
   /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
-  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+  su2double Primitive_i[MAXNVARFLOW] = {0.0}, Primitive_j[MAXNVARFLOW] = {0.0};
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
