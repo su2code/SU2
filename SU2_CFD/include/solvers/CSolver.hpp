@@ -318,8 +318,8 @@ public:
                                 const unsigned long jPoint, 
                                 su2double           *primvar_i, 
                                 su2double           *primvar_j,
-                                su2double           &tke_i, 
-                                su2double           &tke_j,
+                                su2double           *turbvar_i, 
+                                su2double           *turbvar_j,
                                 const unsigned long nFlowVarGrad,
                                 const unsigned long nTurbVarGrad) {}
 
