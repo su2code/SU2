@@ -1078,6 +1078,8 @@ private:
   default_jst_adj_coeff[2],      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   default_ad_coeff_heat[2],      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
   default_obj_coeff[5],          /*!< \brief Default objective array for the COption class. */
+  default_mesh_box_length[3],    /*!< \brief Default mesh box length for the COption class. */
+  default_mesh_box_offset[3],    /*!< \brief Default mesh box offset for the COption class. */
   default_geo_loc[2],            /*!< \brief Default SU2_GEO section locations array for the COption class. */
   default_distortion[2],         /*!< \brief Default SU2_GEO section locations array for the COption class. */
   default_ea_lim[3],             /*!< \brief Default equivalent area limit array for the COption class. */
