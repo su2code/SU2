@@ -378,7 +378,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (auto iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
-  
+
   AD::EndPassive(wasActive);
 }
 
@@ -580,10 +580,14 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[2][2] = alpha*(v[1]+(*c)*n[1]);
     p[2][3] = alpha*(v[1]-(*c)*n[1]);
 
-    p[3][0] = q2+five3k;
+    // p[3][0] = q2+five3k;
+    // p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
+    // p[3][2] = alpha*(h+two3k+(*c)*theta);
+    // p[3][3] = alpha*(h+two3k-(*c)*theta);
+    p[3][0] = q2+(*k);
     p[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[3][2] = alpha*(h+two3k+(*c)*theta);
-    p[3][3] = alpha*(h+two3k-(*c)*theta);
+    p[3][2] = alpha*(h+(*c)*theta);
+    p[3][3] = alpha*(h-(*c)*theta);
   }
   else {
     p[0][0] = n[0];
@@ -610,11 +614,16 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     p[3][3] = alpha*(v[2]+(*c)*n[2]);
     p[2][4] = alpha*(v[2]-(*c)*n[2]);
 
-    p[4][0] = (q2+five3k)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    p[4][1] = (q2+five3k)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    p[4][2] = (q2+five3k)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
-    p[4][3] = alpha*(h+two3k+(*c)*theta);
-    p[4][4] = alpha*(h+two3k-(*c)*theta);
+    // p[4][0] = (q2+five3k)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    // p[4][1] = (q2+five3k)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    // p[4][2] = (q2+five3k)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    // p[4][3] = alpha*(h+two3k+(*c)*theta);
+    // p[4][4] = alpha*(h+two3k-(*c)*theta);
+    p[4][0] = (q2+(*k))*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    p[4][1] = (q2+(*k))*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    p[4][2] = (q2+(*k))*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    p[4][3] = alpha*(h+(*c)*theta);
+    p[4][4] = alpha*(h-(*c)*theta);
   }
 
 }
