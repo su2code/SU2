@@ -3606,10 +3606,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   dUl_dVl[nDim+1][nDim+1] = dUr_dVr[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
 
-  if (tkeNeeded) {
-    dUl_dVl[nDim+1][nDim+2] = rho_l;
-    dUr_dVr[nDim+1][nDim+2] = rho_r;
-  }
+  // if (tkeNeeded) {
+  //   dUl_dVl[nDim+1][nDim+2] = rho_l;
+  //   dUr_dVr[nDim+1][nDim+2] = rho_r;
+  // }
 
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
 
@@ -3643,7 +3643,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   dVi_dUi[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
   dVi_dUi[nDim+1][nDim+1] = Gamma_Minus_One;
   if (tkeNeeded)
-    dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
+    dVi_dUi[nDim+2][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(iPoint,0);
+    // dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -3714,7 +3715,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
     dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
     if (tkeNeeded)
-      dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
+      dVi_dUi[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(kPoint,0);
+      // dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
 
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 

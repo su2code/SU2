@@ -378,6 +378,7 @@ void CNumerics::GetInviscidProjJac(const su2double *val_velocity, const su2doubl
   for (auto iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
+  
   AD::EndPassive(wasActive);
 }
 
