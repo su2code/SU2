@@ -96,8 +96,8 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);
 
     /*--- AR: Blottner coefficients. ---*/
-    Blottner(0,0) = -2.17E-2;   Blottner(0,1) = 9.9982E-1;   Blottner(0,2) = -1.335E1;  
-
+    Blottner(0,0) = 3.83444322E-03;   Blottner(0,1) = 6.74718764E-01;   Blottner(0,2) = -1.24290388E+01; 
+    
     /*--- AR: 7 states ---*/
     CharElTemp(0,0) = 0.000000000000000E+00;
     CharElTemp(0,1) = 1.611135736988230E+05;
