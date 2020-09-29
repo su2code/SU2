@@ -3126,7 +3126,7 @@ OmegaVT = reactive_source->Get_VTEnergysourceTerm(cs, rho, T, Tve);
 
 val_residual[nEv] = OmegaVT*Volume;
 
-val_residual[nEv] = OmegaVT*Volume;
+//val_residual[nEv] = OmegaVT*Volume;
 
   //cout << "vibrelax val_residual[" << nEv << "]=" <<  val_residual[nEv]  << endl;
 
