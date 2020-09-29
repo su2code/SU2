@@ -663,6 +663,9 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
+  //for (iVar = 0; iVar < nVar; iVar++)
+   // cout << "upwind val_residual[" << iVar << "]=" << val_residual[iVar]  << endl;
+
 
   if (implicit) {
 
@@ -2798,7 +2801,19 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
     //std::cout << "Omega chem = "  << Ws[iSpecies]<< std::endl << std::endl << std::endl ;
 
     val_residual[iSpecies] = Ws[iSpecies]* Volume; }
-  
+ 
+   //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+     // cout << "cs[" << iSpecies << "]=" <<  cs[iSpecies]  << endl;
+      //cout << "Ws[" << iSpecies << "]=" <<  Ws[iSpecies]  << endl;
+   //}
+   //cout << "rho=" << rho  << endl;
+   //cout << "T=" << T  << endl;
+   //cout << "Tv=" << Tve  << endl;
+   //cout << "Vol=" << Volume  << endl;
+
+   //for (iVar = 0; iVar < nVar; iVar++)
+      //cout << "chemistry val_residual[" << iVar << "]=" <<  val_residual[iVar]  << endl;
+ 
     //val_residual[nSpecies+nDim+1] += Ws[iSpecies] * SpeciesEnergies[nSpecies+iSpecies]  * Volume;  }
 
 //std::cout << "NOT WORKING PROPERLY OMEGA CV"  << std::endl << std::endl << std::endl ;
@@ -3110,6 +3125,11 @@ OmegaVT = reactive_source->Get_VTEnergysourceTerm(cs, rho, T, Tve);
 
 
 val_residual[nEv] = OmegaVT*Volume;
+
+//val_residual[nEv] = OmegaVT*Volume;
+
+  //cout << "vibrelax val_residual[" << nEv << "]=" <<  val_residual[nEv]  << endl;
+
 
 delete [] cs;
 
