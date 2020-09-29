@@ -1744,57 +1744,57 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
     ----------------------------------------------------------------------------------------------------------------------------------------------------------------- */
     
     // Loop over the DOFs to be corrected.
-    //for(unsigned long l=0; l<nDOFs; ++l)
-    //{
-    //  // Write a message about the number of DOFs to be interpolated.
-    //  if( !(l%writeFreq) )
-    //    cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
-    //    << nDOFs << " DOFs corrected for surface curvature." << endl << flush;
-    //  
-    //  // Set a pointer to the coordinates to be searched.
-    //  su2double *coor = coorCorrected.data() + l*nDim;
-    //  
-    //  // Carry out the minimum distance search to the input grid.
-    //  unsigned short subElem;
-    //  unsigned long  parElem;
-    //  int            rank;
-    //  su2double      dist;
-    //  su2double      weightsInterpol[4];
-    //  inputGridADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-    //                                       weightsInterpol, BBoxTargets,
-    //                                       frontLeaves, frontLeavesNew);
-    //  
-    //  // Subelement found that minimizes the distance to the given coordinate.
-    //  // However, what is needed is the location in the high order parent element.
-    //  // Determine this.
-    //  su2double parCoor[3], wallCoorInputGrid[3];
-    //  unsigned short ind = inputGridIndInStandardBoundaryFaces[parElem];
-    //  HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-    //                             &standardBoundaryFacesGrid[ind],
-    //                             &inputGridSurfElems[parElem],
-    //                             inputGridCoor, parCoor, wallCoorInputGrid);
-    //  
-    //  // Carry out the minimum distance search to the output grid.
-    //  outputGridADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-    //                                        weightsInterpol, BBoxTargets,
-    //                                        frontLeaves, frontLeavesNew);
-    //  
-    //  // Subelement found that minimizes the distance to the given coordinate.
-    //  // However, what is needed is the location in the high order parent element.
-    //  // Determine this.
-    //  su2double wallCoorOutputGrid[3];
-    //  ind = outputGridIndInStandardBoundaryFaces[parElem];
-    //  HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-    //                             &standardBoundaryFacesGrid[ind],
-    //                             &outputGridSurfElems[parElem],
-    //                             outputGridCoor, parCoor, wallCoorOutputGrid);
-    //  
-    //  // Determine the curvature correction, which is the vector from the
-    //  // wall coordinate of the output grid to the wall coordinates on the
-    //  // input grid.
-    //  for(unsigned short iDim=0; iDim<nDim; ++iDim)
-    //    coor[iDim] += wallCoorInputGrid[iDim] - wallCoorOutputGrid[iDim];
-    //}
+   //for(unsigned long l=0; l<nDOFs; ++l)
+   //{
+   //  // Write a message about the number of DOFs to be interpolated.
+   //  if( !(l%writeFreq) )
+   //    cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
+   //    << nDOFs << " DOFs corrected for surface curvature." << endl << flush;
+   //  
+   //  // Set a pointer to the coordinates to be searched.
+   //  su2double *coor = coorCorrected.data() + l*nDim;
+   //  
+   //  // Carry out the minimum distance search to the input grid.
+   //  unsigned short subElem;
+   //  unsigned long  parElem;
+   //  int            rank;
+   //  su2double      dist;
+   //  su2double      weightsInterpol[4];
+   //  inputGridADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+   //                                       weightsInterpol, BBoxTargets,
+   //                                       frontLeaves, frontLeavesNew);
+   //  
+   //  // Subelement found that minimizes the distance to the given coordinate.
+   //  // However, what is needed is the location in the high order parent element.
+   //  // Determine this.
+   //  su2double parCoor[3], wallCoorInputGrid[3];
+   //  unsigned short ind = inputGridIndInStandardBoundaryFaces[parElem];
+   //  HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+   //                             &standardBoundaryFacesGrid[ind],
+   //                             &inputGridSurfElems[parElem],
+   //                             inputGridCoor, parCoor, wallCoorInputGrid);
+   //  
+   //  // Carry out the minimum distance search to the output grid.
+   //  outputGridADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+   //                                        weightsInterpol, BBoxTargets,
+   //                                        frontLeaves, frontLeavesNew);
+   //  
+   //  // Subelement found that minimizes the distance to the given coordinate.
+   //  // However, what is needed is the location in the high order parent element.
+   //  // Determine this.
+   //  su2double wallCoorOutputGrid[3];
+   //  ind = outputGridIndInStandardBoundaryFaces[parElem];
+   //  HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+   //                             &standardBoundaryFacesGrid[ind],
+   //                             &outputGridSurfElems[parElem],
+   //                             outputGridCoor, parCoor, wallCoorOutputGrid);
+   //  
+   //  // Determine the curvature correction, which is the vector from the
+   //  // wall coordinate of the output grid to the wall coordinates on the
+   //  // input grid.
+   //  for(unsigned short iDim=0; iDim<nDim; ++iDim)
+   //    coor[iDim] += wallCoorInputGrid[iDim] - wallCoorOutputGrid[iDim];
+   //}
   
   // Write a message that the curvature correction is finished.
   cout << "Grid zone " << zoneID+1 << ": Curvature correction finished."
@@ -2194,7 +2194,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
         // Determine this.
         //HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
         //                           &standardElementsGrid[indInStandardElements[parElem]],
-        //                           &volElems[parElem], coorGrid, parCoor);
+         //                          &volElems[parElem], coorGrid, parCoor);
        
         
         // Carry out the actual interpolation.
@@ -2507,9 +2507,9 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
     // However, what is needed is the location in the high order parent element.
     // Determine this.
       su2double parCoor[3], wallCoor[3];
-      HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-       &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
-       &surfElems[parElem], coorGrid, parCoor, wallCoor);
+      //HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+      // &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
+      // &surfElems[parElem], coorGrid, parCoor, wallCoor);
 
     // Convert the parametric coordinates of the surface element to
     // parametric weights of the corresponding volume element.
