@@ -5222,8 +5222,8 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
       if ((iVar == 0) || (iVar == nVar-1)) {
         const unsigned long index = iPoint * nVar + iVar;
-        if (fabs(LinSysSol[index]) > allowableRatio*fabs(nodes->GetSolution(iPoint, iVar)))
-          localUnderRelaxation = min(allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps), localUnderRelaxation);
+        const su2double ratio = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar))/(fabs(LinSysSol[index])+eps);
+        if (ratio < 1.0) localUnderRelaxation = min(ratio, localUnderRelaxation);
       }
     }
 
