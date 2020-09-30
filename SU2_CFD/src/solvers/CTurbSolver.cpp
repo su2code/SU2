@@ -762,7 +762,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio =  0.99;
+  const su2double allowableDecrease = 0.99;
+  const su2double allowableIncrease = 1.98;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
@@ -778,9 +779,10 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
          turbulence variables can change over a nonlinear iteration. */
 
         const unsigned long index = iPoint * nVar + iVar;
+        const su2double allowableRatio = (LinSysSol[index] > 0) ? allowableIncrease : allowableDecrease;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (LinSysSol[index] < 0.0 && change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
 
