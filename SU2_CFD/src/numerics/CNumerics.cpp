@@ -261,12 +261,10 @@ void CNumerics::GetInviscidProjFlux(const su2double *r, const su2double *v,
                                     const su2double *p, const su2double *h,
                                     const su2double *n, su2double *F) {
 
-  su2double rhou, rhov, rhow;
-
   if (nDim == 2) {
 
-    rhou = (*r)*v[0];
-    rhov = (*r)*v[1];
+    const su2double rhou = (*r)*v[0];
+    const su2double rhov = (*r)*v[1];
 
     F[0] = rhou*n[0];
     F[1] = (rhou*v[0]+(*p))*n[0];
@@ -281,9 +279,9 @@ void CNumerics::GetInviscidProjFlux(const su2double *r, const su2double *v,
   }
   else {
 
-    rhou = (*r)*v[0];
-    rhov = (*r)*v[1];
-    rhow = (*r)*v[2];
+    const su2double rhou = (*r)*v[0];
+    const su2double rhov = (*r)*v[1];
+    const su2double rhow = (*r)*v[2];
 
     F[0] = rhou*n[0];
     F[1] = (rhou*v[0]+(*p))*n[0];
