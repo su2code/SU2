@@ -780,7 +780,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         const unsigned long index = iPoint * nVar + iVar;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (LinSysSol[index] < 0.0 && change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
 
