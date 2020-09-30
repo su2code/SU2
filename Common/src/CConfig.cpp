@@ -807,6 +807,7 @@ void CConfig::SetPointersNull(void) {
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
   DoubleInfo_WallFunctions = nullptr;
+  Kind_Wall                = nullptr;
 
   Config_Filenames = nullptr;
 
@@ -819,7 +820,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Inlet                = nullptr;    Marker_Outlet           = nullptr;
   Marker_Supersonic_Inlet     = nullptr;    Marker_Supersonic_Outlet= nullptr;    Marker_Smoluchowski_Maxwell   = nullptr;
   Marker_Isothermal           = nullptr;    Marker_HeatFlux         = nullptr;    Marker_EngineInflow   = nullptr;
-  Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;
+  Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;    Marker_RoughWall      = nullptr;
   Marker_EngineExhaust        = nullptr;    Marker_Displacement     = nullptr;    Marker_Load           = nullptr;
   Marker_Load_Dir             = nullptr;    Marker_Load_Sine        = nullptr;    Marker_Clamped        = nullptr;
   Marker_FlowLoad             = nullptr;    Marker_Internal         = nullptr;
@@ -832,8 +833,9 @@ void CConfig::SetPointersNull(void) {
     /*--- Boundary Condition settings ---*/
 
   Isothermal_Temperature = nullptr;
-  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value      = nullptr;
-  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity = nullptr;
+  Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
+  FlowLoad_Value         = nullptr;    Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
+  Roughness_Height       = nullptr;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
@@ -864,8 +866,6 @@ void CConfig::SetPointersNull(void) {
   Inlet_FlowDir             = nullptr;     Inlet_Temperature           = nullptr;     Inlet_Pressure        = nullptr;
   Inlet_Velocity            = nullptr;     Inflow_Mach                 = nullptr;     Inflow_Pressure       = nullptr;
   Exhaust_Pressure          = nullptr;     Outlet_Pressure             = nullptr;     Isothermal_Temperature= nullptr;
-  Heat_Flux                 = nullptr;     Displ_Value                 = nullptr;     Load_Value            = nullptr;
-  FlowLoad_Value            = nullptr;
 
   ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
@@ -1522,6 +1522,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief Smluchowski/Maxwell wall boundary marker(s)  \n DESCRIPTION: Slip velocity and temperature jump wall boundary marker(s)
    Format: ( Heat flux marker,  wall temperature (static), momentum accomodation coefficient, thermal accomodation coefficient ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_SMOLUCHOWSKI_MAXWELL", nMarker_Smoluchowski_Maxwell, Marker_Smoluchowski_Maxwell, Isothermal_Temperature); //Missing TMAC and TAC
+  /*!\brief WALL_ROUGHNESS  \n DESCRIPTION: Specified roughness heights at wall boundary marker(s)
+   Format: ( Wall marker, roughness_height (static), ... ) \ingroup Config*/
+  addStringDoubleListOption("WALL_ROUGHNESS", nRough_Wall, Marker_RoughWall, Roughness_Height);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
@@ -2688,8 +2691,14 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
 
-  /* DESCRIPTION: Activate ParMETIS mode for testing */
-  addBoolOption("PARMETIS", ParMETIS, false);
+  /* DESCRIPTION: ParMETIS load balancing tolerance */
+  addDoubleOption("PARMETIS_TOLERANCE", ParMETIS_tolerance, 0.02);
+
+  /* DESCRIPTION: ParMETIS load balancing weight for points */
+  addLongOption("PARMETIS_POINT_WEIGHT", ParMETIS_pointWgt, 0);
+
+  /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
+  addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
@@ -4634,6 +4643,86 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Check that if the wall roughness array are compatible and set deafult values if needed. ---*/
+   if ((nMarker_HeatFlux > 0) || (nMarker_Isothermal > 0) || (nMarker_CHTInterface > 0)) {
+
+     /*--- The total number of wall markers. ---*/
+     unsigned short nWall = nMarker_HeatFlux + nMarker_Isothermal + nMarker_CHTInterface;
+
+     /*--- If no roughness is specified all walls are assumed to be smooth. ---*/
+     if (nRough_Wall == 0) {
+
+       nRough_Wall = nWall;
+       Roughness_Height = new su2double [nWall];
+       Kind_Wall = new unsigned short [nWall];
+       for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+         Roughness_Height[iMarker] = 0.0;
+         Kind_Wall[iMarker] = SMOOTH;
+       }
+       for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++) {
+         Roughness_Height[nMarker_HeatFlux + iMarker] = 0.0;
+         Kind_Wall[nMarker_HeatFlux + iMarker] = SMOOTH;
+       }
+       for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++) {
+         Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = 0.0;
+         Kind_Wall[nMarker_HeatFlux + nMarker_Isothermal + iMarker] = SMOOTH;
+       }
+
+       /*--- Check for mismatch in number of rough walls and solid walls. ---*/
+     } else if (nRough_Wall > nWall) {
+        SU2_MPI::Error("Mismatch in number of rough walls and solid walls. Number of rough walls cannot be more than solid walls.", CURRENT_FUNCTION);
+       /*--- Check name of the marker and assign the corresponding roughness. ---*/
+     } else {
+       /*--- Store roughness heights in a temp array. ---*/
+       vector<su2double> temp_rough;
+       for (iMarker = 0; iMarker < nRough_Wall; iMarker++)
+         temp_rough.push_back(Roughness_Height[iMarker]);
+
+       /*--- Reallocate the roughness arrays in case not all walls are rough. ---*/
+       delete Roughness_Height;
+       delete Kind_Wall;
+       Roughness_Height = new su2double [nWall];
+       Kind_Wall = new unsigned short [nWall];
+       unsigned short jMarker, chkRough = 0;
+
+       /*--- Initialize everything to smooth. ---*/
+       for (iMarker = 0; iMarker < nWall; iMarker++) {
+         Roughness_Height[iMarker] = 0.0;
+         Kind_Wall[iMarker] = SMOOTH;
+       }
+
+       /*--- Look through heat flux, isothermal and cht_interface markers and assign proper values. ---*/
+       for (iMarker = 0; iMarker < nRough_Wall; iMarker++) {
+         for (jMarker = 0; jMarker < nMarker_HeatFlux; jMarker++)
+           if (Marker_HeatFlux[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+
+         for (jMarker = 0; jMarker < nMarker_Isothermal; jMarker++)
+           if (Marker_Isothermal[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[nMarker_HeatFlux + jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+
+         for (jMarker = 0; jMarker < nMarker_CHTInterface; jMarker++)
+           if (Marker_CHTInterface[jMarker].compare(Marker_RoughWall[iMarker]) == 0) {
+             Roughness_Height[nMarker_HeatFlux + nMarker_Isothermal + jMarker] = temp_rough[iMarker];
+             chkRough++;
+           }
+       }
+
+       /*--- Update kind_wall when a non zero roughness value is specified. ---*/
+       for (iMarker = 0; iMarker < nWall; iMarker++)
+         if (Roughness_Height[iMarker] != 0.0)
+           Kind_Wall[iMarker] = ROUGH;
+
+       /*--- Check if a non solid wall marker was specified as rough. ---*/
+       if (chkRough != nRough_Wall)
+         SU2_MPI::Error("Only solid walls can be rough.", CURRENT_FUNCTION);
+     }
+   }
+
   /*--- Handle default options for topology optimization ---*/
 
   if (topology_optimization && top_optim_nKernel==0) {
@@ -5489,15 +5578,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES: 
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){  
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case FEM_LES:
@@ -7433,22 +7522,24 @@ CConfig::~CConfig(void) {
   delete [] Marker_CfgFile_MixingPlaneInterface;
   delete [] Marker_All_MixingPlaneInterface;
 
-                delete[] Marker_DV;
-            delete[] Marker_Moving;
-       delete[] Marker_Monitoring;
-        delete[] Marker_Designing;
-          delete[] Marker_GeoEval;
-         delete[] Marker_Plotting;
-         delete[] Marker_Analyze;
-   delete[] Marker_WallFunctions;
-         delete[] Marker_ZoneInterface;
-              delete [] Marker_PyCustom;
-     delete[] Marker_All_SendRecv;
+  delete[] Marker_DV;
+  delete[] Marker_Moving;
+  delete[] Marker_Monitoring;
+  delete[] Marker_Designing;
+  delete[] Marker_GeoEval;
+  delete[] Marker_Plotting;
+  delete[] Marker_Analyze;
+  delete[] Marker_WallFunctions;
+  delete[] Marker_ZoneInterface;
+  delete [] Marker_PyCustom;
+  delete[] Marker_All_SendRecv;
 
-       delete[] Kind_Inc_Inlet;
-       delete[] Kind_Inc_Outlet;
+  delete[] Kind_Inc_Inlet;
+  delete[] Kind_Inc_Outlet;
 
   delete[] Kind_WallFunctions;
+
+  delete[] Kind_Wall;
 
   delete[] Config_Filenames;
 
@@ -7641,8 +7732,8 @@ CConfig::~CConfig(void) {
      delete[] Load_Sine_Amplitude;
      delete[] Load_Sine_Frequency;
      delete[] FlowLoad_Value;
+     delete[] Roughness_Height;
      delete[] Wall_Emissivity;
-
   /*--- related to periodic boundary conditions ---*/
 
   for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
@@ -8761,7 +8852,38 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) const {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
+pair<unsigned short, su2double> CConfig::GetWallRoughnessProperties(string val_marker) const {
+  unsigned short iMarker = 0;
+  short          flag = -1;
+  pair<unsigned short, su2double> WallProp;
+
+  if (nMarker_HeatFlux > 0 || nMarker_Isothermal > 0 || nMarker_CHTInterface > 0) {
+    for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++)
+      if (Marker_HeatFlux[iMarker] == val_marker) {
+        flag = iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
+    for (iMarker = 0; iMarker < nMarker_Isothermal; iMarker++)
+      if (Marker_Isothermal[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
+    for (iMarker = 0; iMarker < nMarker_CHTInterface; iMarker++)
+      if (Marker_CHTInterface[iMarker] == val_marker) {
+        flag = nMarker_HeatFlux + nMarker_Isothermal + iMarker;
+        WallProp = make_pair(Kind_Wall[flag], Roughness_Height[flag]);
+        return WallProp;
+      }
+  }
+
+  WallProp = make_pair(SMOOTH, 0.0);
+  return WallProp;
+}
+
 unsigned short CConfig::GetWallFunction_Treatment(string val_marker) const {
+
   unsigned short WallFunction = NO_WALL_FUNCTION;
 
   for(unsigned short iMarker=0; iMarker<nMarker_WallFunctions; iMarker++) {

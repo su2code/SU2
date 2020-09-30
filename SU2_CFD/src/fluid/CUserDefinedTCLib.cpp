@@ -59,6 +59,60 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     mus.resize(nSpecies,0.0);
   }
 
+  if (gas_model =="ARGON"){
+    if (nSpecies != 1) {
+      cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+    }
+    mf = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      mf += MassFrac_Freestream[iSpecies];
+    if (mf != 1.0) {
+      cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf <<endl;
+    }
+    
+    /*--- Define parameters of the gas model ---*/
+    gamma       = 1.667;
+    nReactions  = 0;
+    ionization  = false;
+
+    // Molar mass [kg/kmol]
+    MolarMass[0] = 39.948;
+    // Rotational modes of energy storage
+    RotationModes[0] = 0.0;
+    // Characteristic vibrational temperatures
+    CharVibTemp[0] = 0.0;
+
+    Enthalpy_Formation[0] = 0.0;    
+    Ref_Temperature[0] = 0.0;
+    nElStates[0] = 7;                 
+
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      maxEl = max(maxEl, nElStates[iSpecies]);
+
+    /*--- Allocate and initialize electron data arrays ---*/
+    CharElTemp.resize(nSpecies,maxEl) = su2double(0.0);
+    ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);
+
+    /*--- AR: Blottner coefficients. ---*/
+    Blottner(0,0) = 3.83444322E-03;   Blottner(0,1) = 6.74718764E-01;   Blottner(0,2) = -1.24290388E+01; 
+    
+    /*--- AR: 7 states ---*/
+    CharElTemp(0,0) = 0.000000000000000E+00;
+    CharElTemp(0,1) = 1.611135736988230E+05;
+    CharElTemp(0,2) = 1.625833076870950E+05;
+    CharElTemp(0,3) = 1.636126382960720E+05;
+    CharElTemp(0,4) = 1.642329518358000E+05;
+    CharElTemp(0,5) = 1.649426852542080E+05;   
+    CharElTemp(0,6) = 1.653517702884570E+05; 
+    ElDegeneracy(0,0) = 1;
+    ElDegeneracy(0,1) = 9;
+    ElDegeneracy(0,2) = 21;
+    ElDegeneracy(0,3) = 7;
+    ElDegeneracy(0,4) = 3;
+    ElDegeneracy(0,5) = 5;
+    ElDegeneracy(0,6) = 15;
+  }
+
   if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
@@ -1034,7 +1088,8 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
       }
     }
-    DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;  
+    if (nSpecies==1) DiffusionCoeff[0] = 0;
+    else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
   }    
 }
 

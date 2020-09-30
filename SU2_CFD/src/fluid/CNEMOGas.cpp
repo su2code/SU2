@@ -62,6 +62,8 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
   Pressure = val_pressure;                   
   T        = val_temperature;                
   Tve      = val_temperature_ve; 
+
+  cout << endl << "CNEMOGas::SetTDStatePTTv" << endl;
   
   denom   = 0.0;   
 

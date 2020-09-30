@@ -125,7 +125,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+  void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 
   /*!

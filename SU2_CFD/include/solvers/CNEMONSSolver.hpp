@@ -76,7 +76,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false);
 
   /*!
@@ -87,7 +87,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false);
 
   /*!
