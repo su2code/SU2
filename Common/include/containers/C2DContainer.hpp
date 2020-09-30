@@ -119,7 +119,7 @@ public:
     return *this;                                                       \
   }                                                                     \
                                                                         \
-  ~AccessorImpl()                                                       \
+  ~AccessorImpl() noexcept                                              \
   {                                                                     \
     MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
@@ -519,12 +519,12 @@ public:
   /*!
    * \brief Move ctor, implemented by base class (if fully static works as copy).
    */
-  C2DContainer(C2DContainer&&) noexcept = default;
+  C2DContainer(C2DContainer&&) noexcept(std::is_nothrow_move_constructible<Scalar>::value) = default;
 
   /*!
    * \brief Move assign operator, implemented by base class (if fully static works as copy).
    */
-  C2DContainer& operator= (C2DContainer&&) noexcept = default;
+  C2DContainer& operator= (C2DContainer&&) noexcept(std::is_nothrow_move_assignable<Scalar>::value) = default;
 
   /*!
    * \overload Set all entries to rhs value (syntax sugar, see "resize").

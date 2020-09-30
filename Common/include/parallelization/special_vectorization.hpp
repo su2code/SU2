@@ -63,7 +63,7 @@ public:
   /*--- Special construction using the "register type" directly. ---*/
 
   FORCEINLINE Array(Register y) { reg = y; }
-  FORCEINLINE Array(const Array& other) { reg = other.reg; }
+  FORCEINLINE Array(const Array& other) noexcept { reg = other.reg; }
 
   /*--- Specialized construction primitives. ---*/
 
@@ -80,7 +80,7 @@ public:
 
 #define MAKE_COMPOUND(OP,IMPL)\
   FORCEINLINE Array& operator OP (Scalar x) { reg = IMPL(reg, set1_p(SIZE_TAG, x)); return *this; }\
-  FORCEINLINE Array& operator OP (const Array& other) { reg = IMPL(reg, other.reg); return *this; }
+  FORCEINLINE Array& operator OP (const Array& other) noexcept { reg = IMPL(reg, other.reg); return *this; }
   MAKE_COMPOUND(=, second)
   MAKE_COMPOUND(+=, add_p)
   MAKE_COMPOUND(-=, sub_p)
