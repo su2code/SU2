@@ -87,6 +87,8 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (prestretch_fem) Prestretch.resize(nPoint,nVar);
 
   if (multizone) Set_BGSSolution_k();
+
+  if (config->GetTopology_Optimization()) AuxVar.resize(nPoint);
 }
 
 void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }

@@ -253,6 +253,8 @@ public:
      * allows discarding the Jacobians when they are not needed.
      */
     operator Vector_t() { return residual; }
+
+    su2double operator[] (unsigned long idx) const { return residual[idx]; }
   };
 
   /*!

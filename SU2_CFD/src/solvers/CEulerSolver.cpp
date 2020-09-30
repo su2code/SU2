@@ -32,6 +32,7 @@
 #include "../../include/fluid/CIdealGas.hpp"
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
+#include "../../include/numerics_simd/CNumericsSIMD.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -51,23 +52,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     nSecVar = 2;
   }
 
+  const auto nZone = geometry->GetnZone();
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
+  const auto direct_diff = config->GetDirectDiff();
+  const bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+
+  int Unst_RestartIter = 0;
   unsigned long iPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
-  unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans = (config->GetKind_Turb_Model() != NONE);
-  unsigned short direct_diff = config->GetDirectDiff();
-  int Unst_RestartIter = 0;
-  bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                   (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
   dynamic_grid = config->GetDynamic_Grid();
-
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename_ = "flow";
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -94,6 +94,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
     }
 
+    string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
 
     /*--- Read and store the restart metadata. ---*/
@@ -345,8 +346,28 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name (max 8 characters). ---*/
   SolverName = "C.FLOW";
+
+  /*--- Vectorized numerics. ---*/
+  if (config->GetUseVectorization()) {
+    const bool uncertain = config->GetUsing_UQ();
+    const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                           (config->GetKind_FluidModel() == IDEAL_GAS);
+    const bool low_mach_corr = config->Low_Mach_Correction();
+
+    if (uncertain || !ideal_gas || low_mach_corr) {
+      SU2_MPI::Error("Some of the requested features are not yet "
+                     "supported with vectorization.", CURRENT_FUNCTION);
+    }
+
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, iMesh);
+
+    if (!edgeNumerics) {
+      SU2_MPI::Error("The numerical scheme in use does not "
+                     "support vectorization.", CURRENT_FUNCTION);
+    }
+  }
 
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
@@ -2205,6 +2226,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
                           (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
+  bool center_jst_mat   = (config->GetKind_Centered_Flow() == JST_MAT) && (iMesh == MESH_0);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
@@ -2274,9 +2296,11 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Artificial dissipation ---*/
 
   if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if (center_jst) SetUndivided_Laplacian(geometry, config);
-    if (center_jst || center_jst_ke) SetCentered_Dissipation_Sensor(geometry, config);
+    if (!center_jst_mat) SetMax_Eigenvalue(geometry, config);
+    if (center_jst || center_jst_ke || center_jst_mat) {
+      SetCentered_Dissipation_Sensor(geometry, config);
+      if (!center_jst_ke) SetUndivided_Laplacian(geometry, config);
+    }
   }
 
   /*--- Roe Low Dissipation Sensor ---*/
@@ -2621,6 +2645,9 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
+  /*--- If possible use the vectorized numerics instead. ---*/
+  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   const bool jst_ke_scheme = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
@@ -2705,6 +2732,9 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
+  /*--- If possible use the vectorized numerics instead. ---*/
+  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+
   const auto InnerIter        = config->GetInnerIter();
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -2731,7 +2761,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
-    /*--- Loop over edge colors. ---*/
+  /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
@@ -2944,26 +2974,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
     SU2_OMP_BARRIER
-  }
-
-}
-
-void CEulerSolver::SumEdgeFluxes(CGeometry* geometry) {
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-    LinSysRes.SetBlock_Zero(iPoint);
-
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-
-      if (iPoint == geometry->edges->GetNode(iEdge,0))
-        LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-      else
-        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-    }
   }
 
 }
@@ -3351,9 +3361,8 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
       nodes->SetUnd_Lapl(iPoint, iVar, 0.0);
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
-    {
-      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
@@ -3402,9 +3411,8 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CCo
     jPoint_UndLapl[iPoint] = 0.0;
 
     /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint))
     {
-      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
       bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
       /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
@@ -8811,7 +8819,6 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   delete [] Normal;
 
 }
-
 
 void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
