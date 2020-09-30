@@ -257,12 +257,9 @@ void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
   }
 }
 
-void CNumerics::GetInviscidProjFlux(const su2double *r,
-                                    const su2double *v,
-                                    const su2double *p,
-                                    const su2double *h,
-                                    const su2double *n,
-                                    const su2double *F) {
+void CNumerics::GetInviscidProjFlux(const su2double *r, const su2double *v,
+                                    const su2double *p, const su2double *h,
+                                    const su2double *n, su2double *F) {
 
   su2double rhou, rhov, rhow;
 

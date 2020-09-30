@@ -834,7 +834,7 @@ public:
    */
   void GetInviscidProjFlux(const su2double *r, const su2double *v,
                            const su2double *p, const su2double *h,
-                           const su2double *n, const su2double *F);
+                           const su2double *n, su2double *F);
 
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
@@ -859,8 +859,9 @@ public:
    * \param[in] scale - Scale of the projection.
    * \param[out] J - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(const su2double *v, const su2double *e, const su2double *k,
-                          const su2double *n, const su2double scale, su2double **J) const;
+  void GetInviscidProjJac(const su2double *v, const su2double *e, 
+                          const su2double *k, const su2double *n, 
+                          const su2double scale, su2double **J) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
