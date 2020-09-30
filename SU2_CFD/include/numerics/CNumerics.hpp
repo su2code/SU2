@@ -197,8 +197,7 @@ protected:
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
   su2double
   *Normal,       /*!< \brief Normal vector, its norm is the area of the face. */
-  *UnitNormal,   /*!< \brief Unitary normal vector. */
-  *UnitNormald;  /*!< \brief Derivative of unitary normal vector. */
+  *UnitNormal;   /*!< \brief Unitary normal vector. */
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
@@ -826,16 +825,16 @@ public:
 
   /*!
    * \brief Compute the projected inviscid flux vector.
-   * \param[in] val_density - Pointer to the density.
-   * \param[in] val_velocity - Pointer to the velocity.
-   * \param[in] val_pressure - Pointer to the pressure.
-   * \param[in] val_enthalpy - Pointer to the enthalpy.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_Proj_Flux - Pointer to the projected flux.
+   * \param[in] r - Pointer to the density.
+   * \param[in] v - Pointer to the velocity.
+   * \param[in] p - Pointer to the pressure.
+   * \param[in] h - Pointer to the enthalpy.
+   * \param[in] n - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] F - Pointer to the projected flux.
    */
-  void GetInviscidProjFlux(su2double *val_density, su2double *val_velocity,
-                           su2double *val_pressure, su2double *val_enthalpy,
-                           su2double *val_normal, su2double *val_Proj_Flux);
+  void GetInviscidProjFlux(const su2double *r, const su2double *v,
+                           const su2double *p, const su2double *h,
+                           const su2double *n, const su2double *F);
 
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
@@ -853,15 +852,15 @@ public:
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
-   * \param[in] val_velocity Pointer to the velocity.
-   * \param[in] val_energy Value of the energy.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_scale - Scale of the projection.
-   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   * \param[in] v -Pointer to the velocity.
+   * \param[in] e - Value of the energy.
+   * \param[in] k - Value of the turbulent kinetic energy.
+   * \param[in] n - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] scale - Scale of the projection.
+   * \param[out] J - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidProjJac(const su2double *val_velocity, const su2double *val_energy, const su2double *val_tke,
-                          const su2double *val_normal, const su2double val_scale,
-                          su2double **val_Proj_Jac_tensor) const;
+  void GetInviscidProjJac(const su2double *v, const su2double *e, const su2double *k,
+                          const su2double *n, const su2double scale, su2double **J) const;
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
@@ -978,10 +977,10 @@ public:
    * \param[in] v - Value of the velocity.
    * \param[in] c - Value of the sound speed.
    * \param[in] n - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] p - Pointer to the P matrix.
+   * \param[out] P - Pointer to the P matrix.
    */
   void GetPMatrix(const su2double *r, const su2double *v, const su2double *k,
-                  const su2double *c, const su2double *n, su2double **p);
+                  const su2double *c, const su2double *n, su2double **P);
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1092,10 +1091,10 @@ public:
    * \param[in] v - Value of the velocity.
    * \param[in] c - Value of the sound speed.
    * \param[in] n - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] p - Pointer to the inverse of the P matrix.
+   * \param[out] PInv - Pointer to the inverse of the P matrix.
    */
   void GetPMatrix_inv(const su2double *r, const su2double *v, const su2double *k,
-                      const su2double *c, const su2double *n, su2double **p);
+                      const su2double *c, const su2double *n, su2double **PInv);
 
   /*!
    * \brief Compute viscous residual and jacobian.
