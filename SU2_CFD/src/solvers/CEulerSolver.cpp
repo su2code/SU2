@@ -3348,7 +3348,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto V_i = flowNodes->GetPrimitive(iPoint);
   const auto V_j = flowNodes->GetPrimitive(jPoint);
 
-  const su2double *T_i, *T_j;
+  su2double *T_i, *T_j;
   if (turb) {
     T_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
     T_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
@@ -3550,16 +3550,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
             dVk_dUk[MAXNVAR+1][MAXNVAR] = {0.0};
 
   const su2double rho_l = primvar_l[nDim+2], rho_r = primvar_r[nDim+2];
-  su2double vel_l[MAXNDIM] = {0.0}, vel_r[MAXNDIM] = {0.0};
+  su2double vel_l[MAXNDIM] = {0.0}, sq_vel_l = 0.0,
+            vel_r[MAXNDIM] = {0.0}, sq_vel_r = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    vel_l[iDim] = primvar_l[iDim+1];
-    vel_r[iDim] = primvar_r[iDim+1];
-  }
-
-  su2double sq_vel_l = 0.0, sq_vel_r = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    sq_vel_l += pow(vel_l[iDim], 2.0);
-    sq_vel_r += pow(vel_r[iDim], 2.0);
+    vel_l[iDim] = primvar_l[iDim+1]; sq_vel_l += pow(vel_l[iDim], 2.0);
+    vel_r[iDim] = primvar_r[iDim+1]; sq_vel_r += pow(vel_r[iDim], 2.0);
   }
 
   /*--------------------------------------------------------------------------*/
