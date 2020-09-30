@@ -74,18 +74,6 @@ public:
                 const CConfig* config);
 
   /*!
-   * \brief Constructor of the class, for turbulence applications.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
-                unsigned short val_nVar_NEMO,
-                unsigned short val_nPrimVar,
-                unsigned short val_nPrimVarGrad,
-                const CConfig* config);
-
-  /*!
    * \brief Destructor of the class.
    */
   ~CNEMONumerics(void);
