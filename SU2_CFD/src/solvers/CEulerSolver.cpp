@@ -5213,7 +5213,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    su2double localUnderRelaxation = (GetResLinSolver() < 0.5) ? 1.0 : 0.0;
+    su2double localUnderRelaxation = 1.0;
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
 
