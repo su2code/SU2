@@ -253,7 +253,7 @@ void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
     Flux_Tensor[0][1] = val_density*val_velocity[1];
     Flux_Tensor[1][1] = Flux_Tensor[0][1]*val_velocity[0];
     Flux_Tensor[2][1] = Flux_Tensor[0][1]*val_velocity[1]+val_pressure;
-    Flux_Tensor[3][1] = Flux_Tensor[0][1]*h;
+    Flux_Tensor[3][1] = Flux_Tensor[0][1]*val_enthalpy;
   }
 }
 
