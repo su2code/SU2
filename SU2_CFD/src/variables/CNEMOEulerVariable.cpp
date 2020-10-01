@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
@@ -65,6 +65,8 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   A_INDEX       = nSpecies+nDim+5;
   RHOCVTR_INDEX = nSpecies+nDim+6;
   RHOCVVE_INDEX = nSpecies+nDim+7;
+  LAM_VISC_INDEX  = nSpecies+nDim+8;
+  EDDY_VISC_INDEX = nSpecies+nDim+9;
 
   /*--- Set monoatomic flag ---*/
   if (config->GetGasModel() == "ARGON") monoatomic = true;

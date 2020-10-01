@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
@@ -25,14 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CNEMONSSolver.hpp"
+#include "../../include/variables/CNEMONSVariable.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
 /*--- Explicit instantiation of the parent class of CNEMOEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
 template class CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE>;
-
 
 CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
                CNEMOEulerSolver(geometry, config, iMesh, true) {
@@ -62,6 +63,81 @@ CNEMONSSolver::~CNEMONSSolver(void) {
   if (primitives_aux != nullptr) delete [] primitives_aux;
 
 }
+
+void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                              unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
+  unsigned long InnerIter   = config->GetInnerIter();
+  bool cont_adjoint         = config->GetContinuous_Adjoint();
+  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
+  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+
+  /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
+
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+  /*--- Compute gradient for MUSCL reconstruction. ---*/
+
+  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
+    }
+  }
+
+  /*--- Compute gradient of the primitive variables ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetPrimitive_Gradient_GG(geometry, config);
+  }
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetPrimitive_Gradient_LS(geometry, config);
+  }
+
+  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
+   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+    SetSolution_Limiter(geometry, config);
+  }
+
+  /*--- Evaluate the vorticity and strain rate magnitude ---*/
+  StrainMag_Max = 0.0;
+  Omega_Max = 0.0;
+  //nodes->SetVorticity_StrainMag();
+
+  su2double strainMax = 0.0, omegaMax = 0.0;
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    //su2double StrainMag = nodes->GetStrainMag(iPoint);
+    const su2double* Vorticity = nodes->GetVorticity(iPoint);
+    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+
+    //strainMax = max(strainMax, StrainMag);
+    omegaMax = max(omegaMax, Omega);
+
+  }
+
+  //StrainMag_Max = max(StrainMag_Max, strainMax);
+  Omega_Max = max(Omega_Max, omegaMax);
+
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+
+      su2double MyOmega_Max = Omega_Max;
+      //su2double MyStrainMag_Max = StrainMag_Max;
+      //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);  
+
+  }
+}
+
 
 void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
@@ -111,6 +187,44 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig 
   
   computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
+}
+
+unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output) {
+
+  unsigned long iPoint, nonPhysicalPoints = 0;
+  const unsigned short turb_model = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turb_model == SST) || (turb_model == SST_SUST);
+
+  bool nonphysical = true;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Retrieve the value of the kinetic energy (if needed). ---*/
+
+    su2double eddy_visc = 0.0, turb_ke = 0.0;
+
+    if (turb_model != NONE && solver_container[TURB_SOL] != nullptr) {
+      eddy_visc = solver_container[TURB_SOL]->GetNodes()->GetmuT(iPoint);
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+
+       nodes->SetEddyViscosity(iPoint, eddy_visc);
+    }
+
+    /*--- Incompressible flow, primitive variables ---*/
+
+    nonphysical = nodes->SetPrimVar(iPoint,FluidModel);
+
+    /* Check for non-realizable states for reporting. */
+
+    if (nonphysical) nonPhysicalPoints++;
+
+    /*--- Initialize the convective, source and viscous residual vector ---*/
+
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  return nonPhysicalPoints;
 }
 
 void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,

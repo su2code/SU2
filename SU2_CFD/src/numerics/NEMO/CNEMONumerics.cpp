@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMONumerics.cpp
  * \brief Implementation of the base for NEMO numerics classes.
  *        Contains methods for common tasks, e.g. compute flux
@@ -51,6 +51,8 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     A_INDEX       = nSpecies+nDim+5;
     RHOCVTR_INDEX = nSpecies+nDim+6;
     RHOCVVE_INDEX = nSpecies+nDim+7;  
+    LAM_VISC_INDEX = nSpecies+nDim+8;
+    EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
     implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
@@ -223,7 +225,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
                                        su2double *val_eve,
                                        const su2double *val_normal,
                                        su2double *val_diffusioncoeff,
-                                       su2double val_viscosity,
+                                       su2double val_lam_viscosity,
+                                       su2double val_eddy_viscosity,
                                        su2double val_therm_conductivity,
                                        su2double val_therm_conductivity_ve,
                                        const CConfig *config) {
@@ -235,7 +238,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
-  su2double rho, T;
+  su2double rho, T, RuSI, Ru;
+  vector<su2double> Ms = fluidmodel->GetMolarMass();
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -246,16 +250,34 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   /*--- Rename for convenience ---*/
   Ds  = val_diffusioncoeff;
-  mu  = val_viscosity;
+  mu  = val_lam_viscosity+val_eddy_viscosity;
   ktr = val_therm_conductivity;
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
   V   = val_primvar;
   GV  = val_gradprimvar;
+  RuSI= UNIVERSAL_GAS_CONSTANT;
+  Ru  = 1000.0*RuSI;
 
   hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
   
+  /*--- Scale thermal conductivity with turb visc ---*/
+  //delete me todo
+  // Need to determine proper way to incorporate eddy viscosity
+  // This is only scaling Kve by same factor as ktr
+  su2double Mass = 0.0;
+  su2double tmp1, scl, Cptr;
+  for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
+    Mass += V[iSpecies]*Ms[iSpecies];
+  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+  tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
+  scl  = tmp1/ktr;
+  ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
+  kve  = kve*(1.0+scl);
+  //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
+  //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
+
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
@@ -326,6 +348,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                        su2double *val_Mean_Cvve,
                                        su2double *val_diffusion_coeff,
                                        su2double val_laminar_viscosity,
+                                       su2double val_eddy_viscosity,
                                        su2double val_thermal_conductivity,
                                        su2double val_thermal_conductivity_ve,
                                        su2double val_dist_ij, su2double *val_normal,
