@@ -96,7 +96,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration);
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -105,7 +105,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] ExtIter - External iteration.
    */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) final;
 
   /*!
    * \brief Load a solution from a restart file.
@@ -115,7 +115,7 @@ public:
    * \param[in] val_iter - Current external iteration number.
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.
@@ -126,48 +126,47 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) final;
 
   /*!
-     * \brief Compute the spatial integration using a upwind scheme.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] solver - Description of the numerical method.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] iMesh - Index of the mesh in multigrid computations.
-     */
-   void Upwind_Residual(CGeometry *geometry,
+   * \brief Compute the spatial integration using a upwind scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Upwind_Residual(CGeometry *geometry,
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
 
- 
-
   /*!
-     * \brief Source term integration.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] numerics - Description of the numerical method.
+   * \brief Source term integration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
    * \param[in] second_numerics - Description of the second numerical method.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] iMesh - Index of the mesh in multigrid computations.
-     */
-   void Source_Residual(CGeometry *geometry,
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry,
                        CSolver **solver_container,
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
 
   /*!
-     * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-     */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+   */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Computes primitive variables.
@@ -194,25 +193,14 @@ public:
   void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
   /*!
-     * \brief Impose via the residual the Euler wall boundary condition.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] numerics - Description of the numerical method.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-     */
-  //void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-  //                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
-
-  /*!
-     * \brief Impose the far-field boundary condition using characteristics.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \brief Impose the far-field boundary condition using characteristics.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method for convective terms.
    * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-     */
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
@@ -315,29 +303,11 @@ public:
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) override;
 
   /*!
-     * \brief Load a direct flow solution for use with the adjoint solver.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_iZone - Current zone in the mesh.
-     */
-  void GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone);
-
-  /*!
-     * \brief Load the output data container with the variables to be written to the volume solution file.
-   * \param[in] config - Definition of the particular problem.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] data_container - Container holding the output variable data.
-   * \param[in] nOutput_Vars - Number of output variables being stored.
-     */
-  void SetVolume_Output(CConfig *config, CGeometry *geometry, su2double **data_container, unsigned short nOutput_Vars);
-
-  /*!
    * \brief Compute a pressure sensor switch.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-    */
-
+   */
   inline void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) { }
 
    /*!

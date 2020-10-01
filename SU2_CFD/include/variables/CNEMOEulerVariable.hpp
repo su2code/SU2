@@ -75,6 +75,8 @@ protected:
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX, nSpecies;
 
+  bool monoatomic;
+
 public:
 
   /*!
@@ -259,7 +261,8 @@ public:
    * \param[in] iDim   - Index of the dimension.
    * \param[in] value  - Value of the reconstruction gradient component.
    */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override {
+    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
   }
 
   /*!
@@ -434,28 +437,28 @@ public:
    * \brief A virtual member.
    * \return Value of the vibrational-electronic temperature.
    */
-  inline su2double GetTemperature_ve(unsigned long iPoint) const
+  inline su2double GetTemperature_ve(unsigned long iPoint) const override
                                     { return Primitive(iPoint,TVE_INDEX); }
 
   /*!
    * \brief Sets the vibrational electronic temperature of the flow.
    * \return Value of the temperature of the flow.
    */
-  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve)
+  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) override
                                { Primitive(iPoint,TVE_INDEX) = val_Tve; return false; }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (trans.-rot.).
    * \return \f$\rho C^{t-r}_{v} \f$
    */
-  inline su2double GetRhoCv_tr(unsigned long iPoint) const
+  inline su2double GetRhoCv_tr(unsigned long iPoint) const override
                               { return Primitive(iPoint,RHOCVTR_INDEX); }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (vib.-el.).
    * \return \f$\rho C^{v-e}_{v} \f$
    */
-  inline su2double GetRhoCv_ve(unsigned long iPoint) const
+  inline su2double GetRhoCv_ve(unsigned long iPoint) const override
                               { return Primitive(iPoint,RHOCVVE_INDEX); }
 
   /*!
@@ -471,17 +474,17 @@ public:
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  inline su2double *GetdPdU(unsigned long iPoint) { return dPdU[iPoint]; }
+  inline su2double *GetdPdU(unsigned long iPoint) override { return dPdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial T}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTdU(unsigned long iPoint) { return dTdU[iPoint]; }
+  inline su2double *GetdTdU(unsigned long iPoint) override { return dTdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial T^{V-E}}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTvedU(unsigned long iPoint) { return dTvedU[iPoint]; }
+  inline su2double *GetdTvedU(unsigned long iPoint) override { return dTvedU[iPoint]; }
 
   /*!
    * \brief Get the mass fraction \f$\rho_s / \rho \f$ of species s.

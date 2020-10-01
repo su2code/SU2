@@ -32,10 +32,10 @@ CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
   Mutation::MixtureOptions opt(gas_model);
   string transport_model, state_model;	
 
-    /* Allocating memory*/
-  Cv_ks.resize(nSpecies,0.0);
+  /* Allocating memory*/
+  Cv_ks.resize(nEnergyEq*nSpecies,0.0);
   h_RT.resize(nSpecies,0.0);
-  es.resize(2*nSpecies,0.0);
+  es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/

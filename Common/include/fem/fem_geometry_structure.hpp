@@ -880,7 +880,7 @@ public:
   * \brief Set the send receive boundaries of the grid.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetSendReceive(CConfig *config) override;
+  void SetSendReceive(const CConfig *config) override;
 
   /*!
    * \brief Set the local index that correspond with the global numbering index.

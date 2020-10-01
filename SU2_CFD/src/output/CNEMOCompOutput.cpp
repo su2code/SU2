@@ -109,13 +109,14 @@ CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
       cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
     }
   }
+
+  nSpecies = config->GetnSpecies();
+
 }
 
 CNEMOCompOutput::~CNEMOCompOutput(void) {}
 
 void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
-
-  unsigned short nSpecies = config -> GetnSpecies();
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   if (nSpecies == 2){
@@ -316,6 +317,8 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
+
+
   // Solution variables
   if (nSpecies == 2){
     AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
@@ -328,6 +331,32 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
     AddVolumeOutput("DENSITY_O",   "Density_O",   "SOLUTION", "Density_O");
   }
+
+  //Auxiliary variables for post-processment
+  if (nSpecies == 2){
+    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
+    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
+  }
+  if (nSpecies == 5){
+    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
+    AddVolumeOutput("MASSFRAC_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
+    AddVolumeOutput("MASSFRAC_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
+    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
+    AddVolumeOutput("MASSFRAC_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
+  }
+
+  //TODO: THIS ISNT FULLY WORKING
+//  // Solution variables
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//     Species = std::to_string(iSpecies);
+//     AddVolumeOutput("DENSITY_" + Species,  "Density_" + Species,  "SOLUTION", "Density_" + Species);
+//  }
+//  //Auxiliary variables for post-processment
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//     Species = std::to_string(iSpecies);
+//     AddVolumeOutput("MASSFRAC_" + Species,  "MassFrac_" + Species,  "AUXILIARY", "MassFrac_" + Species);
+//  }
+
 
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
   AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
@@ -349,18 +378,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-  //Auxiliary variables for post-processment
-  if (nSpecies == 2){
-    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");  
-  }
-  if (nSpecies == 5){
-    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASSFRAC_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
-    AddVolumeOutput("MASSFRAC_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
-    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
-    AddVolumeOutput("MASSFRAC_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
-  } 
 
   // Grid velocity
   if (config->GetGrid_Movement()){
@@ -376,18 +393,18 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("TEMPERATURE_VE", "Temperature_ve", "PRIMITIVE", "Temperature_ve");
 
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
-//  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
 
   if (config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
 
-    //AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
-    //AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
-    //if (nDim == 3)
-    //  AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
+    if (nDim == 3)
+     AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
-    //AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
+    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
 
   }
 
@@ -506,7 +523,19 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("MASSFRAC_NO",   iPoint, Node_Flow->GetSolution(iPoint, 2)/Node_Flow->GetDensity(iPoint));
     SetVolumeOutputValue("MASSFRAC_N",    iPoint, Node_Flow->GetSolution(iPoint, 3)/Node_Flow->GetDensity(iPoint));
     SetVolumeOutputValue("MASSFRAC_O",    iPoint, Node_Flow->GetSolution(iPoint, 4)/Node_Flow->GetDensity(iPoint));
-  } 
+  }
+
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//     Species = std::to_string(iSpecies);
+//     SetVolumeOutputValue("DENSITY_" + Species, iPoint, Node_Flow->GetSolution(iPoint, iSpecies));
+//  }
+  
+
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+//     Species = std::to_string(iSpecies);
+//     SetVolumeOutputValue("MASSFRAC_" + Species, iPoint, Node_Flow->GetSolution(iPoint, iSpecies)/Node_Flow->GetDensity(iPoint));
+//  }
+
 
   SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, nSpecies));
   SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(iPoint, nSpecies+1));
@@ -549,8 +578,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0);
   }
-  //su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
-  //SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
+  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
 
   if (config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
@@ -631,13 +660,13 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
   if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES)) {
-  // SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-  //  SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
-  //  if (nDim == 3)
-  //    SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+    SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+    SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+    if (nDim == 3)
+      SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
 
     SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
-  //  SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
+    SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
   }
 }
 

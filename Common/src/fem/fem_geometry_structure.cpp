@@ -3443,7 +3443,7 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
   }
 }
 
-void CMeshFEM_DG::SetSendReceive(CConfig *config) {
+void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Determine the ranks from which this rank has to receive data ---*/

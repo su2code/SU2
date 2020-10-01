@@ -66,6 +66,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   RHOCVTR_INDEX = nSpecies+nDim+6;
   RHOCVVE_INDEX = nSpecies+nDim+7;
 
+  /*--- Set monoatomic flag ---*/
+  if (config->GetGasModel() == "ARGON") monoatomic = true;
+  else monoatomic = false;
+
   /*--- Allocate & initialize residual vectors ---*/
 
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
@@ -267,24 +271,26 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> eves_max = fluidmodel->GetSpeciesEve(Tvemax);
 
   // Check for non-physical solutions
-  rhoEve_min = 0.0;
-  rhoEve_max = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoEve_min += U[iSpecies] * eves_min[iSpecies];
-    rhoEve_max += U[iSpecies] * eves_max[iSpecies];
+  if (!monoatomic){
+    rhoEve_min = 0.0;
+    rhoEve_max = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      rhoEve_min += U[iSpecies] * eves_min[iSpecies];
+      rhoEve_max += U[iSpecies] * eves_max[iSpecies];
+    }
+    if (rhoEve < rhoEve_min) {
+      nonPhys      = true;
+      V[TVE_INDEX] = Tvemin;
+      U[nSpecies+nDim+1] = rhoEve_min;
+    } else if (rhoEve > rhoEve_max) {
+      nonPhys      = true;
+      V[TVE_INDEX] = Tvemax;
+      U[nSpecies+nDim+1] = rhoEve_max;
+    } else {
+      V[TVE_INDEX]   = T[1];
+    }
   }
-  if (rhoEve < rhoEve_min) {
-    nonPhys      = true;
-    V[TVE_INDEX] = Tvemin;
-    U[nSpecies+nDim+1] = rhoEve_min;
-  } else if (rhoEve > rhoEve_max) {
-    nonPhys      = true;
-    V[TVE_INDEX] = Tvemax;
-    U[nSpecies+nDim+1] = rhoEve_max;
-  } else {
-    V[TVE_INDEX]   = T[1];
-  }
-
+    
   // Determine other properties of the mixture at the current state  
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
