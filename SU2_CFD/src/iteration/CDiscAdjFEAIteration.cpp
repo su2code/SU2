@@ -296,7 +296,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   auto structural_numerics = numerics[iZone][iInst][MESH_0][FEA_SOL];
 
   /*--- Some numerics are only instanciated under these conditions ---*/
-  bool fsi = config[iZone]->GetFSI_Simulation();
+  bool fsi = config[iZone]->GetFSI_Simulation() || config[iZone]->GetMultizone_Problem();
   bool nonlinear = config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS;
   bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   bool element_based = dir_solver->IsElementBased() && nonlinear;

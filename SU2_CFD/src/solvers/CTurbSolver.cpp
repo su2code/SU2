@@ -276,9 +276,9 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
                             nodes->GetF1blending(jPoint));
 
   /*--- Roughness heights. ---*/
-    if (config->GetKind_Turb_Model() == SA)
-      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint),
-                             geometry->nodes->GetRoughnessHeight(jPoint));
+  if (config->GetKind_Turb_Model() == SA)
+    numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint),
+                           geometry->nodes->GetRoughnessHeight(jPoint));
 
   /*--- Compute residual, and Jacobians ---*/
 
@@ -302,10 +302,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
@@ -472,7 +469,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         /*--- Accumulate the residuals to compute the average ---*/
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          LinSysRes(iPoint,iVar) += weight*residual.residual[iVar];
+          LinSysRes(iPoint,iVar) += weight*residual[iVar];
           for (auto jVar = 0u; jVar < nVar; jVar++)
             Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
         }

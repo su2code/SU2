@@ -29,7 +29,7 @@
 #pragma once
 
 #include "CVariable.hpp"
-#include "../../../Common/include/toolboxes/CVertexMap.hpp"
+#include "../../../Common/include/containers/CVertexMap.hpp"
 
 class CDiscAdjMeshBoundVariable final : public CVariable {
 private:

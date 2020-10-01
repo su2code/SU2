@@ -4457,40 +4457,6 @@ public:
   inline virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
 
   /*!
-   * \brief Initialize the vertex traction containers at the vertices.
-   */
-  inline void InitVertexTractionContainer() {
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTraction = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTraction[iMarker] = new su2double* [nVertex[iMarker]];
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
-
-  /*!
-   * \brief Initialize the adjoint vertex traction containers at the vertices.
-   */
-  inline void InitVertexTractionAdjointContainer() {
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTractionAdjoint = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTractionAdjoint[iMarker] = new su2double* [nVertex[iMarker]];
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
-
-  /*!
    * \brief Compute the tractions at the vertices.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
