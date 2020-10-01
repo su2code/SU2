@@ -27,7 +27,7 @@
 #pragma once
 
 #include <vector>
-#include "C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 
 /*!
  * \brief The matrix is symmetric but full storage is used as that gives much better
@@ -35,8 +35,7 @@
  * with LAPACK to use optimized matrix inversion and multiplication routines.
  */
 class CSymmetricMatrix {
-  static_assert(su2passivematrix::Storage == StorageType::RowMajor,
-                "Row major storage is assumed for LAPACK.");
+  static_assert(su2passivematrix::IsRowMajor, "Row major storage is assumed for LAPACK.");
 private:
   su2passivematrix mat;
 

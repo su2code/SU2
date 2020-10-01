@@ -1404,10 +1404,8 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
 
 bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) const {
 
-  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
-    auto iPoint = nodes->GetPoint(first_point, iNode);
+  for (auto iPoint : nodes->GetPoints(first_point))
     if (iPoint == second_point) return true;
-  }
   return false;
 }
 
@@ -1434,8 +1432,7 @@ void CGeometry::SetEdges(void) {
   edges = new CEdge(nEdge,nDim);
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
-      auto jPoint = nodes->GetPoint(iPoint, iNode);
+    for (auto jPoint : nodes->GetPoints(iPoint)) {
       if (iPoint < jPoint) {
         auto iEdge = FindEdge(iPoint, jPoint);
         edges->SetNodes(iEdge, iPoint, jPoint);

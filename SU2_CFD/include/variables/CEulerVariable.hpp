@@ -122,6 +122,7 @@ public:
    * \return Primitive variables limiter for the entire domain.
    */
   inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive(void) const {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -154,12 +155,14 @@ public:
    * \return Reference to primitive variable gradient.
    */
   inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive(void) const { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
   inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction(void) const { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.

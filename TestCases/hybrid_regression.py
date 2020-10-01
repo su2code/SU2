@@ -183,7 +183,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.076819, -16.049252, 1.064326, 0.019770]
+    turb_naca0012_sa.test_vals = [-11.537781, -14.899750, 1.064330, 0.019756]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -191,7 +191,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.273728, -6.243783, 1.049988, 0.019165]
+    turb_naca0012_sst.test_vals = [-12.797090, -5.872763, 1.049989, 0.019163]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -199,7 +199,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-14.851214, -6.062566, 1.005233, 0.019014]
+    turb_naca0012_sst_sust.test_vals = [-12.640091, -5.751854, 1.005233, 0.019017]
     test_list.append(turb_naca0012_sst_sust)
 
     # PROPELLER
