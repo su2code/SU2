@@ -5214,7 +5214,6 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     su2double localUnderRelaxation = 1.0;
-
     for (auto iVar = 0; iVar < nVar; iVar++) {
 
       /* We impose a limit on the maximum percentage that the

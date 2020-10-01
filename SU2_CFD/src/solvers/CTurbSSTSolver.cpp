@@ -538,6 +538,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   const su2double sigma_om2 = constants[3];
   const su2double r_i       = flowNodes->GetDensity(iPoint);
   const su2double om_i      = nodes->GetPrimitive(iPoint,1);
+  const su2double gradk     = nodes->GetGradient(iPoint,0);
+  const su2double gradom    = nodes->GetGradient(iPoint,1);
+  const su2double Vol       = node_i->GetVolume();
+
+  const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
   
   /*--- Reset first row of Jacobian now so we don't need to later ---*/
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
@@ -557,13 +562,9 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
         const long iVertex = node_i->GetVertex(iMarker);
         if (iVertex != -1) {
           const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          const su2double factor = -2.0*(1. - F1)*sigma_om2/om_i;
           for (auto iDim = 0; iDim < nDim; iDim++) {
-            const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
-            const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-
-            Jacobian_i[1][0] += factor*gradom*Normal[iDim];
-            Jacobian_i[1][1] += factor*gradk*Normal[iDim];
+            Jacobian_i[1][0] -= factor*gradom[iDim]*Normal[iDim]/Vol;
+            Jacobian_i[1][1] -= factor*gradk[iDim]*Normal[iDim]/Vol;
           }// iDim
         }// iVertex
       }// not send-receive
@@ -580,9 +581,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const unsigned long jPoint = node_i->GetPoint(iNeigh);
     const unsigned long iEdge = node_i->GetEdge(iNeigh);
-    const auto Vol = node_i->GetVolume();
     const su2double r_j  = flowNodes->GetDensity(jPoint);
-    const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
 
     Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
@@ -591,12 +590,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     SetGradWeights(gradWeights, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      const su2double gradk  = nodes->GetGradient(iPoint,0,iDim);
-      const su2double gradom = nodes->GetGradient(iPoint,1,iDim);
-      Jacobian_i[1][0] += factor*gradom*gradWeights[iDim]/r_i*sign_grad_i;
-      Jacobian_j[1][0] += factor*gradom*gradWeights[iDim]/r_j;
-      Jacobian_i[1][1] += factor*gradk*gradWeights[iDim]/r_i*sign_grad_i;
-      Jacobian_j[1][1] += factor*gradk*gradWeights[iDim]/r_j;
+      Jacobian_i[1][0] += factor*gradom[iDim]*gradWeights[iDim]/r_i*sign_grad_i;
+      Jacobian_j[1][0] += factor*gradom[iDim]*gradWeights[iDim]/r_j;
+
+      Jacobian_i[1][1] += factor*gradk[iDim]*gradWeights[iDim]/r_i*sign_grad_i;
+      Jacobian_j[1][1] += factor*gradk[iDim]*gradWeights[iDim]/r_j;
     }// iDim
     
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
