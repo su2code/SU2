@@ -1152,6 +1152,8 @@ private:
   bool Use_Accurate_Visc_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG gradients (CNSSolver)  */
        Use_Accurate_Turb_Jacobians;    /*!< \brief Whether to numerically differentiate the flux due to GG gradients (CTurbSolver) */
 
+  su2double Weighted_Least_SquaresCoeff;  /*!< \brief Coefficient for least squares weights, where weights are given  by (d_ij)^-N. */
+
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
@@ -4347,6 +4349,11 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
+
+   /*!
+   * \brief Get coefficient for weights in WLS gradients.
+   */
+  su2double GetWeighted_Least_Squares_Coeff(void) const { return Weighted_Least_SquaresCoeff; }
 
   /*!
    * \brief Get the MUSCL parameter.

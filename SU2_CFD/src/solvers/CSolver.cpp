@@ -3248,6 +3248,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
           weight = 0.0;
           for (auto iDim = 0; iDim < nDim; iDim++)
             weight += pow(dist_ij[iDim],2); 
+          weight = pow(weight, config->GetWeighted_Least_Squares_Coeff());
         }
         weight = 1.0/weight;
         const auto Smat = reconstruction ? solver->GetNodes()->GetSmatrix_Aux(iPoint)

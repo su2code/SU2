@@ -124,6 +124,7 @@ void computeGradientsLeastSquares(CSolver* solver,
         weight = 0.0;
         for (size_t iDim = 0; iDim < nDim; ++iDim)
           weight += dist_ij[iDim] * dist_ij[iDim];
+        weight = pow(weight, config.GetWeighted_Least_Squares_Coeff());
       }
 
       /*--- Sumations for entries of upper triangular matrix R. ---*/

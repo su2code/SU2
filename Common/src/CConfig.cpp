@@ -1764,6 +1764,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief NUM_METHOD_GRAD
    *  \n DESCRIPTION: Numerical method for spatial gradients used only for upwind reconstruction \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: NO_GRADIENT. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD_RECON", Kind_Gradient_Method_Recon, Gradient_Map, NO_GRADIENT);
+  /*!\brief WEIGHTED_LEAST_SQUARES_COEFF
+   *  \n DESCRIPTION: Coefficient for least squares weights, where weights are given  by (d_ij)^-N. \ingroup Config*/
+  addDoubleOption("WEIGHTED_LEAST_SQUARES_COEFF", Weighted_Least_SquaresCoeff, 2.0);
   /*!\brief VENKAT_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
