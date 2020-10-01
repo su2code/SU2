@@ -44,7 +44,7 @@ CFEMStandardPyra::CFEMStandardPyra(const unsigned short val_nPoly,
         Also determine the padded value of the latter. ---*/
   nDOFs1D  = nPoly + 1;
   nDOFs    = nDOFs1D*(nDOFs1D+1)*(2*nDOFs1D+1)/6;
-  nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
+  nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the parametric locations of the grid DOFs of the pyramid. ---*/
   LocationPyramidGridDOFsEquidistant();
@@ -56,7 +56,7 @@ CFEMStandardPyra::CFEMStandardPyra(const unsigned short val_nPoly,
         albeit a special one. ---*/
   nInt1D          = orderExact/2 + 1;
   nIntegration    = nInt1D*nInt1D*nInt1D;
-  nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the location and the weights of the 1D Gauss-Legendre
         integration points. ---*/

@@ -36,6 +36,74 @@ void TensorProductVolumeIntPoints3D_3_5(const int           N,
                                         const su2double     *B,
                                         su2double           *C) {
 
-  cout << "TensorProductVolumeIntPoints3D_3_5: Not implemented yet" << std::endl;
-  exit(1);
+  /*--- Cast the one dimensional input arrays for the A-tensor to 2D arrays.
+        Note that C++ stores multi-dimensional arrays in row major order,
+        hence the indices are reversed compared to the column major order
+        storage of e.g. Fortran. ---*/
+  const passivedouble (*ai)[8] = (const passivedouble (*)[8]) Ai;
+  const passivedouble (*aj)[8] = (const passivedouble (*)[8]) Aj;
+  const passivedouble (*ak)[8] = (const passivedouble (*)[8]) Ak;
+
+  /*--- Define the variables to store the intermediate results. ---*/
+  su2double tmpK[3][3][8];
+  su2double tmpJ[5][3][8];
+  su2double tmpI[5][5][8];
+
+  /*--- Outer loop over N. ---*/
+  for(int l=0; l<N; ++l) {
+
+    /*--- Cast the index l of B and C to multi-dimensional arrays. ---*/
+    const su2double (*b)[3][3] = (const su2double (*)[3][3]) &B[l*ldb];
+    su2double       (*c)[5][5] = (su2double (*)[5][5]) &C[l*ldc];
+
+    /*--- Tensor product in k-direction to obtain the solution
+          in the integration points in k-direction. ---*/
+    for(int i=0; i<3; ++i) {
+      for(int j=0; j<3; ++j) {
+        SU2_OMP_SIMD
+        for(int k=0; k<8; ++k) tmpK[i][j][k] = 0.0;
+        for(int kk=0; kk<3; ++kk) {
+          SU2_OMP_SIMD
+          for(int k=0; k<8; ++k)
+            tmpK[i][j][k] += ak[kk][k] * b[kk][j][i];
+        }
+      }
+    }
+
+    /*--- Tensor product in j-direction to obtain the solution
+          in the integration points in j-direction. ---*/
+    for(int k=0; k<5; ++k) {
+      for(int i=0; i<3; ++i) {
+        SU2_OMP_SIMD
+        for(int j=0; j<8; ++j) tmpJ[k][i][j] = 0.0;
+        for(int jj=0; jj<3; ++jj) {
+          SU2_OMP_SIMD
+          for(int j=0; j<8; ++j)
+            tmpJ[k][i][j] += aj[jj][j] * tmpK[i][jj][k];
+        }
+      }
+    }
+
+    /*--- Tensor product in i-direction to obtain the solution
+          in the integration points in i-direction. This is
+          the final result of the tensor product. ---*/
+    for(int k=0; k<5; ++k) {
+      for(int j=0; j<5; ++j) {
+        SU2_OMP_SIMD
+        for(int i=0; i<8; ++i) tmpI[k][j][i] = 0.0;
+        for(int ii=0; ii<3; ++ii) {
+          SU2_OMP_SIMD
+          for(int i=0; i<8; ++i)
+            tmpI[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];
+        }
+      }
+    }
+
+    /*--- Copy the values to the appropriate location in c. ---*/
+    for(int k=0; k<5; ++k)
+      for(int j=0; j<5; ++j)
+        for(int i=0; i<5; ++i)
+          c[k][j][i] = tmpI[k][j][i];
+
+  } /*--- End of the loop over N. ---*/
 }

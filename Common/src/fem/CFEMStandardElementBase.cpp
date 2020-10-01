@@ -415,7 +415,7 @@ void CFEMStandardElementBase::DerLagBasisIntPointsLine(const vector<passivedoubl
   /*--- Determine the number of integration points along the line
         and its padded value. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = ((nIntLine+vecLen-1)/vecLen)*vecLen;
+  const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CGeneralSquareMatrixCM VInv(nPoly+1);
@@ -447,7 +447,7 @@ void CFEMStandardElementBase::LagBasisIntPointsLine(const vector<passivedouble> 
   /*--- Determine the number of integration points along the line
         and its padded value. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = ((nIntLine+vecLen-1)/vecLen)*vecLen;
+  const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CGeneralSquareMatrixCM VInv(nPoly+1);

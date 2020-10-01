@@ -44,7 +44,7 @@ CFEMStandardHex::CFEMStandardHex(const unsigned short val_nPoly,
         Also determine the padded value of the latter. ---*/
   nDOFs1D  = nPoly + 1;
   nDOFs    = nDOFs1D*nDOFs1D*nDOFs1D;
-  nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
+  nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the 1D parametric locations of the grid DOFs. 1D is enough,
         because a tensor product is used to obtain the 3D coordinates. ---*/
@@ -55,7 +55,7 @@ CFEMStandardHex::CFEMStandardHex(const unsigned short val_nPoly,
         of integration points. Also determine the padded value of the latter. ---*/
   nInt1D          = orderExact/2 + 1;
   nIntegration    = nInt1D*nInt1D*nInt1D;
-  nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the location and the weights of the 1D integration points.
         The 3D integration points are obtained via a tensor product. ---*/

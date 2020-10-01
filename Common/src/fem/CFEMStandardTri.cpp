@@ -41,7 +41,7 @@ CFEMStandardTri::CFEMStandardTri(const unsigned short val_nPoly,
 
   /*--- Determine the total number of DOFs and its padded version. ---*/
   nDOFs    = (nPoly+1)*(nPoly+2)/2;
-  nDOFsPad = ((nDOFs+vecLen-1)/vecLen)*vecLen;
+  nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the parametric locations of the grid DOFs of the triangle. ---*/
   LocationTriangleGridDOFsEquidistant(rTriangleDOFsEqui, sTriangleDOFsEqui);
@@ -54,7 +54,7 @@ CFEMStandardTri::CFEMStandardTri(const unsigned short val_nPoly,
   /*--- Determine the total number of integration points
         and its padded version. ---*/
   nIntegration    = rTriangleInt.size();
-  nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Allocate the memory for the padded number of integration points and
         initialize the weights to zero. This is done such that the padded

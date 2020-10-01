@@ -86,7 +86,7 @@ void CFEMStandardVolumePyraGrid::DerLagBasisIntPointsPyra(const vector<passivedo
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+vecLen-1)/vecLen)*vecLen;
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CGeneralSquareMatrixCM VInv(rDOFs.size());
@@ -138,7 +138,7 @@ void CFEMStandardVolumePyraGrid::LagBasisIntPointsPyra(const vector<passivedoubl
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+vecLen-1)/vecLen)*vecLen;
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CGeneralSquareMatrixCM VInv(rDOFs.size());

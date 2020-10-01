@@ -46,7 +46,7 @@ CFEMStandardPrism::CFEMStandardPrism(const unsigned short val_nPoly,
   nDOFs1D       = nPoly + 1;
   nDOFsTriangle = nDOFs1D*(nDOFs1D+1)/2;
   nDOFs         = nDOFs1D*nDOFsTriangle;
-  nDOFsPad      = ((nDOFs+vecLen-1)/vecLen)*vecLen;
+  nDOFsPad      = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the 1D parametric locations of the grid DOFs. These are needed
         as the 3D grid DOFs are obtained by taking the tensor product of the
@@ -76,7 +76,7 @@ CFEMStandardPrism::CFEMStandardPrism(const unsigned short val_nPoly,
         quadrature rule and the integration rule of the triangle. Determine
         the total number of integration points and its padded value. ---*/
   nIntegration    = nInt1D*nIntTriangle;
-  nIntegrationPad = ((nIntegration+vecLen-1)/vecLen)*vecLen;
+  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Allocate the memory for the padded number of integration points and
         initialize the weights to zero. This is done such that the padded

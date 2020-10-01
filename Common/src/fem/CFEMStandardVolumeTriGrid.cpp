@@ -78,7 +78,7 @@ void CFEMStandardVolumeTriGrid::DerLagBasisIntPointsTriangle(const vector<passiv
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rTriangleInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+vecLen-1)/vecLen)*vecLen;
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CGeneralSquareMatrixCM VInv(rDOFs.size());
@@ -119,7 +119,7 @@ void CFEMStandardVolumeTriGrid::LagBasisIntPointsTriangle(const vector<passivedo
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rTriangleInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+vecLen-1)/vecLen)*vecLen;
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CGeneralSquareMatrixCM VInv(rDOFs.size());

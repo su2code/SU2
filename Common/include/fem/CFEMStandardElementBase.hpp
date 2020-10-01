@@ -51,7 +51,7 @@ using namespace std;
  */
 class CFEMStandardElementBase {
 public:
-  static const size_t vecLen = 8;   /*!< \brief Vector length must be a multiple of vecLen for good performance. */
+  static const size_t baseVectorLen = 8;   /*!< \brief Vector length must be a multiple of basevectorLen for good performance. */
 
 protected:
   unsigned short VTK_Type;         /*!< \brief Element type using the VTK convention. */
