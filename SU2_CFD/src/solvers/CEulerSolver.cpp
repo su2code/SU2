@@ -3184,7 +3184,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         good_i = (tke_i >= 0.0);
         good_j = (tke_j >= 0.0);
       }
-      good_i = good_i && 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
       counter_local += (!good_i+!good_j);
