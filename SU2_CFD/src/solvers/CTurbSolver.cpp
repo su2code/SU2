@@ -155,10 +155,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        which is typically only active during the start-up of a calculation. ---*/
 
       if (!sa_neg) {
-        // for (auto iVar = 0; iVar < nVar; iVar++) {
-        //   good_i = (turbPrimVar_i[iVar] >= 0.0) && (good_i);
-        //   good_j = (turbPrimVar_j[iVar] >= 0.0) && (good_j);
-        // }
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          good_i = (turbPrimVar_i[iVar] >= 0.0) && (good_i);
+          good_j = (turbPrimVar_j[iVar] >= 0.0) && (good_j);
+        }
       }
 
       const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;

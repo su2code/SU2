@@ -2754,10 +2754,10 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
         /*--- Check the extrapolation ---*/
 
         bool good_i = true, good_j = true;
-        // if (tkeNeeded) {
-        //   good_i = (tke_i >= 0.0);
-        //   good_j = (tke_j >= 0.0);
-        // }
+        if (tkeNeeded) {
+          good_i = (tke_i >= 0.0);
+          good_j = (tke_j >= 0.0);
+        }
         CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
         /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
@@ -3500,10 +3500,8 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
 
   const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 
-  // good_i = good_i && good_prim_i && good_roe;
-  // good_j = good_j && good_prim_j && good_roe;
-  good_i = good_roe;
-  good_j = good_roe;
+  good_i = good_i && good_prim_i && good_roe;
+  good_j = good_j && good_prim_j && good_roe;
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,

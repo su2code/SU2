@@ -1601,10 +1601,10 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         /*--- Check the extrapolation ---*/
 
         bool good_i = true, good_j = true;
-        // if (tkeNeeded) {
-        //   good_i = (tke_i >= 0.0);
-        //   good_j = (tke_j >= 0.0);
-        // }
+        if (tkeNeeded) {
+          good_i = (tke_i >= 0.0);
+          good_j = (tke_j >= 0.0);
+        }
         solver[FLOW_SOL]->CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
         /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
