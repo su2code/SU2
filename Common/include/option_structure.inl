@@ -1998,6 +1998,7 @@ public:
         case EQUILIBRIUM_WALL_MODEL:
         case LOGARITHMIC_WALL_MODEL:
         case ALGEBRAIC_WALL_MODEL:
+        case APGLL_WALL_MODEL:
           counter += 3; break;
         default: break;
       }
@@ -2047,6 +2048,7 @@ public:
             is needed, which is extracted from option_value. ---*/
       switch( this->walltype[i] ) {
 
+        case APGLL_WALL_MODEL:
         case ALGEBRAIC_WALL_MODEL:
         case LOGARITHMIC_WALL_MODEL:
         case EQUILIBRIUM_WALL_MODEL: {

@@ -34,3 +34,5 @@ inline CWallModel1DEQ::~CWallModel1DEQ(void){}
 inline CWallModelLogLaw::~CWallModelLogLaw(void){}
 
 inline CWallModelAlgebraic::~CWallModelAlgebraic(void){}
+
+inline CWallModelAPGLL::~CWallModelAPGLL(void){}

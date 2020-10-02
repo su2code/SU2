@@ -84,7 +84,12 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
 
   /*--- Store specific parameters here. ---*/
 
-  ReynoldsFriction = 5200.0;  // Friction Reynolds Number.
+  Verification_Solution = config->GetVerification_Solution();
+  if ( Verification_Solution == TURBULENT_CHANNEL)
+    ReynoldsFriction = 5200.0;  // Friction Reynolds Number.
+  else if (Verification_Solution == PERIODIC_HILL)
+    ReynoldsFriction = 582.0;  // Friction Reynolds Number.
+
   TWall            = 273.15; // Wall Temperature
   dx               = 0.2;    // Mesh spacing in the x-direction
   dz               = 0.1;    // Mesh spacing in the z-direction
@@ -146,8 +151,6 @@ CTurbChannelSolution::CTurbChannelSolution(unsigned short val_nDim,
   // Compute the random numbers for the synthetic turbulence.
   STG_Preprocessing(PhaseMode, RandUnitVec, RandUnitNormal);
 
-
-
   /*--- Write a message that the solution is initialized for the
    Turbulent Channel test case. ---*/
 
@@ -179,8 +182,46 @@ void CTurbChannelSolution::GetSolution(const su2double *val_coords,
   // Determine the y-coordinate:- Remember that the channel grid is from 0 -> 2*delta
   //                            - RANS equations are only solved for the upper half of the domain;
 
-  su2double y = fabs(val_coords[1]/halfChan - halfChan);
+	su2double y;
+	if (Verification_Solution == TURBULENT_CHANNEL){
+  	y = fabs(val_coords[1]/halfChan - halfChan);
+  }
+	else if (Verification_Solution == PERIODIC_HILL){
+		su2double x = val_coords[0] * 28.;
+		su2double Lx = 28.* 9.;
+		su2double y0 = 0.;
+		if (x > Lx/2.) x = Lx - x;
 
+	  if ((0. <= x) && (x < 9.)){
+			y0 = min(28., 2.8e+1     + 0.0*x + 6.775070969851e-3 * pow(x,2)  - 2.124527775800e-3 * pow(x,3) );
+		}
+
+		else if(( 9. <= x) && (x < 14.)){
+			y0 =  2.507355893131e+1 + 9.754803562315e-1*x -1.016116352781e-1*pow(x,2)  + 1.889794677828e-3*pow(x,3);
+		}
+
+		else if((14. <= x) && (x < 20.)){
+			y0 =  2.579601052357e+1 + 8.206693007457e-1*x -9.055370274339e-2*pow(x,2)  +1.626510569859e-3*pow(x,3);
+		}
+		else if((20. <= x) && (x < 30.)){
+			y0 = 4.046435022819e+1 - 1.379581654948*x +1.945884504128e-2*pow(x,2)  -2.070318932190e-4*pow(x,3);
+		}
+		else if((30. <= x) && (x < 40.)){
+			y0 = 1.792461334664e+1      +8.743920332081e-1*x -5.567361123058e-2*pow(x,2)  +6.277731764683e-4*pow(x,3);
+		}
+		else if((40. <= x) && (x < 54.)){
+			y0 = max(0., 5.639011190988e+1      -2.010520359035*x + 1.644919857549e-2*pow(x,2)  +2.674976141766e-5*pow(x,3));
+		}
+		else{
+			y0 = 0.0;
+		}
+
+		y0 = y0 / 28.;
+		su2double Ly = 3.035 - y0;
+		su2double y_aux = 2.0 * (val_coords[1] - y0) / Ly;
+		y = fabs(y_aux - 1.);
+
+	}
   // Search for the y-coordinate in yRANS.
   unsigned int i;
   for(i=1; i<yRANS.size(); ++i)
