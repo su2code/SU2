@@ -2743,7 +2743,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      const bool good_edge = !node_i>GetPhysicalBoundary() && !node_j->GetPhysicalBoundary();
+      const bool good_edge = !node_i->GetPhysicalBoundary() && !node_j->GetPhysicalBoundary();
       if (muscl && good_edge) {
         /*--- Extrapolate the state ---*/
 
@@ -3151,7 +3151,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
     const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
-    bool good_i = true, good_j = true, good_edge = true;
+    bool good_i = true, good_j = true;
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
