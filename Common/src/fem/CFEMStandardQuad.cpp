@@ -29,7 +29,7 @@
 #include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of CFEMStandardVolumeQuadGrid.                  */
+/*                Public member functions of CFEMStandardQuad.                      */
 /*----------------------------------------------------------------------------------*/
 
 CFEMStandardQuad::CFEMStandardQuad(const unsigned short val_nPoly,
@@ -76,4 +76,50 @@ CFEMStandardQuad::CFEMStandardQuad(const unsigned short val_nPoly,
   for(unsigned short j=0; j<nInt1D; ++j)
     for(unsigned short i=0; i<nInt1D; ++i, ++ii)
       wIntegration(ii) = wLineInt[i]*wLineInt[j];
+
+  /*--- Create the map with the function pointers to carry out the tensor product
+        to compute the data in the 2D integration points of the quadrilateral. ---*/
+  map<CUnsignedShort2T, TPI2D> mapFunctions;
+  CreateMapTensorProductVolumeIntPoints2D(mapFunctions);
+
+  /*--- Try to find the combination of the number of 1D DOFs and integration points
+        in mapFunctions. If not found, write a clear error message that this
+        tensor product is not supported. ---*/
+  CUnsignedShort2T nDOFsAndInt(nDOFs1D, nInt1D);
+  auto MI = mapFunctions.find(nDOFsAndInt);
+  if(MI == mapFunctions.end()) {
+    std::ostringstream message;
+    message << "The tensor product TensorProductVolumeIntPoints2D_" << nDOFs1D
+            << "_" << nInt1D << " not created by the automatic source code "
+            << "generator. Modify this automatic source code creator";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Set the function pointer to carry out tensor product. ---*/
+  TensorProductDataVolIntPoints = MI->second; 
+}
+
+/*----------------------------------------------------------------------------------*/
+/*                Protected member functions of CFEMStandardQuad.                   */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardQuad::TensorProductIntegrationPoints(const int                           N,
+                                                      const ColMajorMatrix<passivedouble> &Ai,
+                                                      const ColMajorMatrix<passivedouble> &Aj,
+                                                      const ColMajorMatrix<su2double>     &B,
+                                                      ColMajorMatrix<su2double>           &C,
+                                                      const CConfig                       *config) {
+
+  /*--- Call the function to which TensorProductDataVolIntPoints points to carry out
+        the actual tensor product. Perform the timing, if desired. ---*/
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->TensorProduct_Tick(&timeGemm);
+#endif
+
+  TensorProductDataVolIntPoints(N, B.rows(), C.rows(), Ai.data(), Aj.data(), B.data(), C.data());
+
+#ifdef PROFILE
+  if( config ) config->TensorProduct_Tock(timeGemm, 2, N, nDOFs1D, nInt1D);
+#endif
 }

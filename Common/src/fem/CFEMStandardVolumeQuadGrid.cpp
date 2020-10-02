@@ -49,5 +49,24 @@ CFEMStandardVolumeQuadGrid::CFEMStandardVolumeQuadGrid(const unsigned short val_
 void CFEMStandardVolumeQuadGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
                                                                 ColMajorMatrix<su2double>          &matCoor,
                                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function TensorProductIntegrationPoints 2 times to compute the
+          derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. ---*/
+    TensorProductIntegrationPoints(2, derLagBasisLineIntLGL, lagBasisLineIntLGL,
+                                   matCoor, matDerCoor[0], nullptr);
+    TensorProductIntegrationPoints(2, lagBasisLineIntLGL, derLagBasisLineIntLGL,
+                                   matCoor, matDerCoor[1], nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
+          derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    TensorProductIntegrationPoints(2, derLagBasisLineIntEqui, lagBasisLineIntEqui,
+                                   matCoor, matDerCoor[0], nullptr);
+    TensorProductIntegrationPoints(2, lagBasisLineIntEqui, derLagBasisLineIntEqui,
+                                   matCoor, matDerCoor[1], nullptr);
+  }
 }

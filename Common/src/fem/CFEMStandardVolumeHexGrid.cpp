@@ -50,7 +50,7 @@ void CFEMStandardVolumeHexGrid::DerivativesCoorVolumeIntPoints(const bool       
                                                                ColMajorMatrix<su2double>          &matCoor,
                                                                vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
-/*--- Check for which point distribution the derivatives must be computed. ---*/
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function TensorProductIntegrationPoints 3 times to compute the

@@ -2,7 +2,7 @@
  * \file GenerateSourceFiles.cpp
  * \brief Program that creates the source files for the desired
  *        combinations for the tensor products to compute the
- *        data in the 3D volume integration points.
+ *        data in the 2D volume integration points.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -34,17 +34,17 @@
 #include <vector>
 
 /*----------------------------------------------------------------------------*/
-/* This program creates the source files to compute the data in the 3D        */
+/* This program creates the source files to compute the data in the 2D        */
 /* integration points of a hexadral element using tensor products. The number */
 /* of 1D DOFs and integration points are hard coded, such that the compiler   */
 /* can optimize much better. The desired combinations of DOFs and integration */
 /* points in 1D are specified below. For each combination a separate source   */
 /* file is created, while the function headers are stored in a single include */
 /* file. Also the meson.build file is created. The names of the functions are */
-/* TensorProductVolumeIntPoints3D_K_M, where K is the number of DOFs in 1D    */
+/* TensorProductVolumeIntPoints2D_K_M, where K is the number of DOFs in 1D    */
 /* M the number of integration points in 1D. These functions are stored in    */
-/* the files TensorProductVolumeIntPoints3D_K_M.cpp, while the function       */
-/* headers are stored in TensorProductVolumeIntPoints3D.hpp in the directory  */
+/* the files TensorProductVolumeIntPoints2D_K_M.cpp, while the function       */
+/* headers are stored in TensorProductVolumeIntPoints2D.hpp in the directory  */
 /* ../../../include/tensor_products.                                          */
 /*----------------------------------------------------------------------------*/
 
@@ -66,7 +66,7 @@ const size_t baseVectorLen = 8;
 
 /*--- Define the name of the include file. ---*/
 const std::string IncludeDir  = "../../../include/tensor_products";
-const std::string IncludeFile = "TensorProductVolumeIntPoints3D.hpp";
+const std::string IncludeFile = "TensorProductVolumeIntPoints2D.hpp";
 
 /*----------------------------------------------------------------------------*/
 /*                          Function prototypes.                              */
@@ -143,7 +143,7 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
   /* Write the header of the file. */
   WriteFileHeader(includeFile, IncludeFile.c_str(),
                   "Function prototypes for the tensor product to compute "
-                  "the data in the 3D integration points");
+                  "the data in the 2D integration points");
 
   /* Write the pragma once line and the required include files. */
   includeFile << "#pragma once" << std::endl << std::endl;
@@ -160,12 +160,11 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
   includeFile << "using namespace std;" << std::endl << std::endl;
 
   /* Typedef the function pointer for the tensor product. */
-  includeFile << "typedef void(*TPI3D)(const int           N,"   << std::endl;
+  includeFile << "typedef void(*TPI2D)(const int           N,"   << std::endl;
   includeFile << "                     const int           ldb," << std::endl;
   includeFile << "                     const int           ldc," << std::endl;
   includeFile << "                     const passivedouble *Ai," << std::endl;
   includeFile << "                     const passivedouble *Aj," << std::endl;
-  includeFile << "                     const passivedouble *Ak," << std::endl;
   includeFile << "                     const su2double     *B,"  << std::endl;
   includeFile << "                     su2double           *C);" << std::endl;
 
@@ -173,31 +172,30 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
      of the available tensor product functions. */
   includeFile << "/*!" << std::endl;
   includeFile << " * \\brief Function, which stores the available function pointers for the tensor" << std::endl;
-  includeFile << " *        product for the 3D volume integration points in a map." << std::endl;
+  includeFile << " *        product for the 2D volume integration points in a map." << std::endl;
   includeFile << " * \\param[out] mapFunctions - Map to store the function pointers to carry out the tensor product." << std::endl;
   includeFile << " */" << std::endl;
-  includeFile << "void CreateMapTensorProductVolumeIntPoints3D(map<CUnsignedShort2T, TPI3D> &mapFunctions);" << std::endl;
+  includeFile << "void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFunctions);" << std::endl;
 
   /* Loop over the number of combinations for which the tensor product must be created. */
   for(unsigned int i=0; i<nDOFs1D.size(); ++i) {
 
     /* Determine the name of this function. */
     std::ostringstream functionName;
-    functionName << "TensorProductVolumeIntPoints3D_"
+    functionName << "TensorProductVolumeIntPoints2D_"
                  << nDOFs1D[i] << "_" << nInt1D[i];
 
     /* Write the function prototype for this tensor product. */
     includeFile << std::endl;
     includeFile << "/*!" << std::endl;
     includeFile << " * \\brief Function, which carries out the tensor product to obtain the data" << std::endl;
-    includeFile << " *        in the 3D integration points for (nDOFs1D,nInt1D) = ("
+    includeFile << " *        in the 2D integration points for (nDOFs1D,nInt1D) = ("
                 << nDOFs1D[i] << "," << nInt1D[i] << ")." << std::endl;
     includeFile << " * \\param[in]  N   - Number of variables to be determined in the integration points" << std::endl;
     includeFile << " * \\param[in]  ldb - Leading dimension of B when stored as a matrix." << std::endl;
     includeFile << " * \\param[in]  ldc - Leading dimension of C when stored as a matrix." << std::endl;
     includeFile << " * \\param[in]  Ai  - I-componnent of the A tensor." << std::endl;
     includeFile << " * \\param[in]  Aj  - J-componnent of the A tensor." << std::endl;
-    includeFile << " * \\param[in]  Ak  - K-componnent of the A tensor." << std::endl;
     includeFile << " * \\param[in]  B   - Tensor, which contains the data to be interpolated." << std::endl;
     includeFile << " * \\param[out] C   - Result of the tensor product C = A*B." << std::endl;
     includeFile << " */" << std::endl;
@@ -216,9 +214,6 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
     includeFile << "const passivedouble *Aj," << std::endl;
 
     for(unsigned int j=0; j<(functionName.str().size()+6); ++j) includeFile << " ";
-    includeFile << "const passivedouble *Ak," << std::endl;
-
-    for(unsigned int j=0; j<(functionName.str().size()+6); ++j) includeFile << " ";
     includeFile << "const su2double     *B," << std::endl;
 
     for(unsigned int j=0; j<(functionName.str().size()+6); ++j) includeFile << " ";
@@ -235,16 +230,16 @@ void CreateMapSourceFile(const std::vector<int> &nDOFs1D,
                          const std::vector<int> &nInt1D) {
 
   /* Open the source file for writing and check if it went OK. */
-  std::ofstream sourceFile("CreateMapTensorProductVolumeIntPoints3D.cpp");
+  std::ofstream sourceFile("CreateMapTensorProductVolumeIntPoints2D.cpp");
   if( !sourceFile ) {
     std::cout << std::endl;
-    std::cout << "The file CreateMapTensorProductVolumeIntPoints3D.cpp "
+    std::cout << "The file CreateMapTensorProductVolumeIntPoints2D.cpp "
               << "could not be opened for writing." << std::endl;
     std::exit(1);
   }
 
   /* Write the header of the file. */
-  WriteFileHeader(sourceFile, "CreateMapTensorProductVolumeIntPoints3D.cpp",
+  WriteFileHeader(sourceFile, "CreateMapTensorProductVolumeIntPoints2D.cpp",
                   "Function, which creates the map between the number of 1D DOFs "
                   "and integration points and the function pointers.");
 
@@ -253,7 +248,7 @@ void CreateMapSourceFile(const std::vector<int> &nDOFs1D,
              << std::endl;
 
   /* Write the header of the function. */
-  sourceFile << "void CreateMapTensorProductVolumeIntPoints3D(map<CUnsignedShort2T, TPI3D> &mapFunctions) {" << std::endl;
+  sourceFile << "void CreateMapTensorProductVolumeIntPoints2D(map<CUnsignedShort2T, TPI2D> &mapFunctions) {" << std::endl;
 
   /* Make sure that the map is empty. */
   sourceFile << std::endl;
@@ -275,7 +270,7 @@ void CreateMapSourceFile(const std::vector<int> &nDOFs1D,
 
     /* Determine the name of this function. */
     std::ostringstream functionName;
-    functionName << "TensorProductVolumeIntPoints3D_"
+    functionName << "TensorProductVolumeIntPoints2D_"
                  << nDOFs1D[i] << "_" << nInt1D[i];
 
     /* Write a new line, if needed, and set the entries of nDOFsAndInt. */
@@ -313,7 +308,7 @@ void CreateMesonBuildFile(const std::vector<int> &nDOFs1D,
 
     /* Determine the name of this file and write it to the meson file. */
     std::ostringstream fileName;
-    fileName << "TensorProductVolumeIntPoints3D_"
+    fileName << "TensorProductVolumeIntPoints2D_"
              << nDOFs1D[i] << "_" << nInt1D[i] << ".cpp";
     mesonFile << "'" << fileName.str() << "'," << std::endl;
 
@@ -323,7 +318,7 @@ void CreateMesonBuildFile(const std::vector<int> &nDOFs1D,
 
   /* Write the name of the final source file, which is the file
      to create the map for the function pointers. */
-  mesonFile << "'CreateMapTensorProductVolumeIntPoints3D.cpp'])" << std::endl;
+  mesonFile << "'CreateMapTensorProductVolumeIntPoints2D.cpp'])" << std::endl;
 
   /* Close the file again. */
   mesonFile.close();
@@ -336,7 +331,7 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
 
   /* Determine the name of this function and the corresponding file name. */
   std::ostringstream functionName;
-  functionName << "TensorProductVolumeIntPoints3D_"
+  functionName << "TensorProductVolumeIntPoints2D_"
                << nDOFs1D << "_" << nInt1D;
   const std::string fileName = functionName.str() + ".cpp";
 
@@ -375,9 +370,6 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "const passivedouble *Aj," << std::endl;
 
   for(unsigned int j=0; j<(functionName.str().size()+6); ++j) sourceFile << " ";
-  sourceFile << "const passivedouble *Ak," << std::endl;
-
-  for(unsigned int j=0; j<(functionName.str().size()+6); ++j) sourceFile << " ";
   sourceFile << "const su2double     *B," << std::endl;
 
   for(unsigned int j=0; j<(functionName.str().size()+6); ++j) sourceFile << " ";
@@ -396,16 +388,13 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
              << MP << "]) Ai;" << std::endl;
   sourceFile << "  const passivedouble (*aj)[" << MP << "] = (const passivedouble (*)["
              << MP << "]) Aj;" << std::endl;
-  sourceFile << "  const passivedouble (*ak)[" << MP << "] = (const passivedouble (*)["
-             << MP << "]) Ak;" << std::endl;
 
   /* Define the variables to store the intermediate results. */
   sourceFile << std::endl;
   sourceFile << "  /*--- Define the variables to store the intermediate results. ---*/" << std::endl;
-  sourceFile << "  su2double tmpK[" << nDOFs1D << "][" << nDOFs1D << "][" << MP << "];" << std::endl;
-  sourceFile << "  su2double tmpJ[" << nInt1D  << "][" << nDOFs1D << "][" << MP << "];" << std::endl;
+  sourceFile << "  su2double tmpJ[" << nDOFs1D << "][" << MP << "];" << std::endl;
   if(MP > nInt1D)
-    sourceFile << "  su2double tmpI[" << nInt1D << "][" << nInt1D << "][" << MP << "];" << std::endl;
+    sourceFile << "  su2double tmpI[" << nInt1D << "][" << MP << "];" << std::endl;
 
   /* Start the outer loop over N. */
   sourceFile << std::endl;
@@ -415,40 +404,22 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   /* Cast the index l of B and C to multi-dimensional arrays. */
   sourceFile << std::endl;
   sourceFile << "    /*--- Cast the index l of B and C to multi-dimensional arrays. ---*/" << std::endl;
-  sourceFile << "    const su2double (*b)[" << nDOFs1D << "][" << nDOFs1D << "] = "
-             << "(const su2double (*)[" << nDOFs1D << "][" << nDOFs1D << "]) &B[l*ldb];" << std::endl;
-  sourceFile << "    su2double       (*c)[" << nInt1D << "][" << nInt1D << "] = "
-             << "(su2double (*)[" << nInt1D << "][" << nInt1D << "]) &C[l*ldc];" << std::endl;
-
-  /* Tensor product in k-direction. */
-  sourceFile << std::endl;
-  sourceFile << "    /*--- Tensor product in k-direction to obtain the solution" << std::endl;
-  sourceFile << "          in the integration points in k-direction. ---*/"      << std::endl;
-  sourceFile << "    for(int i=0; i<" << nDOFs1D << "; ++i) {" << std::endl;
-  sourceFile << "      for(int j=0; j<" << nDOFs1D << "; ++j) {" << std::endl;
-  sourceFile << "        SU2_OMP_SIMD" << std::endl;
-  sourceFile << "        for(int k=0; k<" << MP << "; ++k) tmpK[i][j][k] = 0.0;" << std::endl;
-  sourceFile << "        for(int kk=0; kk<" << nDOFs1D << "; ++kk) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
-  sourceFile << "          for(int k=0; k<" << MP << "; ++k)" << std::endl;
-  sourceFile << "            tmpK[i][j][k] += ak[kk][k] * b[kk][j][i];" << std::endl;
-  sourceFile << "        }" << std::endl;
-  sourceFile << "      }" << std::endl;
-  sourceFile << "    }" << std::endl;
+  sourceFile << "    const su2double (*b)[" << nDOFs1D << "] = "
+             << "(const su2double (*)[" << nDOFs1D << "]) &B[l*ldb];" << std::endl;
+  sourceFile << "    su2double       (*c)[" << nInt1D << "] = "
+             << "(su2double (*)[" << nInt1D << "]) &C[l*ldc];" << std::endl;
 
   /* Tensor product in j-direction. */
   sourceFile << std::endl;
   sourceFile << "    /*--- Tensor product in j-direction to obtain the solution" << std::endl;
   sourceFile << "          in the integration points in j-direction. ---*/"      << std::endl;
-  sourceFile << "    for(int k=0; k<" << nInt1D << "; ++k) {" << std::endl;
-  sourceFile << "      for(int i=0; i<" << nDOFs1D << "; ++i) {" << std::endl;
+  sourceFile << "    for(int i=0; i<" << nDOFs1D << "; ++i) {" << std::endl;
+  sourceFile << "      SU2_OMP_SIMD" << std::endl;
+  sourceFile << "      for(int j=0; j<" << MP << "; ++j) tmpJ[i][j] = 0.0;" << std::endl;
+  sourceFile << "      for(int jj=0; jj<" << nDOFs1D << "; ++jj) {" << std::endl;
   sourceFile << "        SU2_OMP_SIMD" << std::endl;
-  sourceFile << "        for(int j=0; j<" << MP << "; ++j) tmpJ[k][i][j] = 0.0;" << std::endl;
-  sourceFile << "        for(int jj=0; jj<" << nDOFs1D << "; ++jj) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
-  sourceFile << "          for(int j=0; j<" << MP << "; ++j)" << std::endl;
-  sourceFile << "            tmpJ[k][i][j] += aj[jj][j] * tmpK[i][jj][k];" << std::endl;
-  sourceFile << "        }" << std::endl;
+  sourceFile << "        for(int j=0; j<" << MP << "; ++j)" << std::endl;
+  sourceFile << "          tmpJ[i][j] += aj[jj][j] * b[jj][i];" << std::endl;
   sourceFile << "      }" << std::endl;
   sourceFile << "    }" << std::endl;
 
@@ -457,21 +428,19 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "    /*--- Tensor product in i-direction to obtain the solution" << std::endl;
   sourceFile << "          in the integration points in i-direction. This is"    << std::endl;
   sourceFile << "          the final result of the tensor product. ---*/"        << std::endl;
-  sourceFile << "    for(int k=0; k<" << nInt1D << "; ++k) {" << std::endl;
-  sourceFile << "      for(int j=0; j<" << nInt1D << "; ++j) {" << std::endl;
+  sourceFile << "    for(int j=0; j<" << nInt1D << "; ++j) {" << std::endl;
+  sourceFile << "      SU2_OMP_SIMD" << std::endl;
+  if(MP > nInt1D)
+  sourceFile << "      for(int i=0; i<" << MP << "; ++i) tmpI[j][i] = 0.0;" << std::endl;
+  else
+  sourceFile << "      for(int i=0; i<" << MP << "; ++i) c[j][i] = 0.0;" << std::endl;
+  sourceFile << "      for(int ii=0; ii<" << nDOFs1D << "; ++ii) {" << std::endl;
   sourceFile << "        SU2_OMP_SIMD" << std::endl;
+  sourceFile << "        for(int i=0; i<" << MP << "; ++i)" << std::endl;
   if(MP > nInt1D)
-  sourceFile << "        for(int i=0; i<" << MP << "; ++i) tmpI[k][j][i] = 0.0;" << std::endl;
+  sourceFile << "          tmpI[j][i] += ai[ii][i] * tmpJ[ii][j];" << std::endl;
   else
-  sourceFile << "        for(int i=0; i<" << MP << "; ++i) c[k][j][i] = 0.0;" << std::endl;
-  sourceFile << "        for(int ii=0; ii<" << nDOFs1D << "; ++ii) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
-  sourceFile << "          for(int i=0; i<" << MP << "; ++i)" << std::endl;
-  if(MP > nInt1D)
-  sourceFile << "            tmpI[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];" << std::endl;
-  else
-  sourceFile << "            c[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];" << std::endl;
-  sourceFile << "        }" << std::endl;
+  sourceFile << "          c[j][i] += ai[ii][i] * tmpJ[ii][j];" << std::endl;
   sourceFile << "      }" << std::endl;
   sourceFile << "    }" << std::endl;
 
@@ -480,10 +449,9 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   {
     sourceFile << std::endl;
     sourceFile << "    /*--- Copy the values to the appropriate location in c. ---*/" << std::endl;
-    sourceFile << "    for(int k=0; k<" << nInt1D << "; ++k)" << std::endl;
-    sourceFile << "      for(int j=0; j<" << nInt1D << "; ++j)" << std::endl;
-    sourceFile << "        for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
-    sourceFile << "          c[k][j][i] = tmpI[k][j][i];" << std::endl;
+    sourceFile << "    for(int j=0; j<" << nInt1D << "; ++j)" << std::endl;
+    sourceFile << "      for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
+    sourceFile << "        c[j][i] = tmpI[j][i];" << std::endl;
   }
 
   /* Close the outer loop over N. */
