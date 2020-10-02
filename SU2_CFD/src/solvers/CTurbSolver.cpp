@@ -195,9 +195,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (!muscl || !good_edge)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-      else {
+      if (muscl && good_edge) {
         const su2double rho_i = good_i ? flowPrimVar_i[nDim+2] : V_i[nDim+2],
                         rho_j = good_j ? flowPrimVar_j[nDim+2] : V_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,
@@ -210,6 +208,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                  residual.jacobian_j, residual.jacobian_i,
                                  good_j, good_i,
                                  jPoint, iPoint);
+      }
+      else {
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
     }
 

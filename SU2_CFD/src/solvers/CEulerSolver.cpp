@@ -3250,9 +3250,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set implicit computation ---*/
       if (implicit) {
-        if (!muscl || !good_edge)
-          Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-        else {
+        if (muscl && good_edge) {
           su2double *primvar_i = good_i ? Primitive_i : V_i,
                     *primvar_j = good_j ? Primitive_j : V_j;
           SetExtrapolationJacobian(solver, geometry, config,
@@ -3267,6 +3265,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                    residual.jacobian_j, residual.jacobian_i,
                                    good_j, good_i,
                                    jPoint, iPoint);
+        }
+        else {
+          Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         }
       }
     }
