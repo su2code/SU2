@@ -3543,6 +3543,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
+  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ && Kind_FluidModel != MUTATIONPP) {
+    SU2_MPI::Error("Only USER_DEFINED_NONEQ or MUTATIONPP nonequilibrium fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
+  }
+
   if (!ideal_gas && !nemo) {
     if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
       SU2_MPI::Error("Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids", CURRENT_FUNCTION);

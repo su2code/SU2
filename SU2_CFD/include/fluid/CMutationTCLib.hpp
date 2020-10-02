@@ -120,7 +120,7 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
    
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.

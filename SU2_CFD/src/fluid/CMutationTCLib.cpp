@@ -75,6 +75,8 @@ void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double va
   temperatures[0] = val_temperature;
   temperatures[1] = val_temperature_ve; 
 
+  rhos = val_rhos;
+
   mix->setState(rhos.data(), temperatures.data(), 1);
 
 }
@@ -100,12 +102,16 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){
 
 vector<su2double>& CMutationTCLib::GetMixtureEnergies(){
 
+  SetTDStateRhosTTv(rhos, T, Tve);
+
   mix->mixtureEnergies(energies.data());
 
   return energies; 
 }
 
 vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){
+
+  SetTDStateRhosTTv(rhos, T, val_T);
 
   mix->getEnergiesMass(es.data());
 
@@ -165,9 +171,9 @@ vector<su2double>& CMutationTCLib::GetThermalConductivities(){
   return ThermalConductivities;  
 }
 
-vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
-  energies[0] = rhoEmix;
+  energies[0] = rhoE - rhoEvel;
   energies[1] = rhoEve;
 
   mix->setState(rhos.data(), energies.data(), 0);

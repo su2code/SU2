@@ -255,9 +255,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   /*--- Assign temperatures ---*/
   vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
-  
+
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
+
+ // cout << "T[0]=" << T[0] << endl;
+ // cout << "T[1]=" << T[1] << endl;
   
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] == Tmin) {
@@ -270,6 +273,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> eves_min = fluidmodel->GetSpeciesEve(Tvemin);
   vector<su2double> eves_max = fluidmodel->GetSpeciesEve(Tvemax);
 
+  //  cout << "rhoEve=" << rhoEve << endl;
+
+
   // Check for non-physical solutions
   if (!monoatomic){
     rhoEve_min = 0.0;
@@ -278,11 +284,15 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       rhoEve_min += U[iSpecies] * eves_min[iSpecies];
       rhoEve_max += U[iSpecies] * eves_max[iSpecies];
     }
+  //  cout << "rhoEve_min=" << rhoEve_min << endl;
+  //  cout << "rhoEve_max=" << rhoEve_max << endl;
     if (rhoEve < rhoEve_min) {
+      
       nonPhys      = true;
       V[TVE_INDEX] = Tvemin;
       U[nSpecies+nDim+1] = rhoEve_min;
     } else if (rhoEve > rhoEve_max) {
+ //     cout << "RHOEVE_MAX" << endl;
       nonPhys      = true;
       V[TVE_INDEX] = Tvemax;
       U[nSpecies+nDim+1] = rhoEve_max;
@@ -291,6 +301,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     }
   }
     
+ // cout << "T[0]=" << V[T_INDEX] << endl;
+ // cout << "T[1]=" << V[TVE_INDEX] << endl;
+
   // Determine other properties of the mixture at the current state  
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
@@ -310,6 +323,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[P_INDEX] = fluidmodel->GetPressure();
 
   if (V[P_INDEX] < 0.0) {
+    //cout << "P" << endl;
     V[P_INDEX] = 1E-20;
     nonPhys = true;
   }

@@ -285,8 +285,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
 //  }
 
-  if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
-  if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
+  //if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
+  //if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
 
   return ResidualType<>(residual, nullptr, nullptr);
 }
