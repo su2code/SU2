@@ -33,6 +33,8 @@
 		356E2E3223999B140039E9B5 /* CPRISM6.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 356E2E2B23999B140039E9B5 /* CPRISM6.cpp */; };
 		356E2E3323999B140039E9B5 /* CPYRAM5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 356E2E2C23999B140039E9B5 /* CPYRAM5.cpp */; };
 		3599C5D32121FAC9003AAF05 /* wall_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3599C5D12121FAC9003AAF05 /* wall_model.cpp */; };
+		40084FAD24B8E8330040AA28 /* libROM.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 40084FAC24B8E8330040AA28 /* libROM.dylib */; };
+		40084FAE24B8E8330040AA28 /* libROM.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 40084FAC24B8E8330040AA28 /* libROM.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		400CEC2E21FA81A10019B790 /* printing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */; };
 		40303E46246A05EC00CD7789 /* CHeatSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40303E2E246A05EB00CD7789 /* CHeatSolver.cpp */; };
 		40303E47246A05EC00CD7789 /* CAdjEulerSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 40303E2F246A05EB00CD7789 /* CAdjEulerSolver.cpp */; };
@@ -165,6 +167,7 @@
 		4063F859246A053400DE870E /* COutputFactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4063F854246A053400DE870E /* COutputFactory.cpp */; };
 		4063F85A246A053400DE870E /* CParaviewVTMFileWriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4063F855246A053400DE870E /* CParaviewVTMFileWriter.cpp */; };
 		4063F85B246A053400DE870E /* CWindowingTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4063F856246A053400DE870E /* CWindowingTools.cpp */; };
+		40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40D4040C24787579008C5E0F /* Accelerate.framework */; };
 		E90B4FD822DFDF94000ED392 /* CMMSIncNSSolution.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90B4FCB22DFDF92000ED392 /* CMMSIncNSSolution.cpp */; };
 		E90B4FD922DFDF94000ED392 /* CMMSNSUnitQuadSolutionWallBC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90B4FCC22DFDF93000ED392 /* CMMSNSUnitQuadSolutionWallBC.cpp */; };
 		E90B4FDA22DFDF94000ED392 /* CNSUnitQuadSolution.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90B4FCD22DFDF93000ED392 /* CNSUnitQuadSolution.cpp */; };
@@ -232,6 +235,17 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		40084FAF24B8E8330040AA28 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				40084FAE24B8E8330040AA28 /* libROM.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8DD76F690486A84900D96B5E /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 8;
@@ -287,6 +301,7 @@
 		3599C5D12121FAC9003AAF05 /* wall_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wall_model.cpp; path = ../../Common/src/wall_model.cpp; sourceTree = "<group>"; };
 		3599C5D52121FAF4003AAF05 /* wall_model.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = wall_model.hpp; path = ../../Common/include/wall_model.hpp; sourceTree = "<group>"; };
 		3599C5D62121FAF4003AAF05 /* wall_model.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = wall_model.inl; path = ../../Common/include/wall_model.inl; sourceTree = "<group>"; };
+		40084FAC24B8E8330040AA28 /* libROM.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libROM.dylib; path = ../../../libROM/build/libROM.dylib; sourceTree = "<group>"; };
 		400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = printing_toolbox.cpp; path = ../../Common/src/toolboxes/printing_toolbox.cpp; sourceTree = "<group>"; };
 		400CEC2F21FA81B60019B790 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = printing_toolbox.hpp; path = ../../Common/include/toolboxes/printing_toolbox.hpp; sourceTree = "<group>"; };
 		40303E2E246A05EB00CD7789 /* CHeatSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CHeatSolver.cpp; path = ../../SU2_CFD/src/solvers/CHeatSolver.cpp; sourceTree = "<group>"; };
@@ -582,6 +597,7 @@
 		4063F854246A053400DE870E /* COutputFactory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = COutputFactory.cpp; path = ../../SU2_CFD/src/output/COutputFactory.cpp; sourceTree = "<group>"; };
 		4063F855246A053400DE870E /* CParaviewVTMFileWriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CParaviewVTMFileWriter.cpp; sourceTree = "<group>"; };
 		4063F856246A053400DE870E /* CWindowingTools.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CWindowingTools.cpp; path = ../../SU2_CFD/src/output/tools/CWindowingTools.cpp; sourceTree = "<group>"; };
+		40D4040C24787579008C5E0F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		E90B4FCB22DFDF92000ED392 /* CMMSIncNSSolution.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMMSIncNSSolution.cpp; path = ../../Common/src/toolboxes/MMS/CMMSIncNSSolution.cpp; sourceTree = "<group>"; };
 		E90B4FCC22DFDF93000ED392 /* CMMSNSUnitQuadSolutionWallBC.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMMSNSUnitQuadSolutionWallBC.cpp; path = ../../Common/src/toolboxes/MMS/CMMSNSUnitQuadSolutionWallBC.cpp; sourceTree = "<group>"; };
 		E90B4FCD22DFDF93000ED392 /* CNSUnitQuadSolution.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CNSUnitQuadSolution.cpp; path = ../../Common/src/toolboxes/MMS/CNSUnitQuadSolution.cpp; sourceTree = "<group>"; };
@@ -731,6 +747,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40D4040D24787579008C5E0F /* Accelerate.framework in Frameworks */,
+				40084FAD24B8E8330040AA28 /* libROM.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -963,6 +981,7 @@
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				40D4040B24787579008C5E0F /* Frameworks */,
 			);
 			name = SU2_CFD;
 			sourceTree = "<group>";
@@ -1476,6 +1495,15 @@
 			name = ContinuousAdjoint;
 			sourceTree = "<group>";
 		};
+		40D4040B24787579008C5E0F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				40084FAC24B8E8330040AA28 /* libROM.dylib */,
+				40D4040C24787579008C5E0F /* Accelerate.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		E90B4FE522DFDF9C000ED392 /* MMS */ = {
 			isa = PBXGroup;
 			children = (
@@ -1635,8 +1663,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "SU2_CFD" */;
 			buildPhases = (
-				8DD76F640486A84900D96B5E /* Sources */,
 				8DD76F660486A84900D96B5E /* Frameworks */,
+				40084FAF24B8E8330040AA28 /* Embed Libraries */,
+				8DD76F640486A84900D96B5E /* Sources */,
 				8DD76F690486A84900D96B5E /* CopyFiles */,
 			);
 			buildRules = (
@@ -1957,7 +1986,9 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
+					"-DHAVE_LAPACK",
 					"-Wno-inconsistent-missing-override",
+					"-DHAVE_LIBROM",
 				);
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
@@ -2013,7 +2044,9 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
+					"-DHAVE_LAPACK",
 					"-Wno-inconsistent-missing-override",
+					"-DHAVE_LIBROM",
 				);
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
@@ -2057,7 +2090,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+				);
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -2092,7 +2130,12 @@
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../../externals/CLI11;
+				HEADER_SEARCH_PATHS = (
+					/Users/jessie/Software/libROM,
+					../../externals/CLI11,
+				);
+				"LD_RUNPATH_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
+				"LIBRARY_SEARCH_PATHS[arch=*]" = /usr/local/lib/;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};

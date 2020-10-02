@@ -4799,7 +4799,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   unsigned short pod_basis = config->GetKind_PODBasis(); //TODO: POD BASIS KIND
   unsigned long TimeIter = config->GetTimeIter();
   unsigned long nTimeIter = config->GetnTime_Iter();
-  bool StopCalc = ((TimeIter+1) == nTimeIter);
+  //bool StopCalc = ((TimeIter+1) == nTimeIter);
 
   /*--- Get solver nodes ---*/
   CVariable* nodes = GetNodes();
@@ -4810,7 +4810,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
         std::cout << "Creating static basis generator." << std::endl;
         u_basis_generator.reset(new CAROM::StaticSVDBasisGenerator(
           int(nPointDomain * nVar),
-          5000,
+          5,
           filename));
     }
     else {
@@ -4861,7 +4861,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
    
   /*--- End collection of data and save POD ---*/
   
-   if (converged or StopCalc) {
+   if (converged) {
 
       if (!unsteady) {
          double* u = new double[nPointDomain*nVar];
@@ -5022,11 +5022,12 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 5000; //TODO: create config file option
+  int desired_nodes = 200; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
   
+  if (!read_mask_from_file) {
   if (in_phi) {
     std::string line;
     
@@ -5055,6 +5056,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
     PhiNodes.push_back( sqrt(norm_phi) );
   }
+  
   
   unsigned long nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
   Mask.push_back( nodewithMax);
@@ -5142,7 +5144,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Masked Nodes (read from file) ---*/
   
   if (read_mask_from_file) {
-    for (int i = 0; i < 13336; i++){
+    for (int i = 0; i < (int)nPointDomain; i++){
       Mask.push_back(i);
     }
     
@@ -5202,7 +5204,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   unsigned long iEdge, iPoint, jPoint;
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+    iPoint = geometry->edges->GetNode(iEdge, 0); jPoint = geometry->edges->GetNode(iEdge, 1);
     
     if (MaskedNode(iPoint)) {
       Edge_masked.push_back(iEdge);

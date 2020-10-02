@@ -537,8 +537,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
 
   /*---- Initialize ROM specific variables. ----*/
-  
-  if (config->GetReduced_Model() && (TrialBasis.size() == 0) && (MGLevel == MESH_0)) {
+  bool rom = config->GetReduced_Model();
+  if (rom && (TrialBasis.size() == 0) && (MGLevel == MESH_0)) {
     Mask_Selection(geometry, config);
     FindMaskedEdges(geometry, config);
     SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
@@ -2980,16 +2980,28 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
-
+  
+  unsigned long i, iEdge, nEdge;
+  
+  //if (rom) nEdge = Edge_masked.size();
+  //else     nEdge = geometry->GetnEdge();
+  
+  // -------------- comment out new OMP code TODO: Figure out what is happening here -------- //
+  
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
   /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
   SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
   for(auto k = 0ul; k < color.size; ++k) {
-
+  
     auto iEdge = color.indices[k];
-
+  
+  //for (i = 0; i < nEdge; i++) {
+//
+  //   if (rom) iEdge = Edge_masked[i];
+  //   else     iEdge = i;
+    
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
     auto iPoint = geometry->edges->GetNode(iEdge,0);
@@ -3070,6 +3082,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool rom              = (config->GetReduced_Model());
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -3083,6 +3096,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
+  unsigned long i, iEdge, nEdge;
+  
+  //if (rom) nEdge = Edge_masked.size();
+  //else     nEdge = geometry->GetnEdge();
+  
     /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
   {
@@ -3092,6 +3110,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto iEdge = color.indices[k];
 
+  
+  //for (i = 0; i < nEdge; i++) {
+//
+  //  if (rom) iEdge = Edge_masked[i];
+  //  else     iEdge = i;
+    
     unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
@@ -3255,7 +3279,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
-      if (implicit)
+      if (implicit or rom)
         Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
@@ -3263,7 +3287,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       LinSysRes.SubtractBlock(jPoint, residual);
 
       /*--- Set implicit computation ---*/
-      if (implicit)
+      if (implicit or rom)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
@@ -3381,13 +3405,16 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
   const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  
+  /*--- Allow Jacobian to be calculated for ROM problem ---*/
+  if (config->GetReduced_Model()) implicit = true;
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -4634,8 +4661,8 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   su2double *local_Residual, *local_Res_TruncError, Res;
   unsigned long InnerIter = config->GetInnerIter();
   
-  //int m = (int)nPointDomain * nVar;
-  int m = (int)Mask.size() * nVar;
+  int m = (int)nPointDomain * nVar;
+  //int m = (int)Mask.size() * nVar;
   int n = (int)TrialBasis[0].size();
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -4647,9 +4674,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   vector<double> r(m,0.0);
   int index = 0;
-  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-    iPoint = Mask[iPoint_mask];
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+  //  iPoint = Mask[iPoint_mask];
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
   
@@ -4669,15 +4696,17 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   vector<double> TestBasis2(m*n, 0.0);
   su2double* prod   = new su2double[nVar]();
 
-  for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-    iPoint = Mask[iPoint_mask];
-  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+  //  iPoint = Mask[iPoint_mask];
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
   //  if (Mask[iPoint] == 0) continue;
+    
+    su2double* J_ii = Jacobian.GetBlock(iPoint, iPoint);
+    
     for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
       kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
       
       su2double* J_ik = Jacobian.GetBlock(iPoint, kPoint);
-      su2double* J_ii = Jacobian.GetBlock(iPoint, iPoint);
       
       for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
         
@@ -4696,10 +4725,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         }
         
         for (unsigned long i = 0; i < nVar; i++){ // column order
-          TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
+          //TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
+          TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
         }
         
-        // Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor
+        /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
+        
         if (kNeigh == 0) {
           unsigned long k = iPoint;
           
@@ -4717,7 +4748,8 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           }
           
           for (unsigned long i = 0; i < nVar; i++){
-            TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
+            //TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
+            TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
           }
         }
       }
@@ -4728,19 +4760,30 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   for (jPoint = 0; jPoint < TrialBasis[0].size(); jPoint++) {
     
-    for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-      iPoint = Mask[iPoint_mask];
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    //  iPoint = Mask[iPoint_mask];
       
       for (unsigned long i = 0; i < nVar; i++){
-        double prod2 = r[iPoint_mask*nVar + i] * TestBasis2[jPoint*m + iPoint_mask*nVar + i];
+        //double prod2 = r[iPoint_mask*nVar + i] * TestBasis2[jPoint*m + iPoint_mask*nVar + i];
+        double prod2 = r[iPoint*nVar + i] * TestBasis2[jPoint*m + iPoint*nVar + i];
         r_red[jPoint] += prod2;
       }
     }
   }
   
+  ofstream fs;
+  std::string fname2 = "check_solution1.csv";
+  fs.open(fname2);
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      fs << nodes->GetSolution(iPoint,iVar) << "\n" ;
+    }
+  }
+  fs.close();
+  
   /*--- Check for convergence ---*/
   
-  ofstream fs;
   std::string fname = "check_reduced_residual.csv";
   fs.open(fname);
   for(int i=0; i < n; i++){
@@ -4756,22 +4799,31 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     RomConverged = false;
     SetResOld_ROM(sqrt(ReducedRes));
   }
+  
   else {
-    if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e8) {
+    if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e7) {
       RomConverged = true;
-      std::cout << "ROM Converged." << std::endl;
       return;
     }
-    else if (sqrt(ReducedRes) > ReducedResNorm_Cur) {
-      RomConverged = true;
+    
+    else if (ReducedResNorm_Cur == sqrt(ReducedRes)) {
+      if (InnerIter > 20) RomConverged = true;
+      else RomConverged = false;
+    }
+    
+    else if (sqrt(ReducedRes) > ReducedResNorm_Cur*1.5) {
+      //RomConverged = true;
       std::cout << "ROM Residual Increased." << std::endl;
-      SetRes_ROM(sqrt(ReducedRes));
-      return;
+      //SetRes_ROM(sqrt(ReducedRes));
+      //return;
     }
+    
     else {
       RomConverged = false;
     }
   }
+  
+  if (RomConverged == true) std::cout << "ROM Converged." << std::endl;
   SetRes_ROM(sqrt(ReducedRes));
   
   // Set up variables for QR decomposition, A = QR
@@ -4789,7 +4841,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     for(int i=0; i < m; i++){
       for(int j=0; j < n; j++){
         fs << TestBasis2[i +j*m] << "," ;
-        TestBasis2[i +j*m] = TestBasis2[i +j*m] * (-1.0);
+        //TestBasis2[i +j*m] = TestBasis2[i +j*m] *(-1.0);
       }
       fs << "\n";
     }
@@ -4799,6 +4851,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs.open(fname2);
     for(int i=0; i < m; i++){
       fs << r[i] << "\n" ;
+      r[i] = r[i] *(-1.0);
     }
     fs.close();
   }
@@ -4831,7 +4884,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // TODO: backtracking line search to find step size:
-  double a =  0.01;
+  double a = 0.01;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
@@ -4850,8 +4903,11 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   vector<double> allMaskedNodes(Mask);
   allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
   
-  for (iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
-    iPoint = allMaskedNodes[iPoint_mask];
+  std::string fname5 = "check_solution2.csv";
+  fs.open(fname5);
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //for (iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
+  //  iPoint = allMaskedNodes[iPoint_mask];
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
     
@@ -4865,9 +4921,17 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
       nodes->AddROMSolution(iPoint, iVar, sum);
       AddRes_RMS(iVar, Res*Res);
       AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      fs << nodes->GetSolution(iPoint,iVar) << "\n" ;
     }
   }
+  fs.close();
+  
 
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+  
   /*--- MPI solution ---*/
   
   InitiateComms(geometry, config, SOLUTION);
@@ -7332,6 +7396,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool rom      = (config->GetReduced_Model());
 
   su2double *Normal = new su2double[nDim];
 
@@ -7515,7 +7580,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Convective Jacobian contribution for implicit integration ---*/
 
-      if (implicit)
+      if (implicit or rom)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Viscous residual contribution ---*/
@@ -7556,7 +7621,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
-        if (implicit)
+        if (implicit or rom)
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       }
@@ -9789,6 +9854,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   su2double *Normal = new su2double[nDim];
+  bool rom                = (config->GetReduced_Model());
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -9895,7 +9961,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Add Residuals and Jacobians ---*/
 
       LinSysRes.AddBlock(iPoint, residual);
-      if (implicit)
+      if (implicit or rom)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
 //      /*--- Viscous contribution, commented out because serious convergence problems  ---*/
@@ -10696,6 +10762,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
   bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous       = config->GetViscous();
+  bool rom           = config->GetReduced_Model();
 
   su2double Normal[MAXNDIM] = {0.0};
   su2double PrimVar_i[MAXNVAR] = {0.0};
@@ -10784,7 +10851,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          if (implicit)
+          if (implicit or rom)
             Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
           if (viscous) {
@@ -10844,7 +10911,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
             /*--- Jacobian contribution for implicit integration ---*/
 
-            if (implicit)
+            if (implicit or rom)
               Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
           }

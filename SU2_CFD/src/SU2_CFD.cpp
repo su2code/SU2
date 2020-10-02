@@ -38,7 +38,7 @@
 using namespace std;
 
 int main(int argc, char *argv[]) {
-
+  auto t_start = std::chrono::high_resolution_clock::now();
   char config_file_name[MAX_STRING_SIZE];
   bool dry_run = false;
   int num_threads = omp_get_max_threads();
@@ -174,6 +174,10 @@ int main(int argc, char *argv[]) {
   delete driver;
   driver = nullptr;
 
+  auto t_end = std::chrono::high_resolution_clock::now();
+  double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+  std::cout << "Total SU2 time: " << elapsed_time_ms/1000.0 << " seconds." << std::endl;
+  
   /*---Finalize libxsmm, if supported. ---*/
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
