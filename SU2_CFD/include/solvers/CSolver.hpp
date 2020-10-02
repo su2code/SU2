@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,17 +40,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../fluid_model.hpp"
+#include "../fluid/CFluidModel.hpp"
 #include "../task_definition.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../sgs_model.hpp"
-#include "../../../Common/include/fem_geometry_structure.hpp"
+#include "../../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/CSysMatrix.hpp"
 #include "../../../Common/include/linear_algebra/CSysVector.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
-#include "../../../Common/include/grid_movement_structure.hpp"
+#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../Common/include/blas_structure.hpp"
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
@@ -66,6 +67,8 @@ using namespace std;
 
 class CSolver {
 protected:
+  enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
+
   int rank,       /*!< \brief MPI Rank. */
   size;           /*!< \brief MPI Size. */
   bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
@@ -124,8 +127,6 @@ protected:
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  su2double **Smatrix,        /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  **Cvector;                  /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
@@ -171,8 +172,8 @@ public:
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
+  CSysMatrix<su2mixedfloat> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<su2mixedfloat>  System;   /*!< \brief Linear solver/smoother. */
 #else
   CSysMatrix<su2double> Jacobian;
   CSysSolve<su2double>  System;
@@ -218,13 +219,25 @@ public:
   }
 
   /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   */
+  void GetCommCountAndType(const CConfig* config,
+                           unsigned short commType,
+                           unsigned short &COUNT_PER_POINT,
+                           unsigned short &MPI_TYPE) const;
+
+  /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   void InitiateComms(CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType);
 
   /*!
@@ -234,8 +247,24 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   void CompleteComms(CGeometry *geometry,
-                     CConfig *config,
+                     const CConfig *config,
                      unsigned short commType);
+
+  /*!
+   * \brief Helper function to define the type and number of variables per point for each communication type.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
+   * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
+   * \param[out] ICOUNT - Number of rows of matrices associated with the communication.
+   * \param[out] JCOUNT - Number of columns of the same matrices.
+   */
+  void GetPeriodicCommCountAndType(const CConfig* config,
+                                   unsigned short commType,
+                                   unsigned short &COUNT_PER_POINT,
+                                   unsigned short &MPI_TYPE,
+                                   unsigned short &ICOUNT,
+                                   unsigned short &JCOUNT) const;
 
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI periodic communication and to launch non-blocking sends and recvs.
@@ -245,7 +274,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   void InitiatePeriodicComms(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short val_periodic_index,
                              unsigned short commType);
 
@@ -257,7 +286,7 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   void CompletePeriodicComms(CGeometry *geometry,
-                             CConfig *config,
+                             const CConfig *config,
                              unsigned short val_periodic_index,
                              unsigned short commType);
 
@@ -313,7 +342,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline virtual CFluidModel* GetFluidModel(void) const { return NULL;}
+  inline virtual CFluidModel* GetFluidModel(void) const { return nullptr;}
 
   /*!
    * \brief Get number of linear solver iterations.
@@ -561,27 +590,27 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config);
+  void SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Add External to Solution vector.
@@ -606,7 +635,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the solution.
@@ -614,28 +643,28 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry *geometry, CConfig *config);
+  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Compute slope limiter.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
+  void SetSolution_Limiter(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -829,13 +858,6 @@ public:
                                     unsigned long Iteration,
                                     unsigned short RunTime_EqSystem,
                                     bool Output) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -1402,6 +1424,22 @@ public:
                                                  CConfig *config,
                                                  unsigned short val_marker) { }
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  inline virtual void BC_Smoluchowski_Maxwell(CGeometry *geometry,
+                                              CSolver **solution_container,
+                                              CNumerics *conv_numerics,
+                                              CNumerics *visc_numerics,
+                                              CConfig *config,
+                                              unsigned short val_marker) { }
+
  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -1608,7 +1646,7 @@ public:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, CConfig *config) { }
+  inline virtual void ComputeUnderRelaxationFactor(CSolver **solver_container, const CConfig *config) { }
 
   /*!
    * \brief Adapt the CFL number based on the local under-relaxation parameters
@@ -1694,21 +1732,21 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Pressure_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Pressure_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Momentum_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Momentum_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Friction_Forces(CGeometry *geometry, CConfig *config) { }
+  inline virtual void Friction_Forces(const CGeometry* geometry, const CConfig* config) { }
 
   /*!
    * \brief A virtual member.
@@ -1734,7 +1772,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   inline virtual void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                               CConfig *config,
+                                               const CConfig *config,
                                                bool reconstruction = false) { }
 
   /*!
@@ -1743,14 +1781,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, bool reconstruction = false) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry,
+                                               const CConfig *config,
+                                               bool reconstruction = false) { }
 
   /*!
    * \brief A virtual member.
@@ -3039,72 +3072,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
-
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetDonorPrimVar(unsigned short val_marker,
-                                      unsigned long val_vertex,
-                                      unsigned short val_var,
-                                      su2double val_value) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual void SetDonorAdjVar(unsigned short val_marker,
-                                     unsigned long val_vertex,
-                                     unsigned short val_var,
-                                     su2double val_value) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double GetDonorPrimVar(unsigned short val_marker,
-                                           unsigned long val_vertex,
-                                           unsigned short val_var) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
-    return nullptr;
-  }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-
-  inline virtual su2double GetDonorAdjVar(unsigned short val_marker,
-                                          unsigned long val_vertex,
-                                          unsigned short val_var) const {
-    return 0;
-  }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
@@ -3130,43 +3097,7 @@ public:
    * \return Value of the pressure coefficient.
    */
   inline virtual su2double *GetCharacPrimVar(unsigned short val_marker,
-                                             unsigned long val_vertex) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double GetActDisk_DeltaP(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetActDisk_DeltaP(unsigned short val_marker,
-                                        unsigned long val_vertex,
-                                        su2double val_deltap) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual su2double GetActDisk_DeltaT(unsigned short val_marker, unsigned long val_vertex) { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - Surface marker where the coefficient is computed.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the pressure coefficient.
-   */
-  inline virtual void SetActDisk_DeltaT(unsigned short val_marker,
-                                        unsigned long val_vertex,
-                                        su2double val_deltat) { }
+                                             unsigned long val_vertex) const { return nullptr; }
 
   /*!
    * \brief A virtual member
@@ -3244,7 +3175,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  inline virtual void SetUniformInlet(CConfig* config, unsigned short iMarker) {};
+  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {};
 
   /*!
    * \brief A virtual member
@@ -3252,7 +3183,7 @@ public:
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  inline virtual void SetInletAtVertex(su2double *val_inlet,
+  inline virtual void SetInletAtVertex(const su2double *val_inlet,
                                        unsigned short iMarker,
                                        unsigned long iVertex) { };
 
@@ -3269,8 +3200,8 @@ public:
                                             unsigned long val_inlet_point,
                                             unsigned short val_kind_marker,
                                             string val_marker,
-                                            CGeometry *geometry,
-                                            CConfig *config) const { return 0; }
+                                            const CGeometry *geometry,
+                                            const CConfig *config) const { return 0; }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -3459,7 +3390,7 @@ public:
    * \brief A virtual member.
    * \return Value of the velocity at the infinity.
    */
-  inline virtual su2double *GetVelocity_Inf(void) { return 0; }
+  inline virtual su2double *GetVelocity_Inf(void) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -3724,7 +3655,7 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_ASCII(CGeometry *geometry,
-                              CConfig *config,
+                              const CConfig *config,
                               string val_filename);
 
   /*!
@@ -3734,7 +3665,7 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_Binary(CGeometry *geometry,
-                               CConfig *config,
+                               const CConfig *config,
                                string val_filename);
 
   /*!
@@ -3747,7 +3678,7 @@ public:
   void Read_SU2_Restart_Metadata(CGeometry *geometry,
                                  CConfig *config,
                                  bool adjoint_run,
-                                 string val_filename);
+                                 string val_filename) const;
 
   /*!
    * \brief Load a inlet profile data from file into a particular solver.
@@ -3763,7 +3694,7 @@ public:
                         CConfig *config,
                         int val_iter,
                         unsigned short val_kind_solver,
-                        unsigned short val_kind_marker);
+                        unsigned short val_kind_marker) const;
 
   /*!
    * \brief A virtual member.
@@ -4183,7 +4114,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double* GetVecSolDOFs(void) { return NULL; }
+  inline virtual su2double* GetVecSolDOFs(void) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -4388,7 +4319,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the inlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return NULL;}
+  inline virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4409,7 +4340,7 @@ public:
    * \param[in] inMarkerTP - bound marker.
    * \return Value of the outlet normal velocity.
    */
-  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return NULL;}
+  inline virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan) const {return nullptr;}
 
   /*!
    * \brief A virtual member.
@@ -4621,7 +4552,7 @@ public:
    * \brief Get the solution fields.
    * \return A vector containing the solution fields.
    */
-  inline vector<string> GetSolutionFields(){return fields;}
+  inline vector<string> GetSolutionFields() const{return fields;}
 
   /*!
    * \brief A virtual member.
@@ -4629,44 +4560,6 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   inline virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief Initialize the vertex traction containers at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  inline void InitVertexTractionContainer(CGeometry *geometry, CConfig *config){
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTraction = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTraction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
-
-  /*!
-   * \brief Initialize the adjoint vertex traction containers at the vertices.
-   * \param[in] geometry - Geometrical definition.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  inline void InitVertexTractionAdjointContainer(CGeometry *geometry, CConfig *config){
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTractionAdjoint = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTractionAdjoint[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
 
   /*!
    * \brief Compute the tractions at the vertices.

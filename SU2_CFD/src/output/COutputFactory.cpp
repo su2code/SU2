@@ -2,7 +2,7 @@
  * \file COutputFactory.cpp
  * \brief Main subroutines for output solver information
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
 #include "../../include/output/CElasticityOutput.hpp"
 #include "../../include/output/CAdjElasticityOutput.hpp"
 #include "../../include/output/CFlowCompOutput.hpp"
+#include "../../include/output/CNEMOCompOutput.hpp"
 #include "../../include/output/CAdjFlowOutput.hpp"
 #include "../../include/output/CFlowCompFEMOutput.hpp"
 #include "../../include/output/CFlowIncOutput.hpp"
@@ -39,7 +40,7 @@
 #include "../../include/output/CHeatOutput.hpp"
 #include "../../include/output/CAdjHeatOutput.hpp"
 
-COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* config, int nDim){
+COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* config, int nDim){
 
   COutput* output = nullptr;
 
@@ -50,6 +51,9 @@ COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       output = new CFlowIncOutput(config, nDim);
       break;
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+      output = new CNEMOCompOutput(config, nDim);
+      break;  
     case HEAT_EQUATION:
       output = new CHeatOutput(config, nDim);
       break;
@@ -80,14 +84,14 @@ COutput* COutputFactory::createOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
   return output;
 }
 
-COutput* COutputFactory::createMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim){
+COutput* COutputFactory::CreateMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim){
 
   COutput* output = new CMultizoneOutput(driverConfig, config_container, nDim);
 
   return output;
 }
 
-COutputLegacy* COutputFactory::createLegacyOutput(CConfig *config){
+COutputLegacy* COutputFactory::CreateLegacyOutput(CConfig *config){
 
   COutputLegacy* output = new COutputLegacy(config);
 

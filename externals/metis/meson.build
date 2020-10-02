@@ -3,7 +3,7 @@ metis_c_args = ['-D_FILE_OFFSET_BITS=64', '-DNDEBUG', '-DNDEBUG2', '-DHAVE_GETLI
 if build_machine.system() == 'windows'
   metis_default_warnings = []
 else
-  metis_default_warnings = ['-Wno-implicit-function-declaration', '-Wno-unused-result']
+  metis_default_warnings = ['-Wno-implicit-function-declaration', '-Wno-unused-result', '-Wno-macro-redefined']
 endif
 
 metis_src = ['GKlib/pqueue.c',

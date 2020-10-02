@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 
 /*!
@@ -83,7 +84,7 @@ protected:
   CSysVector<su2double> LinSysReact;  /*!< \brief Vector to store the residual before applying the BCs */
 
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<passivedouble> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
+  CSysMatrix<su2mixedfloat> MassMatrix;   /*!< \brief Sparse structure for storing the mass matrix. */
 #else
   CSysMatrix<su2double> MassMatrix;
 #endif
@@ -267,7 +268,7 @@ public:
   inline virtual su2double Get_ValCoord(const CGeometry *geometry,
                                         unsigned long indexNode,
                                         unsigned short iDim) const {
-    return geometry->node[indexNode]->GetCoord(iDim);
+    return geometry->nodes->GetCoord(indexNode, iDim);
   }
 
   /*!
@@ -448,13 +449,6 @@ public:
                     CNumerics *numerics,
                     const CConfig *config,
                     unsigned short val_marker) final;
-
-  /*!
-   * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Iterate using an implicit Newmark solver.

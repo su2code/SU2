@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the adjoint variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #pragma once
 
 #include "CVariable.hpp"
-#include "../../../Common/include/toolboxes/CVertexMap.hpp"
+#include "../../../Common/include/containers/CVertexMap.hpp"
 
 class CDiscAdjMeshBoundVariable final : public CVariable {
 private:

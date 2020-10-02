@@ -1,9 +1,9 @@
 /*!
- * \file linear_solvers_structure.hpp
+ * \file CSysSolve.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
- *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
- * \author J. Hicken, F. Palacios, T. Economon
- * \version 7.0.4 "Blackbird"
+ *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
+ * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,10 +26,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include "../mpi_structure.hpp"
+#include "../containers/C2DContainer.hpp"
 
 #include <cmath>
 #include <vector>
@@ -46,8 +45,6 @@ template<class T> class CSysMatrix;
 template<class T> class CMatrixVectorProduct;
 template<class T> class CPreconditioner;
 
-using namespace std;
-
 /*--- Relative tolerance, target residual is tol*||b-Ax||,
  *    Absolute tolerance, target residual is tol*||b||. ---*/
 enum class LinearToleranceType {RELATIVE, ABSOLUTE};
@@ -55,7 +52,6 @@ enum class LinearToleranceType {RELATIVE, ABSOLUTE};
 /*!
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
- * \author J. Hicken.
  *
  * The individual solvers could be stand-alone subroutines, but by
  * creating CSysSolve objects we can more easily assign different
@@ -70,16 +66,18 @@ template<class ScalarType>
 class CSysSolve {
 
 public:
-  /*--- Some typedefs for simplicity ---*/
-  typedef CSysVector<ScalarType> VectorType;
-  typedef CSysMatrix<ScalarType> MatrixType;
-  typedef CMatrixVectorProduct<ScalarType> ProductType;
-  typedef CPreconditioner<ScalarType> PrecondType;
+  /*--- Some aliases for simplicity. ---*/
+  using Scalar = ScalarType;
+  using VectorType = CSysVector<ScalarType>;
+  using MatrixType = CSysMatrix<ScalarType>;
+  using ProductType = CMatrixVectorProduct<ScalarType>;
+  using PrecondType = CPreconditioner<ScalarType>;
 
 private:
-
-  bool mesh_deform;    /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
-  ScalarType Residual; /*!< \brief Residual at the end of a call to Solve. */
+  const ScalarType eps;      /*!< \brief Machine epsilon used in this class. */
+  bool mesh_deform;          /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  ScalarType Residual=1e-20; /*!< \brief Residual at the end of a call to Solve or Solve_b. */
+  unsigned long Iterations=0;/*!< \brief Iterations done in Solve or Solve_b. */
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
@@ -94,8 +92,8 @@ private:
   mutable VectorType r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
-  mutable vector<VectorType> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
-  mutable vector<VectorType> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+  mutable std::vector<VectorType> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  mutable std::vector<VectorType> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
 
   VectorType  LinSysSol_tmp;        /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType  LinSysRes_tmp;        /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
@@ -150,8 +148,8 @@ private:
    * \pre the upper Hessenberg matrix has been transformed into a
    * triangular matrix.
    */
-  void SolveReduced(int n, const vector<vector<ScalarType> > & Hsbg,
-                    const vector<ScalarType> & rhs, vector<ScalarType> & x) const;
+  void SolveReduced(int n, const su2matrix<ScalarType>& Hsbg,
+                    const su2vector<ScalarType>& rhs, su2vector<ScalarType>& x) const;
 
   /*!
    * \brief Modified Gram-Schmidt orthogonalization
@@ -170,7 +168,7 @@ private:
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(int i, vector<vector<ScalarType> > & Hsbg, vector<VectorType> & w) const;
+  void ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType> & w) const;
 
   /*!
    * \brief writes header information for a CSysSolve residual history
@@ -180,7 +178,7 @@ private:
    *
    * \pre the ostream object os should be open
    */
-  void WriteHeader(string solver, ScalarType restol, ScalarType resinit) const;
+  void WriteHeader(std::string solver, ScalarType restol, ScalarType resinit) const;
 
   /*!
    * \brief writes residual convergence data for one iteration to a stream
@@ -197,7 +195,7 @@ private:
    * \param[in] iter - current iteration
    * \param[in] res - the residual norm
    */
-  void WriteFinalResidual(string solver, unsigned long iter, ScalarType res) const;
+  void WriteFinalResidual(std::string solver, unsigned long iter, ScalarType res) const;
 
   /*!
    * \brief writes the convergence warning
@@ -208,17 +206,77 @@ private:
   void WriteWarning(ScalarType res_calc, ScalarType res_true, ScalarType tol) const;
 
   /*!
-   * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Same type specialization, temporary variables are not required.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
-  void HandleTemporariesIn(const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol);
+  template<class OtherType, su2enable_if<std::is_same<ScalarType,OtherType>::value> = 0>
+  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Set the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = &LinSysRes;
+      LinSysSol_ptr = &LinSysSol;
+    }
+    SU2_OMP_BARRIER
+  }
 
   /*!
-   * \brief Used by Solve for compatibility between passive and active CSysVector, see specializations.
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Different type specialization, copy data into temporary solution and residual vectors.
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in,out] LinSysSol - Linear system solution
+   */
+  template<class OtherType, su2enable_if<!std::is_same<ScalarType,OtherType>::value> = 0>
+  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
+    LinSysRes_tmp.PassiveCopy(LinSysRes);
+    LinSysSol_tmp.PassiveCopy(LinSysSol);
+
+    /*--- Set the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = &LinSysRes_tmp;
+      LinSysSol_ptr = &LinSysSol_tmp;
+    }
+    SU2_OMP_BARRIER
+  }
+
+  /*!
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Same type specialization, temporary variables are not required.
    * \param[out] LinSysSol - Linear system solution
    */
-  void HandleTemporariesOut(CSysVector<su2double> & LinSysSol);
+  template<class OtherType, su2enable_if<std::is_same<ScalarType,OtherType>::value> = 0>
+  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Reset the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = nullptr;
+      LinSysSol_ptr = nullptr;
+    }
+    SU2_OMP_BARRIER
+  }
+
+  /*!
+   * \brief Used by Solve for compatibility between passive and active CSysVector.
+   * \note Different type specialization, copy data from the temporary solution vector.
+   * \param[out] LinSysSol - Linear system solution
+   */
+  template<class OtherType, su2enable_if<!std::is_same<ScalarType,OtherType>::value> = 0>
+  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+
+    /*--- Copy data, only the temporary solution needs to be copied. ---*/
+    LinSysSol.PassiveCopy(LinSysSol_tmp);
+
+    /*--- Reset the pointers. ---*/
+    SU2_OMP_MASTER {
+      LinSysRes_ptr = nullptr;
+      LinSysSol_ptr = nullptr;
+    }
+    SU2_OMP_BARRIER
+  }
 
 public:
 
@@ -241,7 +299,7 @@ public:
    */
   unsigned long CG_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                              const PrecondType & precond, ScalarType tol, unsigned long m,
-                             ScalarType & residual, bool monitoring, CConfig *config) const;
+                             ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Flexible Generalized Minimal Residual method
@@ -257,7 +315,7 @@ public:
    */
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
-                                 ScalarType & residual, bool monitoring, CConfig *config) const;
+                                 ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -273,7 +331,7 @@ public:
    */
   unsigned long BCGSTAB_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                   const PrecondType & precond, ScalarType tol, unsigned long m,
-                                  ScalarType & residual, bool monitoring, CConfig *config) const;
+                                  ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Generic smoother (modified Richardson iteration with preconditioner)
@@ -289,7 +347,7 @@ public:
    */
   unsigned long Smoother_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                    const PrecondType & precond, ScalarType tol, unsigned long m,
-                                   ScalarType & residual, bool monitoring, CConfig *config) const;
+                                   ScalarType & residual, bool monitoring, const CConfig *config) const;
 
   /*!
    * \brief Solve the linear system using a Krylov subspace method
@@ -300,7 +358,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                      CGeometry *geometry, CConfig *config);
+                      CGeometry *geometry, const CConfig *config);
 
   /*!
    * \brief Solve the adjoint linear system using a Krylov subspace method
@@ -311,11 +369,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve_b(MatrixType & Jacobian, const CSysVector<su2double> & LinSysRes, CSysVector<su2double> & LinSysSol,
-                        CGeometry *geometry, CConfig *config);
+                        CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Get the number of iterations.
+   * \return The number of iterations done by Solve or Solve_b
+   */
+  inline unsigned long GetIterations(void) const { return Iterations; }
 
   /*!
    * \brief Get the final residual.
-   * \return The residual at the end of Solve
+   * \return The residual at the end of Solve or Solve_b
    */
   inline ScalarType GetResidual(void) const { return Residual; }
 

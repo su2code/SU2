@@ -3,7 +3,7 @@
  * \brief Declarations and inlines of the transfer structure.
  *        The subroutines and functions are in the physics folders.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,10 +39,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../solvers/CSolver.hpp"
-
+class CConfig;
+class CGeometry;
+class CSolver;
+class CInterpolator;
 
 using namespace std;
 
@@ -50,7 +50,7 @@ using namespace std;
  * \class CInterface
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 
 class CInterface {
@@ -81,9 +81,8 @@ public:
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    * \param[in] val_nConst - Number of physical constants that need to be taken into account.
-   * \param[in] config - Definition of the particular problem.
    */
-  CInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+  CInterface(unsigned short val_nVar, unsigned short val_nConst);
 
   /*!
    * \brief Destructor of the class.
@@ -92,6 +91,7 @@ public:
 
   /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
+   * \param[in] interpolator - Object defining the interpolation.
    * \param[in] donor_solution - Solution from the donor mesh.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] donor_geometry - Geometry of the donor mesh.
@@ -99,16 +99,18 @@ public:
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  void BroadcastData(CSolver *donor_solution, CSolver *target_solution,
+  void BroadcastData(const CInterpolator& interpolator,
+                     CSolver *donor_solution, CSolver *target_solution,
                      CGeometry *donor_geometry, CGeometry *target_geometry,
-                     CConfig *donor_config, CConfig *target_config);
+                     const CConfig *donor_config, const CConfig *target_config);
+
+protected:
   /*!
    * \brief A virtual member.
    */
-
   inline virtual void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                                             CGeometry *donor_geometry, CGeometry *target_geometry,
-                                            CConfig *donor_config, CConfig *target_config) { }
+                                            const CConfig *donor_config, const CConfig *target_config) { }
   /*!
    * \brief A virtual member.
    * \param[in] donor_solution - Solution from the donor mesh.
@@ -117,9 +119,9 @@ public:
    * \param[in] Marker_Donor - Index of the donor marker.
    * \param[in] Vertex_Donor - Index of the donor vertex.
    */
-  inline virtual void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                        CConfig *donor_config, unsigned long Marker_Donor,
-                                        unsigned long Vertex_Donor, unsigned long Point_Donor) { }
+  virtual void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+                                 const CConfig *donor_config, unsigned long Marker_Donor,
+                                 unsigned long Vertex_Donor, unsigned long Point_Donor) = 0;
 
   /*!
    * \brief Initializes the target variable.
@@ -134,16 +136,12 @@ public:
   }
 
   /*!
-   * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
-   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
-   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \brief Recovers the target variable from the buffer of su2doubles that was broadcast.
+   * \param[in] bcastVariable - Broadcast variable.
    * \param[in] donorCoeff - value of the donor coefficient.
    */
-  inline virtual void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
-                                             su2double donorCoeff){
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
-
+  inline virtual void RecoverTarget_Variable(const su2double *bcastVariable, su2double donorCoeff) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
   /*!
@@ -155,35 +153,35 @@ public:
    * \param[in] Vertex_Target - Index of the target vertex.
    * \param[in] Point_Target - Index of the target point.
    */
-  inline virtual void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                         CConfig *target_config, unsigned long Marker_Target,
-                                         unsigned long Vertex_Target, unsigned long Point_Target) { }
+  virtual void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+                                  const CConfig *target_config, unsigned long Marker_Target,
+                                  unsigned long Vertex_Target, unsigned long Point_Target) = 0;
 
   /*!
    * \brief A virtual member.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_zone      - Index of the donorZone.
+   * \param[in] donor_zone - Index of the donorZone.
    */
-
   inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                       unsigned short donorZone){ }
+                                       unsigned short donorZone) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] donor_geometry - Geometry of the target mesh.
    * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_zone      - Index of the donorZone.
+   * \param[in] donor_zone - Index of the donorZone.
    */
   inline virtual void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
                                                unsigned short donorZone) { }
 
+public:
   /*!
    * \brief A virtual member.
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  inline virtual void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config) { }
+  inline virtual void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) { }
 
   /*!
    * \brief Transfer pre-processing for the mixing plane inteface.
@@ -193,7 +191,7 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   void PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-                         CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
+                         const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt);
 
   /*!
    * \brief Interpolate data and scatter it into different processors, for matching meshes.
@@ -206,7 +204,7 @@ public:
    */
   void AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                         CGeometry *donor_geometry, CGeometry *target_geometry,
-                        CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
+                        const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt);
 
   /*!
    * \brief Interpolate data and scatter it into different processors, for matching meshes.
@@ -229,4 +227,3 @@ public:
   void GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
 
 };
-

@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,8 +45,9 @@ extern "C" void dgemm_(const char*, const char*, const int*, const int*, const i
 #endif
 
 
-CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
+                                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -106,6 +107,8 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
 
   const int nProcessor = size;
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
 
   /*--- Process interface patches in parallel, fetch all donor point coordinates,
    *    then distribute interpolation matrix computation over ranks and threads.
@@ -274,22 +277,15 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
      *    of the entire function matrix (A) and of the result (H), but work
      *    on a slab (set of rows) of A/H to amortize accesses to C_inv_trunc. ---*/
 
-    /*--- Fetch domain target vertices. ---*/
+    /*--- Fetch target vertex coordinates. ---*/
 
-    vector<CVertex*> targetVertices; targetVertices.reserve(nVertexTarget);
-    vector<const su2double*> targetCoord; targetCoord.reserve(nVertexTarget);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
+    vector<const su2double*> targetCoord(nVertexTarget);
 
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; ++iVertexTarget) {
-
-      auto targetVertex = target_geometry->vertex[markTarget][iVertexTarget];
-      auto pointTarget = targetVertex->GetNode();
-
-      if (target_geometry->node[pointTarget]->GetDomain()) {
-        targetVertices.push_back(targetVertex);
-        targetCoord.push_back(target_geometry->node[pointTarget]->GetCoord());
-      }
+      const auto pointTarget = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      targetCoord[iVertexTarget] = target_geometry->nodes->GetCoord(pointTarget);
     }
-    nVertexTarget = targetVertices.size();
     totalTargetPoints += nVertexTarget;
     denseSize += nVertexTarget*nGlobalVertexDonor;
 
@@ -359,7 +355,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
       /*--- Set interpolation coefficients. ---*/
 
       for (auto k = 0ul; k < slabSize; ++k) {
-        auto targetVertex = targetVertices[iVertexTarget+k];
+        auto& targetVertex = targetVertices[markTarget][iVertexTarget+k];
 
         /*--- Prune small coefficients. ---*/
         auto info = PruneSmallCoefficients(SU2_TYPE::GetValue(pruneTol), interpMat.cols(), interpMat[k]);
@@ -372,14 +368,14 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         maxCorr = max(maxCorr, corr);
 
         /*--- Allocate and set donor information for this target point. ---*/
-        targetVertex->Allocate_DonorInfo(nnz);
+        targetVertex.resize(nnz);
 
         for (unsigned long iVertex = 0, iSet = 0; iVertex < nGlobalVertexDonor; ++iVertex) {
           auto coeff = interpMat(k,iVertex);
           if (fabs(coeff) > 0.0) {
-            targetVertex->SetInterpDonorProcessor(iSet, donorProc[iVertex]);
-            targetVertex->SetInterpDonorPoint(iSet, donorPoint[iVertex]);
-            targetVertex->SetDonorCoeff(iSet, coeff);
+            targetVertex.processor[iSet] = donorProc[iVertex];
+            targetVertex.globalPoint[iSet] = donorPoint[iVertex];
+            targetVertex.coefficient[iSet] = coeff;
             ++iSet;
           }
         }

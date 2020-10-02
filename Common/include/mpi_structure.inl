@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,12 +24,15 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "mpi_structure.hpp"
+
 #pragma once
+
+#include "mpi_structure.hpp"
+#include "omp_structure.hpp"
 
 #ifdef HAVE_MPI
 
-inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
+NEVERINLINE void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
 
   /* Set MinRankError to Rank, as the error message is called on this rank. */
   MinRankError = Rank;
@@ -286,7 +289,7 @@ inline passivedouble CBaseMPIWrapper::Wtime(void) {
 
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
-  MediTool::init();
+  mediTypes = new MediTypes();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
@@ -298,7 +301,7 @@ inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
 
 inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
   AMPI_Init_thread(argc,argv,required,provided);
-  MediTool::init();
+  mediTypes = new MediTypes();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
@@ -310,7 +313,7 @@ inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, 
 
 inline void CMediMPIWrapper::Init_AMPI(void) {
   AMPI_Init_common();
-  MediTool::init();
+  mediTypes = new MediTypes();
 }
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
@@ -391,6 +394,8 @@ inline void CMediMPIWrapper::Comm_size(Comm comm, int *size){
 
 inline void CMediMPIWrapper::Finalize(){
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
+
+  delete mediTypes;
   AMPI_Finalize();
 }
 
@@ -512,9 +517,8 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
 }
 #endif
 #else // HAVE_MPI
-#include <ctime>
 
-inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
+NEVERINLINE void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
     std::cout << std::endl << std::endl;
     std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
@@ -608,7 +612,7 @@ inline void CBaseMPIWrapper::Scatter(void *sendbuf, int sendcnt, Datatype sendty
 }
 
 inline void CBaseMPIWrapper::Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                                   void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm){
+                                   void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm){
   CopyData(sendbuf, recvbuf, sendcnt, sendtype);
 }
 
@@ -687,7 +691,6 @@ inline void CBaseMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Da
   }
 }
 
-inline passivedouble CBaseMPIWrapper::Wtime(void) {
-  return passivedouble(clock()) / CLOCKS_PER_SEC;
-}
+inline passivedouble CBaseMPIWrapper::Wtime(void) { return omp_get_wtime(); }
+
 #endif

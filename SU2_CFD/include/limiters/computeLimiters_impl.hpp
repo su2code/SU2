@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,17 +55,18 @@
  * \param[out] limiter - Reconstruction limiter for the field.
  *
  * Template parameters:
- * \param FieldType - Generic object with operator (iPoint,iVar)
- * \param GradientType - Generic object with operator (iPoint,iVar,iDim)
+ * \param nDim - Number of dimensions.
  * \param LimiterKind - Used to instantiate the right details class.
+ * \param FieldType - Generic object with operator (iPoint,iVar).
+ * \param GradientType - Generic object with operator (iPoint,iVar,iDim).
  */
-template<class FieldType, class GradientType, ENUM_LIMITER LimiterKind>
+template<size_t nDim, ENUM_LIMITER LimiterKind, class FieldType, class GradientType>
 void computeLimiters_impl(CSolver* solver,
                           MPI_QUANTITIES kindMpiComm,
                           PERIODIC_QUANTITIES kindPeriodicComm1,
                           PERIODIC_QUANTITIES kindPeriodicComm2,
                           CGeometry& geometry,
-                          CConfig& config,
+                          const CConfig& config,
                           size_t varBegin,
                           size_t varEnd,
                           const FieldType& field,
@@ -74,36 +75,31 @@ void computeLimiters_impl(CSolver* solver,
                           FieldType& fieldMax,
                           FieldType& limiter)
 {
-  constexpr size_t MAXNDIM = 3;
-  constexpr size_t MAXNVAR = 8;
+  constexpr size_t MAXNVAR = 32;
 
   if (varEnd > MAXNVAR)
     SU2_MPI::Error("Number of variables is too large, increase MAXNVAR.", CURRENT_FUNCTION);
 
-  size_t nPointDomain = geometry.GetnPointDomain();
-  size_t nPoint = geometry.GetnPoint();
-  size_t nDim = geometry.GetnDim();
+  const size_t nPointDomain = geometry.GetnPointDomain();
+  const size_t nPoint = geometry.GetnPoint();
 
   /*--- If we do not have periodicity we can use a
    *    more efficient access pattern to memory. ---*/
 
-  bool periodic = (solver != nullptr) &&
-                  (kindPeriodicComm1 != PERIODIC_NONE) &&
-                  (config.GetnMarker_Periodic() > 0);
+  const bool periodic = (solver != nullptr) &&
+                        (kindPeriodicComm1 != PERIODIC_NONE) &&
+                        (config.GetnMarker_Periodic() > 0);
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
 
-  size_t chunkSize = computeStaticChunkSize(nPointDomain,
-                     omp_get_max_threads(), OMP_MAX_CHUNK);
+  const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
 #endif
 
-  bool tapeActive = false;
-
+  /*--- If limiters are frozen do not record the computation ---*/
+  bool wasActive = false;
   if (config.GetDiscrete_Adjoint() && config.GetFrozen_Limiter_Disc()) {
-    /*--- If limiters are frozen do not record the computation ---*/
-    tapeActive = AD::TapeActive();
-    AD::StopRecording();
+    wasActive = AD::BeginPassive();
   }
 
   CLimiterDetails<LimiterKind> limiterDetails;
@@ -120,15 +116,11 @@ void computeLimiters_impl(CSolver* solver,
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
         fieldMax(iPoint,iVar) = fieldMin(iPoint,iVar) = field(iPoint,iVar);
 
-    SU2_OMP_MASTER
+    for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
-      for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
-      {
-        solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
-        solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
-      }
+      solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
+      solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm1);
     }
-    SU2_OMP_BARRIER
   }
 
   /*--- Compute limiter for each point. ---*/
@@ -136,8 +128,8 @@ void computeLimiters_impl(CSolver* solver,
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
-    auto node = geometry.node[iPoint];
-    const su2double* coord_i = node->GetCoord();
+    auto nodes = geometry.nodes;
+    const auto coord_i = nodes->GetCoord(iPoint);
 
     AD::StartPreacc();
     AD::SetPreaccIn(coord_i, nDim);
@@ -170,16 +162,14 @@ void computeLimiters_impl(CSolver* solver,
 
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
-    for(size_t iNeigh = 0; iNeigh < node->GetnPoint(); ++iNeigh)
-    {
-      size_t jPoint = node->GetPoint(iNeigh);
+    for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
 
-      const su2double* coord_j = geometry.node[jPoint]->GetCoord();
+      const auto coord_j = geometry.nodes->GetCoord(jPoint);
       AD::SetPreaccIn(coord_j, nDim);
 
       /*--- Distance vector from iPoint to face (middle of the edge). ---*/
 
-      su2double dist_ij[MAXNDIM] = {0.0};
+      su2double dist_ij[nDim] = {0.0};
 
       for(size_t iDim = 0; iDim < nDim; ++iDim)
         dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
@@ -226,26 +216,24 @@ void computeLimiters_impl(CSolver* solver,
     AD::EndPreacc();
   }
 
-  /*--- If no solver was provided we do not communicate. ---*/
-
-  SU2_OMP_MASTER
-  if (solver != nullptr)
+  /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
+  if (periodic)
   {
-    /*--- Account for periodic effects, take the minimum limiter on each periodic pair. ---*/
-
     for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
     {
       solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm2);
       solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm2);
     }
+  }
 
-    /*--- Obtain the limiters at halo points from the MPI ranks that own them. ---*/
-
+  /*--- Obtain the limiters at halo points from the MPI ranks that own them.
+   *    If no solver was provided we do not communicate. ---*/
+  if (solver != nullptr)
+  {
     solver->InitiateComms(&geometry, &config, kindMpiComm);
     solver->CompleteComms(&geometry, &config, kindMpiComm);
   }
-  SU2_OMP_BARRIER
 
-  if (tapeActive) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }

@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -160,7 +160,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      long iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+      long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
       if (iVertex >= 0) {
         nodes->Set_isVertex(iPoint,true);
         break;
@@ -503,7 +503,7 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   /*--- Now fill array with the transform values only for local points ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
 
   /*--- Read all lines in the restart file ---*/
 
@@ -654,7 +654,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Now fill array with the transform values only for local points ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
 
   /*--- Read all lines in the restart file ---*/
 
@@ -722,7 +722,7 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
   for (auto iMarker : markers) {
     for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      myPoints.push_back(geometry->node[iPoint]->GetGlobalIndex());
+      myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
     }
   }
 
@@ -735,7 +735,7 @@ void CFEASolver::Set_VertexEliminationSchedule(CGeometry *geometry, const vector
   /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
   unordered_map<unsigned long, unsigned long> Global2Local;
   for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
   }
 
   /*--- Populate elimination list. ---*/
@@ -769,10 +769,8 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool dynamic = config->GetTime_Domain();
-  const bool first_iter = (config->GetInnerIter() == 0);
   const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
-  const bool fsi = config->GetFSI_Simulation();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*
@@ -817,11 +815,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
   /*--- Clear external forces. ---*/
   nodes->Clear_SurfaceLoad_Res();
-
-  /*
-   * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
-   */
-  if (fsi && first_iter && (idxIncrement==0)) Integrate_FSI_Loads(geometry, config);
 
   /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
   initial_calc = false;
@@ -921,7 +914,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
 
           for (jNode = 0; jNode < nNodes; jNode++) {
             auto Kab = element->Get_Kab(iNode, jNode);
-            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], simp_penalty, Kab);
+            Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Kab, simp_penalty);
           }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[indexNode[iNode]]);
@@ -1081,8 +1074,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   /*--- Never record this method as the mass matrix is passive (but the mass residual is not). ---*/
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1157,7 +1149,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CNumerics **numerics, c
 
   } // end SU2_OMP_PARALLEL
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1330,8 +1322,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Never record this method as atm it is not differentiable. ---*/
-  const bool ActiveTape = AD::TapeActive();
-  AD::StopRecording();
+  const bool wasActive = AD::BeginPassive();
 
   const bool prestretch_fem = config->GetPrestretch();
 
@@ -1424,7 +1415,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
             LinSysReact(iPoint,iVar) += simp_penalty*Ta[iVar];
 
           /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
-          su2double weight = simp_penalty / geometry->node[iPoint]->GetnElem();
+          su2double weight = simp_penalty / geometry->nodes->GetnElem(iPoint);
 
           for (iStress = 0; iStress < nStress; iStress++)
             nodes->AddStress_FEM(iPoint,iStress, weight*element->Get_NodalStress(iNode,iStress));
@@ -1523,7 +1514,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
               for (iDim = 0; iDim < nDim; iDim++) {
                 /*--- Retrieve coordinate ---*/
-                val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+                val_Coord = geometry->nodes->GetCoord(iPoint, iDim);
                 myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
               }
 
@@ -1581,7 +1572,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
                   for (iDim = 0; iDim < nDim; iDim++) {
                     /*--- Retrieve coordinate ---*/
-                    val_Coord = geometry->node[iPoint]->GetCoord(iDim);
+                    val_Coord = geometry->nodes->GetCoord(iPoint, iDim);
                     myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
                   }
 
@@ -1610,7 +1601,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   }
 
-  if (ActiveTape) AD::StartRecording();
+  AD::EndPassive(wasActive);
 
 }
 
@@ -1809,7 +1800,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
   for (auto iNode = 0u; iNode < nNodes; iNode++) {
     auto iPoint = geometry->bound[val_marker][0]->GetNode(iNode);
-    nodeCoord[iNode] = geometry->node[iPoint]->GetCoord();
+    nodeCoord[iNode] = geometry->nodes->GetCoord(iPoint);
   }
 
   su2double normal[MAXNDIM] = {0.0};
@@ -1893,6 +1884,34 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
+template<class T, class U, su2enable_if<is_same<T,U>::value> = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  CSysVector<T> r(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+  SU2_OMP_PARALLEL { A.ComputeResidual(x, b, r); }
+  return r;
+}
+
+template<class T, class U, su2enable_if<!is_same<T,U>::value> = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  /*--- Different types of A and x/b, use temporaries to interface with A. ---*/
+  const auto nVar = x.GetNVar();
+  const auto nBlk = x.GetNBlk();
+  const auto nBlkDom = x.GetNBlkDomain();
+  CSysVector<T> r(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> xtmp(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> btmp(nBlk, nBlkDom, nVar, nullptr);
+  SU2_OMP_PARALLEL {
+    xtmp.PassiveCopy(x);
+    btmp.PassiveCopy(b);
+    A.ComputeResidual(xtmp, btmp, r);
+  }
+  return r;
+}
+
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
@@ -1931,7 +1950,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     {
     su2double utol = LinSysSol.norm();
     su2double rtol = LinSysRes.norm();
-    su2double etol = LinSysSol.dot(LinSysRes);
+    su2double etol = fabs(LinSysSol.dot(LinSysRes));
 
     SU2_OMP_MASTER
     {
@@ -1946,31 +1965,16 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
 
-#ifndef CODI_FORWARD_TYPE
-    CSysVector<passivedouble> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#else
-    CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#endif
-
-    SU2_OMP_PARALLEL
-    {
-#ifndef CODI_REVERSE_TYPE
-    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-#else
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<passivedouble> sol, res;
-    sol.PassiveCopy(LinSysSol);
-    res.PassiveCopy(LinSysRes);
-    Jacobian.ComputeResidual(sol, res, LinSysAux);
-#endif
+    const auto ResidualAux = computeLinearResidual(Jacobian, LinSysSol, LinSysRes);
 
     /*--- Set maximum residual to zero. ---*/
 
-    SU2_OMP_MASTER
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
+
+    SU2_OMP_PARALLEL {
 
     /*--- Compute the residual. ---*/
 
@@ -1981,19 +1985,19 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        su2double Res = fabs(LinSysAux(iPoint, iVar));
+        su2double Res = fabs(ResidualAux(iPoint, iVar));
         resRMS[iVar] += Res*Res;
         if (Res > resMax[iVar]) {
           resMax[iVar] = Res;
           idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->node[iPoint]->GetCoord();
+          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
         }
       }
     }
     SU2_OMP_CRITICAL
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       AddRes_RMS(iVar, resRMS[iVar]);
-      AddRes_Max(iVar, resMax[iVar], geometry->node[idxMax[iVar]]->GetGlobalIndex(), coordMax[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
     }
     SU2_OMP_BARRIER
 
@@ -2077,7 +2081,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CNumerics *numerics, const 
 
     /*--- Use a reference normal from one of the points to decide if computed normal needs to be flipped. ---*/
 
-    auto reference_vertex = geometry->node[indexNode[0]]->GetVertex(val_marker);
+    auto reference_vertex = geometry->nodes->GetVertex(indexNode[0], val_marker);
     const su2double* reference_normal = geometry->vertex[val_marker][reference_vertex]->GetNormal();
 
     su2double dot = 0.0;
@@ -2134,7 +2138,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CNumerics *numerics, const CCo
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
-      nodeCoord[iNode] = geometry->node[indexNode[iNode]]->GetCoord();
+      nodeCoord[iNode] = geometry->nodes->GetCoord(indexNode[iNode]);
     }
 
     /*--- Compute area of the boundary element. ---*/
@@ -2184,7 +2188,7 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CNumerics *numerics, const CConf
       indexNode[iNode] = iPoint;
 
       for (iDim = 0; iDim < nVar; iDim++)
-        nodeCoord[iNode][iDim] = geometry->node[iPoint]->GetCoord(iDim) + nodes->GetSolution(iPoint,iDim);
+        nodeCoord[iNode][iDim] = geometry->nodes->GetCoord(iPoint, iDim) + nodes->GetSolution(iPoint,iDim);
     }
 
     /*--- Compute the area of the surface element. ---*/
@@ -2235,72 +2239,6 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
     LinSysSol.SetBlock(iNode, Disp);
     Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
 
-  }
-
-}
-
-void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config) {
-
-  /*--- The conservative approach transfers forces directly, no integration needed. ---*/
-  if (config->GetConservativeInterpolation()) return;
-
-  unordered_map<unsigned long, su2double> vertexArea;
-  unordered_set<short> processedMarkers({-1});
-
-  /*--- Compute current area associated with each vertex. ---*/
-
-  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair. ---*/
-    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
-    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
-    if (processedMarkers.count(iMarker) > 0) continue;
-    processedMarkers.insert(iMarker);
-
-    for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
-      /*--- Define the boundary element. ---*/
-      unsigned long nodeList[MAXNNODE_2D] = {0};
-      su2double coords[MAXNNODE_2D][MAXNDIM] = {{0.0}};
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      auto nNode = quad? 4u : nDim;
-
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (auto iDim = 0u; iDim < nDim; ++iDim)
-          coords[iNode][iDim] = geometry->node[nodeList[iNode]]->GetCoord(iDim)+
-                                nodes->GetSolution(nodeList[iNode],iDim);
-      }
-
-      /*--- Compute the area contribution to each node. ---*/
-      su2double normal[MAXNDIM] = {0.0};
-
-      switch (nNode) {
-        case 2: LineNormal(coords, normal); break;
-        case 3: TriangleNormal(coords, normal); break;
-        case 4: QuadrilateralNormal(coords, normal); break;
-      }
-
-      su2double area = Norm(int(MAXNDIM),normal) / nNode;
-
-      /*--- Update area of nodes. ---*/
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        auto iPoint = nodeList[iNode];
-        if (vertexArea.count(iPoint) == 0)
-          vertexArea[iPoint] = area;
-        else
-          vertexArea[iPoint] += area;
-      }
-    }
-  }
-
-  /*--- Integrate tractions. ---*/
-
-  for (auto it = vertexArea.begin(); it != vertexArea.end(); ++it) {
-    auto iPoint = it->first;
-    su2double area = it->second;
-    su2double force[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      force[iDim] = nodes->Get_FlowTraction(iPoint,iDim)*area;
-    nodes->Set_FlowTraction(iPoint, force);
   }
 
 }
@@ -2507,13 +2445,12 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
       }
     }
 
+    /*--- Perform the MPI communication of the solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
+
   } // end SU2_OMP_PARALLEL
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
-
 }
 
 void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config) {
@@ -2559,12 +2496,9 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    SU2_OMP_MASTER
-    {
-      InitiateComms(geometry, config, SOLUTION_FEA);
-      CompleteComms(geometry, config, SOLUTION_FEA);
-    }
-    SU2_OMP_BARRIER
+
+    InitiateComms(geometry, config, SOLUTION_FEA);
+    CompleteComms(geometry, config, SOLUTION_FEA);
 
     /*--- After the solution has been communicated, set the 'old' predicted solution as the solution. ---*/
     /*--- Loop over n points (as we have already communicated everything. ---*/
@@ -3109,7 +3043,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
   long iPoint = geometry->GetGlobal_to_Local_Point(config->GetRefNode_ID());
 
   if (iPoint >= 0) {
-    if (geometry->node[iPoint]->GetDomain()) {
+    if (geometry->nodes->GetDomain(iPoint)) {
       for (unsigned short iVar = 0; iVar < nVar; ++iVar)
         dist[iVar] = nodes->GetSolution(iPoint,iVar) - config->GetRefNode_Displacement(iVar);
     }
@@ -3157,7 +3091,7 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iElem = 0; iElem < nElement; ++iElem) {
     /*--- count only elements that belong to the partition ---*/
-    if (geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain()) {
+    if (geometry->nodes->GetDomain(geometry->elem[iElem]->GetNode(0))) {
       su2double volume = geometry->elem[iElem]->GetVolume();
       su2double rho = element_properties[iElem]->GetPhysicalDensity();
       tot_vol_loc += volume;
@@ -3285,7 +3219,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
     // Avoid double-counting elements:
     // Only add the value if the first node is in the domain
-    if (geometry->node[indexNode[0]]->GetDomain()) {
+    if (geometry->nodes->GetDomain(indexNode[0])) {
 
       // Compute the area/volume of the element
       su2double elementVolume;
@@ -3533,6 +3467,18 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
       if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
       else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
       else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+    }
+
+    /*--- Compute nodal averages for output. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint=0ul; iPoint<nPoint; ++iPoint) {
+      su2double sum = 0, vol = 0;
+      for (auto iElem : geometry->nodes->GetElems(iPoint)) {
+        su2double w = geometry->nodes->GetVolume(iPoint);
+        sum += w * element_properties[iElem]->GetPhysicalDensity();
+        vol += w;
+      }
+      nodes->SetAuxVar(iPoint, sum/vol);
     }
   }
 

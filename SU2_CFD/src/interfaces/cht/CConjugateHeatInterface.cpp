@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,16 +27,16 @@
  */
 
 #include "../../../include/interfaces/cht/CConjugateHeatInterface.hpp"
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
-CConjugateHeatInterface::CConjugateHeatInterface(void) : CInterface() { }
-
-CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                 CConfig *config) : CInterface(val_nVar, val_nConst, config) { }
-
-CConjugateHeatInterface::~CConjugateHeatInterface(void) { }
+CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst) :
+  CInterface(val_nVar, val_nConst) {
+}
 
 void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                                CConfig *donor_config, unsigned long Marker_Donor,
+                                                const CConfig *donor_config, unsigned long Marker_Donor,
                                                 unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short nDim, iDim;
@@ -65,11 +65,11 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   bool heat_equation = ((donor_config->GetKind_Solver() == HEAT_EQUATION)
                || (donor_config->GetKind_Solver() == DISC_ADJ_HEAT));
 
-  Coord         = donor_geometry->node[Point_Donor]->GetCoord();
+  Coord         = donor_geometry->nodes->GetCoord(Point_Donor);
 
   Normal        = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
   PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
-  Coord_Normal  = donor_geometry->node[PointNormal]->GetCoord();
+  Coord_Normal  = donor_geometry->nodes->GetCoord(PointNormal);
 
   Twall = 0.0; Tnormal = 0.0; dTdn = 0.0; dist2 = 0.0; Area = 0.0;
 
@@ -189,14 +189,14 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
   }
 
-  if (Edge_Vector != NULL) {
 
-    delete [] Edge_Vector;
-  }
+
+  delete [] Edge_Vector;
+
 }
 
 void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                                 CConfig *target_config, unsigned long Marker_Target,
+                                                 const CConfig *target_config, unsigned long Marker_Target,
                                                  unsigned long Vertex_Target, unsigned long Point_Target) {
 
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0,

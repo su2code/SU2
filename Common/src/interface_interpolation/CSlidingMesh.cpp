@@ -2,7 +2,7 @@
  * \file CSlidingMesh.cpp
  * \brief Implementation of sliding mesh interpolation.
  * \author H. Kline
- * \version 7.0.4 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,9 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
 
-CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config,
+                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -96,6 +97,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
   su2double **donor_element, *DonorPoint_Coord;
 
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
+
   /* 1 - Variable pre-processing */
 
   const unsigned short nDim = donor_geometry->GetnDim();
@@ -131,10 +134,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-    if(markTarget != -1)
-      nVertexTarget = target_geometry->GetnVertex( markTarget );
-    else
-      nVertexTarget  = 0;
+    nVertexTarget = 0;
+    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex( markTarget );
 
     /*
     3 -Reconstruct the boundaries from parallel partitioning
@@ -170,6 +171,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
      * - Starting from the closest donor node, it expands the supermesh by including
      * donor elements neighboring the initial one, until the overall target area is fully covered.
      */
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     if(nDim == 2){
 
@@ -191,9 +193,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-        if (target_geometry->node[target_iPoint]->GetDomain()){
+        if (target_geometry->nodes->GetDomain(target_iPoint)){
 
-          Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+          Coord_i = target_geometry->nodes->GetCoord(target_iPoint);
 
           /*--- Brute force to find the closest donor_node ---*/
 
@@ -222,7 +224,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Contruct information regarding the target cell ---*/
 
-          long dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
+          long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
           for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
             if( dPoint == Target_GlobalPoint[jVertexTarget] )
               break;
@@ -239,9 +241,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
             target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] +
-                                            target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
             target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] +
-                                            target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+                                            target_geometry->nodes->GetCoord( target_iPoint , iDim) ) / 2;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
@@ -314,9 +316,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             tmp_Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
             tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != nullptr) delete [] Donor_Vect;
-            if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
-            if (storeProc  != nullptr) delete [] storeProc;
+            delete [] Donor_Vect;
+            delete [] Coeff_Vect;
+            delete [] storeProc;
 
             Donor_Vect = tmp_Donor_Vect;
             Coeff_Vect = tmp_Coeff_Vect;
@@ -397,9 +399,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
             tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
             tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-            if (Donor_Vect != nullptr) delete [] Donor_Vect;
-            if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
-            if (storeProc  != nullptr) delete [] storeProc;
+            delete [] Donor_Vect;
+            delete [] Coeff_Vect;
+            delete [] storeProc;
 
             Donor_Vect = tmp_Donor_Vect;
             Coeff_Vect = tmp_Coeff_Vect;
@@ -413,12 +415,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-          target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
+          targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
           for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
-            target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor, Donor_GlobalPoint[Donor_Vect[iDonor]]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+            targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor];
+            targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
+            targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
           }
         }
       }
@@ -442,9 +444,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-        if (!target_geometry->node[target_iPoint]->GetDomain()) continue;
+        if (!target_geometry->nodes->GetDomain(target_iPoint)) continue;
 
-        Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+        Coord_i = target_geometry->nodes->GetCoord(target_iPoint);
 
         target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
 
@@ -458,9 +460,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           Normal[iDim] /= Area;
 
         for (iDim = 0; iDim < nDim; iDim++)
-          Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
+          Coord_i[iDim] = target_geometry->nodes->GetCoord(target_iPoint, iDim);
 
-        long dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
+        long dPoint = target_geometry->nodes->GetGlobalIndex(target_iPoint);
         for (target_iPoint = 0; target_iPoint < nGlobalVertex_Target; target_iPoint++){
           if( dPoint == Target_GlobalPoint[target_iPoint] )
             break;
@@ -594,7 +596,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                   tmpVect[jj] = ToVisit[jj];
                 tmpVect[nToVisit] = donor_iPoint;
 
-                if( ToVisit != nullptr )
+
                   delete [] ToVisit;
 
                 ToVisit = tmpVect;
@@ -639,9 +641,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
                 tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                if (Donor_Vect != nullptr) {delete [] Donor_Vect; }
-                if (Coeff_Vect != nullptr) {delete [] Coeff_Vect; }
-                if (storeProc  != nullptr) {delete [] storeProc;  }
+                delete [] Donor_Vect;
+                delete [] Coeff_Vect;
+                delete [] storeProc;
 
                 Donor_Vect = tmp_Donor_Vect;
                 Coeff_Vect = tmp_Coeff_Vect;
@@ -670,8 +672,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for( jj = 0; jj < nToVisit; jj++ )
             tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
-          if( alreadyVisitedDonor != nullptr )
-            delete [] alreadyVisitedDonor;
+
+          delete [] alreadyVisitedDonor;
 
           alreadyVisitedDonor = tmpVect;
 
@@ -684,12 +686,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
+        targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
         for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
-          target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+          targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor] / Area;
+          targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
+          targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
         }
 
         for (ii = 0; ii < 2*nEdges_target + 2; ii++)
@@ -721,9 +723,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   delete [] Normal;
   delete [] Direction;
 
-  if (Donor_Vect != nullptr) delete [] Donor_Vect;
-  if (Coeff_Vect != nullptr) delete [] Coeff_Vect;
-  if (storeProc  != nullptr) delete [] storeProc;
+  delete [] Donor_Vect;
+  delete [] Coeff_Vect;
+  delete [] storeProc;
 }
 
 int CSlidingMesh::Build_3D_surface_element(const unsigned long *map, const unsigned long *startIndex,
