@@ -96,16 +96,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const bool muscl = config->GetMUSCL_Turb();
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
   const bool sa_neg = (turbModel == SA_NEG);
-
-  /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
-  const bool musclFlow = (config->GetMUSCL_Flow()) && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
-  /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
-  const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
 
   const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
 
@@ -387,9 +381,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
   if (gg && node_i->GetPhysicalBoundary()) {
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] = 0.0;
 
     const su2double invVol = 1.0/node_i->GetVolume();
     su2double gradWeightDotDist = 0.0;
