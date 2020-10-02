@@ -43,8 +43,8 @@
 #include <map>
 #include <assert.h>
 
-#include "./option_structure.hpp"
-#include "./toolboxes/C2DContainer.hpp"
+#include "option_structure.hpp"
+#include "containers/container_decorators.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -419,6 +419,7 @@ private:
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
+  bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -591,10 +592,10 @@ private:
   *Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
   *Kappa_Heat;                     /*!< \brief Numerical dissipation coefficients for the (fvm) heat equation. */
   su2double* FFD_Axis;          /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
-  su2double Kappa_1st_AdjFlow,  /*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
+  su2double Kappa_1st_AdjFlow,  /*!< \brief Lax 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,            /*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,            /*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
-  Kappa_1st_Flow,           /*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
+  Kappa_1st_Flow,           /*!< \brief Lax 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,           /*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
@@ -1163,7 +1164,7 @@ private:
   ionization;                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
-  
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -4114,6 +4115,11 @@ public:
   unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
 
   /*!
+   * \brief Get whether to use vectorized numerics (if available).
+   */
+  bool GetUseVectorization(void) const { return UseVectorization; }
+
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -4508,7 +4514,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the flow equations.
    */
-  unsigned short GetKind_Centered_Flow(void) const { return Kind_Centered_Flow; }
+  ENUM_CENTERED GetKind_Centered_Flow(void) const { return static_cast<ENUM_CENTERED>(Kind_Centered_Flow); }
 
   /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.

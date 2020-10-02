@@ -112,6 +112,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
   ../src/numerics/elasticity/nonlinear_models.cpp \
+  ../include/numerics_simd/CNumericsSIMD.cpp \
   ../src/numerics/NEMO/NEMO_diffusion.cpp \
   ../src/numerics/NEMO/NEMO_sources.cpp \
   ../src/numerics/NEMO/convection/ausm.cpp \

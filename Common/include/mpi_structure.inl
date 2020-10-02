@@ -24,12 +24,15 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "mpi_structure.hpp"
+
 #pragma once
+
+#include "mpi_structure.hpp"
+#include "omp_structure.hpp"
 
 #ifdef HAVE_MPI
 
-inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
+NEVERINLINE void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
 
   /* Set MinRankError to Rank, as the error message is called on this rank. */
   MinRankError = Rank;
@@ -514,13 +517,8 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
 }
 #endif
 #else // HAVE_MPI
-#ifdef _OPENMP
-#include <omp.h>
-#else
-#include <ctime>
-#endif
 
-inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
+NEVERINLINE void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
   if (Rank == 0){
     std::cout << std::endl << std::endl;
     std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
@@ -693,11 +691,6 @@ inline void CBaseMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Da
   }
 }
 
-inline passivedouble CBaseMPIWrapper::Wtime(void) {
-#ifdef _OPENMP
-  return omp_get_wtime();
-#else
-  return passivedouble(clock()) / CLOCKS_PER_SEC;
-#endif
-}
+inline passivedouble CBaseMPIWrapper::Wtime(void) { return omp_get_wtime(); }
+
 #endif

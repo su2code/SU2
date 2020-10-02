@@ -560,7 +560,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
@@ -657,7 +657,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
@@ -797,7 +797,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
@@ -843,7 +843,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
         /*--- Strong imposition of the temperature on the fluid zone. ---*/
 
-        LinSysRes.SetBlock_Zero(iPoint, nDim+1);
+        LinSysRes(iPoint, nDim+1) = 0.0;
         nodes->SetSolution_Old(iPoint, nDim+1, Twall);
         nodes->SetEnergy_ResTruncError_Zero(iPoint);
       }

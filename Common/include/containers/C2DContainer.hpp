@@ -27,8 +27,9 @@
 
 #pragma once
 
-#include "allocation_toolbox.hpp"
+#include "../toolboxes/allocation_toolbox.hpp"
 #include "../basic_types/datatype_structure.hpp"
+#include "../parallelization/vectorization.hpp"
 
 #include <utility>
 #include <type_traits>
@@ -118,7 +119,7 @@ public:
     return *this;                                                       \
   }                                                                     \
                                                                         \
-  ~AccessorImpl()                                                       \
+  ~AccessorImpl() noexcept                                              \
   {                                                                     \
     MemoryAllocation::aligned_free<Scalar_t>(m_data);                   \
   }
@@ -134,7 +135,9 @@ public:
 #define UNIV_ACCESSORS                                                  \
   bool empty() const noexcept {return size()==0;}                       \
   Scalar_t* data() noexcept {return m_data;}                            \
-  const Scalar_t* data() const noexcept {return m_data;}
+  const Scalar_t* data() const noexcept {return m_data;}                \
+  const Scalar_t* begin() const noexcept {return data();}               \
+  const Scalar_t* end() const noexcept {return data()+size();}
 
   /*!
    * Operator (,) gives pointwise access, operator [] returns a pointer to the
@@ -177,8 +180,7 @@ public:
   }
 
   /*!
-   * Vectors do not provide operator [] as it is redundant
-   * since operator () already returns by reference.
+   * Vectors provide both [] and () with the same behavior.
    */
 #define VECTOR_ACCESSORS(M,ROWMAJOR)                                    \
   UNIV_ACCESSORS                                                        \
@@ -193,6 +195,18 @@ public:
   }                                                                     \
                                                                         \
   const Scalar_t& operator() (const Index_t i) const noexcept           \
+  {                                                                     \
+    assert(i>=0 && i<M);                                                \
+    return m_data[i];                                                   \
+  }                                                                     \
+                                                                        \
+  Scalar_t& operator[] (const Index_t i) noexcept                       \
+  {                                                                     \
+    assert(i>=0 && i<M);                                                \
+    return m_data[i];                                                   \
+  }                                                                     \
+                                                                        \
+  const Scalar_t& operator[] (const Index_t i) const noexcept           \
   {                                                                     \
     assert(i>=0 && i<M);                                                \
     return m_data[i];                                                   \
@@ -368,9 +382,67 @@ private:
   using Base::m_allocate;
 public:
   using Base::size;
+  using Base::rows;
+  using Base::cols;
   using Index = Index_t;
   using Scalar = Scalar_t;
   static constexpr StorageType Storage = Store;
+  static constexpr bool IsVector = (StaticRows==1) || (StaticCols==1);
+  static constexpr bool IsRowMajor = (Store==StorageType::RowMajor);
+  static constexpr bool IsColumnMajor = (Store==StorageType::ColumnMajor);
+  static constexpr size_t StaticSize = StaticRows*StaticCols;
+
+  /*!
+   * \brief Scalar iterator to the inner dimension of the container, read-only.
+   */
+  class CInnerIter {
+   private:
+    const Index m_increment;
+    const Scalar* m_ptr;
+   public:
+    CInnerIter() = delete;
+
+    FORCEINLINE CInnerIter(const Scalar* ptr, Index increment) noexcept :
+      m_increment(increment),
+      m_ptr(ptr) {
+    }
+
+    FORCEINLINE Scalar operator* () const noexcept { return *m_ptr; }
+
+    FORCEINLINE CInnerIter operator++(int) noexcept {
+      auto ret = *this; m_ptr += m_increment; return ret;
+    }
+  };
+
+  /*!
+   * \brief SIMD iterator to the inner dimension of the container,
+   * read-only, generic non-contiguous access.
+   */
+  template<class IndexSIMD_t>
+  class CInnerIterGather {
+   private:
+    static_assert(std::is_integral<typename IndexSIMD_t::Scalar>::value,"");
+    enum {Size = IndexSIMD_t::Size};
+    IndexSIMD_t m_offsets;
+    const Index m_increment;
+    const Scalar* const m_data;
+   public:
+    CInnerIterGather() = delete;
+
+    FORCEINLINE CInnerIterGather(const Scalar* data, Index increment, IndexSIMD_t offsets) noexcept :
+      m_offsets(offsets),
+      m_increment(increment),
+      m_data(data) {
+    }
+
+    FORCEINLINE simd::Array<Scalar,Size> operator* () const noexcept {
+      return simd::Array<Scalar,Size>(m_data, m_offsets);
+    }
+
+    FORCEINLINE CInnerIterGather operator++(int) noexcept {
+      auto ret = *this; m_offsets += m_increment; return ret;
+    }
+  };
 
 private:
   /*!
@@ -379,11 +451,10 @@ private:
   size_t m_resize(Index_t rows, Index_t cols) noexcept
   {
     /*--- fully static, no allocation needed ---*/
-    if(StaticRows!=DynamicSize && StaticCols!=DynamicSize)
-      return StaticRows*StaticCols;
+    if(StaticSize!=DynamicSize) return StaticSize;
 
     /*--- dynamic row vector, swap size specification ---*/
-    if(StaticRows==1 && StaticCols==DynamicSize) {cols = rows; rows = 1;}
+    if(StaticRows==1 && IsVector) {cols = rows; rows = 1;}
 
     /*--- assert a static size is not being asked to change ---*/
     if(StaticRows!=DynamicSize) assert(rows==StaticRows && "A static size was asked to change.");
@@ -448,12 +519,12 @@ public:
   /*!
    * \brief Move ctor, implemented by base class (if fully static works as copy).
    */
-  C2DContainer(C2DContainer&&) noexcept = default;
+  C2DContainer(C2DContainer&&) noexcept(std::is_nothrow_move_constructible<Scalar>::value) = default;
 
   /*!
    * \brief Move assign operator, implemented by base class (if fully static works as copy).
    */
-  C2DContainer& operator= (C2DContainer&&) noexcept = default;
+  C2DContainer& operator= (C2DContainer&&) noexcept(std::is_nothrow_move_assignable<Scalar>::value) = default;
 
   /*!
    * \overload Set all entries to rhs value (syntax sugar, see "resize").
@@ -483,6 +554,59 @@ public:
   {
     for(size_t i=0; i<size(); ++i) m_data[i] = value;
   }
+
+  /*!
+   * \brief Get a scalar iterator to the inner dimension of the container.
+   */
+  FORCEINLINE CInnerIter innerIter(Index_t row) const noexcept
+  {
+    return CInnerIter(&m_data[IsRowMajor? row*cols() : row], IsRowMajor? 1 : rows());
+  }
+
+  /*!
+   * \brief Get a SIMD gather iterator to the inner dimension of the container.
+   */
+  template<class T, size_t N>
+  FORCEINLINE CInnerIterGather<simd::Array<T,N> > innerIter(simd::Array<T,N> row) const noexcept
+  {
+    return CInnerIterGather<simd::Array<T,N> >(m_data, IsRowMajor? 1 : rows(), IsRowMajor? row*cols() : row);
+  }
+
+  /*!
+   * \brief Return copy of data in a static size container.
+   * \param[in] row - Row of the matrix.
+   * \param[in] start - Starting column to copy the data (amount determined by container size).
+   */
+  template<class StaticContainer>
+  FORCEINLINE StaticContainer get(Index_t row, Index_t start = 0) const noexcept
+  {
+    constexpr size_t Size = StaticContainer::StaticSize;
+    static_assert(Size, "This method requires a static output type.");
+    assert(Size <= cols()-start);
+    StaticContainer ret;
+    SU2_OMP_SIMD
+    for (size_t i=0; i<Size; ++i)
+      ret.data()[i] = m_data[IsRowMajor? row*cols()+i+start : row+(i+start)*rows()];
+    return ret;
+  }
+
+  /*!
+   * \brief Return copy of data in a static size container, SIMD version.
+   */
+  template<class StaticContainer, class T, size_t N>
+  FORCEINLINE StaticContainer get(simd::Array<T,N> row, Index_t start = 0) const noexcept
+  {
+    constexpr size_t Size = StaticContainer::StaticSize;
+    static_assert(Size, "This method requires a static output type.");
+    assert(Size <= cols()-start);
+    StaticContainer ret;
+    for (size_t k=0; k<N; ++k) {
+      SU2_OMP_SIMD
+      for (size_t i=0; i<Size; ++i)
+        ret.data()[i][k] = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
+    }
+    return ret;
+  }
 };
 
 /*!
@@ -497,135 +621,3 @@ using su2activematrix = su2matrix<su2double>;
 
 using su2passivevector = su2vector<passivedouble>;
 using su2passivematrix = su2matrix<passivedouble>;
-
-/*!
- * \class CVectorOfMatrix
- * \brief This contrived container is used to store small matrices in a contiguous manner
- *        but still present the "su2double**" interface to the outside world.
- *        The "interface" part should be replaced by something more efficient, e.g. a "matrix view".
- */
-struct CVectorOfMatrix {
-  su2activevector storage;
-  su2matrix<su2double*> interface;
-  unsigned long M, N;
-
-  CVectorOfMatrix() = default;
-
-  CVectorOfMatrix(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
-    resize(length, rows, cols, value);
-  }
-
-  void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value = 0.0) {
-    M = rows;
-    N = cols;
-    storage.resize(length*rows*cols) = value;
-    interface.resize(length,rows);
-
-    for(unsigned long i=0; i<length; ++i)
-      for(unsigned long j=0; j<rows; ++j)
-        interface(i,j) = &(*this)(i,j,0);
-  }
-
-  su2double& operator() (unsigned long i, unsigned long j, unsigned long k) { return storage(i*M*N + j*N + k); }
-  const su2double& operator() (unsigned long i, unsigned long j, unsigned long k) const { return storage(i*M*N + j*N + k); }
-
-  su2double** operator[] (unsigned long i) { return interface[i]; }
-  const su2double* const* operator[] (unsigned long i) const { return interface[i]; }
-};
-
-/*!
- * \class C2DDummyLastView
- * \brief Helper class, adds dummy trailing dimension to a reference of a
- *        vector object making it a dummy matrix.
- * \note The constness of the object is derived from the template type, but
- *       we allways keep a reference, never a copy of the associated vector.
- */
-template<class T>
-struct C2DDummyLastView
-{
-  using Index = typename T::Index;
-  using Scalar = typename T::Scalar;
-
-  T& data;
-
-  C2DDummyLastView() = delete;
-
-  C2DDummyLastView(T& ref) : data(ref) {}
-
-  template<class U = T,
-           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
-  Scalar& operator() (Index i, Index) noexcept
-  {
-    return data(i);
-  }
-
-  const Scalar& operator() (Index i, Index) const noexcept
-  {
-    return data(i);
-  }
-};
-
-/*!
- * \class C3DDummyMiddleView
- * \brief Helper class, adds dummy middle dimension to a reference of a
- *        matrix object making it a dummy 3D array.
- * \note The constness of the object is derived from the template type, but
- *       we allways keep a reference, never a copy of the associated matrix.
- */
-template<class T>
-struct C3DDummyMiddleView
-{
-  using Index = typename T::Index;
-  using Scalar = typename T::Scalar;
-
-  T& data;
-
-  C3DDummyMiddleView() = delete;
-
-  C3DDummyMiddleView(T& ref) : data(ref) {}
-
-  template<class U = T,
-           typename std::enable_if<!std::is_const<U>::value, bool>::type = 0>
-  Scalar& operator() (Index i, Index, Index k) noexcept
-  {
-    return data(i,k);
-  }
-
-  const Scalar& operator() (Index i, Index, Index k) const noexcept
-  {
-    return data(i,k);
-  }
-};
-
-/*!
- * \class C3DContainerDecorator
- * \brief Decorate a vector type (Storage) with 3 dimensions. *
- */
-template<class Storage>
-struct C3DContainerDecorator {
-  using Scalar = typename Storage::Scalar;
-  using Index = typename Storage::Index;
-
-  Storage storage;
-  Index M, N;
-
-  C3DContainerDecorator() = default;
-
-  C3DContainerDecorator(Index length, Index rows, Index cols, Scalar value = 0) {
-    resize(length, rows, cols, value);
-  }
-
-  void resize(Index length, Index rows, Index cols, Scalar value = 0) {
-    M = rows;
-    N = cols;
-    storage.resize(length*rows*cols) = value;
-  }
-
-  Scalar& operator() (Index i, Index j, Index k) { return storage(i*M*N + j*N + k); }
-  const Scalar& operator() (Index i, Index j, Index k) const { return storage(i*M*N + j*N + k); }
-};
-
-/* Define an alias for a 3D int matrix, we use su2vector to store the integers contiguously
- * and the container decorator to create the access semantics we want. */
-using C3DIntMatrix = C3DContainerDecorator<su2vector<int> >;
-using C3DDoubleMatrix = C3DContainerDecorator<su2vector<double> >;

@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CFEASolver.hpp"
+#include "../variables/CMeshBoundVariable.hpp"
 #include "../variables/CMeshElement.hpp"
 
 class CMeshSolver final : public CFEASolver {
@@ -133,7 +134,7 @@ public:
   inline su2double Get_ValCoord(const CGeometry*,
                                 unsigned long indexNode,
                                 unsigned short iDim) const override {
-    return nodes->GetMesh_Coord(indexNode,iDim);
+    return static_cast<const CMeshBoundVariable*>(nodes)->GetMesh_Coord(indexNode,iDim);
   }
 
   /*!

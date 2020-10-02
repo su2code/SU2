@@ -1599,6 +1599,8 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
+  /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
+  addBoolOption("USE_VECTORIZATION", UseVectorization, false);
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
@@ -2832,14 +2834,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-  void CConfig::SetConfig_Parsing(istream& config_buffer){
+void CConfig::SetConfig_Parsing(istream& config_buffer){
 
   string text_line, option_name;
   vector<string> option_value;
 
   string errorString;
 
-  int  err_count = 0;  // How many errors have we found in the config file
+  int err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
   int line_count = 1;
 
@@ -6068,20 +6070,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
-        if (Kind_Centered_Flow == JST) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
-        if (Kind_Centered_Flow == JST_KE) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
         if (Kind_Centered_Flow == LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << "." << endl;
           cout << "First order integration." << endl;
+        }
+        else {
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
+          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
       }
 

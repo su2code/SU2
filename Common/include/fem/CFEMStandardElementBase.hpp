@@ -33,7 +33,7 @@
 #include <cstdlib>
 
 #include "../CConfig.hpp"
-#include "../toolboxes/C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 #include "mkl.h"

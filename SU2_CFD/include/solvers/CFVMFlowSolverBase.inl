@@ -29,6 +29,7 @@
 #include "../gradients/computeGradientsGreenGauss.hpp"
 #include "../gradients/computeGradientsLeastSquares.hpp"
 #include "../limiters/computeLimiters.hpp"
+#include "../numerics_simd/CNumericsSIMD.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 template <class V, ENUM_REGIME R>
@@ -101,9 +102,9 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
-  if (config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double[nPoint];
-    jPoint_UndLapl = new su2double[nPoint];
+  if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
+    iPoint_UndLapl = new su2double[nPointDomain];
+    jPoint_UndLapl = new su2double[nPointDomain];
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -223,9 +224,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- Only initialize when there is a Marker_Fluid_Load defined
    *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
   if ((config.GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)) {
-    InitVertexTractionContainer();
-
-    if (config.GetDiscrete_Adjoint()) InitVertexTractionAdjointContainer();
+    Alloc3D(nMarker, nVertex, nDim, VertexTraction);
+    if (config.GetDiscrete_Adjoint()) Alloc3D(nMarker, nVertex, nDim, VertexTractionAdjoint);
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
@@ -302,7 +302,7 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
-  /* Store the initial CFL number for all grid points. */
+  /*--- Store the initial CFL number for all grid points. ---*/
 
   const auto CFL = config->GetCFL(MGLevel);
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -353,6 +353,12 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
            << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+    }
+
+    if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
+        (config.GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
   }
 
@@ -1134,7 +1140,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
             /*--- Accumulate the residuals to compute the average ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] += weight * residual.residual[iVar];
+              Residual[iVar] += weight * residual[iVar];
               for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] += weight * residual.jacobian_i[iVar][jVar];
             }
           }
@@ -1191,7 +1197,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
               /*--- Accumulate the residuals to compute the average ---*/
 
               for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] += weight * residual.residual[iVar];
+                Residual[iVar] += weight * residual[iVar];
                 for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] += weight * residual.jacobian_i[iVar][jVar];
               }
             }
@@ -1270,6 +1276,55 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
   } else {
     /* The user must specify the custom BC's here. */
     SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry, const CConfig *config) {
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring) {
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for(auto k = 0ul; k < color.size; k += Double::Size) {
+      Int iEdge;
+      Double mask;
+      for (auto j = 0ul; j < Double::Size; ++j) {
+        bool in = (k+j < color.size);
+        mask[j] = in;
+        iEdge[j] = color.indices[k+j*in];
+      }
+
+      if (ReducerStrategy) {
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+      } else {
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+      }
+    }
+  }
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      Jacobian.SetDiagonalAsColumnSum();
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
+
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
+        LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      else
+        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+    }
   }
 }
 
@@ -1759,7 +1814,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 
           /*--- Moment with respect to the reference axis ---*/
 
-          if (iDim == 3) {
+          if (nDim == 3) {
             MomentMomentum[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
             MomentX_Force[1] += (-Force[1] * Coord[2]);
             MomentX_Force[2] += (Force[2] * Coord[1]);
@@ -2255,7 +2310,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         /*--- Moment with respect to the reference axis ---*/
 
-        if (iDim == 3) {
+        if (nDim == 3) {
           MomentViscous[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
           MomentX_Force[1] += (-Force[1] * Coord[2]);
           MomentX_Force[2] += (Force[2] * Coord[1]);

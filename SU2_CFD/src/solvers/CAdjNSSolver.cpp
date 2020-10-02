@@ -1278,7 +1278,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         nodes->SetSolution_Old(iPoint,iDim+1, phi[iDim]);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       /*--- Compute additional contributions to the adjoint density and energy
@@ -1656,7 +1656,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Strong BC imposition for the adjoint velocity equations ---*/
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
       for (iDim = 0; iDim < nDim; iDim++)
         nodes->SetSolution_Old(iPoint,iDim+1, phi[iDim]);
@@ -1700,7 +1700,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       }
 
       /*--- Strong BC enforcement of the energy equation ---*/
-      LinSysRes.SetBlock_Zero(iPoint, nVar-1);
+      LinSysRes(iPoint, nVar-1) = 0.0;
       nodes->SetEnergy_ResTruncError_Zero(iPoint);
       nodes->SetSolution_Old(iPoint,nDim+1, q);
       if (implicit) {

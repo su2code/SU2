@@ -28,7 +28,7 @@
 #pragma once
 
 #include <vector>
-#include "C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 
 /*!
  * \brief Class to store a dense general square matrix that uses the Column
