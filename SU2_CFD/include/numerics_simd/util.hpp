@@ -146,6 +146,15 @@ FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& 
 }
 
 /*!
+ * \brief Stop the AD preaccumulation.
+ */
+template<size_t nVar>
+FORCEINLINE void stopPreacc(VectorDbl<nVar>& x) {
+  AD::SetPreaccOut(x, nVar, Double::Size);
+  AD::EndPreacc();
+}
+
+/*!
  * \brief Distance vector, from point i to point j.
  */
 template<size_t nDim, class Container>
