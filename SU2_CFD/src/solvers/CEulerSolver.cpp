@@ -2743,7 +2743,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
 
       /*--- Mean Values ---*/
 
-      if (muscl) {
+      const bool good_edge = !node_i>GetPhysicalBoundary() && !node_j->GetPhysicalBoundary();
+      if (muscl && good_edge) {
         /*--- Extrapolate the state ---*/
 
         su2double tke_i = 0.0, tke_j = 0.0;
@@ -3154,7 +3155,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    if (muscl) {
+    const bool good_edge = !geometry->node[iPoint]->GetPhysicalBoundary() && !geometry->node[jPoint]->GetPhysicalBoundary();
+    if (muscl && good_edge) {
       /*--- Reconstruction ---*/
 
       const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
@@ -3182,6 +3184,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         good_i = (tke_i >= 0.0);
         good_j = (tke_j >= 0.0);
       }
+      good_i = good_i && 
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
 
       counter_local += (!good_i+!good_j);
@@ -3248,7 +3251,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set implicit computation ---*/
       if (implicit) {
-        if (!muscl)
+        if (!muscl || !good_edge)
           Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
         else {
           su2double *primvar_i = good_i ? Primitive_i : V_i,

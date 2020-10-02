@@ -146,7 +146,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     bool good_i = true, good_j = true;
 
-    if (muscl) {
+    const bool good_edge = !geometry->node[iPoint]->GetPhysicalBoundary() && !geometry->node[jPoint]->GetPhysicalBoundary();
+    if (muscl && good_edge) {
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
                                          turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
 
@@ -194,7 +195,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (!muscl)
+      if (!muscl || !good_edge)
         Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       else {
         const su2double rho_i = good_i ? flowPrimVar_i[nDim+2] : V_i[nDim+2],
