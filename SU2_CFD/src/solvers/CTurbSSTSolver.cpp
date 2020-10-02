@@ -1590,7 +1590,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       /*--- Mean Values ---*/
 
       const bool good_edge = !node_i->GetPhysicalBoundary() && !node_j->GetPhysicalBoundary();
-      if (muscl) {
+      if (muscl && good_edge) {
         /*--- Extrapolate the state ---*/
 
         su2double tke_i = 0.0, tke_j = 0.0;
