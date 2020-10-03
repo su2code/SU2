@@ -12,14 +12,15 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-if build_machine.system() == 'windows'
-  default_warning_flags = []
-else
-  default_warning_flags = ['-Wno-unused-parameter',
-                           '-Wno-empty-body',
-                           '-Wno-format-security',
-                           '-Wno-deprecated-declarations',
-                           '-Wno-non-virtual-dtor']
+default_warning_flags = []
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    default_warning_flags += ['-Wno-empty-body']
+  endif
+  default_warning_flags += ['-Wno-unused-parameter',
+                            '-Wno-format-security',
+                            '-Wno-deprecated-declarations',
+                            '-Wno-non-virtual-dtor']
 endif
 
 # meson script path

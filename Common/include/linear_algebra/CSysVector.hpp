@@ -90,7 +90,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   FORCEINLINE static void UnpackBlock(const VecTypeSIMD& in, simd::Array<F, N> mask, ScalarType out[][nVar]) {
     static_assert(VecTypeSIMD::StaticSize, "This method requires static size vectors.");
     for (size_t i = 0; i < nVar; ++i) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k = 0; k < N; ++k) out[k][i] = mask[k] * in[i][k];
     }
   }
@@ -413,7 +413,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t i = 0; i < nVar; ++i) vec_val[iPoint[k] * nVar + i] = vec[k][i];
     }
   }
@@ -434,7 +434,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t i = 0; i < nVar; ++i) {
         vec_val[iPoint[k] * nVar + i] += vec[k][i];
         vec_val[jPoint[k] * nVar + i] -= vec[k][i];
