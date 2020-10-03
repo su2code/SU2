@@ -1617,20 +1617,19 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         su2double ProjVel_j = 0, SoundSpeed_j = 0;
 
         if (good_edge) {
-          for (auto iDim = 0; iDim < nDim; iDim++) ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+          for (auto iDim = 0; iDim < nDim; iDim++) {
+            ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+            ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+          }
+          
           SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
-        }
-        else {
-          ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
-          SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
-        }
-
-        if (good_edge) {
-          for (auto iDim = 0; iDim < nDim; iDim++) ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
           SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
         }
         else {
+          ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
           ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
+
+          SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
           SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
         }
 
