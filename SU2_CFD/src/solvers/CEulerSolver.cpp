@@ -2779,11 +2779,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
           SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
         }
         else {
-          ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
-          ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
+          ProjVel_i = nodes->GetProjVel(iPoint,Normal);
+          ProjVel_j = nodes->GetProjVel(jPoint,Normal);
 
-          SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
-          SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
+          SoundSpeed_i = nodes->GetSoundSpeed(iPoint);
+          SoundSpeed_j = nodes->GetSoundSpeed(jPoint);
         }
 
         /*--- Compute the mean values ---*/
