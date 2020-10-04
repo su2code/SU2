@@ -299,6 +299,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   bool nonlinear = config[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS;
   bool de_effects = config[iZone]->GetDE_Effects() && nonlinear;
   bool element_based = dir_solver->IsElementBased() && nonlinear;
+  bool dynamic = config[iZone]->GetTime_Domain();
 
   for (unsigned short iProp = 0; iProp < config[iZone]->GetnElasticityMod(); iProp++) {
     su2double E = adj_solver->GetVal_Young(iProp);
@@ -367,6 +368,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   if (fsi) {
     /*--- Set relation between solution and predicted displacements, which are the transferred ones. ---*/
     dir_solver->PredictStruct_Displacement(structural_geometry, config[iZone]);
+    if (dynamic) dir_solver->PredictStruct_Velocity(structural_geometry, config[iZone]);
   }
 
   /*--- MPI dependencies. ---*/

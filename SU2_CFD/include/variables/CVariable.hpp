@@ -2300,18 +2300,21 @@ public:
    * \brief  A virtual member. Set the value of the solution predictor.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint) {}
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
 
   /*!
    * \brief  A virtual member. Set the value of the old solution.
    * \param[in] solution_pred - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *solution_pred) {}
 
   /*!
    * \brief  A virtual member. Set the value of the solution predicted.
    * \param[in] solution_old - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_pred) {}
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_pred) {}
 
   /*!
    * \brief  A virtual member. Get the value of the solution predictor.
@@ -2319,12 +2322,14 @@ public:
    * \return Pointer to the old solution vector.
    */
   inline virtual su2double GetSolution_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+  inline virtual su2double GetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief  A virtual member. Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
   inline virtual su2double *GetSolution_Pred(unsigned long iPoint) {return nullptr; }
+  inline virtual su2double *GetSolution_Vel_Pred(unsigned long iPoint) {return nullptr; }
 
   /*!
    * \brief  A virtual member. Set the value of the solution predictor.

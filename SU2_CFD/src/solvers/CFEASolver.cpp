@@ -2794,6 +2794,19 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
 
 }
 
+void CFEASolver::PredictStruct_Velocity(CGeometry *geometry, CConfig *config) {
+
+  /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
+    nodes->SetSolution_Vel_Pred(iPoint);
+  }
+
+  InitiateComms(geometry, config, SOLUTION_VEL_PRED);
+  CompleteComms(geometry, config, SOLUTION_VEL_PRED);
+
+}
+
 void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {
 
   unsigned long iPoint, iDim;
@@ -3313,9 +3326,10 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
           nodes->SetSolution_Accel(iPoint_Local, iVar, Sol[iVar+2*nVar]);
           if (!discrete_adjoint) nodes->SetSolution_Accel_time_n(iPoint_Local, iVar, Sol[iVar+2*nVar]);
         }
-        if (fluid_structure && !dynamic) {
+        if (fluid_structure) {
           nodes->SetSolution_Pred(iPoint_Local, iVar, Sol[iVar]);
           nodes->SetSolution_Pred_Old(iPoint_Local, iVar, Sol[iVar]);
+          if (dynamic) nodes->SetSolution_Vel_Pred(iPoint_Local, iVar, Sol[iVar+nVar]);
         }
         if (fluid_structure && discrete_adjoint){
           nodes->SetSolution_Old(iPoint_Local, iVar, Sol[iVar]);
@@ -3344,12 +3358,16 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
     solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
   }
-  if (fluid_structure && !dynamic) {
+  if (fluid_structure) {
     solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
 
     solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+    if (dynamic) {
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_VEL_PRED);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_VEL_PRED);
+    }
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/

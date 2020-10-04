@@ -1646,6 +1646,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar*3;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case SOLUTION_VEL_PRED:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case SOLUTION_PRED:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -1804,6 +1808,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Vel_time_n(iPoint, iVar);
               bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel_time_n(iPoint, iVar);
             }
+            break;
+          case SOLUTION_VEL_PRED:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = base_nodes->GetSolution_Vel_Pred(iPoint, iVar);
             break;
           case SOLUTION_PRED:
             for (iVar = 0; iVar < nVar; iVar++)
@@ -1979,6 +1987,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetSolution_Vel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
               base_nodes->SetSolution_Accel_time_n(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
             }
+            break;
+          case SOLUTION_VEL_PRED:
+            for (iVar = 0; iVar < nVar; iVar++)
+              base_nodes->SetSolution_Vel_Pred(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case SOLUTION_PRED:
             for (iVar = 0; iVar < nVar; iVar++)

@@ -45,7 +45,7 @@ void CDisplacementsInterface::GetDonor_Variable(CSolver *struct_solution, CGeome
     Donor_Variable[iVar] = DisplacementDonor[iVar];
 
   if (struct_config->GetTime_Domain()) {
-    auto VelocityDonor = struct_solution->GetNodes()->GetSolution_Vel(Point_Struct);
+    auto VelocityDonor = struct_solution->GetNodes()->GetSolution_Vel_Pred(Point_Struct);
     for (auto iVar = nVar/2; iVar < nVar; iVar++)//Assuming dynamic interface always has nVar = 2*nDim, 2D: 4, 3D: 6
       Donor_Variable[iVar] = VelocityDonor[iVar-nVar/2];
   }

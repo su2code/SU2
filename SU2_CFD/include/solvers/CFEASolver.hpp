@@ -641,6 +641,7 @@ public:
    * \param[in] config - Configuration of the problem.
    */
   void PredictStruct_Displacement(CGeometry *geometry, CConfig *config) final;
+  void PredictStruct_Velocity(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.

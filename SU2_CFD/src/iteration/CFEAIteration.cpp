@@ -206,8 +206,8 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
     const su2double Physical_t = (TimeIter + 1) * Physical_dt;
     if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
-
-  } else if (fsi) {
+  } 
+  if (fsi) {//Now also runs ImplicitNewmark_Relaxation for dynamic fsi
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
      * purposes) ---*/
     if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == NEWMARK_IMPLICIT) {
@@ -223,6 +223,7 @@ void CFEAIteration::Predictor(COutput* output, CIntegration**** integration, CGe
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+  if (config[val_iZone]->GetTime_Domain()) feaSolver->PredictStruct_Velocity(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 }
 
 void CFEAIteration::Relaxation(COutput* output, CIntegration**** integration, CGeometry**** geometry,

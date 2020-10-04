@@ -3514,6 +3514,8 @@ public:
    */
   inline virtual void PredictStruct_Displacement(CGeometry *geometry,
                                                  CConfig *config) { }
+  inline virtual void PredictStruct_Velocity(CGeometry *geometry,
+                                                 CConfig *config) { }
 
   /*!
    * \brief A virtual member.
