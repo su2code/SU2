@@ -48,8 +48,6 @@ private:
 
   bool JacobianConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation to
                                                     is (almost) constant. */
-  ENUM_FEM_GRID_LOCATION gridLocation;  /*!< \brief The location of the grid DOFs in the element. */
-
 public:
 
   /*!
@@ -193,18 +191,6 @@ public:
                                            unsigned short &numFaces,
                                            unsigned short nPointsPerFace[],
                                            unsigned long  faceConn[6][4]);
-
-  /*!
-   * \brief Function to return the location of the grid DOFs.
-   * \return The value of gridLocation.
-   */
-  inline ENUM_FEM_GRID_LOCATION GetLocationGridDOFs(void) override {return gridLocation;}
-
-  /*!
-   * \brief Function to set the location of the grid DOFs.
-   * \param[in] val_GridLocation - The value to be set for the grid location
-   */
-  inline void SetLocationGridDOFs(ENUM_FEM_GRID_LOCATION val_GridLocation) override {gridLocation = val_GridLocation;}
 
 private:
 

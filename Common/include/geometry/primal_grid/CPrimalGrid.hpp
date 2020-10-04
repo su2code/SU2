@@ -416,12 +416,6 @@ public:
   inline virtual ENUM_FEM_GRID_LOCATION GetLocationGridDOFs(void) { return NO_PREFERRED_LOCATION; }
 
   /*!
-   * \brief Virtual function to set the location of the grid DOFs.
-   * \param[in] val_GridLocation - The value to be set for the grid location
-   */
-  inline virtual void SetLocationGridDOFs(ENUM_FEM_GRID_LOCATION val_GridLocation) {}
-
-  /*!
    * \brief Virtual function to correct the offset of the global DOFs.
    * \param[in] val_offsetRank - The offset that must be added for this rank.
    */

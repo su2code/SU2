@@ -826,14 +826,29 @@ static const MapType<string, ENUM_FEM> FEM_Map = {
 };
 
 /*!
+ * \brief Possibilities in the config file to define the grid DOFs location for the high order FEM solver.
+ */
+enum ENUM_FEM_GRID_LOCATION_CONFIG {
+  SU2_DECIDES = 0,  /*!< \brief The solver decides which location of the grid DOFs is best. */
+  LGL         = 1,  /*!< \brief The Legendre-Gauss-Lobatto points must be used for the grid DOFs. */
+  EQUIDISTANT = 2   /*!< \brief The equidistant point distribution must be used for the grid DOFs. */
+};
+static const MapType<string, ENUM_FEM_GRID_LOCATION_CONFIG> GridLocation_Map = {
+  MakePair("SU2_DECIDES", SU2_DECIDES)
+  MakePair("LGL",         LGL)
+  MakePair("EQUIDISTANT", EQUIDISTANT)
+};
+
+/*!
  * \brief Types of grid DOFs location for the high order FEM solver.
  */
 enum ENUM_FEM_GRID_LOCATION {
-  NO_PREFERRED_LOCATION = 0,  /*!< \brief LGL and equidistant is equally preferred. */
+  NO_VALID_LOCATION     = 0,  /*!< \brief LGL and equidistant both give invalid mappings. */
   LGL_PREFERRED         = 1,  /*!< \brief LGL is preferred, but equidistant is possible. */
   EQUI_PREFERRED        = 2,  /*!< \brief Equidistant is preferred, but LGL is possible. */
   LGL_ONLY              = 3,  /*!< \brief Only LGL leads to a valid mapping to standard element. */
-  EQUI_ONLY             = 4   /*!< \brief Only equidistant leads to a valid mapping to standard element. */
+  EQUI_ONLY             = 4,  /*!< \brief Only equidistant leads to a valid mapping to standard element. */
+  NO_PREFERRED_LOCATION = 5   /*!< \brief LGL and equidistant is equally preferred. */
 };
 
 /*!

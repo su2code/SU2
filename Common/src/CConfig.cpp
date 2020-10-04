@@ -1097,6 +1097,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);
 
+  /*!\brief KIND_FEM_GRIDDOFSLOCATION \n DESCRIPTION: Specify the location of the FEM grid DOFs in the standard element OPTIONS: see \link GridLocation_Map \endlink \n DEFAULT: SU2_DECIDES \ingroup Config*/
+  addEnumOption("KIND_FEM_GRIDDOFSLOCATION", Kind_FEM_GridDOFsLocation, GridLocation_Map, SU2_DECIDES);
+
   /*!\brief KIND_FEM_DG_SHOCK \n DESCRIPTION: Specify shock capturing method for DG OPTIONS: see \link ShockCapturingDG_Map \endlink \n DEFAULT: NO_SHOCK_CAPTURING \ingroup Config*/
   addEnumOption("KIND_FEM_DG_SHOCK", Kind_FEM_DG_Shock, ShockCapturingDG_Map, NO_SHOCK_CAPTURING);
 

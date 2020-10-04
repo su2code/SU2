@@ -527,6 +527,7 @@ private:
   Kind_Upwind_Template,         /*!< \brief Upwind scheme for the template model. */
   Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_GridDOFsLocation,    /*!< \brief Location of the grid DOFs for the FEM solver. */
   Kind_FEM_DG_Shock,            /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Matrix_Coloring,         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_BGS_RelaxMethod,         /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
@@ -4539,6 +4540,20 @@ public:
    * \return Kind of finite element convective numerical scheme for the flow equations.
    */
   unsigned short GetKind_FEM_Flow(void) const { return Kind_FEM_Flow; }
+
+  /*!
+   * \brief Get the location of the grid DOFs.
+   * \note This value is obtained from the config file. It can be changed during the
+   *       computation if SU2 decides the best location of the grid DOFs.
+   * \return Kind of location for the grid DOFs in the standard element.
+   */
+  unsigned short GetKind_FEM_GridDOFsLocation(void) const { return Kind_FEM_GridDOFsLocation;}
+
+  /*!
+   * \brief Get the location of the grid DOFs.
+   * \param[in] val_loc  The location to be set.
+   */
+  void SetKind_FEM_GridDOFsLocation(unsigned short val_loc) {Kind_FEM_GridDOFsLocation = val_loc;}
 
   /*!
    * \brief Get the kind of shock capturing method in FEM DG solver.

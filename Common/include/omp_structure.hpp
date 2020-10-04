@@ -46,7 +46,7 @@
 #define PRAGMIZE(X) _Pragma(#X)
 #endif
 
-/*--- Detect compilation with OpenMP support, protect agaisnt
+/*--- Detect compilation with OpenMP support, protect against
  *    using OpenMP with Reverse AD (not supported yet). ---*/
 #if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE)
 #define HAVE_OMP
@@ -131,6 +131,9 @@ inline void omp_destroy_lock(omp_lock_t*){}
 
 #define SU2_OMP_FOR_DYN(CHUNK) SU2_OMP(for schedule(dynamic,CHUNK))
 #define SU2_OMP_FOR_STAT(CHUNK) SU2_OMP(for schedule(static,CHUNK))
+
+#define SU2_OMP_FOR_DYN_(CHUNK, ARGS) SU2_OMP(for schedule(dynamic,CHUNK) ARGS)
+#define SU2_OMP_FOR_STAT_(CHUNK, ARGS) SU2_OMP(for schedule(static,CHUNK) ARGS)
 
 /*--- Convenience functions (e.g. to compute chunk sizes). ---*/
 
