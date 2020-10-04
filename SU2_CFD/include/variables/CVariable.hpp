@@ -2771,6 +2771,7 @@ public:
    * \param[in] val - value of the source term
    */
   virtual void SetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim, su2double val) { }
+  virtual void SetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim, su2double val) { }
 
   /*!
    * \brief Get the source term applied into the displacement adjoint coming from external solvers
@@ -2778,5 +2779,6 @@ public:
    * \return value of the source term
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
 };

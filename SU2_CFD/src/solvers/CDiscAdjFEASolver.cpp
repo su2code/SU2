@@ -780,6 +780,9 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       }
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Vel[iVar] = nodes->GetSolution_Vel(iPoint,iVar);
+        if (deform_mesh){
+          Solution_Vel[iVar] += nodes->GetSourceTerm_VelAdjoint(iPoint,iVar);
+        }
       }
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += nodes->GetDynamic_Derivative_n(iPoint,iVar);
