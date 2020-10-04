@@ -9788,9 +9788,11 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
     case NEMO_EULER: case NEMO_NAVIER_STOKES:     
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       fluid_zone = true;
       break;
-    case FEM_ELASTICITY:
+    case FEM_ELASTICITY: case DISC_ADJ_FEM:
       structural_zone = true;
       Relaxation = true;
       break;
