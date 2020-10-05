@@ -313,7 +313,6 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
   /*--- Momentum contribution. Note that this form assumes we have
    subtracted the operating density * gravity, i.e., removed the
    hydrostatic pressure component (important for pressure BCs). ---*/
-
   for (iDim = 0; iDim < nDim; iDim++)
     residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
 
@@ -364,7 +363,9 @@ CNumerics::ResidualType<> CSourceBoussinesq::ComputeResidual(const CConfig* conf
 }
 
 CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                CSourceBase_Flow(val_nDim, val_nVar, config) { }
+                CSourceBase_Flow(val_nDim, val_nVar, config) {
+                  Force_Ref = config->GetForce_Ref();
+                }
 
 CNumerics::ResidualType<> CSourceGravity::ComputeResidual(const CConfig* config) {
 
@@ -374,7 +375,7 @@ CNumerics::ResidualType<> CSourceGravity::ComputeResidual(const CConfig* config)
     residual[iVar] = 0.0;
 
   /*--- Evaluate the source term  ---*/
-  residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY;
+  residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY / Force_Ref;
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
@@ -587,7 +588,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
 CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const CConfig *config) {
 
-  delta_p             = config->GetStreamwise_Periodic_PressureDrop();
+  delta_p             = config->GetStreamwise_Periodic_PressureDrop() / config->GetPressure_Ref();
   massflow            = config->GetStreamwise_Periodic_MassFlow();
   integrated_heatflow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
 
@@ -596,7 +597,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 
   /*--- Compute the momentum equation source based on the prescribed (or computed if massflow) delta pressure ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
-    scalar_factor = (delta_p/config->GetPressure_Ref()) / norm2_translation * Streamwise_Coord_Vector[iDim]; // TK check if pres_ref is the same as force ref
+    scalar_factor = delta_p / norm2_translation * Streamwise_Coord_Vector[iDim];
     residual[iDim+1] = -Volume * scalar_factor;
   }
 
@@ -636,7 +637,7 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
 CSourceIncStreamwisePeriodic_Outlet::CSourceIncStreamwisePeriodic_Outlet(unsigned short val_nDim,
                                                                          unsigned short val_nVar,
                                                                          CConfig        *config) :
-                               CSourceBase_Flow(val_nDim, val_nVar, config) { }
+                                     CSourceBase_Flow(val_nDim, val_nVar, config) { }
 
 CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(const CConfig *config) {
 

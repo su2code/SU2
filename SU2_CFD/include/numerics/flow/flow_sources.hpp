@@ -198,6 +198,8 @@ public:
  * \author F. Palacios
  */
 class CSourceGravity final : public CSourceBase_Flow {
+  su2double Force_Ref;
+
 public:
   /*!
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -310,7 +312,7 @@ private:
   vector<su2double> Streamwise_Coord_Vector; /*!< \brief Translation vector between streamwise periodic surfaces. */
 
   su2double norm2_translation, /*!< \brief Square of distance between the 2 periodic surfaces. */
-            integrated_heatflow,  /*!< \brief Total heat added intto the domain via heatflux marker. */
+            integrated_heatflow,  /*!< \brief Total heat added into the domain via heatflux marker. */
             massflow,  /*!< \brief Massflow through streamwise periodic 'outlet' marker. */
             delta_p, /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
             dot_product, /*!< \brief Container for various dot-products. */

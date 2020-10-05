@@ -1480,9 +1480,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Load the conservative variables ---*/
-      numerics->SetConservative(nodes->GetSolution(iPoint), 
-                                NULL);
+      /*--- Load the primitve variables ---*/
       numerics->SetPrimitive(nodes->GetPrimitive(iPoint), 
                              NULL);
 

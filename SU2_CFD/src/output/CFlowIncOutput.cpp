@@ -531,11 +531,9 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
   if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
-  if (heat) {
+
+  if (heat)
     SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
-    if (streamwisePeriodic && streamwisePeriodic_temperature)
-      SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
-  }
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   switch(config->GetKind_Turb_Model()){
