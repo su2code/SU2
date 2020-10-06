@@ -1,7 +1,7 @@
 /*!
- * \file CFEMStandardVolumeQuadGrid.hpp
- * \brief Class for the FEM volume quadrilateral standard element for the grid.
- *        The functions are in the <i>CFEMStandardVolumeQuadGrid.cpp</i> file.
+ * \file CFEMStandardHexGrid.hpp
+ * \brief Class for the FEM hexahedron standard element for the grid.
+ *        The functions are in the <i>CFEMStandardHexGrid.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -28,23 +28,23 @@
 
 #pragma once 
 
-#include "CFEMStandardQuad.hpp"
+#include "CFEMStandardHex.hpp"
 
 /*!
- * \class CFEMStandardVolumeQuadGrid
- * \brief Class which defines the variables and methods for the volume
- *        quadrilateral standard element for the grid.
+ * \class CFEMStandardHexGrid
+ * \brief Class which defines the variables and methods for the
+ *        hexahedron standard element for the grid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  */
-class CFEMStandardVolumeQuadGrid final: public CFEMStandardQuad {
+class CFEMStandardHexGrid final: public CFEMStandardHex {
 
 public:
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
    */
-  CFEMStandardVolumeQuadGrid() = delete;
+  CFEMStandardHexGrid() = delete;
 
   /*!
    * \overload
@@ -52,24 +52,24 @@ public:
    * \param[in] val_orderExact - Polynomial order that must be integrated exactly
    *                             by the integration rule.
    */
-  CFEMStandardVolumeQuadGrid(const unsigned short val_nPoly,
-                             const unsigned short val_orderExact);
+  CFEMStandardHexGrid(const unsigned short val_nPoly,
+                      const unsigned short val_orderExact);
 
   /*!
    * \brief Destructor. Nothing to be done.
    */
-  ~CFEMStandardVolumeQuadGrid() = default;
+  ~CFEMStandardHexGrid() = default;
 
   /*!
-   * \brief Function, which computes the derivatives of the coordinates in the volume
+   * \brief Function, which computes the derivatives of the coordinates in the
    *        integration points.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
    */
-  void DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                      ColMajorMatrix<su2double>          &matCoor,
-                                      vector<ColMajorMatrix<su2double> > &matDerCoor) override;
+  void DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                ColMajorMatrix<su2double>          &matCoor,
+                                vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
    * \brief Function, that returns the number of different face types
@@ -83,7 +83,7 @@ public:
    * \param[in] ind - Index of the face type for which the VTK type must be returned.
    * \return The VTK type of the given face type.
    */
-  unsigned short GetVTK_TypeFace(unsigned short ind) const override {return LINE;}
+  unsigned short GetVTK_TypeFace(unsigned short ind) const override {return QUADRILATERAL;}
 
 private:
 

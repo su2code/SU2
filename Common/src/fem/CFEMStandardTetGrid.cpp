@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardVolumeTetGrid.cpp
- * \brief Functions for the class CFEMStandardVolumeTetGrid.
+ * \file CFEMStandardTetGrid.cpp
+ * \brief Functions for the class CFEMStandardTetGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,15 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardVolumeTetGrid.hpp"
+#include "../../include/fem/CFEMStandardTetGrid.hpp"
 #include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of CFEMStandardVolumeTetGrid.                   */
+/*             Public member functions of CFEMStandardTetGrid.                      */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardVolumeTetGrid::CFEMStandardVolumeTetGrid(const unsigned short val_nPoly,
-                                                     const unsigned short val_orderExact)
+CFEMStandardTetGrid::CFEMStandardTetGrid(const unsigned short val_nPoly,
+                                         const unsigned short val_orderExact)
   : CFEMStandardTet(val_nPoly, val_orderExact) {
 
   /*--- Compute the values of the Lagrangian basis functions in the integration
@@ -51,9 +51,9 @@ CFEMStandardVolumeTetGrid::CFEMStandardVolumeTetGrid(const unsigned short val_nP
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
 }
 
-void CFEMStandardVolumeTetGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                               ColMajorMatrix<su2double>          &matCoor,
-                                                               vector<ColMajorMatrix<su2double> > &matDerCoor) {
+void CFEMStandardTetGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                                   ColMajorMatrix<su2double>          &matCoor,
+                                                   vector<ColMajorMatrix<su2double> > &matDerCoor) {
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
 
@@ -73,10 +73,14 @@ void CFEMStandardVolumeTetGrid::DerivativesCoorVolumeIntPoints(const bool       
   }
 }
 
-void CFEMStandardVolumeTetGrid::DerLagBasisIntPointsTet(const vector<passivedouble>            &rDOFs,
-                                                        const vector<passivedouble>            &sDOFs,
-                                                        const vector<passivedouble>            &tDOFs,
-                                                        vector<ColMajorMatrix<passivedouble> > &derLag) {
+/*----------------------------------------------------------------------------------*/
+/*             Private member functions of CFEMStandardTetGrid.                     */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardTetGrid::DerLagBasisIntPointsTet(const vector<passivedouble>            &rDOFs,
+                                                  const vector<passivedouble>            &sDOFs,
+                                                  const vector<passivedouble>            &tDOFs,
+                                                  vector<ColMajorMatrix<passivedouble> > &derLag) {
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rTetInt.size();
@@ -120,10 +124,10 @@ void CFEMStandardVolumeTetGrid::DerLagBasisIntPointsTet(const vector<passivedoub
   }
 }
 
-void CFEMStandardVolumeTetGrid::LagBasisIntPointsTet(const vector<passivedouble>   &rDOFs,
-                                                     const vector<passivedouble>   &sDOFs,
-                                                     const vector<passivedouble>   &tDOFs,
-                                                     ColMajorMatrix<passivedouble> &lag) {
+void CFEMStandardTetGrid::LagBasisIntPointsTet(const vector<passivedouble>   &rDOFs,
+                                               const vector<passivedouble>   &sDOFs,
+                                               const vector<passivedouble>   &tDOFs,
+                                               ColMajorMatrix<passivedouble> &lag) {
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rTetInt.size();
@@ -152,12 +156,12 @@ void CFEMStandardVolumeTetGrid::LagBasisIntPointsTet(const vector<passivedouble>
   }
 }
 
-void CFEMStandardVolumeTetGrid::GradVandermondeTetrahedron(const vector<passivedouble>   &r,
-                                                           const vector<passivedouble>   &s,
-                                                           const vector<passivedouble>   &t,
-                                                           ColMajorMatrix<passivedouble> &VDr,
-                                                           ColMajorMatrix<passivedouble> &VDs,
-                                                           ColMajorMatrix<passivedouble> &VDt) {
+void CFEMStandardTetGrid::GradVandermondeTetrahedron(const vector<passivedouble>   &r,
+                                                     const vector<passivedouble>   &s,
+                                                     const vector<passivedouble>   &t,
+                                                     ColMajorMatrix<passivedouble> &VDr,
+                                                     ColMajorMatrix<passivedouble> &VDs,
+                                                     ColMajorMatrix<passivedouble> &VDt) {
 
   /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
         combination of Jacobi polynomials (of which the Legendre polynomials is a special
@@ -256,10 +260,10 @@ void CFEMStandardVolumeTetGrid::GradVandermondeTetrahedron(const vector<passived
   }
 }
 
-void CFEMStandardVolumeTetGrid::VandermondeTetrahedron(const vector<passivedouble>   &r,
-                                                       const vector<passivedouble>   &s,
-                                                       const vector<passivedouble>   &t,
-                                                       ColMajorMatrix<passivedouble> &V) {
+void CFEMStandardTetGrid::VandermondeTetrahedron(const vector<passivedouble>   &r,
+                                                 const vector<passivedouble>   &s,
+                                                 const vector<passivedouble>   &t,
+                                                 ColMajorMatrix<passivedouble> &V) {
 
   /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
         combination of Jacobi polynomials (of which the Legendre polynomials is a special

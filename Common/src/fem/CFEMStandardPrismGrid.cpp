@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardVolumePrismGrid.cpp
- * \brief Functions for the class CFEMStandardVolumePrismGrid.
+ * \file CFEMStandardPrismGrid.cpp
+ * \brief Functions for the class CFEMStandardPrismGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,15 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardVolumePrismGrid.hpp"
+#include "../../include/fem/CFEMStandardPrismGrid.hpp"
 #include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of CFEMStandardVolumePrismGrid.                 */
+/*             Public member functions of CFEMStandardPrismGrid.                    */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardVolumePrismGrid::CFEMStandardVolumePrismGrid(const unsigned short val_nPoly,
-                                                         const unsigned short val_orderExact)
+CFEMStandardPrismGrid::CFEMStandardPrismGrid(const unsigned short val_nPoly,
+                                             const unsigned short val_orderExact)
   : CFEMStandardPrism(val_nPoly, val_orderExact) {
 
   /*--- Compute the values of the Lagrangian basis functions in the integration
@@ -51,9 +51,9 @@ CFEMStandardVolumePrismGrid::CFEMStandardVolumePrismGrid(const unsigned short va
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
 }
 
-void CFEMStandardVolumePrismGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                                 ColMajorMatrix<su2double>          &matCoor,
-                                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) {
+void CFEMStandardPrismGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                                     ColMajorMatrix<su2double>          &matCoor,
+                                                     vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
@@ -74,10 +74,14 @@ void CFEMStandardVolumePrismGrid::DerivativesCoorVolumeIntPoints(const bool     
   }
 }
 
-void CFEMStandardVolumePrismGrid::DerLagBasisIntPointsPrism(const vector<passivedouble>            &rTriangleDOFs,
-                                                            const vector<passivedouble>            &sTriangleDOFs,
-                                                            const vector<passivedouble>            &rLineDOFs,
-                                                            vector<ColMajorMatrix<passivedouble> > &derLag) {
+/*----------------------------------------------------------------------------------*/
+/*             Private member functions of CFEMStandardPrismGrid.                   */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardPrismGrid::DerLagBasisIntPointsPrism(const vector<passivedouble>            &rTriangleDOFs,
+                                                      const vector<passivedouble>            &sTriangleDOFs,
+                                                      const vector<passivedouble>            &rLineDOFs,
+                                                      vector<ColMajorMatrix<passivedouble> > &derLag) {
 
   /*--- Determine the parametric coordinates of all DOFs of the prism. ---*/
   vector<passivedouble> rDOFs, sDOFs, tDOFs;
@@ -129,10 +133,10 @@ void CFEMStandardVolumePrismGrid::DerLagBasisIntPointsPrism(const vector<passive
   }
 }
 
-void CFEMStandardVolumePrismGrid::LagBasisIntPointsPrism(const vector<passivedouble>   &rTriangleDOFs,
-                                                         const vector<passivedouble>   &sTriangleDOFs,
-                                                         const vector<passivedouble>   &rLineDOFs,
-                                                         ColMajorMatrix<passivedouble> &lag) {
+void CFEMStandardPrismGrid::LagBasisIntPointsPrism(const vector<passivedouble>   &rTriangleDOFs,
+                                                   const vector<passivedouble>   &sTriangleDOFs,
+                                                   const vector<passivedouble>   &rLineDOFs,
+                                                   ColMajorMatrix<passivedouble> &lag) {
 
   /*--- Determine the parametric coordinates of all DOFs of the prism. ---*/
   vector<passivedouble> rDOFs, sDOFs, tDOFs;
@@ -169,12 +173,12 @@ void CFEMStandardVolumePrismGrid::LagBasisIntPointsPrism(const vector<passivedou
   }
 }
 
-void CFEMStandardVolumePrismGrid::LocationAllDOFsPrism(const vector<passivedouble>   &rTriangleDOFs,
-                                                       const vector<passivedouble>   &sTriangleDOFs,
-                                                       const vector<passivedouble>   &rLineDOFs,
-                                                       vector<passivedouble>         &rDOFs,
-                                                       vector<passivedouble>         &sDOFs,
-                                                       vector<passivedouble>         &tDOFs) {
+void CFEMStandardPrismGrid::LocationAllDOFsPrism(const vector<passivedouble>   &rTriangleDOFs,
+                                                 const vector<passivedouble>   &sTriangleDOFs,
+                                                 const vector<passivedouble>   &rLineDOFs,
+                                                 vector<passivedouble>         &rDOFs,
+                                                 vector<passivedouble>         &sDOFs,
+                                                 vector<passivedouble>         &tDOFs) {
 
   /*--- Determine the number of DOFs of the triangle and line. ---*/
   const unsigned short nTri  = rTriangleDOFs.size();
@@ -197,12 +201,12 @@ void CFEMStandardVolumePrismGrid::LocationAllDOFsPrism(const vector<passivedoubl
   }
 }
 
-void CFEMStandardVolumePrismGrid::GradVandermondePrism(const vector<passivedouble>   &r,
-                                                       const vector<passivedouble>   &s,
-                                                       const vector<passivedouble>   &t,
-                                                       ColMajorMatrix<passivedouble> &VDr,
-                                                       ColMajorMatrix<passivedouble> &VDs,
-                                                       ColMajorMatrix<passivedouble> &VDt) {
+void CFEMStandardPrismGrid::GradVandermondePrism(const vector<passivedouble>   &r,
+                                                 const vector<passivedouble>   &s,
+                                                 const vector<passivedouble>   &t,
+                                                 ColMajorMatrix<passivedouble> &VDr,
+                                                 ColMajorMatrix<passivedouble> &VDs,
+                                                 ColMajorMatrix<passivedouble> &VDt) {
 
   /*--- For a prism the orthogonal basis for the reference element is a tensor
         product of the 1D basis functions in the structured direction of the prism
@@ -265,10 +269,10 @@ void CFEMStandardVolumePrismGrid::GradVandermondePrism(const vector<passivedoubl
   }
 }
 
-void CFEMStandardVolumePrismGrid::VandermondePrism(const vector<passivedouble>   &r,
-                                                   const vector<passivedouble>   &s,
-                                                   const vector<passivedouble>   &t,
-                                                   ColMajorMatrix<passivedouble> &V) {
+void CFEMStandardPrismGrid::VandermondePrism(const vector<passivedouble>   &r,
+                                             const vector<passivedouble>   &s,
+                                             const vector<passivedouble>   &t,
+                                             ColMajorMatrix<passivedouble> &V) {
 
   /*--- For a prism the orthogonal basis for the reference element is a tensor
         product of the 1D basis functions in the structured direction of the prism

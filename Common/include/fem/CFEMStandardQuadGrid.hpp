@@ -1,7 +1,7 @@
 /*!
- * \file CFEMStandardVolumeHexGrid.hpp
- * \brief Class for the FEM volume hexahedron standard element for the grid.
- *        The functions are in the <i>CFEMStandardVolumeHexGrid.cpp</i> file.
+ * \file CFEMStandardQuadGrid.hpp
+ * \brief Class for the FEM quadrilateral standard element for the grid.
+ *        The functions are in the <i>CFEMStandardQuadGrid.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -28,48 +28,51 @@
 
 #pragma once 
 
-#include "CFEMStandardHex.hpp"
+#include "CFEMStandardQuad.hpp"
 
 /*!
- * \class CFEMStandardVolumeHexGrid
- * \brief Class which defines the variables and methods for the volume
- *        hexahedron standard element for the grid.
+ * \class CFEMStandardQuadGrid
+ * \brief Class which defines the variables and methods for the
+ *        quadrilateral standard element for the grid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  */
-class CFEMStandardVolumeHexGrid final: public CFEMStandardHex {
+class CFEMStandardQuadGrid final: public CFEMStandardQuad {
 
 public:
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
    */
-  CFEMStandardVolumeHexGrid() = delete;
+  CFEMStandardQuadGrid() = delete;
 
   /*!
    * \overload
-   * \param[in] val_nPoly      - Polynomial degree of the grid for this element.
-   * \param[in] val_orderExact - Polynomial order that must be integrated exactly
-   *                             by the integration rule.
+   * \param[in] val_nPoly       - Polynomial degree of the grid for this element.
+   * \param[in] val_orderExact  - Polynomial order that must be integrated exactly
+   *                              by the integration rule.
+   * \param[in] val_surfElement - True if this element is a surface element,
+   *                              False if this element is a volume element (2D simulation)
    */
-  CFEMStandardVolumeHexGrid(const unsigned short val_nPoly,
-                            const unsigned short val_orderExact);
+  CFEMStandardQuadGrid(const unsigned short val_nPoly,
+                       const unsigned short val_orderExact,
+                       const bool           val_surfElement);
 
   /*!
    * \brief Destructor. Nothing to be done.
    */
-  ~CFEMStandardVolumeHexGrid() = default;
+  ~CFEMStandardQuadGrid() = default;
 
   /*!
-   * \brief Function, which computes the derivatives of the coordinates in the volume
+   * \brief Function, which computes the derivatives of the coordinates in the
    *        integration points.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
    */
-  void DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                      ColMajorMatrix<su2double>          &matCoor,
-                                      vector<ColMajorMatrix<su2double> > &matDerCoor) override;
+  void DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                ColMajorMatrix<su2double>          &matCoor,
+                                vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
    * \brief Function, that returns the number of different face types
@@ -83,9 +86,12 @@ public:
    * \param[in] ind - Index of the face type for which the VTK type must be returned.
    * \return The VTK type of the given face type.
    */
-  unsigned short GetVTK_TypeFace(unsigned short ind) const override {return QUADRILATERAL;}
+  unsigned short GetVTK_TypeFace(unsigned short ind) const override {return LINE;}
 
 private:
+
+  unsigned short nDim; /*!< \brief Number of space dimensions. For nDim = 2 this standard element is
+                                   a volume element, while for nDim = 3 it is a surface element. */
 
   ColMajorMatrix<passivedouble> lagBasisLineIntEqui; /*!< \brief The values of the 1D Lagrangian basis functions
                                                                  in the integration points for the equidistant

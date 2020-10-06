@@ -60,6 +60,19 @@ public:
    */
   virtual ~CFEMStandardTri() = default;
 
+  /*!
+   * \brief Function, which returns the number of faces of the volume element.
+   * \return The number of faces of the volume element.
+   */
+  unsigned short GetNFaces(void) const override {return 3;}
+
+  /*!
+   * \brief Function, which returns the VTK type of the given face index.
+   * \param[in] ind - Index of the face for which the VTK type must be returned.
+   * \return The VTK type of the given face id of the element.
+   */
+  unsigned short GetVTK_Face(unsigned short ind) const override {return LINE;}
+
 protected:
 
   vector<passivedouble> rTriangleDOFsEqui; /*!< \brief Parametric r-coordinates of the triangle grid

@@ -31,15 +31,13 @@
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../../include/geometry/CPhysicalGeometry.hpp"
-#include "../../include/fem/CFEMStandardVolumeTriGrid.hpp"
-#include "../../include/fem/CFEMStandardVolumeQuadGrid.hpp"
-#include "../../include/fem/CFEMStandardVolumeTetGrid.hpp"
-#include "../../include/fem/CFEMStandardVolumePyraGrid.hpp"
-#include "../../include/fem/CFEMStandardVolumePrismGrid.hpp"
-#include "../../include/fem/CFEMStandardVolumeHexGrid.hpp"
-#include "../../include/fem/CFEMStandardFaceLineGrid.hpp"
-#include "../../include/fem/CFEMStandardFaceTriGrid.hpp"
-#include "../../include/fem/CFEMStandardFaceQuadGrid.hpp"
+#include "../../include/fem/CFEMStandardTriGrid.hpp"
+#include "../../include/fem/CFEMStandardQuadGrid.hpp"
+#include "../../include/fem/CFEMStandardTetGrid.hpp"
+#include "../../include/fem/CFEMStandardPyraGrid.hpp"
+#include "../../include/fem/CFEMStandardPrismGrid.hpp"
+#include "../../include/fem/CFEMStandardHexGrid.hpp"
+#include "../../include/fem/CFEMStandardLineGrid.hpp"
 
 void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReader *mesh) {
 
@@ -265,22 +263,22 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       /*--- Determine the element type and allocate the appropriate object. ---*/
       switch( VTK_Type ) {
         case TRIANGLE:
-          standardVolumeElements[i] = new CFEMStandardVolumeTriGrid(nPoly, orderExact);
+          standardVolumeElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, false);
           break;
         case QUADRILATERAL:
-          standardVolumeElements[i] = new CFEMStandardVolumeQuadGrid(nPoly, orderExact);
+          standardVolumeElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, false);
           break;
         case TETRAHEDRON:
-          standardVolumeElements[i] = new CFEMStandardVolumeTetGrid(nPoly, orderExact);
+          standardVolumeElements[i] = new CFEMStandardTetGrid(nPoly, orderExact);
           break;
         case PYRAMID:
-          standardVolumeElements[i] = new CFEMStandardVolumePyraGrid(nPoly, orderExact);
+          standardVolumeElements[i] = new CFEMStandardPyraGrid(nPoly, orderExact);
           break;
         case PRISM:
-          standardVolumeElements[i] = new CFEMStandardVolumePrismGrid(nPoly, orderExact);
+          standardVolumeElements[i] = new CFEMStandardPrismGrid(nPoly, orderExact);
           break;
         case HEXAHEDRON:
-          standardVolumeElements[i] = new CFEMStandardVolumeHexGrid(nPoly, orderExact);
+          standardVolumeElements[i] = new CFEMStandardHexGrid(nPoly, orderExact);
           break;
         default:  /*--- To avoid a compiler warning. ---*/
           SU2_MPI::Error(string("Unknown volume element. This should not happen"),
@@ -330,13 +328,13 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       /*--- Determine the element type and allocate the appropriate object. ---*/
       switch( VTK_Type ) {
         case LINE:
-          standardFaceElements[i] = new CFEMStandardFaceLineGrid(nPoly, orderExact);
+          standardFaceElements[i] = new CFEMStandardLineGrid(nPoly, orderExact);
           break;
         case TRIANGLE:
-          standardFaceElements[i] = new CFEMStandardFaceTriGrid(nPoly, orderExact);
+          standardFaceElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, true);
           break;
         case QUADRILATERAL:
-          standardFaceElements[i] = new CFEMStandardFaceQuadGrid(nPoly, orderExact);
+          standardFaceElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, true);
           break;
         default:  /*--- To avoid a compiler warning. ---*/
           SU2_MPI::Error(string("Unknown surface element. This should not happen"),
@@ -352,9 +350,11 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     vector<ColMajorMatrix<su2double> > matricesCoor;
     vector<vector<ColMajorMatrix<su2double> > > matricesDerCoor;
 
-    matricesJacobians.resize(standardVolumeElements.size());
-    matricesCoor.resize(standardVolumeElements.size());
-    matricesDerCoor.resize(standardVolumeElements.size());
+    const unsigned long nMat = max(standardVolumeElements.size(),
+                                   standardFaceElements.size());
+    matricesJacobians.resize(nMat);
+    matricesCoor.resize(nMat);
+    matricesDerCoor.resize(nMat);
 
     /*--- Loop over the standard elements and allocate the memory for the
           matrices defined above. ---*/
@@ -373,7 +373,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       matricesJacobians[i].setConstant(0.0);
       matricesCoor[i].setConstant(0.0);
 
-      /*--- Allocate the memory second index of matricesDerCoor. ---*/
+      /*--- Allocate the memory for the second index of matricesDerCoor. ---*/
       matricesDerCoor[i].resize(nDim);
 
       /*--- Loop over the number of dimensions and allocate the
@@ -531,11 +531,52 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     /*--- Store the grid location to be used in config. ---*/
     config->SetKind_FEM_GridDOFsLocation(gridLocation);
 
+    /*--- Loop over the standard face elements and allocate the memory
+          for the matrices used to compute the derivatives. ---*/
+    for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
+
+      /*--- Get the dimensions from the standard element. ---*/
+      const unsigned short sizeDOF = standardFaceElements[i]->GetNDOFs();
+      const unsigned short sizeInt = standardFaceElements[i]->GetNIntegrationPad();
+
+      /*--- Allocate the memory for the Jacobians and the coordinates
+            for this standard element. Fill these matrices with the
+            default values to avoid problems later on. ---*/
+      matricesJacobians[i].resize(sizeInt);
+      matricesCoor[i].resize(sizeDOF, nDim);
+
+      matricesJacobians[i].setConstant(0.0);
+      matricesCoor[i].setConstant(0.0);
+
+      /*--- Allocate the memory for the second index of matricesDerCoor. ---*/
+      matricesDerCoor[i].resize(nDim-1);
+
+      /*--- Loop over the number of dimensions-1 and allocate the
+            memory for the actual matrix for the derivatives
+            of the coordinates. ---*/
+      for(unsigned short iDim=0; iDim<(nDim-1); ++iDim) { 
+        matricesDerCoor[i][iDim].resize(sizeInt, nDim);
+
+        /*--- Set the default values to avoid problems later on. ---*/
+        matricesDerCoor[i][iDim].setConstant(0.0);
+
+        for(unsigned short j=0; j<sizeInt; ++j)
+          matricesDerCoor[i][iDim](j,iDim) = 1.0;
+      }
+    }
+
     /*--- Loop over the local volume elements to determine whether or not the Jacobian
           of the element is constant, to determine whether the Jacobian of boundary
           faces is constant and to determine a length scale for the element. ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for(unsigned long i=0; i<nElem; ++i) {
+
+      /*--- Determine the standard element of the volume element. ---*/
+      unsigned long ii;
+      for(ii=0; ii<standardVolumeElements.size(); ++ii)
+        if( standardVolumeElements[ii]->SameStandardElement(elem[i]->GetVTK_Type(),
+                                                            elem[i]->GetNPolyGrid()) )
+          break;
 
       /*--- Determine the minimum Jacobian and the Jacobian ratio for
             the point distribution used. ---*/
@@ -553,19 +594,30 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       bool constJacobian = (ratioJac <= 1.000001);
       elem[i]->SetJacobianConsideredConstant(constJacobian);
 
-      /*--- Get the global IDs of the corner points of all the faces
-            of this element. ---*/
-      unsigned short nFaces;
-      unsigned short nPointsPerFace[6];
-      unsigned long  faceConn[6][4];
-
-      elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+      /*--- Determine the number of faces for this element. ---*/
+      const unsigned short nFaces = standardVolumeElements[ii]->GetNFaces();
 
       /*--- Initialize the array, which stores whether or not the faces are
             considered to have a constant Jacobian. ---*/
       elem[i]->InitializeJacobianConstantFaces(nFaces);
 
       /*--- Loop over the faces of this element. ---*/
+      su2double jacFaceMax = 0.0;
+      for(unsigned short j=0; j<nFaces; ++j) {
+
+        /*--- Determine the VTK type of the face element and
+              polynomial degree used for the grid. ---*/
+        const unsigned short VTK_Type = standardVolumeElements[ii]->GetVTK_Face(j);
+        const unsigned short nPoly    = standardVolumeElements[ii]->GetPolyDegree();
+
+        /*--- Determine the standard element for this face. ---*/
+        unsigned long jj;
+        for(jj=0; jj<standardFaceElements.size(); ++jj)
+          if( standardFaceElements[jj]->SameStandardElement(VTK_Type, nPoly) )
+            break;
+
+
+      }
     }
 
 

@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardVolumeHexGrid.cpp
- * \brief Functions for the class CFEMStandardVolumeHexGrid.
+ * \file CFEMStandardHexGrid.cpp
+ * \brief Functions for the class CFEMStandardHexGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,14 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardVolumeHexGrid.hpp"
+#include "../../include/fem/CFEMStandardHexGrid.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of CFEMStandardVolumeHexGrid.                   */
+/*             Public member functions of CFEMStandardHexGrid.                      */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardVolumeHexGrid::CFEMStandardVolumeHexGrid(const unsigned short val_nPoly,
-                                                     const unsigned short val_orderExact)
+CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPoly,
+                                         const unsigned short val_orderExact)
   : CFEMStandardHex(val_nPoly,val_orderExact) {
 
   /*--- Compute the values of the 1D Lagrangian basis functions in the integration
@@ -46,9 +46,9 @@ CFEMStandardVolumeHexGrid::CFEMStandardVolumeHexGrid(const unsigned short val_nP
   DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, derLagBasisLineIntLGL);
 }
 
-void CFEMStandardVolumeHexGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                               ColMajorMatrix<su2double>          &matCoor,
-                                                               vector<ColMajorMatrix<su2double> > &matDerCoor) {
+void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                                   ColMajorMatrix<su2double>          &matCoor,
+                                                   vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {

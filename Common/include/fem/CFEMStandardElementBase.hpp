@@ -107,12 +107,33 @@ public:
    * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
    */
-  virtual void DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                              ColMajorMatrix<su2double>          &matCoor,
-                                              vector<ColMajorMatrix<su2double> > &matDerCoor) {
+  virtual void DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                        ColMajorMatrix<su2double>          &matCoor,
+                                        vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return The number of faces of the volume element.
+   */
+  virtual unsigned short GetNFaces(void) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] ind - Index of the face for which the VTK type must be returned.
+   * \return The VTK type of the given face id of the element.
+   */
+  virtual unsigned short GetVTK_Face(unsigned short ind) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
   }
 
   /*!

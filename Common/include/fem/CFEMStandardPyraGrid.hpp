@@ -1,7 +1,7 @@
 /*!
- * \file CFEMStandardVolumePrismGrid.hpp
- * \brief Class for the FEM volume prism standard element for the grid.
- *        The functions are in the <i>CFEMStandardVolumePrismGrid.cpp</i> file.
+ * \file CFEMStandardPyraGrid.hpp
+ * \brief Class for the FEM pyramid standard element for the grid.
+ *        The functions are in the <i>CFEMStandardPyraGrid.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -28,23 +28,23 @@
 
 #pragma once 
 
-#include "CFEMStandardPrism.hpp"
+#include "CFEMStandardPyra.hpp"
 
 /*!
- * \class CFEMStandardVolumePrismGrid
- * \brief Class which defines the variables and methods for the volume
- *        prism standard element for the grid.
+ * \class CFEMStandardPyraGrid
+ * \brief Class which defines the variables and methods for the
+ *        pyramid standard element for the grid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  */
-class CFEMStandardVolumePrismGrid final: public CFEMStandardPrism {
+class CFEMStandardPyraGrid final: public CFEMStandardPyra {
 
 public:
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
    */
-  CFEMStandardVolumePrismGrid() = delete;
+  CFEMStandardPyraGrid() = delete;
 
   /*!
    * \overload
@@ -52,24 +52,24 @@ public:
    * \param[in] val_orderExact - Polynomial order that must be integrated exactly
    *                             by the integration rule.
    */
-  CFEMStandardVolumePrismGrid(const unsigned short val_nPoly,
-                              const unsigned short val_orderExact);
+  CFEMStandardPyraGrid(const unsigned short val_nPoly,
+                       const unsigned short val_orderExact);
 
   /*!
    * \brief Destructor. Nothing to be done.
    */
-  ~CFEMStandardVolumePrismGrid() = default;
+  ~CFEMStandardPyraGrid() = default;
 
   /*!
-   * \brief Function, which computes the derivatives of the coordinates in the volume
+   * \brief Function, which computes the derivatives of the coordinates in the
    *        integration points.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
    */
-  void DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                      ColMajorMatrix<su2double>          &matCoor,
-                                      vector<ColMajorMatrix<su2double> > &matDerCoor) override;
+  void DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                ColMajorMatrix<su2double>          &matCoor,
+                                vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
    * \brief Function, that returns the number of different face types
@@ -84,8 +84,8 @@ public:
    * \return The VTK type of the given face type.
    */
   unsigned short GetVTK_TypeFace(unsigned short ind) const override {
-    if(ind == 0) return TRIANGLE;
-    else         return QUADRILATERAL;
+    if(ind == 0) return QUADRILATERAL;
+    else         return TRIANGLE;
   }
 
 private:
@@ -108,61 +108,35 @@ private:
 
   /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian
-   *        basis functions of a prism in the integration points for the given
+   *        basis functions of a pyramid in the integration points for the given
    *        location of the DOFs.
-   * \param[in]  rTriangleDOFs - Vector, which contains the parametric r-locations of the DOFs
-   *                             of the base triangle.
-   * \param[in]  sTriangleDOFs - Vector, which contains the parametric s-locations of the DOFs
-   *                             of the base triangle.
-   * \param[in]  rLineDOFs     - Vector, which contains the parametric r-locations of the DOFs
-   *                             of the line normal to the triangles.
-   * \param[out] derLag        - Matrix, which contains the values of derivatives of all the
-   *                             Lagrangian basis functions in all the integration points.
+   * \param[in]  rDOFs  - Vector, which contains the parametric r-locations of the DOFs.
+   * \param[in]  sDOFs  - Vector, which contains the parametric s-locations of the DOFs.
+   * \param[in]  tDOFs  - Vector, which contains the parametric t-locations of the DOFs.
+   * \param[out] derLag - Matrix, which contains the values of derivatives of all the
+   *                      Lagrangian basis functions in all the integration points.
    */
-  void DerLagBasisIntPointsPrism(const vector<passivedouble>            &rTriangleDOFs,
-                                 const vector<passivedouble>            &sTriangleDOFs,
-                                 const vector<passivedouble>            &rLineDOFs,
-                                 vector<ColMajorMatrix<passivedouble> > &derLag);
+  void DerLagBasisIntPointsPyra(const vector<passivedouble>            &rDOFs,
+                                const vector<passivedouble>            &sDOFs,
+                                const vector<passivedouble>            &tDOFs,
+                                vector<ColMajorMatrix<passivedouble> > &derLag);
 
   /*!
    * \brief Function, which computes the values of the Lagrangian basis functions
-   *        of a prism in the integration points for the given location of the DOFs.
-   * \param[in]  rTriangleDOFs - Vector, which contains the parametric r-locations of the DOFs
-   *                             of the base triangle.
-   * \param[in]  sTriangleDOFs - Vector, which contains the parametric s-locations of the DOFs
-   *                             of the base triangle.
-   * \param[in]  rLineDOFs     - Vector, which contains the parametric r-locations of the DOFs
-   *                             of the line normal to the triangles.
-   * \param[out] lag           - Matrix, which contains the values of all the Lagrangian
-   *                             basis functions in all the integration points.
+   *        of a pyramid in the integration points for the given location of the DOFs.
+   * \param[in]  rDOFs - Vector, which contains the parametric r-locations of the DOFs.
+   * \param[in]  sDOFs - Vector, which contains the parametric s-locations of the DOFs.
+   * \param[in]  tDOFs - Vector, which contains the parametric t-locations of the DOFs.
+   * \param[out] lag   - Matrix, which contains the values of all the Lagrangian
+   *                     basis functions in all the integration points.
    */
-  void LagBasisIntPointsPrism(const vector<passivedouble>   &rTriangleDOFs,
-                              const vector<passivedouble>   &sTriangleDOFs,
-                              const vector<passivedouble>   &rLineDOFs,
-                              ColMajorMatrix<passivedouble> &lag);
+  void LagBasisIntPointsPyra(const vector<passivedouble>   &rDOFs,
+                             const vector<passivedouble>   &sDOFs,
+                             const vector<passivedouble>   &tDOFs,
+                             ColMajorMatrix<passivedouble> &lag);
 
   /*!
-   * \brief Function, which computes the location of all the DOFs of the prim
-   *        from the given coordinates of the triangle and line.
-   * \param[in]  rTriangleDOFs - Vector, which contains the parametric r-locations of the DOFs
-   *                             of the base triangle.
-   * \param[in]  sTriangleDOFs - Vector, which contains the parametric s-locations of the DOFs
-   *                             of the base triangle.
-   * \param[in]  rLineDOFs     - Vector, which contains the parametric r-locations of the DOFs
-   *                             of the line normal to the triangles.
-   * \param[out] rDOFs         - Parametric r-coordinates of the DOFs of the prism.
-   * \param[out] sDOFs         - Parametric s-coordinates of the DOFs of the prism.
-   * \param[out] tDOFs         - Parametric t-coordinates of the DOFs of the prism.
-   */
-  void LocationAllDOFsPrism(const vector<passivedouble>   &rTriangleDOFs,
-                            const vector<passivedouble>   &sTriangleDOFs,
-                            const vector<passivedouble>   &rLineDOFs,
-                            vector<passivedouble>         &rDOFs,
-                            vector<passivedouble>         &sDOFs,
-                            vector<passivedouble>         &tDOFs);
-
-  /*!
-   * \brief Function, which computes the gradients of the Vandermonde matrix for a standard prism.
+   * \brief Function, which computes the gradients of the Vandermonde matrix for a standard pyramid.
    * \param[in]  r   - Parametric r-coordinates for which the Vandermonde matrix must be computed.
    * \param[in]  s   - Parametric s-coordinates for which the Vandermonde matrix must be computed
    * \param[in]  t   - Parametric t-coordinates for which the Vandermonde matrix must be computed
@@ -173,22 +147,22 @@ private:
    * \param[out] VDt - Matrix to store the derivative in t-direction of the Vandermonde matrix
    *                   in all r,s,t-locations.
    */
-  void GradVandermondePrism(const vector<passivedouble>   &r,
-                            const vector<passivedouble>   &s,
-                            const vector<passivedouble>   &t,
-                            ColMajorMatrix<passivedouble> &VDr,
-                            ColMajorMatrix<passivedouble> &VDs,
-                            ColMajorMatrix<passivedouble> &VDt);
+  void GradVandermondePyramid(const vector<passivedouble>   &r,
+                              const vector<passivedouble>   &s,
+                              const vector<passivedouble>   &t,
+                              ColMajorMatrix<passivedouble> &VDr,
+                              ColMajorMatrix<passivedouble> &VDs,
+                              ColMajorMatrix<passivedouble> &VDt);
 
   /*!
-   * \brief Function, which computes the Vandermonde matrix for a standard prism.
+   * \brief Function, which computes the Vandermonde matrix for a standard pyramid.
    * \param[in]  r  - Parametric r-coordinates for which the Vandermonde matrix must be computed.
    * \param[in]  s  - Parametric s-coordinates for which the Vandermonde matrix must be computed
    * \param[in]  t  - Parametric t-coordinates for which the Vandermonde matrix must be computed
    * \param[out] V  - Matrix to store the Vandermonde matrix in all r,s,t-locations.
    */
-  void VandermondePrism(const vector<passivedouble>   &r,
-                        const vector<passivedouble>   &s,
-                        const vector<passivedouble>   &t,
-                        ColMajorMatrix<passivedouble> &V);
+  void VandermondePyramid(const vector<passivedouble>   &r,
+                          const vector<passivedouble>   &s,
+                          const vector<passivedouble>   &t,
+                          ColMajorMatrix<passivedouble> &V);
 };

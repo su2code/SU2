@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardVolumeQuadGrid.cpp
- * \brief Functions for the class CFEMStandardVolumeQuadGrid.
+ * \file CFEMStandardQuadGrid.cpp
+ * \brief Functions for the class CFEMStandardQuadGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,15 +25,20 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardVolumeQuadGrid.hpp"
+#include "../../include/fem/CFEMStandardQuadGrid.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of CFEMStandardVolumeQuadGrid.                  */
+/*             Public member functions of CFEMStandardQuadGrid.                     */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardVolumeQuadGrid::CFEMStandardVolumeQuadGrid(const unsigned short val_nPoly,
-                                                       const unsigned short val_orderExact)
+CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPoly,
+                                           const unsigned short val_orderExact,
+                                           const bool           val_surfElement)
   : CFEMStandardQuad(val_nPoly, val_orderExact) {
+
+  /*--- Determine the number of space dimensions, which is 3 if this standard
+        element is a surface element and 2 when it is a value element. ---*/
+  nDim = val_surfElement ? 3 : 2;
 
   /*--- Compute the values of the 1D Lagrangian basis functions in the integration
         points for both the equidistant and LGL point distribution. ---*/
@@ -46,27 +51,31 @@ CFEMStandardVolumeQuadGrid::CFEMStandardVolumeQuadGrid(const unsigned short val_
   DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, derLagBasisLineIntLGL);
 }
 
-void CFEMStandardVolumeQuadGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                                ColMajorMatrix<su2double>          &matCoor,
-                                                                vector<ColMajorMatrix<su2double> > &matDerCoor) {
+void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                                    ColMajorMatrix<su2double>          &matCoor,
+                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function TensorProductIntegrationPoints 2 times to compute the
-          derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. ---*/
-    TensorProductIntegrationPoints(2, derLagBasisLineIntLGL, lagBasisLineIntLGL,
+          derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. The first
+          argument in the function call is nDim, which corresponds to the number of Cartesian
+          coordinates (3 for a surface element and 2 for a volume element). ---*/
+    TensorProductIntegrationPoints(nDim, derLagBasisLineIntLGL, lagBasisLineIntLGL,
                                    matCoor, matDerCoor[0], nullptr);
-    TensorProductIntegrationPoints(2, lagBasisLineIntLGL, derLagBasisLineIntLGL,
+    TensorProductIntegrationPoints(nDim, lagBasisLineIntLGL, derLagBasisLineIntLGL,
                                    matCoor, matDerCoor[1], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
-          derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
-    TensorProductIntegrationPoints(2, derLagBasisLineIntEqui, lagBasisLineIntEqui,
+          derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. The first
+          argument in the function call is nDim, which corresponds to the number of Cartesian
+          coordinates (3 for a surface element and 2 for a volume element). ---*/
+    TensorProductIntegrationPoints(nDim, derLagBasisLineIntEqui, lagBasisLineIntEqui,
                                    matCoor, matDerCoor[0], nullptr);
-    TensorProductIntegrationPoints(2, lagBasisLineIntEqui, derLagBasisLineIntEqui,
+    TensorProductIntegrationPoints(nDim, lagBasisLineIntEqui, derLagBasisLineIntEqui,
                                    matCoor, matDerCoor[1], nullptr);
   }
 }

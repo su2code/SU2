@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardVolumePyraGrid.cpp
- * \brief Functions for the class CFEMStandardVolumePyraGrid.
+ * \file CFEMStandardPyraGrid.cpp
+ * \brief Functions for the class CFEMStandardPyraGrid.
  * \author E. van der Weide
  * \version 7.0.6 "Blackbird"
  *
@@ -25,15 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardVolumePyraGrid.hpp"
+#include "../../include/fem/CFEMStandardPyraGrid.hpp"
 #include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of CFEMStandardVolumePyraGrid.                  */
+/*             Public member functions of CFEMStandardPyraGrid.                     */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardVolumePyraGrid::CFEMStandardVolumePyraGrid(const unsigned short val_nPoly,
-                                                       const unsigned short val_orderExact)
+CFEMStandardPyraGrid::CFEMStandardPyraGrid(const unsigned short val_nPoly,
+                                           const unsigned short val_orderExact)
   : CFEMStandardPyra(val_nPoly, val_orderExact) {
 
   /*--- Compute the values of the Lagrangian basis functions in the integration
@@ -51,9 +51,9 @@ CFEMStandardVolumePyraGrid::CFEMStandardVolumePyraGrid(const unsigned short val_
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
 }
 
-void CFEMStandardVolumePyraGrid::DerivativesCoorVolumeIntPoints(const bool                         LGLDistribution,
-                                                                ColMajorMatrix<su2double>          &matCoor,
-                                                                vector<ColMajorMatrix<su2double> > &matDerCoor) {
+void CFEMStandardPyraGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                                    ColMajorMatrix<su2double>          &matCoor,
+                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
@@ -74,10 +74,14 @@ void CFEMStandardVolumePyraGrid::DerivativesCoorVolumeIntPoints(const bool      
   }
 }
 
-void CFEMStandardVolumePyraGrid::DerLagBasisIntPointsPyra(const vector<passivedouble>            &rDOFs,
-                                                          const vector<passivedouble>            &sDOFs,
-                                                          const vector<passivedouble>            &tDOFs,
-                                                          vector<ColMajorMatrix<passivedouble> > &derLag) {
+/*----------------------------------------------------------------------------------*/
+/*             Private member functions of CFEMStandardPyraGrid.                    */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardPyraGrid::DerLagBasisIntPointsPyra(const vector<passivedouble>            &rDOFs,
+                                                    const vector<passivedouble>            &sDOFs,
+                                                    const vector<passivedouble>            &tDOFs,
+                                                    vector<ColMajorMatrix<passivedouble> > &derLag) {
 
   /*--- Determine the parametric coordinates of all integration points
         of the pyramid. ---*/
@@ -126,10 +130,10 @@ void CFEMStandardVolumePyraGrid::DerLagBasisIntPointsPyra(const vector<passivedo
   }
 }
 
-void CFEMStandardVolumePyraGrid::LagBasisIntPointsPyra(const vector<passivedouble>   &rDOFs,
-                                                       const vector<passivedouble>   &sDOFs,
-                                                       const vector<passivedouble>   &tDOFs,
-                                                       ColMajorMatrix<passivedouble> &lag) {
+void CFEMStandardPyraGrid::LagBasisIntPointsPyra(const vector<passivedouble>   &rDOFs,
+                                                 const vector<passivedouble>   &sDOFs,
+                                                 const vector<passivedouble>   &tDOFs,
+                                                 ColMajorMatrix<passivedouble> &lag) {
 
   /*--- Determine the parametric coordinates of all integration points
         of the pyramid. ---*/
@@ -163,12 +167,12 @@ void CFEMStandardVolumePyraGrid::LagBasisIntPointsPyra(const vector<passivedoubl
   }
 }
 
-void CFEMStandardVolumePyraGrid::GradVandermondePyramid(const vector<passivedouble>   &r,
-                                                        const vector<passivedouble>   &s,
-                                                        const vector<passivedouble>   &t,
-                                                        ColMajorMatrix<passivedouble> &VDr,
-                                                        ColMajorMatrix<passivedouble> &VDs,
-                                                        ColMajorMatrix<passivedouble> &VDt) {
+void CFEMStandardPyraGrid::GradVandermondePyramid(const vector<passivedouble>   &r,
+                                                  const vector<passivedouble>   &s,
+                                                  const vector<passivedouble>   &t,
+                                                  ColMajorMatrix<passivedouble> &VDr,
+                                                  ColMajorMatrix<passivedouble> &VDs,
+                                                  ColMajorMatrix<passivedouble> &VDt) {
 
   /*--- For a pyramid the orthogonal basis for the reference element is
         obtained by a combination of Jacobi polynomials (of which the Legendre
@@ -253,10 +257,10 @@ void CFEMStandardVolumePyraGrid::GradVandermondePyramid(const vector<passivedoub
   }
 }
 
-void CFEMStandardVolumePyraGrid::VandermondePyramid(const vector<passivedouble>   &r,
-                                                    const vector<passivedouble>   &s,
-                                                    const vector<passivedouble>   &t,
-                                                    ColMajorMatrix<passivedouble> &V) {
+void CFEMStandardPyraGrid::VandermondePyramid(const vector<passivedouble>   &r,
+                                              const vector<passivedouble>   &s,
+                                              const vector<passivedouble>   &t,
+                                              ColMajorMatrix<passivedouble> &V) {
 
   /*--- For a pyramid the orthogonal basis for the reference element is
         obtained by a combination of Jacobi polynomials (of which the Legendre

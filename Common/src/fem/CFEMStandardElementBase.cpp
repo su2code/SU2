@@ -104,7 +104,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
 
   /*--- Compute the derivatives of the coordinates in the volume integration points.
         The matrix matMetricTerms is used as storage for this data. ---*/
-  DerivativesCoorVolumeIntPoints(LGLDistribution, matCoor, matMetricTerms);
+  DerivativesCoorIntPoints(LGLDistribution, matCoor, matMetricTerms);
 
   /*--- Check the dimension of the problem. ---*/
   if(matMetricTerms.size() == 2) {
