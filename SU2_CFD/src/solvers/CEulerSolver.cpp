@@ -3547,13 +3547,14 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   const unsigned long nPrimVarTot = nVar + tkeNeeded;
 
   constexpr size_t MAXNVAR = 5;
+  constexpr size_t MAXNVARTOT = MAXNVAR + 1;
 
-  su2double dFl_dVl[MAXNVAR][MAXNVAR+1] = {0.0},
-            dFr_dVr[MAXNVAR][MAXNVAR+1] = {0.0},
-            dUl_dVl[MAXNVAR][MAXNVAR+1] = {0.0},
-            dUr_dVr[MAXNVAR][MAXNVAR+1] = {0.0},
-            dVi_dUi[MAXNVAR+1][MAXNVAR] = {0.0},
-            dVk_dUk[MAXNVAR+1][MAXNVAR] = {0.0};
+  su2double dFl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
+            dFr_dVr[MAXNVAR][MAXNVARTOT] = {0.0},
+            dUl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
+            dUr_dVr[MAXNVAR][MAXNVARTOT] = {0.0},
+            dVi_dUi[MAXNVARTOT][MAXNVAR] = {0.0},
+            dVk_dUk[MAXNVARTOT][MAXNVAR] = {0.0};
 
   const su2double rho_l = primvar_l[nDim+2], rho_r = primvar_r[nDim+2];
   su2double vel_l[MAXNDIM] = {0.0}, sq_vel_l = 0.0,
@@ -3570,7 +3571,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
 
-  su2double lim_i[MAXNVAR+1] = {0.0}, lim_j[MAXNVAR+1] = {0.0};
+  su2double lim_i[MAXNVARTOT] = {0.0}, lim_j[MAXNVARTOT] = {0.0};
   for (auto iVar = 1; iVar < nDim+3; iVar++) {
     lim_i[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint,iVar) : 1.0;
     lim_j[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint,iVar) : 1.0;
@@ -3582,7 +3583,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store reconstruction weights ---*/
 
-  su2double dVl_dVi[MAXNVAR+1] = {0.0}, dVr_dVi[MAXNVAR+1] = {0.0};
+  su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
     dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
     dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
@@ -3692,7 +3693,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
           Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
   }
 
-  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {      
+  for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
     /*--- d{r,v,p,k}/dU, evaluated at neighbor node ---*/
 
