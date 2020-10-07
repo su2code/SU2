@@ -175,8 +175,7 @@ public:
 
     /*--- Stop preaccumulation. ---*/
 
-    AD::SetPreaccOut(flux, nVar, Double::Size);
-    AD::EndPreacc();
+    stopPreacc(flux);
 
     /*--- Update the vector and system matrix. ---*/
 

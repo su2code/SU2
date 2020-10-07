@@ -40,7 +40,7 @@
 #define FORCEINLINE inline
 #endif
 
-#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#if defined(__GNUC__) || defined(__clang__)
 #define NEVERINLINE inline __attribute__((noinline))
 #else
 #define NEVERINLINE inline
