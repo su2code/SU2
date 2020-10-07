@@ -100,6 +100,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
   const bool sa_neg = (turbModel == SA_NEG);
+  const bool kappa  = config->GetUse_Accurate_Kappa_Jacobians();
 
   const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
 
@@ -197,7 +198,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (muscl && good_edge) {
+      if (muscl && kappa && good_edge) {
         const su2double rho_i = good_i ? flowPrimVar_i[nDim+2] : V_i[nDim+2],
                         rho_j = good_j ? flowPrimVar_j[nDim+2] : V_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,

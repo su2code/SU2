@@ -1149,8 +1149,9 @@ private:
             Adap_ARmax;                /*!< \brief Maximum cell aspect ratio */
   unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
 
-  bool Use_Accurate_Visc_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG gradients (CNSSolver)  */
-       Use_Accurate_Turb_Jacobians;    /*!< \brief Whether to numerically differentiate the flux due to GG gradients (CTurbSolver) */
+  bool Use_Accurate_Visc_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG/LS gradients (CNSSolver)  */
+       Use_Accurate_Turb_Jacobians,    /*!< \brief Whether to numerically differentiate the flux due to GG/LS gradients (CTurbSolver) */
+       Use_Accurate_Kappa_Jacobians;   /*!< \brief Whether to numerically differentiate the convective flux due to kappa scheme (CEulerSolver/CTurbSolver) */
 
   su2double Weighted_Least_SquaresCoeff;  /*!< \brief Coefficient for least squares weights, where weights are given  by (d_ij)^-N. */
 
@@ -4349,6 +4350,12 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for kappa scheme extrapolation.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Kappa_Jacobians(void) const { return Use_Accurate_Kappa_Jacobians; }
 
    /*!
    * \brief Get coefficient for weights in WLS gradients.
