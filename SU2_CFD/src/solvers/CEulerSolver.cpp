@@ -3409,8 +3409,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
           break;
       }
 
-      Project_Grad_i *= 0.5*Limiter_i[iVar];
-      Project_Grad_j *= 0.5*Limiter_j[iVar];
+      Project_Grad_i *= Limiter_i[iVar];
+      Project_Grad_j *= Limiter_j[iVar];
 
       /*--- Limit projection ---*/
 
@@ -3448,8 +3448,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       /*--- Blend upwind and centered differences ---*/
 
-      Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-      Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+      // Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
+      // Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
 
       /*--- Edge-based limiters ---*/
 
@@ -3468,8 +3468,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             break;
         }
 
-        Project_Grad_i *= 0.5*Limiter_i[iVar];
-        Project_Grad_j *= 0.5*Limiter_j[iVar];
+        Project_Grad_i *= Limiter_i[iVar];
+        Project_Grad_j *= Limiter_j[iVar];
 
         /*--- Limit projection ---*/
 
