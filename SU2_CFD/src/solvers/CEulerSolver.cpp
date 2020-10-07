@@ -3618,7 +3618,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     dVl_dVi[iVar] = sign*(1.0 + 0.5*lim_i[iVar]*good_i);
     dVr_dVi[iVar] = sign*(    - 0.5*lim_j[iVar]*good_j);
   }
-  Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
 
