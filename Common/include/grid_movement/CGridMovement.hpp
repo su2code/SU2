@@ -2,7 +2,7 @@
  * \file CGridMovement.hpp
  * \brief Headers of the CGridMovement class
  * \author F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CMeshVariable.cpp
  * \brief Definition of the variables for mesh motion using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
