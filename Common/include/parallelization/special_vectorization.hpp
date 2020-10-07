@@ -2,7 +2,7 @@
  * \file special_vectorization.hpp
  * \brief Code generator header to create specializations of simd::Array.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
