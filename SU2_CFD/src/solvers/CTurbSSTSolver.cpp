@@ -1529,267 +1529,267 @@ void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
 void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 
-  const auto turb_model    = config->GetKind_Turb_Model();
-  const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool muscl         = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
-  const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == DT_STEPPING_2ND);
-  const su2double K_v = 0.25;
-  const su2double sigma_k1  = constants[0];
-  const su2double sigma_k2  = constants[1];
-  const su2double sigma_om1 = constants[2];
-  const su2double sigma_om2 = constants[3];
+  // const auto turb_model    = config->GetKind_Turb_Model();
+  // const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
+  // const bool muscl         = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  // const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  // const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+  //                            (config->GetTime_Marching() == DT_STEPPING_2ND);
+  // const su2double K_v = 0.25;
+  // const su2double sigma_k1  = constants[0];
+  // const su2double sigma_k2  = constants[1];
+  // const su2double sigma_om1 = constants[2];
+  // const su2double sigma_om2 = constants[3];
 
-  /*--- Init thread-shared variables to compute min/max values.
-   *    Critical sections are used for this instead of reduction
-   *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
+  // /*--- Init thread-shared variables to compute min/max values.
+  //  *    Critical sections are used for this instead of reduction
+  //  *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
 
-  SU2_OMP_MASTER
-  {
-    Min_Delta_Time = 1e30;
-    Max_Delta_Time = 0.0;
-  }
-  SU2_OMP_BARRIER
+  // SU2_OMP_MASTER
+  // {
+  //   Min_Delta_Time = 1e30;
+  //   Max_Delta_Time = 0.0;
+  // }
+  // SU2_OMP_BARRIER
 
-  const su2double *Normal = nullptr;
-  su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
-  su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
-  su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
+  // const su2double *Normal = nullptr;
+  // su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
+  // su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
+  // su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
 
-  /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
-  su2double Primitive_i[MAXNVARFLOW] = {0.0}, Primitive_j[MAXNVARFLOW] = {0.0};
+  // /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
+  // su2double Primitive_i[MAXNVARFLOW] = {0.0}, Primitive_j[MAXNVARFLOW] = {0.0};
 
-  CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
+  // CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  /*--- Loop domain points. ---*/
+  // /*--- Loop domain points. ---*/
 
-  SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  // SU2_OMP_FOR_DYN(omp_chunk_size)
+  // for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-    auto node_i = geometry->node[iPoint];
+  //   auto node_i = geometry->node[iPoint];
 
-    /*--- Set maximum eigenvalues to zero. ---*/
-    nodes->SetMax_Lambda_Inv(iPoint,0.0);
-    nodes->SetMax_Lambda_Visc(iPoint,0.0);
+  //   /*--- Set maximum eigenvalues to zero. ---*/
+  //   nodes->SetMax_Lambda_Inv(iPoint,0.0);
+  //   nodes->SetMax_Lambda_Visc(iPoint,0.0);
 
-    Vol = geometry->node[iPoint]->GetVolume();
-    if (Vol == 0.0) continue;
+  //   Vol = geometry->node[iPoint]->GetVolume();
+  //   if (Vol == 0.0) continue;
 
-    /*--- Loop over the neighbors of point i. ---*/
+  //   /*--- Loop over the neighbors of point i. ---*/
 
-    for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
-    {
-      const auto jPoint = node_i->GetPoint(iNeigh);
-      const auto node_j = geometry->node[jPoint];
+  //   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); ++iNeigh)
+  //   {
+  //     const auto jPoint = node_i->GetPoint(iNeigh);
+  //     const auto node_j = geometry->node[jPoint];
 
-      const auto iEdge = node_i->GetEdge(iNeigh);
-      Normal = geometry->edge[iEdge]->GetNormal();
-      Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
+  //     const auto iEdge = node_i->GetEdge(iNeigh);
+  //     Normal = geometry->edge[iEdge]->GetNormal();
+  //     Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
-      /*--- Mean Values ---*/
+  //     /*--- Mean Values ---*/
 
-      // const bool good_edge = !node_i->GetPhysicalBoundary() && !node_j->GetPhysicalBoundary();
-      // bool good_edge = true;
-      // if (muscl) {
-      //   /*--- Extrapolate the state ---*/
+  //     // const bool good_edge = !node_i->GetPhysicalBoundary() && !node_j->GetPhysicalBoundary();
+  //     // bool good_edge = true;
+  //     // if (muscl) {
+  //     //   /*--- Extrapolate the state ---*/
 
-      //   su2double tke_i = 0.0, tke_j = 0.0;
-      //   const unsigned long nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
-      //   const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
-      //   solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-      //                                      &tke_i, &tke_j, nFlowVarGrad, nTurbVarGrad);
+  //     //   su2double tke_i = 0.0, tke_j = 0.0;
+  //     //   const unsigned long nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
+  //     //   const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
+  //     //   solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+  //     //                                      &tke_i, &tke_j, nFlowVarGrad, nTurbVarGrad);
 
-      //   /*--- Check the extrapolation ---*/
+  //     //   /*--- Check the extrapolation ---*/
 
-      //   bool good_i = true, good_j = true;
-      //   if (tkeNeeded) {
-      //     good_i = (tke_i >= 0.0);
-      //     good_j = (tke_j >= 0.0);
-      //   }
-      //   solver[FLOW_SOL]->CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
-      //   good_edge = good_i && good_j;
+  //     //   bool good_i = true, good_j = true;
+  //     //   if (tkeNeeded) {
+  //     //     good_i = (tke_i >= 0.0);
+  //     //     good_j = (tke_j >= 0.0);
+  //     //   }
+  //     //   solver[FLOW_SOL]->CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
+  //     //   good_edge = good_i && good_j;
 
-      //   /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
-      //   /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
+  //     //   /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
+  //     //   /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
 
-      //   su2double ProjVel_i = 0, SoundSpeed_i = 0;
-      //   su2double ProjVel_j = 0, SoundSpeed_j = 0;
+  //     //   su2double ProjVel_i = 0, SoundSpeed_i = 0;
+  //     //   su2double ProjVel_j = 0, SoundSpeed_j = 0;
 
-      //   if (good_edge) {
-      //     for (auto iDim = 0; iDim < nDim; iDim++) {
-      //       ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
-      //       ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
-      //     }
+  //     //   if (good_edge) {
+  //     //     for (auto iDim = 0; iDim < nDim; iDim++) {
+  //     //       ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];
+  //     //       ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];
+  //     //     }
           
-      //     SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
-      //     SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
-      //   }
-      //   else {
-      //     ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
-      //     ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
+  //     //     SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
+  //     //     SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
+  //     //   }
+  //     //   else {
+  //     //     ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
+  //     //     ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
 
-      //     SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
-      //     SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
-      //   }
+  //     //     SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
+  //     //     SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
+  //     //   }
 
-      //   /*--- Compute the mean values ---*/
+  //     //   /*--- Compute the mean values ---*/
 
-      //   Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
-      //   Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
-      // }
-      // else {
-        Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
-        Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
-      // }
+  //     //   Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+  //     //   Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
+  //     // }
+  //     // else {
+  //       Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
+  //       Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
+  //     // }
 
-      /*--- Adjustment for grid movement ---*/
+  //     /*--- Adjustment for grid movement ---*/
 
-      if (dynamic_grid) {
-        const su2double *GridVel_i = node_i->GetGridVel();
-        const su2double *GridVel_j = node_j->GetGridVel();
+  //     if (dynamic_grid) {
+  //       const su2double *GridVel_i = node_i->GetGridVel();
+  //       const su2double *GridVel_j = node_j->GetGridVel();
 
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
-      }
+  //       for (auto iDim = 0; iDim < nDim; iDim++)
+  //         Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+  //     }
 
-      /*--- Inviscid contribution ---*/
+  //     /*--- Inviscid contribution ---*/
 
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+  //     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+  //     nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
-      /*--- Viscous contribution ---*/
+  //     /*--- Viscous contribution ---*/
 
-      F1_i = nodes->GetF1blending(iPoint);
-      F1_j = nodes->GetF1blending(jPoint);
+  //     F1_i = nodes->GetF1blending(iPoint);
+  //     F1_j = nodes->GetF1blending(jPoint);
 
-      sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-      sigma_k_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
-      sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
-      sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
+  //     sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  //     sigma_k_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  //     sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+  //     sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
-      visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-      visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
-      visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
-      visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_om_j*nodes->GetmuT(jPoint);
+  //     visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
+  //     visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
+  //     visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
+  //     visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_om_j*nodes->GetmuT(jPoint);
 
-      Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
-      Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
+  //     Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
+  //     Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
-      Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
-      nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    }
+  //     Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
+  //     nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+  //   }
 
-  }
+  // }
 
-  /*--- Loop boundary edges ---*/
+  // /*--- Loop boundary edges ---*/
 
-  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+  // for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  //   if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+  //       (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
-      SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-      for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+  //     SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  //     for (auto iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        /*--- Point identification, Normal vector and area ---*/
+  //       /*--- Point identification, Normal vector and area ---*/
 
-        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        const auto node_i = geometry->node[iPoint];
+  //       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  //       const auto node_i = geometry->node[iPoint];
 
-        if (!node_i->GetDomain()) continue;
+  //       if (!node_i->GetDomain()) continue;
 
-        Vol = node_i->GetVolume();
-        if (Vol == 0.0) continue;
+  //       Vol = node_i->GetVolume();
+  //       if (Vol == 0.0) continue;
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+  //       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+  //       Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-        /*--- Mean Values ---*/
+  //       /*--- Mean Values ---*/
 
-        Mean_ProjVel    = flowNodes->GetProjVel(iPoint,Normal);
-        Mean_SoundSpeed = flowNodes->GetSoundSpeed(iPoint) * Area;
+  //       Mean_ProjVel    = flowNodes->GetProjVel(iPoint,Normal);
+  //       Mean_SoundSpeed = flowNodes->GetSoundSpeed(iPoint) * Area;
 
-        /*--- Adjustment for grid movement ---*/
+  //       /*--- Adjustment for grid movement ---*/
 
-        if (dynamic_grid) {
-          const su2double *GridVel = node_i->GetGridVel();
+  //       if (dynamic_grid) {
+  //         const su2double *GridVel = node_i->GetGridVel();
 
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
-        }
+  //         for (auto iDim = 0; iDim < nDim; iDim++)
+  //           Mean_ProjVel -= GridVel[iDim]*Normal[iDim];
+  //       }
 
-        /*--- Inviscid contribution ---*/
+  //       /*--- Inviscid contribution ---*/
 
-        Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+  //       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+  //       nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
-        /*--- Viscous contribution ---*/
+  //       /*--- Viscous contribution ---*/
 
-        F1_i = nodes->GetF1blending(iPoint);
+  //       F1_i = nodes->GetF1blending(iPoint);
 
-        sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-        sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+  //       sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  //       sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
 
-        visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-        visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
+  //       visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
+  //       visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
 
-        Mean_Visc    = (visc_k_i + visc_om_i);
-        Mean_Density = flowNodes->GetDensity(iPoint);
+  //       Mean_Visc    = (visc_k_i + visc_om_i);
+  //       Mean_Density = flowNodes->GetDensity(iPoint);
 
-        Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
-        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+  //       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
+  //       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
-      }
-    }
-  }
+  //     }
+  //   }
+  // }
 
-  /*--- Each element uses their own speed, steady state simulation. ---*/
-  {
-    /*--- Thread-local variables for min/max reduction. ---*/
-    su2double minDt = 1e30, maxDt = 0.0;
+  // /*--- Each element uses their own speed, steady state simulation. ---*/
+  // {
+  //   /*--- Thread-local variables for min/max reduction. ---*/
+  //   su2double minDt = 1e30, maxDt = 0.0;
 
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  //   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      Vol = geometry->node[iPoint]->GetVolume();
+  //     Vol = geometry->node[iPoint]->GetVolume();
 
-      if (Vol != 0.0) {
+  //     if (Vol != 0.0) {
 
-        const su2double Lambda_Inv  = nodes->GetMax_Lambda_Inv(iPoint);
-        const su2double Lambda_Visc = nodes->GetMax_Lambda_Visc(iPoint);
-        Lambda = (Lambda_Inv + Lambda_Visc);
-        Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/Lambda;
+  //       const su2double Lambda_Inv  = nodes->GetMax_Lambda_Inv(iPoint);
+  //       const su2double Lambda_Visc = nodes->GetMax_Lambda_Visc(iPoint);
+  //       Lambda = (Lambda_Inv + Lambda_Visc);
+  //       Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol/Lambda;
 
-        minDt = min(minDt, Local_Delta_Time);
-        maxDt = max(maxDt, Local_Delta_Time);
+  //       minDt = min(minDt, Local_Delta_Time);
+  //       maxDt = max(maxDt, Local_Delta_Time);
 
-        nodes->SetDelta_Time(iPoint, min(Local_Delta_Time, config->GetMax_DeltaTime()));
-      }
-      else {
-        nodes->SetDelta_Time(iPoint,0.0);
-      }
-    }
-    /*--- Min/max over threads. ---*/
-    SU2_OMP_CRITICAL
-    {
-      Min_Delta_Time = min(Min_Delta_Time, minDt);
-      Max_Delta_Time = max(Max_Delta_Time, maxDt);
-    }
-    SU2_OMP_BARRIER
-  }
+  //       nodes->SetDelta_Time(iPoint, min(Local_Delta_Time, config->GetMax_DeltaTime()));
+  //     }
+  //     else {
+  //       nodes->SetDelta_Time(iPoint,0.0);
+  //     }
+  //   }
+  //   /*--- Min/max over threads. ---*/
+  //   SU2_OMP_CRITICAL
+  //   {
+  //     Min_Delta_Time = min(Min_Delta_Time, minDt);
+  //     Max_Delta_Time = max(Max_Delta_Time, maxDt);
+  //   }
+  //   SU2_OMP_BARRIER
+  // }
 
-  /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
+  // /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
 
-  SU2_OMP_MASTER
-  if (config->GetComm_Level() == COMM_FULL) {
-    su2double rbuf_time;
-    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    Min_Delta_Time = rbuf_time;
+  // SU2_OMP_MASTER
+  // if (config->GetComm_Level() == COMM_FULL) {
+  //   su2double rbuf_time;
+  //   SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  //   Min_Delta_Time = rbuf_time;
 
-    SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    Max_Delta_Time = rbuf_time;
-  }
-  SU2_OMP_BARRIER
+  //   SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  //   Max_Delta_Time = rbuf_time;
+  // }
+  // SU2_OMP_BARRIER
 
   /*--- TODO: For exact time solution use the minimum delta time of the whole mesh. ---*/
 
