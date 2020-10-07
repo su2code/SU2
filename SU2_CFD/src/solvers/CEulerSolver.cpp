@@ -3394,10 +3394,9 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     /*--- Edge-based limiters ---*/
 
+    auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+    auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
     if (limiter) {
-      auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-      auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
           Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
@@ -3419,6 +3418,12 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       
     }
     else {
+      const su2double eps    = numeric_limits<passivedouble>::epsilon();
+      const su2double sign_i = 1.0-2.0*(Project_Grad_i < 0);
+      const su2double sign_j = 1.0-2.0*(Project_Grad_j < 0);
+      Limiter_i[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*V_ij/(Project_Grad_i+eps*sign_i));
+      Limiter_j[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*V_ij/(Project_Grad_j+eps*sign_j));
+
       Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
       Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
     }
@@ -3453,10 +3458,9 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       /*--- Edge-based limiters ---*/
 
+      auto Limiter_i = turbNodes->GetLimiter(iPoint);
+      auto Limiter_j = turbNodes->GetLimiter(jPoint);
       if (limiterTurb) {
-        auto Limiter_i = turbNodes->GetLimiter(iPoint);
-        auto Limiter_j = turbNodes->GetLimiter(jPoint);
-
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
             Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
@@ -3477,6 +3481,12 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         // Project_Grad_j *= Limiter_j[iVar];
       }
       else {
+        const su2double eps    = numeric_limits<passivedouble>::epsilon();
+        const su2double sign_i = 1.0-2.0*(Project_Grad_i < 0);
+        const su2double sign_j = 1.0-2.0*(Project_Grad_j < 0);
+        Limiter_i[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*T_ij/(Project_Grad_i+eps*sign_i));
+        Limiter_j[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*T_ij/(Project_Grad_j+eps*sign_j));
+
         Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
         Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
       }
@@ -3587,21 +3597,28 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double lim_i[MAXNVARTOT] = {0.0}, lim_j[MAXNVARTOT] = {0.0};
   for (auto iVar = 1; iVar < nDim+3; iVar++) {
-    lim_i[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint,iVar) : 1.0;
-    lim_j[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint,iVar) : 1.0;
+    // lim_i[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(iPoint,iVar) : 1.0;
+    // lim_j[iVar%(nDim+2)] = limiter ? nodes->GetLimiter_Primitive(jPoint,iVar) : 1.0;
+    lim_i[iVar%(nDim+2)] = nodes->GetLimiter_Primitive(iPoint,iVar);
+    lim_j[iVar%(nDim+2)] = nodes->GetLimiter_Primitive(jPoint,iVar);
   }
   if (tkeNeeded) {
-    lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint,0) : 1.0;
-    lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint,0) : 1.0;
+    // lim_i[nDim+2] = limiterTurb ? turbNodes->GetLimiter(iPoint,0) : 1.0;
+    // lim_j[nDim+2] = limiterTurb ? turbNodes->GetLimiter(jPoint,0) : 1.0;
+    lim_i[nDim+2] = turbNodes->GetLimiter(iPoint,0);
+    lim_j[nDim+2] = turbNodes->GetLimiter(jPoint,0);
   }
 
   /*--- Store reconstruction weights ---*/
 
   su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
-    dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
+    // dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
+    // dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
+    dVl_dVi[iVar] = sign*(1.0 + 0.5*lim_i[iVar]*good_i);
+    dVr_dVi[iVar] = sign*(    - 0.5*lim_j[iVar]*good_j);
   }
+  Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
 
@@ -3697,7 +3714,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
         }
       }
     }
-    const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];
 
@@ -3738,7 +3756,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];
 

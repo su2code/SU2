@@ -354,16 +354,20 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double lim_i[MAXNVAR] = {0.0}, lim_j[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    lim_i[iVar] = limiter ? nodes->GetLimiter(iPoint,iVar) : 1.0;
-    lim_j[iVar] = limiter ? nodes->GetLimiter(jPoint,iVar) : 1.0;
+    // lim_i[iVar] = limiter ? nodes->GetLimiter(iPoint,iVar) : 1.0;
+    // lim_j[iVar] = limiter ? nodes->GetLimiter(jPoint,iVar) : 1.0;
+    lim_i[iVar] = nodes->GetLimiter(iPoint,iVar);
+    lim_j[iVar] = nodes->GetLimiter(jPoint,iVar);
   }
 
   /*--- Store reconstruction weights ---*/
 
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
-    dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
+    // dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
+    // dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
+    dVl_dVi[iVar] = sign*(1.0 + 0.5*lim_i[iVar]*good_i);
+    dVr_dVi[iVar] = sign*(    - 0.5*lim_j[iVar]*good_j);
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -400,7 +404,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
         }
       }
     }
-    const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];
 
@@ -419,7 +424,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
+    const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];
 
