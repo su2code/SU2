@@ -332,18 +332,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("DENSITY_O",   "Density_O",   "SOLUTION", "Density_O");
   }
 
-  //Auxiliary variables for post-processment
-  if (nSpecies == 2){
-    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
-  }
-  if (nSpecies == 5){
-    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
-    AddVolumeOutput("MASSFRAC_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
-    AddVolumeOutput("MASSFRAC_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
-    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
-    AddVolumeOutput("MASSFRAC_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
-  }
 
   //TODO: THIS ISNT FULLY WORKING
 //  // Solution variables
@@ -378,6 +366,18 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
+  //Auxiliary variables for post-processment
+  if (nSpecies == 2){
+    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
+    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
+  }
+  if (nSpecies == 5){
+    AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
+    AddVolumeOutput("MASSFRAC_O2",  "MassFrac_O2",  "AUXILIARY", "MassFrac_O2");
+    AddVolumeOutput("MASSFRAC_NO",  "Massfrac_NO",  "AUXILIARY", "MassFrac_NO");
+    AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");
+    AddVolumeOutput("MASSFRAC_O",   "MassFrac_O",   "AUXILIARY", "MassFrac_NO");
+  }
 
   // Grid velocity
   if (config->GetGrid_Movement()){
