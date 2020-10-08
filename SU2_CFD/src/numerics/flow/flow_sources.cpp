@@ -108,9 +108,9 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
     if (viscous){
 
-      Laminar_Viscosity_i    = V_i[nDim+4];
-      Eddy_Viscosity_i       = V_i[nDim+5];
-      Thermal_Conductivity_i = V_i[nDim+6];
+      Laminar_Viscosity_i    = V_i[nDim+5];
+      Eddy_Viscosity_i       = V_i[nDim+6];
+      Thermal_Conductivity_i = V_i[nDim+7];
 
       su2double u     = V_i[1];
       su2double v     = V_i[2];
@@ -133,6 +133,12 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       su2double tau_tt  = -TWO3*mu*(div_vel-2*v*yinv);
 
       su2double qy      = -Thermal_Conductivity_i*PrimVar_Grad_i[0][1];
+
+//      cout <<"lam viscosity   :"<<Laminar_Viscosity_i <<endl;
+//      cout <<"eddy viscosity   :"<<Eddy_Viscosity_i <<endl;
+//      cout <<"k   :"<<Thermal_Conductivity_i <<endl;
+
+//      cout <<"tau xy:  "<< tau_xy << endl;
 
       residual[0] -= 0.0;
       residual[1] -= Volume*(yinv*tau_xy - TWO3*AxiAuxVar_Grad_i[0][0]);

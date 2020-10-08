@@ -3157,10 +3157,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- If viscous, we need gradients for extra terms. ---*/
 
       if (viscous) {
-
         /*--- Primitive variables ---*/
         numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
-
         /*--- Gradient of the primitive variables ---*/
         numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
 
