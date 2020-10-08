@@ -247,9 +247,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
       Max_CFL_Local = CFL;
       Avg_CFL_Local = CFL;
     }
-    SU2_OMP_MASTER
-    ComputeKnoppWallFunction(geometry, solver, config);
-    SU2_OMP_BARRIER
+    // SU2_OMP_MASTER
+    // ComputeKnoppWallFunction(geometry, solver, config);
+    // SU2_OMP_BARRIER
   }
 
 
@@ -2864,7 +2864,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
   WallFunctionComms(geometry, solver, config);
 
   /*--- Correct values in turbulent solver ---*/
-  if (solver[TURB_SOL] != nullptr)
-    solver[TURB_SOL]->ComputeKnoppWallFunction(geometry, solver, config);
+  // if (solver[TURB_SOL] != nullptr)
+  //   solver[TURB_SOL]->ComputeKnoppWallFunction(geometry, solver, config);
 
 }
