@@ -442,7 +442,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
   const su2double Mean_Viscosity = Mean_LaminarVisc + Mean_EddyVisc;
 
   /*--- TODO: Correction with wall function ---*/
-  const su2double WF_Factor = 1.0;
+  const su2double WF_Factor = nodes->GetTauWallFactor(iPoint);
 
   const su2double Density_i = nodes->GetDensity(iPoint);
   const su2double Xi_i = WF_Factor*Mean_Viscosity/Density_i;
