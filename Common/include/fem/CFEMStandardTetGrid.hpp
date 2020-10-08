@@ -162,4 +162,10 @@ private:
                               const vector<passivedouble>   &s,
                               const vector<passivedouble>   &t,
                               ColMajorMatrix<passivedouble> &V);
+
+  /*!
+   * \brief Function, which creates the local grid connectivities of the faces
+   *        of the volume element.
+   */
+  void LocalGridConnFaces(void);
 };

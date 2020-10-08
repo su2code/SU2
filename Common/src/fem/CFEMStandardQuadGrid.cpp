@@ -49,6 +49,10 @@ CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPoly,
         the integration points for both the equidistant and LGL point distribution. ---*/
   DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, derLagBasisLineIntEqui);
   DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, derLagBasisLineIntLGL);
+
+  /*--- Create the local grid connectivities of the faces of the volume element.
+        Only needed if this is a volume element. ---*/
+  if( !val_surfElement ) LocalGridConnFaces();
 }
 
 void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
@@ -78,4 +82,32 @@ void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                  
     TensorProductIntegrationPoints(nDim, lagBasisLineIntEqui, derLagBasisLineIntEqui,
                                    matCoor, matDerCoor[1], nullptr);
   }
+}
+
+/*----------------------------------------------------------------------------------*/
+/*             Private member functions of CFEMStandardQuadGrid.                    */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardQuadGrid::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the quadrilateral, which is 4. Reserve memory for the second
+        index afterwards. ---*/
+  gridConnFaces.resize(4);
+
+  gridConnFaces[0].reserve(nPoly+1);
+  gridConnFaces[1].reserve(nPoly+1);
+  gridConnFaces[2].reserve(nPoly+1);
+  gridConnFaces[3].reserve(nPoly+1);
+
+  /*--- Define the corner vertices of the quadrilateral. ---*/
+  const unsigned short n0 = 0, n1 = nPoly, n2 = nDOFs-1, n3 = nPoly*(nPoly+1);
+
+  /*--- For a quad element the faces are lines. Loop over the nodes of the
+        lines to set the connectivity. Make sure that the element
+        is to the left of the faces. ---*/
+  for(signed short i=n0; i<=n1; ++i)          gridConnFaces[0].push_back(i);
+  for(signed short i=n1; i<=n2; i+=(nPoly+1)) gridConnFaces[1].push_back(i);
+  for(signed short i=n2; i>=n3; --i)          gridConnFaces[2].push_back(i);
+  for(signed short i=n3; i>=n0; i-=(nPoly+1)) gridConnFaces[3].push_back(i);
 }

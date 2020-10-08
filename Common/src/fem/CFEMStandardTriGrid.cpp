@@ -51,6 +51,10 @@ CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPoly,
   DerLagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, derLagBasisIntEqui);
   DerLagBasisIntPointsTriangle(rTriangleDOFsLGL,  sTriangleDOFsLGL,  derLagBasisIntLGL);
 
+  /*--- Create the local grid connectivities of the faces of the volume element.
+        Only needed if this is a volume element. ---*/
+  if( !val_surfElement ) LocalGridConnFaces();
+
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivatives of the coordinates are computed, which is nDim. ---*/
   SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs);
@@ -231,4 +235,23 @@ void CFEMStandardTriGrid::VandermondeTriangle(const vector<passivedouble>   &r,
       }
     }
   }
+}
+
+void CFEMStandardTriGrid::LocalGridConnFaces(void) {
+
+  /*--- Allocate the first index of gridConnFaces, which is equal to the number
+        of faces of the triangle, which is 3. Reserve memory for the second
+        index afterwards. ---*/
+  gridConnFaces.resize(3);
+
+  gridConnFaces[0].reserve(nPoly+1);
+  gridConnFaces[1].reserve(nPoly+1);
+  gridConnFaces[2].reserve(nPoly+1);
+
+  /*--- For a triangular element the faces are lines. Loop over the nodes
+        of the lines to set the connectivity. Make sure that the element
+        is to the left of the faces. ---*/
+  for(signed short i=0; i<=nPoly; ++i) gridConnFaces[0].push_back(i);
+  for(signed short i=0; i<=nPoly; ++i) gridConnFaces[1].push_back((i+1)*(nPoly+1) - i*(i+1)/2 -1);
+  for(signed short i=nPoly; i>=0; --i) gridConnFaces[2].push_back(i*(nPoly+1) - i*(i-1)/2);
 }

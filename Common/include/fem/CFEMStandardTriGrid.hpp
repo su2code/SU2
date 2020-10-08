@@ -157,4 +157,10 @@ private:
   void VandermondeTriangle(const vector<passivedouble>   &r,
                            const vector<passivedouble>   &s,
                            ColMajorMatrix<passivedouble> &V);
+
+  /*!
+   * \brief Function, which creates the local grid connectivities of the faces
+   *        of the volume element.
+   */
+  void LocalGridConnFaces(void);
 };

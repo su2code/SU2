@@ -109,7 +109,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
   /*--- Check the dimension of the problem. ---*/
   if(matMetricTerms.size() == 2) {
 
-    /*--- 2D problem. Set the references to the derivatives of the Cartesian
+    /*--- 2D problem. Set the references for the derivatives of the Cartesian
           coordinates w.r.t. the parametric coordinates, which are currently
           stored in matMetricTerms. ---*/
     ColMajorMatrix<su2double> &dCoorDr = matMetricTerms[0];
@@ -148,7 +148,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
   }
   else {
 
-    /*--- 3D problem. Set the references to the derivatives of the Cartesian
+    /*--- 3D problem. Set the references for the derivatives of the Cartesian
           coordinates w.r.t. the parametric coordinates, which are currently
           stored in matMetricTerms. ---*/
     ColMajorMatrix<su2double> &dCoorDr = matMetricTerms[0];
@@ -203,6 +203,57 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
   }
 }
 
+void CFEMStandardElementBase::MinMaxFaceJacobians(const bool                         LGLDistribution,
+                                                  ColMajorMatrix<su2double>          &matCoor,
+                                                  vector<ColMajorMatrix<su2double> > &matDerCoor,
+                                                  ColMajorMatrix<su2double>          &unitNormals,
+                                                  su2activevector                    &Jacobians,
+                                                  su2double                          &jacMin,
+                                                  su2double                          &jacMax,
+                                                  su2double                          &cosAngleMin) {
+
+  /*--- Compute the unit face normals, which will be stored in matCoor on return. ---*/
+  UnitFaceNormals(LGLDistribution, matCoor, matDerCoor, unitNormals, Jacobians);
+
+  /*--- Loop over the integration points and determine the minimum
+        and maximum value of the Jacobian. ---*/
+  jacMin = jacMax = Jacobians(0);
+  for(unsigned short i=0; i<nIntegration; ++i) {
+    jacMin = min(jacMin, Jacobians(i));
+    jacMax = max(jacMax, Jacobians(i));
+  }
+
+  /*--- Initialize the cosine of the minimum angle to 1.0, i.e. 90 degrees. ---*/
+  cosAngleMin = 1.0;
+
+  /*--- Check the dimension of the problem. ---*/
+  if(matDerCoor.size() == 1) {
+
+    /*--- Face of a 2D element. Double loop over the integration points to determine
+          the minimum value of the cosine of the angle between the normals. ---*/
+    for(unsigned short i=0; i<nIntegration; ++i) {
+      for( unsigned short j=i+1; j<nIntegration; ++j) {
+        const su2double dot = unitNormals(i,0)*unitNormals(j,0)
+                            + unitNormals(i,1)*unitNormals(j,1);
+        cosAngleMin = min(cosAngleMin, dot);
+      }
+    }
+  }
+  else {
+
+    /*--- Face of a 3D element. Double loop over the integration points to determine
+          the minimum value of the cosine of the angle between the normals. ---*/
+    for(unsigned short i=0; i<nIntegration; ++i) {
+      for( unsigned short j=i+1; j<nIntegration; ++j) {
+        const su2double dot = unitNormals(i,0)*unitNormals(j,0)
+                            + unitNormals(i,1)*unitNormals(j,1)
+                            + unitNormals(i,2)*unitNormals(j,2);
+        cosAngleMin = min(cosAngleMin, dot);
+      }
+    }
+  }
+}
+
 void CFEMStandardElementBase::MinMaxJacobians(const bool                         LGLDistribution,
                                               ColMajorMatrix<su2double>          &matCoor,
                                               vector<ColMajorMatrix<su2double> > &matMetricTerms,
@@ -222,9 +273,371 @@ void CFEMStandardElementBase::MinMaxJacobians(const bool                        
   }
 }
 
+void CFEMStandardElementBase::UnitFaceNormals(const bool                         LGLDistribution,
+                                              ColMajorMatrix<su2double>          &matCoor,
+                                              vector<ColMajorMatrix<su2double> > &matDerCoor,
+                                              ColMajorMatrix<su2double>          &unitNormals,
+                                              su2activevector                    &Jacobians) {
+
+  /*--- Compute the derivatives of the coordinates in the surface integration points. ---*/
+  DerivativesCoorIntPoints(LGLDistribution, matCoor, matDerCoor);
+
+  /*--- Check the dimension of the problem. ---*/
+  if(matDerCoor.size() == 1) {
+
+    /*--- Face of a 2D element. Set the reference for the derivative of the
+          Cartesian coordinates w.r.t. the parametric coordinate. ---*/
+    const ColMajorMatrix<su2double> &dCoorDr = matDerCoor[0];
+
+    /*--- Loop over the padded number of integration points
+          to compute the normals. ---*/
+    SU2_OMP_SIMD
+    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+
+      /*--- Abbreviate dxdr and dydr for readability. ---*/
+      const su2double dxdr = dCoorDr(i,0);
+      const su2double dydr = dCoorDr(i,1);
+
+      /*--- Determine the Jacobian and its inverse. There is a clipping to
+            avoid a division by zero, but this should not be active. ---*/
+      Jacobians[i]           = sqrt(dxdr*dxdr + dydr*dydr);
+      const su2double invJac = Jacobians[i] < su2double(1.e-35) ? su2double(1.e+35) : 1.0/Jacobians[i];
+
+      /*--- Compute and store the outward pointing unit normal vector. ---*/
+      unitNormals(i,0) =  dydr*invJac;
+      unitNormals(i,1) = -dxdr*invJac;
+    }
+
+  }
+  else {
+
+    /*--- Face of a 3D element. Set the references for the derivatives of the Cartesian
+          coordinates w.r.t. the parametric coordinates. ---*/
+    const ColMajorMatrix<su2double> &dCoorDr = matDerCoor[0];
+    const ColMajorMatrix<su2double> &dCoorDs = matDerCoor[1];
+
+    /*--- Loop over the padded number of integration points
+          to compute the normals. ---*/
+    SU2_OMP_SIMD
+    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+
+      /*--- Easier storage of the derivatives of the Cartesian coordinates. ---*/
+      const su2double dxdr = dCoorDr(i,0);
+      const su2double dydr = dCoorDr(i,1);
+      const su2double dzdr = dCoorDr(i,2);
+
+      const su2double dxds = dCoorDs(i,0);
+      const su2double dyds = dCoorDs(i,1);
+      const su2double dzds = dCoorDs(i,2);
+
+      /*--- Compute the vector product dxdr X dxds, where x is the coordinate
+            vector (x,y,z). Compute the length of this vector, which is the
+            Jacobian as well as the inverse.  Make sure that a division by zero
+            is avoided, although this is most likely never active. ---*/
+      const su2double nx = dydr*dzds - dyds*dzdr;
+      const su2double ny = dxds*dzdr - dxdr*dzds;
+      const su2double nz = dxdr*dyds - dxds*dydr;
+
+      Jacobians[i]           = sqrt(nx*nx + ny*ny + nz*nz);
+      const su2double invJac = Jacobians[i] < su2double(1.e-35) ? su2double(1.e+35) : 1.0/Jacobians[i];
+
+      /*--- Store the unit normal. Note that the current direction is inward
+            pointing. However, the outward pointing normal is needed, so the
+            direction  must be reversed. ---*/
+      unitNormals(i,0) = -nx*invJac;
+      unitNormals(i,1) = -ny*invJac;
+      unitNormals(i,2) = -nz*invJac;
+    }
+  }
+}
+
 /*----------------------------------------------------------------------------------*/
 /*          Protected member functions of CFEMStandardElementBase.                  */
 /*----------------------------------------------------------------------------------*/
+
+void CFEMStandardElementBase::ChangeDirectionQuadConn(vector<unsigned short> &connQuad,
+                                                      const unsigned short   vert0,
+                                                      const unsigned short   vert1,
+                                                      const unsigned short   vert2,
+                                                      const unsigned short   vert3) {
+
+  /*--- Determine the indices of the 4 corner vertices of the quad. ---*/
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPoly;
+  const unsigned short ind2 = (nPoly+1)*(nPoly+1) -1;
+  const unsigned short ind3 = ind2 - nPoly;
+
+  /*--- There exists a linear mapping from the indices of the numbering used in the
+        connectivity of this face to the indices of the target numbering. This
+        mapping is of the form ii = a + b*i + c*j and jj = d + e*i + f*j, where
+        ii,jj are the indices of the target numbering and i,j the indices of the
+        numbering used for this face. The values of the coefficients a,b,c,d,e,f
+        depend on how the corner points coincide with each other. This is
+        determined below. The bool verticesDontMatch is there to check if vertices
+        do not match. This should not happen, but it is checked for security. ---*/
+
+  signed short a=0, b=0, c=0, d=0, e=0, f=0;  // Initialization to avoid a compiler warning.
+  bool verticesDontMatch = false;
+
+  if(vert0 == connQuad[ind0]) {
+
+    /*--- Vert0 coincides with the first vertex of the face connectivity.
+          Set the coefficients a and d accordingly.   ---*/
+    a = d = 0;
+    if(vert2 != connQuad[ind2]) verticesDontMatch = true;
+
+    /*--- Check the situation for the neighboring vertices. ---*/
+    if(vert1 == connQuad[ind1]) {
+
+      /*--- The vertex numbering is the same for both faces. ---*/
+      if(vert3 != connQuad[ind3]) verticesDontMatch = true;
+
+      b = f = 1; c = e = 0;
+    }
+    else if(vert1 == connQuad[ind3]) {
+
+      /*--- The i and j numbering are swapped. ---*/
+      if(vert3 != connQuad[ind1]) verticesDontMatch = true;
+
+      b = f = 0; c = e = 1;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else if(vert1 == connQuad[ind0]) {
+
+    /*--- Vert1 coincides with the first vertex of the face connectivity.
+          Set the coefficients a and d accordingly.  ---*/
+    a = nPoly; d = 0;
+    if(vert3 != connQuad[ind2]) verticesDontMatch = true;
+
+    /*--- Check the situation for the neighboring vertices. ---*/
+    if(vert0 == connQuad[ind1]) {
+
+      /*--- The i-direction is negated while the j-direction coincides. ---*/
+      if(vert2 != connQuad[ind3]) verticesDontMatch = true;
+
+      b = -1; f = 1; c = e = 0;
+    }
+    else if(vert0 == connQuad[ind3]) {
+
+      /*--- The j-direction of the current face corresponds with the negative
+            i-direction of the target, while the i-direction coincides with
+            the j-direction of the target.     ---*/
+      if(vert2 != connQuad[ind1]) verticesDontMatch = true;
+
+      b = f = 0; c = -1; e = 1;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else if(vert2 == connQuad[ind0]) {
+
+    /*--- Vert2 coincides with the first vertex of the face connectivity.
+          Set the coefficients a and d accordingly.  ---*/
+    a = d = nPoly;
+    if(vert0 != connQuad[ind2]) verticesDontMatch = true;
+
+    /*--- Check the situation for the neighboring vertices. ---*/
+    if(vert1 == connQuad[ind3]) {
+
+      /*--- Both the i and j-direction are negated. ---*/
+      if(vert3 != connQuad[ind1]) verticesDontMatch = true;
+
+      b = f = -1; c = e = 0;
+    }
+    else if(vert1 == connQuad[ind1]) {
+
+      /*--- The i and j-direction are negated and swapped. ---*/
+      if(vert3 != connQuad[ind3]) verticesDontMatch = true;
+
+      b = f = 0; c = e = -1;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else if(vert3 == connQuad[ind0]) {
+
+    /*--- Vert3 coincides with the first vertex of the face connectivity.
+          Set the coefficients a and d accordingly.  ---*/
+    a = 0; d = nPoly;
+    if(vert1 != connQuad[ind2]) verticesDontMatch = true;
+
+    /*--- Check the situation for the neighboring vertices. ---*/
+    if(vert0 == connQuad[ind3]) {
+
+      /*--- The i-direction coincides while the j-direction is negated. ---*/
+      if(vert2 != connQuad[ind1]) verticesDontMatch = true;
+
+      b = 1; f = -1; c = e = 0;
+    }
+    else if(vert0 == connQuad[ind1]) {
+
+      /*--- The j-direction of the current face corresponds with the i-direction
+            of the target, while the i-direction coincides with the negative
+            j-direction of the target.    ---*/
+      if(vert2 != connQuad[ind3]) verticesDontMatch = true;
+
+      b = f = 0; c = 1; e = -1;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.",
+                   CURRENT_FUNCTION);
+
+  /*--- Copy the connectivity, such that things works out correctly when carrying
+        out the renumbering.      ---*/
+  vector<unsigned short> connQuadOr = connQuad;
+
+  /*--- Loop over the vertices of the original face to copy the connectivity data. ---*/
+  unsigned short ind = 0;
+  for(unsigned short j=0; j<=nPoly; ++j) {
+    for(unsigned short i=0; i<=nPoly; ++i, ++ind) {
+
+      /*--- Determine the ii and jj indices of the target, convert it to
+            a 1D index and shore the modified index in connQuad. ---*/
+      const unsigned short ii = a + i*b + j*c;
+      const unsigned short jj = d + i*e + j*f;
+
+      const unsigned short iind = jj*(nPoly+1) + ii;
+
+      connQuad[iind] = connQuadOr[ind];
+    }
+  }
+}
+
+void CFEMStandardElementBase::ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
+                                                          const unsigned short   vert0,
+                                                          const unsigned short   vert1,
+                                                          const unsigned short   vert2) {
+
+  /*--- Determine the indices of the 3 corner vertices of the triangle. ---*/
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPoly;
+  const unsigned short ind2 = (nPoly+1)*(nPoly+2)/2 -1;
+
+  /*--- There exists a linear mapping from the indices of the numbering used in the
+        connectivity of this face to the indices of the target numbering. This
+        mapping is of the form ii = a + b*i + c*j and jj = d + e*i + f*j, where
+        ii,jj are the indices of the target numbering and i,j the indices of the
+        numbering used for this face. The values of the coefficients a,b,c,d,e,f
+        depend on how the corner points coincide with each other. This is
+        determined below. The bool verticesDontMatch is there to check if vertices
+        do not match. This should not happen, but it is checked for security. ---*/
+  signed short a=0, b=0, c=0, d=0, e=0, f=0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == connTriangle[ind0]) {
+
+    /*--- Vert0 coincides with the first vertex of the face connectivity.
+          Check the situation for the neighboring vertices.  ---*/
+    if(vert1 == connTriangle[ind1]) {
+
+      /*--- The vertex numbering is the same for both faces. ---*/
+      if(vert2 != connTriangle[ind2]) verticesDontMatch = true;
+
+      a = 0; b = 1; c = 0; d = 0; e = 0; f = 1;
+    }
+    else if(vert1 == connTriangle[ind2]) {
+
+      /*--- The ii-index corresponds to the j-index and the
+            jj-index corresponds to i-index.    ---*/
+      if(vert2 != connTriangle[ind1]) verticesDontMatch = true;
+
+      a = 0; b = 0; c = 1; d = 0; e = 1; f = 0;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else if(vert0 == connTriangle[ind1]) {
+
+    /*--- Vert0 coincides with the second vertex of the face connectivity.
+          Check the situation for the neighboring vertices.    ---*/
+    if(vert1 == connTriangle[ind0]) {
+
+      /*--- The ii-index corresponds to a combination of the i and j index
+            and the jj-index corresponds to the j-index.   ---*/
+      if(vert2 != connTriangle[ind2]) verticesDontMatch = true;
+
+      a = nPoly; b = -1; c = -1; d = 0; e = 0; f = 1;
+    }
+    else if(vert1 == connTriangle[ind2]) {
+
+      /*--- The jj-index corresponds to a combination of the i and j index
+            and the ii-index corresponds to the j-index.  ---*/
+      if(vert2 != connTriangle[ind0]) verticesDontMatch = true;
+
+      a = 0; b = 0; c = 1; d = nPoly; e = -1; f = -1;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else if(vert0 == connTriangle[ind2]) {
+
+    /*--- Vert0 coincides with the third vertex of the face connectivity.
+          Check the situation for the neighboring vertices.    ---*/
+    if(vert1 == connTriangle[ind0]) {
+
+      /*--- The ii-index corresponds to a combination of the i and j index
+            and the jj-index corresponds with the i-index.  ---*/
+      if(vert2 != connTriangle[ind1]) verticesDontMatch = true;
+
+      a = nPoly; b = -1; c = -1; d = 0; e = 1; f = 0;
+    }
+    else if(vert1 == connTriangle[ind1]) {
+
+      /*--- The jj-index corresponds to a combination of the i and j index
+            and the ii-index corresponds with the i-index.   ---*/
+      if(vert2 != connTriangle[ind0]) verticesDontMatch = true;
+
+      a = 0; b = 1; c = 0; d = nPoly; e = -1; f = -1;
+    }
+    else {
+      verticesDontMatch = true;
+    }
+  }
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch )
+    SU2_MPI::Error("Corner vertices do not match. This should not happen.",
+                   CURRENT_FUNCTION);
+
+  /*--- Copy the connectivity, such that things works out correctly when carrying
+        out the renumbering.  ---*/
+  vector<unsigned short> connTriangleOr = connTriangle;
+
+  /*--- Loop over the vertices of the original face to copy the connectivity data. ---*/
+  unsigned short ind = 0;
+  for(unsigned short j=0; j<=nPoly; ++j) {
+    for(unsigned short i=0; i<=(nPoly-j); ++i, ++ind) {
+
+      /*--- Determine the ii and jj indices of the target, convert it to
+            a 1D index and shore the modified index in connTriangle. ---*/
+      const unsigned short ii = a + i*b + j*c;
+      const unsigned short jj = d + i*e + j*f;
+
+      const unsigned short iind = jj*(nPoly+1) + ii - jj*(jj-1)/2;
+
+      connTriangle[iind] = connTriangleOr[ind];
+    }
+  }
+}
 
 void CFEMStandardElementBase::Location1DGridDOFsEquidistant(vector<passivedouble> &r) {
 

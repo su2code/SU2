@@ -64,6 +64,10 @@ protected:
 
   su2passivevector wIntegration;    /*!< \brief The weights of the integration points for this standard element. */
 
+  vector<vector<unsigned short> > gridConnFaces; /*!< \brief Local grid connectivities of the faces of the element.
+                                                             The numbering of the DOFs is such that the element
+                                                             is to the left of the face. */
+
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
   void *jitter;                 /*!< \brief Pointer to the data for the jitted gemm function. */
   dgemm_jit_kernel_t my_dgemm;  /*!< \brief Pointer to the function to carry out the jitted gemm call. */
@@ -113,6 +117,16 @@ public:
 
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Function, which returns the const pointer to the grid connectivity
+   *        of the requested face of the volume element.
+   * \param[in] ind - Index of the face for which the connectivity is requested.
+   * \return The pointer to the connectivity of the requested face of the volume element.
+   */
+  const unsigned short *GetGridConnFace(const unsigned short ind) const {
+    return gridConnFaces[ind].data();
   }
 
   /*!
@@ -206,6 +220,32 @@ public:
                                   su2activevector                    &Jacobians);
 
   /*!
+   * \brief Function, which computes the mininum and maximum value of the face Jacobians
+   *        of the transformation to the standard element as well as the minimum value
+   *        of the cosine of the angles between the unit outward normals.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDerCoor      - Vector of matrices to store the derivatives of
+   *                               the coordinates in the integration point of the face.
+   * \param[out] unitNormals     - Matrix to store the unit normals in the integration
+   *                               points of the face.
+   * \param[out] Jacobians       - Vector to store the Jacobians of the transformation
+   *                               in the integration points of the face.
+   * \param[out] jacMin          - Minimum value of the Jacobian.
+   * \param[out] jacMax          - Maximum value of the Jacobian.
+   * \param[out] cosAngleMin     - Minimum value of the cosine of the angles between
+   *                               the unit outward normals.
+   */
+  void MinMaxFaceJacobians(const bool                         LGLDistribution,
+                           ColMajorMatrix<su2double>          &matCoor,
+                           vector<ColMajorMatrix<su2double> > &matDerCoor,
+                           ColMajorMatrix<su2double>          &unitNormals,
+                           su2activevector                    &Jacobians,
+                           su2double                          &jacMin,
+                           su2double                          &jacMax,
+                           su2double                          &cosAngleMin);
+
+  /*!
    * \brief Function, which computes the mininum and maximum value of the Jacobian of
    *        the transformation to the standard element.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
@@ -223,11 +263,28 @@ public:
                        su2double                          &jacMax);
 
   /*!
-  * \brief Function, which checks if the function arguments correspond to this standard element.
-  * \param[in] val_VTK_Type - Type of the element using the VTK convention.
-  * \param[in] val_nPoly    - Polynomial degree of the element.
-  * \return Whether or not the function arguments correspond to this standard element.
-  */
+   * \brief Function, which computes the face normals and the Jacobian.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDerCoor      - Vector of matrices to store the derivatives of
+   *                               the coordinates in the integration point of the face.
+   * \param[out] unitNormals     - Matrix to store the unit normals in the integration
+   *                               points of the face.
+   * \param[out] Jacobians       - Vector to store the Jacobians of the transformation
+   *                               in the integration points of the face.
+   */
+  void UnitFaceNormals(const bool                         LGLDistribution,
+                       ColMajorMatrix<su2double>          &matCoor,
+                       vector<ColMajorMatrix<su2double> > &matDerCoor,
+                       ColMajorMatrix<su2double>          &unitNormals,
+                       su2activevector                    &Jacobians);
+
+  /*!
+   * \brief Function, which checks if the function arguments correspond to this standard element.
+   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
+   * \param[in] val_nPoly    - Polynomial degree of the element.
+   * \return Whether or not the function arguments correspond to this standard element.
+   */
   inline bool SameStandardElement(unsigned short val_VTK_Type,
                                   unsigned short val_nPoly) {
     if(val_VTK_Type != VTK_Type) return false;
@@ -246,6 +303,36 @@ public:
                                        unsigned short nPoly);
 
 protected:
+
+  /*!
+   * \brief Function, which changes the given quadrilateral connectivity, such that
+   *        the direction coincides with the direction corresponding to corner
+   *        vertices vert0, vert1, vert2, vert3.
+   * \param[in,out] connQuad - Connectivity of the quadrilateral, that must be adapted.
+   * \param[in]     vert0    - Corner vertex 0 of the desired sequence.
+   * \param[in]     vert1    - Corner vertex 1 of the desired sequence.
+   * \param[in]     vert2    - Corner vertex 2 of the desired sequence.
+   * \param[in]     vert3    - Corner vertex 3 of the desired sequence.
+   */
+  void ChangeDirectionQuadConn(vector<unsigned short> &connQuad,
+                               const unsigned short   vert0,
+                               const unsigned short   vert1,
+                               const unsigned short   vert2,
+                               const unsigned short   vert3);
+
+  /*!
+   * \brief Function, which changes the given triangular connectivity, such that
+   *        the direction coincides with the direction corresponding to corner
+   *        vertices vert0, vert1, vert2.
+   * \param[in,out] connTriangle - Connectivity of the triangle, that must be adapted.
+   * \param[in]     vert0        - Corner vertex 0 of the desired sequence.
+   * \param[in]     vert1        - Corner vertex 1 of the desired sequence.
+   * \param[in]     vert2        - Corner vertex 2 of the desired sequence.
+   */
+  void ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
+                                   const unsigned short   vert0,
+                                   const unsigned short   vert1,
+                                   const unsigned short   vert2);
 
   /*!
    * \brief Function, which determines the integration points for a tetrahedron
@@ -270,8 +357,6 @@ protected:
   void IntegrationPointsTriangle(vector<passivedouble> &rTriangle,
                                  vector<passivedouble> &sTriangle,
                                  vector<passivedouble> &wTriangle);
-
-
 
   /*!
    * \brief Function, which determines the location of the 1D grid DOFs for polynomial

@@ -343,17 +343,20 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     }
 
     /*--- Define the matrices used to store the coordinates, its derivatives and
-          the Jacobians. Every standard element get its own set of matrices, such
-          that the performance is maximized. Not so important here, but it is
-          compatible with the approach used in the computationally intensive part. ---*/
+          the Jacobians. For later purposes, when computing the face metrics,
+          als the matrices for storing the normals is defined. Every standard
+          element get its own set of matrices, such that the performance is
+          maximized. Not so important here, but it is compatible with the
+          approach used in the computationally intensive part. ---*/
     vector<su2activevector> matricesJacobians;
-    vector<ColMajorMatrix<su2double> > matricesCoor;
+    vector<ColMajorMatrix<su2double> > matricesCoor, matricesNormals;
     vector<vector<ColMajorMatrix<su2double> > > matricesDerCoor;
 
     const unsigned long nMat = max(standardVolumeElements.size(),
                                    standardFaceElements.size());
     matricesJacobians.resize(nMat);
     matricesCoor.resize(nMat);
+    matricesNormals.resize(nMat);
     matricesDerCoor.resize(nMat);
 
     /*--- Loop over the standard elements and allocate the memory for the
@@ -409,10 +412,10 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       /*--- Copy the coordinates into matricesCoor[ii], such that the gemm
             routines can be used to compute the derivatives. ---*/
       for(unsigned short j=0; j<nDOFs; ++j) {
-        unsigned long nodeID = elem[i]->GetNode(j);
+        const unsigned long nodeID = elem[i]->GetNode(j);
 
         map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
-        unsigned long ind = MI->second;
+        const unsigned long ind = MI->second;
         for(unsigned short k=0; k<nDim; ++k)
           matricesCoor[ii](j,k) = nodes->GetCoord(ind, k);
       }
@@ -528,8 +531,10 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       gridLocation = EQUIDISTANT;
     }
 
-    /*--- Store the grid location to be used in config. ---*/
+    /*--- Store the grid location to be used in config
+          and store this info also in a boolean. ---*/
     config->SetKind_FEM_GridDOFsLocation(gridLocation);
+    const bool useLGL = gridLocation == LGL;
 
     /*--- Loop over the standard face elements and allocate the memory
           for the matrices used to compute the derivatives. ---*/
@@ -539,14 +544,16 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       const unsigned short sizeDOF = standardFaceElements[i]->GetNDOFs();
       const unsigned short sizeInt = standardFaceElements[i]->GetNIntegrationPad();
 
-      /*--- Allocate the memory for the Jacobians and the coordinates
+      /*--- Allocate the memory for the Jacobians, coordinates and normals
             for this standard element. Fill these matrices with the
             default values to avoid problems later on. ---*/
       matricesJacobians[i].resize(sizeInt);
       matricesCoor[i].resize(sizeDOF, nDim);
+      matricesNormals[i].resize(sizeInt, nDim);
 
       matricesJacobians[i].setConstant(0.0);
       matricesCoor[i].setConstant(0.0);
+      matricesNormals[i].setConstant(0.0);
 
       /*--- Allocate the memory for the second index of matricesDerCoor. ---*/
       matricesDerCoor[i].resize(nDim-1);
@@ -566,8 +573,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     }
 
     /*--- Loop over the local volume elements to determine whether or not the Jacobian
-          of the element is constant, to determine whether the Jacobian of boundary
-          faces is constant and to determine a length scale for the element. ---*/
+          of the element is constant, to determine whether the Jacobians of boundary
+          faces are constant and to determine a length scale for the element. ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for(unsigned long i=0; i<nElem; ++i) {
 
@@ -580,14 +587,14 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
       /*--- Determine the minimum Jacobian and the Jacobian ratio for
             the point distribution used. ---*/
-      su2double jacMin, ratioJac;
+      su2double jacVolMin, ratioJac;
       if(gridLocation == LGL) {
-        jacMin   = jacMinLGL[i];
-        ratioJac = jacMaxLGL[i]/jacMinLGL[i];
+        jacVolMin = jacMinLGL[i];
+        ratioJac  = jacMaxLGL[i]/jacMinLGL[i];
       }
       else {
-        jacMin   = jacMinEqui[i];
-        ratioJac = jacMaxEqui[i]/jacMinEqui[i];
+        jacVolMin = jacMinEqui[i];
+        ratioJac  = jacMaxEqui[i]/jacMinEqui[i];
       }
 
       /*--- Determine whether or not the Jacobian can be considered constant. ---*/
@@ -616,11 +623,53 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
           if( standardFaceElements[jj]->SameStandardElement(VTK_Type, nPoly) )
             break;
 
+        /*--- Set the pointer to store the local face connectivity of this face. ---*/
+        const unsigned short *connFace = standardVolumeElements[ii]->GetGridConnFace(j);
 
+        /*--- Copy the coordinates into matricesCoor[jj], such that the gemm
+              routines can be used to compute the derivatives. ---*/
+        const unsigned short nDOFs = standardFaceElements[jj]->GetNDOFs();
+
+        for(unsigned short l=0; l<nDOFs; ++l) {
+          const unsigned long nodeID = elem[i]->GetNode(connFace[l]);
+
+          map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
+          const unsigned long ind = MI->second;
+          for(unsigned short k=0; k<nDim; ++k)
+            matricesCoor[jj](l,k) = nodes->GetCoord(ind, k);
+        }
+
+        /*--- Determine the minimum and maximum value of the face jacobian in the integration
+              points and the minimum value of the cosine of the angle between the outward normals
+              of the integration points. ---*/
+        su2double jacMin, jacMax, cosAngleMin;
+        standardFaceElements[jj]->MinMaxFaceJacobians(useLGL,  matricesCoor[jj],
+                                                      matricesDerCoor[jj],
+                                                      matricesNormals[jj],
+                                                      matricesJacobians[jj],
+                                                      jacMin, jacMax, cosAngleMin);
+
+        /*--- Compute the ratio between the maximum and minimum Jacobian and determine
+              whether the face is considered to have a constant Jacobian. ---*/
+        const su2double ratioJacMax = jacMax/jacMin;
+        constJacobian = cosAngleMin >= 0.999999 && ratioJacMax <= 1.000001;
+
+        elem[i]->SetJacobianConstantFace(constJacobian, j);
+
+        /*--- Update the maximum value of the Jacobian of all faces surrounding
+              the current element. ---*/
+        jacFaceMax = max(jacFaceMax, jacMax);
       }
+
+      /*--- Determine the length scale of the element. This is needed to compute the
+            computational weights of an element when time accurate local time
+            stepping is employed and to determine a tolerance when periodic
+            transformations are present. Note that a factor 2 must be taken into
+            account, which is the length scale of all the reference elements used
+            in this code. ---*/
+      const su2double lenScale = 2.0*jacVolMin/jacFaceMax;
+      elem[i]->SetLengthScale(lenScale);
     }
-
-
 
   } /*--- end SU2_OMP_PARALLEL ---*/
 
@@ -630,9 +679,6 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
   for(unsigned long i=0; i<standardFaceElements.size(); ++i)
     delete standardFaceElements[i];
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
 }
 
 void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *config,
