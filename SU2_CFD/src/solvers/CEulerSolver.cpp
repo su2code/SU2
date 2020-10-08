@@ -25,6 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <Accelerate/Accelerate.h>
+
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -34,7 +36,7 @@
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 
-#include <Accelerate/Accelerate.h>
+
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -3742,8 +3744,8 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     
     su2double* J_ii = Jacobian.GetBlock(iPoint, iPoint);
     
-    for (kNeigh = 0; kNeigh < geometry->node[iPoint]->GetnPoint(); kNeigh++) {
-      kPoint = geometry->node[iPoint]->GetPoint(kNeigh);
+    for (kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(iPoint); kNeigh++) {
+      kPoint = geometry->nodes->GetPoint(iPoint,kNeigh);
       
       su2double* J_ik = Jacobian.GetBlock(iPoint, kPoint);
       
@@ -3959,7 +3961,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
       }
       nodes->AddROMSolution(iPoint, iVar, sum);
       AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
       fs << nodes->GetSolution(iPoint,iVar) << "\n" ;
     }
   }

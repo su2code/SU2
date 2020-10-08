@@ -4394,7 +4394,6 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   /*--- Get solver nodes ---*/
   CVariable* nodes = GetNodes();
  
-  su2double* Coord;
   if (!u_basis_generator) {
     if (pod_basis == STATIC_POD) {
         std::cout << "Creating static basis generator." << std::endl;
@@ -4424,7 +4423,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
     std::ofstream f;
     f.open(filename + to_string(rank) + ".csv");
         for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
-          Coord = geometry->node[iPoint]->GetCoord();
+          auto Coord = geometry->nodes->GetCoord(iPoint);
           f << Coord[0] << ", " << Coord[1] << "\n";
         }
     f.close();

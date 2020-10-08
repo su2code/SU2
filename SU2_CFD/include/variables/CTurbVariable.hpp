@@ -39,7 +39,7 @@ class CTurbVariable : public CVariable {
 protected:
   VectorType muT;         /*!< \brief Eddy viscosity. */
   MatrixType HB_Source;   /*!< \brief Harmonic Balance source term. */
-  VectorOfMatrix ReynoldsStressTensor;
+  CVectorOfMatrix ReynoldsStressTensor;
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
