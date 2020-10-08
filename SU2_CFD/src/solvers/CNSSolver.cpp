@@ -192,7 +192,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
 
   const bool restart              = config->GetRestart();
   const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
-  const bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter > WFStartIter) || (restart)));
+  const bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -240,9 +240,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
         cout << "---------------------- Switching to wall function -----------------------" << endl;
       ResetCFLAdapt();
       const su2double CFL = config->GetCFL(iMesh);
-      for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++)
         nodes->SetLocalCFL(iPoint, CFL);
-      }
       Min_CFL_Local = CFL;
       Max_CFL_Local = CFL;
       Avg_CFL_Local = CFL;
