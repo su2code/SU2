@@ -2250,7 +2250,7 @@ void CNSSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver
             const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
             WallDistMod = doubleInfo[0];
 
-            /*--- Get the density, momentum, and energy at the exchange location ---*/
+            /*--- Get the density, velocity, and energy at the exchange location ---*/
             
             su2double Density_Normal = 0., Energy_Normal = 0., Kine_Normal = 0., VelMod = 0.;
             P_Normal = 0.;
@@ -2262,24 +2262,21 @@ void CNSSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
-              Density_Normal  += donorCoeff*nodes->GetSolution(donorPoint, 0);
-              Energy_Normal   += donorCoeff*nodes->GetSolution(donorPoint, nDim+1);
-              if (tkeNeeded)
-                Kine_Normal   += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint, 0);
+              Density_Normal  += donorCoeff*nodes->GetDensity(donorPoint);
+              Energy_Normal   += donorCoeff*nodes->GetEnergy(donorPoint);
+              if (tkeNeeded && solver[TURB_SOL] != nullptr)
+                Kine_Normal   += donorCoeff*solver[TURB_SOL]->GetNodes()->GetPrimitive(donorPoint,0);
               
-              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
+              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);
             }
-            
-            /*--- Compute the primitives at the exchange location ---*/
-            
-            Energy_Normal /= Density_Normal;
-            Kine_Normal   /= Density_Normal;
-            for (iDim = 0; iDim < nDim; iDim++) { Vel[iDim] /= Density_Normal; VelMod += Vel[iDim]*Vel[iDim]; }
+
+            for (iDim = 0; iDim < nDim; iDim++) VelMod += Vel[iDim]*Vel[iDim];
             Energy_Normal -= Kine_Normal + 0.5*VelMod;
             
             GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
             P_Normal = GetFluidModel()->GetPressure();
             T_Normal = GetFluidModel()->GetTemperature();
+            Lam_Visc_Normal = GetFluidModel()->GetLaminarViscosity();
 
             /*--- Compute the wall-parallel velocity at the exchange location ---*/
 
@@ -2569,7 +2566,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
             const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
             WallDistMod = doubleInfo[0];
 
-            /*--- Get the density, momentum, and energy at the exchange location ---*/
+            /*--- Get the density, velocity, and energy at the exchange location ---*/
             
             su2double Density_Normal = 0., Energy_Normal = 0., Kine_Normal = 0., VelMod = 0.;
             P_Normal = 0.;
@@ -2581,19 +2578,15 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
               const unsigned long donorPoint = geometry->vertex[iMarker][iVertex]->GetInterpDonorPoint(iNode);
               const su2double donorCoeff     = geometry->vertex[iMarker][iVertex]->GetDonorCoeff(iNode);
               
-              Density_Normal  += donorCoeff*nodes->GetSolution(donorPoint, 0);
-              Energy_Normal   += donorCoeff*nodes->GetSolution(donorPoint, nDim+1);
+              Density_Normal  += donorCoeff*nodes->GetDensity(donorPoint);
+              Energy_Normal   += donorCoeff*nodes->GetEnergy(donorPoint);
               if (tkeNeeded && solver[TURB_SOL] != nullptr)
-                Kine_Normal   += donorCoeff*solver[TURB_SOL]->GetNodes()->GetSolution(donorPoint, 0);
+                Kine_Normal   += donorCoeff*solver[TURB_SOL]->GetNodes()->GetPrimitive(donorPoint,0);
               
-              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetSolution(donorPoint,iDim+1);
+              for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] += donorCoeff*nodes->GetVelocity(donorPoint,iDim);
             }
-            
-            /*--- Compute the primitives at the exchange location ---*/
-            
-            Energy_Normal /= Density_Normal;
-            Kine_Normal   /= Density_Normal;
-            for (iDim = 0; iDim < nDim; iDim++) { Vel[iDim] /= Density_Normal; VelMod += Vel[iDim]*Vel[iDim]; }
+
+            for (iDim = 0; iDim < nDim; iDim++) VelMod += Vel[iDim]*Vel[iDim];
             Energy_Normal -= Kine_Normal + 0.5*VelMod;
             
             GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
