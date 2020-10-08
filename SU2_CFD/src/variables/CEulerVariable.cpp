@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
@@ -119,6 +119,11 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
+
+  if (config->GetAxisymmetric()){
+    Grad_AxiAuxVar.resize(nPoint,3,nDim,0.0);
+    AxiAuxVar.resize(nPoint,3) = su2double(0.0);
   }
 
   if (config->GetLeastSquaresRequired()) {

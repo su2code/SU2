@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
@@ -3039,7 +3039,8 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool implicit         = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+  const bool viscous          = config->GetViscous();
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
@@ -3107,6 +3108,39 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   if (axisymmetric) {
 
+    /*--- For viscous problems, we need an additional gradient. ---*/
+    if (viscous) {
+
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+        su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+        su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+        su2double xVelocity       = nodes->GetVelocity(iPoint,1);
+        su2double Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
+                                     nodes->GetEddyViscosity(iPoint));
+        su2double AxiAuxVar[3] = {0.0};
+
+        if (yCoord > EPS){
+          AxiAuxVar[0] = Total_Viscosity*yVelocity/yCoord;
+          AxiAuxVar[1] = Total_Viscosity*yVelocity*yVelocity/yCoord;
+          AxiAuxVar[2] = Total_Viscosity*xVelocity*yVelocity/yCoord;
+        }
+
+        /*--- Set the auxilairy variable for this node. ---*/
+        nodes->SetAxiAuxVar(iPoint, AxiAuxVar);
+
+      }
+
+      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAxiAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAxiAuxVar_Gradient_LS(geometry, config);
+      }
+
+    }
+
     /*--- loop over points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3119,6 +3153,21 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+
+      /*--- If viscous, we need gradients for extra terms. ---*/
+
+      if (viscous) {
+
+        /*--- Primitive variables ---*/
+        numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+
+        /*--- Gradient of the primitive variables ---*/
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
+
+        /*--- Load the aux variable gradient that we already computed. ---*/
+        numerics->SetAxiAuxVarGrad(nodes->GetAxiAuxVarGradient(iPoint), nullptr);
+
+      }
 
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file flow_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
@@ -56,9 +56,10 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
 CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
 
   su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
-  unsigned short iDim, iVar, jVar;
+  unsigned short iDim,jDim, iVar, jVar;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool viscous  = (config->GetViscous());
 
   if (Coord_i[1] > EPS) {
 
@@ -105,6 +106,41 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
     }
 
+    if (viscous){
+
+      Laminar_Viscosity_i    = V_i[nDim+4];
+      Eddy_Viscosity_i       = V_i[nDim+5];
+      Thermal_Conductivity_i = V_i[nDim+6];
+
+      su2double u     = V_i[1];
+      su2double v     = V_i[2];
+      su2double mu    = (Laminar_Viscosity_i +
+                         Eddy_Viscosity_i);
+
+      /*--- The full stress tensor is needed for variable density ---*/
+      su2double div_vel = 0.0;
+      for (iDim = 0 ; iDim < nDim; iDim++)
+        div_vel += PrimVar_Grad_i[iDim+1][iDim];
+
+      for (iDim = 0 ; iDim < nDim; iDim++)
+        for (jDim = 0 ; jDim < nDim; jDim++)
+          tau[iDim][jDim] = (mu*(PrimVar_Grad_i[jDim+1][iDim] +
+                             PrimVar_Grad_i[iDim+1][jDim] )
+                             -TWO3*mu*div_vel*delta[iDim][jDim]);
+
+      su2double tau_xy  = tau[0][1];
+      su2double tau_yyp = tau[1][1];
+      su2double tau_tt  = -TWO3*mu*(div_vel-2*v*yinv);
+
+      su2double qy      = -Thermal_Conductivity_i*PrimVar_Grad_i[0][1];
+
+      residual[0] -= 0.0;
+      residual[1] -= Volume*(yinv*tau_xy - TWO3*AxiAuxVar_Grad_i[0][0]);
+      residual[2] -= Volume*(yinv*(tau_yyp-tau_tt-TWO3*mu*v*yinv)-TWO3*AxiAuxVar_Grad_i[0][1]);
+      residual[3] -= Volume*(yinv*(u*tau_xy+v*tau_yyp-qy-TWO3*mu*v*v*yinv*AxiAuxVar_Grad_i[1][1])
+                             -AxiAuxVar_Grad_i[2][1]);
+
+    }
   }
 
   else {

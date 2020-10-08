@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
@@ -204,6 +204,12 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double **GetAxiAuxVarGradient(unsigned long iPoint) final { return Grad_AxiAuxVar[iPoint]; }
 
   /*!
    * \brief A virtual member.

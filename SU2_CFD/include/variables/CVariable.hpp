@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CVariable.hpp
  * \brief Declaration and inlines of the parent class for defining problem
           variables, function definitions in file <i>CVariable.cpp</i>.
@@ -79,6 +79,9 @@ protected:
 
   VectorType AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
   MatrixType Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
+
+  MatrixType AxiAuxVar;             /*!< \brief Axisymmetric auxiliar variable for gradient computation. */
+  CVectorOfMatrix Grad_AxiAuxVar;   /*!< \brief Gradient of the axisymmetric variables  of the problem. */
 
   VectorType Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   VectorType Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
@@ -623,6 +626,53 @@ public:
    * \return Value of the gradient of the auxiliary variable for the dimension <i>iDim</i>.
    */
   inline su2double GetAuxVarGradient(unsigned long iPoint, unsigned long iDim) const { return Grad_AuxVar(iPoint,iDim); }
+
+
+
+
+
+  /*!
+   * \brief Set axisymmetric auxiliar variables.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_auxvar - Value of the auxiliar variable.
+   */
+  inline void SetAxiAuxVar(unsigned long iPoint, const su2double *axiauxvar) {
+    for (unsigned long iVar = 0; iVar < 3; iVar++) AxiAuxVar(iPoint,iVar) = axiauxvar[iVar];
+  }
+
+  /*!
+   * \brief Get the entire axi aux vector of the problem.
+   * \return Reference to the axi aux matrix.
+   */
+  inline const MatrixType& GetAxiAuxVar(void) { return AxiAuxVar; }
+
+  /*!
+   * \brief Set value of axisymmetric auxillary gradients.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the gradient.
+   */
+  inline void SetAxiAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) { Grad_AxiAuxVar(iPoint,iVar,iDim) = value; }
+
+  /*!
+   * \brief Get the gradient of the axi auxilary variables.
+   * \return Reference to gradient.
+   */
+  inline CVectorOfMatrix& GetAxiAuxVarGradient(void) { return Grad_AxiAuxVar; }
+
+  /*!
+   * \brief Get the value of the axisymmetric auxilliary gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the solution gradient.
+   */
+  inline su2double GetAxiAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Grad_AxiAuxVar(iPoint,iVar,iDim); }
+
+
+
+
 
   /*!
    * \brief Add a value to the truncation error.
@@ -1954,6 +2004,12 @@ public:
    * \return Reference to variable reconstruction gradient.
    */
   inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the primitive variables gradient.
+   */
+  inline virtual su2double **GetAxiAuxVarGradient(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
