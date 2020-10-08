@@ -2276,7 +2276,6 @@ void CNSSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **solver
             GetFluidModel()->SetTDState_rhoe(Density_Normal, Energy_Normal);
             P_Normal = GetFluidModel()->GetPressure();
             T_Normal = GetFluidModel()->GetTemperature();
-            Lam_Visc_Normal = GetFluidModel()->GetLaminarViscosity();
 
             /*--- Compute the wall-parallel velocity at the exchange location ---*/
 
