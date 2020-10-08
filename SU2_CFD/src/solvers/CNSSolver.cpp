@@ -235,9 +235,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
 
   if (wall_functions) {
     /*--- First reset CFL if needed ---*/
-    if ((InnerIter == WFStartIter+1) && (!restart) && (!disc_adjoint)) {
+    if ((InnerIter == WFStartIter+1) && (!restart) && (!disc_adjoint) && !Output) {
       if (rank == MASTER_NODE)
-        cout << "Switching to wall function." << endl;
+        cout << "---------------------- Switching to wall function -----------------------" << endl;
       ResetCFLAdapt();
       const su2double CFL = config->GetCFL(iMesh);
       for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -247,9 +247,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
       Max_CFL_Local = CFL;
       Avg_CFL_Local = CFL;
     }
-    // SU2_OMP_MASTER
-    // ComputeKnoppWallFunction(geometry, solver, config);
-    // SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    ComputeKnoppWallFunction(geometry, solver, config);
+    SU2_OMP_BARRIER
   }
 
 

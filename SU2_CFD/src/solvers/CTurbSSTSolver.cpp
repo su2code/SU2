@@ -1968,9 +1968,9 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   }
 
   /*--- MPI solution ---*/
-  SetEddyViscosity(geometry, solver);
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
+  SetEddyViscosity(geometry, solver);
 }
 
 void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
