@@ -1,7 +1,7 @@
 ## \file OptimalPropeller.py
 #  \brief Python script for generating the ActuatorDisk.dat file.
 #  \author E. Saetta, L. Russo, R. Tognaccini
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.7 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 

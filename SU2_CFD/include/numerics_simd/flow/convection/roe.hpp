@@ -2,7 +2,7 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -204,8 +204,7 @@ public:
 
     /*--- Stop preaccumulation. ---*/
 
-    AD::SetPreaccOut(flux, nVar, Double::Size);
-    AD::EndPreacc();
+    stopPreacc(flux);
 
     /*--- Update the vector and system matrix. ---*/
 
