@@ -2,7 +2,7 @@
  * \file vectorization.cpp
  * \brief Unit tests for the SIMD type and associated expression templates.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

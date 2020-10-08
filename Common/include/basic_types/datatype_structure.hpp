@@ -2,7 +2,7 @@
  * \file datatype_structure.hpp
  * \brief Headers for generalized datatypes, defines an interface for AD types.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,7 @@
 #define FORCEINLINE inline
 #endif
 
-#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#if defined(__GNUC__) || defined(__clang__)
 #define NEVERINLINE inline __attribute__((noinline))
 #else
 #define NEVERINLINE inline
