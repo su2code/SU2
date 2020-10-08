@@ -3,7 +3,7 @@
  * \brief Class for the FEM triangle standard element for the grid.
  *        The functions are in the <i>CFEMStandardTriGrid.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class which defines the variables and methods for the
  *        triangle standard element for the grid.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardTriGrid final: public CFEMStandardTri {
 

@@ -3,7 +3,7 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the
  *        finite element solver (FEM).
  * \author T. Economon, E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

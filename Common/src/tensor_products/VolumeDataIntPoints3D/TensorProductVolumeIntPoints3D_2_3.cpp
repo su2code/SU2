@@ -2,7 +2,7 @@
  * \file TensorProductVolumeIntPoints3D_2_3.cpp
  * \brief Function, which carries out the tensor product for (nDOFs1D,nInt1D) = (2,3)
  * \author Automatically generated file, do not change manually
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
