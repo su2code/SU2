@@ -3,7 +3,7 @@
  * \brief Headers of the main functions for the FEM standard elements.
  *        The functions are in the <i>fem_standard_element.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
  * \class CFEMStandardElement
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardElement : public CFEMStandardElementBase {
 private:
@@ -97,7 +97,7 @@ public:
  * \class CFEMStandardBoundaryFace
  * \brief Class to define a FEM standard boundary face.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
 

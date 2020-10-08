@@ -3,7 +3,7 @@
  * \brief Header file for the class CFaceOfElement.
  *        The implementations are in the <i>CFaceOfElement.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
