@@ -235,7 +235,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
 
   if (wall_functions) {
     /*--- First reset CFL if needed ---*/
-    if ((InnerIter == WFStartIter) && (!restart) && (!disc_adjoint)) {
+    if ((InnerIter == WFStartIter+1) && (!restart) && (!disc_adjoint)) {
       if (rank == MASTER_NODE)
         cout << "Switching to wall function." << endl;
       ResetCFLAdapt();
