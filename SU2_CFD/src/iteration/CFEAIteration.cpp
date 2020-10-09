@@ -206,8 +206,7 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
     const su2double Physical_t = (TimeIter + 1) * Physical_dt;
     if (Physical_t >= config[val_iZone]->GetTotal_DynTime())
       integration[val_iZone][val_iInst][FEA_SOL]->SetConvergence(true);
-  } 
-  if (fsi) {//Now also runs ImplicitNewmark_Relaxation for dynamic fsi
+  } else if (fsi) {
     /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
      * purposes) ---*/
     if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == NEWMARK_IMPLICIT) {
