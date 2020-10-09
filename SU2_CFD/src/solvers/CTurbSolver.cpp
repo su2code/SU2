@@ -634,6 +634,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
+  const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
+  const bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
+
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   /*--- Set shared residual variables to 0 and declare
@@ -649,6 +652,49 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
+
+  /*--- Set residual to 0 if turbulent variables are calculated with wall functions ---*/
+
+  if (wall_functions) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      const auto node_i = geometry->node[iPoint];
+      if (node_i->GetBool_Wall_Neighbor()) {
+        bool converged = true;
+        su2double Density_Wall  = 0.;
+        su2double Lam_Visc_Wall = 0.;
+        su2double U_Tau = 0.;
+        const unsigned short nDonors = node_i->GetWall_nNode();
+        for (auto iNode = 0; iNode < nDonors; iNode++) {
+          const su2double donorCoeff = node_i->GetWall_Interpolation_Weights()[iNode];
+          Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
+          Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
+          U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
+          
+          if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
+            converged = false;
+            break;
+          }
+        }
+
+        VelMod = 0.;
+        for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
+        VelMod = sqrt(VelMod);
+
+        const su2double distance = node_i->GetWall_Distance();
+
+        const su2double Up = VelMod/U_Tau;
+        const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
+        
+        if (Yp > 500. || !converged) continue;
+
+        LinSysRes.SetBlock_Zero(iPoint);
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          const unsigned long total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
 
   /*--- Build implicit system ---*/
 

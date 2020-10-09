@@ -2863,7 +2863,7 @@ void CNSSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **solver, 
   WallFunctionComms(geometry, solver, config);
 
   /*--- Correct values in turbulent solver ---*/
-  // if (solver[TURB_SOL] != nullptr)
-  //   solver[TURB_SOL]->ComputeKnoppWallFunction(geometry, solver, config);
+  if (solver[TURB_SOL] != nullptr)
+    solver[TURB_SOL]->ComputeKnoppWallFunction(geometry, solver, config);
 
 }

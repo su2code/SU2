@@ -1935,7 +1935,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
       
       /*--- Disable calculation if Y+ is too small or large ---*/
-      if (Yp > 500.) continue;
+      if (Yp > 500. || !converged) continue;
       
       const su2double Density_Normal = flowNodes->GetDensity(iPoint);
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
@@ -1956,7 +1956,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
-      nodes->SetSolution(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
