@@ -49,6 +49,10 @@ CFEMStandardTetGrid::CFEMStandardTetGrid(const unsigned short val_nPoly,
   /*--- Create the local grid connectivities of the faces of the volume element. ---*/
   LocalGridConnFaces();
 
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivative of the coordinates are computed, which is 3. ---*/
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
@@ -343,4 +347,202 @@ void CFEMStandardTetGrid::LocalGridConnFaces(void) {
   ChangeDirectionTriangleConn(gridConnFaces[1], n0, n3, n1);
   ChangeDirectionTriangleConn(gridConnFaces[2], n0, n2, n3);
   ChangeDirectionTriangleConn(gridConnFaces[3], n1, n3, n2);
+}
+
+void CFEMStandardTetGrid::SubConnLinearElements(void) {
+
+  /*--- The tetrahedron is split into several linear tetrahedron.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = TETRAHEDRON;
+  VTK_SubType2 = NONE;
+
+  /*--- Initialize the number of DOFs for the current edges to the number of
+        DOFs of the edges present in the tetrahedron. Also initialize the
+        current k offset to zero.    ---*/
+  unsigned short nDOFsCurrentEdges = nPoly + 1;
+  unsigned short offCurrentK       = 0;
+
+  /*--- Loop in the k-direction of the tetrahedron, which is along the edge
+        from the first vertex to the last vertex of the tet. ---*/
+  for(unsigned short k=0; k<nPoly; ++k) {
+
+    /*--- Determine the offset for the next k. ---*/
+    const unsigned short offNextK = offCurrentK
+                                  + nDOFsCurrentEdges*(nDOFsCurrentEdges+1)/2;
+
+    /*------------------------------------------------------------------------*/
+    /*      Step 1: The tetrahedron at the end of the current i-edge.         */
+    /*------------------------------------------------------------------------*/
+
+    unsigned short n0 = offCurrentK + nDOFsCurrentEdges - 2;
+    unsigned short n1 = n0 + 1;
+    unsigned short n2 = n0 + nDOFsCurrentEdges;
+    unsigned short n3 = offNextK + nDOFsCurrentEdges - 2;
+
+    subConn1ForPlotting.push_back(n0);
+    subConn1ForPlotting.push_back(n1);
+    subConn1ForPlotting.push_back(n2);
+    subConn1ForPlotting.push_back(n3);
+
+    /*------------------------------------------------------------------------*/
+    /* Step 2: The prisms that run from the end of the j-edge to the base of  */
+    /*         tet just created. These prisms are subdivided into tetrahedra. */
+    /*------------------------------------------------------------------------*/
+
+    for(unsigned short i=0; i<(nDOFsCurrentEdges-2); ++i) {
+
+      /*--- Determine the lowest j-index on the current i-line that contributes
+            to the subprism. Convert that index to the local vertex number in
+            the tetrahedron. ---*/
+      unsigned short j = nDOFsCurrentEdges-2 -i;
+      n0 = j*nDOFsCurrentEdges + i - j*(j-1)/2 + offCurrentK;
+
+      /*--- Increment the j index to obtain the n1 vertex of the subprism. ---*/
+      ++j;
+      n1 = j*nDOFsCurrentEdges + i - j*(j-1)/2 + offCurrentK;
+
+      /*--- The n2 vertex of the prism is located on the next k-level.
+            The i-index remains the same, but the j index must be adapted, because
+            the number of DOFs on the edges on the next k-level is one less. ---*/
+      j  = nDOFsCurrentEdges-2 -i;
+      n2 = j*(nDOFsCurrentEdges-1) + i - j*(j-1)/2 + offNextK;
+
+      /*--- The n3 vertex is part of the upper triangle of the prism. Hence the
+            i-index must be incremented by one, stored in ii. The j-index must
+            be computed accordingly and converted to the 1D numbering. ---*/
+      unsigned short ii = i+1;
+      j  = nDOFsCurrentEdges-2 -ii;
+      n3 = j*nDOFsCurrentEdges + ii - j*(j-1)/2 + offCurrentK;
+
+      /*--- Increment the j index to obtain the n4 vertex of the subprism. ---*/
+      ++j;
+      unsigned short n4 = j*nDOFsCurrentEdges + ii - j*(j-1)/2 + offCurrentK;
+
+      /*--- The n5 vertex of the prism is located on the next k-level.
+            The i-index remains the same, but the j index must be adapted, because
+            the number of DOFs on the edges on the next k-level is one less. ---*/
+      j  = nDOFsCurrentEdges-2 -ii;
+      unsigned short n5 = j*(nDOFsCurrentEdges-1) + ii - j*(j-1)/2 + offNextK;
+
+      /*--- Divide the subprism into 3 subtetrahedra. ---*/
+      subConn1ForPlotting.push_back(n0);
+      subConn1ForPlotting.push_back(n1);
+      subConn1ForPlotting.push_back(n2);
+      subConn1ForPlotting.push_back(n4);
+
+      subConn1ForPlotting.push_back(n3);
+      subConn1ForPlotting.push_back(n0);
+      subConn1ForPlotting.push_back(n2);
+      subConn1ForPlotting.push_back(n4);
+
+      subConn1ForPlotting.push_back(n3);
+      subConn1ForPlotting.push_back(n2);
+      subConn1ForPlotting.push_back(n5);
+      subConn1ForPlotting.push_back(n4);
+    }
+
+    /*------------------------------------------------------------------------*/
+    /* Step 3: The remaining subelements for this k-level, which are prisms   */
+    /*         and hexas. These are subdivided into tetrahedra again.         */
+    /*------------------------------------------------------------------------*/
+
+    for(unsigned short i=0; i<(nDOFsCurrentEdges-2); ++i) {
+
+      /*--- Define the variables n4 to n7, because these indices will be used
+            again for the prism treated after the hexahedra. ---*/
+      unsigned short n4, n5, n6, n7;
+
+      /*--- Initialize n3, n2, n7 and n6 to the quad on the line j = 0. ---*/
+      n3 = offCurrentK + i; n2 = n3 + 1;
+      n7 = offNextK    + i; n6 = n7 + 1;
+
+      /*--- Loop in the j-direction for the hexahedra on this i-row. ---*/
+      for(unsigned short j=0; j<(nDOFsCurrentEdges-3-i); ++j) {
+
+        /*--- Set the values of n0, n1, n4 and n5 from the previous hex. ---*/
+        n0 = n3; n1 = n2; n4 = n7; n5 = n6;
+
+        /*--- Nodes n3 and n7 are the j-neighbors of n0 and n4 respectively.
+              Convert these (i,j,k) indices to the 1D index again. ---*/
+        n3 = (j+1)*nDOFsCurrentEdges + i - j*(j+1)/2 + offCurrentK;
+        n7 = (j+1)*(nDOFsCurrentEdges-1) + i - j*(j+1)/2 + offNextK;
+
+        /*--- Nodes n2 and n6 are the i-neighbors of n3 and n7 respectively.
+              Just add an offset of 1 in the 1D numbering. ---*/
+        n2 = n3 + 1;
+        n6 = n7 + 1;
+
+        /*--- Divide the hexahedron in 6 tetrahedra and add their connectivity
+              to the vector to store the subtetrahedra. ---*/
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n4);
+        subConn1ForPlotting.push_back(n1);
+
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n7);
+        subConn1ForPlotting.push_back(n4);
+        subConn1ForPlotting.push_back(n1);
+
+        subConn1ForPlotting.push_back(n4);
+        subConn1ForPlotting.push_back(n7);
+        subConn1ForPlotting.push_back(n5);
+        subConn1ForPlotting.push_back(n1);
+
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n7);
+
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n5);
+        subConn1ForPlotting.push_back(n6);
+        subConn1ForPlotting.push_back(n7);
+
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n5);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n7);
+      }
+
+      /*--- The prism that is in between the last hexahedron treated above
+            and one of the prisms treated in step 2.
+            The ID's of four of the vertices of the prism have already been
+            computed for the last hexahedron above. However, they must be
+            put in the correct numbering of the prism, which is done here. ---*/
+      n0 = n3;
+      n1 = n2;
+      n3 = n7;
+      n4 = n6;
+
+      /*--- Determine the j-index of the two remaining vertices and convert
+            the (i,j,k) indices to the 1D index. ---*/
+      unsigned short j = nDOFsCurrentEdges-2-i;
+
+      n2 = j*nDOFsCurrentEdges + i - j*(j-1)/2 + offCurrentK;
+      n5 = j*(nDOFsCurrentEdges-1) + i - j*(j-1)/2 + offNextK;
+
+      /*--- Divide the prism in 3 tetrahedra and add their connectivity
+            to the vector to store the subtetrahedra.     ---*/
+      subConn1ForPlotting.push_back(n3);
+      subConn1ForPlotting.push_back(n5);
+      subConn1ForPlotting.push_back(n4);
+      subConn1ForPlotting.push_back(n1);
+
+      subConn1ForPlotting.push_back(n0);
+      subConn1ForPlotting.push_back(n2);
+      subConn1ForPlotting.push_back(n3);
+      subConn1ForPlotting.push_back(n1);
+
+      subConn1ForPlotting.push_back(n2);
+      subConn1ForPlotting.push_back(n5);
+      subConn1ForPlotting.push_back(n3);
+      subConn1ForPlotting.push_back(n1);
+    }
+
+    /*--- Set offCurrentK to offNextK for the next k-value and decrement
+          the value of nDOFsCurrentEdges, also for the next k-value. ---*/
+    offCurrentK = offNextK;
+    --nDOFsCurrentEdges;
+  }
 }

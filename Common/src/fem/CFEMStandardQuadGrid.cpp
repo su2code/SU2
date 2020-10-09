@@ -53,6 +53,10 @@ CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPoly,
   /*--- Create the local grid connectivities of the faces of the volume element.
         Only needed if this is a volume element. ---*/
   if( !val_surfElement ) LocalGridConnFaces();
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
 }
 
 void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
@@ -110,4 +114,32 @@ void CFEMStandardQuadGrid::LocalGridConnFaces(void) {
   for(signed short i=n1; i<=n2; i+=(nPoly+1)) gridConnFaces[1].push_back(i);
   for(signed short i=n2; i>=n3; --i)          gridConnFaces[2].push_back(i);
   for(signed short i=n3; i>=n0; i-=(nPoly+1)) gridConnFaces[3].push_back(i);
+}
+
+void CFEMStandardQuadGrid::SubConnLinearElements(void) {
+
+  /*--- The quadrilateral is split into several linear quads.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = QUADRILATERAL;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the local subconnectivity of the quadrilateral element used for
+        plotting purposes. Note that the connectivity of the linear subelements
+        obey the VTK connectivity rule of a quadrilateral, which is different
+        from the connectivity for the high order quadrilateral. ---*/
+  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
+  for(unsigned short j=0; j<nnPoly; ++j) {
+    unsigned short jj = j*(nnPoly+1);
+    for(unsigned short i=0; i<nnPoly; ++i) {
+      const unsigned short n0 = jj + i;
+      const unsigned short n1 = n0 + 1;
+      const unsigned short n2 = n1 + nPoly+1;
+      const unsigned short n3 = n2 - 1;
+
+      subConn1ForPlotting.push_back(n0);
+      subConn1ForPlotting.push_back(n1);
+      subConn1ForPlotting.push_back(n2);
+      subConn1ForPlotting.push_back(n3);
+    }
+  }
 }

@@ -55,6 +55,10 @@ CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPoly,
         Only needed if this is a volume element. ---*/
   if( !val_surfElement ) LocalGridConnFaces();
 
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivatives of the coordinates are computed, which is nDim. ---*/
   SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs);
@@ -254,4 +258,55 @@ void CFEMStandardTriGrid::LocalGridConnFaces(void) {
   for(signed short i=0; i<=nPoly; ++i) gridConnFaces[0].push_back(i);
   for(signed short i=0; i<=nPoly; ++i) gridConnFaces[1].push_back((i+1)*(nPoly+1) - i*(i+1)/2 -1);
   for(signed short i=nPoly; i>=0; --i) gridConnFaces[2].push_back(i*(nPoly+1) - i*(i-1)/2);
+}
+
+void CFEMStandardTriGrid::SubConnLinearElements(void) {
+
+  /*--- The triangle is split into several linear triangles.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = TRIANGLE;
+  VTK_SubType2 = NONE;
+
+  /*--- Initialize the counter for the edges jj. ---*/
+  unsigned short jj = 0;
+
+  /*--- Loop over subedges of the left boundary of the standard triangle. ---*/
+  for(unsigned short j=0; j<nPoly; ++j) {
+
+    /*--- Check if the "down" elements must be written. ---*/
+    if( j ) {
+
+      /*--- Offset of the relevant DOF on the previous row. ---*/
+      const unsigned short kk = jj - (nPoly + 1 - j);
+
+      /*--- Loop over the sub-elements of this edge. ---*/
+      for(unsigned short i=0; i<(nPoly-j); ++i) {
+        const unsigned short n0 = jj + i;
+        const unsigned short n1 = kk + i;
+        const unsigned short n2 = n0 + 1;
+
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n2);
+      }
+    }
+
+    /*--- The "upp" elements must always be written.
+          Determine the offset of the DOF on the next row. ---*/
+    const unsigned short kk = jj + (nPoly + 1 - j);
+
+    /*--- Loop over the sub-elements of this edge. ---*/
+    for(unsigned short i=0; i<(nPoly-j); ++i) {
+      const unsigned short n0 = jj + i;
+      const unsigned short n1 = n0 + 1;
+      const unsigned short n2 = kk + i;
+
+      subConn1ForPlotting.push_back(n0);
+      subConn1ForPlotting.push_back(n1);
+      subConn1ForPlotting.push_back(n2);
+    }
+
+    /*--- Set jj to kk for the next edge. ---*/
+    jj = kk;
+  }
 }

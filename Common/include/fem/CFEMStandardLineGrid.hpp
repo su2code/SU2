@@ -86,4 +86,10 @@ private:
   ColMajorMatrix<passivedouble> derLagBasisLineIntLGL;  /*!< \brief The values of the derivatives of the 1D Lagrangian
                                                                     basis functions in the integration points for the
                                                                     LGL point distribution. */
+
+  /*!
+   * \brief Function, which creates the connectivity of the linear sub-elements when the
+   *        high order element is split in such elements.
+   */
+  void SubConnLinearElements(void);
 };

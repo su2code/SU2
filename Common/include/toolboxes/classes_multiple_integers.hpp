@@ -135,3 +135,36 @@ struct CLong3T {
   }
 };
 
+/*!
+ * \struct CUnsignedShort3T
+ * \brief Help struct used to store three unsigned shorts as one entity.
+ * \version 7.0.7 "Blackbird"
+ */
+struct CUnsignedShort3T {
+  unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
+  unsigned short short1 = 0;  /*!< \brief Second short to store in this class. */
+  unsigned short short2 = 0;  /*!< \brief Third short to store in this class. */
+
+  /*!
+   * \overload
+   * \param[in] a - First element of the object.
+   * \param[in] b - Second element of the object.
+   * \param[in] c - Third element of the object
+   */
+  CUnsignedShort3T(const unsigned short a, const unsigned short b, const unsigned short c) {
+    short0 = a; short1 = b; short2 = c;
+  }
+
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered less and false otherwise.
+   */
+  inline bool operator<(const CUnsignedShort3T &other) const {
+    if(short0 != other.short0) return (short0 < other.short0);
+    if(short1 != other.short1) return (short1 < other.short1);
+    if(short2 != other.short2) return (short2 < other.short2);
+
+    return false;
+  }
+};

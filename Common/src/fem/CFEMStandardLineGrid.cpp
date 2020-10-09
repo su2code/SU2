@@ -45,6 +45,10 @@ CFEMStandardLineGrid::CFEMStandardLineGrid(const unsigned short val_nPoly,
   DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, derLagBasisLineIntEqui);
   DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, derLagBasisLineIntLGL);
 
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivatives of the coordinates are computed, which is 2,
         because the line element is only present as a surface element in a
@@ -68,5 +72,26 @@ void CFEMStandardLineGrid::DerivativesCoorIntPoints(const bool                  
     /*--- Equidistant distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
     OwnGemm(nIntegrationPad, 2, nDOFs, derLagBasisLineIntEqui, matCoor, matDerCoor[0], nullptr);
+  }
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardLineGrid.                     */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardLineGrid::SubConnLinearElements(void) {
+
+  /*--- The line is split into several linear lines.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = LINE;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the local subconnectivity of the line element used for plotting
+        purposes. This is rather trivial, because the line element is subdivided
+        into nPoly linear line elements. ---*/
+  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
+  for(unsigned short i=0; i<nnPoly; ++i) {
+    subConn1ForPlotting.push_back(i);
+    subConn1ForPlotting.push_back(i+1);
   }
 }

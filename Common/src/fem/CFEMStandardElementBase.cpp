@@ -97,6 +97,31 @@ unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
   return nDOFs;
 }
 
+unsigned short CFEMStandardElementBase::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
+
+  /*--- Distinguish between the possible element types for a linear
+        sub-element and set the nDOFs accordingly. ---*/
+  unsigned short nDOFsSubElem = 0;   // To avoid a compiler warning.
+  switch( val_VTK_Type ) {
+    case NONE:          nDOFsSubElem = 0; break;
+    case LINE:          nDOFsSubElem = 2; break;
+    case TRIANGLE:      nDOFsSubElem = 3; break;
+    case QUADRILATERAL: nDOFsSubElem = 4; break;
+    case TETRAHEDRON:   nDOFsSubElem = 4; break;
+    case PYRAMID:       nDOFsSubElem = 5; break;
+    case PRISM:         nDOFsSubElem = 6; break;
+    case HEXAHEDRON:    nDOFsSubElem = 8; break;
+    default:
+      ostringstream message;
+      message << "Impossible FEM sub element type, " << val_VTK_Type
+              << ", encountered.";
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Return the number of DOFs for a subface. ---*/
+  return nDOFsSubElem;
+}
+
 void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool                         LGLDistribution,
                                                          ColMajorMatrix<su2double>          &matCoor,
                                                          vector<ColMajorMatrix<su2double> > &matMetricTerms,

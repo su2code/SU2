@@ -112,4 +112,10 @@ private:
    *        of the volume element.
    */
   void LocalGridConnFaces(void);
+
+  /*!
+   * \brief Function, which creates the connectivity of the linear sub-elements when the
+   *        high order element is split in such elements.
+   */
+  void SubConnLinearElements(void);
 };

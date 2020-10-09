@@ -49,6 +49,10 @@ CFEMStandardPyraGrid::CFEMStandardPyraGrid(const unsigned short val_nPoly,
   /*--- Create the local grid connectivities of the faces of the volume element. ---*/
   LocalGridConnFaces();
 
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivative of the coordinates are computed, which is 3. ---*/
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
@@ -345,4 +349,165 @@ void CFEMStandardPyraGrid::LocalGridConnFaces(void) {
   ChangeDirectionTriangleConn(gridConnFaces[2], n3, n2, n4);
   ChangeDirectionTriangleConn(gridConnFaces[3], n0, n3, n4);
   ChangeDirectionTriangleConn(gridConnFaces[4], n1, n4, n2);
+}
+
+void CFEMStandardPyraGrid::SubConnLinearElements(void) {
+
+  /*--- The pyramid is split into several linear pyramids and tets.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = PYRAMID;
+  VTK_SubType2 = TETRAHEDRON;
+
+  /*--- Initialize the number of DOFs for the current edges to the number of
+        DOFs of the edges on the base of the pyramid. Also initialize the
+        current k offset to zero.     ---*/
+  unsigned short nDOFsCurrentEdges = nPoly + 1;
+  unsigned short offCurrentK       = 0;
+
+  /*--- Loop in the k-direction of the pyramid. ---*/
+  for(unsigned short k=0; k<nPoly; ++k) {
+
+    /*------------------------------------------------------------------------*/
+    /*       Sub-pyramids in the same direction as the original pyramid.      */
+    /*------------------------------------------------------------------------*/
+
+    /*--- Determine the index of the first vertex of the quadrilateral of the
+          next k value. ---*/
+    unsigned short kk = offCurrentK + nDOFsCurrentEdges*nDOFsCurrentEdges;
+
+    /*--- Loop in j-direction of the current quad. ---*/
+    for(unsigned short j=0; j<(nDOFsCurrentEdges-1); ++j) {
+
+      /*--- Index of the first vertex along the j-row of the current quad. ---*/
+      const unsigned short jj = offCurrentK + j*nDOFsCurrentEdges;
+
+      /*--- Loop in i-direction of the current quad. ---*/
+      for(unsigned short i=0; i<(nDOFsCurrentEdges-1); ++i) {
+
+        /*--- Determine the local indices of the corners of the quadrilateral
+              of this subpyramid as well as the top of the subpyramid.
+              Store the connectivity in subConn1ForPlotting.  ---*/
+        const unsigned short n0 = jj + i;
+        const unsigned short n1 = n0 + 1;
+        const unsigned short n2 = n1 + nDOFsCurrentEdges;
+        const unsigned short n3 = n0 + nDOFsCurrentEdges;
+        const unsigned short n4 = kk + i;
+
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n4);
+      }
+
+      /*--- Update kk for the next j-row. ---*/
+      kk += nDOFsCurrentEdges - 1;
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*    Sub-pyramids in the opposite direction as the original pyramid.     */
+    /*------------------------------------------------------------------------*/
+
+    /*--- Reset the value of kk to the index of the first vertex of the
+          quadrilateral of the next k-plane. ---*/
+    kk = offCurrentK + nDOFsCurrentEdges*nDOFsCurrentEdges;
+
+    /*--- Loop in j-direction of the current quad. Note that the starting index
+          of this loop is 1. ---*/
+    for(unsigned short j=1; j<(nDOFsCurrentEdges-1); ++j) {
+
+      /*--- Index of the first vertex along the j-row of the current quad. ---*/
+      const unsigned short jj = offCurrentK + j*nDOFsCurrentEdges;
+
+      /*--- Loop in the i-direction of this quad. Again the starting index is 1. ---*/
+      for(unsigned short i=1; i<(nDOFsCurrentEdges-1); ++i) {
+
+        /*--- Determine the local indices of the corners of the quadrilateral
+              of this subpyramid as well as the top of the subpyramid.  ---*/
+        const unsigned short n0 = kk + i - 1;
+        const unsigned short n1 = n0 + 1;
+        const unsigned short n2 = n1 + nDOFsCurrentEdges-1;
+        const unsigned short n3 = n0 + nDOFsCurrentEdges-1;
+        const unsigned short n4 = jj + i;
+
+        /*--- Store the connectivity of this subpyramid. Note that n1 and n3 are
+              swapped, such that a positive volume is obtained according to the
+              right hand rule. ---*/
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n4);
+      }
+
+      /*--- Update kk for the next j-row. ---*/
+      kk += nDOFsCurrentEdges - 1;
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*                   Sub-tetrahedra in the j-direction.                   */
+    /*------------------------------------------------------------------------*/
+
+    /*--- Reset the value of kk again. ---*/
+    kk = offCurrentK + nDOFsCurrentEdges*nDOFsCurrentEdges;
+
+    /*--- Loop in the i-direction of the current quad. Note that the starting
+          index must be 1. ---*/
+    for(unsigned short i=1; i<(nDOFsCurrentEdges-1); ++i) {
+
+      /*--- Loop in the j-direction of the current quad. This loop starts at 0. ---*/
+      for(unsigned short j=0; j<(nDOFsCurrentEdges-1); ++j) {
+
+        /*--- Determine the local indices of the 4 corner points of this tet.
+              Its connectivity is stored in subConn2ForPlotting, because in
+              subConn1ForPlotting the pyramids are stored. ---*/
+        const unsigned short n0 = kk + i-1 + j*(nDOFsCurrentEdges-1);
+        const unsigned short n1 = n0 + 1;
+        const unsigned short n2 = offCurrentK + i + j*nDOFsCurrentEdges;
+        const unsigned short n3 = n2 + nDOFsCurrentEdges;
+
+        subConn2ForPlotting.push_back(n0);
+        subConn2ForPlotting.push_back(n1);
+        subConn2ForPlotting.push_back(n2);
+        subConn2ForPlotting.push_back(n3);
+      }
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*                Sub-tetrahedra in the i-direction.                      */
+    /*------------------------------------------------------------------------*/
+
+    /*--- Loop in the j-direction of the current quad. Note that the starting
+          index must be 1. ---*/
+    for(unsigned short j=1; j<(nDOFsCurrentEdges-1); ++j) {
+
+      /*--- Index of the first vertex along the j-row of the current quad. ---*/
+      const unsigned short jj = offCurrentK + j*nDOFsCurrentEdges;
+
+      /*--- Loop in the i-direction of the current quad. This loop starts at 0. ---*/
+      for(unsigned short i=0; i<(nDOFsCurrentEdges-1); ++i) {
+
+        /*--- Determine the local indices of the 4 corner points of this tet
+              and store its connectivity in subConn2ForPlotting.   ---*/
+        const unsigned short n0 = kk + i;
+        const unsigned short n1 = jj + i;
+        const unsigned short n2 = n0 + nDOFsCurrentEdges-1;
+        const unsigned short n3 = n1 + 1;
+
+        subConn2ForPlotting.push_back(n0);
+        subConn2ForPlotting.push_back(n1);
+        subConn2ForPlotting.push_back(n2);
+        subConn2ForPlotting.push_back(n3);
+      }
+
+      /*--- Update kk for the next j-row. ---*/
+      kk += nDOFsCurrentEdges - 1;
+    }
+
+    /*--- Update the value of offCurrentK with the amounts of DOFs present in the
+          current quadrilateral plane and decrement nDOFsCurrentEdges, such that it
+          contains the number of DOFs along an edge of the next quadrilateral plane. ---*/
+    offCurrentK += nDOFsCurrentEdges*nDOFsCurrentEdges;
+    --nDOFsCurrentEdges;
+  }
 }

@@ -49,6 +49,10 @@ CFEMStandardPrismGrid::CFEMStandardPrismGrid(const unsigned short val_nPoly,
   /*--- Create the local grid connectivities of the faces of the volume element. ---*/
   LocalGridConnFaces();
 
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivative of the coordinates are computed, which is 3. ---*/
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
@@ -352,4 +356,83 @@ void CFEMStandardPrismGrid::LocalGridConnFaces(void) {
   ChangeDirectionQuadConn(gridConnFaces[2], n0, n3, n4, n1);
   ChangeDirectionQuadConn(gridConnFaces[3], n0, n2, n5, n3);
   ChangeDirectionQuadConn(gridConnFaces[4], n1, n4, n5, n2);
+}
+
+void CFEMStandardPrismGrid::SubConnLinearElements(void) {
+
+  /*--- The prism is split into several linear prisms.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = PRISM;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the number of DOFs for a triangle. This is the offset in
+        k-direction, the structured direction of a prisms. ---*/
+  const unsigned short nDOFTria = (nPoly+1)*(nPoly+2)/2;
+
+  /*--- Loop in k-direction, which is the structured direction of the prism. ---*/
+  for(unsigned short k=0; k<nPoly; ++k) {
+
+    /*--- Initialize the counter jj to the ID of the first vertex for this
+          k-value. jj contains the ID of the first vertex on the "0-2 edge"
+          of the current bottom triangle. ---*/
+    unsigned short jj = k*nDOFTria;
+
+    /*--- Loop over subedges of the left boundary of the standard triangle. ---*/
+    for(unsigned short j=0; j<nPoly; ++j) {
+
+      /*--- Check if the "down" elements must be written. ---*/
+      if( j ) {
+
+        /*--- Determine the offset of the relevant DOF on the previous row. ---*/
+        const unsigned short kk = jj - (nPoly + 1 - j);
+
+        /*--- Loop over the edges of this row. ---*/
+        for(unsigned short i=0; i<(nPoly-j); ++i) {
+
+          /*--- Determine the local connectivity of this subelement and add
+                it to subConn1ForPlotting. ---*/
+          const unsigned short n0 = jj + i;
+          const unsigned short n1 = kk + i;
+          const unsigned short n2 = n0 + 1;
+          const unsigned short n3 = n0 + nDOFTria;
+          const unsigned short n4 = n1 + nDOFTria;
+          const unsigned short n5 = n2 + nDOFTria;
+
+          subConn1ForPlotting.push_back(n0);
+          subConn1ForPlotting.push_back(n1);
+          subConn1ForPlotting.push_back(n2);
+          subConn1ForPlotting.push_back(n3);
+          subConn1ForPlotting.push_back(n4);
+          subConn1ForPlotting.push_back(n5);
+        }
+      }
+
+      /*--- The "upp" elements must always be written.
+            Determine the offset of the DOF on the next row. ---*/
+      const unsigned short kk = jj + (nPoly + 1 - j);
+
+      /*--- Loop over the edges of this row. ---*/
+      for(unsigned short i=0; i<(nPoly-j); ++i) {
+
+        /*--- Determine the local connectivity of this subelement and add
+              it to subConn1ForPlotting.           ---*/
+        const unsigned short n0 = jj + i;
+        const unsigned short n1 = n0 + 1;
+        const unsigned short n2 = kk + i;
+        const unsigned short n3 = n0 + nDOFTria;
+        const unsigned short n4 = n1 + nDOFTria;
+        const unsigned short n5 = n2 + nDOFTria;
+
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n4);
+        subConn1ForPlotting.push_back(n5);
+      }
+
+      /*--- Set jj to kk for the next edge. ---*/
+      jj = kk;
+    }
+  }
 }

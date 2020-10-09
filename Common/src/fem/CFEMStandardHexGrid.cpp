@@ -47,6 +47,10 @@ CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPoly,
 
   /*--- Create the local grid connectivities of the faces of the volume element. ---*/
   LocalGridConnFaces();
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
 }
 
 void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
@@ -124,4 +128,54 @@ void CFEMStandardHexGrid::LocalGridConnFaces(void) {
   ChangeDirectionQuadConn(gridConnFaces[3], n3, n2, n6, n7);
   ChangeDirectionQuadConn(gridConnFaces[4], n0, n3, n7, n4);
   ChangeDirectionQuadConn(gridConnFaces[5], n1, n5, n6, n2);
+}
+
+void CFEMStandardHexGrid::SubConnLinearElements(void) {
+
+  /*--- The hexahedron is split into several linear hexahedra.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = HEXAHEDRON;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the nodal offset in j- and k-direction. ---*/
+  const unsigned short jOff = nPoly+1;
+  const unsigned short kOff = jOff*jOff;
+
+  /*--- Loop over the subelements in k-direction. ---*/
+  for(unsigned short k=0; k<nPoly; ++k) {
+
+    /*--- Abbreviate the offset in k-direction used in the connectivity. ---*/
+    const unsigned short kk = k*kOff;
+
+    /*--- Loop over the subelements in j-direction. ---*/
+    for(unsigned short j=0; j<nPoly; ++j) {
+
+      /*--- Abbreviate the offset in j-direction used in the connectivity. ---*/
+      const unsigned short jj = j*jOff;
+
+      /*--- Loop over the subelements in i-direction. ---*/
+      for(unsigned short i=0; i<nPoly; ++i) {
+
+        /*--- Determine the 8 vertices of this subhexahedron and store
+              them in subConn1ForPlotting. ---*/
+        const unsigned short n0 = kk + jj + i;
+        const unsigned short n1 = n0 + 1;
+        const unsigned short n2 = n1 + jOff;
+        const unsigned short n3 = n0 + jOff;
+        const unsigned short n4 = n0 + kOff;
+        const unsigned short n5 = n1 + kOff;
+        const unsigned short n6 = n2 + kOff;
+        const unsigned short n7 = n3 + kOff;
+
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n4);
+        subConn1ForPlotting.push_back(n5);
+        subConn1ForPlotting.push_back(n6);
+        subConn1ForPlotting.push_back(n7);
+      }
+    }
+  }
 }

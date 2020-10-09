@@ -64,6 +64,14 @@ protected:
 
   su2passivevector wIntegration;    /*!< \brief The weights of the integration points for this standard element. */
 
+  unsigned short VTK_SubType1;    /*!< \brief VTK type for elements of type 1 in subConn1ForPlotting. */
+  unsigned short VTK_SubType2;    /*!< \brief VTK type for elements of type 2 in subConn2ForPlotting. */
+
+  vector<unsigned short> subConn1ForPlotting; /*!< \brief Local subconnectivity of element type 1 of the high order element.
+                                                          Used for plotting. */
+  vector<unsigned short> subConn2ForPlotting; /*!< \brief Local subconnectivity of element type 2 of the high order element.
+                                                          Used for plotting. */
+
   vector<vector<unsigned short> > gridConnFaces; /*!< \brief Local grid connectivities of the faces of the element.
                                                              The numbering of the DOFs is such that the element
                                                              is to the left of the face. */
@@ -206,6 +214,48 @@ public:
    * \return  The type of the element using the VTK convention.
    */
   inline unsigned short GetVTK_Type(void) const {return VTK_Type;}
+
+  /*!
+   * \brief Function, which makes available the type of the element in subConn1ForPlotting.
+   * \return  The type of the elements in subConn1ForPlotting using the VTK convention.
+   */
+  inline unsigned short GetVTK_SubType1(void) const {return VTK_SubType1;}
+
+  /*!
+   * \brief Function, which makes available the type of the element in subConn2ForPlotting.
+   * \return  The type of the elements in subConn1ForPlotting using the VTK convention.
+   */
+  inline unsigned short GetVTK_SubType2(void) const {return VTK_SubType2;}
+
+  /*!
+   * \brief Function, which makes available the number of sub-elements of type 1 for plotting.
+   * \return  The number of sub-elements of type 1 for plotting.
+   */
+  inline unsigned short GetNSubElemsType1(void) const {return subConn1ForPlotting.size()/GetNDOFsPerSubElem(VTK_SubType1);}
+
+  /*!
+   * \brief Function, which makes available the number of sub-elements of type 2 for plotting.
+   * \return  The number of sub-elements of type 2 for plotting.
+   */
+  inline unsigned short GetNSubElemsType2(void) const {return subConn2ForPlotting.size()/GetNDOFsPerSubElem(VTK_SubType2);}
+
+  /*!
+   * \brief Function, which makes available the the connectivity of the linear elements of type 1 as a const pointer.
+   * \return  The pointer to the local connectivity of the linear elements of type 1.
+   */
+  inline const unsigned short *GetSubConnType1(void) const {return subConn1ForPlotting.data();}
+
+  /*!
+   * \brief Function, which makes available the the connectivity of the linear elements of type 2 as a const pointer.
+   * \return  The pointer to the local connectivity of the linear elements of type 2.
+   */
+  inline const unsigned short *GetSubConnType2(void) const {return subConn2ForPlotting.data();}
+
+  /*!
+   * \brief Function, which makes available the number of DOFs of a linear element, used for plotting.
+   * \return  The number of DOFs of the linear element.
+   */
+  unsigned short GetNDOFsPerSubElem(unsigned short val_VTK_Type) const;
 
   /*!
    * \brief Function, which computes the metric terms in the volume integration points.
