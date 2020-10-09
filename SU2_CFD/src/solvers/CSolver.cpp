@@ -4562,6 +4562,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       }
     }
   }
+  else std::cout << "ERROR: Did not read file for initial solution (ROM)." << std::endl;
   
   /*--- Use reference solution from file to overwrite the solution and solution_old ---*/
   
@@ -4570,8 +4571,8 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
     
     for (unsigned long iVar = 0; iVar < nVar; iVar++){
       node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
-      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      //nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      //nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
     }
     
     nodes->Set_RefSolution(iPoint, &node_sol[0]);

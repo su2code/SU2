@@ -3909,6 +3909,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   // Compute least-squares solution using QR decomposition
   // https://johnwlambert.github.io/least-squares/
   // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
+  if (InnerIter != 0) {
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
   dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
 #else
@@ -3916,6 +3917,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
 #endif
 
   if (INFO < 0) SU2_MPI::Error("Unsucsessful exit of least-squares for ROM", CURRENT_FUNCTION);
+  
   
   std::string fname3 = "check_LS_solution.csv";
   fs.open(fname3);
@@ -3925,12 +3927,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // TODO: backtracking line search to find step size:
-  double a = 0.01;
+  double a = 1.0;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
   }
-  
+  }
   std::string fname4 = "check_red_coords_y.csv";
   fs.open(fname4);
   for(int i=0; i < n; i++){
@@ -3943,31 +3945,53 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   /*--- Update solution ---*/
   vector<double> allMaskedNodes(Mask);
   allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
   
   std::string fname5 = "check_solution2.csv";
   fs.open(fname5);
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
   //for (iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
   //  iPoint = allMaskedNodes[iPoint_mask];
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
     
     for (iVar = 0; iVar < nVar; iVar++) {
       su2double sum = 0.0;
-      Res = local_Residual[iVar] + local_Res_TruncError[iVar];
       
       for (unsigned long i = 0; i < TrialBasis[0].size(); i++) {
         sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
       }
+      
+      if (InnerIter != 0) {
       nodes->AddROMSolution(iPoint, iVar, sum);
-      AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      }
+      
+      /*--- Update residual information for current thread. ---*/
+      unsigned long total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+      Res = fabs(LinSysRes[total_index]);
+      
+      resRMS[iVar] += Res*Res;
+      if (fabs(Res) > resMax[iVar]) {
+        resMax[iVar] = fabs(Res);
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+      }
+      
       fs << nodes->GetSolution(iPoint,iVar) << "\n" ;
     }
   }
   fs.close();
   
-
+  /*--- Reduce residual information over all threads in this rank. ---*/
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AddRes_RMS(iVar, resRMS[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+  }
+  
+  
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
@@ -3978,13 +4002,18 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
   
-  /*--- Compute the root mean square residual ---*/
+  SU2_OMP_MASTER
+  {
+    /*--- Compute the root mean square residual ---*/
   
-  SetResidual_RMS(geometry, config);
+    SetResidual_RMS(geometry, config);
   
-  /*--- For verification cases, compute the global error metrics. ---*/
+    /*--- For verification cases, compute the global error metrics. ---*/
   
-  ComputeVerificationError(geometry, config);
+    ComputeVerificationError(geometry, config);
+  }
+  SU2_OMP_BARRIER
+  
 }
 
 void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
