@@ -3699,7 +3699,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   unsigned short iVar, jVar;
   unsigned long iPoint, kNeigh, kPoint, jPoint, iPoint_mask;
-  su2double *local_Residual, *local_Res_TruncError, Res;
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  const su2double* coordMax[MAXNVAR] = {nullptr};
+  unsigned long idxMax[MAXNVAR] = {0};
   unsigned long InnerIter = config->GetInnerIter();
   
   int m = (int)nPointDomain * nVar;
@@ -3714,17 +3716,39 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   /*--- Find residual ---*/
   
   vector<double> r(m,0.0);
-  int index = 0;
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
-  //  iPoint = Mask[iPoint_mask];
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
+  //int index = 0;
   
-    for (iVar = 0; iVar < nVar; iVar++) {
-      r[index] = local_Residual[iVar] + local_Res_TruncError[iVar];
-      index++;
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
+    //  iPoint = Mask[iPoint_mask];
+
+    su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
+
+    /*--- Right hand side of the system (-Residual) ---*/
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint*nVar + iVar;
+      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+      LinSysSol[total_index] = 0.0;
+
+      su2double Res = fabs(LinSysRes[total_index]);
+      resRMS[iVar] += Res*Res;
+      if (Res > resMax[iVar]) {
+        resMax[iVar] = Res;
+        idxMax[iVar] = iPoint;
+        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+      }
+      
+      r[total_index] = LinSysRes[total_index];
+      //index++;
     }
+  }
+  
+  /*--- Reduce residual information over all threads in this rank. ---*/
+  
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AddRes_RMS(iVar, resRMS[iVar]);
+    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
   }
   
   /*--- Container for reduced residual ---*/
@@ -3892,7 +3916,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs.open(fname2);
     for(int i=0; i < m; i++){
       fs << r[i] << "\n" ;
-      r[i] = r[i] *(-1.0);
+      //r[i] = r[i] * (-1.0);
     }
     fs.close();
   }
@@ -3927,7 +3951,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // TODO: backtracking line search to find step size:
-  double a = 1.0;
+  double a = 0.1;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
@@ -3943,11 +3967,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   delete [] prod;
   
   /*--- Update solution ---*/
+  
   vector<double> allMaskedNodes(Mask);
   allMaskedNodes.insert(allMaskedNodes.end(), MaskNeighbors.begin(), MaskNeighbors.end());
-  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
-  unsigned long idxMax[MAXNVAR] = {0};
   
   std::string fname5 = "check_solution2.csv";
   fs.open(fname5);
@@ -3955,7 +3977,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
   //for (iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
   //  iPoint = allMaskedNodes[iPoint_mask];
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
     
     for (iVar = 0; iVar < nVar; iVar++) {
       su2double sum = 0.0;
@@ -3964,32 +3985,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
         sum += TrialBasis[iPoint*nVar + iVar][i] * GenCoordsY[i];
       }
       
-      if (InnerIter != 0) {
       nodes->AddROMSolution(iPoint, iVar, sum);
-      }
-      
-      /*--- Update residual information for current thread. ---*/
-      unsigned long total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      Res = fabs(LinSysRes[total_index]);
-      
-      resRMS[iVar] += Res*Res;
-      if (fabs(Res) > resMax[iVar]) {
-        resMax[iVar] = fabs(Res);
-        idxMax[iVar] = iPoint;
-        coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-      }
       
       fs << nodes->GetSolution(iPoint,iVar) << "\n" ;
     }
   }
   fs.close();
-  
-  /*--- Reduce residual information over all threads in this rank. ---*/
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    AddRes_RMS(iVar, resRMS[iVar]);
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
   
   
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
