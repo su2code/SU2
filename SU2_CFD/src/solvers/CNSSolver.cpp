@@ -181,7 +181,9 @@ CNSSolver::~CNSSolver(void) {
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  const unsigned long InnerIter = config->GetInnerIter();
+  const unsigned long InnerIter   = config->GetInnerIter();
+  const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
+
   const bool cont_adjoint       = config->GetContinuous_Adjoint();
   const bool disc_adjoint       = config->GetDiscrete_Adjoint();
   const bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
@@ -190,9 +192,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
   const bool edge_limiter_turb  = config->GetEdgeLimiter_Turb();
 
-  const bool restart              = config->GetRestart();
-  const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
-  const bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
+  const bool restart        = config->GetRestart();
+  const bool wall_functions = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 

@@ -630,12 +630,16 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver,
 
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver, CConfig *config) {
 
+  const unsigned long InnerIter   = config->GetInnerIter();
+  const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
+
   const bool adjoint = config->GetContinuous_Adjoint() || (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc());
   const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   const bool sst = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
 
-  const unsigned long WFStartIter = config->GetWallFunction_Start_Iter();
-  const bool wall_functions       = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
+  const bool disc_adjoint   = config->GetDiscrete_Adjoint();
+  const bool restart        = config->GetRestart();
+  const bool wall_functions = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
 
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
