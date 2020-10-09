@@ -73,7 +73,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CPBIncEulerVariable(su2double pressure, const su2double *velocity, 
+  CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, 
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
@@ -196,11 +196,6 @@ public:
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
-   * \brief Set the value of the pressure.
-   */
-  inline void SetPressure_val(unsigned long iPoint, su2double val_pressure) { Primitive(iPoint,0) = val_pressure; }
-
-  /*!
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
@@ -241,6 +236,11 @@ public:
   inline su2double *GetPrimitive(unsigned long iPoint) final { return Primitive[iPoint]; }
 
   /*!
+   * \brief Set the value of the pressure.
+   */
+  inline void SetPressure_val(unsigned long iPoint, su2double val_pressure) { Primitive(iPoint,0) = val_pressure; }
+
+  /*!
    * \brief Set the value of the density for the incompressible flows.
    * \param[in] iPoint - Point index.
    */
@@ -257,7 +257,7 @@ public:
   inline void SetVelocity(unsigned long iPoint) final {
     Velocity2(iPoint) = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      Primitive(iPoint,iDim+1) = Solution(iPoint,iDim);
+      Primitive(iPoint,iDim+1) = Solution(iPoint,iDim)/Primitive(iPoint, nDim+1);
       Velocity2(iPoint) += pow(Primitive(iPoint,iDim+1),2);
     }
   }

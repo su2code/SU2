@@ -40,11 +40,11 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   CFVMFlowSolverBase<CPBIncEulerVariable, INCOMPRESSIBLE>() {
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
-   *    being called by itself, or by its derived class CIncNSSolver. ---*/
+   *    being called by itself, or by the Navier Stokes solver. ---*/
   const string description = navier_stokes? "Navier-Stokes" : "Euler";
 
   unsigned long iPoint, iVertex, iEdge, jPoint;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned short iVar, iDim, iMarker;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -125,8 +125,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
   /*--- Jacobians and vector structures for implicit computations ---*/
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure ("<<description<<"). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
   }
@@ -145,9 +144,9 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
   if (navier_stokes) {
-    nodes = new CPBIncNSVariable(Pressure_Inf, Velocity_Inf, nPoint, nDim, nVar, config);
+    nodes = new CPBIncNSVariable(Density_Inf, Pressure_Inf, Velocity_Inf, nPoint, nDim, nVar, config);
   } else {
-    nodes = new CPBIncEulerVariable(Pressure_Inf, Velocity_Inf, nPoint, nDim, nVar, config);
+    nodes = new CPBIncEulerVariable(Density_Inf, Pressure_Inf, Velocity_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
 
@@ -245,7 +244,7 @@ void CPBIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short
   }
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
-  /*--- Depending on the density model chosen, select a fluid model. ---*/
+  /*--- Only constant density model is available. ---*/
 
   switch (config->GetKind_FluidModel()) {
 
@@ -1184,7 +1183,7 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the rotating frame source residual (CSourceIncRotatingFrame_Flow class) ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -1739,8 +1738,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       Mom_Coeff_j[iDim] = nodes->Get_Mom_Coeff(jPoint,iDim);
       Vel_i[iDim] = nodes->GetVelocity(iPoint,iDim);
       Vel_j[iDim] = nodes->GetVelocity(jPoint,iDim);
-      VelocityOld_i[iDim] = nodes->GetSolution_Old(iPoint,iDim);
-      VelocityOld_j[iDim] = nodes->GetSolution_Old(jPoint,iDim);
+      VelocityOld_i[iDim] = nodes->GetSolution_Old(iPoint,iDim)/Density_i;
+      VelocityOld_j[iDim] = nodes->GetSolution_Old(jPoint,iDim)/Density_j;
     }
 
     Coord_i = geometry->nodes->GetCoord(iPoint);
@@ -2489,6 +2488,7 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
@@ -2509,104 +2509,74 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         Face_Flux += nodes->GetDensity(iPoint)*V_domain[iDim+1]*Normal[iDim];
       }
 
-      Flux0 = 0.5*(Face_Flux + fabs(Face_Flux));
-      Flux1 = 0.5*(Face_Flux - fabs(Face_Flux));
-
       inflow = false;
       if ((Face_Flux < 0.0) && (fabs(Face_Flux) > EPS)) inflow = true;
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Residual[iVar] = Flux0*V_domain[iVar+1] ;
-      }
-
       if (inflow) {
+
+        /*--- Set this face as an inlet. ---*/
+
         for (iDim = 0; iDim < nDim; iDim++)
           LinSysRes.SetBlock_Zero(iPoint, iDim);
 
         nodes->SetStrongBC(iPoint);
-      }
-      else {
-        LinSysRes.AddBlock(iPoint, Residual);
-        nodes->SetPressure_val(iPoint,GetPressure_Inf());
-      }
 
-      /*--- Convective Jacobian contribution for implicit integration ---*/
-
-      if (implicit) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[iDim][jDim] = 0.0;
-
-        proj_vel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          proj_vel += V_domain[iDim+1]*Normal[iDim];
-
-        if (inflow) {
+        if (implicit) {
           for (iDim = 0; iDim < nDim; iDim++) {
             total_index = iPoint*nVar+iDim;
             Jacobian.DeleteValsRowi(total_index);
           }
         }
-        else {
-          if (nDim == 2) {
-           Jacobian_i[0][0] = (V_domain[1]*Normal[0] + proj_vel);
-           Jacobian_i[0][1] = V_domain[1]*Normal[1];
+      }
+      else {
 
-           Jacobian_i[1][0] = V_domain[2]*Normal[0];
-           Jacobian_i[1][1] = (V_domain[2]*Normal[1] + proj_vel);
-          }
-          else {
-            Jacobian_i[0][0] = (proj_vel+V_domain[1]*Normal[0]);
-            Jacobian_i[0][1] = (V_domain[1]*Normal[1]);
-            Jacobian_i[0][2] = (V_domain[1]*Normal[2]);
+        /*--- Compute the residual using an upwind scheme ---*/
 
-            Jacobian_i[1][0] = (V_domain[2]*Normal[0]);
-            Jacobian_i[1][1] = (proj_vel+V_domain[2]*Normal[1]);
-            Jacobian_i[1][2] = (V_domain[2]*Normal[2]);
+        conv_numerics->SetPrimitive(V_domain, V_domain);
+        auto residual = conv_numerics->ComputeResidual(config);
 
-            Jacobian_i[2][0] = (V_domain[3]*Normal[0]);
-            Jacobian_i[2][1] = (V_domain[3]*Normal[1]);
-            Jacobian_i[2][2] = (proj_vel+V_domain[3]*Normal[2]);
-          }
-          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-        }
+        LinSysRes.AddBlock(iPoint, residual);
+        nodes->SetPressure_val(iPoint,GetPressure_Inf());
+
+        if (implicit) 
+         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
 
-      /*--- Set transport properties at the outlet. ---*/
+      /*--- Set transport properties at the outlet (used by turb solver also). ---*/
       if (viscous) {
         V_domain[nDim+2] = nodes->GetLaminarViscosity(iPoint);
         V_domain[nDim+3] = nodes->GetEddyViscosity(iPoint);
         V_infty[nDim+2] = nodes->GetLaminarViscosity(iPoint);
         V_infty[nDim+3] = nodes->GetEddyViscosity(iPoint);
       }
-      if (viscous && !inflow) {
+      /*if (viscous && !inflow) {
 
-        /*--- Set the normal vector and the coordinates ---*/
+        /*--- Set the normal vector and the coordinates ---/
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                                 geometry->nodes->GetCoord(Point_Normal));
 
-        /*--- Primitive variables, and gradient ---*/
+        /*--- Primitive variables, and gradient ---/
         visc_numerics->SetPrimitive(V_domain, V_domain);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
 
-        /*--- Turbulent kinetic energy ---*/
+        /*--- Turbulent kinetic energy ---/
         if ((turb_model == SST) || (turb_model == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
-        /*--- Compute and update residual ---*/
+        /*--- Compute and update residual ---/
         auto residual = visc_numerics->ComputeResidual(config);
 
         LinSysRes.SubtractBlock(iPoint, residual);
 
-        /*--- Jacobian contribution for implicit integration ---*/
+        /*--- Jacobian contribution for implicit integration ---/
         if (implicit)
           Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-      }
+      }*/
     }
   }
 

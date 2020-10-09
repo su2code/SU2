@@ -64,7 +64,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CPBIncNSVariable(su2double val_pressure, su2double *val_velocity, 
+  CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity, 
                    unsigned long npoint, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!

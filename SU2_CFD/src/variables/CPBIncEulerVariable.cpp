@@ -37,7 +37,7 @@
 
 #include "../../include/variables/CPBIncEulerVariable.hpp"
 
-CPBIncEulerVariable::CPBIncEulerVariable(su2double pressure, const su2double *velocity, unsigned long nPoint,
+CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, unsigned long nPoint,
                                      unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(nPoint, ndim, nvar, config),
                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 

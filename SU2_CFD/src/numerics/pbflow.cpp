@@ -103,6 +103,7 @@ CNumerics::ResidualType<> CUpwPB_Flow::ComputeResidual(const CConfig *config) {
   for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
   
+  /*--- (rho*u_i) ---*/
   Face_Flux = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
@@ -110,22 +111,23 @@ CNumerics::ResidualType<> CUpwPB_Flow::ComputeResidual(const CConfig *config) {
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
   }
-  
+
   if (dynamic_grid) {
-	  ProjGridVelFlux = 0.0; 
-	  for (iDim = 0; iDim < nDim; iDim++) { 
-		  ProjGridVelFlux   += 0.5*MeanDensity*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim]; 
+	  ProjGridVelFlux = 0.0;
+	  for (iDim = 0; iDim < nDim; iDim++) {
+		  ProjGridVelFlux   += 0.5*MeanDensity*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 	  }
 	  Face_Flux -= ProjGridVelFlux;
-  } 
-  
- 
+  }
+
+  /*--- Find upwind direction. ---*/
   Flux0 = 0.5*(Face_Flux + fabs(Face_Flux)) ;
   Flux1 = 0.5*(Face_Flux - fabs(Face_Flux)) ;
   
   Upw_i = round(fabs(Flux0/(fabs(Face_Flux)+EPS)));
   Upw_j = round(fabs(Flux1/(fabs(Face_Flux)+EPS)));
-     
+
+  /*--- Find flux. ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
 	  Flux[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
 	  Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1]; 

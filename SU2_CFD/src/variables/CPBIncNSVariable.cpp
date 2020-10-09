@@ -37,9 +37,9 @@
 
 #include "../../include/variables/CPBIncNSVariable.hpp"
 
-CPBIncNSVariable::CPBIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned long nPoint,
+CPBIncNSVariable::CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity, unsigned long nPoint,
                          unsigned short nDim, unsigned short nvar, CConfig *config) :
-                         CPBIncEulerVariable(val_pressure, val_velocity, nPoint, nDim, nvar, config) {
+                         CPBIncEulerVariable(val_density, val_pressure, val_velocity, nPoint, nDim, nvar, config) {
   
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
