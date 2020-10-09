@@ -240,12 +240,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
       if (rank == MASTER_NODE)
         cout << "---------------------- Switching to wall function -----------------------" << endl;
       ResetCFLAdapt();
-      const su2double CFL = config->GetCFL(iMesh);
-      for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-        nodes->SetLocalCFL(iPoint, CFL);
-      Min_CFL_Local = CFL;
-      Max_CFL_Local = CFL;
-      Avg_CFL_Local = CFL;
+      const su2double CFL_Flow = config->GetCFL(iMesh);
+      const su2double CFL_Turb = max(CFL*config->GetCFLRedCoeff_Turb(), config->GetCFL_AdaptParam(2));
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+        nodes->SetLocalCFL(iPoint, CFLFlow);
+        solver[TURB_SOL]->GetNodes()->SetLocalCFL(iPoin, CFLTurb);
+      }
+      Min_CFL_Local = CFL_Flow;
+      Max_CFL_Local = CFL_Flow;
+      Avg_CFL_Local = CFL_Flow;
     }
     SU2_OMP_MASTER
     ComputeKnoppWallFunction(geometry, solver, config);
