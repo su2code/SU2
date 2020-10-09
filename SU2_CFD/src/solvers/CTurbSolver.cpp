@@ -676,7 +676,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
           }
         }
 
-        VelMod = 0.;
+        su2double VelMod = 0.;
         for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
         VelMod = sqrt(VelMod);
 
