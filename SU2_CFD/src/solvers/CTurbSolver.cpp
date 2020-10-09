@@ -664,32 +664,14 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
       const auto node_i = geometry->node[iPoint];
       if (node_i->GetBool_Wall_Neighbor()) {
         bool converged = true;
-        su2double Density_Wall  = 0.;
-        su2double Lam_Visc_Wall = 0.;
-        su2double U_Tau = 0.;
         const unsigned short nDonors = node_i->GetWall_nNode();
         for (auto iNode = 0; iNode < nDonors; iNode++) {
-          const su2double donorCoeff = node_i->GetWall_Interpolation_Weights()[iNode];
-          Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
-          Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
-          U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
-          
           if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
             converged = false;
             break;
           }
         }
-
-        su2double VelMod = 0.;
-        for (auto iDim = 0; iDim < nDim; iDim++) VelMod += pow(flowNodes->GetVelocity(iPoint,iDim), 2.);
-        VelMod = sqrt(VelMod);
-
-        const su2double distance = node_i->GetWall_Distance();
-
-        const su2double Up = VelMod/U_Tau;
-        const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
-        
-        if (Yp > 500. || !converged) continue;
+        if (!converged) continue;
 
         LinSysRes.SetBlock_Zero(iPoint);
         for (auto iVar = 0; iVar < nVar; iVar++) {
