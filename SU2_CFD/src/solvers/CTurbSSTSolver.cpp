@@ -1905,7 +1905,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
 
     const auto node_i = geometry->node[iPoint];
 
-    if (node_i->GetBool_Wall_Neighbor()) {
+    if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
       bool converged = true;
@@ -1919,10 +1919,10 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
         
-        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
-          converged = false;
-          break;
-        }
+        // if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
+        //   converged = false;
+        //   break;
+        // }
       }
 
       VelMod = 0.;

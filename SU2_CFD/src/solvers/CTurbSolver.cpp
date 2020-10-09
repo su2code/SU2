@@ -662,16 +662,16 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   if (wall_functions) {
     for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
       const auto node_i = geometry->node[iPoint];
-      if (node_i->GetBool_Wall_Neighbor()) {
-        bool converged = true;
-        const unsigned short nDonors = node_i->GetWall_nNode();
-        for (auto iNode = 0; iNode < nDonors; iNode++) {
-          if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
-            converged = false;
-            break;
-          }
-        }
-        if (!converged) continue;
+      if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
+        // bool converged = true;
+        // const unsigned short nDonors = node_i->GetWall_nNode();
+        // for (auto iNode = 0; iNode < nDonors; iNode++) {
+        //   if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
+        //     converged = false;
+        //     break;
+        //   }
+        // }
+        // if (!converged) continue;
 
         LinSysRes.SetBlock_Zero(iPoint);
         for (auto iVar = 0; iVar < nVar; iVar++) {
