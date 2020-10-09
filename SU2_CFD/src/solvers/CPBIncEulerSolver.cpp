@@ -2728,7 +2728,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       V_domain = nodes->GetPrimitive(iPoint);
 
       V_outlet = GetCharacPrimVar(val_marker, iVertex);
-      
+
       if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
