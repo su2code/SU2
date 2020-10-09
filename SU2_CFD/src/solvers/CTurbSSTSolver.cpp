@@ -1812,10 +1812,9 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
 
     const auto node_i = geometry->node[iPoint];
 
-    if (node_i->GetBool_Wall_Neighbor()) {
+    if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
-      bool converged = true;
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
@@ -1827,15 +1826,8 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
         T_Wall        += donorCoeff*flowNodes->GetWallTemp(iPoint, iNode);
-        
-        if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
-          converged = false;
-          break;
-        }
       }
       
-      if (!converged) continue;
-
       /*--- Wall function ---*/
       const su2double Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
       const su2double Beta = 0.0; // For adiabatic flows only
@@ -1908,7 +1900,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
     if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
-      bool converged = true;
       su2double Density_Wall  = 0.;
       su2double Lam_Visc_Wall = 0.;
       su2double U_Tau = 0.;
@@ -1918,11 +1909,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
         Density_Wall  += donorCoeff*flowNodes->GetWallDensity(iPoint, iNode);
         Lam_Visc_Wall += donorCoeff*flowNodes->GetWallLamVisc(iPoint, iNode);
         U_Tau         += donorCoeff*flowNodes->GetWallUTau(iPoint, iNode);
-        
-        // if (flowNodes->GetWallUTau(iPoint, iNode) < 0.) {
-        //   converged = false;
-        //   break;
-        // }
       }
 
       VelMod = 0.;
@@ -1935,7 +1921,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       const su2double Yp = Density_Wall * U_Tau * distance / Lam_Visc_Wall;
       
       /*--- Disable calculation if Y+ is too small or large ---*/
-      if (Yp > 500. || !converged) continue;
+      if (Yp > 500.) continue;
       
       const su2double Density_Normal = flowNodes->GetDensity(iPoint);
       const su2double Omega_i = 6. * Lam_Visc_Wall / (0.075 * Density_Wall * pow(distance, 2.0));
