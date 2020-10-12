@@ -106,10 +106,16 @@ su2double CNEMOGas::GetPressure(){
 
   su2double P = 0.0;
 
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
+   //std::cout << "U[" << iSpecies<< "]="  <<rhos[iSpecies]<< std::endl; 
+   //std::cout << "Ms[" << iSpecies<< "]="  <<MolarMass[iSpecies]<< std::endl; 
+  }
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     P += rhos[nSpecies-1] * Ru/MolarMass[nSpecies-1] * Tve;
+
+  //std::cout << "Ru="  <<Ru<< std::endl;
+  //std::cout << "V[T_INDEX]="  <<T<< std::endl;
 
   Pressure = P;
 

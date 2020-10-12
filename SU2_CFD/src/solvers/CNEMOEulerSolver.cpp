@@ -423,6 +423,7 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
   bool nonphysical = true;
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+    //cout << "iPoint =" << iPoint << endl;
 
     /*--- Incompressible flow, primitive variables ---*/
 
@@ -942,6 +943,12 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
     auto residual = numerics->ComputeResidual(config);
 
+
+  //  for (int iVar=0; iVar<nVar; iVar++)
+  // cout << setprecision(8) << "upw Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
+
+  
+
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1052,34 +1059,42 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
     
-    if(nSpecies!=1){
-      if(!frozen){
-          /*--- Compute the non-equilibrium chemistry ---*/
-          auto residual = numerics->ComputeChemistry(config);
-
-          /*--- Check for errors before applying source to the linear system ---*/
-          err = false;
-          for (iVar = 0; iVar < nVar; iVar++)
-            if (residual[iVar] != residual[iVar]) err = true;
-          if (implicit)
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (jVar = 0; jVar < nVar; jVar++)
-                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-          /*--- Apply the chemical sources to the linear system ---*/
-          if (!err) {
-            LinSysRes.SubtractBlock(iPoint, residual);
-            if (implicit)
-              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-          } else
-            eChm_local++;
-      }      
-    }
+//    if(nSpecies!=1){
+//      if(!frozen){
+//          /*--- Compute the non-equilibrium chemistry ---*/
+//          auto residual = numerics->ComputeChemistry(config);
+//
+//                    for (int iVar=0; iVar<nVar; iVar++)
+//    cout << setprecision(8) << "chem Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
+//
+//          /*--- Check for errors before applying source to the linear system ---*/
+//          err = false;
+//          for (iVar = 0; iVar < nVar; iVar++)
+//            if (residual[iVar] != residual[iVar]) err = true;
+//          if (implicit)
+//            for (iVar = 0; iVar < nVar; iVar++)
+//              for (jVar = 0; jVar < nVar; jVar++)
+//                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+//          /*--- Apply the chemical sources to the linear system ---*/
+//          if (!err) {
+//            LinSysRes.SubtractBlock(iPoint, residual);
+//            if (implicit)
+//              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//          } else
+//            eChm_local++;
+//      }      
+//    }
 
     /*--- Compute vibrational energy relaxation ---*/
     /// NOTE: Jacobians don't account for relaxation time derivatives
 
     if (!monoatomic){
       auto residual = numerics->ComputeVibRelaxation(config);
+
+                for (int iVar=0; iVar<nVar; iVar++)
+//    cout << setprecision(8) << "vib Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
+//
+//    exit(0);
 
       /*--- Check for errors before applying source to the linear system ---*/
       err = false;
@@ -1806,10 +1821,16 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       /*--- Apply the flow-tangency b.c. to the convective flux ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Residual[iSpecies] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++){
         Residual[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
+        //cout << setprecision(10) << "P=" << P << endl;
+        //cout << setprecision(10) << "Residual[nSpecies+iDim]=" << Residual[nSpecies+iDim] << endl;
+      }
       Residual[nSpecies+nDim]   = 0.0;
       Residual[nSpecies+nDim+1] = 0.0;
+
+//         for (int iVar=0; iVar<nVar; iVar++)
+//    cout << setprecision(8) << "sym Residual[" << iVar << "]=" << Residual[iVar] << " iPoint=" << iPoint << endl;
 
       /*--- Add value to the residual ---*/
       LinSysRes.AddBlock(iPoint, Residual);
@@ -1930,6 +1951,10 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
+
+//           for (int iVar=0; iVar<nVar; iVar++)
+//    cout << setprecision(8) << "far Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
+
       //if (implicit)
       //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
@@ -2214,6 +2239,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
+
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/

@@ -157,7 +157,7 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
+  virtual vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
   
   /*!
    * \brief Get speed of sound.

@@ -253,11 +253,17 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
+  //std::cout << "rhoEmix="  << rhoE - 0.5*rho*sqvel << std::endl;
+  //std::cout << "rhoEve="   << rhoEve << std::endl;
+  //for (iSpecies=0;iSpecies<nSpecies;iSpecies++) std::cout << "rhos[" << iSpecies << "]="   << rhos[iSpecies] << std::endl;
+
   /*--- Assign temperatures ---*/
   vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
 
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
+
+ // std::cout << "V[T_INDEX]="   << V[T_INDEX] << std::endl;
 
  // cout << "T[0]=" << T[0] << endl;
  // cout << "T[1]=" << T[1] << endl;
@@ -321,6 +327,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   /*--- Pressure ---*/
   V[P_INDEX] = fluidmodel->GetPressure();
+
+  //std::cout << "V[P_INDEX]="  <<V[P_INDEX]<< std::endl;
 
   if (V[P_INDEX] < 0.0) {
     //cout << "P" << endl;
