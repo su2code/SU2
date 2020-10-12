@@ -199,19 +199,20 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])*inv_R_Plus_One;
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
 
-  Lambda[1] = Lambda[0] + RoeSoundSpeed;
-  Lambda[2] = Lambda[0] - RoeSoundSpeed;
+  const su2double dir = 1.0 - 2.0*(Lambda[0] < 0);
+
+  Lambda[0] = dir*Lambda[0];
+  Lambda[1] = dir*Lambda[0] + RoeSoundSpeed;
+  Lambda[2] = dir*Lambda[0] - RoeSoundSpeed;
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
-  const su2double dir = 1.0 - 2.0*(Lambda[0] < 0);
-
-  Epsilon[0] = 4.0*max(dir*(Lambda[0]-ProjVel_i), 
-                       dir*(ProjVel_j-Lambda[0]));
-  Epsilon[1] = 4.0*max(dir*(Lambda[1]-(ProjVel_i+SoundSpeed_i)),
-                       dir*((ProjVel_j+SoundSpeed_j)-Lambda[1]));
-  Epsilon[2] = 4.0*max(dir*(Lambda[2]-(ProjVel_i-SoundSpeed_i)),
-                       dir*((ProjVel_j-SoundSpeed_j)-Lambda[2]));
+  Epsilon[0] = 4.0*max(dir*(Lambda[0]-dir*ProjVel_i), 
+                       dir*(dir*ProjVel_j-Lambda[0]));
+  Epsilon[1] = 4.0*max(dir*(Lambda[1]-(dir*ProjVel_i+SoundSpeed_i)),
+                       dir*((dir*ProjVel_j+SoundSpeed_j)-Lambda[1]));
+  Epsilon[2] = 4.0*max(dir*(Lambda[2]-(dir*ProjVel_i-SoundSpeed_i)),
+                       dir*((dir*ProjVel_j-SoundSpeed_j)-Lambda[2]));
 
   for (auto iVar = 0; iVar < 3; iVar++) {
     Epsilon[iVar] = max(Epsilon[iVar], 0.0);
