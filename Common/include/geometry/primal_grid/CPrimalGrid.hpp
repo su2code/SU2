@@ -240,7 +240,7 @@ public:
   * \brief A virtual member.
   * \return The color of the element in the partitioning.
   */
-  inline virtual unsigned long GetColor(void) { return -1; }
+  inline virtual unsigned long GetColor(void) { return std::numeric_limits<unsigned long>::max(); }
 
   /*!
    * \brief Get the element global index in a parallel computation.

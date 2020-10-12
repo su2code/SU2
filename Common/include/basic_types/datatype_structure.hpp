@@ -40,10 +40,16 @@
 #define FORCEINLINE inline
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #define NEVERINLINE inline __attribute__((noinline))
 #else
 #define NEVERINLINE inline
+#endif
+
+/*--- Disable Intel warnings related to inline attributes. ---*/
+#if defined(__INTEL_COMPILER)
+#pragma warning disable 2196
+#pragma warning disable 3415
 #endif
 
 /*--- Convenience SFINAE typedef to conditionally
