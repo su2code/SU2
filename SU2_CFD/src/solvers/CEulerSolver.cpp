@@ -3115,7 +3115,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
         su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
         su2double yVelocity       = nodes->GetVelocity(iPoint,1);
-        su2double xVelocity       = nodes->GetVelocity(iPoint,1);
+        su2double xVelocity       = nodes->GetVelocity(iPoint,0);
         su2double Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
                                      nodes->GetEddyViscosity(iPoint));
         su2double AxiAuxVar[3] = {0.0};
@@ -3157,8 +3157,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- If viscous, we need gradients for extra terms. ---*/
 
       if (viscous) {
+
         /*--- Primitive variables ---*/
         numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+
         /*--- Gradient of the primitive variables ---*/
         numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
 

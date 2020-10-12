@@ -627,10 +627,6 @@ public:
    */
   inline su2double GetAuxVarGradient(unsigned long iPoint, unsigned long iDim) const { return Grad_AuxVar(iPoint,iDim); }
 
-
-
-
-
   /*!
    * \brief Set axisymmetric auxiliar variables.
    * \param[in] iPoint - Point index.
@@ -669,10 +665,6 @@ public:
    * \return Value of the solution gradient.
    */
   inline su2double GetAxiAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Grad_AxiAuxVar(iPoint,iVar,iDim); }
-
-
-
-
 
   /*!
    * \brief Add a value to the truncation error.
