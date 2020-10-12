@@ -787,8 +787,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableDecrease = 0.5;
-  const su2double allowableIncrease = 1.0;//1.98;
+  const su2double allowableDecrease = 0.99;
+  const su2double allowableIncrease = 1.98;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
@@ -819,7 +819,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
        a very small value. This helps avoid catastrophic crashes due
        to non-realizable states by canceling the update. */
 
-      if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
+      // if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
 
       /* Store the under-relaxation factor for this point. */
 
