@@ -628,7 +628,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (tkeNeeded) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity);
+  // if (tkeNeeded) SetTKEFluxVector(Mean_GradTurbVar, Mean_Laminar_Viscosity);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
@@ -717,12 +717,12 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
 
   /*--- Include TKE diffusion term ---*/
 
-  if (tkeNeeded) {
-    const su2double tke_turb_visc = 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j);
-    const su2double tke_visc = (val_laminar_viscosity + tke_turb_visc);
-    heat_flux_jac_i[0] += tke_visc*turb_ke_i/rho_i*proj_vector_ij/dist_ij_2;
-    heat_flux_jac_j[0] -= tke_visc*turb_ke_j/rho_j*proj_vector_ij/dist_ij_2;
-  }
+  // if (tkeNeeded) {
+  //   const su2double tke_turb_visc = 0.5*(sigma_k_i*Eddy_Viscosity_i+sigma_k_j*Eddy_Viscosity_j);
+  //   const su2double tke_visc = (val_laminar_viscosity + tke_turb_visc);
+  //   heat_flux_jac_i[0] += tke_visc*turb_ke_i/rho_i*proj_vector_ij/dist_ij_2;
+  //   heat_flux_jac_j[0] -= tke_visc*turb_ke_j/rho_j*proj_vector_ij/dist_ij_2;
+  // }
 }
 
 void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVar,
@@ -743,14 +743,15 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   for (auto iDim = 0; iDim < nDim; iDim++)
     div_vel += Mean_GradPrimVar[iDim+1][iDim];
 
-  su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0;
+  su2double proj_stress[MAXNDIM] = {0.0}, proj_stress_dot_v = 0.0, proj_heat_flux = 0.0, proj_tke_flux = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     proj_stress[iDim] = -TWO3*div_vel*Normal[iDim];
     for (auto jDim = 0; jDim < nDim; jDim++)
       proj_stress[iDim] += WF_Factor*(Mean_GradPrimVar[jDim+1][iDim] + Mean_GradPrimVar[iDim+1][jDim])*Normal[jDim];
 
     proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
-    proj_heat_flux    += (heat_flux_factor*Mean_GradPrimVar[0][iDim] + Mean_GradTurbVar[iDim])*Normal[iDim];
+    proj_heat_flux    += heat_flux_factor*Mean_GradPrimVar[0][iDim]*Normal[iDim];
+    // proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
   }
   
   su2double v2_i = 0., v2_j = 0.;
@@ -781,15 +782,15 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     Jacobian_i[iDim+1][nDim+1] += factor_i*proj_stress[iDim];
     Jacobian_j[iDim+1][nDim+1] += factor_j*proj_stress[iDim];
 
-    Jacobian_i[nDim+1][iDim+1] += -factor_i*V_i[iDim+1]*(proj_stress_dot_v + proj_heat_flux);
-    Jacobian_j[nDim+1][iDim+1] += -factor_j*V_j[iDim+1]*(proj_stress_dot_v + proj_heat_flux);
+    Jacobian_i[nDim+1][iDim+1] += -factor_i*V_i[iDim+1]*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
+    Jacobian_j[nDim+1][iDim+1] += -factor_j*V_j[iDim+1]*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
   }
 
-  Jacobian_i[nDim+1][0] += factor_i*(v2_i/2. - Cv*T_i)*proj_heat_flux;
-  Jacobian_j[nDim+1][0] += factor_j*(v2_j/2. - Cv*T_j)*proj_heat_flux;
+  Jacobian_i[nDim+1][0] += factor_i*(v2_i/2. - Cv*T_i)*(proj_heat_flux + proj_tke_flux);
+  Jacobian_j[nDim+1][0] += factor_j*(v2_j/2. - Cv*T_j)*(proj_heat_flux + proj_tke_flux);
 
-  Jacobian_i[nDim+1][nDim+1] += factor_i*(proj_stress_dot_v + proj_heat_flux);  
-  Jacobian_j[nDim+1][nDim+1] += factor_j*(proj_stress_dot_v + proj_heat_flux);
+  Jacobian_i[nDim+1][nDim+1] += factor_i*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);  
+  Jacobian_j[nDim+1][nDim+1] += factor_j*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
 }
 
 void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
@@ -816,7 +817,7 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
 
       proj_stress_dot_v += proj_stress[iDim]*val_Mean_PrimVar[iDim+1];
       proj_heat_flux    += heat_flux_factor*Mean_GradPrimVar[0][iDim]*Normal[iDim];
-      proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
+      // proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
     }
 
     const su2double zeta_i = max(turb_omega_i, VorticityMag_i*F2_i/a1),
