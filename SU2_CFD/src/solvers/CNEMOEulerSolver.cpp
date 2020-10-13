@@ -1059,42 +1059,34 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
     
-//    if(nSpecies!=1){
-//      if(!frozen){
-//          /*--- Compute the non-equilibrium chemistry ---*/
-//          auto residual = numerics->ComputeChemistry(config);
-//
-//                    for (int iVar=0; iVar<nVar; iVar++)
-//    cout << setprecision(8) << "chem Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
-//
-//          /*--- Check for errors before applying source to the linear system ---*/
-//          err = false;
-//          for (iVar = 0; iVar < nVar; iVar++)
-//            if (residual[iVar] != residual[iVar]) err = true;
-//          if (implicit)
-//            for (iVar = 0; iVar < nVar; iVar++)
-//              for (jVar = 0; jVar < nVar; jVar++)
-//                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-//          /*--- Apply the chemical sources to the linear system ---*/
-//          if (!err) {
-//            LinSysRes.SubtractBlock(iPoint, residual);
-//            if (implicit)
-//              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//          } else
-//            eChm_local++;
-//      }      
-//    }
+    if(nSpecies!=1){
+      if(!frozen){
+          /*--- Compute the non-equilibrium chemistry ---*/
+          auto residual = numerics->ComputeChemistry(config);
+
+          /*--- Check for errors before applying source to the linear system ---*/
+          err = false;
+          for (iVar = 0; iVar < nVar; iVar++)
+            if (residual[iVar] != residual[iVar]) err = true;
+          if (implicit)
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (jVar = 0; jVar < nVar; jVar++)
+                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+          /*--- Apply the chemical sources to the linear system ---*/
+          if (!err) {
+            LinSysRes.SubtractBlock(iPoint, residual);
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          } else
+            eChm_local++;
+      }      
+    }
 
     /*--- Compute vibrational energy relaxation ---*/
     /// NOTE: Jacobians don't account for relaxation time derivatives
 
     if (!monoatomic){
       auto residual = numerics->ComputeVibRelaxation(config);
-
-                for (int iVar=0; iVar<nVar; iVar++)
-//    cout << setprecision(8) << "vib Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
-//
-//    exit(0);
 
       /*--- Check for errors before applying source to the linear system ---*/
       err = false;
