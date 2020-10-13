@@ -73,23 +73,23 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-
+  bool muscl            = config->GetMUSCL_Flow();
+  bool center           = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
-
-  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+  if ((muscl && !center) && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetPrimitive_Gradient_GG(geometry, config, true); break;
+        SetSolution_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetPrimitive_Gradient_LS(geometry, config, true); break;
+        SetSolution_Gradient_LS(geometry, config, true); break;
       default: break;
     }
-  }
+  } 
 
   /*--- Compute gradient of the primitive variables ---*/
 
