@@ -46,10 +46,16 @@
 #define NEVERINLINE inline
 #endif
 
-/*--- Disable Intel warnings related to inline attributes. ---*/
 #if defined(__INTEL_COMPILER)
+/*--- Disable warnings related to inline attributes. ---*/
 #pragma warning disable 2196
 #pragma warning disable 3415
+/*--- Disable warnings related to overloaded virtual. ---*/
+#pragma warning disable 654
+#pragma warning disable 1125
+#if defined(CODI_FORWARD_TYPE) || defined(CODI_REVERSE_TYPE)
+#pragma warning disable 1875
+#endif
 #endif
 
 /*--- Convenience SFINAE typedef to conditionally

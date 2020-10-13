@@ -3282,7 +3282,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
         MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
         if (MI != Global_to_Local_Point.end())
           iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
-        else iPoint = -1;
+        else iPoint = std::numeric_limits<unsigned long>::max();
 
         SendDomainLocal[iDomain][iVertex] = iPoint;
         SendTransfLocal[iDomain].push_back(0);
@@ -3302,7 +3302,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
         MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
         if (MI != Global_to_Local_Point.end())
           iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
-        else iPoint = -1;
+        else iPoint = std::numeric_limits<unsigned long>::max();
 
         ReceivedDomainLocal[iDomain][iVertex] = iPoint;
         ReceivedTransfLocal[iDomain].push_back(0);
@@ -5462,7 +5462,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               iPoint = vertex[iMarker][iVertex]->GetNode();
               if (nDim == 3){
                 dist = 10E+06;
-                jSpan = -1;
+                jSpan = std::numeric_limits<unsigned short>::max();
                 coord = nodes->GetCoord(iPoint);
 
                 switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -5563,7 +5563,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               iPoint = vertex[iMarker][iVertex]->GetNode();
               if(nDim == 3){
                 dist  = 10E+06;
-                jSpan = -1;
+                jSpan = std::numeric_limits<unsigned short>::max();
 
                 coord = nodes->GetCoord(iPoint);
                 switch (config->GetKind_TurboMachinery(val_iZone)){
