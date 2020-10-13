@@ -3155,7 +3155,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    bool good_edge = (!geometry->node[iPoint]->GetPhysicalBoundary()) || (!geometry->node[jPoint]->GetPhysicalBoundary());
+    bool good_edge = (!geometry->node[iPoint]->GetPhysicalBoundary()) && (!geometry->node[jPoint]->GetPhysicalBoundary());
     if (muscl && good_edge) {
       /*--- Reconstruction ---*/
 
