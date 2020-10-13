@@ -64,6 +64,29 @@ CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPoly,
   SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs);
 }
 
+void CFEMStandardTriGrid::CoorIntPoints(const bool                LGLDistribution,
+                                        ColMajorMatrix<su2double> &matCoorDOF,
+                                        ColMajorMatrix<su2double> &matCoorInt) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function OwnGemm to compute the Cartesian
+          coordinates in the integration points. The second argument in the
+          function call is nDim, which corresponds to the number of Cartesian
+          coordinates (3 for a surface element and 2 for a volume element). ---*/
+    OwnGemm(nIntegrationPad, nDim, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function OwnGemm to compute the Cartesian
+          coordinates in the integration points. The second argument in the
+          function call is nDim, which corresponds to the number of Cartesian
+          coordinates (3 for a surface element and 2 for a volume element). ---*/
+    OwnGemm(nIntegrationPad, nDim, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+  }
+}
+
 void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
                                                    ColMajorMatrix<su2double>          &matCoor,
                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {
@@ -80,7 +103,7 @@ void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                   
   }
   else {
 
-    /*--- LGL distribution. Call the function OwnGemm 2 times to compute the derivatives
+    /*--- Equidistant distribution. Call the function OwnGemm 2 times to compute the derivatives
           of the Cartesian coordinates w.r.t. the two parametric coordinates. The second
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/

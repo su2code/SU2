@@ -61,6 +61,17 @@ public:
   ~CFEMStandardHexGrid() = default;
 
   /*!
+   * \brief Function, which computes the coordinates in the integration points.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoorDOF - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matCoorInt - Matrix that contains the coordinates of the integration
+   *                          points.
+   */
+  void CoorIntPoints(const bool                LGLDistribution,
+                     ColMajorMatrix<su2double> &matCoorDOF,
+                     ColMajorMatrix<su2double> &matCoorInt) override;
+
+  /*!
    * \brief Function, which computes the derivatives of the coordinates in the
    *        integration points.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.

@@ -31,6 +31,7 @@
 #include "meshreader/CMeshReader.hpp"
 #include "../containers/C2DContainer.hpp"
 #include "../toolboxes/fem/CFaceOfElement.hpp"
+#include "../fem/CFEMStandardElementBase.hpp"
 
 
 /*!
@@ -109,6 +110,9 @@ class CPhysicalGeometry final : public CGeometry {
 
   vector<int> GlobalMarkerStorageDispl;
   vector<su2double> GlobalRoughness_Height;
+
+  vector<CFEMStandardElementBase *> standardVolumeElements;  /*!< \brief Vector of FEM standard volume elements for the grid. */
+  vector<CFEMStandardElementBase *> standardFaceElements;    /*!< \brief Vector of FEM standard face elements for the grid. */
 
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -764,18 +768,43 @@ public:
 private:
 
   /*!
+   * \brief Function, which alloces the memory for the help matrices
+   *        used for the computation of the grid metric terms.
+   * \param[in]  standardElements  - The standard elements for which the
+   *                                 matrices must be allocated.
+   * \param[in]  nDer              - Number of derivative matrices.
+   * \param[out] matricesJacobians - Vector of arrays to store the Jacobians.
+   * \param[out] matricesCoor      - Vector of matrices to store the coordinates.
+   * \param[out] matricesNormals   - Vector of matrices to store the normals.
+   * \param[out] matricesDerCoor   - Vector of matrices to store the derivatives
+   *                                 of the coordinates.
+   */
+  void AllocateMemoryMatricesMetrics(vector<CFEMStandardElementBase *>           &standardElements,
+                                     const unsigned short                        nDer,
+                                     vector<su2activevector>                     *matricesJacobians,
+                                     vector<ColMajorMatrix<su2double> >          *matricesCoor,
+                                     vector<ColMajorMatrix<su2double> >          *matricesNormals,
+                                     vector<vector<ColMajorMatrix<su2double> > > *matricesDerCoor);
+
+  /*!
    * \brief Determine the donor elements for the boundary elements on viscous
-            wall boundaries when wall functions are used.
+   *        wall boundaries when wall functions are used.
    * \param[in]  config - Definition of the particular problem.
    */
   void DetermineDonorElementsWallFunctions(CConfig *config);
 
   /*!
    * \brief Determine whether or not the Jacobians of the elements and faces
-            are constant and a length scale of the elements.
+   *        are constant and a length scale of the elements.
    * \param[in]  config - Definition of the particular problem.
    */
   void DetermineFEMConstantJacobiansAndLenScale(CConfig *config);
+
+  /*!
+   * \brief Function, which determines the FEM standard elements.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineFEMStandardElements(CConfig *config);
 
   /*!
    * \brief Function, which determines the matching faces of a FEM grid.

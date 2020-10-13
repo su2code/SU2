@@ -56,6 +56,25 @@ CFEMStandardLineGrid::CFEMStandardLineGrid(const unsigned short val_nPoly,
   SetUpJittedGEMM(nIntegrationPad, 2, nDOFs);
 }
 
+void CFEMStandardLineGrid::CoorIntPoints(const bool                LGLDistribution,
+                                         ColMajorMatrix<su2double> &matCoorDOF,
+                                         ColMajorMatrix<su2double> &matCoorInt) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function OwnGemm to compute the
+          Cartesian coordinates in the integration points. ---*/
+    OwnGemm(nIntegrationPad, 2, nDOFs, lagBasisLineIntLGL, matCoorDOF, matCoorInt, nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function OwnGemm to compute the
+          Cartesian coordinates in the integration points. ---*/
+    OwnGemm(nIntegrationPad, 2, nDOFs, lagBasisLineIntEqui, matCoorDOF, matCoorInt, nullptr);
+  }
+}
+
 void CFEMStandardLineGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
                                                     ColMajorMatrix<su2double>          &matCoor,
                                                     vector<ColMajorMatrix<su2double> > &matDerCoor) {

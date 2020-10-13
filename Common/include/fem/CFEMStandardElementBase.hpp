@@ -96,6 +96,21 @@ public:
 
 public:
   /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoorDOF - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matCoorInt - Matrix that contains the coordinates of the integration
+   *                          points.
+   */
+  virtual void CoorIntPoints(const bool                LGLDistribution,
+                             ColMajorMatrix<su2double> &matCoorDOF,
+                             ColMajorMatrix<su2double> &matCoorInt) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
    * \brief Function, which computes the data and/or derivatives in the
    *        integration points from the known data in the DOFs.
    * \param[in]  matB    - Matrix that contains the input data.
@@ -195,13 +210,20 @@ public:
    * \brief Function, which makes available the number of total integratin points of the element.
    * \return  The number of total integration points.
    */
-  inline unsigned short GetNIntegration(void) {return nIntegration;}
+  inline unsigned short GetNIntegration(void) const {return nIntegration;}
 
   /*!
    * \brief Function, which makes available the padded number of total integratin points of the element.
    * \return  The padded number of total integration points.
    */
-  inline unsigned short GetNIntegrationPad(void) {return nIntegrationPad;}
+  inline unsigned short GetNIntegrationPad(void) const {return nIntegrationPad;}
+
+  /*!
+   * \brief Function, which makes available the order of the polynomial
+   *        that is integrated exactly by the integration rule.
+   * \return  The order of polynomial that is integrated exactly.
+   */
+  inline unsigned short GetOrderExact(void) const {return orderExact;}
 
   /*!
    * \brief Function, which makes available the polynomial degree of the element.
@@ -331,14 +353,17 @@ public:
 
   /*!
    * \brief Function, which checks if the function arguments correspond to this standard element.
-   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
-   * \param[in] val_nPoly    - Polynomial degree of the element.
+   * \param[in] val_VTK_Type   - Type of the element using the VTK convention.
+   * \param[in] val_nPoly      - Polynomial degree of the element.
+   * \param[in] val_orderExact - Order of the polynomial that is integrated exactly.
    * \return Whether or not the function arguments correspond to this standard element.
    */
   inline bool SameStandardElement(unsigned short val_VTK_Type,
-                                  unsigned short val_nPoly) {
-    if(val_VTK_Type != VTK_Type) return false;
-    if(val_nPoly    != nPoly)    return false;
+                                  unsigned short val_nPoly,
+                                  unsigned short val_orderExact) {
+    if(val_VTK_Type   != VTK_Type)   return false;
+    if(val_nPoly      != nPoly)      return false;
+    if(val_orderExact != orderExact) return false;
     return true;
   }
 

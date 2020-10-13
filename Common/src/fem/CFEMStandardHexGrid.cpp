@@ -53,6 +53,27 @@ CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPoly,
   SubConnLinearElements();
 }
 
+void CFEMStandardHexGrid::CoorIntPoints(const bool                LGLDistribution,
+                                        ColMajorMatrix<su2double> &matCoorDOF,
+                                        ColMajorMatrix<su2double> &matCoorInt) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function TensorProductIntegrationPoints to compute the
+          Cartesian coordinates in the integration points. ---*/
+    TensorProductIntegrationPoints(3, lagBasisLineIntLGL, lagBasisLineIntLGL, lagBasisLineIntLGL,
+                                   matCoorDOF, matCoorInt, nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints to compute the
+          Cartesian coordinates in the integration points. ---*/
+    TensorProductIntegrationPoints(3, lagBasisLineIntEqui, lagBasisLineIntEqui, lagBasisLineIntEqui,
+                                   matCoorDOF, matCoorInt, nullptr);
+  }
+}
+
 void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
                                                    ColMajorMatrix<su2double>          &matCoor,
                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {

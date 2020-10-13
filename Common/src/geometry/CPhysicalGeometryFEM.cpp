@@ -162,6 +162,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=0; i<nElem; ++i)
     elem[i]->SetColor(0);
 
+  /*--- Determine the standard elements for the grid. ---*/
+  DetermineFEMStandardElements(config);
+
   /*--- Determine the matching faces of the local elements. ---*/
   vector<CFaceOfElement> localMatchingFaces;
   DetermineMatchingFacesFEMGrid(config, localMatchingFaces);
@@ -184,9 +187,622 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
+void CPhysicalGeometry::AllocateMemoryMatricesMetrics(
+                                vector<CFEMStandardElementBase *>           &standardElements,
+                                const unsigned short                        nDer,
+                                vector<su2activevector>                     *matricesJacobians,
+                                vector<ColMajorMatrix<su2double> >          *matricesCoor,
+                                vector<ColMajorMatrix<su2double> >          *matricesNormals,
+                                vector<vector<ColMajorMatrix<su2double> > > *matricesDerCoor) {
+
+  /*--- Allocate the memory for matricesJacobians, if needed. ---*/
+  if( matricesJacobians ) {
+
+    matricesJacobians->resize(standardElements.size());
+
+    for(unsigned long i=0; i<standardElements.size(); ++i) {
+      const unsigned short sizeInt = standardElements[i]->GetNIntegrationPad();
+      matricesJacobians->at(i).resize(sizeInt);
+      matricesJacobians->at(i).setConstant(0.0);
+    }
+  }
+
+  /*--- Allocate the memory for matricesCoor, if needed. ---*/
+  if( matricesCoor ) {
+
+    matricesCoor->resize(standardElements.size());
+
+    for(unsigned long i=0; i<standardElements.size(); ++i) {
+      const unsigned short sizeDOF = standardElements[i]->GetNDOFs();
+      matricesCoor->at(i).resize(sizeDOF, nDim);
+      matricesCoor->at(i).setConstant(0.0);
+    }
+  }
+
+  /*--- Allocate the memory for matricesNormals, if needed. ---*/
+  if( matricesNormals ) {
+
+    matricesNormals->resize(standardElements.size());
+
+    for(unsigned long i=0; i<standardElements.size(); ++i) {
+      const unsigned short sizeInt = standardElements[i]->GetNIntegrationPad();
+      matricesNormals->at(i).resize(sizeInt, nDim);
+      matricesNormals->at(i).setConstant(0.0);
+    }
+  }
+
+  /*--- Allocate the memory for matricesDerCoor, if needed. ---*/
+  if( matricesDerCoor ) {
+
+    matricesDerCoor->resize(standardElements.size());
+
+    for(unsigned long i=0; i<standardElements.size(); ++i) {
+      const unsigned short sizeInt = standardElements[i]->GetNIntegrationPad();
+      matricesDerCoor->at(i).resize(nDer);
+
+      for(unsigned short j=0; j<nDer; ++j) { 
+        matricesDerCoor->at(i)[j].resize(sizeInt, nDim);
+
+        /*--- Set the default values to avoid problems later on. ---*/
+        matricesDerCoor->at(i)[j].setConstant(0.0);
+
+        for(unsigned short k=0; k<sizeInt; ++k)
+          matricesDerCoor->at(i)[j](k,j) = 1.0;
+      }
+    }
+  }
+}
+
 void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION); 
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Check whether wall functions are used at all.              ---*/
+  /*--------------------------------------------------------------------------*/
+
+  unsigned long nWallFaces = 0;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+          nWallFaces += nElem_Bound[iMarker];
+        break;
+      }
+      default:  /*--- Just to avoid a compiler warning. ---*/
+        break;
+    }
+  }
+
+  /*--- If no wall functions are used, nothing needs to be done and a
+        return can be made. ---*/
+  if(nWallFaces == 0) return;
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Build the ADT of the linear sub-elements of the locally    ---*/
+  /*---         stored volume elements.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Determine a mapping from the global point ID to the local index
+        of the points. ---*/
+  map<unsigned long,unsigned long> globalPointIDToLocalInd;
+  for(unsigned long i=0; i<nPoint; ++i) {
+    globalPointIDToLocalInd[nodes->GetGlobalIndex(i)] = i;
+  }
+
+  /*--- Define the vectors, which store the mapping from the subelement to the
+        parent element, subelement ID within the parent element, the element
+        type and the connectivity of the subelements. ---*/
+  vector<unsigned long>  parentElement;
+  vector<unsigned short> subElementIDInParent;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned long>  elemConn;
+
+  /*--- Loop over the local volume elements to create the connectivity of
+        the linear sub-elements. ---*/
+  for(unsigned long l=0; l<nElem; ++l) {
+
+    /*--- Determine the standard element of the volume element. ---*/
+    const unsigned short VTK_Parent = elem[l]->GetVTK_Type();
+    const unsigned short nPolyGrid  = elem[l]->GetNPolyGrid();
+    const unsigned short orderExact = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+
+    unsigned long ii;
+    for(ii=0; ii<standardVolumeElements.size(); ++ii)
+      if( standardVolumeElements[ii]->SameStandardElement(VTK_Parent, nPolyGrid, orderExact) )
+          break;
+
+    /*-- Determine the necessary data for splitting the element in its linear
+         sub-elements. ---*/
+    unsigned short VTK_Type[]  = {standardVolumeElements[ii]->GetVTK_SubType1(),
+                                  standardVolumeElements[ii]->GetVTK_SubType2()};
+    unsigned short nSubElems[] = {0, 0};
+    unsigned short nDOFsPerSubElem[] = {0, 0};
+    const unsigned short *connSubElems[] = {nullptr, nullptr};
+
+    if(VTK_Type[0] != NONE) {
+      nSubElems[0]       = standardVolumeElements[ii]->GetNSubElemsType1();
+      nDOFsPerSubElem[0] = standardVolumeElements[ii]->GetNDOFsPerSubElem(VTK_Type[0]);
+      connSubElems[0]    = standardVolumeElements[ii]->GetSubConnType1();
+    }
+
+    if(VTK_Type[1] != NONE) {
+      nSubElems[1]       = standardVolumeElements[ii]->GetNSubElemsType2();
+      nDOFsPerSubElem[1] = standardVolumeElements[ii]->GetNDOFsPerSubElem(VTK_Type[1]);
+      connSubElems[1]    = standardVolumeElements[ii]->GetSubConnType2();
+    }
+
+    /*--- Store the connectivity of the sub-elements. Note that local node
+          numbering must be used for these sub-elements. ---*/
+    unsigned short jj = 0;
+    for(unsigned short i=0; i<2; ++i) {
+      unsigned short kk = 0;
+      for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
+        parentElement.push_back(elem[l]->GetGlobalElemID());
+        subElementIDInParent.push_back(jj);
+        VTK_TypeElem.push_back(VTK_Type[i]);
+
+        for(unsigned short k=0; k<nDOFsPerSubElem[i]; ++k, ++kk) {
+          unsigned long nodeID = elem[l]->GetNode(connSubElems[i][kk]);
+          map<unsigned long,unsigned long>::const_iterator MI;
+          MI = globalPointIDToLocalInd.find(nodeID);
+
+          elemConn.push_back(MI->second);
+        }
+      }
+    }
+  }
+
+  /*--- Store the coordinates of the locally stored nodes in the format
+        expected by the ADT. ---*/
+  vector<su2double> volCoor(nDim*nPoint);
+
+  unsigned long jj = 0;
+  for(unsigned long l=0; l<nPoint; ++l) {
+    for(unsigned short k=0; k<nDim; ++k, ++jj)
+      volCoor[jj] = nodes->GetCoord(l, k);
+  }
+
+  /*--- Build the local ADT. ---*/
+  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                               subElementIDInParent, parentElement, false);
+
+  /*--- Release the memory of the vectors used to build the ADT. To make sure
+        that all the memory is deleted, the swap function is used. ---*/
+  vector<unsigned short>().swap(subElementIDInParent);
+  vector<unsigned short>().swap(VTK_TypeElem);
+  vector<unsigned long>().swap(parentElement);
+  vector<unsigned long>().swap(elemConn);
+  vector<su2double>().swap(volCoor);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
+  /*---         the local elements.                                        ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Determine whether or not the LGL node distribution is used. ---*/
+  const bool useLGL = config->GetKind_FEM_GridDOFsLocation() == LGL;
+
+  /*--- Define the vectors, which store the boundary marker, boundary element ID
+        and exchange coordinates for the integration points for which no donor
+        element was found in the locally stored volume elements. ---*/
+  vector<unsigned short> markerIDGlobalSearch;
+  vector<unsigned long>  boundaryElemIDGlobalSearch;
+  vector<su2double>      coorExGlobalSearch;
+
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Define the matrices used to store the coordinates, its derivatives,
+          the Jacobians and the unit normals. Every standard element gets its
+          own set of matrices, such that the performance is maximized. Not so
+          important here, but it is compatible with the approach used in the
+          computationally intensive part. ---*/
+    vector<su2activevector> matricesJacobians;
+    vector<ColMajorMatrix<su2double> > matricesCoor, matricesNormals;
+    vector<vector<ColMajorMatrix<su2double> > > matricesDerCoor;
+
+    /*--- Allocate the memory for the matrices to compute the face metrics. ---*/
+    AllocateMemoryMatricesMetrics(standardFaceElements, nDim-1, &matricesJacobians,
+                                  &matricesCoor, &matricesNormals, &matricesDerCoor);
+
+    /*--- Loop over the markers and select the ones for which a wall function
+          treatment must be carried out. ---*/
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case ISOTHERMAL:
+        case HEAT_FLUX: {
+          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+
+            /*--- Retrieve the floating point information for this boundary marker.
+                  The exchange location is the first element of this array. ---*/
+            const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+
+            /*--- Determine the chunk size for the OMP loop below. ---*/
+#ifdef HAVE_OMP
+            const size_t omp_chunk_size = computeStaticChunkSize(nElem_Bound[iMarker],
+                                                                 omp_get_num_threads(), 64);
+#endif
+            /*--- Loop over the local boundary elements for this marker. ---*/
+            SU2_OMP_FOR_DYN(omp_chunk_size)
+            for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l) {
+
+              /*--- Determine the local volume element of this boundary element. ---*/
+              const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
+              unordered_map<unsigned long,unsigned long>::const_iterator MI;
+              MI = Global_to_Local_Elem.find(globalElemID);
+
+              if(MI == Global_to_Local_Elem.end())
+                SU2_MPI::Error(string("Global element ID not found. This should not happen"),
+                               CURRENT_FUNCTION);
+
+              const unsigned long elemID = MI->second;
+
+              /*--- Get the corner points of the boundary element. Note that this
+                    is an overloaded function, hence the arguments allow for
+                    multiple faces ---. */
+              unsigned short nFaces;
+              unsigned short nPointsPerFace[6];
+              unsigned long  faceConn[6][4];
+              bound[iMarker][l]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+              /*--- Create an object of CFaceOfElement to store the information. ---*/
+              CFaceOfElement boundaryFace;
+              boundaryFace.nCornerPoints = nPointsPerFace[0];
+              for(unsigned short i=0; i<nPointsPerFace[0]; ++i)
+                boundaryFace.cornerPoints[i] = faceConn[0][i];
+              boundaryFace.elemID0 = elemID;
+
+              /*--- Renumber the corner points of the face, but keep the orientation. ---*/
+              boundaryFace.CreateUniqueNumberingWithOrientation();
+              const bool boundaryFaceSwapped = boundaryFace.elemID1 == elemID;
+
+              /*--- Get the corner points of all the faces from the corresponding
+                    volume element. ---*/
+              elem[elemID]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+              /*--- Loop over the faces of the element to determine which one is
+                    the boundary face. ---*/
+              unsigned long ii;
+              bool outwardPointing = true;   /* Initialized to avoid compiler warning. */
+              for(ii=0; ii<nFaces; ++ii) {
+
+                /*--- Create an object of CFaceOfElement to store the information.
+                      Renumber the corner points, but keep the orientation. ---*/
+                CFaceOfElement thisFace;
+                thisFace.nCornerPoints = nPointsPerFace[ii];
+                for(unsigned short i=0; i<nPointsPerFace[ii]; ++i)
+                  thisFace.cornerPoints[i] = faceConn[ii][i];
+                thisFace.elemID0 = elemID;
+
+                thisFace.CreateUniqueNumberingWithOrientation();
+                const bool thisFaceSwapped = thisFace.elemID1 == elemID;
+
+                /*--- Check if this face is the boundary face. ---*/
+                if(boundaryFace == thisFace) {
+
+                  /*--- Determine whether the orientation of the boundary face is
+                        pointing out of the adjacent element. ---*/
+                  outwardPointing = boundaryFaceSwapped == thisFaceSwapped;
+
+                  /* Break the loop over the faces of the element. */
+                  break;
+                }
+              }
+
+              /*--- Additional check, just to be sure. ---*/
+              if(ii == nFaces)
+                SU2_MPI::Error(string("Boundary face not found in faces of element. This should not happen"),
+                               CURRENT_FUNCTION);
+
+              /*--- Determine whether or not the Jacobian of the boundary face
+                    is constant. ---*/
+              const bool constJac = elem[elemID]->GetJacobianConstantFace(ii);
+              bound[iMarker][l]->SetJacobianConsideredConstant(constJac);
+
+              /*--- Abbreviate the boundary element type, polynomial degree of
+                    the grid and solution, and determine the polynomial degree
+                    that must be integrated exactly, based on the polynomial
+                    degree of the solution. ---*/
+              const unsigned short VTK_Type  = bound[iMarker][l]->GetVTK_Type();
+              const unsigned short nPolyGrid = bound[iMarker][l]->GetNPolyGrid();
+              const unsigned short nPolySol  = elem[elemID]->GetNPolySol();
+
+              unsigned short orderExact;
+              if( constJac ) orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
+              else           orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+
+              /*--- Determine the corresponding standard element of the face. ---*/
+              unsigned long jj;
+              for(jj=0; jj<standardFaceElements.size(); ++jj)
+                if( standardFaceElements[jj]->SameStandardElement(VTK_Type, nPolySol, orderExact) )
+                  break;
+
+              /*--- Store the coordinates of the face in the correct entry of matricesCoor. ---*/
+              const unsigned short nDOFs = standardFaceElements[jj]->GetNDOFs();
+              for(unsigned short j=0; j<nDOFs; ++j) {
+                unsigned long nodeID = bound[iMarker][l]->GetNode(j);
+                map<unsigned long,unsigned long>::const_iterator MI;
+                MI = globalPointIDToLocalInd.find(nodeID);
+                nodeID = MI->second;
+                for(unsigned short k=0; k<nDim; ++k)
+                  matricesCoor[jj](j,k) = nodes->GetCoord(nodeID, k);
+              }
+
+              /*--- Create the coordinates and the unit normals in the integration points.
+                    Make sure to compute the normals first, because then the memory of
+                    matricesDerCoor can be used to store the coordinates of the
+                    integration points. Also store the unit normals a bit easier. ---*/
+              standardFaceElements[jj]->UnitFaceNormals(useLGL, matricesCoor[jj],
+                                                        matricesDerCoor[jj], matricesNormals[jj],
+                                                        matricesJacobians[jj]);
+
+              ColMajorMatrix<su2double> &coorInt  = matricesDerCoor[jj][0];
+              ColMajorMatrix<su2double> &unitNorm = matricesNormals[jj];
+              standardFaceElements[jj]->CoorIntPoints(useLGL, matricesCoor[jj], coorInt);
+
+              /*--- Set the multiplication factor for the normal, such that
+                    an inward pointing normal is obtained. It is scaled with
+                    the exchange distance. ---*/
+              const su2double factNorm = outwardPointing ? -doubleInfo[0] : doubleInfo[0];
+
+              /*--- Determine the number of integration points and reserve the
+                    memory to store the donor elements of the face. ---*/
+              const unsigned short nInt = standardFaceElements[jj]->GetNIntegration();
+              vector<unsigned long> donorElementsFace;
+              donorElementsFace.reserve(nInt);
+
+              /*--- Loop over the number of integration points. ---*/
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /*--- Determine the coordinate of the exchange point. ---*/
+                su2double coorEx[3] = {0.0, 0.0, 0.0};
+                for(unsigned short k=0; k<nDim; ++k)
+                  coorEx[k] = coorInt(i,k) + factNorm*unitNorm(i,k);
+
+                /*--- Search for the element, which contains the exchange location. ---*/
+                unsigned short subElem;
+                unsigned long  parElem;
+                int            mpirank;
+                su2double      parCoor[3], weightsInterpol[8];
+
+                if( localVolumeADT.DetermineContainingElement(coorEx, subElem,
+                                                              parElem, mpirank, parCoor,
+                                                              weightsInterpol) ) {
+
+                  /*--- Donor element found. Store it in donorElementsFace. ---*/
+                  donorElementsFace.push_back(parElem);
+                }
+                else {
+
+                  /*--- Donor element not found in the local ADT. Store the exchange
+                        coordinates, boundary marker and boundary element ID. ---*/
+                  SU2_OMP_CRITICAL
+                  {
+                    markerIDGlobalSearch.push_back(iMarker);
+                    boundaryElemIDGlobalSearch.push_back(l);
+                    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                      coorExGlobalSearch.push_back(coorEx[iDim]);
+                  }
+                }
+              }
+
+              /*--- Sort donorElementsFace in increasing order and remove the
+                    the double entities. ---*/
+              sort(donorElementsFace.begin(), donorElementsFace.end());
+              vector<unsigned long>::iterator lastEntry;
+              lastEntry = unique(donorElementsFace.begin(), donorElementsFace.end());
+              donorElementsFace.erase(lastEntry, donorElementsFace.end()); 
+
+              /*--- Store the donor elements in the data structure for
+                    this boundary element. ---*/
+              bound[iMarker][l]->SetDonorsWallFunctions(donorElementsFace);
+            }
+          }
+
+          break;
+        }
+
+        default:  /*--- Just to avoid a compiler warning. ---*/
+          break;
+      }
+    }
+
+
+  } /*--- end SU2_OMP_PARALLEL ---*/
+
+  /*--- The remaining part of this function only needs to be carried out in parallel mode. ---*/
+#ifdef HAVE_MPI
+
+  /*--- Determine the number of search points for which a global search must be
+        carried out for each rank and store them in such a way that the info can
+        be used directly in Allgatherv. ---*/
+  vector<int> recvCounts(size), displs(size);
+  int nLocalSearchPoints = static_cast<int>(markerIDGlobalSearch.size());
+
+  SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1,
+                     MPI_INT, MPI_COMM_WORLD);
+  displs[0] = 0;
+  for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
+
+  const int nGlobalSearchPoints = displs.back() + recvCounts.back();
+
+  /*--- Check if there actually are global searches to be carried out. ---*/
+  if(nGlobalSearchPoints > 0) {
+
+    /*--- Create a cumulative storage version of recvCounts. ---*/
+    vector<int> nSearchPerRank(size+1);
+    nSearchPerRank[0] = 0;
+
+    for(int i=0; i<size; ++i)
+      nSearchPerRank[i+1] = nSearchPerRank[i] + recvCounts[i];
+
+    /*--- Gather the data of the search points for which a global search must
+          be carried out on all ranks. ---*/
+    vector<unsigned short> bufMarkerIDGlobalSearch(nGlobalSearchPoints);
+    SU2_MPI::Allgatherv(markerIDGlobalSearch.data(), nLocalSearchPoints,
+                        MPI_UNSIGNED_SHORT, bufMarkerIDGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_SHORT,
+                        MPI_COMM_WORLD);
+
+    vector<unsigned long> bufBoundaryElemIDGlobalSearch(nGlobalSearchPoints);
+    SU2_MPI::Allgatherv(boundaryElemIDGlobalSearch.data(), nLocalSearchPoints,
+                        MPI_UNSIGNED_LONG, bufBoundaryElemIDGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_UNSIGNED_LONG,
+                        MPI_COMM_WORLD);
+
+    for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
+    vector<su2double> bufCoorExGlobalSearch(nDim*nGlobalSearchPoints);
+    SU2_MPI::Allgatherv(coorExGlobalSearch.data(), nDim*nLocalSearchPoints,
+                        MPI_DOUBLE, bufCoorExGlobalSearch.data(),
+                        recvCounts.data(), displs.data(), MPI_DOUBLE,
+                        MPI_COMM_WORLD);
+
+    /*--- Buffers to store the return information. ---*/
+    vector<unsigned short> markerIDReturn;
+    vector<unsigned long>  boundaryElemIDReturn;
+    vector<unsigned long>  volElemIDDonorReturn;
+
+    /*--- Loop over the number of global search points to check if these points
+          are contained in the volume elements of this rank. The loop is carried
+          out as a double loop, such that the rank where the point resides is
+          known as well. Furthermore, it is not necessary to search the points
+          that were not found earlier on this rank. The vector recvCounts is used
+          as storage for the number of search items that must be returned to the
+          other ranks. ---*/
+    for(int rankID=0; rankID<size; ++rankID) {
+      recvCounts[rankID] = 0;
+      if(rankID != rank) {
+        for(int i=nSearchPerRank[rankID]; i<nSearchPerRank[rankID+1]; ++i) {
+
+          /*--- Search the local ADT for the coordinate of the exchange point
+                and check if it is found. ---*/
+          unsigned short subElem;
+          unsigned long  parElem;
+          int            rankDonor;
+          su2double      parCoor[3], weightsInterpol[8];
+          if( localVolumeADT.DetermineContainingElement(bufCoorExGlobalSearch.data() + i*nDim,
+                                                        subElem, parElem, rankDonor, parCoor,
+                                                        weightsInterpol) ) {
+
+            /*--- Store the required data in the return buffers. ---*/
+            ++recvCounts[rankID];
+            markerIDReturn.push_back(bufMarkerIDGlobalSearch[i]);
+            boundaryElemIDReturn.push_back(bufBoundaryElemIDGlobalSearch[i]);
+            volElemIDDonorReturn.push_back(parElem);
+          }
+        }
+      }
+    }
+
+    /*--- Create a cumulative version of recvCounts. ---*/
+    for(int i=0; i<size; ++i)
+      nSearchPerRank[i+1] = nSearchPerRank[i] + recvCounts[i];
+
+    /*--- Determine the number of return messages this rank has to receive.
+          Use displs and recvCounts as temporary storage. ---*/
+    int nRankSend = 0;
+    for(int i=0; i<size; ++i) {
+      if( recvCounts[i] ) {recvCounts[i] = 1; ++nRankSend;}
+      displs[i] = 1;
+    }
+
+    int nRankRecv;
+    SU2_MPI::Reduce_scatter(recvCounts.data(), &nRankRecv, displs.data(),
+                            MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Send the data using nonblocking sends to avoid deadlock. ---*/
+    vector<SU2_MPI::Request> commReqs(3*nRankSend);
+    nRankSend = 0;
+    for(int i=0; i<size; ++i) {
+      if( recvCounts[i] ) {
+        const int sizeMessage = nSearchPerRank[i+1] - nSearchPerRank[i];
+        SU2_MPI::Isend(markerIDReturn.data() + nSearchPerRank[i],
+                       sizeMessage, MPI_UNSIGNED_SHORT, i, i, MPI_COMM_WORLD,
+                       &commReqs[nRankSend++]);
+        SU2_MPI::Isend(boundaryElemIDReturn.data() + nSearchPerRank[i],
+                       sizeMessage, MPI_UNSIGNED_LONG, i, i+1, MPI_COMM_WORLD,
+                       &commReqs[nRankSend++]);
+        SU2_MPI::Isend(volElemIDDonorReturn.data() + nSearchPerRank[i],
+                       sizeMessage, MPI_UNSIGNED_LONG, i, i+2, MPI_COMM_WORLD,
+                       &commReqs[nRankSend++]);
+      }
+    }
+
+    /*--- Loop over the number of ranks from which I receive return data. ---*/
+    for(int i=0; i<nRankRecv; ++i) {
+
+      /*--- Block until a message with unsigned shorts arrives from any processor.
+            Determine the source and the size of the message. ---*/
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+      int source = status.MPI_SOURCE;
+
+      int sizeMess;
+      SU2_MPI::Get_count(&status, MPI_UNSIGNED_SHORT, &sizeMess);
+
+      /*--- Allocate the memory for the receive buffers. ---*/
+      vector<unsigned short> bufMarkerIDReturn(sizeMess);
+      vector<unsigned long>  bufBoundaryElemIDReturn(sizeMess);
+      vector<unsigned long>  bufVolElemIDDonorReturn(sizeMess);
+
+      /*--- Receive the three messages using blocking receives. ---*/
+      SU2_MPI::Recv(bufMarkerIDReturn.data(), sizeMess, MPI_UNSIGNED_SHORT,
+                    source, rank, MPI_COMM_WORLD, &status);
+
+      SU2_MPI::Recv(bufBoundaryElemIDReturn.data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank+1, MPI_COMM_WORLD, &status);
+
+      SU2_MPI::Recv(bufVolElemIDDonorReturn.data(), sizeMess, MPI_UNSIGNED_LONG,
+                    source, rank+2, MPI_COMM_WORLD, &status);
+
+      /*--- Loop over the data just received and add it to the wall function
+            donor information of the corresponding boundary element. ---*/
+      for(int j=0; j<sizeMess; ++j) {
+        const unsigned short iMarker = bufMarkerIDReturn[j];
+        const unsigned long  l       = bufBoundaryElemIDReturn[j];
+        const unsigned long  volID   = bufVolElemIDDonorReturn[j];
+
+        bound[iMarker][l]->AddDonorWallFunctions(volID);
+      }
+    }
+
+    /*--- Complete the non-blocking sends. ---*/
+    SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
+
+    /*--- Wild cards have been used in the communication,
+          so synchronize the ranks to avoid problems. ---*/
+    SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+    /*--- Loop again over the boundary elements of the marker for which a wall
+          function treatment must be used and make remove the multiple entries
+          of the donor information. ---*/
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case ISOTHERMAL:
+        case HEAT_FLUX: {
+          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+
+            for(unsigned long l=0; l<nElem_Bound[iMarker]; ++l)
+              bound[iMarker][l]->RemoveMultipleDonorsWallFunctions();
+          }
+
+          break;
+        }
+
+        default:  /*--- Just to avoid a compiler warning. ---*/
+          break;
+      }
+    }
+  }
+
+#endif   /*--- HAVE_MPI ---*/
+
 }
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
@@ -203,15 +819,6 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
   const size_t omp_chunk_size = computeStaticChunkSize(nElem, omp_get_num_threads(), 64);
 #endif
 
-  /*--- Define the vectors to store the standard elements for the volume elements
-        and surface faces. These standard elements will be created based on the
-        polynomial degree of the grid. ---*/
-  vector<CFEMStandardElementBase *> standardVolumeElements, standardFaceElements;
-
-  /*--- Vector of two unsigned shorts per entity to determine the different
-        element types for the grid. ---*/
-  vector<CUnsignedShort2T> elemTypesGrid(nElem);
-
   /*--- Vectors to store the minimum and maximum Jacobian of the elements,
         both for the LGL and equidistant node distribution. ---*/
   vector<su2double> jacMinLGL(nElem),  jacMaxLGL(nElem);
@@ -226,122 +833,6 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
   /*---- Start of the OpenMP parallel region, if supported. ---*/
   SU2_OMP_PARALLEL
   {
-    /*--- Loop over the local volume elements to determine the different
-          element types for the grid. ---*/
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for(unsigned long i=0; i<nElem; ++i) {
-
-      /*--- Retrieve the element type and polynomial degree of the grid
-            of this element and store it in elemTypesGrid. ---*/
-      elemTypesGrid[i].short0 = elem[i]->GetVTK_Type();
-      elemTypesGrid[i].short1 = elem[i]->GetNPolyGrid();
-    }
-
-    /*--- Sort elemTypesGrid in increasing order and remove the multiple entities.
-          Allocate the memory for standardVolumeElements afterwards. ---*/
-    SU2_OMP_SINGLE
-    {
-      sort(elemTypesGrid.begin(), elemTypesGrid.end());
-      vector<CUnsignedShort2T>::iterator lastEntry = unique(elemTypesGrid.begin(), elemTypesGrid.end());
-      elemTypesGrid.erase(lastEntry, elemTypesGrid.end());
-      standardVolumeElements.resize(elemTypesGrid.size(), nullptr);
-    }
-
-    /*--- Loop over the standard volume elements and allocate the appropriate objects. ---*/
-    SU2_OMP_FOR_STAT(1)
-    for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
-
-      /*--- Abbreviate the element type and polynomial degree for readability
-            and determine the polynomial order that must be integrated
-            exactly. The latter value is used to determine whether or not
-            the Jacobian is constant and therefore the value for non-constant
-            Jacobians is used to be sure that the volume is computed correctly. ---*/
-      const unsigned short VTK_Type   = elemTypesGrid[i].short0;
-      const unsigned short nPoly      = elemTypesGrid[i].short1;
-      const unsigned short orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Curved());
-
-      /*--- Determine the element type and allocate the appropriate object. ---*/
-      switch( VTK_Type ) {
-        case TRIANGLE:
-          standardVolumeElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, false);
-          break;
-        case QUADRILATERAL:
-          standardVolumeElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, false);
-          break;
-        case TETRAHEDRON:
-          standardVolumeElements[i] = new CFEMStandardTetGrid(nPoly, orderExact);
-          break;
-        case PYRAMID:
-          standardVolumeElements[i] = new CFEMStandardPyraGrid(nPoly, orderExact);
-          break;
-        case PRISM:
-          standardVolumeElements[i] = new CFEMStandardPrismGrid(nPoly, orderExact);
-          break;
-        case HEXAHEDRON:
-          standardVolumeElements[i] = new CFEMStandardHexGrid(nPoly, orderExact);
-          break;
-        default:  /*--- To avoid a compiler warning. ---*/
-          SU2_MPI::Error(string("Unknown volume element. This should not happen"),
-                         CURRENT_FUNCTION);
-      }
-    }
-
-    /*--- Determine the number of different standard element for the faces
-          and allocate the memory for the pointers. ---*/
-    SU2_OMP_SINGLE
-    {
-      /*--- Reset elemTypesGrid. ---*/
-      elemTypesGrid.clear();
-
-      /*--- Loop over the standard volume elements. ---*/
-      for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
-
-        /*--- Loop over the number of different standard faces for this and
-              store the VTK type and polynomial degree in elemTypesGrid. ---*/
-        for(unsigned short j=0; j<standardVolumeElements[i]->GetnFaceTypes(); ++j)
-          elemTypesGrid.push_back(CUnsignedShort2T(standardVolumeElements[i]->GetVTK_TypeFace(j),
-                                                   standardVolumeElements[i]->GetPolyDegree()));
-      }
-
-      /*--- Sort elemTypesGrid in increasing order and remove the multiple entries.
-            Allocate the memory for standardFaceElements afterwards.  ---*/
-      sort(elemTypesGrid.begin(), elemTypesGrid.end());
-      vector<CUnsignedShort2T>::iterator lastEntry = unique(elemTypesGrid.begin(), elemTypesGrid.end());
-      elemTypesGrid.erase(lastEntry, elemTypesGrid.end());
-
-      standardFaceElements.resize(elemTypesGrid.size(), nullptr);
-    }
-
-    /*--- Loop over the standard face elements and allocate the appropriate objects. ---*/
-    SU2_OMP_FOR_STAT(1)
-    for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
-
-      /*--- Abbreviate the element type and polynomial degree for readability
-            and determine the polynomial order that must be integrated
-            exactly. The latter value is used to determine whether or not
-            the Jacobian is constant and therefore the value for non-constant
-            Jacobians is used to be sure that the surface is computed correctly. ---*/
-      const unsigned short VTK_Type   = elemTypesGrid[i].short0;
-      const unsigned short nPoly      = elemTypesGrid[i].short1;
-      const unsigned short orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Curved());
-
-      /*--- Determine the element type and allocate the appropriate object. ---*/
-      switch( VTK_Type ) {
-        case LINE:
-          standardFaceElements[i] = new CFEMStandardLineGrid(nPoly, orderExact);
-          break;
-        case TRIANGLE:
-          standardFaceElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, true);
-          break;
-        case QUADRILATERAL:
-          standardFaceElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, true);
-          break;
-        default:  /*--- To avoid a compiler warning. ---*/
-          SU2_MPI::Error(string("Unknown surface element. This should not happen"),
-                         CURRENT_FUNCTION);
-      }
-    }
-
     /*--- Define the matrices used to store the coordinates, its derivatives and
           the Jacobians. For later purposes, when computing the face metrics,
           als the matrices for storing the normals is defined. Every standard
@@ -352,46 +843,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     vector<ColMajorMatrix<su2double> > matricesCoor, matricesNormals;
     vector<vector<ColMajorMatrix<su2double> > > matricesDerCoor;
 
-    const unsigned long nMat = max(standardVolumeElements.size(),
-                                   standardFaceElements.size());
-    matricesJacobians.resize(nMat);
-    matricesCoor.resize(nMat);
-    matricesNormals.resize(nMat);
-    matricesDerCoor.resize(nMat);
-
-    /*--- Loop over the standard elements and allocate the memory for the
-          matrices defined above. ---*/
-    for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
-
-      /*--- Get the dimensions from the standard element. ---*/
-      const unsigned short sizeDOF = standardVolumeElements[i]->GetNDOFs();
-      const unsigned short sizeInt = standardVolumeElements[i]->GetNIntegrationPad();
-
-      /*--- Allocate the memory for the Jacobians and the coordinates
-            for this standard element. Fill these matrices with the
-            default values to avoid problems later on. ---*/
-      matricesJacobians[i].resize(sizeInt);
-      matricesCoor[i].resize(sizeDOF, nDim);
-
-      matricesJacobians[i].setConstant(0.0);
-      matricesCoor[i].setConstant(0.0);
-
-      /*--- Allocate the memory for the second index of matricesDerCoor. ---*/
-      matricesDerCoor[i].resize(nDim);
-
-      /*--- Loop over the number of dimensions and allocate the
-            memory for the actual matrix for the derivatives
-            of the coordinates. ---*/
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) { 
-        matricesDerCoor[i][iDim].resize(sizeInt, nDim);
-
-        /*--- Set the default values to avoid problems later on. ---*/
-        matricesDerCoor[i][iDim].setConstant(0.0);
-
-        for(unsigned short j=0; j<sizeInt; ++j)
-          matricesDerCoor[i][iDim](j,iDim) = 1.0;
-      }
-    }
+    /*--- Allocate the memory for these matrices. ---*/
+    AllocateMemoryMatricesMetrics(standardVolumeElements, nDim, &matricesJacobians,
+                                  &matricesCoor, nullptr, &matricesDerCoor);
 
     /*--- Loop over the local volume elements to compute the minimum and maximum
           Jacobian for both the LGL and equidistant point distribution and to
@@ -399,11 +853,18 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     SU2_OMP_FOR_DYN_(omp_chunk_size, reduction(+: counterGridLocation[:NO_PREFERRED_LOCATION+1]))
     for(unsigned long i=0; i<nElem; ++i) {
 
+      /*--- Determine the order of the polynomials that must be integrated exactly.
+            As the intention of this function is to find out whether or not the
+            Jacobians are constant, it suffices to look at the polynomial degree
+            of the grid. ---*/
+      const unsigned short nPolyGrid  = elem[i]->GetNPolyGrid();
+      const unsigned short orderExact = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+
       /*--- Determine the standard element of the volume element. ---*/
       unsigned long ii;
       for(ii=0; ii<standardVolumeElements.size(); ++ii)
         if( standardVolumeElements[ii]->SameStandardElement(elem[i]->GetVTK_Type(),
-                                                            elem[i]->GetNPolyGrid()) )
+                                                            nPolyGrid, orderExact) )
           break;
 
       /*--- Retrieve the number of grid DOFs for this element. ---*/
@@ -536,41 +997,9 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     config->SetKind_FEM_GridDOFsLocation(gridLocation);
     const bool useLGL = gridLocation == LGL;
 
-    /*--- Loop over the standard face elements and allocate the memory
-          for the matrices used to compute the derivatives. ---*/
-    for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
-
-      /*--- Get the dimensions from the standard element. ---*/
-      const unsigned short sizeDOF = standardFaceElements[i]->GetNDOFs();
-      const unsigned short sizeInt = standardFaceElements[i]->GetNIntegrationPad();
-
-      /*--- Allocate the memory for the Jacobians, coordinates and normals
-            for this standard element. Fill these matrices with the
-            default values to avoid problems later on. ---*/
-      matricesJacobians[i].resize(sizeInt);
-      matricesCoor[i].resize(sizeDOF, nDim);
-      matricesNormals[i].resize(sizeInt, nDim);
-
-      matricesJacobians[i].setConstant(0.0);
-      matricesCoor[i].setConstant(0.0);
-      matricesNormals[i].setConstant(0.0);
-
-      /*--- Allocate the memory for the second index of matricesDerCoor. ---*/
-      matricesDerCoor[i].resize(nDim-1);
-
-      /*--- Loop over the number of dimensions-1 and allocate the
-            memory for the actual matrix for the derivatives
-            of the coordinates. ---*/
-      for(unsigned short iDim=0; iDim<(nDim-1); ++iDim) { 
-        matricesDerCoor[i][iDim].resize(sizeInt, nDim);
-
-        /*--- Set the default values to avoid problems later on. ---*/
-        matricesDerCoor[i][iDim].setConstant(0.0);
-
-        for(unsigned short j=0; j<sizeInt; ++j)
-          matricesDerCoor[i][iDim](j,iDim) = 1.0;
-      }
-    }
+    /*--- Allocate the memory for the matrices to compute the face metrics. ---*/
+    AllocateMemoryMatricesMetrics(standardFaceElements, nDim-1, &matricesJacobians,
+                                  &matricesCoor, &matricesNormals, &matricesDerCoor);
 
     /*--- Loop over the local volume elements to determine whether or not the Jacobian
           of the element is constant, to determine whether the Jacobians of boundary
@@ -578,11 +1007,18 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for(unsigned long i=0; i<nElem; ++i) {
 
+      /*--- Determine the order of the polynomials that must be integrated exactly.
+            As the intention of this function is to find out whether or not the
+            Jacobians are constant, it suffices to look at the polynomial degree
+            of the grid. ---*/
+      const unsigned short nPolyGrid  = elem[i]->GetNPolyGrid();
+      const unsigned short orderExact = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+
       /*--- Determine the standard element of the volume element. ---*/
       unsigned long ii;
       for(ii=0; ii<standardVolumeElements.size(); ++ii)
         if( standardVolumeElements[ii]->SameStandardElement(elem[i]->GetVTK_Type(),
-                                                            elem[i]->GetNPolyGrid()) )
+                                                            nPolyGrid, orderExact) )
           break;
 
       /*--- Determine the minimum Jacobian and the Jacobian ratio for
@@ -612,15 +1048,13 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       su2double jacFaceMax = 0.0;
       for(unsigned short j=0; j<nFaces; ++j) {
 
-        /*--- Determine the VTK type of the face element and
-              polynomial degree used for the grid. ---*/
+        /*--- Determine the VTK type of the face element. ---*/
         const unsigned short VTK_Type = standardVolumeElements[ii]->GetVTK_Face(j);
-        const unsigned short nPoly    = standardVolumeElements[ii]->GetPolyDegree();
 
         /*--- Determine the standard element for this face. ---*/
         unsigned long jj;
         for(jj=0; jj<standardFaceElements.size(); ++jj)
-          if( standardFaceElements[jj]->SameStandardElement(VTK_Type, nPoly) )
+          if( standardFaceElements[jj]->SameStandardElement(VTK_Type, nPolyGrid, orderExact) )
             break;
 
         /*--- Set the pointer to store the local face connectivity of this face. ---*/
@@ -672,13 +1106,138 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     }
 
   } /*--- end SU2_OMP_PARALLEL ---*/
+}
 
-  /*--- Release the memory of the standard elements again. ---*/
-  for(unsigned long i=0; i<standardVolumeElements.size(); ++i)
-    delete standardVolumeElements[i];
+void CPhysicalGeometry::DetermineFEMStandardElements(CConfig *config) {
 
-  for(unsigned long i=0; i<standardFaceElements.size(); ++i)
-    delete standardFaceElements[i];
+  /*--- Vector of three unsigned shorts per entity to determine the different
+        element types in the locally stored volume elements. ---*/
+  vector<CUnsignedShort3T> elemTypes(3*nElem);
+
+  /*--- Loop over the local elements to fill the entries of elemTypes. ---*/
+  for(unsigned long i=0; i<nElem; ++i) {
+
+    /*--- Retrieve the polynomial degree of the grid and solution. ---*/
+    const unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
+    const unsigned short nPolySol  = elem[i]->GetNPolyGrid();
+
+    /*--- Determine the order of the polynomials that must be integrated exactly
+          for a) the grid when the Jacobian is not constant, b) the solution
+          when the Jacobian is constant and c) the solution when the Jacobian
+          is not constant. a) is needed to determine whether or not the Jacobian
+          is actually constant and b) and c) are needed to create the face
+          elements to determine the integration points for the wall model. ---*/
+    const unsigned short orderExactA = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+    const unsigned short orderExactB = (unsigned short) ceil(nPolySol *config->GetQuadrature_Factor_Straight());
+    const unsigned short orderExactC = (unsigned short) ceil(nPolySol *config->GetQuadrature_Factor_Curved());
+
+    /*--- Store the three variants in elemTypes. ---*/
+    unsigned long ind = 3*i;
+    elemTypes[ind].short0 = elem[i]->GetVTK_Type();
+    elemTypes[ind].short1 = nPolyGrid;
+    elemTypes[ind].short2 = orderExactA;
+
+    ++ind;
+    elemTypes[ind].short0 = elem[i]->GetVTK_Type();
+    elemTypes[ind].short1 = nPolyGrid;
+    elemTypes[ind].short2 = orderExactB;
+
+    ++ind;
+    elemTypes[ind].short0 = elem[i]->GetVTK_Type();
+    elemTypes[ind].short1 = nPolyGrid;
+    elemTypes[ind].short2 = orderExactC;
+  }
+
+  /*--- Sort elemTypesGrid in increasing order and remove the multiple entities.
+        Allocate the memory for standardVolumeElements afterwards. ---*/
+  sort(elemTypes.begin(), elemTypes.end());
+  vector<CUnsignedShort3T>::iterator lastEntry = unique(elemTypes.begin(), elemTypes.end());
+  elemTypes.erase(lastEntry, elemTypes.end());
+
+  standardVolumeElements.resize(elemTypes.size(), nullptr);
+
+  /*--- Loop over the standard volume elements and allocate the appropriate objects. ---*/
+  for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
+
+    /*--- Abbreviate the element type, polynomial degree and polynomial order that
+          must be integrated exactly for readability. ---*/
+    const unsigned short VTK_Type   = elemTypes[i].short0;
+    const unsigned short nPoly      = elemTypes[i].short1;
+    const unsigned short orderExact = elemTypes[i].short2;
+
+    /*--- Determine the element type and allocate the appropriate object. ---*/
+    switch( VTK_Type ) {
+      case TRIANGLE:
+        standardVolumeElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, false);
+        break;
+      case QUADRILATERAL:
+        standardVolumeElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, false);
+        break;
+      case TETRAHEDRON:
+        standardVolumeElements[i] = new CFEMStandardTetGrid(nPoly, orderExact);
+        break;
+      case PYRAMID:
+        standardVolumeElements[i] = new CFEMStandardPyraGrid(nPoly, orderExact);
+        break;
+      case PRISM:
+        standardVolumeElements[i] = new CFEMStandardPrismGrid(nPoly, orderExact);
+        break;
+      case HEXAHEDRON:
+        standardVolumeElements[i] = new CFEMStandardHexGrid(nPoly, orderExact);
+        break;
+      default:  /*--- To avoid a compiler warning. ---*/
+        SU2_MPI::Error(string("Unknown volume element. This should not happen"),
+                         CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- Reset elemTypes. ---*/
+  elemTypes.clear();
+
+  /*--- Loop over the standard volume elements to determine the standard faces. ---*/
+  for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
+
+    /*--- Loop over the number of different standard faces for this and
+          store the VTK type and polynomial degree in elemTypesGrid. ---*/
+    for(unsigned short j=0; j<standardVolumeElements[i]->GetnFaceTypes(); ++j)
+      elemTypes.push_back(CUnsignedShort3T(standardVolumeElements[i]->GetVTK_TypeFace(j),
+                                           standardVolumeElements[i]->GetPolyDegree(),
+                                           standardVolumeElements[i]->GetOrderExact()));
+  }
+
+  /*--- Sort elemTypes in increasing order and remove the multiple entries.
+        Allocate the memory for standardFaceElements afterwards.  ---*/
+  sort(elemTypes.begin(), elemTypes.end());
+  lastEntry = unique(elemTypes.begin(), elemTypes.end());
+  elemTypes.erase(lastEntry, elemTypes.end());
+
+  standardFaceElements.resize(elemTypes.size(), nullptr);
+
+  /*--- Loop over the standard face elements and allocate the appropriate objects. ---*/
+  for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
+
+    /*--- Abbreviate the element type, polynomial degree and polynomial order that
+          must be integrated exactly for readability. ---*/
+    const unsigned short VTK_Type   = elemTypes[i].short0;
+    const unsigned short nPoly      = elemTypes[i].short1;
+    const unsigned short orderExact = elemTypes[i].short2;
+
+    /*--- Determine the element type and allocate the appropriate object. ---*/
+    switch( VTK_Type ) {
+      case LINE:
+        standardFaceElements[i] = new CFEMStandardLineGrid(nPoly, orderExact);
+        break;
+      case TRIANGLE:
+        standardFaceElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, true);
+        break;
+      case QUADRILATERAL:
+        standardFaceElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, true);
+        break;
+      default:  /*--- To avoid a compiler warning. ---*/
+        SU2_MPI::Error(string("Unknown surface element. This should not happen"),
+                       CURRENT_FUNCTION);
+    }
+  }
 }
 
 void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *config,

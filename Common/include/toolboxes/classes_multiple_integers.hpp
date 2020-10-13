@@ -141,9 +141,9 @@ struct CLong3T {
  * \version 7.0.7 "Blackbird"
  */
 struct CUnsignedShort3T {
-  unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
-  unsigned short short1 = 0;  /*!< \brief Second short to store in this class. */
-  unsigned short short2 = 0;  /*!< \brief Third short to store in this class. */
+  unsigned short short0;  /*!< \brief First short to store in this class. */
+  unsigned short short1;  /*!< \brief Second short to store in this class. */
+  unsigned short short2;  /*!< \brief Third short to store in this class. */
 
   /*!
    * \overload
@@ -151,7 +151,9 @@ struct CUnsignedShort3T {
    * \param[in] b - Second element of the object.
    * \param[in] c - Third element of the object
    */
-  CUnsignedShort3T(const unsigned short a, const unsigned short b, const unsigned short c) {
+  CUnsignedShort3T(const unsigned short a = 0,
+                   const unsigned short b = 0,
+                   const unsigned short c = 0) {
     short0 = a; short1 = b; short2 = c;
   }
 
@@ -166,5 +168,15 @@ struct CUnsignedShort3T {
     if(short2 != other.short2) return (short2 < other.short2);
 
     return false;
+  }
+
+  /*!
+   * \brief Equal operator. Needed for the searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered equal and false otherwise.
+   */
+  inline bool operator==(const CUnsignedShort3T &other) const {
+    return (short0 == other.short0) && (short1 == other.short1) &&
+           (short2 == other.short2);
   }
 };

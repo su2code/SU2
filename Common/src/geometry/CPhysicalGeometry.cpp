@@ -440,6 +440,16 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
     delete [] nTotVertexSpan;
   }
 
+  /*--- Free the memory of the FEM standard elements. ---*/
+  for(unsigned long i=0; i<standardVolumeElements.size(); ++i) {
+    if( standardVolumeElements[i] ) delete standardVolumeElements[i];
+    standardVolumeElements[i] = nullptr;
+  }
+
+  for(unsigned long i=0; i<standardFaceElements.size(); ++i) {
+    if( standardFaceElements[i] ) delete standardFaceElements[i];
+    standardFaceElements[i] = nullptr;
+  }
 }
 
 void CPhysicalGeometry::SetGlobal_to_Local_Point(void) {

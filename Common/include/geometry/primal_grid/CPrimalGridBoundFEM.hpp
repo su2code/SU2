@@ -168,4 +168,18 @@ public:
                                        unsigned short nDOFs,
                                        unsigned short &nPointsPerFace,
                                        unsigned long  faceConn[]);
+
+  /*!
+   * \brief Function to get whether or not the Jacobian is considered constant.
+   * \return True if the Jacobian is (almost) constant and false otherwise.
+   */
+  inline bool GetJacobianConsideredConstant(void) override { return JacobianConsideredConstant; }
+
+  /*!
+   * \brief Function to set the value of JacobianConsideredConstant.
+   * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
+   */
+  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) override {
+    JacobianConsideredConstant = val_JacobianConsideredConstant;
+  }
 };

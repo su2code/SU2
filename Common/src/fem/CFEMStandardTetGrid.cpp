@@ -58,6 +58,25 @@ CFEMStandardTetGrid::CFEMStandardTetGrid(const unsigned short val_nPoly,
   SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
 }
 
+void CFEMStandardTetGrid::CoorIntPoints(const bool                LGLDistribution,
+                                        ColMajorMatrix<su2double> &matCoorDOF,
+                                        ColMajorMatrix<su2double> &matCoorInt) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function OwnGemm to compute the
+          Cartesian coordinates in the integration points. ---*/
+    OwnGemm(nIntegrationPad, 3, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function OwnGemm to compute the
+          Cartesian coordinates in the integration points. ---*/
+    OwnGemm(nIntegrationPad, 3, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+  }
+}
+
 void CFEMStandardTetGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
                                                    ColMajorMatrix<su2double>          &matCoor,
                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {
