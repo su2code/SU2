@@ -4943,9 +4943,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* Set MUSCL kappa blending constant to required values if
      edge limiters are used. */
   switch(Kind_SlopeLimit_Flow) {
-    case VAN_ALBADA_EDGE:
-      MUSCL_Kappa = 0.0;
-      break;
     case PIPERNO:
       MUSCL_Kappa = 1.0/3.0;
       break;

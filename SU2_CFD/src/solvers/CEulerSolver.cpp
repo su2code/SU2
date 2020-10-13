@@ -3385,11 +3385,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
     }
 
-    /*--- Blend upwind and centered differences ---*/
-
-    // Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-    // Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
-
     /*--- Edge-based limiters ---*/
 
     auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
@@ -3397,8 +3392,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     if (limiter) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
-          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa);
+          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa);
           break;
         case PIPERNO:
           Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
@@ -3406,13 +3401,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
           break;
       }
 
-      Project_Grad_i *= Limiter_i[iVar];
-      Project_Grad_j *= Limiter_j[iVar];
-
       /*--- Limit projection ---*/
 
-      // Project_Grad_i *= Limiter_i[iVar];
-      // Project_Grad_j *= Limiter_j[iVar];
+      Project_Grad_i *= Limiter_i[iVar];
+      Project_Grad_j *= Limiter_j[iVar];
       
     }
     else {
@@ -3449,11 +3441,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[iVar][iDim];
       }
 
-      /*--- Blend upwind and centered differences ---*/
-
-      // Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-      // Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
-
       /*--- Edge-based limiters ---*/
 
       auto Limiter_i = turbNodes->GetLimiter(iPoint);
@@ -3461,8 +3448,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       if (limiterTurb) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
-            Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij);
-            Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij);
+            Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa);
+            Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa);
             break;
           case PIPERNO:
             Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
@@ -3475,8 +3462,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
         /*--- Limit projection ---*/
 
-        // Project_Grad_i *= Limiter_i[iVar];
-        // Project_Grad_j *= Limiter_j[iVar];
+        Project_Grad_i *= Limiter_i[iVar];
+        Project_Grad_j *= Limiter_j[iVar];
       }
       else {
         const su2double eps    = numeric_limits<passivedouble>::epsilon();
