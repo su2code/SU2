@@ -26,7 +26,6 @@
  */
 
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
-#include "../../include/toolboxes/classes_multiple_integers.hpp"
 #include "../../include/toolboxes/fem/CMatchingFace.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
@@ -183,6 +182,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine the donor elements for the wall function treatment. ---*/
   DetermineDonorElementsWallFunctions(config);
+
+  /*--- Determine the time levels of the elements. This is only relevant
+        when time accurate local time stepping is employed. ---*/
+  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
+  DetermineTimeLevelElements(config, localMatchingFaces, mapExternalElemIDToTimeLevel);
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

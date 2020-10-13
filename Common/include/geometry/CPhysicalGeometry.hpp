@@ -30,6 +30,7 @@
 #include "CGeometry.hpp"
 #include "meshreader/CMeshReader.hpp"
 #include "../containers/C2DContainer.hpp"
+#include "../toolboxes/classes_multiple_integers.hpp"
 #include "../toolboxes/fem/CFaceOfElement.hpp"
 #include "../fem/CFEMStandardElementBase.hpp"
 
@@ -829,4 +830,14 @@ private:
    */
   void DeterminePeriodicFacesFEMGrid(const CConfig          *config,
                                      vector<CFaceOfElement> &localFaces);
+
+  /*!
+   * \brief Determine the time level of the elements when time accurate local time stepping is employed.
+   * \param[in]  config                       - Definition of the particular problem.
+   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
+   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of DOFs.
+   */
+  void DetermineTimeLevelElements(CConfig                              *config,
+                                  const vector<CFaceOfElement>         &localFaces,
+                                  map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
 };
