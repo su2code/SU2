@@ -1932,3 +1932,12 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(const CConfig          *co
     }
   } 
 }
+
+void CPhysicalGeometry::DetermineTimeLevelElements(CConfig                              *config,
+                                                   const vector<CFaceOfElement>         &localFaces,
+                                                   map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel) {
+
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+

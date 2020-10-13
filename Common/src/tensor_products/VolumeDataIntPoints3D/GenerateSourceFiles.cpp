@@ -429,7 +429,7 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "        SU2_OMP_SIMD" << std::endl;
   sourceFile << "        for(int k=0; k<" << MP << "; ++k) tmpK[i][j][k] = 0.0;" << std::endl;
   sourceFile << "        for(int kk=0; kk<" << nDOFs1D << "; ++kk) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
+  sourceFile << "          SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
   sourceFile << "          for(int k=0; k<" << MP << "; ++k)" << std::endl;
   sourceFile << "            tmpK[i][j][k] += ak[kk][k] * b[kk][j][i];" << std::endl;
   sourceFile << "        }" << std::endl;
@@ -445,7 +445,7 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "        SU2_OMP_SIMD" << std::endl;
   sourceFile << "        for(int j=0; j<" << MP << "; ++j) tmpJ[k][i][j] = 0.0;" << std::endl;
   sourceFile << "        for(int jj=0; jj<" << nDOFs1D << "; ++jj) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
+  sourceFile << "          SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
   sourceFile << "          for(int j=0; j<" << MP << "; ++j)" << std::endl;
   sourceFile << "            tmpJ[k][i][j] += aj[jj][j] * tmpK[i][jj][k];" << std::endl;
   sourceFile << "        }" << std::endl;
@@ -465,7 +465,7 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   else
   sourceFile << "        for(int i=0; i<" << MP << "; ++i) c[k][j][i] = 0.0;" << std::endl;
   sourceFile << "        for(int ii=0; ii<" << nDOFs1D << "; ++ii) {" << std::endl;
-  sourceFile << "          SU2_OMP_SIMD" << std::endl;
+  sourceFile << "          SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
   sourceFile << "          for(int i=0; i<" << MP << "; ++i)" << std::endl;
   if(MP > nInt1D)
   sourceFile << "            tmpI[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];" << std::endl;

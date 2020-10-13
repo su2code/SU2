@@ -31,32 +31,11 @@
 
 CMeshReader::CMeshReader(CConfig        *val_config,
                          unsigned short val_iZone,
-                         unsigned short val_nZone) {
-  
-  /*--- Store MPI size ---*/
-  
-  rank = SU2_MPI::GetRank();
-  size = SU2_MPI::GetSize();
-  
-  this->config = val_config;
-
-  dimension = 0;
-  
-  numberOfLocalPoints = 0;
-  numberOfGlobalPoints = 0;
-  localPointCoordinates.clear();
-  
-  numberOfLocalElements = 0;
-  numberOfGlobalElements = 0;
-  localVolumeElementConnectivity.clear();
-  
-  numberOfMarkers = 0;
-  markerNames.clear();
-  surfaceElementConnectivity.clear();
-  
+                         unsigned short val_nZone) :
+  rank(SU2_MPI::GetRank()),
+  size(SU2_MPI::GetSize()),
+  config(val_config) {
 }
-
-CMeshReader::~CMeshReader(void) { }
 
 void CMeshReader::DetermineFacesVolumeElements(vector<CFaceOfElement> &localFaces) {
 

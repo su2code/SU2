@@ -44,23 +44,23 @@ class CMeshReader {
   
 protected:
   
-  int rank;  /*!< \brief MPI Rank. */
-  int size;  /*!< \brief MPI Size. */
+  const int rank;  /*!< \brief MPI Rank. */
+  const int size;  /*!< \brief MPI Size. */
   
-  CConfig *config; /*!< \brief Local pointer to the config parameter object. */
+  CConfig *config = nullptr; /*!< \brief Local pointer to the config parameter object. */
   
-  unsigned short dimension; /*!< \brief Dimension of the problem (2 or 3). */
+  unsigned short dimension = 0; /*!< \brief Dimension of the problem (2 or 3). */
 
-  unsigned long numberOfLocalPoints;                    /*!< \brief Number of local grid points within the linear partition on this rank. */
-  unsigned long numberOfGlobalPoints;                   /*!< \brief Number of global grid points within the mesh file. */
+  unsigned long numberOfLocalPoints = 0;                /*!< \brief Number of local grid points within the linear partition on this rank. */
+  unsigned long numberOfGlobalPoints = 0;               /*!< \brief Number of global grid points within the mesh file. */
   vector<vector<passivedouble> > localPointCoordinates; /*!< \brief Vector holding the coordinates from the mesh file for the local grid points. First index is dimension, second is point index. */
   vector<unsigned long> globalPointIDs;                 /*!< \brief Vector holding the global IDs of the local grid points. */
   
-  unsigned long numberOfLocalElements;                  /*!< \brief Number of local elements within the linear partition on this rank. */
-  unsigned long numberOfGlobalElements;                 /*!< \brief Number of global elements within the mesh file. */
+  unsigned long numberOfLocalElements = 0;              /*!< \brief Number of local elements within the linear partition on this rank. */
+  unsigned long numberOfGlobalElements = 0;             /*!< \brief Number of global elements within the mesh file. */
   vector<unsigned long> localVolumeElementConnectivity; /*!< \brief Vector containing the element connectivity from the mesh file for the local elements. */
   
-  unsigned long numberOfMarkers;                             /*!< \brief Total number of markers contained within the mesh file. */
+  unsigned long numberOfMarkers = 0;                         /*!< \brief Total number of markers contained within the mesh file. */
   vector<string> markerNames;                                /*!< \brief String names for all markers in the mesh file. */
   vector<unsigned long> numberOfLocalSurfaceElements;        /*!< \brief Vector containing the number of local surface elements. */
   vector<vector<unsigned long> > surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a per-marker basis. For FVM, only the master node reads and stores this connectivity. */
@@ -83,7 +83,7 @@ protected:
                                unsigned short      nPointsPerFace[],
                                unsigned long       faceConn[6][4]);
 public:
-  
+ 
   /*!
    * \brief Constructor of the CMeshReader class.
    * \param[in] val_config - config object for the current zone.
@@ -93,12 +93,12 @@ public:
   CMeshReader(CConfig        *val_config,
               unsigned short val_iZone,
               unsigned short val_nZone);
-  
+ 
   /*!
    * \brief Destructor of the CMeshReader class.
    */
-  virtual ~CMeshReader(void);
-  
+  virtual ~CMeshReader(void) = default;
+ 
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).
    * \returns Physical dimension of the problem.
@@ -114,7 +114,7 @@ public:
   inline const vector<unsigned long> &GetGlobalPointIDs() const {
     return globalPointIDs;
   }
-  
+ 
   /*!
    * \brief Get the local point coordinates (linearly partitioned).
    * \returns Local point coordinates (linear partitioned).
@@ -122,7 +122,7 @@ public:
   inline const vector<vector<passivedouble> > &GetLocalPointCoordinates() const {
     return localPointCoordinates;
   }
-  
+ 
   /*!
    * \brief Get the surface element connectivity for the specified marker. Only the master node owns the surface connectivity.
    * \param[in] val_iMarker - current marker index.
@@ -139,7 +139,7 @@ public:
   inline const vector<unsigned long> &GetNumberOfSurfaceElementsAllMarkers() const {
     return numberOfLocalSurfaceElements;
   }
-  
+
   /*!
    * \brief Get the number surface elements for the specified marker.
    * \param[in] val_iMarker - current marker index.
@@ -148,7 +148,7 @@ public:
   inline unsigned long GetNumberOfSurfaceElementsForMarker(int val_iMarker) {
     return (unsigned long)surfaceElementConnectivity[val_iMarker].size()/SU2_CONN_SIZE;
   }
-  
+
   /*!
    * \brief Get the local volume element connectivity (linearly partitioned).
    * \returns Local volume element connectivity (linearly partitioned).
@@ -156,7 +156,7 @@ public:
   inline const vector<unsigned long> &GetLocalVolumeElementConnectivity() const {
     return localVolumeElementConnectivity;
   }
-  
+
   /*!
    * \brief Get the total number of markers in the mesh zone.
    * \returns Total number of markers in the mesh zone.
@@ -164,7 +164,7 @@ public:
   inline unsigned long GetNumberOfMarkers() const {
     return numberOfMarkers;
   }
-  
+
   /*!
    * \brief Get the vector of string names for all markers in the mesh zone.
    * \returns Vector of string names for all markers in the mesh zone.
@@ -172,7 +172,7 @@ public:
   inline const vector<string> &GetMarkerNames() const {
     return markerNames;
   }
-  
+ 
   /*!
    * \brief Get the number of local grid points within the linear partition on this rank.
    * \returns Number of local grid points within the linear partition on this rank.
@@ -180,7 +180,7 @@ public:
   inline unsigned long GetNumberOfLocalPoints() const {
     return numberOfLocalPoints;
   }
-  
+ 
   /*!
    * \brief Get the number of global grid points within the mesh file.
    * \returns Number of global grid points within the mesh file.
@@ -188,7 +188,7 @@ public:
   inline unsigned long GetNumberOfGlobalPoints() const {
     return numberOfGlobalPoints;
   }
-  
+ 
   /*!
    * \brief Get the number of local elements within the linear partition on this rank.
    * \returns Number of local elements within the linear partition on this rank.
@@ -196,7 +196,7 @@ public:
   inline unsigned long GetNumberOfLocalElements() const {
     return numberOfLocalElements;
   }
-  
+ 
   /*!
    * \brief Get the number of global elements within the mesh file.
    * \returns Number of global elements within the mesh file.
@@ -204,5 +204,5 @@ public:
   inline unsigned long GetNumberOfGlobalElements() const {
     return numberOfGlobalElements;
   }
-  
+ 
 };

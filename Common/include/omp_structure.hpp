@@ -117,6 +117,12 @@ inline void omp_destroy_lock(omp_lock_t*){}
 #define SU2_OMP_SIMD
 #endif
 
+#if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
+#define SU2_OMP_SIMD_IF_NOT_AD SU2_OMP_SIMD
+#else
+#define SU2_OMP_SIMD_IF_NOT_AD
+#endif
+
 /*--- Convenience macros (do not use excessive nesting). ---*/
 
 #define SU2_OMP_MASTER SU2_OMP(master)

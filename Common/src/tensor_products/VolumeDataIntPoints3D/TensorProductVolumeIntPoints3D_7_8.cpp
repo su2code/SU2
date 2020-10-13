@@ -62,7 +62,7 @@ void TensorProductVolumeIntPoints3D_7_8(const int           N,
         SU2_OMP_SIMD
         for(int k=0; k<8; ++k) tmpK[i][j][k] = 0.0;
         for(int kk=0; kk<7; ++kk) {
-          SU2_OMP_SIMD
+          SU2_OMP_SIMD_IF_NOT_AD
           for(int k=0; k<8; ++k)
             tmpK[i][j][k] += ak[kk][k] * b[kk][j][i];
         }
@@ -76,7 +76,7 @@ void TensorProductVolumeIntPoints3D_7_8(const int           N,
         SU2_OMP_SIMD
         for(int j=0; j<8; ++j) tmpJ[k][i][j] = 0.0;
         for(int jj=0; jj<7; ++jj) {
-          SU2_OMP_SIMD
+          SU2_OMP_SIMD_IF_NOT_AD
           for(int j=0; j<8; ++j)
             tmpJ[k][i][j] += aj[jj][j] * tmpK[i][jj][k];
         }
@@ -91,7 +91,7 @@ void TensorProductVolumeIntPoints3D_7_8(const int           N,
         SU2_OMP_SIMD
         for(int i=0; i<8; ++i) c[k][j][i] = 0.0;
         for(int ii=0; ii<7; ++ii) {
-          SU2_OMP_SIMD
+          SU2_OMP_SIMD_IF_NOT_AD
           for(int i=0; i<8; ++i)
             c[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];
         }
