@@ -3282,7 +3282,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
         MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
         if (MI != Global_to_Local_Point.end())
           iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
-        else iPoint = -1;
+        else iPoint = std::numeric_limits<unsigned long>::max();
 
         SendDomainLocal[iDomain][iVertex] = iPoint;
         SendTransfLocal[iDomain].push_back(0);
@@ -3302,7 +3302,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig *config) {
         MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
         if (MI != Global_to_Local_Point.end())
           iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
-        else iPoint = -1;
+        else iPoint = std::numeric_limits<unsigned long>::max();
 
         ReceivedDomainLocal[iDomain][iVertex] = iPoint;
         ReceivedTransfLocal[iDomain].push_back(0);
@@ -3790,83 +3790,60 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
 
   /*--- Get the volume connectivity from the mesh object. ---*/
 
-  const vector<unsigned long> &connElems =
-  mesh->GetLocalVolumeElementConnectivity();
+  auto& connElems = mesh->GetLocalVolumeElementConnectivity();
 
   /*--- Allocate space for the CGNS interior elements in our SU2 data
    structure. Note that we only instantiate our rank's local set. ---*/
 
   elem = new CPrimalGrid*[nElem] ();
 
-  /*--- Some temporaries for the loop below. ---*/
-
-  unsigned long Global_Index_Elem = 0, iElem = 0;
-  vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON);
-
   /*--- Loop over all of the internal, local volumetric elements. ---*/
 
-  for (unsigned long jElem = 0; jElem < nElem; jElem++) {
+  for (unsigned long iElem = 0; iElem < nElem; iElem++) {
 
     /*--- Get the global ID for this element. This is stored in
      the first entry of our connectivity stucture. ---*/
 
-    Global_Index_Elem = connElems[jElem*SU2_CONN_SIZE + 0];
+    const auto Global_Index_Elem = connElems[iElem*SU2_CONN_SIZE + 0];
+    Global_to_Local_Elem[Global_Index_Elem] = iElem;
 
     /*--- Get the VTK type for this element. This is stored in the
      second entry of the connectivity structure. ---*/
 
-    int vtk_type = (int)connElems[jElem*SU2_CONN_SIZE + 1];
+    const auto vtk_type = static_cast<int>(connElems[iElem*SU2_CONN_SIZE + 1]);
 
     /*--- Instantiate this element in the proper SU2 data structure.
      During this loop, we also set the global to local element map
      for later use and increment the element counts for all types. ---*/
 
+    auto connectivity = &connElems[iElem*SU2_CONN_SIZE + SU2_CONN_SKIP];
+
     switch(vtk_type) {
 
       case TRIANGLE:
-
-        for (unsigned long j = 0; j < N_POINTS_TRIANGLE; j++) {
-          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
-        }
-        Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CTriangle(connectivity[0],
                                     connectivity[1],
                                     connectivity[2], nDim);
-        iElem++; nelem_triangle++;
+        nelem_triangle++;
         break;
 
       case QUADRILATERAL:
-
-        for (unsigned long j = 0; j < N_POINTS_QUADRILATERAL; j++) {
-          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
-        }
-        Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CQuadrilateral(connectivity[0],
                                          connectivity[1],
                                          connectivity[2],
                                          connectivity[3], nDim);
-        iElem++; nelem_quad++;
+        nelem_quad++;
         break;
 
       case TETRAHEDRON:
-
-        for (unsigned long j = 0; j < N_POINTS_TETRAHEDRON; j++) {
-          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
-        }
-        Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CTetrahedron(connectivity[0],
                                        connectivity[1],
                                        connectivity[2],
                                        connectivity[3]);
-        iElem++; nelem_tetra++;
+        nelem_tetra++;
         break;
 
       case HEXAHEDRON:
-
-        for (unsigned long j = 0; j < N_POINTS_HEXAHEDRON; j++) {
-          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
-        }
-        Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CHexahedron(connectivity[0],
                                       connectivity[1],
                                       connectivity[2],
@@ -3875,36 +3852,26 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
                                       connectivity[5],
                                       connectivity[6],
                                       connectivity[7]);
-        iElem++; nelem_hexa++;
+        nelem_hexa++;
         break;
 
       case PRISM:
-
-        for (unsigned long j = 0; j < N_POINTS_PRISM; j++) {
-          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
-        }
-        Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CPrism(connectivity[0],
                                  connectivity[1],
                                  connectivity[2],
                                  connectivity[3],
                                  connectivity[4],
                                  connectivity[5]);
-        iElem++; nelem_prism++;
+        nelem_prism++;
         break;
 
       case PYRAMID:
-
-        for (unsigned long j = 0; j < N_POINTS_PYRAMID; j++) {
-          connectivity[j] = connElems[jElem*SU2_CONN_SIZE + SU2_CONN_SKIP + j];
-        }
-        Global_to_Local_Elem[Global_Index_Elem] = iElem;
         elem[iElem] = new CPyramid(connectivity[0],
                                    connectivity[1],
                                    connectivity[2],
                                    connectivity[3],
                                    connectivity[4]);
-        iElem++; nelem_pyramid++;
+        nelem_pyramid++;
         break;
 
       default:
@@ -3913,22 +3880,18 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig        *co
     }
   }
 
-
   /*--- Reduce the global counts of all element types found in
    the CGNS grid with all ranks. ---*/
 
-  SU2_MPI::Allreduce(&nelem_triangle,&Global_nelem_triangle,  1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nelem_quad,    &Global_nelem_quad,      1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nelem_tetra,   &Global_nelem_tetra,     1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nelem_hexa,    &Global_nelem_hexa,      1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nelem_prism,   &Global_nelem_prism,     1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nelem_pyramid, &Global_nelem_pyramid,   1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  auto reduce = [](unsigned long p, unsigned long& t) {
+    SU2_MPI::Allreduce(&p, &t, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  };
+  reduce(nelem_triangle, Global_nelem_triangle);
+  reduce(nelem_quad, Global_nelem_quad);
+  reduce(nelem_hexa, Global_nelem_hexa);
+  reduce(nelem_tetra, Global_nelem_tetra);
+  reduce(nelem_prism, Global_nelem_prism);
+  reduce(nelem_pyramid, Global_nelem_pyramid);
 
 }
 
@@ -5499,7 +5462,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               iPoint = vertex[iMarker][iVertex]->GetNode();
               if (nDim == 3){
                 dist = 10E+06;
-                jSpan = -1;
+                jSpan = std::numeric_limits<unsigned short>::max();
                 coord = nodes->GetCoord(iPoint);
 
                 switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -5600,7 +5563,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               iPoint = vertex[iMarker][iVertex]->GetNode();
               if(nDim == 3){
                 dist  = 10E+06;
-                jSpan = -1;
+                jSpan = std::numeric_limits<unsigned short>::max();
 
                 coord = nodes->GetCoord(iPoint);
                 switch (config->GetKind_TurboMachinery(val_iZone)){

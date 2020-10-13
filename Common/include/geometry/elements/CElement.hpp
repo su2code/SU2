@@ -479,6 +479,28 @@ public:
  */
 template<unsigned short NGAUSS, unsigned short NNODE, unsigned short NDIM>
 class CElementWithKnownSizes : public CElement {
+private:
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][2], su2double ad[][2]) {
+    ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
+    ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
+    /*--- Determinant of Jacobian ---*/
+    return ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
+  }
+
+  FORCEINLINE static su2double JacobianAdjoint(const su2double Jacobian[][3], su2double ad[][3]) {
+    ad[0][0] = Jacobian[1][1]*Jacobian[2][2]-Jacobian[1][2]*Jacobian[2][1];
+    ad[0][1] = Jacobian[0][2]*Jacobian[2][1]-Jacobian[0][1]*Jacobian[2][2];
+    ad[0][2] = Jacobian[0][1]*Jacobian[1][2]-Jacobian[0][2]*Jacobian[1][1];
+    ad[1][0] = Jacobian[1][2]*Jacobian[2][0]-Jacobian[1][0]*Jacobian[2][2];
+    ad[1][1] = Jacobian[0][0]*Jacobian[2][2]-Jacobian[0][2]*Jacobian[2][0];
+    ad[1][2] = Jacobian[0][2]*Jacobian[1][0]-Jacobian[0][0]*Jacobian[1][2];
+    ad[2][0] = Jacobian[1][0]*Jacobian[2][1]-Jacobian[1][1]*Jacobian[2][0];
+    ad[2][1] = Jacobian[0][1]*Jacobian[2][0]-Jacobian[0][0]*Jacobian[2][1];
+    ad[2][2] = Jacobian[0][0]*Jacobian[1][1]-Jacobian[0][1]*Jacobian[1][0];
+    /*--- Determinant of Jacobian ---*/
+    return Jacobian[0][0]*ad[0][0]+Jacobian[0][1]*ad[1][0]+Jacobian[0][2]*ad[2][0];
+  }
+
 protected:
   static_assert(NDIM==2 || NDIM==3, "ComputeGrad_impl expects 2D or 3D");
 
@@ -500,7 +522,6 @@ protected:
   void ComputeGrad_impl(void) {
 
     su2double Jacobian[NDIM][NDIM], ad[NDIM][NDIM];
-    su2double detJac, GradNi_Xj;
     unsigned short iNode, iDim, jDim, iGauss;
 
     /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
@@ -521,33 +542,9 @@ protected:
           for (jDim = 0; jDim < NDIM; jDim++)
             Jacobian[iDim][jDim] += Coord(iNode,jDim) * dNiXj[iGauss][iNode][iDim];
 
-      if (NDIM == 2) {
-        /*--- Adjoint to Jacobian ---*/
+      /*--- Adjoint to the Jacobian and determinant ---*/
 
-        ad[0][0] =  Jacobian[1][1];  ad[0][1] = -Jacobian[0][1];
-        ad[1][0] = -Jacobian[1][0];  ad[1][1] =  Jacobian[0][0];
-
-        /*--- Determinant of Jacobian ---*/
-
-        detJac = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
-      }
-      else {
-        /*--- Adjoint to Jacobian ---*/
-
-        ad[0][0] = Jacobian[1][1]*Jacobian[2][2]-Jacobian[1][2]*Jacobian[2][1];
-        ad[0][1] = Jacobian[0][2]*Jacobian[2][1]-Jacobian[0][1]*Jacobian[2][2];
-        ad[0][2] = Jacobian[0][1]*Jacobian[1][2]-Jacobian[0][2]*Jacobian[1][1];
-        ad[1][0] = Jacobian[1][2]*Jacobian[2][0]-Jacobian[1][0]*Jacobian[2][2];
-        ad[1][1] = Jacobian[0][0]*Jacobian[2][2]-Jacobian[0][2]*Jacobian[2][0];
-        ad[1][2] = Jacobian[0][2]*Jacobian[1][0]-Jacobian[0][0]*Jacobian[1][2];
-        ad[2][0] = Jacobian[1][0]*Jacobian[2][1]-Jacobian[1][1]*Jacobian[2][0];
-        ad[2][1] = Jacobian[0][1]*Jacobian[2][0]-Jacobian[0][0]*Jacobian[2][1];
-        ad[2][2] = Jacobian[0][0]*Jacobian[1][1]-Jacobian[0][1]*Jacobian[1][0];
-
-        /*--- Determinant of Jacobian ---*/
-
-        detJac = Jacobian[0][0]*ad[0][0]+Jacobian[0][1]*ad[1][0]+Jacobian[0][2]*ad[2][0];
-      }
+      auto detJac = JacobianAdjoint(Jacobian, ad);
 
       if (FRAME==REFERENCE)
         GaussPoint[iGauss].SetJ_X(detJac);
@@ -564,7 +561,7 @@ protected:
 
       for (iNode = 0; iNode < NNODE; iNode++) {
         for (iDim = 0; iDim < NDIM; iDim++) {
-          GradNi_Xj = 0.0;
+          su2double GradNi_Xj = 0.0;
           for (jDim = 0; jDim < NDIM; jDim++)
             GradNi_Xj += Jacobian[iDim][jDim] * dNiXj[iGauss][iNode][jDim];
 
