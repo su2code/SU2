@@ -2756,7 +2756,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       //   bool good_i = true, good_j = true, good_edge = true;
       //   if (tkeNeeded) {
       //     good_i = (tke_i >= 0.0);
-      //     good_j = (tke_j >= 0.0);
+      //     good_j = (tke_j >= 0.0);f
       //   }
       //   CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
       //   good_edge = good_i && good_j;
@@ -3155,8 +3155,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    bool good_edge = true;
-    if (muscl) {
+    bool good_edge = (!geometry->node[iPoint]->GetPhysicalBoundary()) || (!geometry->node[jPoint]->GetPhysicalBoundary());
+    if (muscl && good_edge) {
       /*--- Reconstruction ---*/
 
       const auto nTurbVarGrad = tkeNeeded ? 1 : 0;

@@ -145,8 +145,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool good_i = true, good_j = true, good_edge = true;
-    if (muscl) {
+    bool good_i = true, good_j = true;
+    bool good_edge = (!geometry->node[iPoint]->GetPhysicalBoundary()) || (!geometry->node[jPoint]->GetPhysicalBoundary());
+    if (muscl && good_edge) {
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
                                          turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
 
