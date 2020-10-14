@@ -145,9 +145,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool good_i = true, good_j = true;
-    // bool good_edge = (!geometry->node[iPoint]->GetPhysicalBoundary()) && (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool good_edge = true;
+    // bool good_i = true, good_j = true;
+    bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
+    bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
+    bool good_edge = good_i || good_j;
     if (muscl && good_edge) {
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
                                          turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
@@ -166,7 +167,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
-      good_edge = good_i && good_j;
+      // good_edge = good_i && good_j;
+      good_edge = good_i || good_j;
     }
     else {
       for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
@@ -181,10 +183,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Store the state ---*/
 
-    numerics->SetPrimitive(good_edge ? flowPrimVar_i : V_i, 
-                           good_edge ? flowPrimVar_j : V_j);
-    numerics->SetTurbVar(good_edge ? turbPrimVar_i : T_i, 
-                         good_edge ? turbPrimVar_j : T_j);
+    numerics->SetPrimitive(good_i ? flowPrimVar_i : V_i, 
+                           good_j ? flowPrimVar_j : V_j);
+    numerics->SetTurbVar(good_i ? turbPrimVar_i : T_i, 
+                         good_j ? turbPrimVar_j : T_j);
 
     /*--- Update convective residual value ---*/
 

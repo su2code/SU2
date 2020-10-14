@@ -3151,13 +3151,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
     const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
-    bool good_i = true, good_j = true;
-
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    // bool good_edge = (!geometry->node[iPoint]->GetPhysicalBoundary()) && (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool good_edge = true;
-    if (muscl && good_edge) {
+    // bool good_i = true, good_j = true;
+    bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
+    bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
+    bool good_edge = good_i || good_j;
+    if (muscl) {
       /*--- Reconstruction ---*/
 
       const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
@@ -3186,20 +3186,21 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         good_j = (tke_j >= 0.0);
       }
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
-      good_edge = good_i && good_j;
+      // good_edge = good_i && good_j;
+      good_edge = good_i || good_j;
 
       counter_local += (!good_i+!good_j);
 
-      numerics->SetPrimitive(good_edge ? Primitive_i : V_i, 
-                             good_edge ? Primitive_j : V_j);
-      numerics->SetSecondary(good_edge ? Secondary_i : S_i, 
-                             good_edge ? Secondary_j : S_j);
+      numerics->SetPrimitive(good_i ? Primitive_i : V_i, 
+                             good_j ? Primitive_j : V_j);
+      numerics->SetSecondary(good_i ? Secondary_i : S_i, 
+                             good_j ? Secondary_j : S_j);
 
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = good_edge ? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = good_edge ? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
         numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
