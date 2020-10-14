@@ -340,8 +340,8 @@ protected:
                               const su2double *primvar_j, 
                               const su2double *tke_i, 
                               const su2double *tke_j, 
-                              bool good_i, 
-                              bool good_j) override;
+                              bool &good_i, 
+                              bool &good_j) override;
 
   /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.

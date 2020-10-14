@@ -3488,8 +3488,8 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
                                           const su2double *primvar_j, 
                                           const su2double *tke_i, 
                                           const su2double *tke_j, 
-                                          bool good_i, 
-                                          bool good_j) {
+                                          bool &good_i, 
+                                          bool &good_j) {
 
   const bool good_prim_i = (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
   const bool good_prim_j = (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
