@@ -58,7 +58,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   string filename_ = "flow";
   su2double *Mvec_Inf;
   su2double Alpha, Beta;
-  bool check_infty, nonPhys;
+  bool nonPhys;
   su2double Soundspeed_Inf, sqvel;
   vector<su2double> Energies_Inf;
 
@@ -217,7 +217,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-  check_infty = node_infty->SetPrimVar(0, FluidModel);
+  node_infty->SetPrimVar(0, FluidModel);
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
@@ -2025,8 +2025,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_inlet = new su2double[nPrimVar];
   su2double *Normal   = new su2double[nDim];
 
-  su2double Spec_Density[config->GetnSpecies()];
   nSpecies = config->GetnSpecies();
+  su2double *Spec_Density = new su2double[nSpecies];
 
   RHO_INDEX = nodes->GetRhoIndex();
 
@@ -2265,6 +2265,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   delete [] V_domain;
   delete [] V_inlet;
   delete [] Normal;
+  delete [] Spec_Density;
 }
 
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_container,
