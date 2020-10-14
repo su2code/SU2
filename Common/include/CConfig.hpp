@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CConfig.hpp
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.

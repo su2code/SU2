@@ -140,7 +140,6 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
 
 }
 
-
 CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
 
   caseName = config->GetCaseName();
@@ -355,7 +354,6 @@ void CConfig::addEnumOption(const string name, unsigned short & option_field, co
   option_map.insert(pair<string, COptionBase *>(name, val));
   return;
 }
-
 
 // input_size is the number of options read in from the config file
 template <class Tenum>
@@ -5610,22 +5608,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case NEMO_EULER: case DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){  
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5")&& (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_RANS: case DISC_ADJ_NEMO_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5")&& (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {

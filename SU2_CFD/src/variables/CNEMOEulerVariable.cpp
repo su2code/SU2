@@ -68,6 +68,11 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   LAM_VISC_INDEX  = nSpecies+nDim+8;
   EDDY_VISC_INDEX = nSpecies+nDim+9;
 
+  /*--- Set monoatomic flag ---*/
+  //TDO change this to fluid model?
+  if (config->GetGasModel() == "ARGON") monoatomic = true;
+  else monoatomic = false;
+
   /*--- Allocate & initialize residual vectors ---*/
 
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
@@ -105,7 +110,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   
   /*--- Compressible flow, gradients primitive variables ---*/
-
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   Gradient.resize(nPoint,nVar,nDim,0.0);
 
@@ -260,6 +264,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[T_INDEX] = T[0];
   
   // Determine if the temperature lies within the acceptable range
+  //TODO fIX THIS
   if (V[T_INDEX] == Tmin) {
     nonPhys = true;
   } else if (V[T_INDEX] == Tmax){
@@ -271,22 +276,24 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> eves_max = fluidmodel->GetSpeciesEve(Tvemax);
 
   // Check for non-physical solutions
-  rhoEve_min = 0.0;
-  rhoEve_max = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoEve_min += U[iSpecies] * eves_min[iSpecies];
-    rhoEve_max += U[iSpecies] * eves_max[iSpecies];
-  }
-  if (rhoEve < rhoEve_min) {
-    nonPhys      = true;
-    V[TVE_INDEX] = Tvemin;
-    U[nSpecies+nDim+1] = rhoEve_min;
-  } else if (rhoEve > rhoEve_max) {
-    nonPhys      = true;
-    V[TVE_INDEX] = Tvemax;
-    U[nSpecies+nDim+1] = rhoEve_max;
-  } else {
-    V[TVE_INDEX]   = T[1];
+  if (!monoatomic){
+    rhoEve_min = 0.0;
+    rhoEve_max = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      rhoEve_min += U[iSpecies] * eves_min[iSpecies];
+      rhoEve_max += U[iSpecies] * eves_max[iSpecies];
+    }
+    if (rhoEve < rhoEve_min) {
+      nonPhys      = true;
+      V[TVE_INDEX] = Tvemin;
+      U[nSpecies+nDim+1] = rhoEve_min;
+    } else if (rhoEve > rhoEve_max) {
+      nonPhys      = true;
+      V[TVE_INDEX] = Tvemax;
+      U[nSpecies+nDim+1] = rhoEve_max;
+    } else {
+      V[TVE_INDEX]   = T[1];
+    }
   }
 
   // Determine other properties of the mixture at the current state  

@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file msw.hpp
  * \brief Declaration of numerics classes for modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
@@ -54,9 +54,8 @@ public:
      * \brief Constructor of the class.
      * \param[in] val_nDim - Number of dimensions of the problem.
      * \param[in] val_nVar - Number of variables of the problem.
-     * \param[in] val_nSpecies - Number of species in the problem.
-     * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-     * \param[in] val_nMonatomics - Number of monatomic species in the problem.
+     * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+     * \param[in] val_nPrimVarGrad - Number primitive grad. variables of the problem.
      * \param[in] config - Definition of the particular problem.
      */
     CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,

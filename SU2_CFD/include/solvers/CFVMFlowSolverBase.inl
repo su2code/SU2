@@ -2100,7 +2100,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         if (FlowRegime == INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
       }
-
+       //TODO ????/No eddy?
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       if (roughwall) {
         unsigned short WallType; su2double Roughness_Height;
@@ -2200,8 +2200,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
-
-
 
       /// TODO: Move these ifs to specialized functions.
       if (!nemo){

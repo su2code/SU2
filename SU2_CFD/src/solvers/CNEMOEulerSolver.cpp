@@ -1003,7 +1003,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   /*--- Assign booleans ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
   bool frozen = config->GetFrozen();
   bool err = false;
   bool monoatomic = false;
@@ -1063,26 +1062,26 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
     
-    if(nSpecies!=1){
+    if(!monoatomic){
       if(!frozen){
-          /*--- Compute the non-equilibrium chemistry ---*/
-          auto residual = numerics->ComputeChemistry(config);
+        /*--- Compute the non-equilibrium chemistry ---*/
+        auto residual = numerics->ComputeChemistry(config);
 
-          /*--- Check for errors before applying source to the linear system ---*/
-          err = false;
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = false;
+        for (iVar = 0; iVar < nVar; iVar++)
+          if (residual[iVar] != residual[iVar]) err = true;
+        if (implicit)
           for (iVar = 0; iVar < nVar; iVar++)
-            if (residual[iVar] != residual[iVar]) err = true;
+            for (jVar = 0; jVar < nVar; jVar++)
+              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+        /*--- Apply the chemical sources to the linear system ---*/
+        if (!err) {
+          LinSysRes.SubtractBlock(iPoint, residual);
           if (implicit)
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (jVar = 0; jVar < nVar; jVar++)
-                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-          /*--- Apply the chemical sources to the linear system ---*/
-          if (!err) {
-            LinSysRes.SubtractBlock(iPoint, residual);
-            if (implicit)
-              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-          } else
-            eChm_local++;
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        } else
+          eChm_local++;
       }      
     }
 
@@ -2008,7 +2007,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
       Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-      alpha, aa, bb, cc, dd, Area, UnitaryNormal[3];
+      alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   const su2double *Flow_Dir;    
 
   bool dynamic_grid         = config->GetGrid_Movement();
@@ -2085,7 +2084,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
            from the domain interior. ---*/
         Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
         for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitaryNormal[iDim];
+          Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Total speed of sound ---*/
         SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
@@ -2094,7 +2093,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
            be negative due to outward facing boundary normal convention. ---*/
         alpha = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          alpha += UnitaryNormal[iDim]*Flow_Dir[iDim];
+          alpha += UnitNormal[iDim]*Flow_Dir[iDim];
 
         /*--- Coefficients in the quadratic equation for the velocity ---*/
         aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
@@ -2185,12 +2184,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
            from the domain interior. ---*/
         Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
         for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitaryNormal[iDim];
+          Riemann += Velocity[iDim]*UnitNormal[iDim];
 
         /*--- Speed of sound squared for fictitious inlet state ---*/
         SoundSpeed2 = Riemann;
         for (iDim = 0; iDim < nDim; iDim++)
-          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitaryNormal[iDim];
+          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
         SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
         SoundSpeed2 = SoundSpeed2*SoundSpeed2;
@@ -2269,7 +2268,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   unsigned short iVar, iDim, iSpecies;
   unsigned long iVertex, iPoint;
   su2double Pressure, P_Exit, Velocity[3], Temperature, Tve, Velocity2, Entropy, Density,
-  Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit, Area, UnitaryNormal[3];
+  Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit, Area, UnitNormal[3];
   vector<su2double> rhos, energies;
 
   rhos.resize(nSpecies,0.0);
@@ -2313,7 +2312,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       Area = sqrt (Area);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        UnitaryNormal[iDim] = Normal[iDim]/Area;
+        UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node ---*/
       for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
@@ -2339,7 +2338,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity[iDim] = V_domain[VEL_INDEX+iDim];
         Velocity2 += Velocity[iDim]*Velocity[iDim];
-        Vn += Velocity[iDim]*UnitaryNormal[iDim];
+        Vn += Velocity[iDim]*UnitNormal[iDim];
       }
       Temperature = V_domain[T_INDEX];
       Tve         = V_domain[TVE_INDEX];
@@ -2384,7 +2383,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
         Velocity2  = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitaryNormal[iDim];
+          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
 

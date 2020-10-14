@@ -80,7 +80,6 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
                              const CConfig* config) :
                              CNumerics(val_nDim, val_nVar, config) {
 
-    cout<<"THIS shouldnt be called delete me" << endl;
     nSpecies     = val_nVar_NEMO - nDim - 2;
     nPrimVar     = val_nPrimVar;
     nPrimVarGrad = val_nPrimVarGrad;
@@ -145,7 +144,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
   P      = val_V[P_INDEX];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  rhos = &val_V[RHOS_INDEX];
+  rhos   = &val_V[RHOS_INDEX];
 
   if (nDim == 2) {
 
