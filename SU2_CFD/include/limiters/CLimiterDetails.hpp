@@ -82,7 +82,7 @@ namespace LimiterHelpers
     const su2double beta = (1.0 + kappa)/(1.0 - kappa);
 
     // return R*(R + beta)/(pow(R, 2.0) + beta);
-    return 2.0/(pow(R, 2.0) + 1.0);
+    return 2.0*R/(pow(R, 2.0) + 1.0);
   }
 
   inline su2double pipernoFunction(su2double proj, su2double delta)
