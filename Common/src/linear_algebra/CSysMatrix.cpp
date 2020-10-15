@@ -143,7 +143,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if(ilu_needed)
   {
-    ilu_fill_in = config->GetLinear_Solver_ILU_n();
+    ilu_fill_in = config->GetLinear_Solver_ILU_n() + fill_in;
 
     const auto& csr_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
 
