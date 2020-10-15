@@ -740,7 +740,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) 
       if (nodes->GetUnderRelaxation(iPoint) < 1.0e-6)
-        cout << "iPoint: " << geometry->node[iPoint]->GetGlobalIndex() << ", R[k]= " << LinSysSol[iPoint*nVar] << ", R[o]= " << LinSysSol[iPoint*nVar+1] << endl;
+        cout << "iPoint: " << geometry->node[iPoint]->GetGlobalIndex() << 
+                ", UR[k]= " << LinSysSol[iPoint*nVar]/nodes->GetSolution(iPoint,0) << 
+                ", UR[o]= " << LinSysSol[iPoint*nVar+1]/nodes->GetSolution(iPoint,1) << endl;
 
   /*--- Update solution (system written in terms of increments) ---*/
 
