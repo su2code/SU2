@@ -171,7 +171,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
-    //CGarbacz: is it just me who thinks this next block of code doesn't make sense?
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
@@ -546,8 +545,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
   bool ionization = config->GetIonization();
 
-  //cout << endl << "ISOTHERMAL" << endl;
-
   if (ionization) {
     cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
     exit(1);
@@ -623,15 +620,6 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       Res_Visc[nSpecies+nDim]   = ((ktr*(Ti-Tj)    + kve*(Tvei-Tvej)) +
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
-
-      //cout << setprecision(10) << "ktr=" << ktr << endl;
-      //cout << setprecision(10) << "kve=" << kve << endl;
-      //cout << setprecision(10) << "Ti=" << Ti << endl;
-      //cout << setprecision(10) << "Tj=" << Tj << endl;
-      //cout << setprecision(10) << "Tvei=" << Tvei << endl;
-      //cout << setprecision(10) << "Tvej=" << Tvej << endl;      
-      //cout << setprecision(10) << "Res_Visc[nSpecies+nDim]=" << Res_Visc[nSpecies+nDim] << endl;
-      //cout << setprecision(10) << "Res_Visc[nSpecies+nDim+1]=" << Res_Visc[nSpecies+nDim+1] << endl;
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 

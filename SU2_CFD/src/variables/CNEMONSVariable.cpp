@@ -64,8 +64,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   ThermalCond.resize(nPoint)  = su2double(0.0);  
   ThermalCond_ve.resize(nPoint)  = su2double(0.0);
 
-  Max_Lambda_Visc.resize(nPoint) = su2double(0.0); //Cat this should only exist in NSNEMO variable
-    
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);  
 }
 
 bool CNEMONSVariable::SetVorticity(void) {
@@ -111,22 +110,15 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   SetVelocity2(iPoint);
 
   Ds = fluidmodel->GetDiffusionCoeff();
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
-    //cout << "DiffusionCoeff(iPoint, iSpecies)=" << DiffusionCoeff(iPoint, iSpecies) << endl;
-  }
   
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
-
-  //cout << "LaminarViscosity(iPoint)=" << LaminarViscosity(iPoint) << endl;
 
   thermalconductivities    = fluidmodel->GetThermalConductivities();
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
-  //cout << "ThermalCond(iPoint)=" << ThermalCond(iPoint) << endl;
-  //cout << "ThermalCond_ve(iPoint)=" << ThermalCond_ve(iPoint) << endl;
-  //exit(0);
   return nonPhys;
 }
 

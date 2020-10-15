@@ -28,8 +28,6 @@
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 #include <math.h>
 
-#include <iomanip>
-
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
                                        su2double *val_mach,
@@ -255,22 +253,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
-//  std::cout << setprecision(10) << "rhoE="  << rhoE<< std::endl;
-//  std::cout << setprecision(10) << "rhoEve="   << rhoEve << std::endl;
-//  for (iSpecies=0;iSpecies<nSpecies;iSpecies++) std::cout << "rhos[" << iSpecies << "]="   << rhos[iSpecies] << std::endl;
-//
-//    exit(0);
-
   /*--- Assign temperatures ---*/
   vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
 
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
-
- // std::cout << "V[T_INDEX]="   << V[T_INDEX] << std::endl;
-
- // cout << "T[0]=" << T[0] << endl;
- // cout << "T[1]=" << T[1] << endl;
   
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] == Tmin) {
@@ -283,9 +270,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> eves_min = fluidmodel->GetSpeciesEve(Tvemin);
   vector<su2double> eves_max = fluidmodel->GetSpeciesEve(Tvemax);
 
-  //  cout << "rhoEve=" << rhoEve << endl;
-
-
   // Check for non-physical solutions
   if (!monoatomic){
     rhoEve_min = 0.0;
@@ -294,15 +278,13 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       rhoEve_min += U[iSpecies] * eves_min[iSpecies];
       rhoEve_max += U[iSpecies] * eves_max[iSpecies];
     }
-  //  cout << "rhoEve_min=" << rhoEve_min << endl;
-  //  cout << "rhoEve_max=" << rhoEve_max << endl;
+
     if (rhoEve < rhoEve_min) {
       
       nonPhys      = true;
       V[TVE_INDEX] = Tvemin;
       U[nSpecies+nDim+1] = rhoEve_min;
     } else if (rhoEve > rhoEve_max) {
- //     cout << "RHOEVE_MAX" << endl;
       nonPhys      = true;
       V[TVE_INDEX] = Tvemax;
       U[nSpecies+nDim+1] = rhoEve_max;
@@ -310,9 +292,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       V[TVE_INDEX]   = T[1];
     }
   }
-    
-  //cout << setprecision(10) << "T[0]=" << V[T_INDEX] << endl;
-  //cout << setprecision(10) << "T[1]=" << V[TVE_INDEX] << endl;
 
   // Determine other properties of the mixture at the current state  
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
@@ -333,11 +312,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Pressure ---*/
   V[P_INDEX] = fluidmodel->GetPressure();
 
-//  std::cout <<setprecision(20)<< "V[P_INDEX]="  <<V[P_INDEX]<< std::endl;
-
-
   if (V[P_INDEX] < 0.0) {
-    //cout << "P" << endl;
     V[P_INDEX] = 1E-20;
     nonPhys = true;
   }
@@ -346,7 +321,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   fluidmodel->GetdPdU  (V, eves, val_dPdU  );
   fluidmodel->GetdTdU  (V, val_dTdU );
   fluidmodel->GetdTvedU(V, eves, val_dTvedU);
-
 
   /*--- Sound speed ---*/
   V[A_INDEX] = fluidmodel->GetSoundSpeed();

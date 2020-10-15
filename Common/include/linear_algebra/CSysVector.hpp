@@ -31,11 +31,6 @@
 #include <cmath>
 #include <cstdlib>
 
-//cat delete
-#include <iomanip>
-#include <iostream>
-using namespace std;
-
 /*!
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
@@ -299,11 +294,8 @@ public:
    * \param[in] val_residual - Value to subtract to the residual.
    */
   inline void SubtractBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++){
-      //if(val_ipoint==0 && iVar==3) cout << setprecision(10) << "vec_val[" << val_ipoint*nVar+iVar << "]=" << vec_val[val_ipoint*nVar+iVar] << endl;
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       vec_val[val_ipoint*nVar+iVar] -= val_residual[iVar];
-      //if(val_ipoint==0 && iVar==3) cout << setprecision(10) << "vec_val[" << val_ipoint*nVar+iVar << "]=" << vec_val[val_ipoint*nVar+iVar] << endl;
-    }
   }
 
   /*!
@@ -312,11 +304,8 @@ public:
    * \param[in] val_residual - Value to add to the residual.
    */
   inline void AddBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++){
-      //if(val_ipoint==0 && iVar==3) cout << setprecision(10) << "vec_val[" << val_ipoint*nVar+iVar << "]=" << vec_val[val_ipoint*nVar+iVar] << endl;
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
       vec_val[val_ipoint*nVar+iVar] += val_residual[iVar];
-      //if(val_ipoint==0 && iVar==3) cout << setprecision(10) << "vec_val[" << val_ipoint*nVar+iVar << "]=" << vec_val[val_ipoint*nVar+iVar] << endl;
-    }
   }
 
   /*!

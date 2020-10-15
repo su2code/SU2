@@ -50,7 +50,6 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
   frozen               = config->GetFrozen();
-
 }
 
 void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve){
@@ -98,29 +97,21 @@ su2double CNEMOGas::GetSoundSpeed(){
   }
   SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
 
-  return(sqrt(SoundSpeed2));
-
+ return(sqrt(SoundSpeed2));
 }
 
 su2double CNEMOGas::GetPressure(){
 
   su2double P = 0.0;
 
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     P += rhos[iSpecies] * Ru/MolarMass[iSpecies] * T;
-   //std::cout << "U[" << iSpecies<< "]="  <<rhos[iSpecies]<< std::endl; 
-   //std::cout << "Ms[" << iSpecies<< "]="  <<MolarMass[iSpecies]<< std::endl; 
-  }
   for (iSpecies = 0; iSpecies < nEl; iSpecies++)
     P += rhos[nSpecies-1] * Ru/MolarMass[nSpecies-1] * Tve;
-
-  //std::cout << "Ru="  <<Ru<< std::endl;
-  //std::cout << "V[T_INDEX]="  <<T<< std::endl;
 
   Pressure = P;
 
   return P;
-
 }
 
 su2double CNEMOGas::GetGasConstant(){

@@ -66,8 +66,6 @@ CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
 
 }
 
-//CGarbacz returning random things to avoid warnings. This will be properly implemented once NEMO is in develop
-
 CMutationTCLib::~CMutationTCLib(){}
   
 void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
@@ -132,15 +130,7 @@ vector<su2double>& CMutationTCLib::GetNetProductionRates(){
 
 su2double CMutationTCLib::GetEveSourceTerm(){
 
- // for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) cout << setprecision(10)<< "rhos[" << iSpecies << "]=" << rhos[iSpecies] << endl;
-
- //cout << "GetEveSourceTerm()" << endl;
- //cout << "T=" << temperatures[0] << endl;
- //cout << "Tve=" << temperatures[1] << endl;
-
   mix->energyTransferSource(omega_vec.data());
-
- // cout << "omega_vec=" << omega_vec[0] << endl;
 
   omega = omega_vec[0];
 
@@ -153,8 +143,6 @@ vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double
   su2double Ru   = 1000.0*RuSI;
 
   mix->speciesHOverRT(val_T, val_Tve, val_T, val_Tve, val_Tve, h_RT.data(), NULL, NULL, NULL, NULL, NULL);
-
-  //std::cout << "calc mut 3"  << std::endl<< std::endl<< std::endl<< std::endl;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) hs[iSpecies] = h_RT[iSpecies]*(RuSI*val_T); 
 
@@ -189,16 +177,9 @@ vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& val_rhos, 
   energies[0] = rhoE - rhoEvel;
   energies[1] = rhoEve;
 
- // std::cout << "MUTATION rhoEmix="  << energies[0] << std::endl;
- // std::cout << "MUTATION rhoEve="   << energies[1] << std::endl;
- // for (iSpecies=0;iSpecies<nSpecies;iSpecies++) std::cout << "MUTATION rhos[" << iSpecies << "]="   << rhos[iSpecies] << std::endl;
-
   mix->setState(rhos.data(), energies.data(), 0);
 
   mix->getTemperatures(temperatures.data());
-
- // std::cout << "MUTATION temperatures[0]="  << temperatures[0] << std::endl;
- // std::cout << "MUTATION temperatures[1]="  << temperatures[1] << std::endl;
 
   T   = temperatures[0];
   Tve = temperatures[1];
