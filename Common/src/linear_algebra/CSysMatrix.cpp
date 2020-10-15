@@ -125,7 +125,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Get sparse structure pointers from geometry,
    *    the data is managed by CGeometry to allow re-use. ---*/
 
-  const unsigned short fill_in = 0 + (config->GetUse_Accurate_Visc_Jacobians() || config->GetUse_Accurate_Turb_Jacobians() || config->GetUse_Accurate_Kappa_Jacobians());
+  bool flow = (nVar > geometry->GetnDim());
+  const unsigned short fill_in = flow? config->GetLinear_Solver_Flow_Fill_In() : config->GetLinear_Solver_Turb_Fill_In();
   const auto& csr = geometry->GetSparsePattern(type, fill_in);
 
   nnz = csr.getNumNonZeros();
