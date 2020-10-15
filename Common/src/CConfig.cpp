@@ -187,6 +187,44 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
 
 }
 
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
+
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
+
+  base_config = false;
+
+  iZone = val_iZone;
+  nZone = val_nZone;
+
+  Init();
+
+  /*--- Parsing the config file  ---*/
+
+  SetConfig_Parsing(case_filename);
+
+  /*--- Set the default values for all of the options that weren't set ---*/
+
+  SetDefault();
+
+  /*--- Set number of zone ---*/
+
+  SetnZone();
+
+  /*--- Configuration file postprocessing ---*/
+
+  SetPostprocessing(val_software, val_iZone, val_nDim);
+
+  /*--- Configuration file boundaries/markers setting ---*/
+
+  SetMarkers(val_software);
+
+  /*--- Configuration file output ---*/
+
+  if ((rank == MASTER_NODE) && verb_high)
+    SetOutput(val_software, val_iZone);
+
+}
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
   /*--- Set the case name to the base config file name without extension ---*/

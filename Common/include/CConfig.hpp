@@ -754,6 +754,7 @@ private:
   su2double* Mesh_Box_Length;    /*!< \brief Array containing the length in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   su2double* Mesh_Box_Offset;    /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
+  Target_Mesh_FileName,
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_LinFileName,          /*!< \brief Linearized flow solution input file. */
@@ -1319,6 +1320,11 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
+
+  /*!
+   * \brief Constructor of the class which reads the input file.
+   */
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
 
   /*!
    * \brief Destructor of the class.
@@ -5212,6 +5218,12 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void) const { return Restart; }
+
+  void SetRestart(bool val_restart) { Restart = val_restart; }
+
+  void SetMesh_FileName(string val_filename) { Mesh_FileName = val_filename; }
+
+  string GetTarget_Mesh_FileName(void) { return Target_Mesh_FileName; }
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are written.
