@@ -28,6 +28,8 @@
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 #include <math.h>
 
+#include <iomanip>
+
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
                                        su2double *val_mach,
@@ -253,9 +255,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
-  //std::cout << "rhoEmix="  << rhoE - 0.5*rho*sqvel << std::endl;
-  //std::cout << "rhoEve="   << rhoEve << std::endl;
-  //for (iSpecies=0;iSpecies<nSpecies;iSpecies++) std::cout << "rhos[" << iSpecies << "]="   << rhos[iSpecies] << std::endl;
+//  std::cout << setprecision(10) << "rhoE="  << rhoE<< std::endl;
+//  std::cout << setprecision(10) << "rhoEve="   << rhoEve << std::endl;
+//  for (iSpecies=0;iSpecies<nSpecies;iSpecies++) std::cout << "rhos[" << iSpecies << "]="   << rhos[iSpecies] << std::endl;
+//
+//    exit(0);
 
   /*--- Assign temperatures ---*/
   vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
@@ -307,10 +311,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     }
   }
     
- // cout << "T[0]=" << V[T_INDEX] << endl;
- // cout << "T[1]=" << V[TVE_INDEX] << endl;
+  //cout << setprecision(10) << "T[0]=" << V[T_INDEX] << endl;
+  //cout << setprecision(10) << "T[1]=" << V[TVE_INDEX] << endl;
 
   // Determine other properties of the mixture at the current state  
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
@@ -328,7 +333,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Pressure ---*/
   V[P_INDEX] = fluidmodel->GetPressure();
 
-  //std::cout << "V[P_INDEX]="  <<V[P_INDEX]<< std::endl;
+//  std::cout <<setprecision(20)<< "V[P_INDEX]="  <<V[P_INDEX]<< std::endl;
+
 
   if (V[P_INDEX] < 0.0) {
     //cout << "P" << endl;

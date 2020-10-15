@@ -75,6 +75,9 @@ void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double va
   temperatures[0] = val_temperature;
   temperatures[1] = val_temperature_ve; 
 
+  T   = temperatures[0];
+  Tve = temperatures[1];
+
   rhos = val_rhos;
 
   mix->setState(rhos.data(), temperatures.data(), 1);

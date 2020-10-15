@@ -89,8 +89,8 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   for (iDim = 0; iDim < nDim; iDim++) {
     u_i[iDim] = V_i[VEL_INDEX+iDim];
     u_j[iDim] = V_j[VEL_INDEX+iDim];
-    //cout << setprecision(8) <<  "u_i[iDim]=" << u_i[iDim] << endl;
-    //cout << setprecision(8) <<  "u_j[iDim]=" << u_i[iDim] << endl;
+    //cout << setprecision(20) <<  "u_i[iDim]=" << u_i[iDim] << endl;
+    //cout << setprecision(20) <<  "u_j[iDim]=" << u_i[iDim] << endl;
   }
 
   P_i       = V_i[P_INDEX];
@@ -104,20 +104,20 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
   e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
 
-//  for (iSpecies=0; iSpecies<nSpecies; iSpecies++){
-//    cout << setprecision(8) <<  "rhos_i[" << iSpecies << "]=" << rhos_i[iSpecies] << endl;
-//    cout << setprecision(8) <<  "rhos_j[" << iSpecies << "]=" << rhos_j[iSpecies] << endl;
-//  }
-// cout << setprecision(8) <<  "P_i=" << P_i << endl;
-// cout << setprecision(8) <<  "P_j=" << P_j << endl;
-// cout << setprecision(8) <<  "h_i=" << h_i << endl;
-// cout << setprecision(8) <<  "h_j=" << h_j << endl;
-// cout << setprecision(8) <<  "a_i=" << a_i << endl;
-// cout << setprecision(8) <<  "a_j=" << a_j << endl;
-// cout << setprecision(8) <<  "rho_i=" << rho_i << endl;
-// cout << setprecision(8) <<  "rho_j=" << rho_j << endl;
-// cout << setprecision(8) <<  "e_ve_i=" << e_ve_i << endl;
-// cout << setprecision(8) <<  "e_ve_j=" << e_ve_j << endl;
+ // for (iSpecies=0; iSpecies<nSpecies; iSpecies++){
+ //   cout << setprecision(20) <<  "rhos_i[" << iSpecies << "]=" << rhos_i[iSpecies] << endl;
+ //   cout << setprecision(20) <<  "rhos_j[" << iSpecies << "]=" << rhos_j[iSpecies] << endl;
+ // }
+ //cout << setprecision(20) <<  "P_i=" << P_i << endl;
+ //cout << setprecision(20) <<  "P_j=" << P_j << endl;
+ //cout << setprecision(20) <<  "h_i=" << h_i << endl;
+ //cout << setprecision(20) <<  "h_j=" << h_j << endl;
+ //cout << setprecision(20) <<  "a_i=" << a_i << endl;
+ //cout << setprecision(20) <<  "a_j=" << a_j << endl;
+ //cout << setprecision(20) <<  "rho_i=" << rho_i << endl;
+ //cout << setprecision(20) <<  "rho_j=" << rho_j << endl;
+ //cout << setprecision(20) <<  "e_ve_i=" << e_ve_i << endl;
+ //cout << setprecision(20) <<  "e_ve_j=" << e_ve_j << endl;
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -175,10 +175,9 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
-//  for (iVar=0; iVar<nVar; iVar++)
-//    cout << setprecision(8) << "Flux[" << iVar << "]=" << Flux[iVar] << endl;
-//
-//  exit(0);
+  //for (iVar=0; iVar<nVar; iVar++)
+  //  cout << setprecision(10) << "Flux[" << iVar << "]=" << Flux[iVar] << endl;
+
   
 //  if (implicit)
 

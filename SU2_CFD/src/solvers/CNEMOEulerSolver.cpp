@@ -811,6 +811,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
 
+  //cout << endl << "UPWIND" << endl;
+
 
   su2double lim_i, lim_j, lim_ij;
 
@@ -945,7 +947,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
 
   //  for (int iVar=0; iVar<nVar; iVar++)
-  // cout << setprecision(8) << "upw Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
+  // cout << setprecision(8) << "upw Residual[" << iVar << "]=" << residual[iVar] << endl;
 
   
 
@@ -1134,15 +1136,21 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+
+  su2double *sol, *sol_new;
  
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    sol = nodes->GetSolution(iPoint);
 
  
     Vol = (geometry->nodes->GetVolume(iPoint) +
            geometry->nodes->GetPeriodicVolume(iPoint));
 
     Delta = nodes->GetDelta_Time(iPoint) / Vol;   
+
+    cout << setprecision(10) << "Delta=" << Delta <<  endl;
 
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
@@ -1151,12 +1159,22 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
       for (iVar = 0; iVar < nVar; iVar++) {
          
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+
+       //cout << setprecision(10) << "sol(iPoint, iVar)=" << sol[iVar] <<  endl;
+       //cout << setprecision(10) << "local_Residual[" << iVar << "]=" << local_Residual[iVar] << "iPoint=" << iPoint <<  endl;
+       //cout << setprecision(10) << "local_Res_TruncError[iVar]=" << local_Res_TruncError[iVar] <<  endl;
+       //cout << setprecision(10) << "Res=" << Res <<  endl;
+
         nodes->AddSolution(iPoint, iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
 
       }
     }
+
+    //sol_new = nodes->GetSolution(iPoint);
+    //for (iVar = 0; iVar < nVar; iVar++) cout << setprecision(10) << "sol_new(iPoint, iVar)=" << sol_new[iVar] <<  endl;
+
   }
 
   /*--- MPI solution ---*/
@@ -1772,6 +1790,8 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+  //cout << endl << "EULER" << endl;
+
   /*--- Allocate arrays ---*/
   Normal     = new su2double[nDim];
   NormalArea = new su2double[nDim];
@@ -1821,8 +1841,8 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       Residual[nSpecies+nDim]   = 0.0;
       Residual[nSpecies+nDim+1] = 0.0;
 
-//         for (int iVar=0; iVar<nVar; iVar++)
-//    cout << setprecision(8) << "sym Residual[" << iVar << "]=" << Residual[iVar] << " iPoint=" << iPoint << endl;
+    //     for (int iVar=0; iVar<nVar; iVar++)
+    //cout << setprecision(8) << "sym Residual[" << iVar << "]=" << Residual[iVar] << endl;
 
       /*--- Add value to the residual ---*/
       LinSysRes.AddBlock(iPoint, Residual);
@@ -1899,6 +1919,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
   su2double *V_infty, *V_domain, *U_domain,*U_infty;
 
+  //cout << endl << "FARFIELD" << endl;
+
   /*--- Set booleans from configuration parameters ---*/
   //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
@@ -1944,8 +1966,8 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
 
-//           for (int iVar=0; iVar<nVar; iVar++)
-//    cout << setprecision(8) << "far Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
+    //       for (int iVar=0; iVar<nVar; iVar++)
+    //cout << setprecision(8) << "far conv Residual[" << iVar << "]=" << residual[iVar] << " iPoint=" << iPoint << endl;
 
       //if (implicit)
       //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -1991,6 +2013,10 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
+
+   //        for (int iVar=0; iVar<nVar; iVar++)
+   //cout << setprecision(8) << "far visc Residual[" << iVar << "]=" << residual[iVar] << endl;
+
         LinSysRes.SubtractBlock(iPoint, residual);
         //if (implicit) {
         //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -2280,6 +2306,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   vector<su2double> rhos, energies;
 
   rhos.resize(nSpecies,0.0);
+
+  //cout << endl << "OUTLET" << endl;
 
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool dynamic_grid       = config->GetGrid_Movement();

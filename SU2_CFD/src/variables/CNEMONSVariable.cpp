@@ -110,16 +110,23 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   SetVelocity2(iPoint);
 
-  Ds                       = fluidmodel->GetDiffusionCoeff();
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+  Ds = fluidmodel->GetDiffusionCoeff();
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
+    //cout << "DiffusionCoeff(iPoint, iSpecies)=" << DiffusionCoeff(iPoint, iSpecies) << endl;
+  }
   
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
+
+  //cout << "LaminarViscosity(iPoint)=" << LaminarViscosity(iPoint) << endl;
 
   thermalconductivities    = fluidmodel->GetThermalConductivities();
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
+  //cout << "ThermalCond(iPoint)=" << ThermalCond(iPoint) << endl;
+  //cout << "ThermalCond_ve(iPoint)=" << ThermalCond_ve(iPoint) << endl;
+  //exit(0);
   return nonPhys;
 }
 

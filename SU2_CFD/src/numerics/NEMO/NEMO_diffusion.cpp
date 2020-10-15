@@ -317,8 +317,11 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
                      config);
 
   /*--- Update viscous residual ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++){
     Flux[iVar] = Proj_Flux_Tensor[iVar];
+    //cout << "Flux[iVar]=" << Flux[iVar] << endl;
+  }
+  //exit(0);
 
   /*--- Compute the implicit part ---*/
   if (implicit) {
