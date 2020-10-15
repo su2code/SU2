@@ -72,11 +72,11 @@ CNumerics::ResidualType<> CNEMOUpwScalar::ComputeResidual(const CConfig* config)
   }
 
   ExtraADPreaccIn();
-
   Density_i = V_i[RHO_INDEX];
   Density_j = V_j[RHO_INDEX];
 
   q_ij = 0.0;
+
   if (dynamic_grid) {
     for (iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[VEL_INDEX+iDim] - GridVel_i[iDim];

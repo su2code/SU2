@@ -316,7 +316,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     su2double nu_hat = nodes->GetSolution(iPoint,0);
     su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
     su2double dist = geometry->nodes->GetWall_Distance(iPoint);
-
+    cout <<"line 318, rho:  " << rho << endl;
+    cout <<"line 319, nuhatT:  " << nu_hat << endl;
     dist += rough_const*roughness;
 
     su2double Ji   = nu_hat/nu ;

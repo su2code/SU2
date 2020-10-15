@@ -240,6 +240,10 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solution_con
     numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
                                   nodes->GetLaminarViscosity(jPoint) );
 
+    /*--- Eddy viscosity ---*/
+    numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                               nodes->GetEddyViscosity(jPoint) );
+
     /*--- Thermal conductivity ---*/
     numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
                                      nodes->GetThermalConductivity(jPoint));

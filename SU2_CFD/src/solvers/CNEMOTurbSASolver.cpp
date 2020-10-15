@@ -315,6 +315,8 @@ void CNEMOTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
 
     su2double nu  = mu/rho;
     su2double nu_hat = nodes->GetSolution(iPoint,0);
+    cout <<"line 318, rho:  " << rho << endl;
+    cout <<"line 319, nuhatT:  " << nu_hat << endl;
 
     su2double Ji   = nu_hat/nu;
     su2double Ji_3 = Ji*Ji*Ji;
@@ -506,7 +508,7 @@ void CNEMOTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
-      conv_numerics->SetPrimitive(U_domain, U_infty);
+      conv_numerics->SetConservative(U_domain, U_infty);
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 

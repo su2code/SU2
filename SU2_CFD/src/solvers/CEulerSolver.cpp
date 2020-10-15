@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon

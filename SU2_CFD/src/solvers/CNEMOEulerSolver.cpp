@@ -1974,6 +1974,10 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
                                            node_infty->GetLaminarViscosity(0) );
 
+        /*--- Eddy viscosity ---*/
+        visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
+                                        node_infty->GetEddyViscosity(0) );
+
         /*--- Thermal conductivity ---*/
         visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
                                               node_infty->GetThermalConductivity(0));
@@ -1985,6 +1989,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
         LinSysRes.SubtractBlock(iPoint, residual);
+
         //if (implicit) {
         //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         //}
