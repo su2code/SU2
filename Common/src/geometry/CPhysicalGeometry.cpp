@@ -6490,7 +6490,7 @@ void CPhysicalGeometry::AddWallModelSurfaceDonorHalos(CConfig *config) {
       markerTag = config->GetMarker_All_TagBound(iMarker);
       if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
         su2double exchange = config->GetWallFunction_DoubleInfo(markerTag)[0];
-        cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
+        if (rank == MASTER_NODE) cout << "Exchange location at " << exchange << " m from viscous walls." << endl;
         break;
       }
     }
