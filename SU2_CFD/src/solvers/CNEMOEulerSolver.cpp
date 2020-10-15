@@ -2027,6 +2027,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
   nSpecies = config->GetnSpecies();
   su2double *Spec_Density = new su2double[nSpecies];
+  for(iSpecies=0; iSpecies<nSpecies; iSpecies++)
+    Spec_Density[iSpecies] = 0.0;               /*--- To avoid a compiler warning. ---*/
 
   RHO_INDEX = nodes->GetRhoIndex();
 
