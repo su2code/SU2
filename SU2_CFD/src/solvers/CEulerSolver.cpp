@@ -3459,9 +3459,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             break;
         }
 
-        Project_Grad_i *= Limiter_i[iVar];
-        Project_Grad_j *= Limiter_j[iVar];
-
         /*--- Limit projection ---*/
 
         Project_Grad_i *= Limiter_i[iVar];
