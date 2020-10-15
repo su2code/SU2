@@ -821,6 +821,9 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
        to non-realizable states by canceling the update. */
 
       // if (localUnderRelaxation < 1.0e-10) localUnderRelaxation = 0.0;
+      if (localUnderRelaxation < 1.0e-6) {
+        cout << "iPoint: " << geometry->node[iPoint]->GetGlobalIndex() << ", R[k]= " << LinSysSol[iPoint*nVar] << ", R[o]= " << LinSysSol[iPoint*nVar+1] << endl;
+      }
 
       /* Store the under-relaxation factor for this point. */
 
