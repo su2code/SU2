@@ -39,11 +39,11 @@
 #pragma once
 
 #include "../../Common/include/adt_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../SU2_CFD/include/output_structure.hpp"
-#include "../../SU2_CFD/include/solver_structure.hpp"
+#include "../../Common/include/CConfig.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
+#include "../../Common/include/fem/fem_geometry_structure.hpp"
+#include "../../SU2_CFD/include/output/COutput.hpp"
+#include "../../SU2_CFD/include/solvers/CSolver.hpp"
 
 using namespace std;
 
