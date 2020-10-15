@@ -125,6 +125,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Get sparse structure pointers from geometry,
    *    the data is managed by CGeometry to allow re-use. ---*/
 
+  const unsigned short fill_in = 0 + (config->GetUse_Accurate_Visc_Jacobians() || config->GetUse_Accurate_Turb_Jacobians() || config->GetUse_Accurate_Kappa_Jacobians());
   const auto& csr = geometry->GetSparsePattern(type,0);
 
   nnz = csr.getNumNonZeros();
