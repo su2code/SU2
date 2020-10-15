@@ -44,6 +44,7 @@
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/fem/fem_geometry_structure.hpp"
 #include "../../SU2_CFD/include/output/COutput.hpp"
+#include "../../SU2_CFD/include/output/COutputLegacy.hpp"
 #include "../../SU2_CFD/include/solvers/CSolver.hpp"
 
 #include "../include/solvers/CEulerSolver.hpp"
@@ -598,7 +599,7 @@ private:
   int rank,                                     /*!< \brief MPI Rank. */
       size;                                     /*!< \brief MPI Size. */
 
-  COutput *output;                              /*!< \brief Pointer to the COutput class. */
+  COutputLegacy *output;                              /*!< \brief Pointer to the COutput class. */
   CGeometry ****input_geometry_container;       /*!< \brief Input geometry for which there is a solution */
   CGeometry ****output_geometry_container;      /*!< \brief Output geometry that solution is going to be interpolated onto */
   CSolver *****input_solver_container;          /*!< \brief Input solution that needs to be interpolated onto new mesh */

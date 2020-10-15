@@ -273,7 +273,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
    surface comma-separated value, and convergence history files (both in serial
    and in parallel). ---*/
 
-//////////////////////////////  output = new COutput(input_config_container[ZONE_0]);
+  output = new COutputLegacy(input_config_container[ZONE_0]);
 
   input_grid            = NULL;
   output_grid           = NULL;
@@ -452,6 +452,8 @@ void CFEMInterpolationDriver::Input_Preprocessing(CConfig **config_container, CG
       /*--- Add the Send/Receive boundaries ---*/
       geometry_container[iZone][iInst][MESH_0]->SetBoundaries(config_container[iZone]);
 
+      /*--- Create the point-to-point MPI communication structures for the fvm solver. ---*/
+      if (!fem_solver) geometry_container[iZone][iInst][MESH_0]->PreprocessP2PComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
 
   }
@@ -1209,7 +1211,7 @@ void CFEMInterpolationDriver::Output() {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-//  output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+  output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
 
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
