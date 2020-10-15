@@ -48,7 +48,7 @@ ___bin_SU2_SOL_SOURCES = \
 
 ___bin_SU2_SOL_CXXFLAGS =
 ___bin_SU2_SOL_LDADD = \
-  ../../SU2_CFD/obj/libSU2Core_a \
+  ../../SU2_CFD/obj/libSU2Core.a \
   ../../Common/lib/libSU2.a
 
 # always link to built dependencies from ./externals

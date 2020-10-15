@@ -75,12 +75,12 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
 
-  if (config->GetKind_Solver() == MULTIZONE)
+  if (config->GetnConfigFiles() > 0)
     nZone  = config->GetnConfigFiles();
   else
-    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+    nZone  = config->GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  nDim     = config->GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  //periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
 
   CFEMInterpolationDriver *InterpolationDriver = NULL;

@@ -2850,6 +2850,15 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
+  /* DESCRIPTION: Interpolating solutions between two meshes */
+  addBoolOption("INTERPOLATE_SOLUTION", interpolate_solution, false);
+
+  /* DESCRIPTION: Interpolated output file restart flow */
+  addStringOption("INTERPOLATED_RESTART_FILENAME", Interpolated_Restart_FileName, string("interpolated_restart_flow.dat"));
+
+  /* DESCRIPTION: Target mesh for solution interpolation */
+  addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
+  
   /* END_CONFIG_OPTIONS */
 
 }

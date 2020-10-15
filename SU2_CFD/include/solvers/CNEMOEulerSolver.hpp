@@ -28,7 +28,6 @@
 #pragma once
 
 #include "../variables/CNEMOEulerVariable.hpp"
-#include "../include/fluid/CNEMOGas.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 /*!

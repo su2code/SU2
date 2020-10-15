@@ -309,7 +309,21 @@ public:
    * \param[in]     globalTree   Whether or not a global tree must be built. If false
                                  a local ADT is built.
    */
+
+  /*!
+   * \brief Default constructor of the class, disabled.
+   */
+  CADTElemClass() = default;
+
   CADTElemClass(unsigned short         val_nDim,
+                vector<su2double>      &val_coor,
+                vector<unsigned long>  &val_connElem,
+                vector<unsigned short> &val_VTKElem,
+                vector<unsigned short> &val_markerID,
+                vector<unsigned long>  &val_elemID,
+                const bool             globalTree);
+
+  void CreateADT(unsigned short val_nDim,
                 vector<su2double>      &val_coor,
                 vector<unsigned long>  &val_connElem,
                 vector<unsigned short> &val_VTKElem,
@@ -362,7 +376,6 @@ public:
               FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
   }
 
-private:
   /*!
    * \brief Implementation of DetermineContainingElement.
    * \note Working variables (first two) passed explicitly for thread safety.
@@ -388,6 +401,9 @@ private:
                                     unsigned short  &markerID,
                                     unsigned long   &elemID,
                                     int             &rankID) const;
+
+private:
+
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -625,9 +641,6 @@ private:
                        su2double           &dist2Tria,
                        su2double           &r,
                        su2double           &s) const;
-  /*!
-   * \brief Default constructor of the class, disabled.
-   */
-  CADTElemClass() = delete;
+
 
 };

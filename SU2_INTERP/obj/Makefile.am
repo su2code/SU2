@@ -48,7 +48,7 @@ ___bin_SU2_INTERP_SOURCES = \
 
 ___bin_SU2_INTERP_CXXFLAGS =
 ___bin_SU2_INTERP_LDADD = \
-  ../../SU2_CFD/src/libSU2Core_a \
+  ../../SU2_CFD/obj/libSU2Core.a \
   ../../Common/lib/libSU2.a
 
 # always link to built dependencies from ./externals

@@ -73,6 +73,10 @@ if BUILD_GEO
 SUBDIRS +=SU2_GEO/obj
 endif
 
+if BUILD_INTERP
+SUBDIRS +=SU2_INTERP/obj
+endif
+
 if BUILD_PY_WRAPPER
 SUBDIRS += SU2_PY/pySU2
 endif

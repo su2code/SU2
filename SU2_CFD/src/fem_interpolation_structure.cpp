@@ -397,7 +397,7 @@ void CFEMInterpolationDriver::Input_Preprocessing(CConfig **config_container, CG
       /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
 
-      CGeometry *geometry_aux = NULL;
+      CGeometry *geometry_aux = nullptr;
 
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
@@ -435,11 +435,11 @@ void CFEMInterpolationDriver::Input_Preprocessing(CConfig **config_container, CG
          partitioning routines for cases with periodic BCs. The old routines 
          will be entirely removed eventually in favor of the new methods. ---*/
 
-        if (val_periodic) {
+//        if (val_periodic) {
           geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-        } else {
-          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], val_periodic);
-        }
+//        } else {
+//          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+//        }
       }
 
       /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
@@ -2000,7 +2000,7 @@ void CFEMInterpolationSol::BuildSurfaceADT(
   
   // Build the local ADT.
   surfaceADT.CreateADT(nDim, surfaceCoor, faceConn, VTK_TypeFace,
-                       subFaceIDInParent, parentFace);
+                       subFaceIDInParent, parentFace, false);
 }
 
 void CFEMInterpolationSol::VolumeInterpolationSolution(
@@ -2130,7 +2130,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
   
   // Build the local ADT.
   CADTElemClass volumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                             subElementIDInParent, parentElement);
+                             subElementIDInParent, parentElement, false);
   
   // Release the memory of the vectors used to build the ADT. To make sure
   // that all the memory is deleted, the swap function is used.
@@ -2183,9 +2183,8 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
       int            rank;
       su2double      parCoor[3], weightsInterpol[8];
 
-      if( volumeADT.DetermineContainingElement(coor, subElem, parElem, rank,
-                                               parCoor, weightsInterpol,
-                                               frontLeaves, frontLeavesNew) )
+      if( volumeADT.DetermineContainingElement_impl(frontLeaves, frontLeavesNew,coor, subElem, parElem, rank,
+                                               parCoor, weightsInterpol) )
       {
 
         
@@ -2499,9 +2498,8 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
       int            rank;
       su2double      dist;
       su2double      weightsInterpol[4];
-      surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-       weightsInterpol, BBoxTargets,
-       frontLeaves, frontLeavesNew);
+      surfaceADT.DetermineNearestElement_impl( BBoxTargets,
+       frontLeaves, frontLeavesNew, coor, dist, subElem, parElem, rank);
 
     // Subelement found that minimizes the distance to the given coordinate.
     // However, what is needed is the location in the high order parent element.
@@ -3478,12 +3476,14 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
     mCoor[iDim].resize(nPoint);
     // Copy the coordinates.
     for(iPoint = 0; iPoint < nPoint; iPoint++){
-      mCoor[iDim][iPoint] = geometry->node[iPoint]->GetCoord(iDim);
+      mCoor[iDim][iPoint] = geometry->nodes->GetCoord(iPoint,iDim);
     }
   }
   
   // Allocate the memory for the surface elements.
-  nElem = geometry->GetnElem_Local_Bound();
+  nElem=0;
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    nElem +=geometry->GetnElem_Bound(iMarker); }
   mSurfElems.resize(nElem);
   
   // Loop over the boundary markers to store the surface connectivity.

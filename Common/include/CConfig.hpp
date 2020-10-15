@@ -1165,6 +1165,9 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   
+  bool interpolate_solution;
+  string Interpolated_Restart_FileName;
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
