@@ -2637,6 +2637,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       su2double CFLFactor = 1.0;
       if ((underRelaxation < 0.1)) {
          CFLFactor = CFLFactorDecrease;
+         cout << "URFlow= " << underRelaxationFlow << ", URTurb= " << underRelaxationTurb << endl;
        } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
          CFLFactor = 1.0;
        } else {
