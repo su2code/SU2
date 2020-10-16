@@ -2,7 +2,7 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -695,9 +695,8 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
   return ideal / real;
 }
 
-
 /*!
- * \brief Build a sparse pattern from geometry information, from a certain boundary and
+ * \brief Build a sparse pattern from geometry information, for a certain boundary and
  *        for a given fill-level.
  *        The marker tells us for which boundary from the geometry we do the calculation,
  *        based on the FEM surface connectivity
@@ -705,8 +704,8 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
  *        points in level N-1 are also considered neighbors of the base point.
  *        The resulting pattern is that of A^{N+1} where A is the sparse matrix
  *        of immediate neighbors.
- * \note Algorithm is equivalent to the implementation by F. Palacios,
- *       A. Bueno, and T. Economon from CSysMatrix.
+ * \note Algorithm is equivalent to buildCSRPattern, only for surface mesh
+ * \author T.Dick
  * \param[in] geometry - Definition of the grid.
  * \param[in] val_marker - which boundary.
  * \param[in] fillLvl - Target degree of neighborhood (immediate neighbors always added).

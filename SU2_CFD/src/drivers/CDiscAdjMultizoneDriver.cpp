@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,9 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutputLegacy.hpp"
+#include "../../include/output/COutput.hpp"
+#include "../../include/iteration/CIterationFactory.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -62,16 +65,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
       switch (config_container[iZone]->GetKind_Solver()) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(EULER, config_container[iZone]);
           break;
         case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-          direct_iteration[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(INC_EULER, config_container[iZone]);
           break;
         case DISC_ADJ_HEAT:
-          direct_iteration[iZone][iInst] = new CHeatIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(HEAT_EQUATION, config_container[iZone]);
           break;
         case DISC_ADJ_FEM:
-          direct_iteration[iZone][iInst] = new CFEAIteration(config_container[iZone]);
+          direct_iteration[iZone][iInst] = CIterationFactory::CreateIteration(FEM_ELASTICITY, config_container[iZone]);
           break;
         default:
           SU2_MPI::Error("There is no discrete adjoint functionality for one of the specified solvers yet.",
@@ -84,16 +87,16 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
     switch (config_container[iZone]->GetKind_Solver()) {
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        direct_output[iZone] = COutputFactory::createOutput(EULER, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
-        direct_output[iZone] = COutputFactory::createOutput(INC_EULER, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(INC_EULER, config_container[iZone], nDim);
         break;
       case DISC_ADJ_HEAT:
-        direct_output[iZone] = COutputFactory::createOutput(HEAT_EQUATION, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(HEAT_EQUATION, config_container[iZone], nDim);
         break;
       case DISC_ADJ_FEM:
-        direct_output[iZone] = COutputFactory::createOutput(FEM_ELASTICITY, config_container[iZone], nDim);
+        direct_output[iZone] = COutputFactory::CreateOutput(FEM_ELASTICITY, config_container[iZone], nDim);
         break;
       default:
         direct_output[iZone] = nullptr;
@@ -161,6 +164,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector(nZone);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -174,6 +178,15 @@ void CDiscAdjMultizoneDriver::Run() {
      *    correctly as the OF gradient will overwrite the solution. ---*/
 
     Set_BGSSolution_k_To_Solution(iZone);
+
+    /*--- Prepare quasi-Newton drivers. ---*/
+
+    if (config_container[iZone]->GetnQuasiNewtonSamples() > 1) {
+      fixPtCorrector[iZone].resize(config_container[iZone]->GetnQuasiNewtonSamples(),
+                                   geometry_container[iZone][INST_0][MESH_0]->GetnPoint(),
+                                   GetTotalNumberOfVariables(iZone, true),
+                                   geometry_container[iZone][INST_0][MESH_0]->GetnPointDomain());
+    }
   }
 
   /*--- Evaluate the objective function gradient w.r.t. the solutions of all zones. ---*/
@@ -246,7 +259,15 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Inner loop to allow for multiple adjoint updates with respect to solvers in iZone. ---*/
 
       bool eval_transfer = false;
-      bool no_restart = (iOuterIter > 0) || !config_container[iZone]->GetRestart();
+      const bool restart = config_container[iZone]->GetRestart();
+      const bool no_restart = (iOuterIter > 0) || !restart;
+
+      /*--- Reset QN driver for new inner iterations. ---*/
+
+      if (fixPtCorrector[iZone].size()) {
+        fixPtCorrector[iZone].reset();
+        if(restart && (iOuterIter==1)) GetAllSolutions(iZone, true, fixPtCorrector[iZone]);
+      }
 
       for (unsigned long iInnerIter = 0; iInnerIter < nInnerIter[iZone]; iInnerIter++) {
 
@@ -275,6 +296,14 @@ void CDiscAdjMultizoneDriver::Run() {
         iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                     solver_container, numerics_container, config_container,
                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+        /*--- Use QN driver to improve the solution. ---*/
+
+        if (fixPtCorrector[iZone].size()) {
+          GetAllSolutions(iZone, true, fixPtCorrector[iZone].FPresult());
+          fixPtCorrector[iZone].compute();
+          if(iInnerIter) SetAllSolutions(iZone, true, fixPtCorrector[iZone]);
+        }
 
         /*--- This is done explicitly here for multizone cases, only in inner iterations and not when
          *    extracting cross terms so that the adjoint residuals in each zone still make sense. ---*/

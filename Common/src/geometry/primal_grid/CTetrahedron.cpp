@@ -2,7 +2,7 @@
  * \file CTetrahedron.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -87,11 +87,5 @@ CTetrahedron::~CTetrahedron() {
 }
 
 void CTetrahedron::Change_Orientation(void) {
-  unsigned long Point_0, Point_1;
-
-  Point_0 = Nodes[0];
-  Point_1 = Nodes[1];
-  Nodes[0] = Point_1;
-  Nodes[1] = Point_0;
-
+  swap(Nodes[0],Nodes[1]);
 }

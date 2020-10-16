@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -189,6 +189,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- If we want no derivatives or the direct derivatives, we solve the system using the
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/
+
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative && !config->GetSmoothGradient())) {
 
       Tot_Iter = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
@@ -254,6 +255,7 @@ CSysMatrix<su2mixedfloat>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *ge
   if (Derivative) { SetBoundaryDerivatives(geometry, config); }
 
   /*--- return a pointer to the matrix ---*/
+
   return StiffMatrix;
 
 }

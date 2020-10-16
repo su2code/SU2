@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -694,12 +694,6 @@ def read_config(filename):
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
     if 'MARKER_OUTLET' not in data_dict:
         data_dict['MARKER_OUTLET'] = '(NONE)'
-    if 'OPT_HESSIAN_FACTOR' not in data_dict:
-        data_dict['OPT_HESSIAN_FACTOR'] = 1.0
-    if 'SQP_MODE' not in data_dict:
-        data_dict['SQP_MODE'] = '(NONE)'
-    if 'LINESEARCH_MODE' not in data_dict:
-        data_dict['LINESEARCH_MODE'] = -10.0
 
     #
     # Multipoints requires some particular default values

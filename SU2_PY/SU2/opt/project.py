@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -77,7 +77,6 @@ class Project(object):
             
             obj_f(dvs)     - objective function              : float
             obj_df(dvs)    - objective function derivatives  : list
-            obj_ddf(dvs)   - objective function second derivatives : list
             con_ceq(dvs)   - equality constraints            : list
             con_dceq(dvs)  - equality constraint derivatives : list[list]
             con_cieq(dvs)  - inequality constraints          : list
@@ -239,11 +238,6 @@ class Project(object):
         
     def obj_df(self,dvs):
         func = su2eval.obj_df
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
-    
-    def obj_ddf(self,dvs):
-        func = su2eval.obj_ddf
         konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
 

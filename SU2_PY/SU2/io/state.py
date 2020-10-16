@@ -3,7 +3,7 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -107,7 +107,7 @@ def State_Factory(state=None,config=None):
     
     NewClass = State()
     
-    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA', 'HESSIAN']:
+    for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY','WND_CAUCHY_DATA']:
         NewClass[key] = ordered_bunch()
             
     if config:

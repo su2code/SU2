@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure for the FEM solver.
  *        The subroutines and functions are in the <i>fem_geometry_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ using namespace std;
 /*!
  * \class CLong3T
  * \brief Help class used to store three longs as one entity.
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 struct CLong3T {
   long long0 = 0;  /*!< \brief First long to store in this class. */
@@ -59,7 +59,7 @@ struct CLong3T {
  * \class CReorderElements
  * \brief Class, used to reorder the owned elements after the partitioning.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CReorderElements {
 private:
@@ -131,7 +131,7 @@ public:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CFaceOfElement.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class CSortFaces {
@@ -172,9 +172,9 @@ public:
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CSurfaceElementFEM.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
-class CSurfaceElementFEM;   // Forward declaration to avoid problems.
+struct CSurfaceElementFEM;   // Forward declaration to avoid problems.
 struct CSortBoundaryFaces {
  /*!
   * \brief Operator used for the comparison.
@@ -189,7 +189,7 @@ struct CSortBoundaryFaces {
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CVolumeElementFEM {
 public:
@@ -283,7 +283,7 @@ public:
  * \class CPointFEM
  * \brief Class to a point for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 struct CPointFEM {
   unsigned long globalID;    /*!< \brief The global ID of this point in the grid. */
@@ -308,7 +308,7 @@ struct CPointFEM {
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 struct CInternalFaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
@@ -353,7 +353,7 @@ struct CInternalFaceElementFEM {
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 struct CSurfaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
@@ -415,7 +415,7 @@ struct CSurfaceElementFEM {
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 struct CBoundaryFEM {
   string markerTag;  /*!< \brief Marker tag of this boundary. */
@@ -438,12 +438,12 @@ struct CBoundaryFEM {
  * \class CMeshFEM
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CMeshFEM: public CGeometry {
 protected:
-  unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
-  unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
+  unsigned long nVolElemTot{0};    /*!< \brief Total number of local volume elements, including halos. */
+  unsigned long nVolElemOwned{0};  /*!< \brief Number of owned local volume elements. */
 
   vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
                                                                   per time level. Cumulative storage. */
@@ -489,13 +489,13 @@ protected:
   vector<CFEMStandardBoundaryFace> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
                                                                           faces used for the geometry of the DG solver. */
 
-  CBlasStructure *blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
+  CBlasStructure *blasFunctions{nullptr}; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
 
 public:
   /*!
   * \brief Constructor of the class.
   */
- CMeshFEM(void) : CGeometry() { blasFunctions = nullptr; }
+ CMeshFEM(void) : CGeometry() { }
 
   /*!
   * \overload
@@ -712,7 +712,7 @@ protected:
  * \class CMeshFEM_DG
  * \brief Class which contains all the variables for the DG FEM solver.
  * \author E. van der Weide
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  */
 class CMeshFEM_DG: public CMeshFEM {
 protected:
@@ -1249,10 +1249,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CDummyMeshFEM_DG(CConfig *config);
-
-  /*!
-	 * \brief Destructor of the class.
-	 */
-  ~CDummyMeshFEM_DG() override;
 
 };

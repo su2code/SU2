@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the adjoint variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

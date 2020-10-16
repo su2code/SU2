@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -396,7 +396,6 @@ private:
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
   unsigned long Unst_nIntIter;      /*!< \brief Number of internal iterations (Dual time Method). */
-  unsigned long Dyn_nIntIter;       /*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;            /*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -411,6 +410,8 @@ private:
   su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
+
+  unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -801,8 +802,6 @@ private:
   unsigned short
   Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;         /*!< \brief Particular average for the marker analyze. */
-  unsigned short
-  nPolyCoeffs;          /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,         /*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
@@ -836,14 +835,14 @@ private:
   Mu_Temperature_Ref,    /*!< \brief Reference temperature for Sutherland model.  */
   Mu_Temperature_RefND,  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   Mu_S,                  /*!< \brief Reference S for Sutherland model.  */
-  Mu_SND,                /*!< \brief Non-dimensional reference S for Sutherland model.  */
-  *CpPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
-  *MuPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
-  *KtPolyCoefficients,     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
-  *CpPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
-  *MuPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
-  *KtPolyCoefficientsND,   /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
-  Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
+  Mu_SND;                /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  su2double* CpPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for specific heat Cp. */
+  su2double* MuPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for viscosity. */
+  su2double* KtPolyCoefficients;     /*!< \brief Definition of the temperature polynomial coefficients for thermal conductivity. */
+  array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
+  array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
+  array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  su2double Thermal_Conductivity_Solid,      /*!< \brief Thermal conductivity in solids. */
   Thermal_Diffusivity_Solid,       /*!< \brief Thermal diffusivity in solids. */
   Temperature_Freestream_Solid,    /*!< \brief Temperature in solids at freestream conditions. */
   Density_Solid,                   /*!< \brief Total density in solids. */
@@ -1036,9 +1035,9 @@ private:
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
-  su2double *default_cp_polycoeffs;     /*!< \brief Array for specific heat polynomial coefficients. */
-  su2double *default_mu_polycoeffs;     /*!< \brief Array for viscosity polynomial coefficients. */
-  su2double *default_kt_polycoeffs;     /*!< \brief Array for thermal conductivity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_cp_polycoeffs{{0.0}};  /*!< \brief Array for specific heat polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
+  array<su2double, N_POLY_COEFFS> default_kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   su2double *ExtraRelFacGiles;          /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;         /*!< \brief Values of the prescribed body force vector. */
@@ -2682,7 +2681,6 @@ public:
    * \return    <code>TRUE</code> means that elements can be reoriented if suspected unhealthy
    */
   bool GetReorientElements(void) const { return ReorientElements; }
-
   /*!
    * \brief Check if the gradient smoothing is active
    * \return true means that smoothing is applied to the sensitivities
@@ -3026,12 +3024,6 @@ public:
    * \return Number of internal iterations.
    */
   unsigned long GetUnst_nIntIter(void) const { return Unst_nIntIter; }
-
-  /*!
-   * \brief Get the number of internal iterations for the Newton-Raphson Method in nonlinear structural applications.
-   * \return Number of internal iterations.
-   */
-  unsigned long GetDyn_nIntIter(void) const { return Dyn_nIntIter; }
 
   /*!
    * \brief Get the starting direct iteration number for the unsteady adjoint (reverse time integration).
@@ -3916,7 +3908,7 @@ public:
    * \brief Get the number of coefficients in the temperature polynomial models.
    * \return The the number of coefficients in the temperature polynomial models.
    */
-  unsigned short GetnPolyCoeffs(void) const { return nPolyCoeffs; }
+  unsigned short GetnPolyCoeffs(void) const { return N_POLY_COEFFS; }
 
   /*!
    * \brief Get the temperature polynomial coefficient for specific heat Cp.
@@ -3950,7 +3942,7 @@ public:
    * \brief Get the temperature polynomial coefficients for viscosity.
    * \return Non-dimensional temperature polynomial coefficients for viscosity.
    */
-  su2double* GetMu_PolyCoeffND(void) { return MuPolyCoefficientsND; }
+  const su2double* GetMu_PolyCoeffND(void) const { return MuPolyCoefficientsND.data(); }
 
   /*!
    * \brief Get the temperature polynomial coefficient for thermal conductivity.
@@ -3970,7 +3962,7 @@ public:
    * \brief Get the temperature polynomial coefficients for thermal conductivity.
    * \return Non-dimensional temperature polynomial coefficients for thermal conductivity.
    */
-  su2double* GetKt_PolyCoeffND(void) { return KtPolyCoefficientsND; }
+  const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
 
   /*!
    * \brief Set the value of the non-dimensional constant viscosity.
@@ -4062,24 +4054,6 @@ public:
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
 
   /*!
-   * \brief Get the kind of solver for the implicit solver.
-   * \return Numerical solver for implicit formulation (solving the linear system).
-   */
-  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
-
-  /*!
-   * \brief Get the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
-
-  /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
-
-  /*!
    * \brief Set the kind of preconditioner for the implicit solver.
    * \return Numerical preconditioner for implicit formulation (solving the linear system).
    */
@@ -4104,12 +4078,6 @@ public:
   su2double GetDeform_Linear_Solver_Error(void) const { return Deform_Linear_Solver_Error; }
 
   /*!
-   * \brief Get min error of the linear solver for the implicit formulation.
-   * \return Min error of the linear solver for the implicit formulation.
-   */
-  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
-
-  /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
@@ -4122,8 +4090,32 @@ public:
   unsigned long GetDeform_Linear_Solver_Iter(void) const { return Deform_Linear_Solver_Iter; }
 
   /*!
-   * \brief Get max number of iterations of the linear solver for the implicit formulation.
-   * \return Max number of iterations of the linear solver for the implicit formulation.
+   * \brief Get min error of the linear solver for the gradient smoothing.
+   * \return Min error of the linear solver for the gradient smoothing.
+   */
+  su2double GetGrad_Linear_Solver_Error(void) const { return Grad_Linear_Solver_Error; }
+
+  /*!
+   * \brief Get the kind of solver for the gradient smoothing.
+   * \return Numerical solver for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver(void) const { return Kind_Grad_Linear_Solver; }
+
+    /*!
+   * \brief Get the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  unsigned short GetKind_Grad_Linear_Solver_Prec(void) const { return Kind_Grad_Linear_Solver_Prec; }
+
+    /*!
+   * \brief Set the kind of preconditioner for the gradient smoothing.
+   * \return Numerical preconditioner for the gradient smoothing.
+   */
+  void SetKind_Grad_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Grad_Linear_Solver_Prec = val_kind_prec; }
+
+    /*!
+   * \brief Get max number of iterations of the for the gradient smoothing.
+   * \return Max number of iterations of the linear solver for the gradient smoothing.
    */
   unsigned long GetGrad_Linear_Solver_Iter(void) const { return Grad_Linear_Solver_Iter; }
 
@@ -4155,6 +4147,11 @@ public:
    * \return relaxation coefficient of the CHT coupling.
    */
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
+
+  /*!
+   * \brief Get the number of samples used in quasi-Newton methods.
+   */
+  unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
 
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
@@ -6485,17 +6482,17 @@ public:
   /*!
    * \brief Center of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotCenter(string val_marker);
+  const su2double *GetPeriodicRotCenter(string val_marker) const;
 
   /*!
    * \brief Angles of rotation for a rotational periodic boundary.
    */
-  su2double *GetPeriodicRotAngles(string val_marker);
+  const su2double *GetPeriodicRotAngles(string val_marker) const;
 
   /*!
    * \brief Translation vector for a rotational periodic boundary.
    */
-  su2double *GetPeriodicTranslation(string val_marker);
+  const su2double *GetPeriodicTranslation(string val_marker) const;
 
   /*!
    * \brief Get the rotationally periodic donor marker for boundary <i>val_marker</i>.

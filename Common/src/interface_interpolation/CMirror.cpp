@@ -2,7 +2,7 @@
  * \file CMirror.cpp
  * \brief Implementation of mirror interpolation (conservative approach in FSI problems).
  * \author P. Gomes
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

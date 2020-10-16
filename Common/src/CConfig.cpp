@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -979,13 +979,6 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Initialize some default arrays to NULL. ---*/
 
-  default_cp_polycoeffs = nullptr;
-  default_mu_polycoeffs = nullptr;
-  default_kt_polycoeffs = nullptr;
-  CpPolyCoefficientsND  = nullptr;
-  MuPolyCoefficientsND  = nullptr;
-  KtPolyCoefficientsND  = nullptr;
-
   Riemann_FlowDir       = nullptr;
   Giles_FlowDir         = nullptr;
   CoordFFDBox           = nullptr;
@@ -1076,23 +1069,6 @@ void CConfig::SetRunTime_Options(void) {
 }
 
 void CConfig::SetConfig_Options() {
-
-
-  /*--- Allocate some default arrays needed for lists of doubles. ---*/
-
-
-  /*--- All temperature polynomial fits for the fluid models currently
-   assume a quartic form (5 coefficients). For example,
-   Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
-   are set to zero and will be properly non-dim. in the solver. ---*/
-
-  nPolyCoeffs = 5;
-  default_cp_polycoeffs = new su2double[nPolyCoeffs]();
-  default_mu_polycoeffs = new su2double[nPolyCoeffs]();
-  default_kt_polycoeffs = new su2double[nPolyCoeffs]();
-  CpPolyCoefficientsND  = new su2double[nPolyCoeffs]();
-  MuPolyCoefficientsND  = new su2double[nPolyCoeffs]();
-  KtPolyCoefficientsND  = new su2double[nPolyCoeffs]();
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -1220,11 +1196,11 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("CP_POLYCOEFFS", nPolyCoeffs, CpPolyCoefficients, default_cp_polycoeffs);
+  addDoubleArrayOption("CP_POLYCOEFFS", N_POLY_COEFFS, CpPolyCoefficients, default_cp_polycoeffs.data());
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("MU_POLYCOEFFS", nPolyCoeffs, MuPolyCoefficients, default_mu_polycoeffs);
+  addDoubleArrayOption("MU_POLYCOEFFS", N_POLY_COEFFS, MuPolyCoefficients, default_mu_polycoeffs.data());
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("KT_POLYCOEFFS", nPolyCoeffs, KtPolyCoefficients, default_kt_polycoeffs);
+  addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, KtPolyCoefficients, default_kt_polycoeffs.data());
 
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -1596,6 +1572,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
+  /* DESCRIPTION: Number of samples for quasi-Newton methods. */
+  addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
@@ -1610,9 +1588,9 @@ void CConfig::SetConfig_Options() {
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
-   * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
-   * and decrease when the residual is increasing or stalled. \ingroup Config*/
-  default_cfl_adapt[0] = 0.0; default_cfl_adapt[1] = 0.0; default_cfl_adapt[2] = 1.0; default_cfl_adapt[3] = 100.0;
+   * Factor down generally <1.0, factor up generally > 1.0 to cause the CFL to increase when the under-relaxation parameter is 1.0
+   * and to decrease when the under-relaxation parameter is less than 0.1. Factor is multiplicative. \ingroup Config*/
+  default_cfl_adapt[0] = 1.0; default_cfl_adapt[1] = 1.0; default_cfl_adapt[2] = 10.0; default_cfl_adapt[3] = 100.0;
   addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
@@ -2379,9 +2357,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
-  /* DESCRIPTION: Number of internal iterations for Newton-Raphson Method in nonlinear structural applications */
-  addUnsignedLongOption("NONLINEAR_FEM_INT_ITER", Dyn_nIntIter, 10);
-
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
   addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRAIN);
   /*  DESCRIPTION: Apply dead loads
@@ -2898,9 +2873,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
      * If there is a statement after a cont. char
      * throw an error. ---*/
 
-     // bug fix for the case of empty line
-     if (text_line != "") {
-     if (text_line.front() != '%'){
+     if (text_line.size() && (text_line.front() != '%')){
        while (text_line.back() == '\\' ||
               (PrintingToolbox::split(text_line, '\\').size() > 1)){
          string tmp;
@@ -2915,7 +2888,6 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
            text_line += " " + tmp;
          }
        }
-     }
      }
 
     if (TokenizeString(text_line, option_name, option_value)) {
@@ -3097,7 +3069,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -4593,28 +4565,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
     su2double sum = 0.0;
-    for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+    for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetCp_PolyCoeff(iVar);
     }
-    if ((nPolyCoeffs < 1) || (sum == 0.0))
+    if ((N_POLY_COEFFS < 1) || (sum == 0.0))
       SU2_MPI::Error(string("CP_POLYCOEFFS not set for fluid model INC_IDEAL_GAS_POLY. \n"), CURRENT_FUNCTION);
   }
 
   if (((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS)) && (Kind_ViscosityModel == POLYNOMIAL_VISCOSITY)) {
     su2double sum = 0.0;
-    for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+    for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetMu_PolyCoeff(iVar);
     }
-    if ((nPolyCoeffs < 1) || (sum == 0.0))
+    if ((N_POLY_COEFFS < 1) || (sum == 0.0))
       SU2_MPI::Error(string("MU_POLYCOEFFS not set for viscosity model POLYNOMIAL_VISCOSITY. \n"), CURRENT_FUNCTION);
   }
 
   if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_ConductivityModel == POLYNOMIAL_CONDUCTIVITY)) {
     su2double sum = 0.0;
-    for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++) {
+    for (unsigned short iVar = 0; iVar < N_POLY_COEFFS; iVar++) {
       sum += GetKt_PolyCoeff(iVar);
     }
-    if ((nPolyCoeffs < 1) || (sum == 0.0))
+    if ((N_POLY_COEFFS < 1) || (sum == 0.0))
       SU2_MPI::Error(string("KT_POLYCOEFFS not set for conductivity model POLYNOMIAL_CONDUCTIVITY. \n"), CURRENT_FUNCTION);
   }
 
@@ -4936,6 +4908,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error(string("CFL adaption not available for TIME_STEPPING integration.\n") +
                    string("Please select CFL_ADAPT = NO."),
                    CURRENT_FUNCTION);
+  }
+
+  /* Protect against using incorrect CFL adaption parameters. */
+
+  if (CFL_Adapt && (CFL_AdaptParam[0] > 1.0)) {
+    SU2_MPI::Error(string("CFL adaption factor down should be less than 1.0."), CURRENT_FUNCTION);
+  }
+
+  if (CFL_Adapt && (CFL_AdaptParam[1] < 1.0)) {
+    SU2_MPI::Error(string("CFL adaption factor up should be greater than 1.0."), CURRENT_FUNCTION);
+  }
+
+  if (CFL_Adapt && (CFL_AdaptParam[2] > CFL_AdaptParam[3])) {
+    SU2_MPI::Error(string("CFL adaption minimum CFL is larger than the maximum CFL."), CURRENT_FUNCTION);
   }
 
   /*--- 0 in the config file means "disable" which can be done using a very large group. ---*/
@@ -7703,13 +7689,6 @@ CConfig::~CConfig(void) {
 
   /*--- Delete some arrays needed just for initializing options. ---*/
 
-  delete [] default_cp_polycoeffs;
-  delete [] default_mu_polycoeffs;
-  delete [] default_kt_polycoeffs;
-  delete [] CpPolyCoefficientsND;
-  delete [] MuPolyCoefficientsND;
-  delete [] KtPolyCoefficientsND;
-
   delete [] FFDTag;
   delete [] nDV_Value;
   delete [] TagFFDBox;
@@ -8121,21 +8100,21 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   }
 }
 
-su2double* CConfig::GetPeriodicRotCenter(string val_marker) {
+const su2double* CConfig::GetPeriodicRotCenter(string val_marker) const {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
   return Periodic_RotCenter[iMarker_PerBound];
 }
 
-su2double* CConfig::GetPeriodicRotAngles(string val_marker) {
+const su2double* CConfig::GetPeriodicRotAngles(string val_marker) const {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;
   return Periodic_RotAngles[iMarker_PerBound];
 }
 
-su2double* CConfig::GetPeriodicTranslation(string val_marker) {
+const su2double* CConfig::GetPeriodicTranslation(string val_marker) const {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
     if (Marker_PerBound[iMarker_PerBound] == val_marker) break;

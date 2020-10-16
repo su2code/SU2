@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -46,7 +46,7 @@ def main():
     parser.add_option("-g", "--gradient", dest="gradient", default="DISCRETE_ADJOINT",
                       help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, DISCRETE_ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
     parser.add_option("-o", "--optimization", dest="optimization", default="SLSQP",
-                      help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL, REDUCEDSQP)", metavar="OPTIMIZATION")
+                      help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)", metavar="OPTIMIZATION")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
@@ -63,7 +63,7 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                         |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
@@ -163,8 +163,7 @@ def shape_optimization( filename                           ,
       SU2.opt.BFGS(project,x0,xb,its,accu)
     if optimization == 'POWELL':
       SU2.opt.POWELL(project,x0,xb,its,accu)
-    if optimization == 'REDUCEDSQP':
-      SU2.opt.REDUCEDSQP(project,x0,xb,its,accu)
+
 
     # rename project file
     if projectname:

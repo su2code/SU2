@@ -3,7 +3,7 @@
  * \brief An interface to the INRIA solver PaStiX
  *        (http://pastix.gforge.inria.fr/files/README-txt.html)
  * \author P. Gomes
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
 #include<numeric>
 
 template<class ScalarType>
-void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, CConfig *config) {
+void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, const CConfig *config) {
 
   using namespace PaStiX;
 
@@ -223,7 +223,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry *geometry, CConfig *config
 }
 
 template<class ScalarType>
-void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, CConfig *config,
+void CPastixWrapper<ScalarType>::Factorize(CGeometry *geometry, const CConfig *config,
                                            unsigned short kind_fact, bool transposed) {
   using namespace PaStiX;
 

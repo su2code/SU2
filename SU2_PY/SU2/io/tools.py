@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.6 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -31,7 +31,6 @@
 
 import os
 import shutil, glob
-import numpy as np
 from SU2.util import ordered_bunch
 from .historyMap import history_header_map as historyOutFields
 
@@ -60,26 +59,6 @@ def read_gradients( Grad_filename , scale = 1.0):
     return grad_vals
 
 #: def read_gradients()
-
-
-# -------------------------------------------------------------------
-#  Read SU2_CFD_AD Hessian Approximation Values
-# -------------------------------------------------------------------
-
-def read_hessian( Hess_filename ):
-    """ reads the raw hessian from the hessian file
-        returns a list of floats
-    """
-
-    # open file and skip first line
-    hessfile = open(Hess_filename)
-
-    # read values
-    hess_vals = np.loadtxt(hessfile,delimiter=",")
-
-    return hess_vals
-
-#: def read_hessian()
 
 
 # -------------------------------------------------------------------

@@ -2,7 +2,7 @@
  * \file CIntegrationFactory.cpp
  * \brief Main subroutines for CIntegrationFactory .
  * \author T. Albring
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 #include "../../include/integration/CStructuralIntegration.hpp"
 #include "../../include/integration/CFEM_DG_Integration.hpp"
 
-CIntegration** CIntegrationFactory::createIntegrationContainer(ENUM_MAIN_SOLVER kindMainSolver,
+CIntegration** CIntegrationFactory::CreateIntegrationContainer(ENUM_MAIN_SOLVER kindMainSolver,
                                                                const CSolver* const* solver_container){
 
   CIntegration **integration = new CIntegration* [MAX_SOLS]();
@@ -39,14 +39,14 @@ CIntegration** CIntegrationFactory::createIntegrationContainer(ENUM_MAIN_SOLVER 
   for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
     if (solver_container[iSol] != nullptr){
       const SolverMetaData &solverInfo = CSolverFactory::GetSolverMeta(solver_container[iSol]);
-      integration[iSol] = createIntegration(solverInfo.integrationType);
+      integration[iSol] = CreateIntegration(solverInfo.integrationType);
     }
   }
 
   return integration;
 }
 
-CIntegration* CIntegrationFactory::createIntegration(INTEGRATION_TYPE integrationType){
+CIntegration* CIntegrationFactory::CreateIntegration(INTEGRATION_TYPE integrationType){
 
   CIntegration *integration = nullptr;
 

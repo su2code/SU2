@@ -5,7 +5,7 @@
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,8 +47,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_
 
   auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
   if (!ilu_ij) return;
-  for (auto iVar = 0ul; iVar < nVar*nVar; ++iVar)
-    ilu_ij[iVar] = val_block[iVar];
+  MatrixCopy(val_block, ilu_ij, false);
 }
 
 template<class ScalarType>
@@ -56,9 +55,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::SetBlockTransposed_ILUMatrix(unsigned l
 
   auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
   if (!ilu_ij) return;
-  for (auto iVar = 0ul; iVar < nVar; iVar++)
-    for (auto jVar = 0ul; jVar < nVar; jVar++)
-      ilu_ij[iVar*nVar+jVar] = val_block[jVar*nVar+iVar];
+  MatrixCopy(val_block, ilu_ij, true);
 }
 
 template<class T, bool alpha, bool beta, bool transp>

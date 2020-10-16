@@ -3,7 +3,7 @@
  * \brief Classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,7 +73,7 @@ class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief Pointer to problem configuration. */
+  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
   bool transp;                           /*!< \brief If the transpose version of the preconditioner is required. */
 
 public:
@@ -85,7 +85,7 @@ public:
    * \param[in] transposed - If the transpose version of the preconditioner is required.
    */
   inline CJacobiPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                               CGeometry *geometry_ref, CConfig *config_ref, bool transposed) :
+                               CGeometry *geometry_ref, const CConfig *config_ref, bool transposed) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
@@ -127,7 +127,7 @@ class CILUPreconditioner final : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief Pointer to problem configuration. */
+  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
   bool transp;                           /*!< \brief If the transpose version of the preconditioner is required. */
 
 public:
@@ -139,7 +139,7 @@ public:
    * \param[in] transposed - If the transpose version of the preconditioner is required.
    */
   inline CILUPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                            CGeometry *geometry_ref, CConfig *config_ref, bool transposed) :
+                            CGeometry *geometry_ref, const CConfig *config_ref, bool transposed) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
@@ -181,7 +181,7 @@ class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief Pointer to problem configuration. */
+  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
 
 public:
 
@@ -192,7 +192,7 @@ public:
    * \param[in] config_ref - Config of the problem.
    */
   inline CLU_SGSPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                               CGeometry *geometry_ref, CConfig *config_ref) :
+                               CGeometry *geometry_ref, const CConfig *config_ref) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
@@ -226,7 +226,7 @@ class CLineletPreconditioner final : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  CConfig* config;                       /*!< \brief Pointer to problem configuration. */
+  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
 
 public:
   /*!
@@ -236,7 +236,7 @@ public:
    * \param[in] config_ref - Config of the problem.
    */
   inline CLineletPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                                CGeometry *geometry_ref, CConfig *config_ref) :
+                                CGeometry *geometry_ref, const CConfig *config_ref) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))
@@ -277,7 +277,7 @@ class CPastixPreconditioner final : public CPreconditioner<ScalarType> {
 private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to the matrix. */
   CGeometry* geometry;                   /*!< \brief Geometry associated with the problem. */
-  CConfig* config;                       /*!< \brief Configuration of the problem. */
+  const CConfig *config;                 /*!< \brief Configuration of the problem. */
   unsigned short kind_fact;              /*!< \brief The type of factorization desired. */
   bool transp;                           /*!< \brief If the transpose version of the preconditioner is required. */
 
@@ -291,7 +291,7 @@ public:
    * \param[in] transposed - If the transpose version of the preconditioner is required.
    */
   inline CPastixPreconditioner(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref,
-                               CConfig *config_ref, unsigned short kind_factorization, bool transposed) :
+                               const CConfig *config_ref, unsigned short kind_factorization, bool transposed) :
     sparse_matrix(matrix_ref)
   {
     if((geometry_ref == nullptr) || (config_ref == nullptr))

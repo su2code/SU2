@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_CFD.
  *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,7 +43,6 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/CConfig.hpp"
 #include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
 #include "../include/interfaces/CInterface.hpp"
 
 using namespace std;
