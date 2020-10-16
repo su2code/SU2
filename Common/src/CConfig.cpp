@@ -2778,6 +2778,23 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
+  /* Options related to the OneShot method
+
+  /* DESCRIPTION: Use OneShot method for optimization */
+  addBoolOption("ONE_SHOT", OneShot, false);
+
+  /* DESCRIPTION: Starting iteration of one-shot method */
+  addUnsignedLongOption("ONE_SHOT_START", One_Shot_Start, 0);
+
+  /* DESCRIPTION: Stopping iteration of one-shot method */
+  addUnsignedLongOption("ONE_SHOT_STOP", One_Shot_Stop, 999999);
+
+  /* DESCRIPTION: number of Piggyback steps between 2 design updates */
+  addUnsignedLongOption("ONE_SHOT_STOP", PiggybackSteps, 999999);
+
+  /* DESCRIPTION: Original step size at the start of the line search */
+  addDoubleOption("ONE_SHOT_STEP_SIZE", Step_Size, 1.0);
+
   /* END_CONFIG_OPTIONS */
 
 }

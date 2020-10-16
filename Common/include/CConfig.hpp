@@ -1140,6 +1140,14 @@ private:
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
+  bool OneShot;                  /*!< \brief Flag to enable the OneShot method */
+  unsigned long One_Shot_Start;  /*!< \brief Start iteration for one-shot method */
+  unsigned long One_Shot_Stop;   /*!< \brief Stop iteration for one-shot method */
+  unsigned long PiggybackSteps;  /*!< \brief The number of Piggyback steps in between 2 linesearches */
+  unsigned short nConstr;        /*!< \brief number of constraint functions for the optimization */
+  su2double Step_Size; /*!< \brief value of initial step size in line search */
+
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9372,5 +9380,42 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
+
+  /*!
+   * \brief Check if the one-shot option is specified in the config file.
+   * \return YES if one-shot is enabled.
+   */
+  bool GetOneShot(void) { return OneShot; }
+
+  /*!
+   * \brief Get the starting iteration for the OneShot method.
+   * \return start iteration number
+   */
+  unsigned long GetOneShotStart(void) { return One_Shot_Start; }
+
+  /*!
+   * \brief Get the stopping iteration for the OneShot method.
+   * \return stop iteration number
+   */
+  unsigned long GetOneShotStop(void) { return One_Shot_Stop; }
+
+  /*!
+   * \brief Get the number of Piggyback steps between line searches.
+   * \return number of steps
+   */
+  unsigned long GetPiggybackSteps(void) { return PiggybackSteps; }
+
+  /*!
+   * \brief Get the number of constraints for the optimization.
+   * \return stop iteration number
+   */
+  unsigned short GetnConstr(void) { return nConstr;}
+
+  /*!
+   * \brief Get the initial value of the stepsize for line search
+   * \return Value of initial stepsize.
+   */
+  su2double GetStepSize(void) { return Step_Size; }
+
 
 };
