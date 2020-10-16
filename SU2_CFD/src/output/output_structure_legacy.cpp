@@ -11949,8 +11949,8 @@ void COutputLegacy::SetResult_Files_Parallel(CSolver *****solver_container,
         cout << "Loading solution output data locally on each rank." << endl;
 
       switch (config[iZone]->GetKind_Solver()) {
-        case EULER : case NAVIER_STOKES : case NEMO_EULER : case NEMO_NAVIER_STOKES : case RANS :
-
+        case EULER : case NAVIER_STOKES :
+        case NEMO_EULER : case NEMO_NAVIER_STOKES : case RANS :
         case INC_EULER : case INC_NAVIER_STOKES : case INC_RANS :
         if (compressible)
           LoadLocalData_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);

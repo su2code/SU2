@@ -273,7 +273,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
    surface comma-separated value, and convergence history files (both in serial
    and in parallel). ---*/
 
-  output = new COutputLegacy(input_config_container[ZONE_0]);
+  output = COutputFactory::CreateOutput(NEMO_NAVIER_STOKES, input_config_container[ZONE_0],nDim);
 
   input_grid            = NULL;
   output_grid           = NULL;
@@ -1210,8 +1210,9 @@ void CFEMInterpolationDriver::Output() {
 
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-
-  output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+  output->PreprocessHistoryOutput(output_config_container[0], false);
+  output->PreprocessVolumeOutput(output_config_container[0]);
+  output->SetResult_Files( output_geometry_container[0][0][0], output_config_container[0],output_solver_container[0][0][0], ExtIter, true);
 
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
