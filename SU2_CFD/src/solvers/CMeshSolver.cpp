@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,10 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/adt_structure.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
-#include "../../include/variables/CMeshBoundVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 using namespace GeometryToolbox;

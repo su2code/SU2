@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.7 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -143,7 +143,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.021218, -5.268447, 0.807465, 0.060897]
+    rae2822_sa.test_vals = [-2.021224, -5.268445, 0.807582, 0.060731]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -175,7 +175,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.412446, -6.702976, 0.229866, 0.147638]
+    turb_oneram6.test_vals = [-2.388851, -6.689340, 0.230320, 0.157649]
     test_list.append(turb_oneram6)
 
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
@@ -183,7 +183,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.076819, -16.049252, 1.064326, 0.019770]
+    turb_naca0012_sa.test_vals = [-11.537781, -14.899750, 1.064330, 0.019756]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -191,7 +191,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.273728, -6.243783, 1.049988, 0.019165]
+    turb_naca0012_sst.test_vals = [-12.797090, -5.872763, 1.049989, 0.019163]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -199,7 +199,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-14.851214, -6.062566, 1.005233, 0.019014]
+    turb_naca0012_sst_sust.test_vals = [-12.640091, -5.751854, 1.005233, 0.019017]
     test_list.append(turb_naca0012_sst_sust)
 
     # PROPELLER
@@ -215,7 +215,7 @@ def main():
     propeller_var_load.cfg_dir   = "rans/actuatordisk_variable_load"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.810684, -4.535582, 0.000252, 0.170455]
+    propeller_var_load.test_vals = [-1.808010, -4.535613, 0.000190, 0.172483]
     test_list.append(propeller_var_load)
 
     #################################
@@ -240,7 +240,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.979339, 1.140084, 1.217182, 0.220079]
+    turb_naca0012_1c.test_vals = [-4.979389, 1.140070, 1.211965, 0.194237]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -248,7 +248,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484195, 0.969780, 1.315926, 0.258346]
+    turb_naca0012_2c.test_vals = [-5.484195, 0.969789, 1.310525, 0.231240]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -256,7 +256,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.586959, 0.932347, 1.540973, 0.345562]
+    turb_naca0012_3c.test_vals = [-5.586959, 0.932359, 1.535455, 0.315820]
     test_list.append(turb_naca0012_3c)
 
     # NACA0012 p1c1
@@ -264,7 +264,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.132080, 1.076459, 1.183320, 0.207012]
+    turb_naca0012_p1c1.test_vals = [-5.132081, 1.076462, 1.178093, 0.181595]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -272,7 +272,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556645, 0.945121, 1.246337, 0.231311]
+    turb_naca0012_p1c2.test_vals = [-5.556648, 0.945129, 1.240986, 0.205071]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -293,7 +293,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.909633, -5.954752, 0.007773, 0.131217]
+    hb_rans_preconditioning.test_vals = [-1.902391, -5.950120, 0.007786, 0.128110]
     hb_rans_preconditioning.new_output = False
     test_list.append(hb_rans_preconditioning)
 
@@ -386,7 +386,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280316, 0.379651, 44.725470, 2.271540]
+    Jones_tc.test_vals = [-5.280316, 0.379651, 72.207590, 1.277638]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -395,7 +395,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.626647, -1.570858, 34.014100, 10.190720]
+    Jones_tc_rst.test_vals = [-4.625330, -1.568896, 33.995140, 10.181610]
     Jones_tc_rst.new_output = False
     test_list.append(Jones_tc_rst)
 
@@ -404,7 +404,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933199, 5.381560, 73.357900, 1.780500]
+    axial_stage2D.test_vals = [-1.933200, 5.379973, 73.357900, 0.925878]
     axial_stage2D.new_output = False
     test_list.append(axial_stage2D)
 
@@ -413,7 +413,7 @@ def main():
     transonic_stator.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator.cfg_file  = "transonic_stator.cfg"
     transonic_stator.test_iter = 20
-    transonic_stator.test_vals = [-0.563540, 5.823232, 96.736080, 0.062426]
+    transonic_stator.test_vals = [-0.562430, 5.828446, 96.436050, 0.062506]
     transonic_stator.new_output = False
     test_list.append(transonic_stator)
 

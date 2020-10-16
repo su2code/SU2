@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -847,6 +847,15 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for NEMO problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_NEMO(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.

@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,8 @@
 #include "../../include/fem/fem_geometry_structure.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
-#include "../../include/adt_structure.hpp"
+#include "../../include/adt/CADTElemClass.hpp"
+#include "../../include/adt/CADTPointsOnlyClass.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined (HAVE_MKL) || defined(HAVE_LAPACK)
@@ -3443,7 +3444,7 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
   }
 }
 
-void CMeshFEM_DG::SetSendReceive(CConfig *config) {
+void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Determine the ranks from which this rank has to receive data ---*/
