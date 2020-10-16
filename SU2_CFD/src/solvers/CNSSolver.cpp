@@ -168,7 +168,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Alloc2D(nMarker, nVertex, TauWall_WMLES);
     Alloc2D(nMarker, nVertex, HeatFlux_WMLES);
     Alloc3D(nMarker, nVertex, nDim, FlowDirTan_WMLES);
-    Alloc3D(nMarker, nVertex, 2*nDim, VelTimeFilter_WMLES);
+    Alloc3D(nMarker, nVertex, nDim, VelTimeFilter_WMLES);
 
     /*--- Check if the Wall models or Wall functions are unique. ---*/
     /*--- OBS: All the markers must have the same wall model/function ---*/
@@ -2776,7 +2776,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
          for (iDim = 0; iDim < nDim; iDim++ ){
            Vel[iDim]   = 0.0;
-           GradP[iDim] = 0.0;
          }
 
          for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
@@ -2788,7 +2787,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
            for (iDim = 0; iDim < nDim; iDim++ ){
              Vel[iDim] += donnorCoeff*nodes->GetSolution(donorPoint,iDim+1)/nodes->GetSolution(donorPoint,0);
-             GradP[iDim] += donnorCoeff*nodes->GetGradient_Primitive(donorPoint, nDim+1, iDim);
            }
          }
 
@@ -2816,12 +2814,15 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
          for (iDim = 0; iDim < nDim; iDim++){
            Vel[iDim]   = nodes->GetVelocity(Point_Normal,iDim);
-           GradP[iDim] = nodes->GetGradient_Primitive(Point_Normal, nDim+1, iDim);
          }
 
          P_Normal  = nodes->GetPressure(Point_Normal);
          T_Normal  = nodes->GetTemperature(Point_Normal);
          mu_Normal = nodes->GetLaminarViscosity(Point_Normal);
+       }
+
+       for (iDim = 0; iDim < nDim; iDim++){
+         GradP[iDim] = nodes->GetGradient_Primitive(iPoint, nDim+1, iDim);
        }
 
        /*--- Filter the input LES velocity ---*/
@@ -2831,23 +2832,19 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
          /*--- Old input LES velocity and GradP---*/
          su2double Vel_old[3]   = {0.,0.,0.};
-         su2double GradP_old[3] = {0.,0.,0.};
          for (iDim = 0; iDim < nDim; iDim++){
            Vel_old[iDim]   = VelTimeFilter_WMLES[iMarker][iVertex][iDim];
-           GradP_old[iDim] = VelTimeFilter_WMLES[iMarker][iVertex][iDim+nDim];
          }
          /*--- Now filter the LES velocity and GradP ---*/
          for (iDim = 0; iDim < nDim; iDim++){
-           Vel[iDim]   = (1.0 - TimeFilter) * Vel_old[iDim] + TimeFilter * Vel[iDim];
-           GradP[iDim] = (1.0 - TimeFilter) * GradP_old[iDim] + TimeFilter * GradP[iDim];
+           Vel[iDim] = (1.0 - TimeFilter) * Vel_old[iDim] + TimeFilter * Vel[iDim];
          }
        }
 
        /*--- Update input LES velocity if it is the 1st inner iteration---*/
        if (config->GetInnerIter() == 0){
          for (iDim = 0; iDim < nDim; iDim++){
-           VelTimeFilter_WMLES[iMarker][iVertex][iDim]      = Vel[iDim];
-           VelTimeFilter_WMLES[iMarker][iVertex][iDim+nDim] = GradP[iDim];
+           VelTimeFilter_WMLES[iMarker][iVertex][iDim] = Vel[iDim];
          }
        }
 
@@ -2879,18 +2876,11 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
        /*--- Pressure gradient in the tangent direction: ---*/
 
-       GradP_Normal = 0.0;
-       for (iDim = 0; iDim < nDim; iDim++)
-         GradP_Normal += GradP[iDim] * UnitNormal[iDim];
-       for (iDim = 0; iDim < nDim; iDim++)
-         GradP_Tang[iDim] = GradP[iDim] - GradP_Normal*UnitNormal[iDim];
-
        GradP_TangMod = 0.0;
        for (iDim = 0; iDim < nDim; iDim++)
-         GradP_TangMod += GradP_Tang[iDim]*GradP_Tang[iDim];
-       GradP_TangMod = sqrt(GradP_TangMod);
-       GradP_TangMod = max(GradP_TangMod,1.e-25);
-
+         GradP_TangMod += GradP[iDim]*dirTan[iDim];
+       GradP_TangMod = max(GradP_TangMod,0.0);
+       
        /* Compute the wall shear stress and heat flux vector using
         the wall model. */
        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
