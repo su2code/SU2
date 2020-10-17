@@ -2738,11 +2738,11 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
       for(unsigned long j=0; j<elementsSendMPIComm[timeLevel][i].size(); ++j) {
         const unsigned long jj = elementsSendMPIComm[timeLevel][i][j];
         const unsigned long nItems = volElem[jj].nDOFsSol * nVar;
-        const unsigned long nBytes = nItems * sizeof(su2double);
 
         for(unsigned short k=0; k<nTimeDOFs; ++k) {
           const unsigned long indS = nVar*(volElem[jj].offsetDOFsSolLocal + k*nDOFsLocTot);
-          memcpy(sendBuf+ii, commData+indS, nBytes);
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            sendBuf[ii+mm] = commData[indS+mm];
           ii += nItems;
         }
       }
@@ -2824,11 +2824,11 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
       for(unsigned long j=0; j<elementsRecvMPIComm[timeLevel][i].size(); ++j) {
         const unsigned long jj = elementsRecvMPIComm[timeLevel][i][j];
         const unsigned long nItems = volElem[jj].nDOFsSol * nVar;
-        const unsigned long nBytes = nItems * sizeof(su2double);
 
         for(unsigned short k=0; k<nTimeDOFs; ++k) {
           const unsigned long indR = nVar*(volElem[jj].offsetDOFsSolLocal + k*nDOFsLocTot);
-          memcpy(commData+indR, recvBuf+ii, nBytes);
+          for(unsigned long mm=0; mm<nItems; ++mm)
+            commData[indR+mm] = recvBuf[ii+mm];
           ii += nItems;
         }
       }
@@ -2844,13 +2844,14 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
   for(unsigned long i=0; i<elementsSendSelfComm[timeLevel].size(); ++i) {
     const unsigned long elemS  = elementsSendSelfComm[timeLevel][i];
     const unsigned long elemR  = elementsRecvSelfComm[timeLevel][i];
-    const unsigned long nBytes = volElem[elemS].nDOFsSol * nVar*sizeof(su2double);
+    const unsigned long nItems = volElem[elemS].nDOFsSol * nVar;
 
     for(unsigned short j=0; j<nTimeDOFs; ++j) {
       const unsigned long indS = nVar*(volElem[elemS].offsetDOFsSolLocal + j*nDOFsLocTot);
       const unsigned long indR = nVar*(volElem[elemR].offsetDOFsSolLocal + j*nDOFsLocTot);
 
-      memcpy(commData+indR, commData+indS, nBytes);
+      for(unsigned long mm=0; mm<nItems; ++mm)
+        commData[indR+mm] = commData[indS+mm];
     }
   }
 
@@ -2985,10 +2986,10 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
       for(unsigned long j=0; j<elementsRecvMPIComm[timeLevel][i].size(); ++j) {
         const unsigned long jj = elementsRecvMPIComm[timeLevel][i][j];
         const unsigned long nItems = volElem[jj].nDOFsSol * nVar;
-        const unsigned long nBytes = nItems * sizeof(su2double);
 
         const unsigned long indS = nVar*volElem[jj].offsetDOFsSolLocal;
-        memcpy(recvBuf+ii, resComm+indS, nBytes);
+        for(unsigned long mm=0; mm<nItems; ++mm)
+          recvBuf[ii+mm] = resComm[indS+mm];
         ii += nItems;
       }
 
@@ -3579,12 +3580,14 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 
 void CFEM_DG_EulerSolver::Set_OldSolution() {
 
-  memcpy(VecWorkSolDOFs[0].data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
+  for(unsigned long i=0; i<VecSolDOFs.size(); ++i)
+    VecWorkSolDOFs[0][i] = VecSolDOFs[i];
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution() {
 
-  memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFs.size()*sizeof(su2double));
+  for(unsigned long i=0; i<VecSolDOFs.size(); ++i)
+    VecSolDOFsNew[i] = VecSolDOFs[i];
 }
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -4233,12 +4236,12 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
     su2double *work    = solInt  + NPad*nDOFs;
 
     /* Initialize the predictor solution to the current solution. */
-    const su2double    *solCur = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
-    const unsigned long nBytes = nVarNDOFs*sizeof(su2double);
+    const su2double *solCur = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     for(unsigned short j=0; j<nTimeDOFs; ++j) {
       su2double *solPredTimeInd = solPred + j*nVarNDOFs;
-      memcpy(solPredTimeInd, solCur, nBytes);
+      for(unsigned short mm=0; mm<nVarNDOFs; ++mm)
+        solPredTimeInd[mm] = solCur[mm];
     }
 
     /*-------------------------------------------------------------------------*/
@@ -4372,7 +4375,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
         /*--- integration points considered. Note the minus sign, because  ---*/
         /*--- the residual is put on the RHS of the equation. Also note    ---*/
         /*--- that the residuals are stored in such a way that a memcpy    ---*/
-        /*--- call is avoided when the multiplication takes place with the ---*/
+        /*--- is avoided when the multiplication takes place with the      ---*/
         /*--- iteration matrix (i.e. mass matrix) later on.                ---*/
         /*--------------------------------------------------------------------*/
 
@@ -4678,7 +4681,8 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                              + nVar*(j*nDOFsLocTot + volElem[l].offsetDOFsSolLocal);
       su2double *solPredTime = solPred + j*nVarNDOFs;
 
-      memcpy(solADERPred, solPredTime, nBytes);
+      for(unsigned short mm=0; mm<nVarNDOFs; ++mm)
+        solADERPred[mm] = solPredTime[mm];
     }
   }
 }
@@ -5777,9 +5781,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
@@ -5829,7 +5830,8 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
       /* Loop over the DOFs and copy the data. */
       const unsigned short llNVar = ll*nVar;
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(solDOFs+i*NPad+llNVar, solDOFsElem+i*nVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          solDOFs[i*NPad+llNVar+mm] = solDOFsElem[i*nVar+mm];
     }
 
     /* Call the general function to carry out the matrix product to determine
@@ -6126,7 +6128,8 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
       /* Loop over the DOFs and copy the data. */
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(res+i*nVar, solDOFs+i*NPad+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          res[i*nVar+mm] = solDOFs[i*NPad+llNVar+mm];
     }
 
     /* Update the value of the counter l to the end index of the
@@ -6235,9 +6238,6 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Loop over the requested range of matching faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
         multiplications. As a consequence, the update of the counter l
@@ -6318,7 +6318,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
 
       /* Loop over the DOFs and copy the data for side 0. */
       for(unsigned short i=0; i<nDOFsFace0; ++i)
-        memcpy(resFace0+nVar*i, resSide0+NPad*i+nVar*ll, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          resFace0[nVar*i+mm] = resSide0[NPad*i+nVar*ll+mm];
 
       /* If the number of DOFs on both sides is the same, then the residual
          of side 1 is obtained by simply negating the residual of side 0.
@@ -6330,10 +6331,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
       }
       else {
         for(unsigned short i=0; i<nDOFsFace1; ++i)
-          memcpy(resFace1+nVar*i, resSide1+NPad*i+nVar*ll, nBytes);
-
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-        resFace1[i] = -resFace1[i];
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resFace1[nVar*i+mm] = -resSide1[NPad*i+nVar*ll+mm];
       }
     }
 
@@ -6357,9 +6356,6 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      same memory can be used for the storage of the solution of the DOFs of
      the face and the fluxes. */
   su2double *solFace = fluxes;
-
-  /* Number of bytes to be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the left state in the integration points of  ---*/
@@ -6420,7 +6416,8 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                               + nVar*(DOFs[i] - offset);
       su2double       *sol    = solFace + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -6467,7 +6464,8 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                               + nVar*(DOFs[i] - offset);
       su2double       *sol    = solFace + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -6701,7 +6699,9 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array workArray as temporary storage. */
-      memcpy(workArray, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+      for(unsigned long mm=0; mm<nVar*volElem[l].nDOFsSol; ++mm)
+        workArray[mm] = res[mm];
+
       blasFunctions->gemm(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
                           volElem[l].invMassMatrix.data(), workArray, res, config);
     }
@@ -6714,9 +6714,6 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConf
      warnings in debug mode  about uninitialized memory when padding is applied. */
   vector<su2double> workArrayVec(sizeWorkArray, 0.0);
   su2double *workArray = workArrayVec.data();
-
-  /* The number of bytes to copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -6852,7 +6849,8 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConf
             for(unsigned short i=0; i<nDOFs; ++i) {
               const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
               su2double       *sol    = workArray + NPad*i + llNVar;
-              memcpy(sol, solDOF, nBytes);
+              for(unsigned short mm=0; mm<nVar; ++mm)
+                sol[mm] = solDOF[mm];
             }
           }
 
@@ -7814,14 +7812,14 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
         UCons[iDim+1] = Density_e*Mach[iDim]*SoundSpeed;
 
       /* Loop over the number of faces that are treated simultaneously. */
-      const unsigned long nBytes = nVar*sizeof(su2double);
       for(unsigned short l=0; l<nFaceSimul; ++l) {
         const unsigned short llNVar = l*nVar;
 
         /* Loop over the integration points and set the right state. */
         for(unsigned short i=0; i<nInt; ++i) {
           su2double *UR = solIntR + i*NPad + llNVar;
-          memcpy(UR, UCons, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            UR[mm] = UCons[mm];
         }
       }
 
@@ -7865,14 +7863,14 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
         UCons[iDim+1] = Density_e*Mach[iDim]*SoundSpeed;
 
       /* Loop over the number of faces that are treated simultaneously. */
-      const unsigned long nBytes = nVar*sizeof(su2double);
       for(unsigned short l=0; l<nFaceSimul; ++l) {
         const unsigned short llNVar = l*nVar;
 
         /* Loop over the integration points and set the right state. */
         for(unsigned short i=0; i<nInt; ++i) {
           su2double *UR = solIntR + i*NPad + llNVar;
-          memcpy(UR, UCons, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            UR[mm] = UCons[mm];
         }
       }
 
@@ -8444,7 +8442,8 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     /* Set the right state in the integration points to the left state, i.e.
        no boundary condition is applied for a supersonic outlet. */
-    memcpy(solIntR, solIntL, NPad*nInt*sizeof(su2double));
+    for(unsigned short mm=0; mm<NPad*nInt; ++mm)
+       solIntR[mm] = solIntL[mm];
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -8750,9 +8749,6 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Get the required information from the standard face, which is the
         same for all faces considered. ---*/
   const unsigned short ind     = surfElem[0].indStandardElement;
@@ -8818,7 +8814,8 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
 
     /* Loop over the DOFs and copy the data. */
     for(unsigned short i=0; i<nDOFs; ++i)
-      memcpy(resFace+nVar*i, solInt0+NPad*i+llNVar, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        resFace[nVar*i+mm] = solInt0[NPad*i+llNVar+mm];
   }
 }
 
@@ -8836,9 +8833,6 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
-
-  /* The number of bytes to copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Loop over the faces that are treated simultaneously. */
   for(unsigned short l=0; l<nFaceSimul; ++l) {
@@ -8862,7 +8856,8 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
 
       const su2double *solDOF = VecWorkSolDOFs[timeLevel].data() + nVar*(DOFs[i]-offset);
       su2double       *sol    = solFace + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
