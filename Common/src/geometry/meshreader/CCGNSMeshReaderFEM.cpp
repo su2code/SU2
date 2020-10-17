@@ -500,7 +500,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
     for(int j=0; j<sizeMess; ++j) {
       const int jj = dimension*j;
       const long kk = pointRecvBuf[j] - firstIndex;
-      if(kk < 0 || kk >= nPointsRead)
+      if(kk < 0 || kk >= static_cast<long>(nPointsRead))
         SU2_MPI::Error("Invalid point requested. This should not happen.", CURRENT_FUNCTION);
 
       for(int k=0; k<dimension; ++k)

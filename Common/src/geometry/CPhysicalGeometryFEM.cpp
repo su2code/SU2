@@ -507,13 +507,11 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
               const bool constJac = elem[elemID]->GetJacobianConstantFace(ii);
               bound[iMarker][l]->SetJacobianConsideredConstant(constJac);
 
-              /*--- Abbreviate the boundary element type, polynomial degree of
-                    the grid and solution, and determine the polynomial degree
-                    that must be integrated exactly, based on the polynomial
-                    degree of the solution. ---*/
-              const unsigned short VTK_Type  = bound[iMarker][l]->GetVTK_Type();
-              const unsigned short nPolyGrid = bound[iMarker][l]->GetNPolyGrid();
-              const unsigned short nPolySol  = elem[elemID]->GetNPolySol();
+              /*--- Abbreviate the boundary element type, polynomial degree of the
+                    solution and determine the polynomial degree that must be integrated
+                    exactly, based on the polynomial degree of the solution. ---*/
+              const unsigned short VTK_Type = bound[iMarker][l]->GetVTK_Type();
+              const unsigned short nPolySol = elem[elemID]->GetNPolySol();
 
               unsigned short orderExact;
               if( constJac ) orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
@@ -2362,7 +2360,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig                      
           for(unsigned short i=0; i<nDonors; ++i) {
 
             /*--- Determine the status of the donor element. ---*/
-            if(elemPartitioner.GetRankContainingIndex(donors[i]) == rank) {
+            if(elemPartitioner.GetRankContainingIndex(donors[i]) == static_cast<unsigned long>(rank)) {
 
               /*--- Donor is stored locally. Determine its local ID and
                     get the time levels of both elements. ---*/
@@ -2428,7 +2426,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig                      
           const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
           /*--- Determine the status of the second element. ---*/
-          if(elemPartitioner.GetRankContainingIndex(FI->elemID1) == rank) {
+          if(elemPartitioner.GetRankContainingIndex(FI->elemID1) == static_cast<unsigned long>(rank)) {
 
             /*--- Both elements are stored locally. Determine the local
                   element of the second element and determine the minimum

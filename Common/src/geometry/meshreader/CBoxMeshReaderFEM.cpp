@@ -194,7 +194,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
       /*--- Determine the corresponding global element ID and check
             if it is stored on this rank. ---*/
       const unsigned long globalElemID = kNode*nElemIJ + jNode*nElemI;
-      if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
+      if(elemPartitioner.GetRankContainingIndex(globalElemID) == static_cast<unsigned long>(rank)) {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
@@ -225,7 +225,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
       /*--- Determine the corresponding global element ID and check
             if it is stored on this rank. ---*/
       const unsigned long globalElemID = kNode*nElemIJ + jNode*nElemI + nElemI-1;
-      if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
+      if(elemPartitioner.GetRankContainingIndex(globalElemID) == static_cast<unsigned long>(rank)) {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
@@ -256,7 +256,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
        /*--- Determine the corresponding global element ID and check
             if it is stored on this rank. ---*/
       const unsigned long globalElemID = kNode*nElemIJ + iNode;
-      if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
+      if(elemPartitioner.GetRankContainingIndex(globalElemID) == static_cast<unsigned long>(rank)) {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
@@ -287,7 +287,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
        /*--- Determine the corresponding global element ID and check
             if it is stored on this rank. ---*/
       const unsigned long globalElemID = kNode*nElemIJ + (mNode-2)*nElemI + iNode;
-      if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
+      if(elemPartitioner.GetRankContainingIndex(globalElemID) == static_cast<unsigned long>(rank)) {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
@@ -318,7 +318,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
        /*--- Determine the corresponding global element ID and check
             if it is stored on this rank. ---*/
       const unsigned long globalElemID = jNode*nElemI + iNode;
-      if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
+      if(elemPartitioner.GetRankContainingIndex(globalElemID) == static_cast<unsigned long>(rank)) {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
@@ -349,7 +349,7 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
        /*--- Determine the corresponding global element ID and check
             if it is stored on this rank. ---*/
       const unsigned long globalElemID = (pNode-2)*nElemIJ + jNode*nElemI + iNode;
-      if(elemPartitioner.GetRankContainingIndex(globalElemID) == rank) {
+      if(elemPartitioner.GetRankContainingIndex(globalElemID) == static_cast<unsigned long>(rank)) {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/

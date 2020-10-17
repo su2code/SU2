@@ -118,8 +118,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const passivedouble
   /* Native implementation of the matix vector product.
      Initialize the elements of y to zero. */
   SU2_OMP_SIMD
-  for(int k=0; k<M; ++k)
-    y[k] = 0.0;
+  for(int i=0; i<M; ++i) y[i] = 0.0;
 
   /* Carry out the matrix vector product. */
   for(int l=0; l<N; ++l) {
@@ -146,8 +145,7 @@ void CBlasStructure::gemm_imp(const int m,            const int n,        const 
 
   /* Initialize the elements of c to zero. */
   SU2_OMP_SIMD
-  for(int i=0; i<(m*n); ++i)
-    c[i] = 0.0;
+  for(int i=0; i<(m*n); ++i) c[i] = 0.0;
 
   /* Set the leading dimensions of the three matrices. */
   const int lda = m;

@@ -178,7 +178,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
         /*--- Find the index of the global donor point in the donor data. ---*/
 
         const auto idx = lower_bound(donorIdx.begin(), donorIdx.end(), donorGlobalIndex) - donorIdx.begin();
-        assert(idx < donorIdx.size());
+        assert(idx < static_cast<long>(donorIdx.size()));
 
         /*--- Recover the Target_Variable from the buffer of variables. ---*/
         RecoverTarget_Variable(donorVar[idx], donorCoeff);

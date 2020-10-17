@@ -98,7 +98,7 @@ void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates() {
   }
 
   /*--- Loop over the global number of points in the grid. ---*/
-  for(int i=0; i<numberOfGlobalPoints; ++i) {
+  for(unsigned long i=0; i<numberOfGlobalPoints; ++i) {
 
     /*--- Read the line in the grid file. This line must always
           be read, even if the point is not stored on this rank. ---*/

@@ -73,8 +73,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   ofstream boundary_file;
   string Grid_Marker;
 
-  string val_mesh_filename  = config->GetMesh_FileName();
-  unsigned short val_format = config->GetMesh_FileFormat();
+  string val_mesh_filename = config->GetMesh_FileName();
 
   /*--- Read the grid. ---*/
 
