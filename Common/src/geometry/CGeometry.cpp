@@ -4021,7 +4021,7 @@ const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType t
   return *pattern;
 }
 
-const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(unsigned long fillLvl, bool needNewPattern)
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(bool needNewPattern, unsigned long fillLvl)
 {
   CCompressedSparsePatternUL* pattern = nullptr;
 
