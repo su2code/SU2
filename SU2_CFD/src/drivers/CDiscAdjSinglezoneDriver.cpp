@@ -587,11 +587,15 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
  */
 void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
+  if (rank == MASTER_NODE)  cout << "Sobolev Smoothing of derivatives is active." << endl;
+
   /*--- get the sensitivities from the adjoint solver to work with ---*/
   solver[GRADIENT_SMOOTHING]->SetSensitivity(geometry,solver,config);
 
   /*--- Apply the smoothing procedure on the mesh level. ---*/
   if (config->GetSobMode()==MESH_LEVEL || config->GetSobMode()==DEBUG ) {
+
+    if (rank == MASTER_NODE)  cout << "  working on mesh level (including debug mode)" << endl;
 
     if (config->GetSmoothOnSurface()) {
 
@@ -610,6 +614,8 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
   /*--- Apply the smoothing procedure on the DV level. ---*/
   } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE || config->GetSobMode()==PARAM_LEVEL_SEQUENTIAL) {
+
+    if (rank == MASTER_NODE)  cout << "  working on design variable level" << endl;
 
     /// variable declarations
     unsigned nDVtotal=0;

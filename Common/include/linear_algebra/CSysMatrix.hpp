@@ -359,7 +359,7 @@ public:
   void Initialize(unsigned long npoint, unsigned long npointdomain,
                   unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry *geometry,
-                  const CConfig *config, bool needTranspPtr = false);
+                  const CConfig *config, bool needTranspPtr = false, bool grad_mode = false);
 
   /*!
    * \brief Initializes sparse matrix system.
@@ -370,7 +370,6 @@ public:
    * \param[in] val_marker - Boundary marker.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] needTranspPtr - If "col_ptr" should be created, used for "SetDiagonalAsColumnSum".
    */
   void InitOwnConnectivity(unsigned long nvertex, unsigned short nvar, unsigned short neqn, unsigned long val_marker,
                            CGeometry *geometry, CConfig *config);

@@ -117,11 +117,11 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     if ( config->GetSepDim() ) {
       LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
       LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
-      Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config);
+      Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, true);
     } else {
       LinSysSol.Initialize(nPoint, nPointDomain, nDim, 0.0);
       LinSysRes.Initialize(nPoint, nPointDomain, nDim, 0.0);
-      Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config);
+      Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config, false, true);
     }
 
     // initialize auxiliar helper vectors
