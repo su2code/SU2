@@ -738,12 +738,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   ComputeUnderRelaxationFactor(solver, config);
 
-  // for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) 
-  //     if (nodes->GetUnderRelaxation(iPoint) < 1.0e-6)
-  //       cout << "iPoint: " << geometry->node[iPoint]->GetGlobalIndex() << 
-  //               ", UR[k]= " << LinSysSol[iPoint*nVar]/nodes->GetSolution(iPoint,0) << 
-  //               ", UR[o]= " << LinSysSol[iPoint*nVar+1]/nodes->GetSolution(iPoint,1) << endl;
-
   /*--- Update solution (system written in terms of increments) ---*/
 
   if (!adjoint) {
@@ -826,7 +820,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
        a very small value. This helps avoid catastrophic crashes due
        to non-realizable states by canceling the update. */
 
-      if (localUnderRelaxation < 0.1) localUnderRelaxation = 0.0;
+      // if (localUnderRelaxation < 0.1) localUnderRelaxation = 0.0;
 
       /* Store the under-relaxation factor for this point. */
 
