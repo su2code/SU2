@@ -1645,9 +1645,11 @@ public:
   /*!
    * \brief Get the edge to sparse pattern map.
    * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
+   * \param[in] fillLvl - Level of fill of the pattern.
+   * \param[in] newPatternNeeded - Whether we need to recompute the pattern map (for a different solver with different fillLvl).
    * \return Reference to the map.
    */
-  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(void);
+  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap(unsigned long fillLvl = 0, bool newPatternNeeded);
 
   /*!
    * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).

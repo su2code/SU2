@@ -137,8 +137,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (needTranspPtr)
     col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
+  bool new_pattern = (!flow) && (config->GetLinear_Solver_Flow_Fill_In() != config->GetLinear_Solver_Turb_Fill_In());
   if (type == ConnectivityType::FiniteVolume)
-    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap().data();
+    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap(fill_in, new_pattern).data();
 
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 

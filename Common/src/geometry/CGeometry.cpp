@@ -4021,13 +4021,20 @@ const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType t
   return *pattern;
 }
 
-const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(void)
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(unsigned long fillLvl, bool needNewPattern)
 {
-  if (edgeToCSRMap.empty()) {
-    if (finiteVolumeCSRFill0.empty()) {
-      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
+  CCompressedSparsePatternUL* pattern = nullptr;
+
+  if (fillLvl == 0)
+    pattern = fvm? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
+  else
+    pattern = fvm? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
+
+  if (edgeToCSRMap.empty() || needNewPattern) {
+    if (pattern->empty()) {
+      *pattern = buildCSRPattern(*this, ConnectivityType::FiniteVolume, filllvl);
     }
-    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
+    edgeToCSRMap = mapEdgesToSparsePattern(*this, pattern);
   }
   return edgeToCSRMap;
 }
