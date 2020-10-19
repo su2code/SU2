@@ -1654,9 +1654,10 @@ public:
   /*!
    * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
    * \param[in] type - Finite volume or finite element.
+   * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the map.
    */
-  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
    * \brief Get the edge coloring.

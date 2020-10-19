@@ -135,7 +135,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   dia_ptr = csr.diagPtr();
 
   if (needTranspPtr)
-    col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
+    col_ptr = geometry->GetTransposeSparsePatternMap(type, fill_in).data();
 
   bool new_pattern = (!flow) && (config->GetLinear_Solver_Flow_Fill_In() != config->GetLinear_Solver_Turb_Fill_In());
   if (type == ConnectivityType::FiniteVolume)

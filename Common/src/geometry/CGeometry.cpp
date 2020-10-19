@@ -4023,7 +4023,7 @@ const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType t
 
 const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(bool needNewPattern, unsigned long fillLvl)
 {
-  CCompressedSparsePatternUL* pattern = (fillLvl == 0)? &finiteVolumeCSRFill0 : &finiteVolumeCSRFillN;
+  CCompressedSparsePatternUL* pattern = (fillLvl == 0)? finiteVolumeCSRFill0 : finiteVolumeCSRFillN;
 
   if (edgeToCSRMap.empty() || needNewPattern) {
     if (pattern->empty()) {
@@ -4034,10 +4034,10 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap(bool needNewPatt
   return edgeToCSRMap;
 }
 
-const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type)
+const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type, unsigned long fillLvl)
 {
   /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
-  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));
+  auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type, fillLvl));
   pattern.buildTransposePtr();
   return pattern.transposePtr();
 }
