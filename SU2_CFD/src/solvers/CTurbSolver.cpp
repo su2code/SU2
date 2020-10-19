@@ -1163,6 +1163,13 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       for (iVar = 0; iVar < nVar; iVar++)
         nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
 
+      /*--- Load local CFL number ---*/
+
+      if (restart_cfl) {
+        index += nVar + nDim*(config->GetGrid_Movement()) + 1;
+        nodes->SetLocalCFL(iPoint, Restart_Data[index]);
+      }
+
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
