@@ -117,7 +117,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.709021, -3.993726, -3.804347, -3.993726] #last 4 lines
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.743233, -4.002085, -3.812253, -4.002085] #last 4 lines
     da_sp_pinArray_cht_2d_dp_hf.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     da_sp_pinArray_cht_2d_dp_hf.timeout   = 1600
     da_sp_pinArray_cht_2d_dp_hf.tol       = 0.00001
