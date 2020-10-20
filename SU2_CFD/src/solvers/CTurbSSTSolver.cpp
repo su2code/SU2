@@ -301,12 +301,12 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfi
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh) {
 
-  const bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && 
+  const bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                            (!config->GetEdgeLimiter_Flow()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                            (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-  const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
-  const bool edge_limiter_turb  = config->GetEdgeLimiter_Turb();
 
   /*--- Clip omega ---*/
   // const su2double eps = numeric_limits<passivedouble>::epsilon();
@@ -332,7 +332,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
     }
   }
 
-  if ((limiter_flow && !edge_limiter_flow) || (limiter_turb && !edge_limiter_turb)) SetPrimitive_Limiter(geometry, config);
+  if (limiter_flow || limiter_turb) SetPrimitive_Limiter(geometry, config);
   
   /*--- Compute eddy viscosity ---*/
 

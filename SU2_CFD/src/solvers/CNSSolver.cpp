@@ -186,11 +186,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
 
   const bool cont_adjoint       = config->GetContinuous_Adjoint();
   const bool disc_adjoint       = config->GetDiscrete_Adjoint();
-  const bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (!config->GetEdgeLimiter_Flow()) && (InnerIter <= config->GetLimiterIter());
+  const bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (!config->GetEdgeLimiter_Turb()) && (InnerIter <= config->GetLimiterIter());
   const bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  const bool edge_limiter_flow  = config->GetEdgeLimiter_Flow();
-  const bool edge_limiter_turb  = config->GetEdgeLimiter_Turb();
 
   const bool restart        = config->GetRestart();
   const bool wall_functions = (config->GetWall_Functions() && ((disc_adjoint) || (InnerIter >= WFStartIter) || (restart)));
@@ -224,7 +222,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *co
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && ((limiter_flow && !edge_limiter_flow) || (limiter_turb && !edge_limiter_turb) || limiter_adjflow) && !Output) {
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
 

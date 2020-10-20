@@ -2621,12 +2621,11 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver, CC
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  const auto InnerIter         = config->GetInnerIter();
-  const bool cont_adjoint      = config->GetContinuous_Adjoint();
-  const bool muscl             = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  const bool limiter           = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool center            = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  const bool edge_limiter      = config->GetEdgeLimiter_Flow();
+  const auto InnerIter    = config->GetInnerIter();
+  const bool cont_adjoint = config->GetContinuous_Adjoint();
+  const bool muscl        = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
+  const bool limiter      = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (!config->GetEdgeLimiter_Flow()) && (InnerIter <= config->GetLimiterIter());
+  const bool center       = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
 
   /*--- Common preprocessing steps. ---*/
 
@@ -2649,7 +2648,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) && !Output && !edge_limiter)
+    if (limiter && (iMesh == MESH_0) && !Output)
       SetPrimitive_Limiter(geometry, config);
   }
 
