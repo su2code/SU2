@@ -125,8 +125,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Get sparse structure pointers from geometry,
    *    the data is managed by CGeometry to allow re-use. ---*/
 
-  bool flow = (nVar > geometry->GetnDim());
-  const unsigned short fill_in = flow? config->GetLinear_Solver_Flow_Fill_In() : config->GetLinear_Solver_Turb_Fill_In();
+  const unsigned short fill_in = max(config->GetLinear_Solver_Flow_Fill_In(), config->GetLinear_Solver_Turb_Fill_In());
   const auto& csr = geometry->GetSparsePattern(type, fill_in);
 
   nnz = csr.getNumNonZeros();
@@ -137,9 +136,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (needTranspPtr)
     col_ptr = geometry->GetTransposeSparsePatternMap(type, fill_in).data();
 
-  bool new_pattern = (!flow) && (config->GetLinear_Solver_Flow_Fill_In() != config->GetLinear_Solver_Turb_Fill_In());
   if (type == ConnectivityType::FiniteVolume)
-    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap(new_pattern, fill_in).data();
+    edge_ptr.ptr = geometry->GetEdgeToSparsePatternMap(fill_in).data();
 
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 
