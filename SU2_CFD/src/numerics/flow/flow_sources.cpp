@@ -59,7 +59,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
   unsigned short iDim, iVar, jVar;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool viscous = config->GetViscous();
 
   if (Coord_i[1] > EPS) {
 
@@ -74,8 +73,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
     Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
-    /*--- Inviscid component of the source term. ---*/
-	
     residual[0] = yinv*Volume*U_i[2];
     residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
     residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
@@ -106,134 +103,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
         for (jVar=0; jVar < nVar; jVar++)
           jacobian[iVar][jVar] *= yinv*Volume;
 
-    }
-	
-	/*--- Add the viscous terms if necessary. ---*/
-
-    if (viscous) {
-
-      su2double laminar_viscosity_i    = V_i[nDim+5];
-      su2double eddy_viscosity_i       = V_i[nDim+6];
-      su2double thermal_conductivity_i = V_i[nDim+7];
-      su2double heat_capacity_cp_i     = V_i[nDim+8];
-
-      su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
-      su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
-
-      residual[0] -= 0.0;
-      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][1]
-                                                    - TWO3*PrimVar_Grad_i[2][0]);
-      residual[2] -= yinv*Volume*total_viscosity_i*(2*(PrimVar_Grad_i[2][1]-U_i[2]/U_i[0]*yinv)
-                                                    - TWO3*PrimVar_Grad_i[2][1]-FOUR3*U_i[2]/U_i[0]*yinv);
-      residual[3] -= yinv*Volume*(total_viscosity_i*(U_i[1]/U_i[0]*(PrimVar_Grad_i[1][1]
-                                                                    + ONE3*PrimVar_Grad_i[2][0])
-                                                                    - FOUR3*U_i[2]/U_i[0]*PrimVar_Grad_i[1][0]) 
-                                  + total_conductivity_i*PrimVar_Grad_i[0][1]);
-    }
-
-  }
-
-  else {
-
-    for (iVar=0; iVar < nVar; iVar++)
-      residual[iVar] = 0.0;
-
-    if (implicit) {
-      for (iVar=0; iVar < nVar; iVar++) {
-        for (jVar=0; jVar < nVar; jVar++)
-          jacobian[iVar][jVar] = 0.0;
-      }
-    }
-
-  }
-
-  return ResidualType<>(residual, jacobian, nullptr);
-}
-
-CSourceGeneralAxisymmetric_Flow::CSourceGeneralAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                          CSourceBase_Flow(val_nDim, val_nVar, config) {
-
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  viscous = config->GetViscous();
-
-}
-
-CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
-  unsigned short iVar, jVar;
-
-  if (Coord_i[1] > EPS) {
-
-    su2double yinv = 1.0/Coord_i[1];
-
-    su2double Density_i = U_i[0];
-    su2double Velocity1_i = U_i[1]/U_i[0];
-    su2double Velocity2_i = U_i[2]/U_i[0];
-    su2double Energy_i = U_i[3]/U_i[0];
-
-    su2double Pressure_i = V_j[3];
-    su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
-
-    /*--- Inviscid component of the source term. ---*/
-
-    residual[0] = yinv*Volume*U_i[2];
-    residual[1] = yinv*Volume*U_i[1]*Velocity2_i;
-    residual[2] = yinv*Volume*U_i[2]*Velocity2_i;
-    residual[3] = yinv*Volume*U_i[2]*Enthalpy_i;
-
-    if (implicit) {
-
-      su2double dPdrho_e_i = S_i[0];
-      su2double dPde_rho_i = S_i[1];
-
-      jacobian[0][0] = 0.0;
-      jacobian[0][1] = 0.0;
-      jacobian[0][2] = 1.0;
-      jacobian[0][3] = 0.0;
-
-      jacobian[1][0] = -Velocity1_i*Velocity2_i;
-      jacobian[1][1] = Velocity2_i;
-      jacobian[1][2] = Velocity1_i;
-      jacobian[1][3] = 0.0;
-
-      jacobian[2][0] = -Velocity2_i*Velocity2_i;
-      jacobian[2][1] = 0.0;
-      jacobian[2][2] = 2*Velocity2_i;
-      jacobian[2][3] = 0.0;
-
-      jacobian[3][0] = Velocity2_i*(dPdrho_e_i + dPde_rho_i/Density_i*(Velocity1_i*Velocity1_i
-                                                                        + Velocity2_i*Velocity2_i
-                                                                        - Energy_i) - Enthalpy_i);
-      jacobian[3][1] = -Velocity1_i*Velocity2_i/Density_i *dPde_rho_i;
-      jacobian[3][2] = Enthalpy_i - Velocity2_i*Velocity2_i/Density_i *dPde_rho_i;
-      jacobian[3][3] = Velocity2_i + Velocity2_i/Density_i *dPde_rho_i;
-
-      for (iVar=0; iVar < nVar; iVar++)
-        for (jVar=0; jVar < nVar; jVar++)
-          jacobian[iVar][jVar] *= yinv*Volume;
-
-    }
-
-    /*--- Add the viscous terms if necessary. ---*/
-
-    if (viscous) {
-
-      su2double laminar_viscosity_i    = V_i[nDim+5];
-      su2double eddy_viscosity_i       = V_i[nDim+6];
-      su2double thermal_conductivity_i = V_i[nDim+7];
-      su2double heat_capacity_cp_i     = V_i[nDim+8];
-
-      su2double total_viscosity_i = laminar_viscosity_i + eddy_viscosity_i;
-      su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
-
-      residual[0] -= 0.0;
-      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][1]
-                                                    - TWO3*PrimVar_Grad_i[2][0]);
-      residual[2] -= yinv*Volume*total_viscosity_i*(2*(PrimVar_Grad_i[2][1]-Velocity2_i*yinv)
-                                                    - TWO3*PrimVar_Grad_i[2][1]-FOUR3*Velocity2_i*yinv);
-      residual[3] -= yinv*Volume*(total_viscosity_i*(Velocity1_i*(PrimVar_Grad_i[1][1]
-                                                                  + ONE3*PrimVar_Grad_i[2][0])
-                                                                  - FOUR3*Velocity2_i*PrimVar_Grad_i[1][0]) 
-                                  + total_conductivity_i*PrimVar_Grad_i[0][1]);
     }
 
   }

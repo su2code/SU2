@@ -1865,8 +1865,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else if (config->GetAxisymmetric() == YES) {
         if (incompressible)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncAxisymmetric_Flow(nDim, nVar_Flow, config);
-        if (config->GetKind_FluidModel() == 0)
-          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGeneralAxisymmetric_Flow(nDim, nVar_Flow, config);
         else
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
       }
