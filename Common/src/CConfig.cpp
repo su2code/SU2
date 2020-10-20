@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -3553,6 +3553,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  //TODO UPDATE THIS
   if (nemo){
     if (Kind_ConvNumScheme_Flow == SPACE_CENTERED || Kind_Upwind_Flow == ROE || Kind_Upwind_Flow == MSW || Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("Only AUSM and AUSMPLUSUP2 upwind schemes are operational for NEMO. Feel free to fix the others!", CURRENT_FUNCTION);
@@ -4807,9 +4808,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check the conductivity model. Deactivate the turbulent component
    if we are not running RANS. ---*/
 
-  if ((Kind_Solver != RANS) &&
+  if ((Kind_Solver != RANS) && (Kind_Solver != NEMO_RANS) &&
       (Kind_Solver != ADJ_RANS) &&
-      (Kind_Solver != DISC_ADJ_RANS) &&
+      (Kind_Solver != DISC_ADJ_RANS) && (Kind_Solver != DISC_ADJ_NEMO_RANS) &&
       (Kind_Solver != INC_RANS) &&
       (Kind_Solver != DISC_ADJ_INC_RANS)){
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
@@ -4906,6 +4907,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
+      case NEMO_EULER:
+        Kind_Solver = DISC_ADJ_NEMO_EULER;
+        break;
+      case NEMO_RANS:
+        Kind_Solver = DISC_ADJ_NEMO_RANS;
+        break;
+      case NEMO_NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_NEMO_NAVIER_STOKES;
+        break;
       case HEAT_EQUATION:
         Kind_Solver = DISC_ADJ_HEAT;
         break;
@@ -4973,9 +4983,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    (Kind_Solver == EULER) ||
                    (Kind_Solver == NAVIER_STOKES) ||
                    (Kind_Solver == RANS) ||
+                   (Kind_Solver == NEMO_EULER) ||
+                   (Kind_Solver == NEMO_NAVIER_STOKES) ||
+                   (Kind_Solver == NEMO_RANS) ||
                    (Kind_Solver == DISC_ADJ_EULER) ||
                    (Kind_Solver == DISC_ADJ_RANS) ||
                    (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+                   (Kind_Solver == DISC_ADJ_NEMO_EULER) ||
+                   (Kind_Solver == DISC_ADJ_NEMO_RANS) ||
+                   (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) ||
                    (Kind_Solver == DISC_ADJ_INC_EULER) ||
                    (Kind_Solver == DISC_ADJ_INC_RANS) ||
                    (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
@@ -5551,8 +5567,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
       case RANS:     case DISC_ADJ_RANS:
-      case INC_RANS: case DISC_ADJ_INC_RANS:
-      case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case INC_RANS:  case DISC_ADJ_INC_RANS:
+      case FEM_RANS:  case DISC_ADJ_FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -5579,18 +5595,35 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
-      case NEMO_EULER:
+      case NEMO_EULER: case DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
-      case NEMO_NAVIER_STOKES: 
+      case NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){  
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+        }
+        break;
+      case NEMO_RANS: case DISC_ADJ_NEMO_RANS:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
+        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+          if ((GasModel != "N2") && (GasModel != "AIR-5"))
+            SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+        }
+        cout << "Turbulence model: ";
+        switch (Kind_Turb_Model) {
+          case SA:        cout << "Spalart Allmaras" << endl; break;
+          case SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
+          case SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
+          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
+          case SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case SST:       cout << "Menter's SST"     << endl; break;
+          case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         break;
       case FEM_LES:
@@ -6113,7 +6146,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
 
         if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||

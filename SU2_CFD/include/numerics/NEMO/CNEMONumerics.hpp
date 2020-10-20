@@ -44,6 +44,7 @@ public:
   unsigned short nPrimVar, nPrimVarGrad;
 
   su2double* Flux = nullptr;            /*!< \brief The flux / residual across the edge. */
+  su2double *mF_s = nullptr;
 
   unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
   

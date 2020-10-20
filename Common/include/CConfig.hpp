@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CConfig.hpp
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
@@ -3661,9 +3661,10 @@ public:
     switch (Kind_Solver) {
       case EULER : case NAVIER_STOKES: case RANS:
       case INC_EULER : case INC_NAVIER_STOKES: case INC_RANS:
-      case NEMO_EULER : case NEMO_NAVIER_STOKES:
+      case NEMO_EULER : case NEMO_NAVIER_STOKES: case NEMO_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_NEMO_EULER : case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
         return true;
       default:
         return false;
