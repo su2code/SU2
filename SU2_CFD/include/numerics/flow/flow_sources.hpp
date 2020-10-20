@@ -83,6 +83,33 @@ public:
 };
 
 /*!
+ * \class CSourceGeneralAxisymmetric_Flow
+ * \brief Class for source term for solving axisymmetric problems for a general (non ideal) fluid.
+ * \ingroup SourceDiscr
+ * \author F. Dittmann
+ */
+class CSourceGeneralAxisymmetric_Flow final : public CSourceBase_Flow {
+  bool implicit, viscous;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceGeneralAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
+
+/*!
  * \class CSourceIncAxisymmetric_Flow
  * \brief Class for source term for solving incompressible axisymmetric problems.
  * \ingroup SourceDiscr
