@@ -75,7 +75,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
     /*--- Inviscid component of the source term. ---*/
-	
+
     residual[0] = yinv*Volume*U_i[2];
     residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
     residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
@@ -107,8 +107,8 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
           jacobian[iVar][jVar] *= yinv*Volume;
 
     }
-	
-	/*--- Add the viscous terms if necessary. ---*/
+
+    /*--- Add the viscous terms if necessary. ---*/
 
     if (viscous) {
 
