@@ -194,9 +194,6 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
   /*--- function must be modified when wall functions are implemented.     ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* The number of bytes to copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
   const unsigned short nPadInput  = config->GetSizeMatMulPadding();
@@ -467,7 +464,8 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
               for(unsigned short i=0; i<nDOFsFace; ++i) {
                 const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
                 su2double       *sol    = solCopy + NPad*i + llNVar;
-                memcpy(sol, solDOF, nBytes);
+                for(unsigned short mm=0; mm<nVar; ++mm)
+                  sol[mm] = solDOF[mm];
               }
             }
 
@@ -485,7 +483,8 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
               for(unsigned short i=0; i<nDOFsElem; ++i) {
                 const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[lll].DOFsSolElement[i];
                 su2double       *sol    = solCopy + NPad*i + llNVar;
-                memcpy(sol, solDOF, nBytes);
+                for(unsigned short mm=0; mm<nVar; ++mm)
+                  sol[mm] = solDOF[mm];
               }
             }
 
@@ -948,9 +947,6 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
@@ -1020,7 +1016,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
             /* Loop over the DOFs and copy the data. */
             const unsigned short llNVar = ll*nVar;
             for(unsigned short i=0; i<nDOFs; ++i)
-              memcpy(solDOFs+i*NPad+llNVar, sol+i*nVar, nBytes);
+              for(unsigned short mm=0; mm<nVar; ++mm)
+                solDOFs[i*NPad+llNVar+mm] =  sol[i*nVar+mm];
           }
 
           /* Call the general function to carry out the matrix product to determine
@@ -3193,9 +3190,6 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
@@ -3249,7 +3243,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
       /* Loop over the DOFs and copy the data. */
       const unsigned short llNVar = ll*nVar;
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(solDOFs+i*NPad+llNVar, solDOFsElem+i*nVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          solDOFs[i*NPad+llNVar+mm] = solDOFsElem[i*nVar+mm];
     }
 
     /* Call the general function to carry out the matrix product to determine
@@ -3735,7 +3730,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
       /* Loop over the DOFs and copy the data. */
       for(unsigned short i=0; i<nDOFs; ++i)
-        memcpy(res+i*nVar, solDOFs+i*NPad+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+           res[i*nVar+mm] = solDOFs[i*NPad+llNVar+mm];
     }
 
     /* Update the value of the counter l to the end index of the
@@ -3759,9 +3755,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
   /* Determine the minimum padded size in the matrix multiplications, which
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
-
-  /* Set the number of bytes that must be copied in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Loop over the requested range of matching faces. Multiple faces
         are treated simultaneously to improve the performance of the matrix
@@ -3864,7 +3857,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
         const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                                 + nVar*(DOFsElem[i] - offset);
         su2double       *sol    = solElem + NPad*i + llNVar;
-        memcpy(sol, solDOF, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          sol[mm] = solDOF[mm];
       }
     }
 
@@ -3937,7 +3931,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
         const su2double *solDOF = VecWorkSolDOFs[timeLevelFace].data()
                                 + nVar*(DOFsElem[i] - offset);
         su2double       *sol    = solElem + NPad*i + llNVar;
-        memcpy(sol, solDOF, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          sol[mm] = solDOF[mm];
       }
     }
 
@@ -4052,7 +4047,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
       /* Loop over the DOFs and copy the data for side 0. */
       for(unsigned short i=0; i<nDOFsFace0; ++i)
-        memcpy(resFace0+nVar*i, resSide0+NPad*i+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          resFace0[nVar*i+mm] = resSide0[NPad*i+llNVar+mm];
 
       /* If the number of DOFs on both sides is the same, then the residual
          of side 1 is obtained by simply negating the residual of side 0.
@@ -4064,10 +4060,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
       }
       else {
         for(unsigned short i=0; i<nDOFsFace1; ++i)
-          memcpy(resFace1+nVar*i, resSide1+NPad*i+llNVar, nBytes);
-
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-        resFace1[i] = -resFace1[i];
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resFace1[nVar*i+mm] = -resSide1[NPad*i+llNVar+mm];
       }
     }
 
@@ -4140,11 +4134,13 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
         /* Loop over the DOFs of the element and copy the data for side 0. */
         for(unsigned short i=0; i<nDOFsElem0; ++i)
-          memcpy(resElem0+nVar*i, solIntL+NPad*i+llNVar, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resElem0[nVar*i+mm] = solIntL[NPad*i+llNVar+mm];
 
         /* Loop over the DOFs of the element and copy the data for side 1. */
         for(unsigned short i=0; i<nDOFsElem1; ++i)
-          memcpy(resElem1+nVar*i, solIntR+NPad*i+llNVar, nBytes);
+          for(unsigned short mm=0; mm<nVar; ++mm)
+            resElem1[nVar*i+mm] = solIntR[NPad*i+llNVar+mm];
       }
     }
 
@@ -5146,9 +5142,6 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
 
@@ -5230,7 +5223,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
       for(unsigned short i=0; i<nDOFsElem; ++i) {
         const su2double *solDOF = VecWorkSolDOFs[timeLevel].data()
                                 + nVar*(surfElem[ll].DOFsSolElement[i] - offset);
-        memcpy(solElem+NPad*i+llNVar, solDOF, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          solElem[NPad*i+llNVar+mm] = solDOF[mm];
       }
     }
 
@@ -5596,7 +5590,8 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     /* Set the right state in the integration points to the left state, i.e.
        no boundary condition is applied for a supersonic outlet. */
-    memcpy(solIntR, solIntL, NPad*nInt*sizeof(su2double));
+    for(unsigned short mm=0; mm<(NPad*nInt); ++mm)
+      solIntR[mm] = solIntL[mm];
 
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
@@ -6225,9 +6220,6 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
                                              su2double          *viscosityInt,
                                              su2double          *kOverCvInt) {
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Compute the gradients of the conservative variables in the  ---*/
   /*---         integration points of the faces.                            ---*/
@@ -6253,7 +6245,8 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
       const su2double *solDOF = VecWorkSolDOFs[timeLevel].data()
                               + nVar*(DOFsElem[i] - offset);
       su2double       *sol    = solElem + NPad*i + llNVar;
-      memcpy(sol, solDOF, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        sol[mm] = solDOF[mm];
     }
   }
 
@@ -6422,9 +6415,6 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Get the required information from the standard element, which is the
         same for all faces considered. ---*/
   const unsigned short ind          = surfElem[0].indStandardElement;
@@ -6522,7 +6512,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
     /* Loop over the DOFs and copy the data. */
     for(unsigned short i=0; i<nDOFs; ++i)
-      memcpy(resFace+nVar*i, viscFluxes+NPad*i+llNVar, nBytes);
+      for(unsigned short mm=0; mm<nVar; ++mm)
+        resFace[nVar*i+mm] = viscFluxes[NPad*i+llNVar+mm];
   }
 
   /*------------------------------------------------------------------------*/
@@ -6572,7 +6563,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
       /* Loop over the DOFs of the element and copy the data. */
       for(unsigned short i=0; i<nDOFsElem; ++i)
-        memcpy(resElem+nVar*i, fluxes+NPad*i+llNVar, nBytes);
+        for(unsigned short mm=0; mm<nVar; ++mm)
+          resElem[nVar*i+mm] = fluxes[NPad*i+llNVar+mm];
     }
   }
 }
