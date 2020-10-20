@@ -45,7 +45,7 @@ def main():
     streamwise_periodic_cylinder.cfg_dir   = "incomp_navierstokes/streamwise_periodic/half_cylinder_2D"
     streamwise_periodic_cylinder.cfg_file  = "half_cylinder_2D.cfg"
     streamwise_periodic_cylinder.test_iter = 30
-    streamwise_periodic_cylinder.test_vals = [30, -7.818388, -6.797497, -6.968131] #last 4 lines
+    streamwise_periodic_cylinder.test_vals = [30.000000, -7.819176, -6.796437, -6.969024] #last 4 lines
     streamwise_periodic_cylinder.su2_exec  = "parallel_computation.py -f"
     streamwise_periodic_cylinder.timeout   = 1600
     streamwise_periodic_cylinder.tol       = 0.00001
