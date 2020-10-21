@@ -307,12 +307,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
-
-  /*--- Clip omega ---*/
-  // const su2double eps = numeric_limits<passivedouble>::epsilon();
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   for (auto iVar = 0; iVar < nVar; iVar++)
-  //     nodes->SetSolution(iPoint,iVar,max(nodes->GetSolution(iPoint,iVar), eps));
   
   SetPrimitive_Variables(solver);
   
@@ -545,8 +539,9 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
 
   const su2double factor = 2.0*(1. - F1)*sigma_om2*r_i/om_i*Vol;
   
-  /*--- Reset first row of Jacobian now so we don't need to later ---*/
+  /*--- Reset Jacobian i and first row of Jacobian j now so we don't need to later ---*/
   Jacobian_i[0][0] = 0.; Jacobian_i[0][1] = 0.;
+  Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
   Jacobian_j[0][0] = 0.; Jacobian_j[0][1] = 0.;
 
   /*--------------------------------------------------------------------------*/
@@ -570,7 +565,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
         }// iVertex
       }// not send-receive
     }// iMarker
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
   }// if physical boundary
   
   /*--------------------------------------------------------------------------*/
@@ -583,8 +577,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     const unsigned long jPoint = node_i->GetPoint(iNeigh);
     const unsigned long iEdge = node_i->GetEdge(iNeigh);
     const su2double r_j  = flowNodes->GetDensity(jPoint);
-
-    Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
+    
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
     su2double gradWeights[MAXNDIM] = {0.0};
@@ -598,9 +591,10 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
       Jacobian_j[1][1] += factor*gradk[iDim]*gradWeights[iDim]/r_j;
     }// iDim
     
-    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
   }// iNeigh
+
+  Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
   AD::EndPassive(wasActive);
   

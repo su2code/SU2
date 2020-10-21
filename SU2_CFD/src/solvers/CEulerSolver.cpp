@@ -3734,7 +3734,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     Jacobian.SubtractBlock(jPoint, kPoint, Jacobian_j);
   }
 
-  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+  Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
   Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
 
   AD::EndPassive(wasActive);
