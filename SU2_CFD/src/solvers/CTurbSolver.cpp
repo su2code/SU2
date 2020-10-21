@@ -95,8 +95,6 @@ CTurbSolver::~CTurbSolver(void) {
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool muscl = config->GetMUSCL_Turb();
-
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
   const bool sa_neg = (turbModel == SA_NEG);
@@ -148,8 +146,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     // bool good_i = true, good_j = true;
     bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool good_edge = good_i || good_j;
-    if (muscl && good_edge) {
+    bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
+    if (muscl) {
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
                                          turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
 
@@ -167,8 +165,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
-      // good_edge = good_i && good_j;
-      good_edge = good_i || good_j;
+      // muscl = good_i && good_j;
+      muscl = good_i || good_j;
     }
     else {
       for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
@@ -199,7 +197,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (muscl && kappa && good_edge) {
+      if (muscl && kappa) {
         const su2double rho_i = good_i ? flowPrimVar_i[nDim+2] : V_i[nDim+2],
                         rho_j = good_j ? flowPrimVar_j[nDim+2] : V_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,

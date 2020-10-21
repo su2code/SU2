@@ -3091,7 +3091,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool low_mach_corr    = config->Low_Mach_Correction();
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
-  const bool muscl       = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const auto turb_model  = config->GetKind_Turb_Model();
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
@@ -3155,7 +3154,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     // bool good_i = true, good_j = true;
     bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool good_edge = good_i || good_j;
+    bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
@@ -3185,8 +3184,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         good_j = (tke_j >= 0.0);
       }
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
-      // good_edge = good_i && good_j;
-      good_edge = good_i || good_j;
+      // muscl = good_i && good_j;
+      muscl = good_i || good_j;
 
       counter_local += (!good_i+!good_j);
 
@@ -3252,7 +3251,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Set implicit computation ---*/
       if (implicit) {
-        if (muscl && kappa && good_edge) {
+        if (muscl && kappa) {
           su2double *primvar_i = good_i ? Primitive_i : V_i,
                     *primvar_j = good_j ? Primitive_j : V_j;
           SetExtrapolationJacobian(solver, geometry, config,
@@ -3371,6 +3370,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
   const su2double Kappa = config->GetMUSCL_Kappa();
+  const su2double eps   = numeric_limits<passivedouble>::epsilon();
 
   /*--- Reconstruct flow primitive variables. ---*/
 
@@ -3464,7 +3464,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         Project_Grad_j *= Limiter_j[iVar];
       }
       else {
-        const su2double eps    = numeric_limits<passivedouble>::epsilon();
         const su2double sign_i = 1.0-2.0*(Project_Grad_i < 0);
         const su2double sign_j = 1.0-2.0*(Project_Grad_j < 0);
         Limiter_i[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*T_ij/(Project_Grad_i+eps*sign_i));
