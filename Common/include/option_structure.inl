@@ -1999,6 +1999,7 @@ public:
         case LOGARITHMIC_WALL_MODEL:
         case ALGEBRAIC_WALL_MODEL:
         case APGLL_WALL_MODEL:
+        case TEMPLATE_WALL_MODEL:
           counter += 3; break;
         default: break;
       }
@@ -2050,6 +2051,7 @@ public:
 
         case APGLL_WALL_MODEL:
         case ALGEBRAIC_WALL_MODEL:
+        case TEMPLATE_WALL_MODEL:
         case LOGARITHMIC_WALL_MODEL:
         case EQUILIBRIUM_WALL_MODEL: {
 

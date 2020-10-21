@@ -210,6 +210,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           case APGLL_WALL_MODEL:
             WallModel = new CWallModelAPGLL(config,WallFunctionsMarker_[0]);
             break;
+          case TEMPLATE_WALL_MODEL:
+            WallModel = new CWallModelTemplate(config,WallFunctionsMarker_[0]);
+          break;
 
           default:
             break;
@@ -2691,7 +2694,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
   bool CalculateWallModel = false;
 
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
-  su2double GradP[3], GradP_Normal, GradP_Tang[3], GradP_TangMod;
+  su2double GradP[3], GradP_TangMod;
   su2double T_Normal, P_Normal, mu_Normal;
   su2double *Coord, *Coord_Normal, UnitNormal[3], *Normal, Area;
   su2double TimeFilter = config->GetDelta_UnstTimeND()/ (config->GetTimeFilter_WMLES() / config->GetTime_Ref());
@@ -2710,6 +2713,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        case LOGARITHMIC_WALL_MODEL:
        case ALGEBRAIC_WALL_MODEL:
        case APGLL_WALL_MODEL:
+       case TEMPLATE_WALL_MODEL:
          CalculateWallModel = true;
          break;
 
@@ -2835,7 +2839,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
          for (iDim = 0; iDim < nDim; iDim++){
            Vel_old[iDim]   = VelTimeFilter_WMLES[iMarker][iVertex][iDim];
          }
-         /*--- Now filter the LES velocity and GradP ---*/
+         /*--- Now filter the LES velocity ---*/
          for (iDim = 0; iDim < nDim; iDim++){
            Vel[iDim] = (1.0 - TimeFilter) * Vel_old[iDim] + TimeFilter * Vel[iDim];
          }
