@@ -555,8 +555,10 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   if (gg && node_i->GetPhysicalBoundary()) {
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-    Jacobian_i[1][0] = factor*gradom[iDim]*gradWeight[iDim]/Vol;
-    Jacobian_i[1][1] = factor*gradk[iDim]*gradWeight[iDim]/Vol;
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      Jacobian_i[1][0] += factor*gradom[iDim]*gradWeight[iDim]/Vol;
+      Jacobian_i[1][1] += factor*gradk[iDim]*gradWeight[iDim]/Vol;
+    }
   }// if physical boundary
   
   /*--------------------------------------------------------------------------*/
@@ -575,11 +577,11 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[1][0] += factor*gradom[iDim]*gradWeights[iDim]/r_i*sign_grad_i;
-      Jacobian_j[1][0] += factor*gradom[iDim]*gradWeights[iDim]/r_j;
+      Jacobian_i[1][0] += factor*gradom[iDim]*gradWeight[iDim]/r_i*sign_grad_i;
+      Jacobian_j[1][0] += factor*gradom[iDim]*gradWeight[iDim]/r_j;
 
-      Jacobian_i[1][1] += factor*gradk[iDim]*gradWeights[iDim]/r_i*sign_grad_i;
-      Jacobian_j[1][1] += factor*gradk[iDim]*gradWeights[iDim]/r_j;
+      Jacobian_i[1][1] += factor*gradk[iDim]*gradWeight[iDim]/r_i*sign_grad_i;
+      Jacobian_j[1][1] += factor*gradk[iDim]*gradWeight[iDim]/r_j;
     }// iDim
     
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
