@@ -3401,26 +3401,14 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
           Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
           break;
       }
-
-      /*--- Limit projection ---*/
-
-      Project_Grad_i *= Limiter_i[iVar];
-      Project_Grad_j *= Limiter_j[iVar];
-      
     }
     else {
-      const su2double eps    = numeric_limits<passivedouble>::epsilon();
-      const su2double sign_i = 1.0-2.0*(Project_Grad_i < 0);
-      const su2double sign_j = 1.0-2.0*(Project_Grad_j < 0);
-      Limiter_i[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*V_ij/(Project_Grad_i+eps*sign_i));
-      Limiter_j[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*V_ij/(Project_Grad_j+eps*sign_j));
-
-      Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*V_ij);
-      Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*V_ij);
+      Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa);
+      Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa);
     }
 
-    primvar_i[iVar] = V_i[iVar] + Project_Grad_i;
-    primvar_j[iVar] = V_j[iVar] - Project_Grad_j;
+    primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Limiter_i[iVar];
+    primvar_j[iVar] = V_j[iVar] - Project_Grad_j*Limiter_j[iVar];
   }
 
   /*--- Reconstruct turbulent primitive variables. ---*/
@@ -3457,24 +3445,14 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
             break;
         }
-
-        /*--- Limit projection ---*/
-
-        Project_Grad_i *= Limiter_i[iVar];
-        Project_Grad_j *= Limiter_j[iVar];
       }
       else {
-        const su2double sign_i = 1.0-2.0*(Project_Grad_i < 0);
-        const su2double sign_j = 1.0-2.0*(Project_Grad_j < 0);
-        Limiter_i[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*T_ij/(Project_Grad_i+eps*sign_i));
-        Limiter_j[iVar] = 0.5*((1.0-Kappa) + (1.0+Kappa)*T_ij/(Project_Grad_j+eps*sign_j));
-
-        Project_Grad_i = 0.5*((1.0-Kappa)*Project_Grad_i + (1.0+Kappa)*T_ij);
-        Project_Grad_j = 0.5*((1.0-Kappa)*Project_Grad_j + (1.0+Kappa)*T_ij);
+        Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa);
+        Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa);
       }
 
-      turbvar_i[iVar] = T_i[iVar] + Project_Grad_i;
-      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j;
+      turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Limiter_i[iVar];
+      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Limiter_j[jVar];
 
     }
   }
