@@ -1378,38 +1378,19 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetMu_SND(config->GetMu_S());
     config->SetMu_ConstantND(config->GetMu_Constant());
 
-    /*--- Reynolds based initialization ---*/
-    if (reynolds_init) {
-
-      /*--- First, check if there is mesh motion. If yes, use the Mach
-         number relative to the body to initialize the flow. ---*/
-
-      if (dynamic_grid) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
-      else Velocity_Reynolds = ModVel_FreeStream;
-
-      /*--- For viscous flows, pressure will be computed from a density
-            that is found from the Reynolds number. The viscosity is computed
-            from the dimensional version of Sutherland's law or the constant
-            viscosity, depending on the input option.---*/
-
-      // THIS NEEDS TO BE REVISITED
-      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
-      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
-      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
-
-      config->SetViscosity_FreeStream(Viscosity_FreeStream);
-      config->SetPressure_FreeStream(Pressure_FreeStream);
-    }
-
-    else {
+    if (!reynolds_init) {
 
       /*--- Thermodynamics quantities based initialization ---*/
-      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
-      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
-      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
+      Viscosity_FreeStream = FluidModel->GetViscosity();
+      Energy_FreeStream    = energies[0] + 0.5*sqvel;
+   
+    } else {
+
+      /*--- Reynolds based initialization not present in NEMO ---*/
+      SU2_MPI::Error("Only thermodynamics quantities based initialization: set pressure, temperatures and flag INIT_OPTION= TD_CONDITIONS." , CURRENT_FUNCTION);
     }
+
+    config->SetViscosity_FreeStream(Viscosity_FreeStream);
 
     /*--- Turbulence kinetic energy ---*/
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
@@ -1533,9 +1514,15 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     cout.precision(6);
 
     if (viscous) {
-      cout << "Viscous flow: Computing pressure using the equation of state for multi-species and multi-temperatures." << endl;
-      cout << "based on the free-stream temperatures and a density computed" << endl;
-      cout << "from the Reynolds number." << endl;
+      if (reynolds_init){
+        cout << "Viscous flow: Computing pressure using the equation of state for multi-species and multi-temperatures" << endl;
+        cout << "based on the free-stream temperatures and a density computed" << endl;
+        cout << "from the Reynolds number." << endl;
+      }
+      else{
+        cout << "Viscous flow: Computing density using the equation of state for multi-species and multi-temperatures" << endl;
+        cout << "based on the free-stream temperatures and pressure." << endl;
+      }
     } else {
       cout << "Inviscid flow: Computing density based on free-stream" << endl;
       cout << "and pressure using the the equation of state for multi-species and multi-temperatures." << endl;
@@ -1573,19 +1560,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
       ModelTable << "Wilke-Blottner-Eucken ";
-        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2.";
-        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2.";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
-        Unit.str("");
         NonDimTable.PrintFooter();
         break;
 
       case GUPTAYOS:
         ModelTable << "Gupta-Yos";
-        if      (config->GetSystemMeasurements() == SI) Unit << " N.s/m^2." ;
-        else if (config->GetSystemMeasurements() == US) Unit << " lbf.s/ft^2.";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
-        Unit.str("");
         NonDimTable.PrintFooter();
         break;
 
@@ -1655,10 +1634,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
       NonDimTable << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
-      Unit.str("");
-      if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
-      else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
       Unit.str("");
       if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
