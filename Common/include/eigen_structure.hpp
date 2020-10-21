@@ -36,3 +36,6 @@ using MatrixType = Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic>;
 using QRdecomposition = Eigen::ColPivHouseholderQR<MatrixType>;
 
 using VectorType = Eigen::Matrix<su2double, Eigen::Dynamic, 1>;
+
+// define the output format you want, you only need one instance of this...
+const static Eigen::IOFormat CSVFormat(15, 0, ", ", "\n");

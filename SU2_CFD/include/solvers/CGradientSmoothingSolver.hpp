@@ -28,6 +28,8 @@
 #pragma once
 
 #include "CSolver.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../../../Common/include/gradient_projection.hpp"
 
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
@@ -45,15 +47,27 @@ public:
   su2double **mZeros_Aux  = nullptr;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
   su2double **mId_Aux = nullptr;             /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
 
-  unsigned short dir;             /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
+  unsigned short dir;                        /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
-  CSysVector<su2double> auxVecInp; /*!< \brief Auxiliar vectors for output and debugging */
-  CSysVector<su2double> auxVecRHS; /*!< \brief Auxiliar vectors for output and debugging */
-  CSysVector<su2double> auxVecOut; /*!< \brief Auxiliar vectors for output and debugging */
+  CSysVector<su2double> auxVecInp;           /*!< \brief Auxiliar vectors for output and debugging */
 
-  CVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CSysVector<su2double> activeCoord;         /*!< \brief Auxiliar vector to keep the indeces of geometry->vertex->Coord */
 
-  std::vector<su2double> deltaP; /*!< \brief The smoothed gradient with respect to the design variables. */
+  #ifndef CODI_FORWARD_TYPE
+    CSysVector<su2mixedfloat> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
+    CSysVector<su2mixedfloat> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
+    CSysVector<su2mixedfloat> matVecIn;      /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+    CSysVector<su2mixedfloat> matVecOut;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+  #else
+    CSysVector<su2double> helperVecIn;
+    CSysVector<su2double> helperVecOut;
+    CSysVector<su2mixedfloat> matVecIn;      /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+    CSysVector<su2mixedfloat> matVecOut;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+  #endif
+
+  CVariable* nodes = nullptr;                /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+
+  std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
 
   /*!
@@ -73,12 +87,12 @@ public:
   ~CGradientSmoothingSolver(void);
 
   /*!
-   * \brief Main routine for applying the solver
+   * \brief Main routine for applying the solver on the volume sensitivities
    */
-  void ApplyGradientSmoothing(CGeometry *geometry,
-                              CSolver *solver,
-                              CNumerics **numerics,
-                              CConfig *config);
+  void ApplyGradientSmoothingVolume(CGeometry *geometry,
+                                    CSolver *solver,
+                                    CNumerics **numerics,
+                                    CConfig *config);
 
   /*!
    * \brief Assemble the stiffness matrix
@@ -146,9 +160,10 @@ public:
   }
 
   /*!
-   * \brief Main routine to apply the method only on the surface
+   * \brief Main routine to apply the method only on the surface for mesh sensitivities
+   *        Projects and smoothes only in the normal direction!
    */
-  void ApplyGradientSmoothingOnSurface(CGeometry *geometry,
+  void ApplyGradientSmoothingSurface(CGeometry *geometry,
                                        CSolver *solver,
                                        CNumerics **numerics,
                                        CConfig *config,
@@ -160,7 +175,8 @@ public:
   void Compute_Surface_StiffMatrix(CGeometry *geometry,
                                    CNumerics **numerics,
                                    CConfig *config,
-                                   unsigned long val_marker);
+                                   unsigned long val_marker,
+                                   unsigned short nSurfDim=1);
 
   /*!
    * \brief Compute the RHS of the PDE on the surface mesh
@@ -237,9 +253,8 @@ public:
    * \brief calculate the original DV gradient similar to SU2_DOT_AD
    */
   void CalculateOriginalGradient(CGeometry *geometry,
-                                 CConfig *config,
                                  CVolumetricMovement* grid_movement,
-                                 su2double *param_jacobi);
+                                 CConfig *config);
 
   /*!
    * \brief read or write the surface sensitivity into an Eigen vector
@@ -248,15 +263,6 @@ public:
                                      CConfig *config,
                                      VectorType& x,
                                      bool write);
-
-  /*!
-   * \brief Smooth the system by solving each LES in consecutive order
-   */
-  void SmoothConsecutive(CGeometry *geometry,
-                         CSolver *solver,
-                         CNumerics **numerics,
-                         CConfig *config,
-                         su2double *param_jacobi);
 
   /*!
    * \brief Return the stiffness matrix
@@ -282,5 +288,21 @@ public:
                             CConfig *config,
                             CVolumetricMovement* grid_movement,
                             su2double *param_jacobi);
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level
+   *        New layout for SmoothCompleteSystem + projections
+   */
+  void ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement);
+
+  /*!
+   * \brief Get the matrix vector product with the StiffnessMatrix
+   */
+  CSysMatrixVectorProduct<su2mixedfloat> GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Copy sensitivities from nodes to a vector
+   */
+  void WriteSens2Vector(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
 
 };

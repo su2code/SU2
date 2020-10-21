@@ -160,7 +160,6 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
 
 /* development comments:
  * Call the AD routine with the help of tape forward evalution to get the Jacobian
- * TODO: Fix Bug resulting in wrong derivatives and test speed.
  * 13.05.2020 T. Dick
  */
 void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
@@ -169,7 +168,6 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iMarker, iVertex, iDim;
   su2double* VarCoord;
   su2double** DV_Value;
-  double localGradient;
 
   /*--- get information from config ---*/
   nMarker = config->GetnMarker_All();
@@ -224,7 +222,7 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
   iDV_index = 0;
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
-    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++) {
 
       SU2_TYPE::SetDerivative(DV_Value[iDV][iDV_Value], 1.0);
 
@@ -234,15 +232,15 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
       for (iMarker = 0; iMarker < nMarker; iMarker++) {
         if (config->GetMarker_All_DV(iMarker) == YES) {
           nVertex = geometry->nVertex[iMarker];
-            for (iVertex = 0; iVertex <nVertex; iVertex++) {
-              VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-              for (iDim=0; iDim<nDim; iDim++) {
-                Jacobian[iDV_index*nPoint*nDim+iPoint*nDim+iDim] = AD::GetDerivativeValue(VarCoord[iDim]);
-              }
+          for (iVertex = 0; iVertex <nVertex; iVertex++) {
+            VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            for (iDim=0; iDim<nDim; iDim++) {
+              Jacobian[iDV_index*nPoint*nDim+iPoint*nDim+iDim] = AD::GetDerivativeValue(VarCoord[iDim]);
             }
           }
         }
+      }
 
       iDV_index++;
       AD::ClearAdjoints();
@@ -256,8 +254,8 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
 
 /* development comments:
  * Call the AD routine for each point to get the whole Jacobian
- * This method uses preaccumulation for faster evaluation.
- * 14.05.2020 T. Dick
+ * makes use of preaccumulation
+ * 31.01.2020 T. Dick
  */
 void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
@@ -417,19 +415,185 @@ void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *co
   AD::Reset();
 }
 
-/*
- * TODO: check if this is still used??
+
+/* development comments:
+ * Record a tape containing one evaluation of the parameterization.
+ * \date 19.10.2020
+ * \name T. Dick
  */
-MatrixType Cast2Eigenmatrix(CGeometry *geometry, CConfig *config, su2double *Jacobian) {
+void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord) {
 
-  unsigned nDV_Total = config->GetnDV_Total();
+  unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nVertex;
+  unsigned short iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
+  su2double* VarCoord;
+  su2double** DV_Value;
 
-  unsigned short nDim    = geometry->GetnDim();
-  unsigned long nPoint  = geometry->GetnPoint();
+  /*--- get information from config ---*/
+  nMarker = config->GetnMarker_All();
+  nDim    = geometry->GetnDim();
+  nPoint  = geometry->GetnPoint();
+  nDV     = config->GetnDV();
+  nDV_Total = config->GetnDV_Total();
 
-  Eigen::Map<Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Jacobi_eigen(&Jacobian[0], nDV_Total, nPoint*nDim);
+  /*--- Start recording of operations ---*/
 
-  MatrixType Jacobi_eigen_trans = Jacobi_eigen.transpose();
+  AD::Reset();
 
-  return Jacobi_eigen_trans;
+  AD::StartRecording();
+
+  /*--- Register design variables as input and set them to zero
+   * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
+
+  DV_Value = config->GetDV_Pointer();
+  for (iDV = 0; iDV < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+
+      /*--- Initilization of su2double with 0.0 resets the index ---*/
+      DV_Value[iDV][iDV_Value] = 0.0;
+      AD::RegisterInput(DV_Value[iDV][iDV_Value]);
+
+    }
+  }
+
+  /*--- Call the surface deformation routine ---*/
+
+  surface_movement->SetSurface_Deformation(geometry, config);
+
+  /*--- Register Outputs --- */
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      nVertex = geometry->nVertex[iMarker];
+      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim=0; iDim<nDim; iDim++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          registeredCoord(iPoint,iDim) = VarCoord[iDim];
+        }
+      }
+    }
+  }
+  for (iPoint = 0; iPoint<nPoint; iPoint++) {
+    for (iDim=0; iDim<nDim; iDim++) {
+      AD::RegisterOutput(registeredCoord(iPoint,iDim));
+    }
+  }
+
+  /*--- Stop the recording --- */
+  AD::StopRecording();
+
 }
+
+
+/* development comments:
+ * Evaluate the derivatives of the parameterization in tape forward mode.
+ * \date 19.10.2020
+ * \name T. Dick
+ */
+void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result) {
+
+  unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
+  unsigned short iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
+  su2double* VarCoord;
+  su2double** DV_Value = config->GetDV_Pointer();
+
+  /*--- get information from config ---*/
+  nMarker = config->GetnMarker_All();
+  nDim    = geometry->GetnDim();
+  nDV     = config->GetnDV();
+
+  /*--- Seeding for the DV. --*/
+  iDV_index = 0;
+  for (iDV = 0; iDV  < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      SU2_TYPE::SetDerivative(DV_Value[iDV][iDV_Value], SU2_TYPE::GetValue(seeding[iDV_index]));
+      iDV_index++;
+    }
+  }
+
+  AD::ComputeAdjointForward();
+
+  /*--- Extract sensitivities ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      nVertex = geometry->nVertex[iMarker];
+      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim=0; iDim<nDim; iDim++) {
+          result(iPoint,iDim) = AD::GetDerivativeValue(VarCoord[iDim]);
+        }
+      }
+    }
+  }
+
+  AD::ClearAdjoints();
+
+}
+
+/* development comments:
+ * Evaluate the derivatives of the parameterization in reverse mode.
+ * \date 19.10.2020
+ * \name T. Dick
+ */
+void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output) {
+
+  /*--- Part 1: adjoint volumetric mesh deformation, if needed ---*/
+  if (true) {
+
+  }
+
+  /*--- Part 2: adjoint surface deformation ---*/
+
+  unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
+  unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
+  su2double* VarCoord;
+  su2double DV_Value;
+  double my_Gradient, localGradient;
+
+  // get some numbers from config
+  nMarker = config->GetnMarker_All();
+  nDim    = geometry->GetnDim();
+  nDV     = config->GetnDV();
+
+  /*--- Set the seeding appropriately ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      nVertex = geometry->nVertex[iMarker];
+      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+        VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        if (iPoint == geometry->vertex[iMarker][iVertex]->GetNode()) {
+          for (iDim = 0; iDim < nDim; iDim++){
+            SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(sensitivity(iPoint,iDim)));
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Compute derivatives and extract gradient ---*/
+  AD::ComputeAdjoint();
+
+  iDV_index = 0;
+  for (iDV = 0; iDV  < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      DV_Value = config->GetDV_Value(iDV, iDV_Value);
+      my_Gradient = AD::GetDerivativeValue(DV_Value);
+      #ifdef HAVE_MPI
+        SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      #else
+        localGradient = my_Gradient;
+      #endif
+      output[iDV_index] = localGradient;
+      iDV_index++;
+    }
+  }
+
+  AD::ClearAdjoints();
+
+}
+
+
+

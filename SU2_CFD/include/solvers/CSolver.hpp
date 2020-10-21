@@ -4523,12 +4523,10 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] grid_movement - Definition of the grid deformation.
-   * \oaram[in] param_jacobian - Jacobian of the surface mesh parameterization.
    */
   virtual void CalculateOriginalGradient(CGeometry *geometry,
-                                         CConfig *config, CVolumetricMovement* grid_movement,
-                                         su2double *param_jacobi) { }
+                                         CVolumetricMovement* grid_movement,
+                                         CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4537,10 +4535,10 @@ public:
    * \param[in] numerics - the numerics for this problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ApplyGradientSmoothing(CGeometry *geometry,
-                                      CSolver *solver,
-                                      CNumerics **numerics,
-                                      CConfig *config) { }
+  virtual void ApplyGradientSmoothingVolume(CGeometry *geometry,
+                                            CSolver *solver,
+                                            CNumerics **numerics,
+                                            CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4550,20 +4548,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    *
    */
-  virtual void ApplyGradientSmoothingOnSurface(CGeometry *geometry,
+  virtual void ApplyGradientSmoothingSurface(CGeometry *geometry,
                                                CSolver *solver,
                                                CNumerics **numerics,
                                                CConfig *config,
                                                unsigned long val_marker) { }
-
-  /*!
-   * \brief Smooth the system by solving each LES in consecutive order
-   */
-  virtual void SmoothConsecutive(CGeometry *geometry,
-                                 CSolver *solver,
-                                 CNumerics **numerics,
-                                 CConfig *config,
-                                 su2double *param_jacobi) { }
 
   /*!
    * \brief Smooth the system by multiplying out the whole system matrix and solving it
@@ -4574,6 +4563,18 @@ public:
                                     CConfig *config,
                                     CVolumetricMovement* grid_movement,
                                     su2double *param_jacobi) { }
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level
+   *        New layout for SmoothCompleteSystem + projections
+   */
+  virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
+                                        CSolver *solver,
+                                        CNumerics **numerics,
+                                        CConfig *config,
+                                        CSurfaceMovement *surface_movement,
+                                        CVolumetricMovement *grid_movement) { }
+
 
   /*!
    * \brief A virtual member.

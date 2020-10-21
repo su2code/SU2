@@ -179,6 +179,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   }
 
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  if (config->GetSmoothGradient()) {
+    Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  }
+
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
@@ -267,6 +272,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   LoadPoints(config, geometry);
   LoadVolumeElements(config, geometry);
   LoadSurfaceElements(config, geometry);
+
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  if (config->GetSmoothGradient()) {
+    Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  }
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 

@@ -2209,14 +2209,12 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
 enum ENUM_SOBOLEV_MODUS {
   NO_MODUS = 0,                    /*!< \brief Default option if none is choosen. */
   PARAM_LEVEL_COMPLETE   = 1,      /*!< \brief Operate on parameter level. */
-  PARAM_LEVEL_SEQUENTIAL = 2,      /*!< \brief Operate on parameter level, by giving out system sequentially. */
   MESH_LEVEL  = 3,                 /*!< \brief Operate on mesh level. */
   DEBUG = 4,                       /*!< \brief Special flag for debugging. */
 };
 static const map<string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
   MakePair("NONE", NO_MODUS)
   MakePair("PARAM_LEVEL_COMPLETE"  , PARAM_LEVEL_COMPLETE)
-  MakePair("PARAM_LEVEL_SEQUENTIAL", PARAM_LEVEL_SEQUENTIAL)
   MakePair("MESH_LEVEL" , MESH_LEVEL)
   MakePair("DEBUG" , DEBUG)
 };

@@ -62,7 +62,25 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
 void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian);
 
 /*!
- * \brief Cast2Eigenmatrix
- * \param Jacobian of the parameterization
+ * \brief Record a tape containing the parameter Jacobian.
+ * \param geometry
+ * \param config
+ * \param surface_movement
  */
-MatrixType Cast2Eigenmatrix(CGeometry *geometry, CConfig *config, su2double *Jacobian);
+void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CSysVector<su2double> &registeredCoord);
+
+/*!
+ * \brief Forward evaluate parameterization Jacobian.
+ * \param geometry
+ * \param config
+ * \param surface_movement
+ */
+void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result);
+
+/*!
+ * \brief Reverse evaluate parameterization Jacobian.
+ * \param geometry
+ * \param config
+ * \param surface_movement
+ */
+void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output);

@@ -601,19 +601,21 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if ( config->GetMarker_All_DV(iMarker) == YES ) {
-          solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingOnSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, iMarker);
+          solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, iMarker);
         }
       }
 
     } else {
-      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothing(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
     }
 
     /// After appling the solver write the results back
     solver[GRADIENT_SMOOTHING]->OutputSensitivity(geometry,solver,config);
 
   /*--- Apply the smoothing procedure on the DV level. ---*/
-  } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE || config->GetSobMode()==PARAM_LEVEL_SEQUENTIAL) {
+  } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
+
+    if (false) { // old version
 
     if (rank == MASTER_NODE)  cout << "  working on design variable level" << endl;
 
@@ -629,20 +631,15 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
     /// get the Jacobian of the parametrization for simplicity in the rest of the function
     GetParameterizationJacobianForward(geometry,config,surface_movement[ZONE_0], param_jacobi);
 
-    /// calculate the normal output gradient similar to SU2_DOT
-    solver[GRADIENT_SMOOTHING]->CalculateOriginalGradient(geometry, config, grid_movement[ZONE_0][INST_0], param_jacobi);
-
     /// calculate the whole equation system.
-    if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
-      solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, grid_movement[ZONE_0][INST_0], param_jacobi);
-
-      /// assemble the system sequentially.
-    } else if (config->GetSobMode()==PARAM_LEVEL_SEQUENTIAL) {
-      solver[GRADIENT_SMOOTHING]->SmoothConsecutive(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, param_jacobi);
-    }
+    solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, grid_movement[ZONE_0][INST_0], param_jacobi);
 
     /// Free used memory.
     delete [] param_jacobi;
+
+    } else { /// new layout for this
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
+    }
 
   /*--- warning if choose mode is unsupported. ---*/
   } else {
