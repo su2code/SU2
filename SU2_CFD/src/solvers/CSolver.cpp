@@ -3265,7 +3265,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
 void CSolver::SetSurfaceGradWeights_GG(su2double *gradWeight, const CGeometry *geometry, const CConfig *config, 
                                        const unsigned long iPoint) {
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
+  for (auto iDim = 0; iDim < nDim; iDim++)
     gradWeight[iDim] = 0.0;
 
   const su2double factor = -1.0/geometry->node[iPoint]->GetVolume();
