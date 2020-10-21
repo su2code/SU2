@@ -551,20 +551,12 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
   /*---         gradients do not have a surface term.                      ---*/
   /*--------------------------------------------------------------------------*/
 
+  su2double gradWeight[MAXNDIM] = {0.0};
   if (gg && node_i->GetPhysicalBoundary()) {
-    Jacobian_i[1][0] = 0.; Jacobian_i[1][1] = 0.;
-    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = node_i->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          for (auto iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_i[1][0] -= factor*gradom[iDim]*Normal[iDim]/Vol;
-            Jacobian_i[1][1] -= factor*gradk[iDim]*Normal[iDim]/Vol;
-          }// iDim
-        }// iVertex
-      }// not send-receive
-    }// iMarker
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
+
+    Jacobian_i[1][0] = factor*gradom[iDim]*gradWeight[iDim]/Vol;
+    Jacobian_i[1][1] = factor*gradk[iDim]*gradWeight[iDim]/Vol;
   }// if physical boundary
   
   /*--------------------------------------------------------------------------*/
@@ -580,8 +572,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
 
-    su2double gradWeights[MAXNDIM] = {0.0};
-    SetGradWeights(gradWeights, solver[TURB_SOL], geometry, config, iPoint, jPoint);
+    SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, jPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Jacobian_i[1][0] += factor*gradom[iDim]*gradWeights[iDim]/r_i*sign_grad_i;

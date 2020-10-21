@@ -3659,20 +3659,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   if (gg && node_i->GetPhysicalBoundary()) {
 
-    const su2double invVol = 1.0/node_i->GetVolume();
-    su2double gradWeightDotDist = 0.0;
-    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = node_i->GetVertex(iMarker);
-        if (iVertex != -1) {
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            gradWeight[iDim] = -geometry->vertex[iMarker][iVertex]->GetNormal()[iDim]*invVol;
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
-        }
-      }
-    }
+    su2double gradWeightDotDist = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
+    
     // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)

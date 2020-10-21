@@ -3262,6 +3262,24 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
 
 }
 
+void CSolver::SetSurfaceGradWeights_GG(su2double *gradWeight, const CGeometry *geometry, const CConfig *config, 
+                                       const unsigned long iPoint) {
+
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    gradWeight[iDim] = 0.0;
+
+  const su2double factor = -1.0/geometry->node[iPoint]->GetVolume();
+  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+      const long iVertex = node_i->GetVertex(iMarker);
+      if (iVertex != -1) {
+        for (auto iDim = 0; iDim < nDim; iDim++)
+          gradWeight[iDim] += factor*geometry->vertex[iMarker][iVertex]->GetNormal()[iDim];
+      }// iVertex
+    }// not send-receive
+  }// iMarker
+}
+
 void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   
   //--- communicate the solution values via MPI

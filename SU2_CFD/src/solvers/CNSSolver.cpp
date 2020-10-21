@@ -467,34 +467,27 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
   /*---         gradients do not have a surface term.                      ---*/
   /*--------------------------------------------------------------------------*/
 
+  su2double gradWeight[MAXNDIM] = {0.0};
   if (gg && node_i->GetPhysicalBoundary()) {
 
     for (auto iVar = 1; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
         Jacobian_i[iVar][jVar] = 0.0;
 
-    const su2double HalfOnVol = 0.5/node_i->GetVolume();
-    const su2double factor = -HalfOnVol*sign;
-    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = node_i->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-          /*--- Get projection to be multiplied by divergence terms ---*/
-          su2double diagTerm = 0.0;
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            diagTerm += Vec[iDim]*gradWeight[iDim];
+    /*--- Get projection to be multiplied by divergence terms ---*/
+    su2double diagTerm = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      diagTerm += Vec[iDim]*gradWeight[iDim];
 
-          /*--- Momentum flux Jacobian wrt momentum ---*/
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            for (auto jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[iDim+1][jDim+1] += factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
-                                          - TWO3*gradWeight[jDim]*Vec[iDim] 
-                                          + delta[iDim][jDim]*diagTerm);
-        }// iVertex
-      }// not send-receive
-    }// iMarker
+    /*--- Momentum flux Jacobian wrt momentum ---*/
+    const su2double factor = 0.5*sign;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      for (auto jDim = 0; jDim < nDim; jDim++)
+        Jacobian_i[iDim+1][jDim+1] += factor*Xi_i*(gradWeight[iDim]*Vec[jDim] 
+                                    - TWO3*gradWeight[jDim]*Vec[iDim] 
+                                    + delta[iDim][jDim]*diagTerm);
 
     /*--- Now get density and energy Jacobians for iPoint ---*/
     for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -520,7 +513,6 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const auto kPoint = node_i->GetPoint(iNeigh);
     const su2double Density_k = nodes->GetDensity(kPoint);
@@ -634,42 +626,35 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
   /*---         gradients do not have a surface term.                      ---*/
   /*--------------------------------------------------------------------------*/
 
+  su2double gradWeight[MAXNDIM] = {0.0};
   if (gg && node_i->GetPhysicalBoundary()) {
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       Jacobian_i[nVar-1][iVar] = 0.0;
 
-    const su2double HalfOnVol = 0.5/node_i->GetVolume();
-    for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
-        const long iVertex = node_i->GetVertex(iMarker);
-        if (iVertex != -1) {
-          const su2double *gradWeight = geometry->vertex[iMarker][iVertex]->GetNormal();
+    SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
-          su2double factor = 0.0;
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            factor += gradWeight[iDim]*Vec[iDim];
+    su2double factor = 0.0;
+    for (auto iDim = 0; iDim < nDim; iDim++)
+      factor += gradWeight[iDim]*Vec[iDim];
 
-          factor *= -HalfOnVol*ConductivityOnR*sign;
+    factor *= 0.5*ConductivityOnR*sign;
 
-          /*--- Density Jacobian ---*/
-          Jacobian_i[nVar-1][0] += factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
+    /*--- Density Jacobian ---*/
+    Jacobian_i[nVar-1][0] += factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
 
-          /*--- Momentum Jacobian ---*/
-          for (auto jDim = 0; jDim < nDim; jDim++)
-            Jacobian_i[nVar-1][jDim+1] -= factor*Phi_i*nodes->GetVelocity(iPoint,jDim);
+    /*--- Momentum Jacobian ---*/
+    for (auto jDim = 0; jDim < nDim; jDim++)
+      Jacobian_i[nVar-1][jDim+1] -= factor*Phi_i*nodes->GetVelocity(iPoint,jDim);
 
-          /*--- Energy Jacobian ---*/
-          Jacobian_i[nVar-1][nVar-1] += factor*Phi_i;
+    /*--- Energy Jacobian ---*/
+    Jacobian_i[nVar-1][nVar-1] += factor*Phi_i;
 
-          /*--- Tke term ---*/
-          if (tkeNeeded) {
-            factor *= tke_visc/ConductivityOnR;
-            Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i;
-          }
-        }// iVertex
-      }// not send-receive
-    }// iMarker
+    /*--- Tke term ---*/
+    if (tkeNeeded) {
+      factor *= tke_visc/ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i;
+    }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
@@ -681,7 +666,6 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
   /*---         neighbors on the current rank.                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2double gradWeight[MAXNDIM] = {0.0};
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
       
     const auto kPoint = node_i->GetPoint(iNeigh);

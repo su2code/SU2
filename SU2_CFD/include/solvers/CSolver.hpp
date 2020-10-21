@@ -796,6 +796,13 @@ public:
    */
   void SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeometry *geometry, const CConfig *config, 
                       const unsigned long iPoint, const unsigned long jPoint, const bool reconstruction = false);
+
+  /*!
+   * \brief Compute the weighting function of the Green-Gauss surface term to obtain an accurate Jacobian
+   *        for MUSCL extrapolation and viscous fluxes.
+   */
+  void SetSurfaceGradWeights_GG(su2double *gradWeight, const CGeometry *geometry, const CConfig *config, 
+                                const unsigned long iPoint);
   
   /*!
    * \brief Compute the Green-Gauss Hessian of the solution.
