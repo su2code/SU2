@@ -74,12 +74,12 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
     Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
-    /*--- Inviscid component of the source term. ---*/
-
     residual[0] = yinv*Volume*U_i[2];
     residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
     residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
     residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
+    
+    /*--- Inviscid component of the source term. ---*/
 
     if (implicit) {
       jacobian[0][0] = 0.0;
@@ -107,7 +107,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
           jacobian[iVar][jVar] *= yinv*Volume;
 
     }
-
+    
     /*--- Add the viscous terms if necessary. ---*/
 
     if (viscous) {
@@ -121,13 +121,11 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
 
       residual[0] -= 0.0;
-      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][1]
-                                                    - TWO3*PrimVar_Grad_i[2][0]);
-      residual[2] -= yinv*Volume*total_viscosity_i*(2*(PrimVar_Grad_i[2][1]-U_i[2]/U_i[0]*yinv)
-                                                    - TWO3*PrimVar_Grad_i[2][1]-FOUR3*U_i[2]/U_i[0]*yinv);
+      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+ONE3*PrimVar_Grad_i[2][0]);
+      residual[2] -= yinv*Volume*total_viscosity_i*FOUR3*(PrimVar_Grad_i[2][1]-U_i[2]/U_i[0]*yinv);
       residual[3] -= yinv*Volume*(total_viscosity_i*(U_i[1]/U_i[0]*(PrimVar_Grad_i[1][1]
-                                                                    + ONE3*PrimVar_Grad_i[2][0])
-                                                                    - FOUR3*U_i[2]/U_i[0]*PrimVar_Grad_i[1][0]) 
+                                                                    - TWO3*PrimVar_Grad_i[2][0])
+                                                    - FOUR3*U_i[2]/U_i[0]*(PrimVar_Grad_i[1][0]+PrimVar_Grad_i[2][1]))
                                   + total_conductivity_i*PrimVar_Grad_i[0][1]);
     }
 
@@ -152,7 +150,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 
 CSourceGeneralAxisymmetric_Flow::CSourceGeneralAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                           CSourceBase_Flow(val_nDim, val_nVar, config) {
-
+  
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
 
@@ -164,15 +162,15 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
   if (Coord_i[1] > EPS) {
 
     su2double yinv = 1.0/Coord_i[1];
-
+    
     su2double Density_i = U_i[0];
     su2double Velocity1_i = U_i[1]/U_i[0];
     su2double Velocity2_i = U_i[2]/U_i[0];
     su2double Energy_i = U_i[3]/U_i[0];
-
+    
     su2double Pressure_i = V_j[3];
     su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
-
+    
     /*--- Inviscid component of the source term. ---*/
 
     residual[0] = yinv*Volume*U_i[2];
@@ -181,10 +179,10 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
     residual[3] = yinv*Volume*U_i[2]*Enthalpy_i;
 
     if (implicit) {
-
+      
       su2double dPdrho_e_i = S_i[0];
       su2double dPde_rho_i = S_i[1];
-
+    
       jacobian[0][0] = 0.0;
       jacobian[0][1] = 0.0;
       jacobian[0][2] = 1.0;
@@ -226,16 +224,14 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
       su2double total_conductivity_i = thermal_conductivity_i + heat_capacity_cp_i*eddy_viscosity_i/Prandtl_Turb;
 
       residual[0] -= 0.0;
-      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][1]
-                                                    - TWO3*PrimVar_Grad_i[2][0]);
-      residual[2] -= yinv*Volume*total_viscosity_i*(2*(PrimVar_Grad_i[2][1]-Velocity2_i*yinv)
-                                                    - TWO3*PrimVar_Grad_i[2][1]-FOUR3*Velocity2_i*yinv);
+      residual[1] -= yinv*Volume*total_viscosity_i*(PrimVar_Grad_i[1][1]+ONE3*PrimVar_Grad_i[2][0]);
+      residual[2] -= yinv*Volume*total_viscosity_i*FOUR3*(PrimVar_Grad_i[2][1]-Velocity2_i*yinv);
       residual[3] -= yinv*Volume*(total_viscosity_i*(Velocity1_i*(PrimVar_Grad_i[1][1]
-                                                                  + ONE3*PrimVar_Grad_i[2][0])
-                                                                  - FOUR3*Velocity2_i*PrimVar_Grad_i[1][0]) 
+                                                                    + TWO3*PrimVar_Grad_i[2][0])
+                                                    - FOUR3*Velocity2_i*(PrimVar_Grad_i[1][0]+PrimVar_Grad_i[2][1])) 
                                   + total_conductivity_i*PrimVar_Grad_i[0][1]);
     }
-
+    
   }
 
   else {
@@ -254,6 +250,7 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
+
 
 CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                              CSourceBase_Flow(val_nDim, val_nVar, config) {
