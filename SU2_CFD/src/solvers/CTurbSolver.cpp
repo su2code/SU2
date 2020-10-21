@@ -354,8 +354,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double lim_i[MAXNVAR] = {0.0}, lim_j[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    // lim_i[iVar] = limiter ? nodes->GetLimiter(iPoint,iVar) : 1.0;
-    // lim_j[iVar] = limiter ? nodes->GetLimiter(jPoint,iVar) : 1.0;
     lim_i[iVar] = nodes->GetLimiter(iPoint,iVar);
     lim_j[iVar] = nodes->GetLimiter(jPoint,iVar);
   }
@@ -364,8 +362,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    // dVl_dVi[iVar] = sign*(1.0 - 0.5*kappa*lim_i[iVar]*good_i);
-    // dVr_dVi[iVar] = sign*(      0.5*kappa*lim_j[iVar]*good_j);
     dVl_dVi[iVar] = sign*(1.0 + 0.5*lim_i[iVar]*good_i);
     dVr_dVi[iVar] = sign*(    - 0.5*lim_j[iVar]*good_j);
   }
@@ -396,7 +392,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];
@@ -416,7 +411,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];
@@ -473,18 +467,12 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
   
   su2double gradWeight[MAXNDIM] = {0.0};
   if (gg && node_i->GetPhysicalBoundary()) {
-
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      Jacobian_i[iVar][iVar] = 0.0;
-
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto iDim = 0; iDim < nDim; iDim++)
         Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim];
 
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
   /*--------------------------------------------------------------------------*/
@@ -501,7 +489,6 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint);
     
     for (auto iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar][iVar] = 0.0;
       Jacobian_j[iVar][iVar] = 0.0;
       for (auto iDim = 0; iDim < nDim; iDim++) {
         Jacobian_i[iVar][iVar] += sign*jacobianWeights_i[iVar][iDim]*gradWeight[iDim]*sign_grad_i;
@@ -509,12 +496,12 @@ void CTurbSolver::CorrectJacobian(CSolver             **solver,
       }
     }
 
-    Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
+
+  Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+  Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
   AD::EndPassive(wasActive);
   
