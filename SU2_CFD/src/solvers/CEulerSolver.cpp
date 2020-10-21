@@ -3452,7 +3452,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       }
 
       turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Limiter_i[iVar];
-      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Limiter_j[jVar];
+      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Limiter_j[iVar];
 
     }
   }
