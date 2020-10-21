@@ -37,8 +37,7 @@ CUpwSLAU_NEMO::CUpwSLAU_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   mF_s   = new su2double [nSpecies];
   u_i    = new su2double [nDim];
   u_j    = new su2double [nDim];
-
-  Flux   = new su2double[nVar];
+  Flux   = new su2double [nVar];
 
 }
 
@@ -141,7 +140,7 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
 
   //TODO this could be dumb.....should just be mF_s???
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
-    Flux[0] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
+    Flux[iSpecies] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
         0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));
   }
   for (iDim = 0; iDim < nDim; iDim++) {

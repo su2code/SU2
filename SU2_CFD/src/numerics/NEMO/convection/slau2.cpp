@@ -140,7 +140,7 @@ CNumerics::ResidualType<> CUpwSLAU2_NEMO::ComputeResidual(const CConfig *config)
 
   //TODO this could be dumb.....should just be mF_s???
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
-    Flux[0] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
+    Flux[iSpecies] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
         0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));
   }
   for (iDim = 0; iDim < nDim; iDim++) {
