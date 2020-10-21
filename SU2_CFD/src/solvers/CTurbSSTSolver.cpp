@@ -556,8 +556,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[1][0] += factor*gradom[iDim]*gradWeight[iDim]/Vol;
-      Jacobian_i[1][1] += factor*gradk[iDim]*gradWeight[iDim]/Vol;
+      Jacobian_i[1][0] += factor*gradom[iDim]*gradWeight[iDim];
+      Jacobian_i[1][1] += factor*gradk[iDim]*gradWeight[iDim];
     }
   }// if physical boundary
   

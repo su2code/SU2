@@ -641,14 +641,14 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     factor *= 0.5*ConductivityOnR*sign;
 
     /*--- Density Jacobian ---*/
-    Jacobian_i[nVar-1][0] += factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
+    Jacobian_i[nVar-1][0] = factor*(-Pressure_i/pow(Density_i,2.0)+0.5*Vel2_i*Phi_i);
 
     /*--- Momentum Jacobian ---*/
     for (auto jDim = 0; jDim < nDim; jDim++)
-      Jacobian_i[nVar-1][jDim+1] -= factor*Phi_i*nodes->GetVelocity(iPoint,jDim);
+      Jacobian_i[nVar-1][jDim+1] = -factor*Phi_i*nodes->GetVelocity(iPoint,jDim);
 
     /*--- Energy Jacobian ---*/
-    Jacobian_i[nVar-1][nVar-1] += factor*Phi_i;
+    Jacobian_i[nVar-1][nVar-1] = factor*Phi_i;
 
     /*--- Tke term ---*/
     if (tkeNeeded) {
