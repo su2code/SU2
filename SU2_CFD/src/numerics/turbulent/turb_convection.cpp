@@ -207,15 +207,15 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
-  Epsilon[0] = 4.0*max((Lambda[0]-ProjVel_i), 
-                       (ProjVel_j-Lambda[0]));
-  Epsilon[1] = 4.0*max((Lambda[1]-(ProjVel_i+SoundSpeed_i)),
-                       ((ProjVel_j+SoundSpeed_j)-Lambda[1]));
-  Epsilon[2] = 4.0*max((Lambda[2]-(ProjVel_i-SoundSpeed_i)),
-                       ((ProjVel_j-SoundSpeed_j)-Lambda[2]));
+  Epsilon[0] = 4.0*max(fabs(Lambda[0]-ProjVel_i), 
+                       fabs(ProjVel_j-Lambda[0]));
+  Epsilon[1] = 4.0*max(fabs(Lambda[1]-(ProjVel_i+SoundSpeed_i)),
+                       fabs((ProjVel_j+SoundSpeed_j)-Lambda[1]));
+  Epsilon[2] = 4.0*max(fabs(Lambda[2]-(ProjVel_i-SoundSpeed_i)),
+                       fabs((ProjVel_j-SoundSpeed_j)-Lambda[2]));
 
   for (auto iVar = 0; iVar < 3; iVar++) {
-    Epsilon[iVar] = max(Epsilon[iVar], 0.0);
+    // Epsilon[iVar] = max(Epsilon[iVar], 0.0);
     Lambda[iVar] = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
                                                         : su2double(fabs(Lambda[iVar]));
   }

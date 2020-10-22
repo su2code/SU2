@@ -3257,13 +3257,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_i, primvar_j,
                                    &tke_i, &tke_j,
-                                   residual.jacobian_i, residual.jacobian_j,
+                                   residual.jacobian_i, 
+                                   residual.jacobian_j,
                                    good_i, good_j,
                                    iPoint, jPoint);
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_j, primvar_i,
                                    &tke_j, &tke_i,
-                                   residual.jacobian_j, residual.jacobian_i,
+                                   residual.jacobian_j, 
+                                   residual.jacobian_i,
                                    good_j, good_i,
                                    jPoint, iPoint);
         }
@@ -3700,7 +3702,6 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    // const su2double factor = sign*0.5*(1.-kappa)*gradWeightDotDist*good_i;
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
       dVl_dVi[iVar] = factor*lim_i[iVar];

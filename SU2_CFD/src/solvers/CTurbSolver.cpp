@@ -202,12 +202,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                         rho_j = good_j ? flowPrimVar_j[nDim+2] : V_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,
                                  &rho_i, &rho_j,
-                                 residual.jacobian_i, residual.jacobian_j,
+                                 residual.jacobian_i, 
+                                 residual.jacobian_j,
                                  good_i, good_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
                                  &rho_j, &rho_i,
-                                 residual.jacobian_j, residual.jacobian_i,
+                                 residual.jacobian_j, 
+                                 residual.jacobian_i,
                                  good_j, good_i,
                                  jPoint, iPoint);
       }
