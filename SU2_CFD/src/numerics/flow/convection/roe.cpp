@@ -46,7 +46,6 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   Conservatives_i = new su2double [nVar] ();
   Conservatives_j = new su2double [nVar] ();
   Lambda = new su2double [nPrimVarTot] ();
-  Epsilon = new su2double [nVar] ();
   P_Tensor = new su2double* [nVar];
   invP_Tensor = new su2double* [nPrimVarTot];
   Jacobian_i = new su2double* [nVar];
@@ -70,7 +69,6 @@ CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
   delete [] Conservatives_i;
   delete [] Conservatives_j;
   delete [] Lambda;
-  delete [] Epsilon;
   for (auto iVar = 0; iVar < nVar; iVar++) {
     delete [] P_Tensor[iVar];
     delete [] invP_Tensor[iVar];
@@ -227,10 +225,11 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
       Wave_j -= SoundSpeed_j;
     }
 
-    Epsilon[iVar] = max((Lambda[iVar]-Wave_i),
-                        (Wave_j-Lambda[iVar]));
-    Epsilon[iVar] = max(4.0*Epsilon[iVar], 0.0);
-    Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
+    su2double Epsilon = max((Lambda[iVar]-Wave_i),
+                            (Wave_j-Lambda[iVar]));
+    Epsilon = max(4.0*Epsilon, 0.0);
+
+    Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
                                                          : su2double(fabs(Lambda[iVar]));
   }
 

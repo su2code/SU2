@@ -216,10 +216,11 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
       Wave_j -= SoundSpeed_j;
     }
 
-    Epsilon[iVar] = max((Lambda[iVar]-Wave_i),
-                        (Wave_j-Lambda[iVar]));
-    Epsilon[iVar] = max(4.0*Epsilon[iVar], 0.0);
-    Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon[iVar]) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon[iVar] + Epsilon[iVar]))
+    su2double Epsilon = max((Lambda[iVar]-Wave_i),
+                            (Wave_j-Lambda[iVar]));
+    Epsilon = max(4.0*Epsilon, 0.0);
+
+    Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
                                                          : su2double(fabs(Lambda[iVar]));
   }
 
