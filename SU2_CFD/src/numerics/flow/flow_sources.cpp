@@ -156,7 +156,7 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
 
   if (Coord_i[1] > EPS) {
 
-    su2double yinv = 1.0/Coord_i[1];
+    yinv = 1.0/Coord_i[1];
     
     su2double Density_i = U_i[0];
     su2double Velocity1_i = U_i[1]/U_i[0];
