@@ -37,7 +37,7 @@
  * \ingroup SourceDiscr
  */
 class CSourceBase_Flow : public CNumerics {
-protected:
+ protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
 
@@ -49,7 +49,7 @@ protected:
    */
   CSourceBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
-public:
+ public:
   /*!
    * \brief Destructor of the class.
    */
@@ -63,8 +63,13 @@ public:
  * \ingroup SourceDiscr
  * \author F. Palacios
  */
-class CSourceAxisymmetric_Flow final : public CSourceBase_Flow {
-public:
+class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
+  
+ protected:
+    bool implicit, viscous;
+    su2double yinv{0.0};
+    
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
@@ -74,12 +79,17 @@ public:
   CSourceAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
-   * \brief Residual of the rotational frame source term.
+   * \brief Residual of the axisymmetric source term.
    * \param[in] config - Definition of the particular problem.
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-
+  
+    /*!
+   * \brief Diffusion residual of the axisymmetric source term.
+   */
+  void ResidualDiffusion();
+  
 };
 
 /*!
@@ -88,25 +98,17 @@ public:
  * \ingroup SourceDiscr
  * \author F. Dittmann
  */
-class CSourceGeneralAxisymmetric_Flow final : public CSourceBase_Flow {
-  bool implicit, viscous;
-
- public:
+class CSourceGeneralAxisymmetric_Flow final : public CSourceAxisymmetric_Flow {
+public:
+  
+  using CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow;
   /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourceGeneralAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Residual of the rotational frame source term.
+   * \brief Residual of the general axisymmetric source term.
    * \param[in] config - Definition of the particular problem.
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-
+  
 };
 
 /*!
