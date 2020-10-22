@@ -230,7 +230,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     Epsilon = max(4.0*Epsilon, 0.0);
 
     Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
-                                                         : su2double(fabs(Lambda[iVar]));
+                                                   : su2double(fabs(Lambda[iVar]));
   }
 
   if (tkeNeeded)
