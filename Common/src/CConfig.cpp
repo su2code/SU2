@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -2036,7 +2036,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
-   *  Options: AREA, MASSFLUX
+   *  Options: AREA, MASSFLUX, HYBRID
    *  \n Use with MARKER_ANALYZE. \ingroup Config*/
   addEnumOption("MARKER_ANALYZE_AVERAGE", Kind_Average, Average_Map, AVERAGE_MASSFLUX);
   /*!\brief COMM_LEVEL

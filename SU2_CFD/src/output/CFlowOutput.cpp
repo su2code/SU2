@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
@@ -115,6 +115,8 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
   Enthalpy, Velocity[3] = {}, TangVel[3], Velocity2, MassFlow, Density, Area,
   AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
+
+  su2double WeightVel = 1.0; //USED ONLY FOR AeroProp inforation
 
   su2double Gas_Constant      = config->GetGas_ConstantND();
   su2double Gamma             = config->GetGamma();
@@ -257,15 +259,23 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
           Surface_MassFlow[iMarker]         += MassFlow;
           Surface_MassFlow_Abs[iMarker]     += abs(MassFlow);
 
-          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
-          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+          if (Kind_Average == AVERAGE_MASSFLUX){
+            Weight    = abs(MassFlow);
+            WeightVel = abs(MassFlow);
+          } else if (Kind_Average == AVERAGE_AREA){
+            Weight    = abs(Area);
+            WeightVel = abs(Area);
+          } else if (Kind_Average == AVERAGE_HYBRID){
+            Weight    = abs(Area);
+            WeightVel = abs(MassFlow);
+          }
           else Weight = 1.0;
 
           Surface_Mach[iMarker]             += Mach*Weight;
           Surface_Temperature[iMarker]      += Temperature*Weight;
           Surface_Density[iMarker]          += Density*Weight;
           Surface_Enthalpy[iMarker]         += Enthalpy*Weight;
-          Surface_NormalVelocity[iMarker]   += Vn*Weight;
+          Surface_NormalVelocity[iMarker]   += Vn*WeightVel;
           Surface_Pressure[iMarker]         += Pressure*Weight;
           Surface_TotalTemperature[iMarker] += TotalTemperature*Weight;
           Surface_TotalPressure[iMarker]    += TotalPressure*Weight;
@@ -420,8 +430,16 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
 
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
 
-    if (Kind_Average == AVERAGE_MASSFLUX) Weight = Surface_MassFlow_Abs_Total[iMarker_Analyze];
-    else if (Kind_Average == AVERAGE_AREA) Weight = abs(Surface_Area_Total[iMarker_Analyze]);
+    if (Kind_Average == AVERAGE_MASSFLUX){
+      Weight    = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+      WeightVel = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    }else if (Kind_Average == AVERAGE_AREA){
+      Weight    = abs(Surface_Area_Total[iMarker_Analyze]);
+      WeightVel = abs(Surface_Area_Total[iMarker_Analyze]);
+    }else if (Kind_Average == AVERAGE_HYBRID){
+      Weight    = abs(Surface_Area_Total[iMarker_Analyze]);
+      WeightVel = Surface_MassFlow_Abs_Total[iMarker_Analyze];
+    }
     else Weight = 1.0;
 
     if (Weight != 0.0) {
@@ -429,7 +447,7 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
       Surface_Temperature_Total[iMarker_Analyze]      /= Weight;
       Surface_Density_Total[iMarker_Analyze]          /= Weight;
       Surface_Enthalpy_Total[iMarker_Analyze]         /= Weight;
-      Surface_NormalVelocity_Total[iMarker_Analyze]   /= Weight;
+      Surface_NormalVelocity_Total[iMarker_Analyze]   /= WeightVel;
       Surface_Pressure_Total[iMarker_Analyze]         /= Weight;
       Surface_TotalTemperature_Total[iMarker_Analyze] /= Weight;
       Surface_TotalPressure_Total[iMarker_Analyze]    /= Weight;

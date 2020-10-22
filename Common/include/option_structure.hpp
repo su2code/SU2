@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -150,11 +150,13 @@ enum ANSWER {
  */
 enum AVERAGE_TYPE {
   AVERAGE_AREA = 1,     /*!< \brief Area-weighted average. */
-  AVERAGE_MASSFLUX = 2  /*!< \brief Mass-flux weighted average. */
+  AVERAGE_MASSFLUX = 2, /*!< \brief Mass-flux weighted average. */
+  AVERAGE_HYBRID =3     /*!< \brief Hybrid weighted average for aeroprop purposes. */
 };
 static const MapType<string, AVERAGE_TYPE> Average_Map = {
   MakePair("AREA", AVERAGE_AREA)
   MakePair("MASSFLUX", AVERAGE_MASSFLUX)
+  MakePair("HYBRID", AVERAGE_HYBRID)
 };
 
 /*!
