@@ -2878,13 +2878,18 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        su2double dirTan[3] = {0.0, 0.0, 0.0};
        for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = VelTang[iDim]/VelTangMod;
 
+       /*--- If it is pressure gradient driven flow
+        subtract the body force in all directions. ---*/
+       if (config->GetBody_Force()){
+         for (iDim = 0; iDim < nDim; iDim++)
+           GradP[iDim] -= config->GetBody_Force_Vector()[iDim];
+       }
+       
        /*--- Pressure gradient in the tangent direction: ---*/
-
        GradP_TangMod = 0.0;
        for (iDim = 0; iDim < nDim; iDim++)
          GradP_TangMod += GradP[iDim]*dirTan[iDim];
-       GradP_TangMod = max(GradP_TangMod,0.0);
-       
+              
        /* Compute the wall shear stress and heat flux vector using
         the wall model. */
        su2double tauWall, qWall, ViscosityWall, kOverCvWall;

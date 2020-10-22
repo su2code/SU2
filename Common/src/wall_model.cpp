@@ -722,7 +722,6 @@ void CWallModelTemplate::WallShearStressAndHeatFlux(const su2double tExchange,
 
   /* Set parameters for control of the Newton iteration. */
   bool converged = false;
-  bool apgpl     = false;
   unsigned short iter = 0, max_iter = 50;
   const su2double tol    = 1e-3;
   const su2double y_star = 11.81;
@@ -754,28 +753,23 @@ void CWallModelTemplate::WallShearStressAndHeatFlux(const su2double tExchange,
       
     }
     else{
-      if (dPds <= 0.0){
-        fval   = -A*pow(y_plus, B) + velExchange/u_tau0;
-        fprime = -(A*B*u_tau0*pow(y_plus, B) + velExchange)/pow(u_tau0, 2);
-      }
-      else{
-//        fval   = -A*pow(y_plus, B) - alpha*sqrt(h_wm*pow(u_p, 3)/(nu_wall*pow(u_tau0, 2))) - beta*cbrt(pow(u_p, 3)/pow(u_tau0, 3))*log(gama*pow(u_p, 3)*pow(y_plus, 3.0)/pow(u_tau0, 3)) + velExchange/u_tau0;
-//        fprime = (u_tau0*(-A*B*pow(y_plus, B) + 1.0*alpha*sqrt(h_wm*pow(u_p, 3)/(nu_wall*pow(u_tau0, 2))) + 1.0*beta*cbrt(pow(u_p, 3)/pow(u_tau0, 3))*log(gama*pow(u_p, 3)*pow(y_plus, 3.0)/pow(u_tau0, 3))) - velExchange)/pow(u_tau0, 2);
-        converged = true;
-        apgpl     = true;
-      }
+      fval   = -A*pow(y_plus, B) + velExchange/u_tau0;
+      fprime = -(A*B*u_tau0*pow(y_plus, B) + velExchange)/pow(u_tau0, 2);
     }
+
     /* Newton method */
     const su2double newton_step = fval/fprime;
     u_tau = u_tau0 - newton_step;
 
     /* Define a norm */
     if (fabs(1.0 - u_tau/u_tau0) < tol) converged = true;
+    
   }
   
-  if (apgpl){
-    su2double D  = velExchange - alpha * sqrt(h_wm * dPds / rho_wall) - beta *  pow(dPds * nu_wall / rho_wall, 1./3.) * log(gama * pow(h_wm,3.0)*dPds/(rho_wall*pow(nu_wall,2.)));
-    if (D >= 0){
+  if (dPds > 0){
+    const su2double D  = velExchange - alpha * sqrt(h_wm * dPds / rho_wall) - beta *  pow(dPds * nu_wall / rho_wall, 1./3.) * log(gama * pow(h_wm,3.0)*dPds/(rho_wall*pow(nu_wall,2.)));
+    const su2double y_plus = u_tau*h_wm/nu_wall;
+    if ((D >= 0) && (y_plus >= y_star)){
       u_tau = pow(A,-1./(B+1)) * pow(nu_wall/h_wm, B/(B+1)) * pow(D,1/(B+1));
     }
     else{
