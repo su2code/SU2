@@ -69,6 +69,11 @@ class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
     bool implicit, viscous;
     su2double yinv{0.0};
     
+  /*!
+  * \brief Diffusion residual of the axisymmetric source term.
+  */
+  void ResidualDiffusion();
+    
  public:
   /*!
    * \brief Constructor of the class.
@@ -84,11 +89,6 @@ class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
-  
-    /*!
-   * \brief Diffusion residual of the axisymmetric source term.
-   */
-  void ResidualDiffusion();
   
 };
 
