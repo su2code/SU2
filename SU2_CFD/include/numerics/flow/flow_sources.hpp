@@ -37,7 +37,7 @@
  * \ingroup SourceDiscr
  */
 class CSourceBase_Flow : public CNumerics {
- protected:
+protected:
   su2double* residual = nullptr;
   su2double** jacobian = nullptr;
 
@@ -49,7 +49,7 @@ class CSourceBase_Flow : public CNumerics {
    */
   CSourceBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
- public:
+public:
   /*!
    * \brief Destructor of the class.
    */
@@ -64,8 +64,7 @@ class CSourceBase_Flow : public CNumerics {
  * \author F. Palacios
  */
 class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
-  
- protected:
+protected:
     bool implicit, viscous;
     su2double yinv{0.0};
     
@@ -74,7 +73,7 @@ class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
   */
   void ResidualDiffusion();
     
- public:
+public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
