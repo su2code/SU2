@@ -78,8 +78,21 @@ void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double va
 
   rhos = val_rhos;
 
+  Density = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Density += rhos[iSpecies];
+
+  Pressure = GetPressure();
+
   mix->setState(rhos.data(), temperatures.data(), 1);
 
+}
+
+vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){
+
+   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
+
+   return MolarMass;
 }
 
 vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
@@ -187,9 +200,24 @@ vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& val_rhos, 
   return temperatures;  
 }
 
-void CMutationTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
+vector<su2double>& CMutationTCLib::GetRefTemperature() {
+  
+  Tref = mix->standardStateT();
 
-void CMutationTCLib::GetdTdU(su2double *V, su2double *val_dTdU){}
- 
-void CMutationTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) Ref_Temperature[iSpecies] = Tref;
 
+  return Ref_Temperature;
+}
+
+vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
+
+   vector<su2double> hf_RT; hf_RT.resize(nSpecies);
+
+   Tref = mix->standardStateT();
+
+   mix->speciesHOverRT(Tref, Tref, Tref, Tref, Tref, NULL, NULL, NULL, NULL, NULL, hf_RT.data());
+
+   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) Enthalpy_Formation[iSpecies] = hf_RT[iSpecies]*(RuSI*Tref);
+
+   return Enthalpy_Formation;  
+}

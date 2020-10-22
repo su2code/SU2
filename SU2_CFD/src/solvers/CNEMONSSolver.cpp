@@ -676,7 +676,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   /*--- Get universal information ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
-  Ms   = FluidModel->GetMolarMass();
+  Ms   = FluidModel->GetSpeciesMolarMass();
   
   /*--- Get the locations of the primitive variables ---*/
   RHOS_INDEX    = nodes->GetRhosIndex();
@@ -946,7 +946,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Density = nodes->GetDensity(iPoint);
 
-      Ms = FluidModel->GetMolarMass();
+      Ms = FluidModel->GetSpeciesMolarMass();
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);

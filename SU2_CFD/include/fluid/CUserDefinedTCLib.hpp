@@ -37,8 +37,6 @@
 class CUserDefinedTCLib : public CNEMOGas {
 
 private:
-
-  bool ionization;                  /*!< \brief Presence of charged species in gas mixture. */
   
   unsigned short nReactions,                      /*!< \brief Number of reactions in chemical model. */
   iEl;                              /*!< \brief Common iteration counter for electrons */
@@ -52,14 +50,12 @@ private:
   ArrheniusTheta,				   /*!< \brief Arrhenius reaction characteristic temperature */
   CharVibTemp,					   /*!< \brief Characteristic vibrational temperature for e_vib */
   RotationModes,			       /*!< \brief Rotational modes of energy storage */
-  Ref_Temperature,   			   /*!< \brief Reference temperature for thermodynamic relations */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Tcb_b,                          /*!< \brief Rate controlling temperature exponent (bkw) */
   Diss,                           /*!< \brief Dissociation potential. */
   MassFrac_FreeStream,            /*!< \brief Mixture mass fractions of the fluid. */
-  Enthalpy_Formation,             /*!< \brief Enthalpy of formation */
   Wall_Catalycity,                /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
   Particle_Mass,                  /*!< \brief Mass of all particles present in the plasma */
   MolarFracWBE,                   /*!< \brief Molar fractions to be used in Wilke/Blottner/Eucken model */
@@ -94,6 +90,11 @@ public:
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
   void SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve) final;
+
+  /*!
+   * \brief Get species molar mass.
+   */
+  vector<su2double>& GetSpeciesMolarMass() final { return MolarMass; }
 
   /*!
    * \brief Get species T-R specific heats at constant volume.
@@ -150,21 +151,6 @@ public:
    */
   vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
 
-  /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
-   */
-  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU) final;
-
-  /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
-   */
-  void GetdTdU(su2double *V, su2double *val_dTdU) final;
-
-  /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
-   */
-  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU) final;
-
   private:
 
   /*!
@@ -209,7 +195,15 @@ public:
    */
   void ThermalConductivitiesGY();
 
+  /*!
+   * \brief Get reference temperature.
+   */
+  vector<su2double>& GetRefTemperature() final { return Ref_Temperature; }
 
+  /*!
+   * \brief Get species formation enthalpy.
+   */
+  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
 
   };
 

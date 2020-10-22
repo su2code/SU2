@@ -46,6 +46,8 @@ private:
   omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
   h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
 
+  su2double Tref;
+
 public:
 
   /*!
@@ -123,18 +125,18 @@ public:
   vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
    
   /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
+   * \brief Get species molar mass.
    */
-  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU) final;
+  vector<su2double>& GetSpeciesMolarMass() final;
 
   /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
+   * \brief Get reference temperature.
    */
-  void GetdTdU(su2double *V, su2double *val_dTdU) final;
+  vector<su2double>& GetRefTemperature() final;
 
   /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
+   * \brief Get species formation enthalpy.
    */
-  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU) final;
+  vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };

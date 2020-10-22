@@ -39,7 +39,8 @@ class CNEMOGas : public CFluidModel {
 
 protected:
   
-  bool frozen;                           /*!< \brief Indicates if mixture is frozen. */
+  bool frozen,                           /*!< \brief Indicates if mixture is frozen. */
+  ionization;                            /*!< \brief Presence of charged species in gas mixture. */
 
   string gas_model;                      /*!< \brief String gas model. */
               
@@ -78,7 +79,9 @@ protected:
   hs,                                    /*!< \brief Species enthalpies */
   MolarFractions,                        /*!< \brief Species molar fractions */
   ws,                                    /*!< \brief Species net production rates */
-  DiffusionCoeff;                        /*!< \brief Species diffusion coefficients*/
+  DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
+  Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
+  Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
 
 public:
 
@@ -102,7 +105,6 @@ public:
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
   void SetTDStatePTTv(su2double P, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve);
-  
   
   /*!
    * \brief Get species T-R specific heats at constant volume.
@@ -172,17 +174,17 @@ public:
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  virtual void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
+  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
   
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
    */
-  virtual void GetdTdU(su2double *V, su2double *val_dTdU){}
+  void GetdTdU(su2double *V, su2double *val_dTdU);
   
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  virtual void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
+  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 
   /*!
    * \brief Set the translational temperature.
@@ -222,7 +224,15 @@ public:
   /*!
    * \brief Get species molar mass.
    */
-  inline vector<su2double>& GetMolarMass() { return MolarMass; }
+  virtual vector<su2double>& GetSpeciesMolarMass() = 0;
 
+  /*!
+   * \brief Get reference temperature.
+   */
+  virtual vector<su2double>& GetRefTemperature() = 0;
 
+  /*!
+   * \brief Get species formation enthalpy.
+   */
+  virtual vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
 };
