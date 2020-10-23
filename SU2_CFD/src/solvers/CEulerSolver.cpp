@@ -3552,7 +3552,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
-  /*---         term and the difference (0.5*kappa*(V_j-V_i)).             ---*/
+  /*---         term and the difference (0.5*Psi_i*(V_i-V_j)).             ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
@@ -3645,7 +3645,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
-  /*---         gradient projection (0.5*(1-kappa)*gradV_i*dist_ij).       ---*/
+  /*---         gradient projection (0.5*Psi_i*gradV_i*dist_ij).           ---*/
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
@@ -3653,6 +3653,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
+  /*--- Green-Gauss surface terms ---*/
+  
   if (gg && node_i->GetPhysicalBoundary()) {
 
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
@@ -3670,6 +3672,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
         for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
           Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
   }
+
+  /*--- Neighbor node terms ---*/
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
 
