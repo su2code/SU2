@@ -2781,19 +2781,10 @@ void CConfig::SetConfig_Options() {
   /* Options related to the OneShot method
 
   /* DESCRIPTION: Use OneShot method for optimization */
-  addBoolOption("ONE_SHOT", OneShot, false);
-
-  /* DESCRIPTION: Starting iteration of one-shot method */
-  addUnsignedLongOption("ONE_SHOT_START", One_Shot_Start, 0);
-
-  /* DESCRIPTION: Stopping iteration of one-shot method */
-  addUnsignedLongOption("ONE_SHOT_STOP", One_Shot_Stop, 999999);
+  addEnumOption("ONE_SHOT", OneShotMode, Oneshot_Mode_Map, NO_MODE);
 
   /* DESCRIPTION: number of Piggyback steps between 2 design updates */
-  addUnsignedLongOption("ONE_SHOT_STOP", PiggybackSteps, 999999);
-
-  /* DESCRIPTION: Original step size at the start of the line search */
-  addDoubleOption("ONE_SHOT_STEP_SIZE", Step_Size, 1.0);
+  addUnsignedLongOption("PIGGYBACK_ITER", PiggybackSteps, 999999);
 
   /* END_CONFIG_OPTIONS */
 

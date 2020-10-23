@@ -35,6 +35,7 @@
 #include "drivers/CSinglezoneDriver.hpp"
 #include "drivers/CMultizoneDriver.hpp"
 #include "drivers/CDiscAdjSinglezoneDriver.hpp"
+#include "drivers/COneShotSinglezoneDriver.hpp"
 #include "drivers/CDiscAdjMultizoneDriver.hpp"
 #include "drivers/CDummyDriver.hpp"
 #include "output/COutput.hpp"

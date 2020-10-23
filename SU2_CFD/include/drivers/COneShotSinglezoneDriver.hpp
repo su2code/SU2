@@ -1,5 +1,5 @@
 /*!
- * \file COneShotDriver.hpp
+ * \file COneShotSinglezoneDriver.hpp
  * \brief Header to define a driver for OneShot problems.
  *        Logic is based on the CAdjSinglezoneDriver class.
  * \author T.Dick
@@ -37,31 +37,22 @@
  */
 
 #pragma once
+
 #include "CDiscAdjSinglezoneDriver.hpp"
 
 /*!
- * \class COneShotDriver
+ * \class COneShotSinglezoneDriver
  * \brief Class that extends the AdjSinglezoneDriver class with methods for one-shot optimization
  * \author L. Kusch, T.Dick
  * \version 7.0.6 "Blackbird"
  */
-class COneShotFluidDriver : public CDiscAdjSinglezoneDriver {
+class COneShotSinglezoneDriver : public CDiscAdjSinglezoneDriver {
 
 protected:
-  unsigned short RecordingState;      /*!< \brief The kind of recording the tape currently holds.*/
-  unsigned short CombinedVariables;   /*!< \brief The kind of recording linked to both variables of the problem.*/
+
+  unsigned long nPiggyIter;           /*!< \brief The number of coupled primal and adjoint iterations that are run on the PiggyBack solver.*/
   unsigned short nDV_Total;           /*!< \brief Total number of design variables used in optimization.*/
-  unsigned short nConstr;             /*!< \brief Total number of constraints used in optimization.*/
 
-  su2double* Gradient;                /*!< \brief Vector to store gradient obtained from projection .*/
-  su2double* Gradient_Old;            /*!< \brief Vector to store gradient obtained from projection (old value) .*/
-  su2double* DesignVarUpdate;         /*!< \brief Update of the design variable Delta p = p_{k+1} - p_k .*/
-  su2double* DesignVariable;          /*!< \brief The current design variable Delta p_k .*/
-  su2double* SearchDirection;         /*!< \brief The search direction for optimization .*/
-
-  su2double lb, ub; /*!< \brief Lower and upper bounds of design variables.*/
-
-  bool update; /*!< \brief Flag for whether the geometry has been updated (and whether to update the dual grid).*/
 
 public:
 
@@ -70,25 +61,31 @@ public:
     * \param[in] confFile - Configuration file name.
     * \param[in] val_nZone - Total number of zones.
     */
-  COneShotFluidDriver(char* confFile,
+  COneShotSinglezoneDriver(char* confFile,
                    unsigned short val_nZone,
                    SU2_Comm MPICommunicator);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~COneShotFluidDriver(void);
+  ~COneShotSinglezoneDriver(void);
 
   /*!
    * \brief Preprocess the one-shot iteration
    * \param[in] TimeIter - index of the current time-step.
    */
-  void Preprocess(unsigned long TimeIter);
+  void Preprocess(unsigned long TimeIter) override;
 
   /*!
    * \brief Runs main routines of the one-shot class.
    */
-  void Run();
+  void Run(void) override;
+
+  /*!
+   * \brief Postprocess the One-Shot driver.
+   * \note no secondary recording is needed here like in the DiscAdj driver!
+   */
+  void Postprocess(void) override;
 
   /*!
    * \brief Runs an optimization using the one-shot method.
@@ -96,9 +93,15 @@ public:
   void RunOneShot();
 
   /*!
-   * \brief Executes one primal and dual iteration (in a piggy-back manner).
+   * \brief Run a Piggyback iteration
    */
-  void PrimalDualStep();
+  void PiggyBack();
+
+  /*!
+   * \brief Executes one primal and dual iteration (in a piggy-back manner).
+   * \param[in] current Piggyback iteration number
+   */
+  void PrimalDualStep(unsigned long iPiggyIter);
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.

@@ -2196,6 +2196,20 @@ static const MapType<string, ENUM_VERIFICATION_SOLUTIONS> Verification_Solution_
   MakePair("USER_DEFINED_SOLUTION",    USER_DEFINED_SOLUTION)
 };
 
+/*!
+ * \brief mode of operation for the sobolev smoothing solver.
+ */
+enum ENUM_ONESHOT_MODE {
+  NO_MODE = 0,         /*!< \brief Default option if none is choosen. */
+  PIGGYBACK   = 1,      /*!< \brief Operate on parameter level. */
+  ONESHOT  = 2,         /*!< \brief Operate on mesh level. */
+};
+static const map<string, ENUM_ONESHOT_MODE> Oneshot_Mode_Map = {
+  MakePair("NONE", NO_MODE)
+  MakePair("PIGGYBACK"  , PIGGYBACK)
+  MakePair("ONESHOT" , ONESHOT)
+};
+
 #undef MakePair
 /* END_CONFIG_ENUMS */
 

@@ -95,7 +95,8 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CTransLMSolver.cpp',
                       'solvers/CTurbSolver.cpp',
                       'solvers/CTurbSASolver.cpp',
-                      'solvers/CTurbSSTSolver.cpp'])
+                      'solvers/CTurbSSTSolver.cpp',
+                      'solvers/COneShotSolver.cpp'])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/template.cpp',
@@ -136,7 +137,8 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CSinglezoneDriver.cpp',
                       'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
-                      'drivers/CDummyDriver.cpp'])
+                      'drivers/CDummyDriver.cpp',
+                      'drivers/COneShotSinglezoneDriver.cpp'])
 
 su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CIntegrationFactory.cpp',

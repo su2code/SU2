@@ -36,8 +36,8 @@
  * \ingroup Discrete_Adjoint
  * \author T. Albring
  */
-class CDiscAdjSolver final : public CSolver {
-private:
+class CDiscAdjSolver : public CSolver {
+protected:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
   su2double **CSensitivity;      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
