@@ -608,45 +608,46 @@ void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double tExchange,
   const su2double a_plus = 8.0;
 
   /* Tangential wall pressure gradient */
-  const su2double u_p = pow(dPds * nu_wall / rho_wall, 1./3.);
+  su2double u_p = 0.0;
+  if (dPds > 0)
+    u_p = pow(dPds * nu_wall / rho_wall, 1./3.);
   
+  su2double monitor = 0.0;
   while (converged == false){
 
     iter += 1;
     if (iter == max_iter){
       converged = true;
-      SU2_MPI::Error("APGLL Wall Model did not converge", CURRENT_FUNCTION);
+      if (monitor > 0.5)
+        SU2_MPI::Error("APGLL Wall Model did not converge", CURRENT_FUNCTION);
     }
 
     const su2double u_tau0 = u_tau;
     const su2double y_plus = u_tau0*h_wm/nu_wall;
-
+    const su2double p_plus = pow(u_p/u_tau0, 3.0);
+    
     /* Adverse Pressure Gradient Log Law (APGLL)
        fprime is the differentiation with repect to u_tau.
      */
 
     const su2double fval = + velExchange/u_tau0
-                           - (1.0 - exp(-y_plus/a_plus))*(C + 2.0*(sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) - 1.0)/karman
-                           + 1.0*log(y_plus + 3.0)/karman - 2.0*log(0.5*sqrt(1.0 +  y_plus*pow(u_p/u_tau0, 3.0)) + 0.5)/karman);
+                           - (1.0 - exp(-y_plus/a_plus))*(C + 2.0*(sqrt(1.0 + y_plus*p_plus) - 1.0)/karman
+                           + 1.0*log(y_plus + 3.0)/karman - 2.0*log(0.5*sqrt(1.0 +  y_plus*p_plus) + 0.5)/karman);
 
+    const su2double fprime = -(1.0 - exp(-y_plus/a_plus))*(-2.0*h_wm*p_plus*pow(y_plus*p_plus + 1.0, -0.5)/(karman*nu_wall) + 1.0*h_wm*p_plus*pow(y_plus*p_plus + 1.0, -0.5)/(karman*nu_wall*(0.5*sqrt(y_plus*p_plus + 1.0) + 0.5)) + 1.0*h_wm/(karman*nu_wall*(3. + y_plus))) - velExchange/pow(u_tau0, 2) - h_wm*(C + 2.0*(sqrt(y_plus*p_plus + 1.0) - 1.0)/karman + 1.0*log(3.0 + y_plus)/karman - 2.0*log(0.5*sqrt(y_plus*p_plus + 1.0) + 0.5)/karman)*exp(-y_plus/a_plus)/(a_plus*nu_wall);
 
-    // const su2double fprime = -velExchange/pow(u_tau0, 2) - (1.0 - exp(-y_plus/a_plus))*(1.0/(karman*u_tau0)
-    //                          - 2.0*h_wm*pow(u_p/u_tau0, 3.0)*pow(1.0 + y_plus*pow(u_p/u_tau0, 3.0), -0.5)/(karman*nu_wall)
-    //                          + 1.0*h_wm*pow(u_p/u_tau0, 3.0)*pow(1.0 + y_plus*pow(u_p/u_tau0, 3.0), -0.5)/(karman*nu_wall*(0.5*sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) + 0.5)))
-    //                          - h_wm*(C + 2.0*(sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) - 1.0)/karman + 1.0*log(y_plus)/karman - 2.0*log(0.5*sqrt(1.0 + y_plus*pow(u_p/u_tau0, 3.0)) + 0.5)/karman)
-    //                          *exp(-y_plus/a_plus)/(a_plus*nu_wall);
-
-    const su2double fprime =-velExchange/pow(u_tau0, 2) - (1.0 - exp(-y_plus/a_plus))*(1.0/(karman*u_tau0));
+    //const su2double fprime =-velExchange/pow(u_tau0, 2) - (1.0 - exp(-y_plus/a_plus))*(1.0/(karman*u_tau0));
 
     /* Newton method */
     const su2double newton_step = fval/fprime;
     u_tau = u_tau0 - newton_step;
 
     /* Avoid u_tau to be zero and higher than u_p */
-    u_tau = max(max(u_tau,1e-10), u_p);
+    u_tau = max(u_tau,1e-10);
 
     /* Define a norm */
-    if (fabs(1.0 - u_tau/u_tau0) < tol) converged = true;
+    monitor = fabs(1.0 - u_tau/u_tau0);
+    if ( monitor < tol) converged = true;
 
     if (std::isnan(u_tau)){
       SU2_MPI::Error("u_tau is nan at APGLL Wall Model", CURRENT_FUNCTION);
