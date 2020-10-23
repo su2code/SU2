@@ -168,7 +168,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Alloc2D(nMarker, nVertex, TauWall_WMLES);
     Alloc2D(nMarker, nVertex, HeatFlux_WMLES);
     Alloc3D(nMarker, nVertex, nDim, FlowDirTan_WMLES);
-    Alloc3D(nMarker, nVertex, 2*nDim, VelTimeFilter_WMLES);
+    Alloc3D(nMarker, nVertex, nDim, VelTimeFilter_WMLES);
 
     /*--- Check if the Wall models or Wall functions are unique. ---*/
     /*--- OBS: All the markers must have the same wall model/function ---*/
@@ -210,6 +210,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
           case APGLL_WALL_MODEL:
             WallModel = new CWallModelAPGLL(config,WallFunctionsMarker_[0]);
             break;
+          case TEMPLATE_WALL_MODEL:
+            WallModel = new CWallModelTemplate(config,WallFunctionsMarker_[0]);
+          break;
 
           default:
             break;
@@ -2691,7 +2694,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
   bool CalculateWallModel = false;
 
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
-  su2double GradP[3], GradP_Normal, GradP_Tang[3], GradP_TangMod;
+  su2double GradP[3], GradP_TangMod;
   su2double T_Normal, P_Normal, mu_Normal;
   su2double *Coord, *Coord_Normal, UnitNormal[3], *Normal, Area;
   su2double TimeFilter = config->GetDelta_UnstTimeND()/ (config->GetTimeFilter_WMLES() / config->GetTime_Ref());
@@ -2710,6 +2713,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        case LOGARITHMIC_WALL_MODEL:
        case ALGEBRAIC_WALL_MODEL:
        case APGLL_WALL_MODEL:
+       case TEMPLATE_WALL_MODEL:
          CalculateWallModel = true;
          break;
 
@@ -2776,7 +2780,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
          for (iDim = 0; iDim < nDim; iDim++ ){
            Vel[iDim]   = 0.0;
-           GradP[iDim] = 0.0;
          }
 
          for (unsigned short iNode = 0; iNode < nDonors; iNode++) {
@@ -2788,7 +2791,6 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
            for (iDim = 0; iDim < nDim; iDim++ ){
              Vel[iDim] += donnorCoeff*nodes->GetSolution(donorPoint,iDim+1)/nodes->GetSolution(donorPoint,0);
-             GradP[iDim] += donnorCoeff*nodes->GetGradient_Primitive(donorPoint, nDim+1, iDim);
            }
          }
 
@@ -2816,12 +2818,15 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
          for (iDim = 0; iDim < nDim; iDim++){
            Vel[iDim]   = nodes->GetVelocity(Point_Normal,iDim);
-           GradP[iDim] = nodes->GetGradient_Primitive(Point_Normal, nDim+1, iDim);
          }
 
          P_Normal  = nodes->GetPressure(Point_Normal);
          T_Normal  = nodes->GetTemperature(Point_Normal);
          mu_Normal = nodes->GetLaminarViscosity(Point_Normal);
+       }
+
+       for (iDim = 0; iDim < nDim; iDim++){
+         GradP[iDim] = nodes->GetGradient_Primitive(iPoint, nDim+1, iDim);
        }
 
        /*--- Filter the input LES velocity ---*/
@@ -2831,23 +2836,19 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
 
          /*--- Old input LES velocity and GradP---*/
          su2double Vel_old[3]   = {0.,0.,0.};
-         su2double GradP_old[3] = {0.,0.,0.};
          for (iDim = 0; iDim < nDim; iDim++){
            Vel_old[iDim]   = VelTimeFilter_WMLES[iMarker][iVertex][iDim];
-           GradP_old[iDim] = VelTimeFilter_WMLES[iMarker][iVertex][iDim+nDim];
          }
-         /*--- Now filter the LES velocity and GradP ---*/
+         /*--- Now filter the LES velocity ---*/
          for (iDim = 0; iDim < nDim; iDim++){
-           Vel[iDim]   = (1.0 - TimeFilter) * Vel_old[iDim] + TimeFilter * Vel[iDim];
-           GradP[iDim] = (1.0 - TimeFilter) * GradP_old[iDim] + TimeFilter * GradP[iDim];
+           Vel[iDim] = (1.0 - TimeFilter) * Vel_old[iDim] + TimeFilter * Vel[iDim];
          }
        }
 
        /*--- Update input LES velocity if it is the 1st inner iteration---*/
        if (config->GetInnerIter() == 0){
          for (iDim = 0; iDim < nDim; iDim++){
-           VelTimeFilter_WMLES[iMarker][iVertex][iDim]      = Vel[iDim];
-           VelTimeFilter_WMLES[iMarker][iVertex][iDim+nDim] = GradP[iDim];
+           VelTimeFilter_WMLES[iMarker][iVertex][iDim] = Vel[iDim];
          }
        }
 
@@ -2877,20 +2878,18 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        su2double dirTan[3] = {0.0, 0.0, 0.0};
        for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = VelTang[iDim]/VelTangMod;
 
+       /*--- If it is pressure gradient driven flow
+        subtract the body force in all directions. ---*/
+       if (config->GetBody_Force()){
+         for (iDim = 0; iDim < nDim; iDim++)
+           GradP[iDim] -= config->GetBody_Force_Vector()[iDim];
+       }
+       
        /*--- Pressure gradient in the tangent direction: ---*/
-
-       GradP_Normal = 0.0;
-       for (iDim = 0; iDim < nDim; iDim++)
-         GradP_Normal += GradP[iDim] * UnitNormal[iDim];
-       for (iDim = 0; iDim < nDim; iDim++)
-         GradP_Tang[iDim] = GradP[iDim] - GradP_Normal*UnitNormal[iDim];
-
        GradP_TangMod = 0.0;
        for (iDim = 0; iDim < nDim; iDim++)
-         GradP_TangMod += GradP_Tang[iDim]*GradP_Tang[iDim];
-       GradP_TangMod = sqrt(GradP_TangMod);
-       GradP_TangMod = max(GradP_TangMod,1.e-25);
-
+         GradP_TangMod += GradP[iDim]*dirTan[iDim];
+              
        /* Compute the wall shear stress and heat flux vector using
         the wall model. */
        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
