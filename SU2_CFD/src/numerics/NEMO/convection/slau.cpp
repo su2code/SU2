@@ -106,17 +106,25 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
   Chi = pow((1.0 - Mach_tilde),2.0);
   f_rho = -max(min(mL,0.0),-1.0) * min(max(mR,0.0),1.0);
 
+  /*--- Mass flux function ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++ ){
+
+    Vn_Mag = (rhos_i[iSpecies]*fabs(ProjVel_i) +
+              rhos_j[iSpecies]*fabs(ProjVel_j)) /
+             (rhos_i[iSpecies] + rhos_j[iSpecies]);
+    Vn_MagL= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVel_i);
+    Vn_MagR= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVel_j);
+
+    mF_s[iSpecies] = 0.5 * (rhos_i[iSpecies] * (ProjVel_i + Vn_MagL) +
+                            rhos_j[iSpecies] * (ProjVel_j - Vn_MagR) -
+                            (Chi/aF)*(P_j-P_i));
+  }
+
   /*--- Mean normal velocity with density weighting ---*/
   Vn_Mag = (rho_i*fabs(ProjVel_i) + rho_j*fabs(ProjVel_j)) / (rho_i + rho_j);
   Vn_MagL= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVel_i);
   Vn_MagR= (1.0 - f_rho)*Vn_Mag + f_rho*fabs(ProjVel_j);
 
-  /*--- Mass flux function ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++ ){
-    mF_s[iSpecies] = 0.5 * (rhos_i[iSpecies] * (ProjVel_i + Vn_MagL) +
-                            rhos_j[iSpecies] * (ProjVel_j - Vn_MagR) -
-                            (Chi/aF)*(P_j-P_i));
-  }
   mF = 0.5 * (rho_i * (ProjVel_i + Vn_MagL) + rho_j * (ProjVel_j - Vn_MagR) - (Chi/aF)*(P_j-P_i));
 
   /*--- Pressure function ---*/
@@ -133,7 +141,7 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
     else BetaR = 1.0;
   }
 
-  //Dissipation not implemented
+  //Dissipation not implemented TODO
   Dissipation_ij = 1.0;
   pF = 0.5 * (P_i + P_j) + 0.5 * (BetaL - BetaR) * (P_i - P_j)
       + Dissipation_ij*(1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (P_i + P_j);
@@ -141,15 +149,15 @@ CNumerics::ResidualType<> CUpwSLAU_NEMO::ComputeResidual(const CConfig *config) 
   //TODO this could be dumb.....should just be mF_s???
   for (iSpecies=0;iSpecies<nSpecies;iSpecies++){
     Flux[iSpecies] = 0.5*(mF_s[iSpecies]+fabs(mF_s[iSpecies])) +
-        0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));
+                     0.5*(mF_s[iSpecies]-fabs(mF_s[iSpecies]));
   }
   for (iDim = 0; iDim < nDim; iDim++) {
     Flux[nSpecies+iDim] = 0.5*(mF+fabs(mF)) * u_i[iDim];
     Flux[nSpecies+iDim]+= 0.5*(mF-fabs(mF)) * u_j[iDim] ;
     Flux[nSpecies+iDim]+= pF*UnitNormal[iDim];
   }
-  Flux[nVar-2] = 0.5*(mF+fabs(mF))*(h_i) + 0.5*(mF-fabs(mF))*(h_j);
-  Flux[nVar-1] = 0.5*(mF+fabs(mF))*(e_ve_i) + 0.5*(mF-fabs(mF))*(e_ve_j);
+  Flux[nSpecies+nDim]   = 0.5*(mF+fabs(mF))*(h_i) + 0.5*(mF-fabs(mF))*(h_j);
+  Flux[nSpecies+nDim+1] = 0.5*(mF+fabs(mF))*(e_ve_i) + 0.5*(mF-fabs(mF))*(e_ve_j);
 
   for (iVar = 0; iVar < nVar; iVar++)
     Flux[iVar] *= Area;

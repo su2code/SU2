@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
  * \author F. Palacios, W.Maier, C. Garbacz
@@ -117,8 +117,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   alpha = 3.0/16.0;
 
   /*---- Initialize the residual vector ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    Flux[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++) {Flux[iVar] = 0.0;}
 
   /*--- Calculate geometric quantities ---*/
   Area = 0;
@@ -134,35 +133,28 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   Ru   = 1000.0*RuSI;
 
   /*--- Pull stored primitive variables ---*/
-  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++) {
-    u_i[iDim] = 0.0; // V_i[VEL_INDEX+iDim];
-    u_j[iDim] = 0.0; // V_j[VEL_INDEX+iDim];
+    u_i[iDim] = V_i[VEL_INDEX+iDim];
+    u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-  P_i       = 0.0; // V_i[P_INDEX];
-  P_j       = 0.0; // V_j[P_INDEX];
-  h_i       = V_i[H_INDEX];
-  h_j       = V_j[H_INDEX];
-  rho_i     = V_i[RHO_INDEX];
-  rho_j     = V_j[RHO_INDEX];
-  rhoEve_i  = U_i[nSpecies+nDim+1];
-  rhoEve_j  = U_j[nSpecies+nDim+1];
-  rhoCvtr_i = V_i[RHOCVTR_INDEX];
-  rhoCvtr_j = V_j[RHOCVTR_INDEX];
-  rhoCvve_i = V_i[RHOCVVE_INDEX];
-  rhoCvve_j = V_j[RHOCVVE_INDEX];
+
+  P_i       = V_i[P_INDEX];         P_j       = V_j[P_INDEX];
+  h_i       = V_i[H_INDEX];         h_j       = V_j[H_INDEX];
+  rho_i     = V_i[RHO_INDEX];       rho_j     = V_j[RHO_INDEX];
+  rhoEve_i  = U_i[nSpecies+nDim+1]; rhoEve_j  = U_j[nSpecies+nDim+1];
+  rhoCvtr_i = V_i[RHOCVTR_INDEX];   rhoCvtr_j = V_j[RHOCVTR_INDEX];
+  rhoCvve_i = V_i[RHOCVVE_INDEX];   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
   vector<su2double> Ms = fluidmodel->GetMolarMass();
   
-  rhoRi = 0.0;
-  rhoRj = 0.0;
+  rhoRi = 0.0;  rhoRj = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoRi += V_i[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
-    rhoRj += V_j[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
+    rhoRi += rhos_i[iSpecies]*Ru/Ms[iSpecies];
+    rhoRj += rhos_j[iSpecies]*Ru/Ms[iSpecies];
   }
 
   /*--- Projected velocities ---*/
@@ -173,13 +165,14 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
   sqVi = 0.0;   sqVj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim])
-        * (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
-    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim])
-        * (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
+    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim]) *
+            (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
+    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim]) *
+            (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
   }
 
-  /*--- Calculate interface numerical speed of sound ---*/
+  /*--- Calculate interface numerical gammas and speed of sound ---*/
+  //TODO move Gamma to fluidmodel
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
   gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
   gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
@@ -190,7 +183,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     atl = sqrt(2.0*Hnorm * (((gtl_i-1.0)/(gtl_i*rho_i) - (gtl_j-1.0)/(gtl_j*rho_j))/
                             ((gtl_j+1.0)/(gtl_j*rho_i) - (gtl_i+1.0)/(gtl_i*rho_j))));
   }
-
   if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i),atl);
   else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
 
@@ -198,7 +190,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   mL  = ProjVel_i/aij;
   mR  = ProjVel_j/aij;
   if (fabs(mL) <= 1.0) {
-    mLP = 0.25*(mL+1.0)*(mL+1.0);
+    mLP = 0.25*(mL+1.0)*(mL+1.0);  
     pLP = P_i*(0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
   } else {
     mLP = 0.5*(mL+fabs(mL));
@@ -213,13 +205,16 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
 
   /*--- Calculate supporting w & f functions ---*/
-  w = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
+  w  = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
   ps = pLP + pRM;
-  // Modified f function:
-  if (fabs(mL) < 1.0) fL = P_i/ps - 1.0;
-  else fL = 0.0;
-  if (fabs(mR) < 1.0) fR = P_j/ps - 1.0;
-  else fR = 0.0;
+
+  // simplified f function (Literature requires information from cells from
+  // above and below  (TODO)
+  fL = 0.0; fR = 0.0;
+  if (ps != 0.0){
+    fL = (P_i/ps-1.0);
+    fR = (P_j/ps-1.0);
+  }
 
   /*--- Calculate modified M functions ---*/
   mF = mLP + mRM;
