@@ -412,7 +412,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         const su2double *U = config->GetVelocity_FreeStream();
-	su2double WallShearStress;
+        su2double WallShearStress;
         su2double SkinFrictionMag = 0.0;
         for (auto iDim = 0; iDim < nDim; iDim++)
           SkinFrictionMag += pow(solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, iDim),2.0);
