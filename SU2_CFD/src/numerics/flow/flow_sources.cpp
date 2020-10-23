@@ -110,7 +110,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
     
     /*--- Add the viscous terms if necessary. ---*/
 
-    if (viscous) { ResidualDiffusion(); }
+    if (viscous) ResidualDiffusion();
 
   }
 
@@ -208,7 +208,7 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
 
     /*--- Add the viscous terms if necessary. ---*/
 
-    if (viscous) { ResidualDiffusion(); }
+    if (viscous) ResidualDiffusion();
     
   }
 
