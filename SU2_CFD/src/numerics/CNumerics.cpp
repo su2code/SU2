@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNumerics.cpp
  * \brief Implementation of the base for all numerics classes.
  *        Contains methods for common tasks, e.g. compute flux
@@ -1764,34 +1764,57 @@ void CNumerics::CreateBasis(const su2double *val_Normal) {
   unsigned short iDim;
   su2double modm, modl;
 
-  /*--- Define l as a vector in the plane normal to the supplied vector ---*/
-  l[0] = 0.0;
-  l[1] = -val_Normal[2];
-  l[2] = val_Normal[1];
 
-  /*--- Check for the zero vector and re-assign if needed ---*/
-  if (l[0] == 0.0 && l[1] == 0.0 && l[2] == 0.0) {
-    l[0] = -val_Normal[2];
-    l[1] = 0.0;
-    l[2] = val_Normal[0];
-  }
+  if (nDim ==2){
 
-  /*--- Take vector product of n * l to make m ---*/
-  m[0] = val_Normal[1]*l[2] - val_Normal[2]*l[1];
-  m[1] = val_Normal[2]*l[0] - val_Normal[0]*l[2];
-  m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
+    /*--- Multiply Normal by [0 -1; 1 0] rotation matrix ---*/
+    l[0] = -val_Normal[1];
+    l[1] = val_Normal[0];
 
-  /*--- Normalize ---*/
-  modm =0 ; modl = 0;
-  for (iDim =0 ; iDim < nDim; iDim++) {
-    modm += m[iDim]*m[iDim];
-    modl += l[iDim]*l[iDim];
-  }
-  modm = sqrt(modm);
-  modl = sqrt(modl);
-  for (iDim =0 ; iDim < nDim; iDim++) {
-    l[iDim] = l[iDim]/modl;
-    m[iDim] = m[iDim]/modm;
+    /*--- Set m matrix to zero ---*/
+    m[0] = 0.0;
+    m[1] = 0.0;
+
+    /*--- Normalize ---*/
+    modl = 0.0;
+    for (iDim = 0; iDim <nDim; iDim ++)
+      modl += l[iDim]*l[iDim];
+    modl = sqrt(modl);
+    for (iDim =0; iDim<nDim; iDim++)
+      l[iDim] = l[iDim]/modl;
+
+  } else {
+
+    /*--- Define l as a vector in the plane normal to the supplied vector ---*/
+    l[0] = 0.0;
+    l[1] = -val_Normal[2];
+    l[2] = val_Normal[1];
+
+    /*--- Check for the zero vector and re-assign if needed ---*/
+    if (l[0] == 0.0 && l[1] == 0.0 && l[2] == 0.0) {
+      l[0] = -val_Normal[2];
+      l[1] = 0.0;
+      l[2] = val_Normal[0];
+    }
+
+    /*--- Take vector product of n * l to make m ---*/
+    m[0] = val_Normal[1]*l[2] - val_Normal[2]*l[1];
+    m[1] = val_Normal[2]*l[0] - val_Normal[0]*l[2];
+    m[2] = val_Normal[0]*l[1] - val_Normal[1]*l[0];
+
+    /*--- Normalize ---*/
+    modm =0 ; modl = 0;
+    for (iDim =0 ; iDim < nDim; iDim++) {
+      modm += m[iDim]*m[iDim];
+      modl += l[iDim]*l[iDim];
+    }
+    modm = sqrt(modm);
+    modl = sqrt(modl);
+    for (iDim =0 ; iDim < nDim; iDim++) {
+     l[iDim] = l[iDim]/modl;
+     m[iDim] = m[iDim]/modm;
+    }
+
   }
 }
 

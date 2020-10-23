@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CUserDefinedTCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
@@ -1432,21 +1432,22 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
     exit(1);
   }
 
-  /*--- Determine the number of heavy species ---*/
-  if (ionization) {
-    rho_el = rhos[nSpecies-1];
-  } else {
-    rho_el = 0.0;
-  }
-
-  /*--- Necessary indexes to assess primitive variables ---*/  
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOS_INDEX    = 0;
+  unsigned long VEL_INDEX     = nSpecies+2;
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
-  unsigned long VEL_INDEX     = nSpecies+nDim+2;
-  
+
+
   /*--- Rename for convenience ---*/
+  for (iSpecies = 0;iSpecies<nSpecies;iSpecies++){
+    rhos[iSpecies] = V[iSpecies];}
   rhoCvtr = V[RHOCVTR_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
+
+  /*--- Determine the number of heavy species ---*/
+  if (ionization) { rho_el = rhos[RHOS_INDEX+nSpecies-1];
+  } else {         rho_el = 0.0; }
 
   /*--- Pre-compute useful quantities ---*/
   CvtrBAR = 0.0;
@@ -1462,9 +1463,8 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   // Species density
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     ef                 = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
-    val_dPdU[iSpecies] =  T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
-        (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
-         ef + 0.5*sqvel);
+    val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
+                         (-Cvtrs[iSpecies] * (T-Ref_Temperature[iSpecies]) - ef + 0.5*sqvel);
   }
   if (ionization) {
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -1480,9 +1480,9 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
       val_dPdU[iSpecies] -= rho_el * Ru/MolarMass[nSpecies-1] * (val_eves[iSpecies])/rhoCvve;
     }
     ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1]*Ref_Temperature[nSpecies-1];
-    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
-        + Ru/MolarMass[nSpecies-1]*Tve
-        - rho_el*Ru/MolarMass[nSpecies-1] * (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
+    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel) +
+                           Ru/MolarMass[nSpecies-1]*Tve - rho_el*Ru/MolarMass[nSpecies-1] *
+                           (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
   }
   // Momentum
   for (iDim = 0; iDim < nDim; iDim++)
@@ -1492,11 +1492,10 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;
 
   // Vib.-el energy
-  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim]
-      + rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
+  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
+                              rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
+
 }
-
-
 
 void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
 
@@ -1533,7 +1532,6 @@ void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
   val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
 
 }    
-
 
 void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
 
@@ -1709,5 +1707,6 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
   }    
 }
 
+//su2double CUserDefinedTCLib::GetGamma(){}
 
 

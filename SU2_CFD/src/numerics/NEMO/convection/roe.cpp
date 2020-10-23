@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes in NEMO.
  * \author S. R. Copeland, W. Maier, C. Garbacz
@@ -96,8 +96,8 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  /*--- Calculate Roe variables ---*/
-  R    = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
+  /*--- Calculate Roe averaged variables ---*/
+  R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
 
   for (iVar = 0; iVar < nVar; iVar++)
     RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
