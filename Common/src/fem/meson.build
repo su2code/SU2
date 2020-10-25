@@ -17,5 +17,4 @@ common_src += files(['CFEMStandardElementBase.cpp',
                      'fem_quadrature_tets.cpp',
                      'fem_quadrature_tris.cpp',
                      'fem_geometry_structure.cpp',
-                     'fem_standard_element.cpp',
                      'fem_wall_distance.cpp'])

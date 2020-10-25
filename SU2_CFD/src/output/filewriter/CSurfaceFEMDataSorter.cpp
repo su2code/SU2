@@ -389,7 +389,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
     CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
 
     const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
-    const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
+    const CFEMStandardElementBase *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
 
     /*--- Create the map from the global DOF ID to the local index.
           Note one is added to the index value, because visualization
@@ -415,7 +415,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
           for(unsigned long i=0; i<surfElem.size(); ++i) {
             const unsigned short ind      = surfElem[i].indStandardElement;
             const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
-            if(Elem_Type == VTK_Type) nSubElem_Local += standardBoundaryFacesSol[ind].GetNSubFaces();
+            if(Elem_Type == VTK_Type) nSubElem_Local += standardBoundaryFacesSol[ind].GetNSubElemsType1();
           }
         }
       }
@@ -446,8 +446,8 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
               /* Get the number of sub-elements and the local connectivity of
                  the sub-elements. */
-              const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
-              const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
+              const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubElemsType1();
+              const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubConnType1();
 
               /* Store the global connectivities. */
               const unsigned short kk = NODES_PER_ELEMENT*nSubFaces;

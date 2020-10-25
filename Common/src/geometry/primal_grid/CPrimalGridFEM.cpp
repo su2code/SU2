@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
-#include "../../../include/fem/fem_standard_element.hpp"
+#include "../../../include/fem/CFEMStandardElementBase.hpp"
 
 CPrimalGridFEM::~CPrimalGridFEM(){}
 

@@ -29,9 +29,9 @@
 #pragma once
 
 #include "../geometry/CGeometry.hpp"
-#include "fem_standard_element.hpp"
 #include "../wall_model.hpp"
 #include "../blas_structure.hpp"
+#include "CFEMStandardElementBase.hpp"
 
 using namespace std;
 
@@ -178,9 +178,9 @@ protected:
                                                            an entity is an element, for regular FEM an entity
                                                            is a DOF. */
 
-  vector<CFEMStandardBoundaryFace> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
+  vector<CFEMStandardElementBase *> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
                                                                           faces used for the solution of the DG solver. */
-  vector<CFEMStandardBoundaryFace> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
+  vector<CFEMStandardElementBase *> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
                                                                           faces used for the geometry of the DG solver. */
 
   CBlasStructure *blasFunctions{nullptr}; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
@@ -238,7 +238,7 @@ public:
   * \brief Function, which makes available the standard boundary faces of the solution.
   * \return  Pointer to the standard boundary faces of the solution.
   */
-  inline CFEMStandardBoundaryFace* GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
+  inline CFEMStandardElementBase* GetStandardBoundaryFacesSol(void) {return nullptr;}
 
   /*!
   * \brief Function, which makes available the vector of receive ranks as
@@ -402,7 +402,7 @@ public:
   * \brief Function, which makes available the standard volume elements of the solution.
   * \return  Pointer to the standard volume elements of the solution.
   */
-  inline CFEMStandardElement* GetStandardElementsSol(void) {return NULL;}
+  inline CFEMStandardElementBase* GetStandardElementsSol(void) {return nullptr;}
 
  /*!
   * \brief Function, which computes a length scale of the volume elements.

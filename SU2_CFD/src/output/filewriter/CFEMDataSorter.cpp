@@ -142,7 +142,7 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
 
-  const CFEMStandardElement *standardElementsSol = DGGeometry->GetStandardElementsSol();
+  const CFEMStandardElementBase *standardElementsSol = DGGeometry->GetStandardElementsSol();
 
   /*--- Determine the number of sub-elements on this rank. ---*/
   unsigned long nSubElem_Local = 0;
@@ -150,8 +150,8 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
 
     /* Determine the necessary data from the corresponding standard elem. */
     const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
 
      /* Only store the linear sub elements if they are of
         the current type that we are storing. */
@@ -173,8 +173,8 @@ void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geom
 
     /* Determine the necessary data from the corresponding standard elem. */
     const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
 
     /* Check if the first sub-element is of the required type. */
     if(Elem_Type == VTK_Type1) {

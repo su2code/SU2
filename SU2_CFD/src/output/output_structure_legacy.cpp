@@ -18933,7 +18933,7 @@ void COutputLegacy::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *
 
   CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
 
-  const CFEMStandardElement *standardElementsSol = DGGeometry->GetStandardElementsSol();
+  const CFEMStandardElementBase *standardElementsSol = DGGeometry->GetStandardElementsSol();
 
   /* Define the vectors for the connectivity of the local linear subelements. */
   vector<unsigned long> volumeConn;
@@ -18955,8 +18955,8 @@ void COutputLegacy::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *
      such as the number of linear sub elements, the number of DOFs per
      linear sub element and the corresponding local connectivity. */
     const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
 
     /*--- Only store the linear sub elements if they are of
      the current type that we are merging. ---*/
@@ -19227,7 +19227,7 @@ void COutputLegacy::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geo
 
   const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
 
-  const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
+  const CFEMStandardElementBase *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
 
   /*--- Create the map from the global DOF ID to the local index. ---*/
   map<unsigned long, unsigned long> mapLocal2Global;
@@ -19259,15 +19259,15 @@ void COutputLegacy::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geo
            such as the number of linear subfaces, the number of DOFs per
            linear subface and the corresponding local connectivity. */
           const unsigned short ind           = surfElem[i].indStandardElement;
-          const unsigned short VTK_Type      = standardBoundaryFacesSol[ind].GetVTK_Type();
+          const unsigned short VTK_Type      = standardBoundaryFacesSol[ind].GetVTK_SubType1();
 
           /*--- Only store the linear sub-elements if they are of
            the current type that we are merging. ---*/
           if (VTK_Type == Elem_Type) {
 
-            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
-            const unsigned short nDOFsPerFace  = standardBoundaryFacesSol[ind].GetNDOFsPerSubFace();
-            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
+            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubElemsType1();
+            const unsigned short nDOFsPerFace  = standardBoundaryFacesSol[ind].GetNDOFsPerSubElem(VTK_Type);
+            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubConnType1();
 
             /* Loop over the number of subfaces and store the required data. */
             unsigned short ii = 0;
@@ -20603,7 +20603,7 @@ void COutputLegacy::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *g
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
 
-  const CFEMStandardElement *standardElementsSol = DGGeometry->GetStandardElementsSol();
+  const CFEMStandardElementBase *standardElementsSol = DGGeometry->GetStandardElementsSol();
 
   /*--- Determine the number of sub-elements on this rank. ---*/
   unsigned long nSubElem_Local = 0;
@@ -20611,8 +20611,8 @@ void COutputLegacy::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *g
 
     /* Determine the necessary data from the corresponding standard elem. */
     const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
 
      /* Only store the linear sub elements if they are of
         the current type that we are storing. */
@@ -20634,8 +20634,8 @@ void COutputLegacy::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *g
 
     /* Determine the necessary data from the corresponding standard elem. */
     const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
 
     /* Check if the first sub-element is of the required type. */
     if(Elem_Type == VTK_Type1) {
@@ -20725,7 +20725,7 @@ void COutputLegacy::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geom
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
 
   const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
-  const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
+  const CFEMStandardElementBase *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
 
   /*--- Create the map from the global DOF ID to the local index.
         Note one is added to the index value, because visualization
@@ -20749,7 +20749,7 @@ void COutputLegacy::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geom
         for(unsigned long i=0; i<surfElem.size(); ++i) {
           const unsigned short ind      = surfElem[i].indStandardElement;
           const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
-          if(Elem_Type == VTK_Type) nSubElem_Local += standardBoundaryFacesSol[ind].GetNSubFaces();
+          if(Elem_Type == VTK_Type) nSubElem_Local += standardBoundaryFacesSol[ind].GetNSubElemsType1();
         }
       }
     }
@@ -20778,8 +20778,8 @@ void COutputLegacy::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geom
 
             /* Get the number of sub-elements and the local connectivity of
                the sub-elements. */
-            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
-            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
+            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubElemsType1();
+            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubConnType1();
 
             /* Store the global connectivities. */
             const unsigned short kk = NODES_PER_ELEMENT*nSubFaces;
