@@ -1635,6 +1635,12 @@ public:
   void FindMaskedEdges(CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Check for ROM convergence.
+   * \param[out] bool - returns value of bool RomConverged
+   */
+  bool CheckROMConvergence();
+  
+  /*!
    * \brief Convert masked nodes to masked edges.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

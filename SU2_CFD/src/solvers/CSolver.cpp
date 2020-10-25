@@ -4571,8 +4571,8 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
     
     for (unsigned long iVar = 0; iVar < nVar; iVar++){
       node_sol[iVar] = ref_sol[iVar + iPoint*nVar];
-      //nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
-      //nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
+      nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
     }
     
     nodes->Set_RefSolution(iPoint, &node_sol[0]);
@@ -4590,7 +4590,11 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
     }
     GenCoordsY.push_back(sum);
   }
-  
+  GenCoordsY[0] = -15957437.9358702;
+  GenCoordsY[1] =-7939.73902059381;
+  GenCoordsY[2] =440.690025768359;
+  GenCoordsY[3] =204.247905440978;
+  GenCoordsY[4] =8.52312544989400;
   delete[] ref_sol;
   delete[] init_sol;
 }

@@ -226,6 +226,10 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     StopCalc = MonitorFixed_CL(output, geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0],
                                config[val_iZone]);
   }
+  
+  if (config[val_iZone]->GetReduced_Model()) {
+    StopCalc = solver[val_iZone][INST_0][MESH_0][FLOW_SOL]->CheckROMConvergence();
+  }
 
   return StopCalc;
 }
