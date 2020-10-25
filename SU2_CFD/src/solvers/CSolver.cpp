@@ -3300,28 +3300,6 @@ void CSolver::SetHessian_GG(CGeometry *geometry, CConfig *config, unsigned short
     
 }
 
-void CSolver::SetAuxVar_Hessian_GG(CGeometry *geometry, CConfig *config) {
-  
-//  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-//    base_nodes->SetAuxVar_Adaptation(iPoint,0,base_nodes->GetDensity(iPoint)*base_nodes->GetEnthalpy(iPoint));
-//
-//  //--- communicate the solution values via MPI
-//  InitiateComms(geometry, config, ANISO_AUX_VAR);
-//  CompleteComms(geometry, config, ANISO_AUX_VAR);
-//
-//  const auto& solution = base_nodes->GetAuxVar_Adaptation();
-//  auto& gradient = base_nodes->GetGradientAuxVar_Adaptation();
-//
-//  computeGradientsGreenGauss(this, ANISO_AUX_GRADIENT, PERIODIC_SOL_GG, *geometry,
-//                             *config, solution, 0, 1, gradient);
-//
-//  auto& hessian = base_nodes->GetHessianAuxVar();
-//
-//  computeHessiansGreenGauss(this, AUX_HESSIAN, PERIODIC_SOL_GG, *geometry,
-//                            *config, gradient, 0, 1, hessian);
-  
-}
-
 void CSolver::SetHessian_LS(CGeometry *geometry, CConfig *config, unsigned short Kind_Solver) {
   
   if (rank == MASTER_NODE)
