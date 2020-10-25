@@ -2692,6 +2692,16 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   
   unsigned long i, iEdge, nEdge;
   
+  //ofstream fs;
+  //std::string fname0 = "check_solution_spaceint.csv";
+  //fs.open(fname0);
+  //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //    fs << nodes->GetSolution(iPoint, iVar) << "\n" ;
+  //  }
+  //}
+  //fs.close();
+  
   //if (rom) nEdge = Edge_masked.size();
   //else     nEdge = geometry->GetnEdge();
   
@@ -2810,6 +2820,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
   unsigned long i, iEdge, nEdge;
+  
+  //ofstream fs;
+  //std::string fname0 = "check_solution_spaceint.csv";
+  //fs.open(fname0);
+  //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //    fs << nodes->GetSolution(iPoint, iVar) << "\n" ;
+  //  }
+  //}
+  //fs.close();
   
   //if (rom) nEdge = Edge_masked.size();
   //else     nEdge = geometry->GetnEdge();
@@ -3708,16 +3728,19 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   //int m = (int)Mask.size() * nVar;
   int n = (int)TrialBasis[0].size();
   
+  SU2_OMP_MASTER
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  SU2_OMP_BARRIER
   
   /*--- Find residual ---*/
   
   vector<double> r(m,0.0);
   //int index = 0;
   
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     //for (iPoint_mask = 0; iPoint_mask < Mask.size(); iPoint_mask++) {
     //  iPoint = Mask[iPoint_mask];
@@ -3744,8 +3767,19 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  /*--- Reduce residual information over all threads in this rank. ---*/
+  ofstream fs;
+  std::string fname0 = "check_residual_rom.csv";
+  fs.open(fname0);
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      unsigned long total_index = iPoint*nVar + iVar;
+      fs << LinSysRes[total_index] << "\n" ;
+    }
+  }
+  fs.close();
   
+  /*--- Reduce residual information over all threads in this rank. ---*/
+  SU2_OMP_CRITICAL
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
     AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
@@ -3755,6 +3789,20 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   
   vector<double> r_red(n,0.0);
   double ReducedRes = 0.0;
+  
+  /*--- Compute Initial Reduced Coordinates based on IC ---*/
+  if (InnerIter == 0) {
+  for (int i = 0; i < n; i++) {
+    double sum = 0.0;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        auto sol = nodes->GetSolution(iPoint,iVar);
+        sum += TrialBasis[iPoint*nVar + iVar][i] * (sol - nodes->Get_RefSolution(iPoint, iVar));
+      }
+    }
+    GenCoordsY[i] = sum;
+  }
+  }
   
   /*--- Compute Test Basis: W = J * Phi and reduced residual ---*/
   
@@ -3837,7 +3885,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  ofstream fs;
+
   std::string fname2 = "check_solution1.csv";
   fs.open(fname2);
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3866,7 +3914,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   
   else {
-    if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e7) {
+    if (1.0 / sqrt(ReducedRes) >= 1e8) {
       RomConverged = true;
       return;
     }
@@ -3912,6 +3960,16 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     }
     fs.close();
     
+    std::string fname1 = "check_trialbasis.csv";
+    fs.open(fname1);
+    for(int i=0; i < m; i++){
+      for(int j=0; j < n; j++){
+        fs << TrialBasis[i][j] << "," ;
+      }
+      fs << "\n";
+    }
+    fs.close();
+    
     std::string fname2 = "check_residual.csv";
     fs.open(fname2);
     for(int i=0; i < m; i++){
@@ -3933,7 +3991,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   // Compute least-squares solution using QR decomposition
   // https://johnwlambert.github.io/least-squares/
   // http://www.netlib.org/lapack/explore-html/d7/d3b/group__double_g_esolve_ga225c8efde208eaf246882df48e590eac.html
-  if (InnerIter != 0) {
+
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK))
   dgels_(&TRANS, &m, &n, &NRHS, TestBasis2.data(), &m, r.data(), &m, WORK.data(), &LWORK, &INFO);
 #else
@@ -3951,12 +4009,12 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.close();
   
   // TODO: backtracking line search to find step size:
-  double a = 0.1;
+  double a = 0.5;
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
   }
-  }
+  
   std::string fname4 = "check_red_coords_y.csv";
   fs.open(fname4);
   for(int i=0; i < n; i++){
@@ -3974,6 +4032,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   std::string fname5 = "check_solution2.csv";
   fs.open(fname5);
   
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
   //for (iPoint_mask = 0; iPoint_mask < allMaskedNodes.size(); iPoint_mask++) {
   //  iPoint = allMaskedNodes[iPoint_mask];
@@ -4174,6 +4233,17 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     ComputeVerificationError(geometry, config);
   }
   SU2_OMP_BARRIER
+  
+  //ofstream fs;
+  //std::string fname0 = "check_residual_implicit.csv";
+  //fs.open(fname0);
+  //for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //    unsigned long total_index = iPoint*nVar + iVar;
+  //    fs << LinSysRes[total_index] << "\n" ;
+  //  }
+  //}
+  //fs.close();
 
 }
 

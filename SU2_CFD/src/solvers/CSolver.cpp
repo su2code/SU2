@@ -4843,6 +4843,10 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   
 }
 
+bool CSolver::CheckROMConvergence() {
+  return RomConverged;
+}
+
 //void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
 //
 //  unsigned long InnerIter = config->GetInnerIter();
