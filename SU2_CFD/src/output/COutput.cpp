@@ -1540,7 +1540,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver** solver){
 
   unsigned short iMarker = 0;
-  unsigned long iPoint = 0, jPoint = 0;
+  unsigned long iPoint = 0;
   unsigned long iVertex = 0;
 
   /*--- Reset the offset cache and index --- */
@@ -1551,29 +1551,7 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
   if (femOutput){
 
-    /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-     geometrical information for the FEM DG solver. ---*/
-
-    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-    unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-
-    CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-    /*--- Access the solution by looping over the owned volume elements. ---*/
-
-    for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-      for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
-        buildFieldIndexCache = fieldIndexCache.empty();
-
-        LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
-
-        jPoint++;
-
-      }
-    }
+    SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 
   } else {
 

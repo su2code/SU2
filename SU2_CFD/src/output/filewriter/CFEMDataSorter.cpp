@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/output/filewriter/CFEMDataSorter.hpp"
-#include "../../../../Common/include/fem/fem_geometry_structure.hpp"
+#include "../../../../Common/include/geometry/fem_grid/CMeshFEM_DG.hpp"
 #include <numeric>
 
 CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vector<string> &valFieldNames) :
@@ -34,44 +34,7 @@ CFEMDataSorter::CFEMDataSorter(CConfig *config, CGeometry *geometry, const vecto
 
   nDim = geometry->GetnDim();
 
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-  /*--- Create the map from the global DOF ID to the local index. ---*/
-
-  vector<unsigned long> globalID;
-
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Count up the number of local points we have for allocating storage. */
-
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
-      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
-      globalID.push_back(globalIndex);
-
-      nLocalPointsBeforeSort++;
-    }
-  }
-
-  SU2_MPI::Allreduce(&nLocalPointsBeforeSort, &nGlobalPointBeforeSort, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-
-  /*--- Create a linear partition --- */
-
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
-
-  /*--- Prepare the send buffers ---*/
-
-  PrepareSendBuffers(globalID);
-
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 CFEMDataSorter::~CFEMDataSorter(){
@@ -110,132 +73,5 @@ void CFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometry, bool
 
 void CFEMDataSorter::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
 
-  /* Determine the number of nodes for this element type. */
-  unsigned short NODES_PER_ELEMENT = 0;
-  switch (Elem_Type) {
-    case TRIANGLE:
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      break;
-    case QUADRILATERAL:
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      break;
-    case TETRAHEDRON:
-      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
-      break;
-    case HEXAHEDRON:
-      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
-      break;
-    case PRISM:
-      NODES_PER_ELEMENT = N_POINTS_PRISM;
-      break;
-    case PYRAMID:
-      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-  }
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-        geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-  const CFEMStandardElementBase *standardElementsSol = DGGeometry->GetStandardElementsSol();
-
-  /*--- Determine the number of sub-elements on this rank. ---*/
-  unsigned long nSubElem_Local = 0;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Determine the necessary data from the corresponding standard elem. */
-    const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
-
-     /* Only store the linear sub elements if they are of
-        the current type that we are storing. */
-     if(Elem_Type == VTK_Type1) nSubElem_Local += standardElementsSol[ind].GetNSubElemsType1();
-     if(Elem_Type == VTK_Type2) nSubElem_Local += standardElementsSol[ind].GetNSubElemsType2();
-  }
-
-  /* Allocate the memory to store the connectivity if the size is
-     larger than zero. */
-  int *Conn_SubElem = nullptr;
-  if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
-
-  /*--- Loop again over the local volume elements and store the global
-        connectivities of the sub-elements. Note one is added to the
-        index value, because visualization softwares typically use
-        1-based indexing. ---*/
-  unsigned long kNode = 0;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Determine the necessary data from the corresponding standard elem. */
-    const unsigned short ind       = volElem[i].indStandardElement;
-    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_SubType1();
-    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_SubType2();
-
-    /* Check if the first sub-element is of the required type. */
-    if(Elem_Type == VTK_Type1) {
-
-      /* Get the number of sub-elements and the local connectivity of
-         the sub-elements. */
-      const unsigned short nSubElems     = standardElementsSol[ind].GetNSubElemsType1();
-      const unsigned short *connSubElems = standardElementsSol[ind].GetSubConnType1();
-
-      /* Store the global connectivities. */
-      const unsigned short kk = NODES_PER_ELEMENT*nSubElems;
-      for(unsigned short k=0; k<kk; ++k, ++kNode)
-        Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
-    }
-
-    /* Check if the second sub-element is of the required type. */
-    if(Elem_Type == VTK_Type2) {
-
-      /* Get the number of sub-elements and the local connectivity of
-         the sub-elements. */
-      const unsigned short nSubElems     = standardElementsSol[ind].GetNSubElemsType2();
-      const unsigned short *connSubElems = standardElementsSol[ind].GetSubConnType2();
-
-      /* Store the global connectivities. */
-      const unsigned short kk = NODES_PER_ELEMENT*nSubElems;
-      for(unsigned short k=0; k<kk; ++k, ++kNode)
-        Conn_SubElem[kNode] = connSubElems[k] + volElem[i].offsetDOFsSolGlobal + 1;
-    }
-  }
-
-  nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
-
-  /*--- Store the particular global element count in the class data,
-        and set the class data pointer to the connectivity array. ---*/
-  switch (Elem_Type) {
-    case TRIANGLE:
-      delete [] Conn_Tria_Par;
-      Conn_Tria_Par = Conn_SubElem;
-      break;
-    case QUADRILATERAL:
-      delete [] Conn_Quad_Par;
-      Conn_Quad_Par = Conn_SubElem;
-      break;
-    case TETRAHEDRON:
-      delete [] Conn_Tetr_Par;
-      Conn_Tetr_Par = Conn_SubElem;
-      break;
-    case HEXAHEDRON:
-      delete [] Conn_Hexa_Par;
-      Conn_Hexa_Par = Conn_SubElem;
-      break;
-    case PRISM:
-      delete [] Conn_Pris_Par;
-      Conn_Pris_Par = Conn_SubElem;
-      break;
-    case PYRAMID:
-      delete [] Conn_Pyra_Par;
-      Conn_Pyra_Par = Conn_SubElem;
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-      break;
-  }
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }

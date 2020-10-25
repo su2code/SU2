@@ -15,6 +15,4 @@ common_src += files(['CFEMStandardElementBase.cpp',
                      'CFEMStandardTriGrid.cpp',
                      'fem_gauss_jacobi_quadrature.cpp',
                      'fem_quadrature_tets.cpp',
-                     'fem_quadrature_tris.cpp',
-                     'fem_geometry_structure.cpp',
-                     'fem_wall_distance.cpp'])
+                     'fem_quadrature_tris.cpp'])

@@ -1,7 +1,7 @@
 /*!
- * \file CBaselineSolver_FEM.cpp
- * \brief Main subroutines for CBaselineSolver_FEM class.
- * \author F. Palacios, T. Economon
+ * \file CMesh.cpp
+ * \brief Implementations of the member functions of CMesh.
+ * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,25 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../../include/geometry/fem_grid/CMeshFEM.hpp"
 
-#include "../../include/solvers/CBaselineSolver_FEM.hpp"
-
-
-CBaselineSolver_FEM::CBaselineSolver_FEM(void) : CSolver() { }
-
-CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
-
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
-
-void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *config) {
-
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
-
-void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
-
-CBaselineSolver_FEM::~CBaselineSolver_FEM(void) { }

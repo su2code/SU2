@@ -160,73 +160,7 @@ void CFlowCompFEMOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowCompFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
 
-  unsigned short iDim;
-
-  unsigned short nVar = solver[FLOW_SOL]->GetnVar();
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-  /*--- Get a pointer to the fluid model class from the DG-FEM solver
-   so that we can access the states below. ---*/
-
-  CFluidModel *DGFluidModel = solver[FLOW_SOL]->GetFluidModel();
-
-  /* Set the pointers for the solution for this element. */
-
-  const unsigned long offset = nVar*volElem[iElem].offsetDOFsSolLocal;
-  su2double *solDOFs         = solver[FLOW_SOL]->GetVecSolDOFs() + offset;
-
-  /*--- Get the conservative variables for this particular DOF. ---*/
-
-  const su2double *U = solDOFs+dof*nVar;
-
-  /*--- Load the coordinate values of the solution DOFs. ---*/
-
-  const su2double *coor = volElem[iElem].coorSolDOFs.data() + dof*nDim;
-
-  /*--- Prepare the primitive states. ---*/
-
-  const su2double DensityInv = 1.0/U[0];
-  su2double vel[3], Velocity2 = 0.0;
-  for(iDim=0; iDim<nDim; ++iDim) {
-    vel[iDim] = U[iDim+1]*DensityInv;
-    Velocity2 += vel[iDim]*vel[iDim];
-  }
-  su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
-  DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
-
-
-  SetVolumeOutputValue("COORD-X",        index, coor[0]);
-  SetVolumeOutputValue("COORD-Y",        index, coor[1]);
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z",      index, coor[2]);
-  SetVolumeOutputValue("DENSITY",        index, U[0]);
-  SetVolumeOutputValue("MOMENTUM-X",     index, U[1]);
-  SetVolumeOutputValue("MOMENTUM-Y",     index, U[2]);
-  if (nDim == 3){
-    SetVolumeOutputValue("MOMENTUM-Z",   index,  U[3]);
-    SetVolumeOutputValue("ENERGY",       index,  U[4]);
-  } else {
-    SetVolumeOutputValue("ENERGY",       index,  U[3]);
-  }
-
-  SetVolumeOutputValue("PRESSURE",       index, DGFluidModel->GetPressure());
-  SetVolumeOutputValue("TEMPERATURE",    index, DGFluidModel->GetTemperature());
-  SetVolumeOutputValue("MACH",           index, sqrt(Velocity2)/DGFluidModel->GetSoundSpeed());
-  SetVolumeOutputValue("PRESSURE_COEFF", index, DGFluidModel->GetCp());
-
-  if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
-    SetVolumeOutputValue("LAMINAR_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
-  }
-  if ((config->GetKind_Solver()  == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-    // todo: Export Eddy instead of Laminar viscosity
-    SetVolumeOutputValue("EDDY_VISCOSITY", index, DGFluidModel->GetLaminarViscosity());
-  }
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 void CFlowCompFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

@@ -26,44 +26,13 @@
  */
 
 #include "../../../include/output/filewriter/CSurfaceFEMDataSorter.hpp"
-#include "../../../../Common/include/fem/fem_geometry_structure.hpp"
+#include "../../../../Common/include/geometry/fem_grid/CMeshFEM_DG.hpp"
 #include <numeric>
 
 CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometry, CFEMDataSorter* valVolumeSorter) :
   CParallelDataSorter(config, valVolumeSorter->GetFieldNames()){
 
-  nDim = geometry->GetnDim();
-
-  this->volumeSorter = valVolumeSorter;
-
-  connectivitySorted = false;
-
-  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-   geometrical information for the FEM DG solver. ---*/
-
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Count up the number of local points we have for allocating storage. */
-
-    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-      nLocalPointsBeforeSort++;
-    }
-  }
-
-  SU2_MPI::Allreduce(&nLocalPointsBeforeSort, &nGlobalPointBeforeSort, 1,
-                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-
-  /*--- Create the linear partitioner --- */
-
-  linearPartitioner = new CLinearPartitioner(nGlobalPointBeforeSort, 0);
-
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
 CSurfaceFEMDataSorter::~CSurfaceFEMDataSorter(){
@@ -365,120 +334,5 @@ void CSurfaceFEMDataSorter::SortConnectivity(CConfig *config, CGeometry *geometr
 void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type,
                                                     const vector<string> &markerList) {
 
-  /* Determine the number of nodes for this element type. */
-    unsigned short NODES_PER_ELEMENT = 0;
-    switch (Elem_Type) {
-      case LINE:
-        NODES_PER_ELEMENT = N_POINTS_LINE;
-        break;
-      case TRIANGLE:
-        NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-        break;
-      case QUADRILATERAL:
-        NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-    }
-
-    /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-          geometrical information for the FEM DG solver. ---*/
-    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
-
-    unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
-    CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
-
-    const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
-    const CFEMStandardElementBase *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
-
-    /*--- Create the map from the global DOF ID to the local index.
-          Note one is added to the index value, because visualization
-          softwares typically use 1-based indexing. ---*/
-    vector<unsigned long> globalID;
-    for(unsigned long l=0; l<nVolElemOwned; ++l) {
-      for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-        const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j + 1;
-        globalID.push_back(globalIndex);
-      }
-    }
-
-    /*--- Determine the number of sub-elements on this rank by looping
-          over the surface elements of the boundary markers that must
-          be plotted. ---*/
-    unsigned long nSubElem_Local = 0;
-    for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
-      if( !boundaries[iMarker].periodicBoundary ) {
-        string markerTag = boundaries[iMarker].markerTag;
-        auto it = std::find(markerList.begin(), markerList.end(), markerTag);
-        if (it != markerList.end()) {
-          const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
-          for(unsigned long i=0; i<surfElem.size(); ++i) {
-            const unsigned short ind      = surfElem[i].indStandardElement;
-            const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
-            if(Elem_Type == VTK_Type) nSubElem_Local += standardBoundaryFacesSol[ind].GetNSubElemsType1();
-          }
-        }
-      }
-    }
-
-    /* Allocate the memory to store the connectivity if the size is
-       larger than zero. */
-    int *Conn_SubElem = nullptr;
-    if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT]();
-
-    /*--- Repeat the loop over the surface elements of the boundary markers
-          that must be plotted, but now store the connectivity. ---*/
-    unsigned long kNode = 0;
-    for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
-      if( !boundaries[iMarker].periodicBoundary ) {
-        string markerTag = boundaries[iMarker].markerTag;
-        auto it = std::find(markerList.begin(), markerList.end(), markerTag);
-        if (it != markerList.end()) {
-          const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
-
-          /* Loop over the surface elements of this boundary marker. */
-          for(unsigned long i=0; i<surfElem.size(); ++i) {
-
-            /* Check if this is the element type to be stored. */
-            const unsigned short ind      = surfElem[i].indStandardElement;
-            const unsigned short VTK_Type = standardBoundaryFacesSol[ind].GetVTK_Type();
-            if(Elem_Type == VTK_Type) {
-
-              /* Get the number of sub-elements and the local connectivity of
-                 the sub-elements. */
-              const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubElemsType1();
-              const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubConnType1();
-
-              /* Store the global connectivities. */
-              const unsigned short kk = NODES_PER_ELEMENT*nSubFaces;
-              for(unsigned short k=0; k<kk; ++k, ++kNode)
-                Conn_SubElem[kNode] = globalID[surfElem[i].DOFsSolFace[connSubFaces[k]]];
-            }
-          }
-        }
-      }
-    }
-
-    nElemPerType[TypeMap.at(Elem_Type)] = nSubElem_Local;
-
-    /*--- Store the particular global element count in the class data,
-          and set the class data pointer to the connectivity array. ---*/
-    switch (Elem_Type) {
-      case LINE:
-        delete [] Conn_Line_Par;
-        Conn_Line_Par = Conn_SubElem;
-        break;
-      case TRIANGLE:
-        delete [] Conn_Tria_Par;
-        Conn_Tria_Par = Conn_SubElem;
-        break;
-      case QUADRILATERAL:
-        delete [] Conn_Quad_Par;
-        Conn_Quad_Par = Conn_SubElem;
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
-        break;
-    }
-
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }

@@ -1,7 +1,8 @@
 /*!
- * \file CBaselineSolver_FEM.cpp
- * \brief Main subroutines for CBaselineSolver_FEM class.
- * \author F. Palacios, T. Economon
+ * \file CSurfaceElementFEM.hpp
+ * \brief Class definition for a surface element for the FEM solver.
+ *        The implementations are in the <i>CSurfaceElementFEM.cpp</i> file.
+ * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,25 +26,20 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#include "../../include/solvers/CBaselineSolver_FEM.hpp"
+#include "../../fem/CFEMStandardElementBase.hpp"
 
+using namespace std;
 
-CBaselineSolver_FEM::CBaselineSolver_FEM(void) : CSolver() { }
+/*!
+ * \class CSurfaceeSurfaceFEM
+ * \brief Class to store a surface element for the FEM solver.
+ * \author E. van der Weide
+ * \version 7.0.7 "Blackbird"
+ */
+class CSurfaceElementFEM {
+public:
 
-CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
-
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
-
-void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *config) {
-
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
-
-void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
-
-CBaselineSolver_FEM::~CBaselineSolver_FEM(void) { }
+  CFEMStandardElementBase *standardElem; /*!< \brief Pointer to the standard element. */
+};
