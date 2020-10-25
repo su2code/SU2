@@ -112,6 +112,48 @@ void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                   
   }
 }
 
+passivedouble CFEMStandardTriGrid::WorkEstimateBoundaryFace(CConfig              *config,
+                                                            const unsigned short elemType) {
+
+  /*--- Determine the number of DOFs of the neighboring element. ---*/
+  const unsigned short nDOFsElem = GetNDOFsStatic(elemType, nPoly);
+
+  /*--- TEMPORARY IMPLEMENTATION. ---*/
+  return nIntegration + 0.05*nDOFsElem;
+}
+
+passivedouble CFEMStandardTriGrid::WorkEstimateInternalFace(CConfig              *config,
+                                                            const unsigned short elemType0,
+                                                            const unsigned short nPoly0,
+                                                            const unsigned short elemType1,
+                                                            const unsigned short nPoly1) {
+
+  /*--- Determine the number of DOFs of the neighboring elements. ---*/
+  const unsigned short nDOFsElem0 = GetNDOFsStatic(elemType0, nPoly0);
+  const unsigned short nDOFsElem1 = GetNDOFsStatic(elemType1, nPoly1);
+
+  /* TEMPORARY IMPLEMENTATION. */
+  return 2.0*nIntegration + 0.05*(nDOFsElem0 + nDOFsElem1);
+}
+
+passivedouble CFEMStandardTriGrid::WorkEstimateVolume(CConfig *config) {
+
+  /*--- TEMPORARY IMPLEMENTATION. ---*/
+  return nIntegration + 0.1*nDOFs;
+}
+
+passivedouble CFEMStandardTriGrid::WorkEstimateWallFunctions(CConfig              *config,
+                                                             const unsigned short nPointsWF,
+                                                             const unsigned short elemType) {
+
+  /*--- TEMPORARY IMPLEMENTATION. ---*/
+  return 0.25*nIntegration*nPointsWF;
+}
+
+/*----------------------------------------------------------------------------------*/
+/*             Private member functions of CFEMStandardTriGrid.                     */
+/*----------------------------------------------------------------------------------*/
+
 void CFEMStandardTriGrid::DerLagBasisIntPointsTriangle(const vector<passivedouble>            &rDOFs,
                                                        const vector<passivedouble>            &sDOFs,
                                                        vector<ColMajorMatrix<passivedouble> > &derLag) {

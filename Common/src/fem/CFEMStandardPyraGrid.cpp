@@ -100,6 +100,12 @@ void CFEMStandardPyraGrid::DerivativesCoorIntPoints(const bool                  
   }
 }
 
+passivedouble CFEMStandardPyraGrid::WorkEstimateVolume(CConfig *config) {
+
+  /*--- TEMPORARY IMPLEMENTATION. ---*/
+  return nIntegration + 0.1*nDOFs;
+}
+
 /*----------------------------------------------------------------------------------*/
 /*             Private member functions of CFEMStandardPyraGrid.                    */
 /*----------------------------------------------------------------------------------*/

@@ -352,6 +352,68 @@ public:
                        su2activevector                    &Jacobians);
 
   /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] config   - Object, which contains the input parameters.
+   * \param[in] elemType - Type of the volume element adjacent to this boundary face.
+   * \return The work estimate for a boundary face of this type.
+   */
+  virtual passivedouble WorkEstimateBoundaryFace(CConfig              *config,
+                                                 const unsigned short elemType) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] config    - Object, which contains the input parameters.
+   * \param[in] elemType0 - Type of the volume element adjacent to side 0 of this face.
+   * \param[in] nPoly0    - Polynomial degree used in elemType0.
+   * \param[in] elemType1 - Type of the volume element adjacent to side 1 of this face.
+   * \param[in] nPoly1    - Polynomial degree used in elemType1.
+   * \return The work estimate for an internal face of this type.
+   */
+  virtual passivedouble WorkEstimateInternalFace(CConfig              *config,
+                                                 const unsigned short elemType0,
+                                                 const unsigned short nPoly0,
+                                                 const unsigned short elemType1,
+                                                 const unsigned short nPoly1) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] config - Object, which contains the input parameters.
+   * \return The work estimate for the volume for this type of element.
+   */
+  virtual passivedouble WorkEstimateVolume(CConfig *config) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in] config    - Object, which contains the input parameters.
+   * \param[in] nPointsWF - Number of points in wall function treatment.
+   * \param[in] elemType  - Type of the volume element adjacent to this boundary face.
+   * \return The work estimate for a boundary face of this type.
+   */
+  virtual passivedouble WorkEstimateWallFunctions(CConfig              *config,
+                                                  const unsigned short nPointsWF,
+                                                  const unsigned short elemType) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
    * \brief Function, which checks if the function arguments correspond to this standard element.
    * \param[in] val_VTK_Type   - Type of the element using the VTK convention.
    * \param[in] val_nPoly      - Polynomial degree of the element.

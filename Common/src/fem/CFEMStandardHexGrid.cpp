@@ -103,6 +103,12 @@ void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                   
   }
 }
 
+passivedouble CFEMStandardHexGrid::WorkEstimateVolume(CConfig *config) {
+
+  /*--- TEMPORARY IMPLEMENTATION. ---*/
+  return nIntegration + 0.1*nDOFs;
+}
+
 /*----------------------------------------------------------------------------------*/
 /*             Private member functions of CFEMStandardHexGrid.                     */
 /*----------------------------------------------------------------------------------*/

@@ -100,6 +100,12 @@ void CFEMStandardPrismGrid::DerivativesCoorIntPoints(const bool                 
   }
 }
 
+passivedouble CFEMStandardPrismGrid::WorkEstimateVolume(CConfig *config) {
+
+  /*--- TEMPORARY IMPLEMENTATION. ---*/
+  return nIntegration + 0.1*nDOFs;
+}
+
 /*----------------------------------------------------------------------------------*/
 /*             Private member functions of CFEMStandardPrismGrid.                   */
 /*----------------------------------------------------------------------------------*/

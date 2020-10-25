@@ -795,11 +795,39 @@ private:
   void DetermineDonorElementsWallFunctions(CConfig *config);
 
   /*!
+   * \brief Function, which converts the input the format for ParMETIS and calls
+   *        ParMETIS to determine the actual colors of the elements.
+   * \param[in] adjacency - Adjacency information of the elements.
+   * \param[in] vwgt      - Weights of the vertices of the graph, which are the elements.
+   * \param[in] adjwgt    - Weights of the adjacencies of the graph.
+   */
+  void DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> > &adjacency,
+                                     vector<passivedouble>          &vwgt,
+                                     vector<vector<passivedouble> > &adjwgt);
+
+  /*!
    * \brief Determine whether or not the Jacobians of the elements and faces
    *        are constant and a length scale of the elements.
    * \param[in]  config - Definition of the particular problem.
    */
   void DetermineFEMConstantJacobiansAndLenScale(CConfig *config);
+
+  /*!
+   * \brief Function, which determines the weights of the FEM graph for ParMETIS.
+   * \param[in]  config                       - Definition of the particular problem.
+   * \param[in]  localMatchingFaces           - Vector, which contains the matching faces of this rank.
+   * \param[in]  adjacency                    - Neighbors of the element.
+   * \param[in]  mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level
+   *                                            and number of DOFs.
+   * \param[out] vwgt                         - Weights of the vertices of the graph, i.e. the elements.
+   * \param[out] adjwgt                       - Weights of the edges of the graph.
+   */
+  void DetermineFEMGraphWeights(CConfig                                    *config,
+                                const vector<CFaceOfElement>               &localFaces,
+                                const vector<vector<unsigned long> >       &adjacency,
+                                const map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel,
+                                vector<passivedouble>                      &vwgt,
+                                vector<vector<passivedouble> >             &adjwgt);
 
   /*!
    * \brief Function, which determines the FEM standard elements.
@@ -808,9 +836,19 @@ private:
   void DetermineFEMStandardElements(CConfig *config);
 
   /*!
+   * \brief Function, which determines the adjacency information of the graph
+   *        representation of the grid.
+   * \param[in]  localMatchingFaces - Vector containing the local matching faces of the FEM grid.
+   * \param[out] adjacency          - Vector of vector to store the adjacency.
+   */
+  void DetermineGraphAdjacency(const vector<CFaceOfElement>   &localMatchingFaces,
+                               vector<vector<unsigned long> > &adjacency);
+
+  /*!
    * \brief Function, which determines the matching faces of a FEM grid.
    * \param[in]  config      - Definition of the particular problem.
-   * \param[out] localFaces  - Vector containing the local faces of the FEM grid. On output the matching faces are stored as one face.
+   * \param[out] localFaces  - Vector containing the local faces of the FEM grid.
+   *                           On output the matching faces are stored as one face.
    */
   void DetermineMatchingFacesFEMGrid(const CConfig          *config,
                                      vector<CFaceOfElement> &localFaces);
@@ -818,10 +856,20 @@ private:
   /*!
    * \brief Function, which determines the non-matching faces of a FEM grid.
    * \param[in]  config                - Definition of the particular problem.
-   * \param[in,out] localMatchingFaces - Vector containing the local faces of the FEM grid. On output the non-matching faces are removed.
+   * \param[in,out] localMatchingFaces - Vector containing the local faces of the FEM grid.
+   *                                     On output the non-matching faces are removed.
    */
   void DetermineNonMatchingFacesFEMGrid(const CConfig          *config,
                                         vector<CFaceOfElement> &localMatchingFaces);
+
+  /*!
+   * \brief Function, which determines the owner of the internal faces, i.e. which element
+   *        is responsible for computing the fluxes through the face.
+   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
+   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of DOFs.
+   */
+  void DetermineOwnershipInternalFaces(vector<CFaceOfElement>               &localFaces,
+                                       map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Determine the neighboring information for periodic faces of a FEM grid.
@@ -840,4 +888,11 @@ private:
   void DetermineTimeLevelElements(CConfig                              *config,
                                   const vector<CFaceOfElement>         &localFaces,
                                   map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
+
+  /*!
+   * \brief Function, which stores the information of the local matching faces in the
+   *        data structures of the local elements.
+   * \param[in] localMatchingFaces  - Vector, which contains the internal matching faces of this rank.
+   */
+  void StoreFaceInfoInLocalElements(const vector<CFaceOfElement> &localMatchingFaces);
 };

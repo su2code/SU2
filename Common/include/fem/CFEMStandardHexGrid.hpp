@@ -96,6 +96,15 @@ public:
    */
   unsigned short GetVTK_TypeFace(unsigned short ind) const override {return QUADRILATERAL;}
 
+  /*!
+   * \brief Function, which estimates the amount of work for a volume hexahedron.
+   *        This information is used to determine a well balanced partition.
+   *        The work of the surface integral in DG is not included.
+   * \param[in] config - Object, which contains the input parameters.
+   * \return The work estimate for the volume for this type of element.
+   */
+  passivedouble WorkEstimateVolume(CConfig *config) override;
+
 private:
 
   ColMajorMatrix<passivedouble> lagBasisLineIntEqui; /*!< \brief The values of the 1D Lagrangian basis functions

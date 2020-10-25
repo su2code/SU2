@@ -32,7 +32,7 @@
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
@@ -41,7 +41,7 @@ void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration
                                                const unsigned long  *DOFs,
                                                su2double            *derivCoor,
                                                CConfig              *config) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
@@ -50,43 +50,50 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
                                             const unsigned long  *DOFs,
                                             su2double            *derivCoor,
                                             CConfig              *config) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
                                         CConfig      *config) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM::SetPositive_ZArea(CConfig *config) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
   : CMeshFEM(geometry, config) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CoordinatesSolDOFs(void) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesFace(
@@ -101,6 +108,7 @@ void CMeshFEM_DG::CreateConnectivitiesFace(
                                 unsigned long               *modConnFace,
                                 unsigned long               *modConnElem) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral(
@@ -112,6 +120,7 @@ void CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral(
                                 unsigned long               *modConnLine,
                                 unsigned long               *modConnQuad) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle(
@@ -123,6 +132,7 @@ void CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle(
                                 unsigned long               *modConnLine,
                                 unsigned long               *modConnTria) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron(
@@ -134,6 +144,7 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron(
                                 unsigned long               *modConnQuad,
                                 unsigned long               *modConnHexa) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism(
@@ -146,6 +157,7 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism(
                                 unsigned long               *modConnQuad,
                                 unsigned long               *modConnPrism) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid(
@@ -157,6 +169,7 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid(
                                 unsigned long               *modConnQuad,
                                 unsigned long               *modConnPyra) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
@@ -168,6 +181,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
                                 unsigned long               *modConnTria,
                                 unsigned long               *modConnPrism) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid(
@@ -180,6 +194,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid(
                                 unsigned long               *modConnTria,
                                 unsigned long               *modConnPyra) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
@@ -191,26 +206,32 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
                                 unsigned long               *modConnTria,
                                 unsigned long               *modConnTet) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::VolumeMetricTermsFromCoorGradients(
@@ -218,10 +239,12 @@ void CMeshFEM_DG::VolumeMetricTermsFromCoorGradients(
                                        const su2double      *gradCoor,
                                        vector<su2double>    &metricTerms) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
@@ -230,14 +253,17 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
                                              const su2double      *weightsSubElem,
                                              su2double            *parCoor) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

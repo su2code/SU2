@@ -99,6 +99,52 @@ public:
    */
   unsigned short GetVTK_TypeFace(unsigned short ind) const override {return LINE;}
 
+  /*!
+   * \brief Function, which estimates the amount of work for a boundary triangular face.
+   *        This information is used to determine a well balanced partition.
+   * \param[in] config   - Object, which contains the input parameters.
+   * \param[in] elemType - Type of the volume element adjacent to this boundary face.
+   * \return The work estimate for a boundary face of this type.
+   */
+  passivedouble WorkEstimateBoundaryFace(CConfig              *config,
+                                         const unsigned short elemType) override;
+
+  /*!
+   * \brief Function, which estimates the amount of work for an internal triangular face.
+   *        This information is used to determine a well balanced partition.
+   * \param[in] config    - Object, which contains the input parameters.
+   * \param[in] elemType0 - Type of the volume element adjacent to side 0 of this face.
+   * \param[in] nPoly0    - Polynomial degree used in elemType0.
+   * \param[in] elemType1 - Type of the volume element adjacent to side 1 of this face.
+   * \param[in] nPoly1    - Polynomial degree used in elemType1.
+   * \return The work estimate for an internal face of this type.
+   */
+  passivedouble WorkEstimateInternalFace(CConfig              *config,
+                                         const unsigned short elemType0,
+                                         const unsigned short nPoly0,
+                                         const unsigned short elemType1,
+                                         const unsigned short nPoly1) override;
+
+  /*!
+   * \brief Function, which estimates the amount of work for a volume triangle.
+   *        This information is used to determine a well balanced partition.
+   *        The work of the surface integral in DG is not included.
+   * \param[in] config - Object, which contains the input parameters.
+   * \return The work estimate for the volume for this type of element.
+   */
+  passivedouble WorkEstimateVolume(CConfig *config) override;
+
+  /*!
+   * \brief Function, which estimates the amount of work for a boundary triangle
+   *        when wall functions are applied.
+   * \param[in] config    - Object, which contains the input parameters.
+   * \param[in] nPointsWF - Number of points in wall function treatment.
+   * \param[in] elemType  - Type of the volume element adjacent to this boundary face.
+   * \return The work estimate for a boundary face of this type.
+   */
+  passivedouble WorkEstimateWallFunctions(CConfig              *config,
+                                          const unsigned short nPointsWF,
+                                          const unsigned short elemType) override;
 private:
 
   unsigned short nDim; /*!< \brief Number of space dimensions. For nDim = 2 this standard element is
