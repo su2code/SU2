@@ -6521,8 +6521,7 @@ void CSolver::SumWeightedHessians(CSolver                    **solver,
 
 void CSolver::NormalizeMetric2(CGeometry *geometry,
                                CConfig   *config) {
-  unsigned long iPoint, 
-                nPointDomain = geometry->GetnPointDomain();
+  const unsigned long nPointDomain = geometry->GetnPointDomain();
 
   su2double localScale = 0.0,
             globalScale = 0.0;
@@ -6540,13 +6539,13 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
 
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+  for(auto iDim = 0; iDim < nDim; ++iDim){
     A[iDim]      = new su2double[nDim];
     EigVec[iDim] = new su2double[nDim];
   }
 
   //--- set tolerance and obtain global scaling
-  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6569,7 +6568,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 #endif
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6582,11 +6581,10 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]), -1./(2.*p+nDim));
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
     for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
-
     for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
@@ -6626,7 +6624,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+  for(auto iDim = 0; iDim < nDim; ++iDim){
     delete [] A[iDim];
     delete [] EigVec[iDim];
   }
@@ -6637,8 +6635,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
 
 void CSolver::NormalizeMetric3(CGeometry *geometry,
                                CConfig   *config) {
-  unsigned long iPoint, 
-                nPointDomain = geometry->GetnPointDomain();
+  const unsigned long nPointDomain = geometry->GetnPointDomain();
 
   su2double localScale = 0.0,
             globalScale = 0.0;
@@ -6656,13 +6653,13 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
             **EigVec = new su2double*[nDim], 
             *EigVal  = new su2double[nDim];
 
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+  for(auto iDim = 0; iDim < nDim; ++iDim){
     A[iDim]      = new su2double[nDim];
     EigVec[iDim] = new su2double[nDim];
   }
 
   //--- set tolerance and obtain global scaling
-  for(iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for(auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6689,7 +6686,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 #endif
 
   //--- normalize to achieve Lp metric for constraint complexity, then truncate size
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+  for (auto iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
     const su2double a = base_nodes->GetMetric(iPoint, 0);
     const su2double b = base_nodes->GetMetric(iPoint, 1);
@@ -6706,11 +6703,10 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
 
     const su2double factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
 
-    for(unsigned short iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+    for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
     for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
-
     for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
@@ -6754,7 +6750,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     cout << "Mesh complexity: " << globalTotComplex << "." << endl;
   }
 
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim){
+  for(auto iDim = 0; iDim < nDim; ++iDim){
     delete [] A[iDim];
     delete [] EigVec[iDim];
   }
