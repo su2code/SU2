@@ -227,6 +227,8 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                                config[val_iZone]);
   }
   
+  /* --- Checking convergence of reduced order model simulation  --*/
+  
   if (config[val_iZone]->GetReduced_Model()) {
     StopCalc = solver[val_iZone][INST_0][MESH_0][FLOW_SOL]->CheckROMConvergence();
   }
