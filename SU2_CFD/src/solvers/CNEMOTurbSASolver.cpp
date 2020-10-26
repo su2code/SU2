@@ -315,8 +315,6 @@ void CNEMOTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
 
     su2double nu  = mu/rho;
     su2double nu_hat = nodes->GetSolution(iPoint,0);
-    cout <<"line 318, rho:  " << rho << endl;
-    cout <<"line 319, nuhatT:  " << nu_hat << endl;
 
     su2double Ji   = nu_hat/nu;
     su2double Ji_3 = Ji*Ji*Ji;

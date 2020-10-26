@@ -118,6 +118,10 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   unsigned short nSpecies = config -> GetnSpecies();
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
+  if (nSpecies == 1){
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_AR",   "rms[Rho_AR]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the Ar density.", HistoryFieldType::RESIDUAL);
+  }
   if (nSpecies == 2){
     /// DESCRIPTION: Root-mean square residual of the density.
     AddHistoryOutput("RMS_DENSITY_N2",   "rms[Rho_N2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N2 density.", HistoryFieldType::RESIDUAL);
@@ -317,6 +321,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
   // Solution variables
+  if (nSpecies ==1){
+    AddVolumeOutput("DENSITY_AR",  "Density_Ar",  "SOLUTION","Density_Ar");
+  }
   if (nSpecies == 2){
     AddVolumeOutput("DENSITY_N2",  "Density_N2",  "SOLUTION", "Density_N2");
     AddVolumeOutput("DENSITY_N",   "Density_N",   "SOLUTION", "Density_N");
@@ -350,6 +357,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Auxiliary variables for post-processment
+  if (nSpecies == 1){
+    AddVolumeOutput("MASSFRAC_AR",  "MassFrac_Ar",  "AUXILIARY", "MassFrac_Ar");
+  }
   if (nSpecies == 2){
     AddVolumeOutput("MASSFRAC_N2",  "MassFrac_N2",  "AUXILIARY", "MassFrac_N2");
     AddVolumeOutput("MASSFRAC_N",   "MassFrac_N",   "AUXILIARY", "MassFrac_N");  
@@ -396,6 +406,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Residuals
+  if (nSpecies == 1){
+    AddVolumeOutput("RES_DENSITY_AR", "Residual_Density_Ar", "RESIDUAL", "Residual of the Ar density");
+  }
   if (nSpecies == 2){
     AddVolumeOutput("RES_DENSITY_N2", "Residual_Density_N2", "RESIDUAL", "Residual of the N2 density");
     AddVolumeOutput("RES_DENSITY_N",  "Residual_Density_N",  "RESIDUAL", "Residual of the N density");
@@ -484,6 +497,9 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
+  if (nSpecies == 1){
+    SetVolumeOutputValue("DENSITY_AR",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+  }
   if (nSpecies == 2){
     SetVolumeOutputValue("DENSITY_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0));
     SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 1));
@@ -496,6 +512,9 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
   }
 
+  if (nSpecies == 1){
+    SetVolumeOutputValue("MASSFRAC_AR",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
+  }
   if (nSpecies == 2){
     SetVolumeOutputValue("MASSFRAC_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0)/Node_Flow->GetDensity(iPoint));
     SetVolumeOutputValue("MASSFRAC_N",    iPoint, Node_Flow->GetSolution(iPoint, 1)/Node_Flow->GetDensity(iPoint));
@@ -560,6 +579,9 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
   }
 
+  if (nSpecies == 1) {
+    SetVolumeOutputValue("RES_DENSITY_AR", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+  }
   if (nSpecies == 2) {
     SetVolumeOutputValue("RES_DENSITY_N2", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
     SetVolumeOutputValue("RES_DENSITY_N",  iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
@@ -648,6 +670,9 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   CSolver* mesh_solver = solver[MESH_SOL];
   unsigned short nSpecies = config->GetnSpecies();
 
+  if (nSpecies == 1) {
+    SetHistoryOutputValue("RMS_DENSITY_AR", log10(NEMO_solver->GetRes_RMS(0)));
+  }
   if (nSpecies == 2) {
     SetHistoryOutputValue("RMS_DENSITY_N2", log10(NEMO_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DENSITY_N",  log10(NEMO_solver->GetRes_RMS(1)));
