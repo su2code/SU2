@@ -1160,7 +1160,8 @@ private:
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
-  ionization;                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  vt_transfer_res_limit;                     /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   
@@ -5260,6 +5261,11 @@ public:
    * \brief Indicates whether electron gas is present in the gas mixture.
    */
   bool GetIonization(void) const { return ionization; }
+
+  /*!
+   * \brief Indicates whether electron gas is present in the gas mixture.
+   */
+  bool GetVTTransferResidualLimiting(void) const { return vt_transfer_res_limit; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.
