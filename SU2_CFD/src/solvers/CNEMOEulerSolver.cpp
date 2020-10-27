@@ -1378,6 +1378,12 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetMu_SND(config->GetMu_S());
     config->SetMu_ConstantND(config->GetMu_Constant());
 
+    /*--- First, check if there is mesh motion. If yes, use the Mach
+         number relative to the body to initialize the flow. ---*/
+
+    if (dynamic_grid) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
+    else Velocity_Reynolds = ModVel_FreeStream;
+
     if (!reynolds_init) {
 
       /*--- Thermodynamics quantities based initialization ---*/
@@ -1391,6 +1397,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     }
 
     config->SetViscosity_FreeStream(Viscosity_FreeStream);
+
+    /*--- Compute Reynolds number ---*/
+    Reynolds = (Density_FreeStream*Velocity_Reynolds*config->GetLength_Reynolds())/Viscosity_FreeStream;
+    config->SetReynolds(Reynolds);
 
     /*--- Turbulence kinetic energy ---*/
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
