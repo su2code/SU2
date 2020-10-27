@@ -410,8 +410,10 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 
         DHiDHj = element_container[GRAD_TERM][EL_KIND]->Get_DHiDHj(iNode, jNode);
         HiHj = element_container[GRAD_TERM][EL_KIND]->Get_HiHj(iNode, jNode);
+
+        /*--- TODO: need to do this for all block dimensions which is 2/3D respectively with the same component from surface 1/2D dimension! Maybe rework this inefficiency ---*/
         for (iSurfDim=0; iSurfDim<nSurfDim; iSurfDim++) {
-          Jacobian_block[iSurfDim][iSurfDim] = DHiDHj[iSurfDim][iSurfDim] + HiHj;
+          Jacobian_block[iSurfDim][iSurfDim] = DHiDHj[0][0] + HiHj;
         }
         Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], Jacobian_block);
 
@@ -1012,7 +1014,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   WriteSens2Vector(geometry, config, helperVecOut);
 
-  ProjectMeshToDV(geometry, config, helperVecOut, deltaP);
+  ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
 
   OutputDVGradient("orig_grad.dat");
 }
@@ -1185,7 +1187,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
   RecordParameterizationJacobian(geometry, config, surface_movement, activeCoord);
 
   /// calculate the original gradinet
-  //CalculateOriginalGradient(geometry, grid_movement, config);
+  CalculateOriginalGradient(geometry, grid_movement, config);
 
   /// compute the Hessian column by column
   if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;
@@ -1212,7 +1214,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     helperVecOut.SetValZero();
 
     /// forward projection
-    ProjectDVtoMesh(geometry, config, seedvector, helperVecIn);
+    ProjectDVtoMesh(geometry, config, seedvector, helperVecIn, activeCoord);
 
     ofstream helperVecInStream("helperVecIn.dat");
     helperVecIn.printVec(helperVecInStream);
@@ -1246,7 +1248,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
           for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
             auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             for (auto iDim = 0; iDim < nDim; iDim++){
-              helperVecOut(iPoint*nDim,iDim) = matVecOut(iVertex,iDim);
+              helperVecOut(iPoint,iDim) = matVecOut(iVertex,iDim);
             }
           }
         }
@@ -1262,7 +1264,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     helperVecOutStream.close();
 
     /// reverse projection
-    ProjectMeshToDV(geometry, config, helperVecOut, seedvector);
+    ProjectMeshToDV(geometry, config, helperVecOut, seedvector, activeCoord);
 
     /// extract projected direction
     hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
@@ -1286,18 +1288,23 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
 
 CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  bool twoD = config->GetSmoothOnSurface();
-  if (twoD) {
+  bool surf = config->GetSmoothOnSurface();
+  if (surf) {
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ( config->GetMarker_All_DV(iMarker) == YES ) {
 
         /*--- Initialize the sparse matrix ---*/
-        Jacobian.InitOwnConnectivity(geometry->nVertex[iMarker], nDim-1, nDim-1, iMarker, geometry, config);
-        Compute_Surface_StiffMatrix(geometry, numerics, config, iMarker, nDim-1);
+        Jacobian.InitOwnConnectivity(geometry->nVertex[iMarker], nDim, nDim, iMarker, geometry, config);
+        Compute_Surface_StiffMatrix(geometry, numerics, config, iMarker, nDim);
+
+        // for debugging
+        ofstream stiffness("surfacestiffness.dat");
+        Jacobian.printMat(stiffness);
+        stiffness.close();
 
         // don't forget to initialize the vectors to the correct size.
-        matVecIn.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim-1, 0.0);
-        matVecOut.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim-1, 0.0);
+        matVecIn.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim, 0.0);
+        matVecOut.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim, 0.0);
       }
     }
   } else {

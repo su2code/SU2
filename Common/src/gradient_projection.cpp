@@ -490,11 +490,10 @@ void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfa
  * \date 19.10.2020
  * \name T. Dick
  */
-void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result) {
+void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord) {
 
   unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
-  su2double* VarCoord;
   su2double** DV_Value = config->GetDV_Pointer();
 
   /*--- get information from config ---*/
@@ -519,10 +518,9 @@ void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
-        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim=0; iDim<nDim; iDim++) {
-          result(iPoint,iDim) = AD::GetDerivativeValue(VarCoord[iDim]);
+          result(iPoint,iDim) = AD::GetDerivativeValue(registeredCoord(iPoint,iDim));
         }
       }
     }
@@ -537,7 +535,7 @@ void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double
  * \date 19.10.2020
  * \name T. Dick
  */
-void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output) {
+void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord) {
 
   /*--- Part 1: adjoint volumetric mesh deformation, if needed ---*/
   if (true) {
@@ -548,8 +546,7 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
 
   unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
-  su2double* VarCoord;
-  su2double DV_Value;
+  su2double** DV_Value = config->GetDV_Pointer();
   double my_Gradient, localGradient;
 
   // get some numbers from config
@@ -562,11 +559,9 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
-        VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-        if (iPoint == geometry->vertex[iMarker][iVertex]->GetNode()) {
-          for (iDim = 0; iDim < nDim; iDim++){
-            SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(sensitivity(iPoint,iDim)));
-          }
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++){
+          SU2_TYPE::SetDerivative(registeredCoord(iPoint,iDim), SU2_TYPE::GetValue(sensitivity(iPoint,iDim)));
         }
       }
     }
@@ -579,8 +574,7 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-      DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      my_Gradient = AD::GetDerivativeValue(DV_Value);
+      my_Gradient = AD::GetDerivativeValue(DV_Value[iDV][iDV_Value]);
       #ifdef HAVE_MPI
         SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       #else

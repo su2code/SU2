@@ -297,6 +297,7 @@ public:
 
   /*!
    * \brief Get the matrix vector product with the StiffnessMatrix
+   * \note This always applies the stiffness matrix for all dimensions independent of each other!
    */
   CSysMatrixVectorProduct<su2mixedfloat> GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config);
 

@@ -75,7 +75,7 @@ void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfa
  * \param config
  * \param surface_movement
  */
-void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result);
+void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord);
 
 /*!
  * \brief Reverse evaluate parameterization Jacobian.
@@ -83,4 +83,4 @@ void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double
  * \param config
  * \param surface_movement
  */
-void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output);
+void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double> &registeredCoord);
