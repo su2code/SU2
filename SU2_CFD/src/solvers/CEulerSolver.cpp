@@ -3160,7 +3160,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                       &tke_i, &tke_j, nPrimVarGrad, nTurbVarGrad);
+                       &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
@@ -3184,21 +3184,21 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         good_j = (tke_j >= 0.0);
       }
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
-      // muscl = good_i && good_j;
-      muscl = good_i || good_j;
+      muscl = good_i && good_j;
+      // muscl = good_i || good_j;
 
       counter_local += (!good_i+!good_j);
 
-      numerics->SetPrimitive(good_i ? Primitive_i : V_i, 
-                             good_j ? Primitive_j : V_j);
-      numerics->SetSecondary(good_i ? Secondary_i : S_i, 
-                             good_j ? Secondary_j : S_j);
+      numerics->SetPrimitive(muscl ? Primitive_i : V_i, 
+                             muscl ? Primitive_j : V_j);
+      numerics->SetSecondary(muscl ? Secondary_i : S_i, 
+                             muscl ? Secondary_j : S_j);
 
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        tke_i = muscl ? tke_i : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = muscl ? tke_j : turbNodes->GetPrimitive(jPoint,0);
         numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
@@ -3337,6 +3337,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
                                     su2double           *primvar_j,
                                     su2double           *turbvar_i, 
                                     su2double           *turbvar_j,
+                                    bool                &good_i,
+                                    bool                &good_j,
                                     const unsigned long nFlowVarGrad,
                                     const unsigned long nTurbVarGrad) {
 
@@ -3388,11 +3390,14 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
     }
 
+    good_i = good_i && (Project_Grad_i*V_ij >= 0);
+    good_j = good_j && (Project_Grad_j*V_ij >= 0);
+
     /*--- Edge-based limiters ---*/
 
     auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
     auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-    if (limiter) {
+    if (limiter && good_i && good_j) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
           Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa);
@@ -3432,11 +3437,14 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[iVar][iDim];
       }
 
+      good_i = good_i && (Project_Grad_i*T_ij >= 0);
+      good_j = good_j && (Project_Grad_j*T_ij >= 0);
+
       /*--- Edge-based limiters ---*/
 
       auto Limiter_i = turbNodes->GetLimiter(iPoint);
       auto Limiter_j = turbNodes->GetLimiter(jPoint);
-      if (limiterTurb) {
+      if (limiterTurb && good_i && good_j) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
             Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa);
