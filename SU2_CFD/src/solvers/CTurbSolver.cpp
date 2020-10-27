@@ -190,12 +190,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (nodes->GetUnderRelaxation(iPoint) < 0.1) {
-      cout << "Upwind_Res[" << iPoint << "][0]+= " << residual[0] << ", WallDist= " << geometry->node[iPoint]->GetWall_Distance() << endl;
-    }
-    if (nodes->GetUnderRelaxation(jPoint) < 0.1) {
-      cout << "Upwind_Res[" << jPoint << "][0]+= " << -residual[0] << ", WallDist= " << geometry->node[jPoint]->GetWall_Distance() << endl;
-    }
+    // if (nodes->GetUnderRelaxation(iPoint) < 0.1) {
+    //   cout << "Upwind_Res[" << iPoint << "][0]+= " << residual[0] << ", WallDist= " << geometry->node[iPoint]->GetWall_Distance() << endl;
+    // }
+    // if (nodes->GetUnderRelaxation(jPoint) < 0.1) {
+    //   cout << "Upwind_Res[" << jPoint << "][0]+= " << -residual[0] << ", WallDist= " << geometry->node[jPoint]->GetWall_Distance() << endl;
+    // }
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
