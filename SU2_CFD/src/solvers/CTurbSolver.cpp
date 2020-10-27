@@ -190,13 +190,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (nodes->GetUnderRelaxation(iPoint) < 0.1) {
-      cout << "Upwind_Res[" << iPoint << "][0]+= " << residual[0] << endl;
-    }
-    if (nodes->GetUnderRelaxation(jPoint) < 0.1) {
-      cout << "Upwind_Res[" << jPoint << "][0]+= " << -residual[0] << endl;
-    }
-
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -285,12 +278,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   /*--- Compute residual, and Jacobians ---*/
 
   auto residual = numerics->ComputeResidual(config);
-  if (nodes->GetUnderRelaxation(iPoint) < 0.1) {
-      cout << "Viscous_Res[" << iPoint << "][0]+= " << -residual[0] << endl;
-    }
-    if (nodes->GetUnderRelaxation(jPoint) < 0.1) {
-      cout << "Viscous_Res[" << jPoint << "][0]+= " << residual[0] << endl;
-    }
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
