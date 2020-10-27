@@ -211,7 +211,7 @@ vector<su2double>& CMutationTCLib::GetRefTemperature() {
 
 vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
 
-   vector<su2double> hf_RT; hf_RT.resize(nSpecies);
+   vector<su2double> hf_RT; hf_RT.resize(nSpecies,0.0);
 
    Tref = mix->standardStateT();
 
