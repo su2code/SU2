@@ -159,12 +159,14 @@ void CNEMOGas::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val
     rho_el = 0.0;
   }
 
-  /*--- Necessary indexes to assess primitive variables ---*/  
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOS_INDEX    = 0;  
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
-  unsigned long VEL_INDEX     = nSpecies+nDim+2;
+  unsigned long VEL_INDEX     = nSpecies+2;
 
-  MolarMass          = GetSpeciesMolarMass();
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhos[iSpecies] = V[RHOS_INDEX+iSpecies];
+
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
   Ref_Temperature    = GetRefTemperature();
@@ -229,12 +231,11 @@ void CNEMOGas::GetdTdU(su2double *V, su2double *val_dTdU){
 
   /*--- Necessary indexes to assess primitive variables ---*/  
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
-  unsigned long VEL_INDEX     = nSpecies+nDim+2;
+  unsigned long VEL_INDEX     = nSpecies+2;
 
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
 
-  MolarMass          = GetSpeciesMolarMass();
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
   Ref_Temperature    = GetRefTemperature();
