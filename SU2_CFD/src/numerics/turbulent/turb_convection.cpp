@@ -196,13 +196,11 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  const su2double dir = (Lambda[0] > 0)? 1.0 : -1.0;
-
   RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])*inv_R_Plus_One;
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
 
-  Lambda[1] = Lambda[0] + dir*RoeSoundSpeed;
-  Lambda[2] = Lambda[0] - dir*RoeSoundSpeed;
+  Lambda[1] = Lambda[0] + RoeSoundSpeed;
+  Lambda[2] = Lambda[0] - RoeSoundSpeed;
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
@@ -210,12 +208,12 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
     su2double Wave_i = ProjVel_i;
     su2double Wave_j = ProjVel_j;
     if (iVar == 1) {
-      Wave_i += dir*SoundSpeed_i;
-      Wave_j += dir*SoundSpeed_j;
+      Wave_i += SoundSpeed_i;
+      Wave_j += SoundSpeed_j;
     }
     if (iVar == 2) {
-      Wave_i -= dir*SoundSpeed_i;
-      Wave_j -= dir*SoundSpeed_j;
+      Wave_i -= SoundSpeed_i;
+      Wave_j -= SoundSpeed_j;
     }
 
     su2double Epsilon = max((Lambda[iVar]-Wave_i),
@@ -242,9 +240,9 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double Lambda_G = (Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])*(Gamma - FIVE3)/RoeSoundSpeed2;
   // const su2double Lambda_G = (Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])*Gamma_Minus_One/RoeSoundSpeed2; 
 
-  const su2double Diss_rk_rk = dir*(Lambda[0]+RoeTke*Lambda_G);
-  const su2double Diss_ro_ro = dir*(Lambda[0]);
-  const su2double Diss_ro_rk = dir*(RoeOmega*Lambda_G);
+  const su2double Diss_rk_rk = Lambda[0]+RoeTke*Lambda_G;
+  const su2double Diss_ro_ro = Lambda[0];
+  const su2double Diss_ro_rk = RoeOmega*Lambda_G;
 
   Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk_rk*Diff_rk)*Area;
   Flux[1] = 0.5*(rov_i+rov_j-Diss_ro_rk*Diff_rk
