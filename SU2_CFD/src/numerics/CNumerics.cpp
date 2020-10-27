@@ -570,14 +570,14 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     P[2][2] = alpha*(v[1]+(*c)*n[1]);
     P[2][3] = alpha*(v[1]-(*c)*n[1]);
 
-    // P[3][0] = q2+five3k;
-    // P[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    // P[3][2] = alpha*(h+two3k+(*c)*theta);
-    // P[3][3] = alpha*(h+two3k-(*c)*theta);
-    P[3][0] = q2+(*k);
+    P[3][0] = q2+five3k;
     P[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
-    P[3][2] = alpha*(h+(*c)*theta);
-    P[3][3] = alpha*(h-(*c)*theta);
+    P[3][2] = alpha*(h+two3k+(*c)*theta);
+    P[3][3] = alpha*(h+two3k-(*c)*theta);
+    // P[3][0] = q2+(*k);
+    // P[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
+    // P[3][2] = alpha*(h+(*c)*theta);
+    // P[3][3] = alpha*(h-(*c)*theta);
   }
   else {
     P[0][0] = n[0];
@@ -604,16 +604,16 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     P[3][3] = alpha*(v[2]+(*c)*n[2]);
     P[2][4] = alpha*(v[2]-(*c)*n[2]);
 
-    // P[4][0] = (q2+five3k)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    // P[4][1] = (q2+five3k)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    // P[4][2] = (q2+five3k)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
-    // P[4][3] = alpha*(h+two3k+(*c)*theta);
-    // P[4][4] = alpha*(h+two3k-(*c)*theta);
-    P[4][0] = (q2+(*k))*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    P[4][1] = (q2+(*k))*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    P[4][2] = (q2+(*k))*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
-    P[4][3] = alpha*(h+(*c)*theta);
-    P[4][4] = alpha*(h-(*c)*theta);
+    P[4][0] = (q2+five3k)*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    P[4][1] = (q2+five3k)*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    P[4][2] = (q2+five3k)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    P[4][3] = alpha*(h+two3k+(*c)*theta);
+    P[4][4] = alpha*(h+two3k-(*c)*theta);
+    // P[4][0] = (q2+(*k))*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    // P[4][1] = (q2+(*k))*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    // P[4][2] = (q2+(*k))*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    // P[4][3] = alpha*(h+(*c)*theta);
+    // P[4][4] = alpha*(h-(*c)*theta);
   }
 
 }
