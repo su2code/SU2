@@ -257,7 +257,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   /*--- Assign temperatures ---*/
   vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
-  
+
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
   
@@ -280,7 +280,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       rhoEve_min += U[iSpecies] * eves_min[iSpecies];
       rhoEve_max += U[iSpecies] * eves_max[iSpecies];
     }
+
     if (rhoEve < rhoEve_min) {
+      
       nonPhys      = true;
       V[TVE_INDEX] = Tvemin;
       U[nSpecies+nDim+1] = rhoEve_min;
@@ -292,8 +294,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       V[TVE_INDEX]   = T[1];
     }
   }
-    
+
   // Determine other properties of the mixture at the current state  
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
@@ -320,7 +323,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   fluidmodel->GetdPdU  (V, eves, val_dPdU  );
   fluidmodel->GetdTdU  (V, val_dTdU );
   fluidmodel->GetdTvedU(V, eves, val_dTvedU);
-
 
   /*--- Sound speed ---*/
   V[A_INDEX] = fluidmodel->GetSoundSpeed();

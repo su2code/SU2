@@ -64,8 +64,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-      cout << "Delete Me, Calling Mutation" << endl;
+      fluidmodel = new CMutationTCLib(config);
       break;
       case USER_DEFINED_NONEQ:
       fluidmodel = new CUserDefinedTCLib(config, nDim, false);
@@ -238,8 +237,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
-  su2double rho, T, RuSI, Ru;
-  vector<su2double> Ms = fluidmodel->GetMolarMass();
+  su2double rho, T, Tve, RuSI, Ru;
+  vector<su2double> Ms = fluidmodel->GetSpeciesMolarMass();
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -255,12 +254,13 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
+  Tve  = val_primvar[TVE_INDEX];
   V   = val_primvar;
   GV  = val_gradprimvar;
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
-  hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
+  hs = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_eve);
   
   /*--- Scale thermal conductivity with turb visc ---*/
   //delete me todo
@@ -664,7 +664,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
   a2 = V[A_INDEX]*V[A_INDEX];
 
   if(nDim == 2) {
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
       val_p_tensor[iSpecies][nSpecies]   += 0.0;
       val_p_tensor[iSpecies][nSpecies+1] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
@@ -678,15 +678,12 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+3][iSpecies] += 0.0;
     }
 
-    val_p_tensor[nSpecies][nSpecies]     += l[0];
-    val_p_tensor[nSpecies][nSpecies+1]   += (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+2]   += (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+3]   += 0.0;
-
-    val_p_tensor[nSpecies+1][nSpecies]   += l[1];
-    val_p_tensor[nSpecies+1][nSpecies+1] += (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+2] += (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+3] += 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      val_p_tensor[nSpecies+iDim][nSpecies]     += l[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+1]   += (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+2]   += (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+3]   += 0.0;
+    }
 
     val_p_tensor[nSpecies+2][nSpecies]   += vV;
     val_p_tensor[nSpecies+2][nSpecies+1] += ((V[H_INDEX])+a*vU) / (2.0*a2);
@@ -697,7 +694,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
-    }
+  }
   else {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -714,25 +711,15 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+3][iSpecies] = (val_dPdU[nSpecies+3]*sqvel-val_dPdU[iSpecies])
           / (val_dPdU[nSpecies+3]*a2);
       val_p_tensor[nSpecies+4][iSpecies] = 0.0;
-  }
+    }
 
-    val_p_tensor[nSpecies][nSpecies]     = l[0]; //cat next 3 blocks correspond to 3dim - make it a loop
-    val_p_tensor[nSpecies][nSpecies+1]   = m[0];
-    val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+3]   = (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+4]   = 0.0;
-
-    val_p_tensor[nSpecies+1][nSpecies]   = l[1];
-    val_p_tensor[nSpecies+1][nSpecies+1] = m[1];
-    val_p_tensor[nSpecies+1][nSpecies+2] = (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+3] = (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+4] = 0.0;
-
-    val_p_tensor[nSpecies+2][nSpecies]   = l[2];
-    val_p_tensor[nSpecies+2][nSpecies+1] = m[2];
-    val_p_tensor[nSpecies+2][nSpecies+2] = (V[VEL_INDEX+2]+a*val_normal[2]) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+3] = (V[VEL_INDEX+2]-a*val_normal[2]) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+4] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      val_p_tensor[nSpecies+iDim][nSpecies]     = l[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+1]   = m[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+2]   = (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+3]   = (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+4]   = 0.0;  
+    }
 
     val_p_tensor[nSpecies+3][nSpecies]   = vV;
     val_p_tensor[nSpecies+3][nSpecies+1] = vW;

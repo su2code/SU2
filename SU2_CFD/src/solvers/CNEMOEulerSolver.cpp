@@ -809,7 +809,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
 
-
   su2double lim_i, lim_j, lim_ij;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -939,7 +938,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Compute the residual ---*/
 
-    auto residual = numerics->ComputeResidual(config);
+    auto residual = numerics->ComputeResidual(config); 
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
     err = false;
@@ -1130,7 +1129,6 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
- 
     Vol = (geometry->nodes->GetVolume(iPoint) +
            geometry->nodes->GetPeriodicVolume(iPoint));
 
@@ -1318,7 +1316,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
   case MUTATIONPP:
-   //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
+   FluidModel = new CMutationTCLib(config);
    break;
   case USER_DEFINED_NONEQ:
    FluidModel = new CUserDefinedTCLib(config, nDim, viscous);
@@ -1379,38 +1377,19 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     config->SetMu_SND(config->GetMu_S());
     config->SetMu_ConstantND(config->GetMu_Constant());
 
-    /*--- Reynolds based initialization ---*/
-    if (reynolds_init) {
-
-      /*--- First, check if there is mesh motion. If yes, use the Mach
-         number relative to the body to initialize the flow. ---*/
-
-      if (dynamic_grid) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
-      else Velocity_Reynolds = ModVel_FreeStream;
-
-      /*--- For viscous flows, pressure will be computed from a density
-            that is found from the Reynolds number. The viscosity is computed
-            from the dimensional version of Sutherland's law or the constant
-            viscosity, depending on the input option.---*/
-
-      // THIS NEEDS TO BE REVISITED
-      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
-      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
-      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
-
-      config->SetViscosity_FreeStream(Viscosity_FreeStream);
-      config->SetPressure_FreeStream(Pressure_FreeStream);
-    }
-
-    else {
+    if (!reynolds_init) {
 
       /*--- Thermodynamics quantities based initialization ---*/
-      Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
-      Pressure_FreeStream  = Density_FreeStream*GasConstant_Inf*Temperature_FreeStream;
-      Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
+      Viscosity_FreeStream = FluidModel->GetViscosity();
+      Energy_FreeStream    = energies[0] + 0.5*sqvel;
+   
+    } else {
+
+      /*--- Reynolds based initialization not present in NEMO ---*/
+      SU2_MPI::Error("Only thermodynamics quantities based initialization: set pressure, temperatures and flag INIT_OPTION= TD_CONDITIONS." , CURRENT_FUNCTION);
     }
+
+    config->SetViscosity_FreeStream(Viscosity_FreeStream);
 
     /*--- Turbulence kinetic energy ---*/
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
@@ -1534,9 +1513,15 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     cout.precision(6);
 
     if (viscous) {
-      cout << "Viscous flow: Computing pressure using the equation of state for multi-species and multi-temperatures." << endl;
-      cout << "based on the free-stream temperatures and a density computed" << endl;
-      cout << "from the Reynolds number." << endl;
+      if (reynolds_init){
+        cout << "Viscous flow: Computing pressure using the equation of state for multi-species and multi-temperatures" << endl;
+        cout << "based on the free-stream temperatures and a density computed" << endl;
+        cout << "from the Reynolds number." << endl;
+      }
+      else{
+        cout << "Viscous flow: Computing density using the equation of state for multi-species and multi-temperatures" << endl;
+        cout << "based on the free-stream temperatures and pressure." << endl;
+      }
     } else {
       cout << "Inviscid flow: Computing density based on free-stream" << endl;
       cout << "and pressure using the the equation of state for multi-species and multi-temperatures." << endl;
@@ -1574,19 +1559,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
       ModelTable << "Wilke-Blottner-Eucken ";
-        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2.";
-        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2.";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
-        Unit.str("");
         NonDimTable.PrintFooter();
         break;
 
       case GUPTAYOS:
         ModelTable << "Gupta-Yos";
-        if      (config->GetSystemMeasurements() == SI) Unit << " N.s/m^2." ;
-        else if (config->GetSystemMeasurements() == US) Unit << " lbf.s/ft^2.";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
-        Unit.str("");
         NonDimTable.PrintFooter();
         break;
 
@@ -1657,10 +1634,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
       NonDimTable << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
       Unit.str("");
-      if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
-      else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
-      Unit.str("");
       if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
         else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
@@ -1726,7 +1699,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   }
 
   /*--- Get species molar mass ---*/
-  vector <su2double> Ms = FluidModel->GetMolarMass();
+  vector <su2double> Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Loop over all the vertices on this boundary (val_marker) ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1754,8 +1727,9 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       /*--- Apply the flow-tangency b.c. to the convective flux ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Residual[iSpecies] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++){
         Residual[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
+      }
       Residual[nSpecies+nDim]   = 0.0;
       Residual[nSpecies+nDim+1] = 0.0;
 
@@ -1878,6 +1852,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
       /*--- Apply contribution to the linear system ---*/
       LinSysRes.AddBlock(iPoint, residual);
+
       //if (implicit)
       //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
@@ -1926,6 +1901,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
+
         LinSysRes.SubtractBlock(iPoint, residual);
         //if (implicit) {
         //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -2166,6 +2142,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
+
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/

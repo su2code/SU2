@@ -149,7 +149,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-
+  
 //  if (implicit)
 
 //    /*--- Initialize the Jacobians ---*/

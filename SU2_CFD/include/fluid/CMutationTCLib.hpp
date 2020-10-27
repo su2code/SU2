@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CNEMOGas.hpp"
+#include "mutation++.h"
 
 /*!
  * \derived class CMutationTCLib
@@ -38,7 +39,14 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
-  string GasModel;
+  std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
+
+  vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
+  es,                                     /*!< \brief Species energies. */
+  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
+  h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
+
+  su2double Tref;
 
 public:
 
@@ -93,7 +101,7 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves) final;
+  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
 
   /*!
    * \brief Get species diffusion coefficients.
@@ -114,21 +122,21 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
    
   /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
+   * \brief Get species molar mass.
    */
-  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU) final;
+  vector<su2double>& GetSpeciesMolarMass() final;
 
   /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
+   * \brief Get reference temperature.
    */
-  void GetdTdU(su2double *V, su2double *val_dTdU) final;
+  vector<su2double>& GetRefTemperature() final;
 
   /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
+   * \brief Get species formation enthalpy.
    */
-  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU) final;
+  vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };

@@ -44,8 +44,6 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   Wall_Catalycity.resize(nSpecies,0.0);
   CharVibTemp.resize(nSpecies,0.0);
   RotationModes.resize(nSpecies,0.0);
-  Enthalpy_Formation.resize(nSpecies,0.0);
-  Ref_Temperature.resize(nSpecies,0.0);
   Diss.resize(nSpecies,0.0);
   A.resize(5,0.0);
   Omega00.resize(nSpecies,nSpecies,4,0.0);
@@ -58,10 +56,8 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
   }
-  
-  String_GasModel = config->GetGasModel();
 
-  if (String_GasModel =="ARGON"){
+  if (gas_model =="ARGON"){
     if (nSpecies != 1) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
     }
@@ -75,7 +71,6 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.667;
     nReactions  = 0;
-    ionization  = false;
 
     // Molar mass [kg/kmol]
     MolarMass[0] = 39.948;
@@ -115,7 +110,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     ElDegeneracy(0,6) = 15;
   }
 
-  if (String_GasModel == "N2"){
+  if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -130,7 +125,6 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.4;
     nReactions  = 2;
-    ionization  = false;
 
     Reactions.resize(nReactions,2,6,0.0);
     ArrheniusCoefficient.resize(nReactions,0.0);
@@ -261,7 +255,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
  
-  } else if (String_GasModel == "AIR-5"){
+  } else if (gas_model == "AIR-5"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -276,7 +270,6 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.4;
     nReactions  = 17;
-    ionization  = false;
 
     Reactions.resize(nReactions,2,6,0.0);
     ArrheniusCoefficient.resize(nReactions,0.0);
@@ -993,7 +986,7 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){
+vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
 
@@ -1421,147 +1414,9 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
   
 }
 
-void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
-
-  // Note: Electron energy not included properly.
-
-  su2double CvtrBAR, rhoCvtr, rhoCvve, rho_el, sqvel, conc, ef;
-
-  if (val_dPdU == NULL) {
-    cout << "ERROR: CalcdPdU - Array dPdU not allocated!" << endl;
-    exit(1);
-  }
-
-  /*--- Determine the number of heavy species ---*/
-  if (ionization) {
-    rho_el = rhos[nSpecies-1];
-  } else {
-    rho_el = 0.0;
-  }
-
-  /*--- Necessary indexes to assess primitive variables ---*/  
-  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
-  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
-  unsigned long VEL_INDEX     = nSpecies+nDim+2;
-  
-  /*--- Rename for convenience ---*/
-  rhoCvtr = V[RHOCVTR_INDEX];
-  rhoCvve = V[RHOCVVE_INDEX];
-
-  /*--- Pre-compute useful quantities ---*/
-  CvtrBAR = 0.0;
-  sqvel   = 0.0;
-  conc    = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    sqvel += V[VEL_INDEX+iDim] * V[VEL_INDEX+iDim];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    CvtrBAR += rhos[iSpecies]*Cvtrs[iSpecies];
-    conc    += rhos[iSpecies]/MolarMass[iSpecies];
-  }
-
-  // Species density
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    ef                 = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
-    val_dPdU[iSpecies] =  T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
-        (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
-         ef + 0.5*sqvel);
-  }
-  if (ionization) {
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
-      //      num = 0.0;
-      //      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
-      //      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-      //        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      //        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      //      }
-      //      eels = Ru/MolarMass[iSpecies] * (num/denom);
-
-      val_dPdU[iSpecies] -= rho_el * Ru/MolarMass[nSpecies-1] * (val_eves[iSpecies])/rhoCvve;
-    }
-    ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1]*Ref_Temperature[nSpecies-1];
-    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
-        + Ru/MolarMass[nSpecies-1]*Tve
-        - rho_el*Ru/MolarMass[nSpecies-1] * (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
-  }
-  // Momentum
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_dPdU[nSpecies+iDim] = -conc*Ru*V[VEL_INDEX+iDim]/rhoCvtr;
-
-  // Total energy
-  val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;
-
-  // Vib.-el energy
-  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim]
-      + rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
-}
-
-
-
-void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
-
-  su2double v2, ef, rhoCvtr;
-
-  /*--- Necessary indexes to assess primitive variables ---*/  
-  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
-  unsigned long VEL_INDEX     = nSpecies+nDim+2;
-
-  /*--- Rename for convenience ---*/
-  rhoCvtr = V[RHOCVTR_INDEX];
-
-  /*--- Calculate supporting quantities ---*/
-  v2 = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    v2 += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
-
-  /*--- Species density derivatives ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
-    val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
-  }
-  if (ionization) {
-    cout << "CNEMOVariable: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
-    exit(1);
-  }
-
-  /*--- Momentum derivatives ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_dTdU[nSpecies+iDim] = -V[VEL_INDEX+iDim] / V[RHOCVTR_INDEX];
-
-  /*--- Energy derivatives ---*/
-  val_dTdU[nSpecies+nDim]   =  1.0 / V[RHOCVTR_INDEX];
-  val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
-
-}    
-
-
-void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
-
-  su2double rhoCvve;
-
-  /*--- Necessary indexes to assess primitive variables ---*/  
-  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
- 
-  /*--- Rename for convenience ---*/
-  rhoCvve = V[RHOCVVE_INDEX];
-
-  /*--- Species density derivatives ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    val_dTvedU[iSpecies] = -val_eves[iSpecies]/rhoCvve;
-  }
-  /*--- Momentum derivatives ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_dTvedU[nSpecies+iDim] = 0.0;
-
-  /*--- Energy derivatives ---*/
-  val_dTvedU[nSpecies+nDim]   = 0.0;
-  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;  
-
-}
-
 void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
 
-  if (String_GasModel == "O2"){
+  if (gas_model == "O2"){
 
     //O2 + M -> 2O + M
     RxnConstantTable(0,0) = 1.8103;  RxnConstantTable(0,1) = 1.9607;  RxnConstantTable(0,2) = 3.5716;  RxnConstantTable(0,3) = -7.3623;   RxnConstantTable(0,4) = 0.083861;
@@ -1571,7 +1426,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 0.52455; RxnConstantTable(4,1) = 2.4715;  RxnConstantTable(4,2) = 1.7342;  RxnConstantTable(4,3) = -6.55534;  RxnConstantTable(4,4) = 0.030209;
     RxnConstantTable(5,0) = 0.50989; RxnConstantTable(5,1) = 2.4773;  RxnConstantTable(5,2) = 1.7132;  RxnConstantTable(5,3) = -6.5441;   RxnConstantTable(5,4) = 0.029591;
 
-  } else if (String_GasModel == "N2"){ 
+  } else if (gas_model == "N2"){ 
 
     //N2 + M -> 2N + M
     RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14
@@ -1581,7 +1436,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 1.4766;  RxnConstantTable(4,1) = 1.62910; RxnConstantTable(4,2) = 1.2153;  RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.00944;  //n = 1E18
     RxnConstantTable(5,0) = 1.4766;  RxnConstantTable(5,1) = 1.62910; RxnConstantTable(5,2) = 1.2153;  RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.00944;  //n = 1E19
 
-  } else if (String_GasModel == "ARGON_SID"){
+  } else if (gas_model == "ARGON_SID"){
 
     //N2 + M -> 2N + M
     RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14
@@ -1591,7 +1446,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 1.4766;  RxnConstantTable(4,1) = 1.62910; RxnConstantTable(4,2) = 1.2153;  RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.00944;  //n = 1E18
     RxnConstantTable(5,0) = 1.4766;  RxnConstantTable(5,1) = 1.62910; RxnConstantTable(5,2) = 1.2153;  RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.00944;  //n = 1E19
 
-  } else if (String_GasModel == "AIR-5"){
+  } else if (gas_model == "AIR-5"){
 
     if (iReaction <= 4) {
 
@@ -1644,7 +1499,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
       RxnConstantTable(5,0) = -0.002428; RxnConstantTable(5,1) = -1.7415; RxnConstantTable(5,2) = -1.2331;   RxnConstantTable(5,3) = -0.95365;  RxnConstantTable(5,4) = -0.04585;
     }
 
-  } else if (String_GasModel == "AIR-7"){  
+  } else if (gas_model == "AIR-7"){  
 
     if (iReaction <= 6) {
 

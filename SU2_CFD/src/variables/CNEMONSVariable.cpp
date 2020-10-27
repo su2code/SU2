@@ -118,8 +118,8 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   SetVelocity2(iPoint);
 
-  Ds                       = fluidmodel->GetDiffusionCoeff();
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+  Ds = fluidmodel->GetDiffusionCoeff();
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
   
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
