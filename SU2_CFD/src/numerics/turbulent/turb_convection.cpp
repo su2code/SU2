@@ -248,6 +248,9 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[1] = 0.5*(rov_i+rov_j-Diss_ro_rk*Diff_rk
                             -Diss_ro_ro*Diff_ro)*Area;
 
+  if (fabs(Flux[0]) > 10*Density_i*TurbVar_i[0]) cout << "rkv_i= " << rkv_i << ", rkv_j= " << rkv_j << ",Diss= " << Diss_rk_rk*Diff_rk << endl;
+  if (fabs(Flux[0]) > 10*Density_j*TurbVar_j[0]) cout << "rkv_j= " << rkv_j << ", rkv_i= " << rkv_i << ",Diss= " << Diss_rk_rk*Diff_rk << endl;
+
   Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk_rk)*Area;
   Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk_rk)*Area;
 
