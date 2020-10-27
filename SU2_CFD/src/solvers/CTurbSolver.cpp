@@ -190,12 +190,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    // if (nodes->GetUnderRelaxation(iPoint) < 0.1) {
-    //   cout << "Upwind_Res[" << iPoint << "][0]+= " << residual[0] << ", WallDist= " << geometry->node[iPoint]->GetWall_Distance() << endl;
-    // }
-    // if (nodes->GetUnderRelaxation(jPoint) < 0.1) {
-    //   cout << "Upwind_Res[" << jPoint << "][0]+= " << -residual[0] << ", WallDist= " << geometry->node[jPoint]->GetWall_Distance() << endl;
-    // }
+    if (residual[0] >  1000*flowPrimVar_i*turbPrimVar_i[0]) cout << "I, k_i= " << turbPrimVar_i[0] <<", k_j= " << turbPrimVar_j[0] << ", limiter_i= " << nodes->GetLimiter(iPoint,0) << ", limiter_j= " << nodes->GetLimiter(jPoint,0) << ", res= " << residual[0]  << endl;
+    if (residual[0] < -1000*flowPrimVar_j*turbPrimVar_j[0]) cout << "J, k_i= " << turbPrimVar_i[0] <<", k_j= " << turbPrimVar_j[0] << ", limiter_i= " << nodes->GetLimiter(iPoint,0) << ", limiter_j= " << nodes->GetLimiter(jPoint,0) << ", res= " << -residual[0] << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
