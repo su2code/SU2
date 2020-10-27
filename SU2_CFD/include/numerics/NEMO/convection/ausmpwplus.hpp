@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file ausmpwplus.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSMPWPLUS.
  * \author F. Palacios, W.Maier, C. Garbacz

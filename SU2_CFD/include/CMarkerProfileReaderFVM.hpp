@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CMarkerProfileReaderFVM.hpp
  * \brief Header file for the class CMarkerProfileReaderFVM.
  *        The implementations are in the <i>CMarkerProfileReaderFVM.cpp</i> file.

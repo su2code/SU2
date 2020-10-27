@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez

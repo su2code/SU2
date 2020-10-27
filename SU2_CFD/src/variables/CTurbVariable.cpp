@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CTurbVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno

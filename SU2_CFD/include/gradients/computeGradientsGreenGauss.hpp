@@ -112,6 +112,7 @@ void computeGradientsGreenGauss(CSolver* solver,
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
         AD::SetPreaccIn(field(jPoint,iVar));
+
         su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
 
         for (size_t iDim = 0; iDim < nDim; ++iDim)

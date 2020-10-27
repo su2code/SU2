@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring

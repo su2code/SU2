@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file COutputFactory.cpp
  * \brief Main subroutines for output solver information
  * \author T. Albring

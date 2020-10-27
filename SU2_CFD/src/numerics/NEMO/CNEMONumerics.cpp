@@ -711,7 +711,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
   a2 = V[A_INDEX]*V[A_INDEX];
 
   if(nDim == 2) {
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
       val_p_tensor[iSpecies][nSpecies]   += 0.0;
       val_p_tensor[iSpecies][nSpecies+1] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
@@ -744,8 +744,8 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
-    }
-  else {
+
+  } else {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;

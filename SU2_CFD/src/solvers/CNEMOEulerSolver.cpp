@@ -55,11 +55,11 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   int Unst_RestartIter = 0;
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING; 
+  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
 
-  bool check_infty, nonPhys;
+  bool nonPhys;
   vector<su2double> Energies_Inf;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -93,9 +93,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   }
 
-  //TOD0: we dont need this in NEMO delete me
-  LowMach_Precontioner = nullptr;
-
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -116,7 +113,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   if (navier_stokes) { nPrimVar   = nSpecies + nDim + 10; }
   else {               nPrimVar   = nSpecies +nDim +8;    }
   nPrimVarGrad = nSpecies + nDim + 8;
-  //todo, need to clean up?
 
   /*--- Initialize nVarGrad for deallocation ---*/
   nVarGrad     = nPrimVarGrad;
@@ -225,7 +221,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   SetBaseClassPointerToNodes();
   SetBaseClassPointerToNodeInfty();
 
-  check_infty = node_infty->SetPrimVar(0, FluidModel);
+  node_infty->SetPrimVar(0, FluidModel);
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
@@ -290,16 +286,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 }
 
 CNEMOEulerSolver::~CNEMOEulerSolver(void) {
-  unsigned short iVar;
-
-  if (LowMach_Precontioner != nullptr) {
-    for (iVar = 0; iVar < nVar; iVar ++)
-      delete [] LowMach_Precontioner[iVar];
-    delete [] LowMach_Precontioner;
-  }
 
   delete node_infty;
   delete FluidModel;
+
 }
 
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
@@ -365,7 +355,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
 
   /*--- Set the primitive variables ---*/
   ErrorCounter = 0;
-  ErrorCounter = SetPrimitive_Variables(solver_container,config, Output);
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
 
@@ -397,8 +387,6 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long ErrorCounter = 0;
-
   unsigned long InnerIter = config->GetInnerIter();
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl              = config->GetMUSCL_Flow();
@@ -410,7 +398,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-    /*--- Upwind second order reconstruction ---*/
+  /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
     /*--- Calculate the gradients ---*/
@@ -821,8 +809,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
 
-
-  su2double lim_i, lim_j, lim_ij;
+  su2double lim_i, lim_j, lim_ij = 0.0;
 
   unsigned long InnerIter = config->GetInnerIter();
   
@@ -1712,57 +1699,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
  }
 }
 
-void CNEMOEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
-  unsigned short iDim, jDim, iVar, jVar;
-  su2double local_Mach, rho, enthalpy, soundspeed, sq_vel;
-  su2double *U_i = nullptr, Mach_infty2, Mach_lim2, aux, parameter;
-
-  cout << "This dont work" << endl;
-  /*--- Variables to calculate the preconditioner parameter Beta ---*/
-  local_Mach = sqrt(nodes->GetVelocity2(iPoint))/nodes->GetSoundSpeed(iPoint);
-
-  /*--- Weiss and Smith Preconditionng ---*/
-  su2double Beta_max = config->GetmaxTurkelBeta();
-  Mach_infty2 = pow(config->GetMach(),2.0);
-  Mach_lim2   = pow(0.00001,2.0);
-  aux         = max(pow(local_Mach,2.0),Mach_lim2);
-  parameter   = min(1.0, max(aux,Beta_max*Mach_infty2));
-
-  U_i = nodes->GetSolution(iPoint);
-
-  rho = U_i[0];
-  enthalpy = nodes->GetEnthalpy(iPoint);
-  soundspeed = nodes->GetSoundSpeed(iPoint);
-  sq_vel = nodes->GetVelocity2(iPoint);
-
-  /*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-  LowMach_Precontioner[0][0] = 0.5*sq_vel;
-  LowMach_Precontioner[0][nVar-1] = 1.0;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Precontioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
-
-  for (iDim = 0; iDim < nDim; iDim ++) {
-    LowMach_Precontioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-    LowMach_Precontioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
-    for (jDim = 0; jDim < nDim; jDim ++) {
-      LowMach_Precontioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
-    }
-  }
-
-  LowMach_Precontioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
-  LowMach_Precontioner[nVar-1][nVar-1] = enthalpy;
-  for (iDim = 0; iDim < nDim; iDim ++)
-    LowMach_Precontioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
-
-  for (iVar = 0; iVar < nVar; iVar ++ ) {
-    for (jVar = 0; jVar < nVar; jVar ++ ) {
-      LowMach_Precontioner[iVar][jVar] = (parameter - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*LowMach_Precontioner[iVar][jVar];
-      if (iVar == jVar)
-        LowMach_Precontioner[iVar][iVar] += 1.0;
-    }
-  }
-}
-
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
@@ -1989,7 +1925,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
         LinSysRes.SubtractBlock(iPoint, residual);
-
         //if (implicit) {
         //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         //}
@@ -2045,6 +1980,9 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Retrieve solution at this boundary node ---*/
       for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);

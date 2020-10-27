@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CFlowTractionInterface.cpp
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.

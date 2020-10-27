@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
@@ -690,7 +690,6 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
-
           // per-surface output to be added soon
           break;
         case HEAT_EQUATION: case DISC_ADJ_HEAT:

@@ -43,9 +43,9 @@ public:
   su2double a_j, P_j, h_j;
   unsigned short nPrimVar, nPrimVarGrad;
 
-  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+  su2double* Flux   = nullptr;            /*!< \brief The flux / residual across the edge. */
 
-  unsigned short nSpecies, nHeavy, nEl; /*!< \brief Number of species present in plasma */
+  unsigned short nSpecies, nHeavy, nEl;   /*!< \brief Number of species present in plasma */
   
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;
@@ -55,8 +55,8 @@ public:
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
  
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX, LAM_VISC_INDEX,
-  EDDY_VISC_INDEX;
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
+  LAM_VISC_INDEX, EDDY_VISC_INDEX;
 
   CNEMOGas *fluidmodel;
 
@@ -64,10 +64,13 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of primitive grad. variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
-                unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
                 const CConfig* config);
 
   /*!
@@ -117,8 +120,8 @@ public:
    * \param[in] val_eve - Virbational-Electronical Energy.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_diffusioncoeff - Disffusion Coefficient.
-   * \param[in] val_lam_viscosity - Laminar viscosity
-   * \param[in] val_eddy_viscosity - Eddy viscosity
+   * \param[in] val_lam_viscosity - Laminar Viscosity
+   * \param[in] val_eddy_viscosity - Eddy Viscosity
    * \param[in] val_thermal_conductivity - Thermal conductivity.
    * \param[in] val_thermal_conductivity_ve - Thermal conductivity of Vibe-Elec modes.
    * \param[in] config - Definition of the particular problem.

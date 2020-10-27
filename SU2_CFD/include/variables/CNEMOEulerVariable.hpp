@@ -550,15 +550,4 @@ public:
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
   
-  /*!
-   * \brief Retrieves the value of the laminar viscosity in the primitive variable vector.
-   */
-  inline unsigned short GetLamViscIndex(void) { return LAM_VISC_INDEX; }
-
-  /*!
-   * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
-   */
-  inline unsigned short GetEddyViscIndex(void) { return EDDY_VISC_INDEX; }
-
-
 };

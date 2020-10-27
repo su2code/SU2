@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file msw.hpp
  * \brief Declaration of numerics classes for modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon

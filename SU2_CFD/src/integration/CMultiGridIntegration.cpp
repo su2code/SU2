@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon

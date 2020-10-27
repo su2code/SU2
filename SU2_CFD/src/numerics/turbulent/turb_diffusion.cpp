@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file turb_diffusion.cpp
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in turbulence problems.
@@ -108,7 +108,6 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
   /*--- Mean gradient approximation ---*/
-
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;

@@ -53,7 +53,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   RxnConstantTable.resize(6,5) = su2double(0.0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
 
-  if(viscous){
+  if(viscous){ 
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
@@ -85,9 +85,9 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     // Characteristic vibrational temperatures
     CharVibTemp[0] = 0.0;
 
-    Enthalpy_Formation[0] = 0.0;
+    Enthalpy_Formation[0] = 0.0;    
     Ref_Temperature[0] = 0.0;
-    nElStates[0] = 7;
+    nElStates[0] = 7;                 
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       maxEl = max(maxEl, nElStates[iSpecies]);
@@ -97,16 +97,16 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);
 
     /*--- AR: Blottner coefficients. ---*/
-    Blottner(0,0) = 3.83444322E-03;   Blottner(0,1) = 6.74718764E-01;   Blottner(0,2) = -1.24290388E+01;
-
+    Blottner(0,0) = 3.83444322E-03;   Blottner(0,1) = 6.74718764E-01;   Blottner(0,2) = -1.24290388E+01; 
+    
     /*--- AR: 7 states ---*/
     CharElTemp(0,0) = 0.000000000000000E+00;
     CharElTemp(0,1) = 1.611135736988230E+05;
     CharElTemp(0,2) = 1.625833076870950E+05;
     CharElTemp(0,3) = 1.636126382960720E+05;
     CharElTemp(0,4) = 1.642329518358000E+05;
-    CharElTemp(0,5) = 1.649426852542080E+05;
-    CharElTemp(0,6) = 1.653517702884570E+05;
+    CharElTemp(0,5) = 1.649426852542080E+05;   
+    CharElTemp(0,6) = 1.653517702884570E+05; 
     ElDegeneracy(0,0) = 1;
     ElDegeneracy(0,1) = 9;
     ElDegeneracy(0,2) = 21;
@@ -1186,14 +1186,17 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
       jSpecies = nSpecies-1;
       Mj       = MolarMass[jSpecies];
       gam_j    = rhos[iSpecies] / (Density*Mj);
+      
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega00(iSpecies,jSpecies,1)*log(Tve)
           + Omega00(iSpecies,jSpecies,2));
+      
       /*--- Calculate "delta1_ij" ---*/
       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
     }
+    
     /*--- Assign species diffusion coefficient ---*/
     if (nSpecies == 1) DiffusionCoeff[0]=0.0;
     else DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
@@ -1433,21 +1436,22 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
     exit(1);
   }
 
-  /*--- Determine the number of heavy species ---*/
-  if (ionization) {
-    rho_el = rhos[nSpecies-1];
-  } else {
-    rho_el = 0.0;
-  }
-
-  /*--- Necessary indexes to assess primitive variables ---*/  
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOS_INDEX    = 0;
+  unsigned long VEL_INDEX     = nSpecies+2;
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
-  unsigned long VEL_INDEX     = nSpecies+nDim+2;
-  
+
+
   /*--- Rename for convenience ---*/
+  for (iSpecies = 0;iSpecies<nSpecies;iSpecies++){
+    rhos[iSpecies] = V[iSpecies];}
   rhoCvtr = V[RHOCVTR_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
+
+  /*--- Determine the number of heavy species ---*/
+  if (ionization) { rho_el = rhos[RHOS_INDEX+nSpecies-1];}
+  else            { rho_el  = 0.0;                       }
 
   /*--- Pre-compute useful quantities ---*/
   CvtrBAR = 0.0;
@@ -1463,9 +1467,8 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   // Species density
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     ef                 = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
-    val_dPdU[iSpecies] =  T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
-        (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
-         ef + 0.5*sqvel);
+    val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
+                         (-Cvtrs[iSpecies] * (T-Ref_Temperature[iSpecies]) - ef + 0.5*sqvel);
   }
   if (ionization) {
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -1481,9 +1484,9 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
       val_dPdU[iSpecies] -= rho_el * Ru/MolarMass[nSpecies-1] * (val_eves[iSpecies])/rhoCvve;
     }
     ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1]*Ref_Temperature[nSpecies-1];
-    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
-        + Ru/MolarMass[nSpecies-1]*Tve
-        - rho_el*Ru/MolarMass[nSpecies-1] * (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
+    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel) +
+                           Ru/MolarMass[nSpecies-1]*Tve - rho_el*Ru/MolarMass[nSpecies-1] *
+                           (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
   }
   // Momentum
   for (iDim = 0; iDim < nDim; iDim++)
@@ -1493,8 +1496,9 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;
 
   // Vib.-el energy
-  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim]
-      + rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
+  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
+                               rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
+
 }
 
 void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){

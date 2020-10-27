@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CDiscAdjFluidIteration.hpp
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.

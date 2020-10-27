@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CUserDefinedTCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
@@ -50,12 +50,12 @@ private:
   C3DIntMatrix Reactions;           /*!</brief reaction map for chemically reacting flows */
   
   vector<su2double>
-  ArrheniusCoefficient,           /*!< \brief Arrhenius reaction coefficient */
-  ArrheniusEta,				      /*!< \brief Arrhenius reaction temperature exponent */
-  ArrheniusTheta,				  /*!< \brief Arrhenius reaction characteristic temperature */
-  CharVibTemp,					  /*!< \brief Characteristic vibrational temperature for e_vib */
-  RotationModes,			      /*!< \brief Rotational modes of energy storage */
-  Ref_Temperature,   			  /*!< \brief Reference temperature for thermodynamic relations */
+  ArrheniusCoefficient,             /*!< \brief Arrhenius reaction coefficient */
+  ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
+  ArrheniusTheta,                   /*!< \brief Arrhenius reaction characteristic temperature */
+  CharVibTemp,                      /*!< \brief Characteristic vibrational temperature for e_vib */
+  RotationModes,		    /*!< \brief Rotational modes of energy storage */
+  Ref_Temperature,   		  /*!< \brief Reference temperature for thermodynamic relations */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */

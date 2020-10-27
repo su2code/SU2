@@ -1059,6 +1059,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
     cout << endl <<"-------------------- Solver Preprocessing ( Zone " << config->GetiZone() <<" ) --------------------" << endl;
 
   solver = new CSolver**[config->GetnMGLevels()+1];
+
   for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++){
     solver[iMesh] = CSolverFactory::CreateSolverContainer(kindSolver, config, geometry[iMesh], iMesh);
   }
@@ -1266,7 +1267,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
     case NAVIER_STOKES: case INC_NAVIER_STOKES: ns = true; heat = config->GetWeakly_Coupled_Heat(); break;
     case NEMO_NAVIER_STOKES: NEMO_ns = true; break;
     case RANS : case INC_RANS: ns = true; turbulent = true; heat = config->GetWeakly_Coupled_Heat(); break;
-    case NEMO_RANS: NEMO_ns = true; turbulent = true; heat = config->GetWeakly_Coupled_Heat(); break;
+    case NEMO_RANS: NEMO_ns = true; NEMO_turbulent = true; heat = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; break;
@@ -1570,9 +1571,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (NEMO_ns)         nVar_NEMO = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)       nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
   if (NEMO_turbulent)  nVar_Turb = solver[MESH_0][TURB_SOL]->GetnVar();
-
   if (transition)      nVar_Trans = solver[MESH_0][TRANS_SOL]->GetnVar();
-
   if (fem_euler)       nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
   if (fem_ns)          nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
   //if (fem_turbulent)    nVar_Turb = solver_container[MESH_0][FEM_TURB_SOL]->GetnVar();
@@ -1912,7 +1911,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
   }
 
-  /*--- Solver definition for the Potential, Euler, Navier-Stokes NEMO problems ---*/
+   /*--- Solver definition for the Potential, Euler, Navier-Stokes NEMO problems ---*/
+
   if ((NEMO_euler) || (NEMO_ns)) {
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/

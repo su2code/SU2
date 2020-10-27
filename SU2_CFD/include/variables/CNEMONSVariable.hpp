@@ -144,6 +144,12 @@ public:
   inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return LaminarViscosity(iPoint); }
 
   /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,EDDY_VISC_INDEX); }
+
+  /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
@@ -154,12 +160,6 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity_ve(unsigned long iPoint) const override { return ThermalCond_ve(iPoint); }
-
-  /*!
-   * \brief Get the eddy viscosity of the flow.
-   * \return The eddy viscosity of the flow.
-   */
-  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,EDDY_VISC_INDEX); }
 
   /*!
    * \brief Set the temperature at the wall

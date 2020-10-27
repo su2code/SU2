@@ -1,7 +1,7 @@
 ﻿/*!
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
- * \author C. Garbacz, W. Maier, S.R. Copeland.
+ * \author C. Garbacz, W. Maier, S.R. Copeland
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -34,12 +34,12 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure, const su2double *val_ma
                                  unsigned long val_ndim, unsigned long val_nvar,
                                  unsigned long val_nvarprim, unsigned long val_nvarprimgrad,
                                  CConfig *config, CNEMOGas *fluidmodel) :
-                                     CNEMOEulerVariable(val_pressure, val_massfrac,
-                                                        val_mach, val_temperature,
-                                                        val_temperature_ve, npoint,
-                                                        val_ndim, val_nvar,
-                                                        val_nvarprim, val_nvarprimgrad,
-                                                        config, fluidmodel) {
+                                 CNEMOEulerVariable(val_pressure, val_massfrac,
+                                                    val_mach, val_temperature,
+                                                    val_temperature_ve, npoint,
+                                                    val_ndim, val_nvar,
+                                                    val_nvarprim, val_nvarprimgrad,
+                                                    config, fluidmodel) {
                                
 
 
@@ -53,9 +53,16 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure, const su2double *val_ma
   ThermalCond.resize(nPoint)               = su2double(0.0);
   ThermalCond_ve.resize(nPoint)            = su2double(0.0);
 
-  Max_Lambda_Visc.resize(nPoint)           = su2double(0.0);
-  Vorticity.resize(nPoint,3)               = su2double(0.0);
-  StrainMag.resize(nPoint)                 = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0); //Cat this should only exist in NSNEMO variable
+  inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
+
+  Vorticity.resize(nPoint,3)     = su2double(0.0);
+  StrainMag.resize(nPoint)       = su2double(0.0);
+  Tau_Wall.resize(nPoint)        = su2double(-1.0);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Roe_Dissipation.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint)  = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 }
 
 bool CNEMONSVariable::SetVorticity(void) {

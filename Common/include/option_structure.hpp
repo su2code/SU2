@@ -200,12 +200,11 @@ enum ENUM_MAIN_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30,
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42,          /*!< \brief Definition of the NEMO Navier-Stokes solver. */
-  NEMO_RANS = 43,                    /*!< \brief Definition of the NEMO RANS solver. */
-  DISC_ADJ_NEMO_EULER = 44,          /*!< \brief Definition of the discrete adjoint NEMO Euler solver. */
+  NEMO_NAVIER_STOKES = 42,          /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_RANS = 43,                   /*!< \brief Definition of the NEMO RANS solver. */
+  DISC_ADJ_NEMO_EULER = 44,         /*!< \brief Definition of the discrete adjoint NEMO Euler solver. */
   DISC_ADJ_NEMO_RANS = 45,          /*!< \brief Definition of the discrete adjoint NEMO Reynolds-averaged Navier-Stokes' (RANS) solver. */
   DISC_ADJ_NEMO_NAVIER_STOKES = 46  /*!< \brief Definition of the discrete adjoint NEMO Navier-Stokes' solver. */
-
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -239,6 +238,9 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
   MakePair("DISC_ADJ_FEM", DISC_ADJ_FEM)
   MakePair("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
+  MakePair("DISC_ADJ_NEMO_EULER", DISC_ADJ_NEMO_EULER)
+  MakePair("DISC_ADJ_NEMO_RANS", DISC_ADJ_NEMO_RANS)
+  MakePair("DISC_ADJ_NEMO_NAVIERSTOKES", DISC_ADJ_NEMO_NAVIER_STOKES)
   MakePair("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
   MakePair("MULTIPHYSICS", MULTIPHYSICS)
 };

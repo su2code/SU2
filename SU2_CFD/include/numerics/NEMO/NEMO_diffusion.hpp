@@ -36,7 +36,6 @@
  * \author S.R. Copeland, W. Maier, C. Garbacz
  * \version 7.0.6 "falcon"
  */
-
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
   unsigned short iDim, iVar;    /*!< \brief Iterators in dimension an variable. */
