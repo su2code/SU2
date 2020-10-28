@@ -55,18 +55,19 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
                                              unsigned long  faceConn[6][4]) {
 
   /*--- Get the corner points of the faces local to the element. ---*/
-
   GetLocalCornerPointsAllFaces(VTK_Type, nPolyGrid, nDOFsGrid,
                                numFaces, nPointsPerFace, faceConn);
 
   /*--- Convert the local values of faceConn to global values. ---*/
-
   for(unsigned short i=0; i<numFaces; ++i) {
     for(unsigned short j=0; j<nPointsPerFace[i]; ++j) {
       unsigned long nn = faceConn[i][j];
       faceConn[i][j] = Nodes[nn];
     }
   }
+
+  /*--- Store numFaces in nFaces for later purposes. ---*/
+  nFaces = numFaces;
 }
 
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
@@ -77,8 +78,7 @@ void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
                                                   unsigned long  faceConn[6][4]) {
 
   /*--- Determine the element type and set the face data accordingly.
-        The faceConn values are local to the element.                 ---*/
-
+        The faceConn values are local to the element. ---*/
   unsigned short nn2, nn3, nn4;
   switch( elementType ) {
     case TRIANGLE:

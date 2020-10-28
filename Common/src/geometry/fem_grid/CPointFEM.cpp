@@ -1,6 +1,6 @@
 /*!
- * \file fem_wall_distance.cpp
- * \brief Main subroutines for computing the wall distance for the FEM solver.
+ * \file CPointFEM.cpp
+ * \brief Implementations of the member functions of CPointFEM.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
@@ -25,22 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/fem_geometry_structure.hpp"
-#include "../../include/adt/CADTElemClass.hpp"
+#include "../../../include/geometry/fem_grid/CPointFEM.hpp"
 
-std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig *config) const {
+bool CPointFEM::operator< (const CPointFEM &other) const {
+  if(periodIndexToDonor != other.periodIndexToDonor)
+    return periodIndexToDonor < other.periodIndexToDonor;
+  return globalID < other.globalID;
+ }
 
-  return NULL;
-
-}
-
-/*!
- * \brief Set wall distances a specific value
- */
-void CMeshFEM_DG::SetWallDistance(su2double val){
-
-}
-
-void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass *WallADT){
-
+bool CPointFEM::operator==(const CPointFEM &other) const {
+ return (globalID           == other.globalID &&
+         periodIndexToDonor == other.periodIndexToDonor);
 }

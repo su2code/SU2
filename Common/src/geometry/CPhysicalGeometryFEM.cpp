@@ -1893,7 +1893,8 @@ void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *co
         physical boundary faces in localFaces. Note that use is made of the
         overloaded function GetCornerPointsAllFaces, which explains the
         dimensions of the variables used in the function call. Also note that
-        the periodic boundaries are excluded, because they are not physical.  ---*/
+        the periodic boundaries are excluded, because they are not physical.
+        The face is invalidated by setting the element ID to an invalid value. ---*/
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     if(config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
       for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
@@ -1912,9 +1913,6 @@ void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *co
         vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-        /*--- Store the corresponding element ID for the boundary element and
-              invalidate the face by setting the element ID to an invalid value. ---*/
-        bound[iMarker][k]->SetDomainElement(low->elemID0);
         low->elemID0 = Global_nElem + 10;
       }
     }
@@ -1938,7 +1936,7 @@ void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig          *co
         face four points a global node ID that is larger than the largest
         point ID in the grid. In this way the sorting operator puts
         these faces at the end of the vector, see also the < operator
-        of CFaceOfElement.                                         ---*/
+        of CFaceOfElement. ---*/
   unsigned long nFacesLocOr = nFacesLoc;
   for(unsigned long i=0; i<nFacesLocOr; ++i) {
     if(localFaces[i].elemID0 > Global_nElem) {

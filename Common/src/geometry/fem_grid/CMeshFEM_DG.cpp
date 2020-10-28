@@ -1,6 +1,6 @@
 /*!
- * \file CMesh_DG.cpp
- * \brief Implementations of the member functions of CMesh_DG.
+ * \file CMeshFEM_DG.cpp
+ * \brief Implementations of the member functions of CMeshFEM_DG.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *

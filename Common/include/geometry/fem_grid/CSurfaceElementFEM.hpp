@@ -38,8 +38,24 @@ using namespace std;
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  */
-class CSurfaceElementFEM {
-public:
+struct CSurfaceElementFEM {
+  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
+  unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
+  unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
+
+  unsigned long volElemID;         /*!< \brief ID of the corresponding volume element. */
+  unsigned long boundElemIDGlobal; /*!< \brief Global ID of this surface element inside
+                                               the boundary to which it belongs. */
+
+  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element.
+                                                 In this vector the original sequence of the grid file
+                                                 is stored. */
 
   CFEMStandardElementBase *standardElem; /*!< \brief Pointer to the standard element. */
+
+  /*!
+   * \brief Less than operator of the class. Needed for the sorting.
+            The criterion for comparison is the corresponding (local) volume ID.
+   */
+  bool operator<(const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
 };

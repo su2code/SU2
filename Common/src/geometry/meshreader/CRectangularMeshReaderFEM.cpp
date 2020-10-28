@@ -157,10 +157,8 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
   /*--- Determine the number of elements in i-direction. ---*/
   const unsigned long nElemI = nNode-1;
 
-  /*--- Get a partitioner to help with linear partitioning and store
-        the index of the first element on this rank. ---*/
+  /*--- Get a partitioner to help with linear partitioning. ---*/
   CLinearPartitioner elemPartitioner(numberOfGlobalElements,0);
-  const unsigned long firstIndex = elemPartitioner.GetFirstIndexOnRank(rank);
 
   /*--- The rectangle always has 4 markers. Allocate the required memory. ---*/
   numberOfMarkers = 4;
@@ -180,11 +178,11 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       /*--- The corresponding volume element is stored on this rank,
             hence store the surface element as well. ---*/
-      surfaceElementConnectivity[0].push_back(KindBound);                // VTK type.
-      surfaceElementConnectivity[0].push_back(1);                        // Poly degree grid.
-      surfaceElementConnectivity[0].push_back(2);                        // Number of grid DOFs.
-      surfaceElementConnectivity[0].push_back(iNode);                    // Global surface element ID.
-      surfaceElementConnectivity[0].push_back(globalElemID-firstIndex);  // Local volume element ID.
+      surfaceElementConnectivity[0].push_back(KindBound);     // VTK type.
+      surfaceElementConnectivity[0].push_back(1);             // Poly degree grid.
+      surfaceElementConnectivity[0].push_back(2);             // Number of grid DOFs.
+      surfaceElementConnectivity[0].push_back(iNode);         // Global surface element ID.
+      surfaceElementConnectivity[0].push_back(globalElemID);  // Global volume element ID.
 
       surfaceElementConnectivity[0].push_back(iNode);
       surfaceElementConnectivity[0].push_back(iNode+1);
@@ -206,11 +204,11 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       /*--- The corresponding volume element is stored on this rank,
             hence store the surface element as well. ---*/
-      surfaceElementConnectivity[1].push_back(KindBound);                // VTK type.
-      surfaceElementConnectivity[1].push_back(1);                        // Poly degree grid.
-      surfaceElementConnectivity[1].push_back(2);                        // Number of grid DOFs.
-      surfaceElementConnectivity[1].push_back(jNode);                    // Global surface element ID.
-      surfaceElementConnectivity[1].push_back(globalElemID-firstIndex);  // Local volume element ID.
+      surfaceElementConnectivity[1].push_back(KindBound);     // VTK type.
+      surfaceElementConnectivity[1].push_back(1);             // Poly degree grid.
+      surfaceElementConnectivity[1].push_back(2);             // Number of grid DOFs.
+      surfaceElementConnectivity[1].push_back(jNode);         // Global surface element ID.
+      surfaceElementConnectivity[1].push_back(globalElemID);  // Global volume element ID.
 
       surfaceElementConnectivity[1].push_back(jNode*nNode + (nNode-1));
       surfaceElementConnectivity[1].push_back((jNode+1)*nNode + (nNode-1));
@@ -232,11 +230,11 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       /*--- The corresponding volume element is stored on this rank,
             hence store the surface element as well. ---*/
-      surfaceElementConnectivity[2].push_back(KindBound);                // VTK type.
-      surfaceElementConnectivity[2].push_back(1);                        // Poly degree grid.
-      surfaceElementConnectivity[2].push_back(2);                        // Number of grid DOFs.
-      surfaceElementConnectivity[2].push_back(iNode);                    // Global surface element ID.
-      surfaceElementConnectivity[2].push_back(globalElemID-firstIndex);  // Local volume element ID.
+      surfaceElementConnectivity[2].push_back(KindBound);     // VTK type.
+      surfaceElementConnectivity[2].push_back(1);             // Poly degree grid.
+      surfaceElementConnectivity[2].push_back(2);             // Number of grid DOFs.
+      surfaceElementConnectivity[2].push_back(iNode);         // Global surface element ID.
+      surfaceElementConnectivity[2].push_back(globalElemID);  // Global volume element ID.
 
       surfaceElementConnectivity[2].push_back((mNode-1)*nNode + iNode+1);
       surfaceElementConnectivity[2].push_back((mNode-1)*nNode + iNode);
@@ -258,11 +256,11 @@ void CRectangularMeshReaderFEM::ComputeRectangularSurfaceConnectivity() {
 
       /*--- The corresponding volume element is stored on this rank,
             hence store the surface element as well. ---*/
-      surfaceElementConnectivity[3].push_back(KindBound);                // VTK type.
-      surfaceElementConnectivity[3].push_back(1);                        // Poly degree grid.
-      surfaceElementConnectivity[3].push_back(2);                        // Number of grid DOFs.
-      surfaceElementConnectivity[3].push_back(jNode);                    // Global surface element ID.
-      surfaceElementConnectivity[3].push_back(globalElemID-firstIndex);  // Local volume element ID.
+      surfaceElementConnectivity[3].push_back(KindBound);     // VTK type.
+      surfaceElementConnectivity[3].push_back(1);             // Poly degree grid.
+      surfaceElementConnectivity[3].push_back(2);             // Number of grid DOFs.
+      surfaceElementConnectivity[3].push_back(jNode);         // Global surface element ID.
+      surfaceElementConnectivity[3].push_back(globalElemID);  // Global volume element ID.
 
       surfaceElementConnectivity[3].push_back((jNode+1)*nNode);
       surfaceElementConnectivity[3].push_back(jNode*nNode);

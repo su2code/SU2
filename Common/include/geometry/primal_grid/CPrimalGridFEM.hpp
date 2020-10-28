@@ -42,11 +42,12 @@ private:
   unsigned short nPolySol;      /*!< \brief Polynomial degree for the solution of the element. */
   unsigned short nDOFsGrid;     /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short nDOFsSol;      /*!< \brief Number of DOFs for the solution of the element. */
+  unsigned short nFaces;        /*!< \brief Number of faces of the element. */
 
   unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
   unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
 
-  bool JacobianConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation to
+  bool JacobianConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation
                                                     is (almost) constant. */
 public:
 
@@ -90,7 +91,7 @@ public:
    * \brief Get the number of faces of an element.
    * \return Number of faces of an element.
    */
-  inline unsigned short GetnFaces(void) override { return std::numeric_limits<unsigned short>::max(); }  
+  inline unsigned short GetnFaces(void) override { return nFaces; }  
 
   /*!
    * \brief Get the number of element that are neighbor to this element.

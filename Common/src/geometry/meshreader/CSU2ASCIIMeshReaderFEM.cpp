@@ -368,7 +368,7 @@ void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
           surfaceElementConnectivity[iMarker].push_back(nPolyGrid);
           surfaceElementConnectivity[iMarker].push_back(nDOFsGrid);
           surfaceElementConnectivity[iMarker].push_back(i);            // Global surface elem ID.
-          surfaceElementConnectivity[iMarker].push_back(low->elemID0); // Local volume elem ID.
+          surfaceElementConnectivity[iMarker].push_back(low->elemID0); // Global volume elem ID.
 
           /*--- Copy the connectivity to surfaceElementConnectivity. ---*/
           surfaceElementConnectivity[iMarker].insert(surfaceElementConnectivity[iMarker].end(),

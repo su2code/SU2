@@ -29,9 +29,9 @@
 #pragma once
 
 #include "../CGeometry.hpp"
-#include "../../wall_model.hpp"
 #include "CVolumeElementFEM.hpp"
-#include "CSurfaceElementFEM.hpp"
+#include "CPointFEM.hpp"
+#include "CBoundaryFEM.hpp"
 
 using namespace std;
 
@@ -43,8 +43,20 @@ using namespace std;
  */
 class CMeshFEM: public CGeometry {
 protected:
+  unsigned long nVolElemTot{0};    /*!< \brief Total number of local volume elements, including halos. */
+  unsigned long nVolElemOwned{0};  /*!< \brief Number of owned local volume elements. */
 
-  vector<CVolumeElementFEM> volElem; /*!< \brief Vector of the local volume elements, including halos. */
+  vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
+                                                                  per time level. Cumulative storage. */
+  vector<unsigned long> nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
+                                                                  time level. Internal means that the solution
+                                                                  data does not need to be communicated. */
+  vector<unsigned long> nVolElemHaloPerTimeLevel;    /*!< \brief Number of local halo volume elements
+                                                                 per time level. Cumulative storage. */
+
+  vector<CVolumeElementFEM> volElem;      /*!< \brief Vector of the local volume elements, including halos. */
+  vector<CPointFEM>         meshPoints;   /*!< \brief Vector of the points of the FEM mesh. */
+  vector<CBoundaryFEM>      boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
 
 public:
   /*!

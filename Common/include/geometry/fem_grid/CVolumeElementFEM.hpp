@@ -40,6 +40,42 @@ using namespace std;
  */
 class CVolumeElementFEM {
 public:
+  bool elemIsOwned;             /*!< \brief Whether or not this is an owned element. */
+  bool JacIsConsideredConstant; /*!< \brief Whether or not the Jacobian of the transformation
+                                            to the standard element is considered constant. */
+
+  int rankOriginal;            /*!< \brief The rank where the original volume is stored. For
+                                           the owned volumes, this is simply the current rank. */
+
+  short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
+                                           element. Only for halo elements. A -1 indicates no
+                                           periodic transformation. */
+
+  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
+  unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
+  unsigned short nPolySol;     /*!< \brief Polynomial degree for the solution of the element. */
+  unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
+  unsigned short nDOFsSol;     /*!< \brief Number of DOFs for the solution of the element. */
+  unsigned short nFaces;       /*!< \brief Number of faces of the element. */
+  unsigned short timeLevel;    /*!< \brief Time level of the element when time accurate local
+                                           time stepping is employed. */
+
+  unsigned int factTimeLevel;  /*!< \brief Number of local time steps for this element
+                                           compared to the largest time step when time
+                                           accurate local time stepping is employed. */
+
+  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
+
+  vector<bool> JacFacesIsConsideredConstant; /*!< \brief Vector with the booleans whether the Jacobian of the
+                                                         transformation to the standard element is constant
+                                                         for the faces. */
+  vector<bool> ElementOwnsFaces;             /*!< \brief Vector with the booleans whether the element is the
+                                                         owner of the faces. */
+
+  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
+
+  su2double lenScale;                /*!< \brief Length scale of the element. */
+
 
   CFEMStandardElementBase *standardElem; /*!< \brief Pointer to the standard element. */
 };

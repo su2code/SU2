@@ -173,10 +173,8 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
   const unsigned long nElemI  = nNode-1;
   const unsigned long nElemIJ = nElemI*(mNode-1);
 
-  /*--- Get a partitioner to help with linear partitioning and store
-        the index of the first element on this rank. ---*/
+  /*--- Get a partitioner to help with linear partitioning. ---*/
   CLinearPartitioner elemPartitioner(numberOfGlobalElements,0);
-  const unsigned long firstIndex = elemPartitioner.GetFirstIndexOnRank(rank);
 
   /*--- The box always has 6 markers. Allocate the required memory. ---*/
   numberOfMarkers = 6;
@@ -198,11 +196,11 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
-        surfaceElementConnectivity[0].push_back(KindBound);                // VTK type.
-        surfaceElementConnectivity[0].push_back(1);                        // Poly degree grid.
-        surfaceElementConnectivity[0].push_back(4);                        // Number of grid DOFs.
-        surfaceElementConnectivity[0].push_back(ind);                      // Global surface element ID.
-        surfaceElementConnectivity[0].push_back(globalElemID-firstIndex);  // Local volume element ID.
+        surfaceElementConnectivity[0].push_back(KindBound);     // VTK type.
+        surfaceElementConnectivity[0].push_back(1);             // Poly degree grid.
+        surfaceElementConnectivity[0].push_back(4);             // Number of grid DOFs.
+        surfaceElementConnectivity[0].push_back(ind);           // Global surface element ID.
+        surfaceElementConnectivity[0].push_back(globalElemID);  // Global volume element ID.
 
         surfaceElementConnectivity[0].push_back(kNode*mNode*nNode + jNode*nNode);
         surfaceElementConnectivity[0].push_back((kNode+1)*mNode*nNode + jNode*nNode);
@@ -229,11 +227,11 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
-        surfaceElementConnectivity[1].push_back(KindBound);                // VTK type.
-        surfaceElementConnectivity[1].push_back(1);                        // Poly degree grid.
-        surfaceElementConnectivity[1].push_back(4);                        // Number of grid DOFs.
-        surfaceElementConnectivity[1].push_back(ind);                      // Global surface element ID.
-        surfaceElementConnectivity[1].push_back(globalElemID-firstIndex);  // Local volume element ID.
+        surfaceElementConnectivity[1].push_back(KindBound);     // VTK type.
+        surfaceElementConnectivity[1].push_back(1);             // Poly degree grid.
+        surfaceElementConnectivity[1].push_back(4);             // Number of grid DOFs.
+        surfaceElementConnectivity[1].push_back(ind);           // Global surface element ID.
+        surfaceElementConnectivity[1].push_back(globalElemID);  // Global volume element ID.
 
         surfaceElementConnectivity[1].push_back(kNode*mNode*nNode + jNode*nNode + (nNode-1));
         surfaceElementConnectivity[1].push_back(kNode*mNode*nNode + (jNode+1)*nNode + (nNode-1));
@@ -260,11 +258,11 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
-        surfaceElementConnectivity[2].push_back(KindBound);                // VTK type.
-        surfaceElementConnectivity[2].push_back(1);                        // Poly degree grid.
-        surfaceElementConnectivity[2].push_back(4);                        // Number of grid DOFs.
-        surfaceElementConnectivity[2].push_back(ind);                      // Global surface element ID.
-        surfaceElementConnectivity[2].push_back(globalElemID-firstIndex);  // Local volume element ID.
+        surfaceElementConnectivity[2].push_back(KindBound);     // VTK type.
+        surfaceElementConnectivity[2].push_back(1);             // Poly degree grid.
+        surfaceElementConnectivity[2].push_back(4);             // Number of grid DOFs.
+        surfaceElementConnectivity[2].push_back(ind);           // Global surface element ID.
+        surfaceElementConnectivity[2].push_back(globalElemID);  // Global volume element ID.
 
         surfaceElementConnectivity[2].push_back(kNode*mNode*nNode + iNode);
         surfaceElementConnectivity[2].push_back(kNode*mNode*nNode + iNode+1);
@@ -291,11 +289,11 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
-        surfaceElementConnectivity[3].push_back(KindBound);                // VTK type.
-        surfaceElementConnectivity[3].push_back(1);                        // Poly degree grid.
-        surfaceElementConnectivity[3].push_back(4);                        // Number of grid DOFs.
-        surfaceElementConnectivity[3].push_back(ind);                      // Global surface element ID.
-        surfaceElementConnectivity[3].push_back(globalElemID-firstIndex);  // Local volume element ID.
+        surfaceElementConnectivity[3].push_back(KindBound);     // VTK type.
+        surfaceElementConnectivity[3].push_back(1);             // Poly degree grid.
+        surfaceElementConnectivity[3].push_back(4);             // Number of grid DOFs.
+        surfaceElementConnectivity[3].push_back(ind);           // Global surface element ID.
+        surfaceElementConnectivity[3].push_back(globalElemID);  // Global volume element ID.
 
         surfaceElementConnectivity[3].push_back(kNode*mNode*nNode + (mNode-1)*nNode + iNode);
         surfaceElementConnectivity[3].push_back(kNode*mNode*nNode + (mNode-1)*nNode + iNode+1);
@@ -322,11 +320,11 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
-        surfaceElementConnectivity[4].push_back(KindBound);                // VTK type.
-        surfaceElementConnectivity[4].push_back(1);                        // Poly degree grid.
-        surfaceElementConnectivity[4].push_back(4);                        // Number of grid DOFs.
-        surfaceElementConnectivity[4].push_back(ind);                      // Global surface element ID.
-        surfaceElementConnectivity[4].push_back(globalElemID-firstIndex);  // Local volume element ID.
+        surfaceElementConnectivity[4].push_back(KindBound);     // VTK type.
+        surfaceElementConnectivity[4].push_back(1);             // Poly degree grid.
+        surfaceElementConnectivity[4].push_back(4);             // Number of grid DOFs.
+        surfaceElementConnectivity[4].push_back(ind);           // Global surface element ID.
+        surfaceElementConnectivity[4].push_back(globalElemID);  // Global volume element ID.
 
         surfaceElementConnectivity[4].push_back(jNode*nNode + iNode);
         surfaceElementConnectivity[4].push_back(jNode*nNode + iNode+1);
@@ -353,11 +351,11 @@ void CBoxMeshReaderFEM::ComputeBoxSurfaceConnectivity() {
 
         /*--- The corresponding volume element is stored on this rank,
               hence store the surface element as well. ---*/
-        surfaceElementConnectivity[5].push_back(KindBound);                // VTK type.
-        surfaceElementConnectivity[5].push_back(1);                        // Poly degree grid.
-        surfaceElementConnectivity[5].push_back(4);                        // Number of grid DOFs.
-        surfaceElementConnectivity[5].push_back(ind);                      // Global surface element ID.
-        surfaceElementConnectivity[5].push_back(globalElemID-firstIndex);  // Local volume element ID.
+        surfaceElementConnectivity[5].push_back(KindBound);     // VTK type.
+        surfaceElementConnectivity[5].push_back(1);             // Poly degree grid.
+        surfaceElementConnectivity[5].push_back(4);             // Number of grid DOFs.
+        surfaceElementConnectivity[5].push_back(ind);           // Global surface element ID.
+        surfaceElementConnectivity[5].push_back(globalElemID);  // Global volume element ID.
 
         surfaceElementConnectivity[5].push_back((pNode-1)*mNode*nNode + jNode*nNode + iNode);
         surfaceElementConnectivity[5].push_back((pNode-1)*mNode*nNode + jNode*nNode + iNode+1);

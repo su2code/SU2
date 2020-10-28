@@ -376,7 +376,7 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int                    val
           connSU2[1] = nPolyGrid;
           connSU2[2] = nDOFsGrid;
           connSU2[3] = globalID;      // Global surface elem ID.
-          connSU2[4] = low->elemID0;  // Local volume elem ID.
+          connSU2[4] = low->elemID0;  // Global volume elem ID.
 
           /*--- Store the connectivity data in surfConn. ---*/
           surfConn.insert(surfConn.end(), connSU2.begin(), connSU2.end());
