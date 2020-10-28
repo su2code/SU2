@@ -3180,8 +3180,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        which is typically only active during the start-up of a calculation. ---*/
 
       if (tkeNeeded) {
-        good_i = (tke_i >= 0.0);
-        good_j = (tke_j >= 0.0);
+        good_i = (tke_i >= 0.0) && (good_i);
+        good_j = (tke_j >= 0.0) && (good_j);
       }
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
       muscl = good_i && good_j;
