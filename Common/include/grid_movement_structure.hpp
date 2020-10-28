@@ -1232,7 +1232,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false, bool ForwardProjectionDerivative = false);
 
   /*!
    * \brief Get the stiffness matrix of the volume deformation.
@@ -1256,14 +1256,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetBoundaryDerivatives(CGeometry *geometry, CConfig *config);
+  void SetBoundaryDerivatives(CGeometry *geometry, CConfig *config, bool ForwardProjectionDerivative);
 
   /*!
    * \brief Update the derivatives of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config);
+  void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config, bool ForwardProjectionDerivative);
 
   /*!
    * \brief Compute the determinant of a 3 by 3 matrix.

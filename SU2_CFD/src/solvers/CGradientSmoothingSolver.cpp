@@ -957,6 +957,26 @@ void CGradientSmoothingSolver::WriteSens2Vector(CGeometry *geometry, CConfig *co
   }
 }
 
+void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
+  unsigned long iPoint;
+  unsigned short iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->SetSensitivity(iPoint,iDim, vector[iPoint*nDim+iDim]);
+    }
+  }
+}
+
+void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
+  unsigned long iPoint;
+  unsigned short iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
+    }
+  }
+}
+
 void CGradientSmoothingSolver::MultiplyParameterJacobian(su2double *Jacobian, bool transposed){
 
   unsigned iDV, iPoint, iDim,  total_index;
@@ -1010,9 +1030,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   grid_movement->SetVolume_Deformation(geometry, config, false, true);
 
-  ReadSens2Geometry(geometry,config);
-
-  WriteSens2Vector(geometry, config, helperVecOut);
+  ReadVector2Geometry(geometry,config, helperVecOut);
 
   ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
 
@@ -1255,8 +1273,19 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
       }
     } else {
 
+      /// meshdeformation forward
+      WriteVector2Geometry(geometry,config, helperVecIn);
+      grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
+      ReadVector2Geometry(geometry,config, helperVecIn);
+
       ///straight forward for volume case.
       mat_vec(helperVecIn, helperVecOut);
+
+      /// mesh deformation backward
+      WriteVector2Geometry(geometry,config, helperVecOut);
+      grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
+      ReadVector2Geometry(geometry,config, helperVecOut);
+
     }
 
     ofstream helperVecOutStream("helperVecOut.dat");
@@ -1297,11 +1326,6 @@ CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMat
         Jacobian.InitOwnConnectivity(geometry->nVertex[iMarker], nDim, nDim, iMarker, geometry, config);
         Compute_Surface_StiffMatrix(geometry, numerics, config, iMarker, nDim);
 
-        // for debugging
-        ofstream stiffness("surfacestiffness.dat");
-        Jacobian.printMat(stiffness);
-        stiffness.close();
-
         // don't forget to initialize the vectors to the correct size.
         matVecIn.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim, 0.0);
         matVecOut.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim, 0.0);
@@ -1310,6 +1334,11 @@ CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMat
   } else {
       Compute_StiffMatrix(geometry, numerics, config);
   }
+
+  // for debugging
+  ofstream stiffness("sobolevstiffness.dat");
+  Jacobian.printMat(stiffness);
+  stiffness.close();
 
   return CSysMatrixVectorProduct<su2mixedfloat>(Jacobian, geometry, config);
 }

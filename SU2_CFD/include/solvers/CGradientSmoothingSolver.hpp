@@ -306,4 +306,14 @@ public:
    */
   void WriteSens2Vector(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
 
+  /*!
+   * \brief Copy sensitivities from a vector into the geometry
+   */
+  void WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
+
+  /*!
+   * \brief Copy sensitivities from the geometry into a vector
+   */
+  void ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
+
 };

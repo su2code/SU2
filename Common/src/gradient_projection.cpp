@@ -539,7 +539,8 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
 
   /*--- Part 1: adjoint volumetric mesh deformation, if needed ---*/
   if (true) {
-
+    // so far done in CGradientSmoothingSolver.cpp:ApplySmoothingDV
+    // change to here later?
   }
 
   /*--- Part 2: adjoint surface deformation ---*/
