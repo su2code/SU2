@@ -208,6 +208,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     }
   }
 
+  /*--- Wall Shear Stress in all the markers ---*/
+
+  Alloc2D(nMarker, nVertex, WallShearStress);
+
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
@@ -471,6 +475,13 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
       delete[] CSkinFriction[iMarker];
     }
     delete[] CSkinFriction;
+  }
+
+  if (WallShearStress != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete[] WallShearStress[iMarker];
+    }
+    delete[] WallShearStress;
   }
 
   if (HeatConjugateVar != nullptr) {
