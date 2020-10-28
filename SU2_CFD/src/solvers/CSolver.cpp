@@ -2662,11 +2662,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Apply the adjustment to the CFL and store local values. */
 
       CFL *= CFLFactor;
-      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, max(CFL*config->GetCFLRedCoeff_Turb(), CFLMin));
-      }
-      // base_nodes->SetLocalCFL(iPoint, CFL);
+      // solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      //   solverTurb->GetNodes()->SetLocalCFL(iPoint, max(CFL*config->GetCFLRedCoeff_Turb(), CFLMin));
+      // }
+      base_nodes->SetLocalCFL(iPoint, CFL);
 
       /* Store min and max CFL for reporting on the fine grid. */
 
