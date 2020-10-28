@@ -307,6 +307,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   const bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
                             (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
+
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      const su2double sol = max(numeric_limits<passivedouble>::epsilon(), nodes->GetSolution(iPoint,iVar));
+      nodes->SetSolution(iPoint, iVar, sol);
+    }
   
   SetPrimitive_Variables(solver);
   
