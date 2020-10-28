@@ -248,8 +248,8 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[1] = 0.5*(rov_i+rov_j-Diss_ro_rk*Diff_rk
                             -Diss_ro_ro*Diff_ro)*Area;
 
-  // if (Flux[0] >  1000*Density_i*TurbVar_i[0]) cout << "I, k_i= " << TurbVar_i[0] <<", k_j= " << TurbVar_j[0] << ", RoeTke= " << RoeTke << ", Flux= " << rkv_i+rkv_j << " - (" << Lambda[0] << " + " << RoeTke*Lambda_G << ")*" << Diff_rk << endl;
-  // if (Flux[0] < -1000*Density_j*TurbVar_j[0]) cout << "J, k_i= " << TurbVar_i[0] <<", k_j= " << TurbVar_j[0] << ", RoeTke= " << RoeTke << ", Flux= " << -rkv_i-rkv_j << " - (" << Lambda[0] << " + " << RoeTke*Lambda_G << ")*" << -Diff_rk << endl;
+  if (Flux[0] >  1000*Density_i*TurbVar_i[0]) cout << "I, k_i= " << TurbVar_i[0] <<", k_j= " << TurbVar_j[0] << ", RoeTke= " << RoeTke << ", Flux= " << rkv_i+rkv_j << " - (" << Lambda[0] << " + " << RoeTke*Lambda_G << ")*" << Diff_rk << endl;
+  if (Flux[0] < -1000*Density_j*TurbVar_j[0]) cout << "J, k_i= " << TurbVar_i[0] <<", k_j= " << TurbVar_j[0] << ", RoeTke= " << RoeTke << ", Flux= " << -rkv_i-rkv_j << " - (" << Lambda[0] << " + " << RoeTke*Lambda_G << ")*" << -Diff_rk << endl;
 
   Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk_rk)*Area;
   Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk_rk)*Area;

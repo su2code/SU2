@@ -190,9 +190,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (residual[0] >  1000*flowPrimVar_i[nDim+2]*turbPrimVar_i[0]) cout << "I, k_i= " << turbPrimVar_i[0] <<", k_j= " << turbPrimVar_j[0] << ", limiter_i= " << nodes->GetLimiter(iPoint,0) << ", limiter_j= " << nodes->GetLimiter(jPoint,0) << ", res= " << residual[0]  << endl;
-    if (residual[0] < -1000*flowPrimVar_j[nDim+2]*turbPrimVar_j[0]) cout << "J, k_i= " << turbPrimVar_i[0] <<", k_j= " << turbPrimVar_j[0] << ", limiter_i= " << nodes->GetLimiter(iPoint,0) << ", limiter_j= " << nodes->GetLimiter(jPoint,0) << ", res= " << -residual[0] << endl;
-
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
