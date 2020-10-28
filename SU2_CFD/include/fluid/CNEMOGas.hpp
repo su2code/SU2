@@ -88,7 +88,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CNEMOGas(const CConfig* config);
+  CNEMOGas(const CConfig* config, unsigned short val_nDim);
 
   /*!
    * \brief Set mixture thermodynamic state.

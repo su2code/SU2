@@ -27,9 +27,11 @@
 
 #include "../../include/fluid/CNEMOGas.hpp"
 
-CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
+CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(){
 
   nSpecies = config->GetnSpecies();
+
+  nDim = val_nDim;
 
   MassFrac.resize(nSpecies,0.0);
   MolarMass.resize(nSpecies,0.0);

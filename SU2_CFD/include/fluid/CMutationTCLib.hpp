@@ -53,7 +53,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CMutationTCLib(const CConfig* config);
+  CMutationTCLib(const CConfig* config, unsigned short val_nDim);
 
   /*!
    * \brief Destructor of the class.

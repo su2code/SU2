@@ -64,7 +64,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      fluidmodel = new CMutationTCLib(config);
+      fluidmodel = new CMutationTCLib(config, nDim);
       break;
       case USER_DEFINED_NONEQ:
       fluidmodel = new CUserDefinedTCLib(config, nDim, false);

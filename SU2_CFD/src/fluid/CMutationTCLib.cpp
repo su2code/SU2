@@ -27,7 +27,7 @@
 
 #include "../../include/fluid/CMutationTCLib.hpp"
 
-CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
+CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, nDim){
  
   Mutation::MixtureOptions opt(gas_model);
   string transport_model, state_model;	
