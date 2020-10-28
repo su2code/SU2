@@ -3560,6 +3560,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Only AUSM and AUSMPLUSUP2 upwind schemes are operational for NEMO. Feel free to fix the others!", CURRENT_FUNCTION);
   }
 
+  if (Kind_SU2 == SU2_CFD && Kind_FluidModel == MUTATIONPP && Kind_Solver == NEMO_NAVIER_STOKES && nMarker_Plotting > 0)
+    SU2_MPI::Error("MARKER_PLOTTING not working in NEMO_NAVIER_STOKES solver with MUTATIONPP fluidmodel, using SU2_CFD. For surface plotting run SU2_SOL.", CURRENT_FUNCTION);
+
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];
     FreeStreamTurboNormal= new su2double[3];
