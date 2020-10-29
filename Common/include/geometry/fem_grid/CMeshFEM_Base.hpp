@@ -1,7 +1,7 @@
 /*!
- * \file CMeshFEM.hpp
+ * \file CMeshFEM_Base.hpp
  * \brief Base class definition for a mesh object for the FEM solver.
- *        The implementations are in the <i>CMeshFEM.cpp</i> file.
+ *        The implementations are in the <i>CMeshFEM_Base.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
@@ -29,40 +29,29 @@
 #pragma once
 
 #include "../CGeometry.hpp"
-#include "CVolumeElementFEM.hpp"
 #include "CPointFEM.hpp"
 #include "CBoundaryFEM.hpp"
 
 using namespace std;
 
 /*!
- * \class CMeshFEM
+ * \class CMeshFEM_Base
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  */
-class CMeshFEM: public CGeometry {
+class CMeshFEM_Base: public CGeometry {
 protected:
-  unsigned long nVolElemTot{0};    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned{0};  /*!< \brief Number of owned local volume elements. */
 
-  vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
-                                                                  per time level. Cumulative storage. */
-  vector<unsigned long> nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
-                                                                  time level. Internal means that the solution
-                                                                  data does not need to be communicated. */
-  vector<unsigned long> nVolElemHaloPerTimeLevel;    /*!< \brief Number of local halo volume elements
-                                                                 per time level. Cumulative storage. */
-
-  vector<CVolumeElementFEM> volElem;      /*!< \brief Vector of the local volume elements, including halos. */
-  vector<CPointFEM>         meshPoints;   /*!< \brief Vector of the points of the FEM mesh. */
-  vector<CBoundaryFEM>      boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
+  vector<CPointFEM>    meshPoints;   /*!< \brief Vector of the points of the FEM mesh. */
+  vector<CBoundaryFEM> boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
 
 public:
   /*!
    * \brief Constructor of the class.
    */
- CMeshFEM(void) : CGeometry() { }
+ CMeshFEM_Base(void) : CGeometry() { }
 
   /*!
    * \overload
@@ -70,12 +59,12 @@ public:
    * \param[in] geometry - The linear distributed grid that must be redistributed.
    * \param[in] config   - Definition of the particular problem.
    */
-  CMeshFEM(CGeometry *geometry, CConfig *config);
+  CMeshFEM_Base(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CMeshFEM(void) {}
+  virtual ~CMeshFEM_Base(void) {}
 
 protected:
 

@@ -1,6 +1,6 @@
 /*!
- * \file CDummyMesh_DG.cpp
- * \brief Implementations of the member functions of CDummyMesh_DG.
+ * \file CMeshFEM_Base.cpp
+ * \brief Implementations of the member functions of CMeshFEM_Base.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
@@ -25,9 +25,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/geometry/fem_grid/CDummyMeshFEM_DG.hpp"
+#include "../../../include/geometry/fem_grid/CMeshFEM_Base.hpp"
 
-CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
+CMeshFEM_Base::CMeshFEM_Base(CGeometry *geometry, CConfig *config) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
+  nDim         = geometry->GetnDim();
+  nZone        = geometry->GetnZone();
+  Global_nElem = geometry->GetGlobal_nElem();
 }

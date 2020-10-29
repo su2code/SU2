@@ -1,7 +1,7 @@
 /*!
- * \file CVolumeElementFEM.hpp
- * \brief Class definition for a volume element for the FEM solver.
- *        The implementations are in the <i>CVolumeElementFEM.cpp</i> file.
+ * \file CVolumeElementFEM_Base.hpp
+ * \brief Base class for a volume element for the FEM solver.
+ *        The implementations are in the <i>CVolumeElementFEM_Base.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
@@ -33,12 +33,12 @@
 using namespace std;
 
 /*!
- * \class CVolumeElementFEM
- * \brief Class to store a volume element for the FEM solver.
+ * \class CVolumeElementFEM_Base
+ * \brief Base class to store a volume element for the FEM solver.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  */
-class CVolumeElementFEM {
+class CVolumeElementFEM_Base {
 public:
   bool elemIsOwned;             /*!< \brief Whether or not this is an owned element. */
   bool JacIsConsideredConstant; /*!< \brief Whether or not the Jacobian of the transformation
@@ -46,10 +46,6 @@ public:
 
   int rankOriginal;            /*!< \brief The rank where the original volume is stored. For
                                            the owned volumes, this is simply the current rank. */
-
-  short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
-                                           element. Only for halo elements. A -1 indicates no
-                                           periodic transformation. */
 
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
@@ -77,5 +73,5 @@ public:
   su2double lenScale;                /*!< \brief Length scale of the element. */
 
 
-  CFEMStandardElementBase *standardElem; /*!< \brief Pointer to the standard element. */
+  CFEMStandardElementBase *standardElemGrid; /*!< \brief Pointer to the standard element for the grid. */
 };

@@ -52,7 +52,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
-                                                           CVolumeElementFEM    *elem,
+                                                           CVolumeElementFEM_DG *elem,
                                                            const su2double      *sol,
                                                            const unsigned short nSimul,
                                                            const unsigned short NPad,
@@ -61,7 +61,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
-                                                           CVolumeElementFEM    *elem,
+                                                           CVolumeElementFEM_DG *elem,
                                                            const su2double      *sol,
                                                            const unsigned short nSimul,
                                                            const unsigned short NPad,
@@ -70,7 +70,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
-                                                              CVolumeElementFEM    *elem,
+                                                              CVolumeElementFEM_DG *elem,
                                                               const su2double      *sol,
                                                               const unsigned short nSimul,
                                                               const unsigned short NPad,
@@ -80,7 +80,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
-                                                              CVolumeElementFEM    *elem,
+                                                              CVolumeElementFEM_DG *elem,
                                                               const su2double      *sol,
                                                               const unsigned short nSimul,
                                                               const unsigned short NPad,
@@ -117,20 +117,20 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
 }
 
-void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM *adjVolElem,
-                                             const unsigned short    indFaceChunk,
-                                             const unsigned short    nInt,
-                                             const unsigned short    NPad,
-                                             const su2double         Wall_HeatFlux,
-                                             const bool              HeatFlux_Prescribed,
-                                             const su2double         *solInt,
-                                             const su2double         *gradSolInt,
-                                             const su2double         *metricCoorDerivFace,
-                                             const su2double         *metricNormalsFace,
-                                             const su2double         *wallDistanceInt,
-                                                   su2double         *viscNormFluxes,
-                                                   su2double         *viscosityInt,
-                                                   su2double         *kOverCvInt) {
+void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM_DG *adjVolElem,
+                                             const unsigned short       indFaceChunk,
+                                             const unsigned short       nInt,
+                                             const unsigned short       NPad,
+                                             const su2double            Wall_HeatFlux,
+                                             const bool                 HeatFlux_Prescribed,
+                                             const su2double            *solInt,
+                                             const su2double            *gradSolInt,
+                                             const su2double            *metricCoorDerivFace,
+                                             const su2double            *metricNormalsFace,
+                                             const su2double            *wallDistanceInt,
+                                                   su2double            *viscNormFluxes,
+                                                   su2double            *viscosityInt,
+                                                   su2double            *kOverCvInt) {
 
 }
 

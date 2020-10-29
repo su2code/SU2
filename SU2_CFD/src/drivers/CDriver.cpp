@@ -29,6 +29,7 @@
 #include "../../include/definition_structure.hpp"
 
 #include "../../../Common/include/geometry/CDummyGeometry.hpp"
+#include "../../../Common/include/geometry/fem_grid/CDummyMeshFEM_DG.hpp"
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
 

@@ -855,7 +855,7 @@ private:
    * \param[out] work    - Work array.
    */
   virtual void ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
-                                                   CVolumeElementFEM    *elem,
+                                                   CVolumeElementFEM_DG *elem,
                                                    const su2double      *sol,
                                                    const unsigned short nSimul,
                                                    const unsigned short NPad,
@@ -880,7 +880,7 @@ private:
    * \param[out] work    - Work array.
    */
   virtual void ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
-                                                   CVolumeElementFEM    *elem,
+                                                   CVolumeElementFEM_DG *elem,
                                                    const su2double      *sol,
                                                    const unsigned short nSimul,
                                                    const unsigned short NPad,
@@ -905,7 +905,7 @@ private:
    * \param[out] work    - Work array.
    */
   virtual void ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
-                                                      CVolumeElementFEM    *elem,
+                                                      CVolumeElementFEM_DG *elem,
                                                       const su2double      *sol,
                                                       const unsigned short nSimul,
                                                       const unsigned short NPad,
@@ -930,7 +930,7 @@ private:
    * \param[out] work    - Work array.
    */
   virtual void ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
-                                                      CVolumeElementFEM    *elem,
+                                                      CVolumeElementFEM_DG *elem,
                                                       const su2double      *sol,
                                                       const unsigned short nSimul,
                                                       const unsigned short NPad,
@@ -943,8 +943,8 @@ private:
    * \param[in] DGGeometry - Geometrical definition of the DG problem.
    * \param[in] config     - Definition of the particular problem.
    */
-  void DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
-                          CConfig        *config);
+  void DetermineGraphDOFs(const CMeshFEM_DG *FEMGeometry,
+                          CConfig           *config);
 
   /*!
    * \brief Function, which determines the meta data needed for the computation
@@ -952,7 +952,7 @@ private:
    * \param[in] DGGeometry     - Geometrical definition of the DG problem.
    * \param[in] colorLocalDOFs - Color of the locally stored DOFs.
    */
-  void MetaDataJacobianComputation(const CMeshFEM    *FEMGeometry,
+  void MetaDataJacobianComputation(const CMeshFEM_DG    *FEMGeometry,
                                    const vector<int> &colorLocalDOFs);
 
   /*!
@@ -968,7 +968,7 @@ private:
    * \param[in] DGGeometry - Geometrical definition of the DG problem.
    * \param[in] config     - Definition of the particular problem.
    */
-  void Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
+  void Prepare_MPI_Communication(const CMeshFEM_DG *FEMGeometry,
                                  CConfig *config);
 
   /*!

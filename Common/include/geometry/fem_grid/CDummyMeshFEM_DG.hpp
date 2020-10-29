@@ -1,6 +1,7 @@
 /*!
- * \file CDummyMesh_DG.cpp
- * \brief Implementations of the member functions of CDummyMesh_DG.
+ * \file CDummyMeshFEM_DG.hpp
+ * \brief Class definition for a dummy mesh object for the DG-FEM solver.
+ *        The implementations are in the <i>CDummyMeshFEM_DG.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
@@ -25,9 +26,26 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/geometry/fem_grid/CDummyMeshFEM_DG.hpp"
+#pragma once
 
-CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
+#include "CMeshFEM_DG.hpp"
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
+using namespace std;
+
+/*!
+ * \class CDummyMeshFEM_DG
+ * \brief Class for defining a DG geometry that does not contain any points/elements.
+ *        Can be used for initializing other classes that depend on the geometry without
+ *        going through the time-consuming mesh initialization and paritioning.
+ * \author T. Albring
+ */
+class CDummyMeshFEM_DG : public CMeshFEM_DG {
+
+public:
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDummyMeshFEM_DG(CConfig *config);
+
+};

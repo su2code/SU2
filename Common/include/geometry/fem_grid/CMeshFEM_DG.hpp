@@ -1,7 +1,7 @@
 /*!
  * \file CMeshFEM_DG.hpp
  * \brief Class definition for a mesh object for the DG-FEM solver.
- *        The implementations are in the <i>CMeshFEM_FG.cpp</i> file.
+ *        The implementations are in the <i>CMeshFEM_DG.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  *
@@ -28,7 +28,8 @@
 
 #pragma once
 
-#include "CMeshFEM.hpp"
+#include "CMeshFEM_Base.hpp"
+#include "CVolumeElementFEM_DG.hpp"
 
 using namespace std;
 
@@ -38,13 +39,25 @@ using namespace std;
  * \author E. van der Weide
  * \version 7.0.7 "Blackbird"
  */
-class CMeshFEM_DG: public CMeshFEM {
+class CMeshFEM_DG: public CMeshFEM_Base {
+protected:
+  unsigned long nVolElemTot{0};    /*!< \brief Total number of local volume elements, including halos. */
+
+  vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
+                                                                  per time level. Cumulative storage. */
+  vector<unsigned long> nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
+                                                                  time level. Internal means that the solution
+                                                                  data does not need to be communicated. */
+  vector<unsigned long> nVolElemHaloPerTimeLevel;    /*!< \brief Number of local halo volume elements
+                                                                 per time level. Cumulative storage. */
+
+  vector<CVolumeElementFEM_DG> volElem;      /*!< \brief Vector of the local volume elements, including halos. */
 
 public:
   /*!
    * \brief Constructor of the class.
    */
-  CMeshFEM_DG(void) : CMeshFEM() {}
+  CMeshFEM_DG(void) : CMeshFEM_Base() {}
 
   /*!
    * \overload
@@ -57,7 +70,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CMeshFEM_DG(void) {}
+  ~CMeshFEM_DG(void) {}
 
   /*!
    * \brief Function to compute the coordinates of the integration points.
@@ -123,22 +136,4 @@ public:
   void WallFunctionPreprocessing(CConfig *config);
 
 protected:
-};
-
-/*!
- * \class CDummyMeshFEM_DG
- * \brief Class for defining a DG geometry that does not contain any points/elements.
- *        Can be used for initializing other classes that depend on the geometry without
- *        going through the time-consuming mesh initialization and paritioning.
- * \author T. Albring
- */
-class CDummyMeshFEM_DG : public CMeshFEM_DG {
-
-public:
-  /*!
-   * \brief Constructor of the class
-   * \param[in] config - Definition of the particular problem.
-   */
-  CDummyMeshFEM_DG(CConfig *config);
-
 };

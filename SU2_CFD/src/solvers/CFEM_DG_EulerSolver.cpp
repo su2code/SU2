@@ -51,12 +51,12 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
 }
 
-void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
-                                             CConfig        *config) {
+void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM_DG *FEMGeometry,
+                                             CConfig           *config) {
 
 }
 
-void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeometry,
+void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM_DG *FEMGeometry,
                                                       const vector<int> &colorLocalDOFs) {
 
 }
@@ -65,8 +65,8 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
 }
 
-void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
-                                                    CConfig        *config) {
+void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM_DG *FEMGeometry,
+                                                    CConfig           *config) {
 
 }
 
@@ -151,7 +151,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
-                                                              CVolumeElementFEM    *elem,
+                                                              CVolumeElementFEM_DG *elem,
                                                               const su2double      *sol,
                                                               const unsigned short nSimul,
                                                               const unsigned short NPad,
@@ -161,7 +161,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
-                                                              CVolumeElementFEM    *elem,
+                                                              CVolumeElementFEM_DG *elem,
                                                               const su2double      *sol,
                                                               const unsigned short nSimul,
                                                               const unsigned short NPad,
@@ -171,7 +171,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
-                                                                 CVolumeElementFEM    *elem,
+                                                                 CVolumeElementFEM_DG *elem,
                                                                  const su2double      *sol,
                                                                  const unsigned short nSimul,
                                                                  const unsigned short NPad,
@@ -181,7 +181,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
-                                                                 CVolumeElementFEM    *elem,
+                                                                 CVolumeElementFEM_DG *elem,
                                                                  const su2double      *sol,
                                                                  const unsigned short nSimul,
                                                                  const unsigned short NPad,
