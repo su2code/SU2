@@ -3160,6 +3160,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
+      if (tkeNeeded) {
+        tke_i = turbNodes->GetPrimitive(iPoint,0);
+        tke_j = turbNodes->GetPrimitive(jPoint,0);
+      }
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
                        &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
