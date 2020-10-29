@@ -3198,8 +3198,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = muscl ? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = muscl ? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
         numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
