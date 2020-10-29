@@ -97,7 +97,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
-  const bool sa_neg = (turbModel == SA_NEG);
   const bool kappa  = config->GetUse_Accurate_Kappa_Jacobians();
 
   const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
@@ -156,16 +155,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      if (!sa_neg) {
-        for (auto iVar = 0; iVar < nVar; iVar++) {
-          good_i = (turbPrimVar_i[iVar] >= 0.0) && (good_i);
-          good_j = (turbPrimVar_j[iVar] >= 0.0) && (good_j);
-        }
-      }
-
-      const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
-      const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
-      solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
+      CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, good_i, good_j);
       // muscl = good_i && good_j;
       muscl = good_i || good_j;
     }
@@ -315,6 +305,31 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
     }
   }
 
+}
+
+void CTurbSolver::CheckExtrapolatedState(const CConfig   *config,
+                                         const su2double *primvar_i, 
+                                         const su2double *primvar_j, 
+                                         const su2double *turbvar_i, 
+                                         const su2double *turbvar_j, 
+                                         bool &good_i, 
+                                         bool &good_j) {
+  const unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool sa_neg = (turbModel == SA_NEG);
+
+  /*--- Positive density ---*/
+
+  good_i = good_i && (primvar_i[nDim+2] > 0.0);
+  good_j = good_j && (primvar_j[nDim+2] > 0.0);
+
+  /*--- Positive turbulent variables---*/
+
+  if (!sa_neg) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      good_i = good_i && (turbvar_i[iVar] >= 0.0);
+      good_j = good_j && (turbvar_j[iVar] >= 0.0);
+    }
+  }
 }
 
 void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,

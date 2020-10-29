@@ -3180,11 +3180,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      if (tkeNeeded) {
-        good_i = (tke_i >= 0.0) && (good_i);
-        good_j = (tke_j >= 0.0) && (good_j);
-      }
-      CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
+      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
       // muscl = good_i && good_j;
       muscl = good_i || good_j;
 
@@ -3469,15 +3465,32 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   }
 }
 
-void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i, 
+void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
+                                          const su2double *primvar_i, 
                                           const su2double *primvar_j, 
-                                          const su2double *tke_i, 
-                                          const su2double *tke_j, 
+                                          const su2double *turbvar_i, 
+                                          const su2double *turbvar_j, 
                                           bool &good_i, 
                                           bool &good_j) {
+  const unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool tkeNeeded = (turbModel == SST) || (turbModel == SST_SUST);
 
-  const bool good_prim_i = (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
-  const bool good_prim_j = (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
+  /*--- Positive density ---*/
+
+  good_i = good_i && (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
+  good_j = good_j && (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
+
+  /*--- Positive turbulent kinetic energy ---*/
+
+  const su2double tke_i = tkeNeeded? turbvar_i[0] : 0.0;
+  const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
+
+  if (tkeNeeded) {
+    good_i = good_i && (tke_i >= 0.0);
+    good_j = good_j && (tke_j >= 0.0);
+  }
+
+  /*--- Positive Roe sound speed ---*/
 
   const su2double R = sqrt(fabs(primvar_j[nDim+2]/primvar_i[nDim+2]));
   const su2double R_Plus_One = R+1.;
@@ -3490,19 +3503,17 @@ void CEulerSolver::CheckExtrapolatedState(const su2double *primvar_i,
     SqVel_j += pow(primvar_j[iDim+1],2);
   }
   
-  const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+(*tke_i)+0.5*SqVel_i;
-  const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+(*tke_j)+0.5*SqVel_j;
+  const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+tke_i+0.5*SqVel_i;
+  const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+tke_j+0.5*SqVel_j;
 
   const su2double Enthalpy_i = Energy_i+primvar_i[nDim+1]/primvar_i[nDim+2];
   const su2double Enthalpy_j = Energy_j+primvar_j[nDim+1]/primvar_j[nDim+2];
 
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-  const su2double RoeTke = (R*(*tke_j)+(*tke_i))/R_Plus_One;
+  const su2double RoeTke = tkeNeeded? (R*tke_j+tke_i)/R_Plus_One : 0.0;
 
-  const bool good_roe = (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
-
-  good_i = good_i && good_prim_i && good_roe;
-  good_j = good_j && good_prim_j && good_roe;
+  good_i = good_i && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
+  good_j = good_j && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,

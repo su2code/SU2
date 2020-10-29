@@ -333,17 +333,19 @@ protected:
 
   /*!
    * \brief Check if the kappa scheme extrapolation gives physical L and R states.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] primvar_i - Primitive vector extrapolated from node i to face.
    * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
-   * \param[in] tke_i - Turbulent kinetic energy extrapolated from node i to face.
-   * \param[in] tke_j - Turbulent kinetic energy extrapolated from node j to face.
+   * \param[in] turbvar_i - Turbulent kinetic energy extrapolated from node i to face.
+   * \param[in] turbvar_j - Turbulent kinetic energy extrapolated from node j to face.
    * \param[in/out] good_i - Whether the extrapolated state from node i is good.
    * \param[in/out] good_j - Whether the extrapolated state from node j is good.
    */
-  void CheckExtrapolatedState(const su2double *primvar_i, 
+  void CheckExtrapolatedState(const CConfig   *config,
+                              const su2double *primvar_i, 
                               const su2double *primvar_j, 
-                              const su2double *tke_i, 
-                              const su2double *tke_j, 
+                              const su2double *turbvar_i, 
+                              const su2double *turbvar_j, 
                               bool &good_i, 
                               bool &good_j) override;
 
