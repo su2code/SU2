@@ -3510,7 +3510,7 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
   const su2double Enthalpy_j = Energy_j+primvar_j[nDim+1]/primvar_j[nDim+2];
 
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-  const su2double RoeTke = tkeNeeded? (R*tke_j+tke_i)/R_Plus_One : 0.0;
+  const su2double RoeTke = tkeNeeded? su2double((R*tke_j+tke_i)/R_Plus_One) : su2double(0.0);
 
   good_i = good_i && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
   good_j = good_j && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
