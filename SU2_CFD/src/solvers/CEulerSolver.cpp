@@ -3154,7 +3154,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     // bool good_i = true, good_j = true;
     bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && good_i && good_j;
+    // bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && good_i && good_j;
+    bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
@@ -3184,15 +3185,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         good_j = (tke_j >= 0.0) && (good_j);
       }
       CheckExtrapolatedState(Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
-      muscl = good_i && good_j;
-      // muscl = good_i || good_j;
+      // muscl = good_i && good_j;
+      muscl = good_i || good_j;
 
       counter_local += (!good_i+!good_j);
 
-      numerics->SetPrimitive(muscl ? Primitive_i : V_i, 
-                             muscl ? Primitive_j : V_j);
-      numerics->SetSecondary(muscl ? Secondary_i : S_i, 
-                             muscl ? Secondary_j : S_j);
+      numerics->SetPrimitive(good_i ? Primitive_i : V_i, 
+                             good_j ? Primitive_j : V_j);
+      numerics->SetSecondary(good_i ? Secondary_i : S_i, 
+                             good_j ? Secondary_j : S_j);
 
       /*--- Turbulent variables ---*/
 

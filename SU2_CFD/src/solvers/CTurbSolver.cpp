@@ -146,7 +146,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     // bool good_i = true, good_j = true;
     bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
+    // bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
+    bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
                                          turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
@@ -165,8 +166,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       const su2double tke_i = sst ? turbPrimVar_i[0] : 0.0;
       const su2double tke_j = sst ? turbPrimVar_j[0] : 0.0;
       solver[FLOW_SOL]->CheckExtrapolatedState(flowPrimVar_i, flowPrimVar_j, &tke_i, &tke_j, good_i, good_j);
-      muscl = good_i && good_j;
-      // muscl = good_i || good_j;
+      // muscl = good_i && good_j;
+      muscl = good_i || good_j;
     }
     else {
       for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
@@ -181,10 +182,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Store the state ---*/
 
-    numerics->SetPrimitive(muscl ? flowPrimVar_i : V_i, 
-                           muscl ? flowPrimVar_j : V_j);
-    numerics->SetTurbVar(muscl ? turbPrimVar_i : T_i, 
-                         muscl ? turbPrimVar_j : T_j);
+    numerics->SetPrimitive(good_i ? flowPrimVar_i : V_i, 
+                           good_j ? flowPrimVar_j : V_j);
+    numerics->SetTurbVar(  good_i ? turbPrimVar_i : T_i, 
+                           good_j ? turbPrimVar_j : T_j);
 
     /*--- Update convective residual value ---*/
 
