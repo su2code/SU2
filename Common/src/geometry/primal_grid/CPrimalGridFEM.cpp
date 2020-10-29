@@ -28,9 +28,15 @@
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../../include/fem/CFEMStandardElementBase.hpp"
 
-CPrimalGridFEM::~CPrimalGridFEM(){}
+CPrimalGridFEM::~CPrimalGridFEM() {
 
-CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem) {
+  delete[] ElementOwnsFace;
+  delete[] PeriodIndexNeighbors;
+  delete[] JacobianFaceIsConstant;
+}
+
+CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem)
+  : CPrimalGrid() {
 
   /*--- Store the meta data for this element. ---*/
   VTK_Type     = (unsigned short) dataElem[0];
@@ -48,6 +54,11 @@ CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem) {
 
   /*--- Determine the dimension of the element. ---*/
   nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
+
+  /*--- Initialize the pointer members to nullptr. ---*/
+  ElementOwnsFace        = nullptr;
+  PeriodIndexNeighbors   = nullptr;
+  JacobianFaceIsConstant = nullptr;
 }
 
 void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
@@ -131,5 +142,30 @@ void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType,
       nPointsPerFace[4] = 4; faceConn[4][0] = 0;     faceConn[4][1] = nn3;       faceConn[4][2] = nn3+nn4;   faceConn[4][3] = nn4;
       nPointsPerFace[5] = 4; faceConn[5][0] = nPoly; faceConn[5][1] = nPoly+nn4; faceConn[5][2] = nn2+nn4;   faceConn[5][3] = nn2;
       break;
+  }
+}
+
+void CPrimalGridFEM::InitializeJacobianConstantFaces(unsigned short val_nFaces) {
+
+  /*--- Allocate the memory for JacobianFaceIsConstant and initialize
+        its values to false.     ---*/
+  JacobianFaceIsConstant = new bool[val_nFaces];
+  for(unsigned short i=0; i<val_nFaces; ++i)
+    JacobianFaceIsConstant[i] = false;
+}
+
+void CPrimalGridFEM::InitializeNeighbors(unsigned short val_nFaces) {
+
+  /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
+        initialize the arrays to -1 to indicate that no neighbor is present and
+        that no periodic transformation is needed to the neighbor. ---*/
+  Neighbor_Elements    = new long[val_nFaces];
+  ElementOwnsFace      = new bool[val_nFaces];
+  PeriodIndexNeighbors = new short[val_nFaces];
+
+  for(unsigned short i=0; i<val_nFaces; ++i) {
+    Neighbor_Elements[i]    = -1;
+    ElementOwnsFace[i]      =  false;
+    PeriodIndexNeighbors[i] = -1;
   }
 }

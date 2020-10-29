@@ -47,8 +47,6 @@ protected:
   unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
   unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
   long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
-  short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
-                                            A -1 indicates no periodic transformation to the neighbor. */
   su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
   su2double **Coord_FaceElems_CG;  /*!< \brief Coordinates of the center-of-gravity of the face of the
                                                elements. */
@@ -59,11 +57,6 @@ protected:
   bool Divide;                     /*!< \brief Marker used to know if we are going to divide this element
                                                in the adaptation proccess. */
   su2double Volume;                /*!< \brief Volume of the element. */
-  bool *JacobianFaceIsConstant;    /*!< \brief Whether or not the Jacobian of the faces can be considered
-                                               constant in the transformation to the standard element. */
-  bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
-  su2double LenScale;       /*!< \brief Length scale of the element. */
-  unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
 public:
 
   /*!
@@ -99,72 +92,70 @@ public:
   inline void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
 
   /*!
-   * \brief Make available the length scale of the element.
+   * \brief A virtual member.
    * \return The length scale of the element.
    */
-  inline su2double GetLengthScale(void) const { return LenScale; }
+  inline virtual su2double GetLengthScale(void) const { return 0.0; }
 
   /*!
-   * \brief Set the length scale of the element.
+   * \brief A virtual member.
    * \param[in] val_lenScale - Length scale of the element.
    */
-  inline void SetLengthScale(su2double val_lenScale) { LenScale = val_lenScale; }
+  inline virtual void SetLengthScale(su2double val_lenScale) { }
 
   /*!
-   * \brief Make available the time level of the element.
+   * \brief A virtual member.
    * \return The time level of the element.
    */
-  inline unsigned short GetTimeLevel(void) const { return TimeLevel; }
+  inline virtual unsigned short GetTimeLevel(void) const { return 0; }
 
   /*!
-   * \brief Set the time level of the element.
+   * \brief A virtual member.
    * \param[in] val_timeLevel - Time level of the element.
    */
-  inline void SetTimeLevel(unsigned short val_timeLevel) { TimeLevel = val_timeLevel; }
+  inline virtual void SetTimeLevel(unsigned short val_timeLevel) { }
 
   /*!
-  * \brief Get the boolean to indicate whether or not this element owns the face
-           between the current and the adjacent element with index val_face.
-  * \param[in] val_face - Local index of the face.
-  * \return   Boolean to indicate whether or not the face is owned by this element.
-  */
-  inline bool GetOwnerFace(unsigned short val_face) { return ElementOwnsFace[val_face]; }
+   * \brief A virtual member.
+   * \param[in] val_face - Local index of the face.
+   * \return   Boolean to indicate whether or not the face is owned by this element.
+   */
+  inline virtual bool GetOwnerFace(unsigned short val_face) { return false; }
 
   /*!
-  * \brief Set the boolean to indicate whether or not this element owns the face
-           between the current and the adjacent element with index val_face.
-  * \param[in] val_owner - Whether or not this element owns the face.
-  * \param[in] val_face  - Local index of the face.
-  */
-  inline void SetOwnerFace(bool val_owner, unsigned short val_face) { ElementOwnsFace[val_face] = val_owner; }
+   * \brief A virtual member.
+   * \param[in] val_owner - Whether or not this element owns the face.
+   * \param[in] val_face  - Local index of the face.
+   */
+  inline virtual void SetOwnerFace(bool val_owner, unsigned short val_face) { }
 
   /*!
-  * \brief Get the index of the periodic transformation to the neighboring element.
-  * \param[in] val_face - Local index of the face.
-  * \return   Index of the periodic transformation to the neighboring element.
-  */
-  inline short GetPeriodicIndex(unsigned short val_face) {return PeriodIndexNeighbors[val_face];}
+   * \brief A virtual member.
+   * \param[in] val_face - Local index of the face.
+   * \return   Index of the periodic transformation to the neighboring element.
+   */
+  inline virtual short GetPeriodicIndex(unsigned short val_face) {return 0;}
 
   /*!
-  * \brief Set the index of the periodic transformation to the neighboring element.
-  * \param[in] val_periodic - Index of the periodic marker to which the face belongs.
-  * \param[in] val_face     - Local index of the face.
-  */
-  inline void SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face) {PeriodIndexNeighbors[val_face] = val_periodic; }
+   * \brief A virtual member.
+   * \param[in] val_periodic - Index of the periodic marker to which the face belongs.
+   * \param[in] val_face     - Local index of the face.
+   */
+  inline virtual void SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face) { }
 
   /*!
-  * \brief Get whether or not the Jacobian of the given face is considered constant.
+  * \brief A virtual member.
   * \param[in] val_face - Local index of the face.
   * \return  Whether or not the Jacobian of the face is considered constant.
   */
-  inline bool GetJacobianConstantFace(unsigned short val_face) { return JacobianFaceIsConstant[val_face]; }
+  inline virtual bool GetJacobianConstantFace(unsigned short val_face) { return false; }
 
   /*!
-  * \brief Set whether or not the Jacobian of the given face is considered constant.
+  * \brief A virtual member.
   * \param[in] val_JacFaceIsConstant - Boolean to indicate whether or not the Jacobian is constant.
   * \param[in] val_face              - Local index of the face.
   */
-  inline void SetJacobianConstantFace(bool val_JacFaceIsConstant, unsigned short val_face) {JacobianFaceIsConstant[val_face] = val_JacFaceIsConstant; }
+  inline virtual void SetJacobianConstantFace(bool val_JacFaceIsConstant, unsigned short val_face) { }
 
   /*!
    * \brief Set the center of gravity of an element (including edges).
@@ -219,16 +210,16 @@ public:
   inline bool GetDivide (void) const { return Divide; }
 
   /*!
-  * \brief Initialize the array, which stores whether or not the faces have a constant Jacobian.
-  * \param[in] val_nFaces - Number of faces for which Jacobians must be initialized.
-  */
-  void InitializeJacobianConstantFaces(unsigned short val_nFaces);
+   * \brief A virtual member.
+   * \param[in] val_nFaces - Number of faces for which Jacobians must be initialized.
+   */
+  inline virtual void InitializeJacobianConstantFaces(unsigned short val_nFaces) { }
 
   /*!
-  * \brief Initialize the information about the neighboring elements.
-  * \param[in] val_nFaces - Number of faces for which neighboring information must be initialized.
-  */
-  void InitializeNeighbors(unsigned short val_nFaces);
+   * \brief A virtual member.
+   * \param[in] val_nFaces - Number of faces for which neighboring information must be initialized.
+   */
+  void virtual InitializeNeighbors(unsigned short val_nFaces) { }
 
   /*!
   * \brief A virtual member.
@@ -278,13 +269,13 @@ public:
   virtual unsigned short GetVTK_Type(void) = 0;
 
   /*!
-   * \brief A pure virtual member.
+   * \brief A virtual member.
    * \return Type of the element using VTK nomenclature.
    */
   inline virtual unsigned short GetRotation_Type(void) { return 0; }
 
   /*!
-   * \brief A pure virtual member.
+   * \brief A virtual member.
    * \param[in] val_rotation_type - Kind of rotation/traslation that must be applied.
    */
   inline virtual void SetRotation_Type(unsigned short val_rotation_type) { }
@@ -414,12 +405,6 @@ public:
    * \return Just a dummy, because this function must be overwritten.
    */
   inline virtual ENUM_FEM_GRID_LOCATION GetLocationGridDOFs(void) { return NO_PREFERRED_LOCATION; }
-
-  /*!
-   * \brief Virtual function to correct the offset of the global DOFs.
-   * \param[in] val_offsetRank - The offset that must be added for this rank.
-   */
-  inline virtual void AddOffsetGlobalDOFs(const unsigned long val_offsetRank) {}
 
   /*!
    * \brief Virtual function to add the given donor ID to the donor elements for the wall function treatment.
