@@ -39,7 +39,7 @@
  */
 class CNEMOEulerVariable : public CVariable {
 public:
-  static constexpr size_t MAXNVAR = 20;
+  static constexpr size_t MAXNVAR = 25;
 
 protected:
 
