@@ -208,6 +208,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     }
   }
 
+  /*--- Wall Shear Stress in all the markers ---*/
+
+  Alloc2D(nMarker, nVertex, WallShearStress);
+
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
@@ -471,6 +475,13 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
       delete[] CSkinFriction[iMarker];
     }
     delete[] CSkinFriction;
+  }
+
+  if (WallShearStress != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete[] WallShearStress[iMarker];
+    }
+    delete[] WallShearStress;
   }
 
   if (HeatConjugateVar != nullptr) {
@@ -2019,7 +2030,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, WallShearStress, TauNormal, RefTemp, RefVel2 = 0.0,
+  su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve = 0.0,
@@ -2236,13 +2247,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       TauNormal = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
-      WallShearStress = 0.0;
+      WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
         CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
-        WallShearStress += TauTangent[iDim] * TauTangent[iDim];
+        WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
-      WallShearStress = sqrt(WallShearStress);
+      WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
 
       for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
       WallDistMod = 0.0;
@@ -2251,7 +2262,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Compute y+ and non-dimensional velocity ---*/
 
-      FrictionVel = sqrt(fabs(WallShearStress) / Density);
+      FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
       YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
