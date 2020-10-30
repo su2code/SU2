@@ -3181,7 +3181,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, good_i, good_j);
+      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
 
       // muscl = good_i && good_j;
       // counter_local += (!good_i+!good_j);
@@ -3488,14 +3488,16 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   }
 }
 
-void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
-                                          const su2double *primvar_i, 
-                                          const su2double *primvar_j, 
-                                          const su2double *turbvar_i, 
-                                          const su2double *turbvar_j, 
+void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
+                                          const su2double     *primvar_i, 
+                                          const su2double     *primvar_j, 
+                                          const su2double     *turbvar_i, 
+                                          const su2double     *turbvar_j, 
+                                          const unsigned long nTurbVar,
                                           bool &good_i, 
                                           bool &good_j) {
   const unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool turb = (turbModel != NONE) && (turbModel != SA_NEG);
   const bool tkeNeeded = (turbModel == SST) || (turbModel == SST_SUST);
 
   /*--- Positive density ---*/
@@ -3505,9 +3507,14 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
 
   /*--- Positive turbulent kinetic energy ---*/
 
-  if (tkeNeeded) {
-    good_i = good_i && (turbvar_i[0] >= 0.0);
-    good_j = good_j && (turbvar_j[0] >= 0.0);
+  const su2double tke_i = tkeNeeded? turbvar_i[0] : 0.0;
+  const su2double tke_j = tkeNeeded? turbvar_i[0] : 0.0;
+
+  if (turb) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      good_i = good_i && (turbvar_i[iVar] >= 0.0);
+      good_j = good_j && (turbvar_j[iVar] >= 0.0);
+    }
   }
 
   /*--- Positive Roe sound speed ---*/
