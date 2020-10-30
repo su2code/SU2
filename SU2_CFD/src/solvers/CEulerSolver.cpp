@@ -3129,12 +3129,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
       }
 
-      /*--- Check for non-physical solutions after reconstruction. If found, use the
-       cell-average value of the solution. This is a locally 1st order approximation,
-       which is typically only active during the start-up of a calculation. ---*/
-
-      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
-
       // muscl = good_i && good_j;
       // counter_local += (!good_i+!good_j);
 
@@ -3363,15 +3357,11 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     good_i = good_i && (Project_Grad_i*V_ij >= 0);
     good_j = good_j && (Project_Grad_j*V_ij >= 0);
 
-    const bool good_edge = good_i || good_j;
-    // const bool good_edge = good_i && good_j;
-
     /*--- Edge-based limiters ---*/
 
     auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
     auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-    // if (limiter && good_i && good_j) {
-    if (limiter && good_edge) {
+    if (limiter) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
           Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa);
@@ -3414,14 +3404,11 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       good_i = good_i && (Project_Grad_i*T_ij >= 0);
       good_j = good_j && (Project_Grad_j*T_ij >= 0);
 
-      const bool good_edge = good_i || good_j;
-      // const bool good_edge = good_i && good_j;
-
       /*--- Edge-based limiters ---*/
 
       auto Limiter_i = turbNodes->GetLimiter(iPoint);
       auto Limiter_j = turbNodes->GetLimiter(jPoint);
-      if (limiterTurb && good_edge) {
+      if (limiterTurb) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
             Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa);
@@ -3443,6 +3430,12 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     }
   }
+
+  /*--- Check for non-physical solutions after reconstruction. If found, use the
+       cell-average value of the solution. This is a locally 1st order approximation,
+       which is typically only active during the start-up of a calculation. ---*/
+
+  CheckExtrapolatedState(config, primvar_i, primvar_j, turbvar_i, turbvar_j, nTurbVarGrad, good_i, good_j);
 }
 
 void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,

@@ -86,14 +86,11 @@ namespace LimiterHelpers
   inline su2double vanAlbadaFunction(su2double proj, su2double delta, su2double kappa)
   {
     const su2double sign = 1.0 - 2.0*(proj < 0.0);
-    // const su2double R = max(epsilon(), delta / (proj + sign*epsilon()));
     const su2double R = delta / (proj + sign*epsilon());
     const su2double beta = (1.0 + kappa)/(1.0 - kappa);
     const su2double psi = R*(R + beta)/(pow(R, 2.0) + beta);
 
-    return psi;
-    // return psi * (R >= 0);
-    // return psi * (R*psi >= 0);
+    return psi * (R >= 0);
   }
 
   inline su2double pipernoFunction(su2double proj, su2double delta)
@@ -104,8 +101,7 @@ namespace LimiterHelpers
                               1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
     const su2double psi = (1.0/3.0 + 2.0/(3.0*r)) * phi;
 
-    return psi;
-    // return psi * (r >= 0.0);
+    return psi * (r >= 0.0);
   }
 
   inline su2double raisedSine(su2double dist)
