@@ -3511,7 +3511,7 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double tke_j = tkeNeeded? turbvar_i[0] : 0.0;
 
   if (turb) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
       good_i = good_i && (turbvar_i[iVar] >= 0.0);
       good_j = good_j && (turbvar_j[iVar] >= 0.0);
     }
