@@ -3465,7 +3465,7 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   /*--- Positive turbulent kinetic energy ---*/
 
   const su2double tke_i = tkeNeeded? turbvar_i[0] : 0.0;
-  const su2double tke_j = tkeNeeded? turbvar_i[0] : 0.0;
+  const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
 
   if (turb) {
     for (auto iVar = 0; iVar < nTurbVar; iVar++) {
