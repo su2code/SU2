@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "../../../include/toolboxes/classes_multiple_integers.hpp"
+#include "../../fem/CFEMStandardElementBase.hpp"
 #include "../CGeometry.hpp"
 #include "CPointFEM.hpp"
 #include "CBoundaryFEM.hpp"
@@ -47,6 +49,9 @@ protected:
   vector<CPointFEM>    meshPoints;   /*!< \brief Vector of the points of the FEM mesh. */
   vector<CBoundaryFEM> boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
 
+  vector<CFEMStandardElementBase *> standardVolumeElementsGrid; /*!< \brief Vector of standard volume
+                                                                            elements for the grid. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -64,8 +69,13 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CMeshFEM_Base(void) {}
+  virtual ~CMeshFEM_Base(void);
 
 protected:
 
+  /*!
+   * \brief Function, which creates the standard elements for the grid.
+   * \param[in] elemTypes - Information about the element types to be created.
+   */
+  void CreateStandardVolumeElementsGrid(const vector<CUnsignedShort3T> &elemTypes);
 };

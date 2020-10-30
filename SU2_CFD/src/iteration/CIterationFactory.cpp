@@ -63,7 +63,8 @@ CIteration* CIterationFactory::CreateIteration(ENUM_MAIN_SOLVER kindSolver, cons
       }
       break;
 
-    case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
+    case FEM_EULER:     case FEM_NAVIER_STOKES:     case FEM_RANS:     case FEM_LES:
+    case FEM_INC_EULER: case FEM_INC_NAVIER_STOKES: case FEM_INC_RANS: case FEM_INC_LES:
       if (rank == MASTER_NODE)
         cout << "Finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
       iteration = new CFEMFluidIteration(config);

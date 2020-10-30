@@ -53,5 +53,8 @@ public:
 
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
 
-  CFEMStandardElementBase *standardElemSol; /*!< \brief Pointer to the standard element for the solution. */
+  CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
+                                                                   standard flow solution variables. */
+  CFEMStandardElementBase *standardElemP    = nullptr; /*!< \brief Pointer to the standard element for the
+                                                                   pressure for an incompressible flow. */
 };

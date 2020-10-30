@@ -53,6 +53,9 @@ protected:
 
   vector<CVolumeElementFEM_DG> volElem;      /*!< \brief Vector of the local volume elements, including halos. */
 
+  vector<CFEMStandardElementBase *> standardVolumeElementsSolution; /*!< \brief Vector of standard volume
+                                                                                elements for the solution. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -70,7 +73,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMeshFEM_DG(void) {}
+  ~CMeshFEM_DG(void);
 
   /*!
    * \brief Function to compute the coordinates of the integration points.
@@ -135,5 +138,12 @@ public:
    */
   void WallFunctionPreprocessing(CConfig *config);
 
-protected:
+private:
+
+  /*!
+   * \brief Function, which creates the standard elements for the solution.
+   * \param[in] elemTypes - Information about the element types to be created.
+   */
+  void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort3T> &elemTypes,
+                                            const unsigned short           locGridDOFs);
 };

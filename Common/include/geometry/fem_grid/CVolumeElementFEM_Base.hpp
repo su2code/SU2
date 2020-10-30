@@ -73,5 +73,5 @@ public:
   su2double lenScale;                /*!< \brief Length scale of the element. */
 
 
-  CFEMStandardElementBase *standardElemGrid; /*!< \brief Pointer to the standard element for the grid. */
+  CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
 };

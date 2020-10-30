@@ -26,10 +26,27 @@
  */
 
 #include "../../../include/geometry/fem_grid/CMeshFEM_DG.hpp"
-#include "../../../include/toolboxes/classes_multiple_integers.hpp"
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/toolboxes/fem/CReorderElements.hpp"
 #include "../../../include/adt/CADTPointsOnlyClass.hpp"
+#include "../../../include/fem/CFEMStandardHexVolumeSol.hpp"
+#include "../../../include/fem/CFEMStandardPrismVolumeSol.hpp"
+#include "../../../include/fem/CFEMStandardPyraVolumeSol.hpp"
+#include "../../../include/fem/CFEMStandardQuadVolumeSol.hpp"
+#include "../../../include/fem/CFEMStandardTetVolumeSol.hpp"
+#include "../../../include/fem/CFEMStandardTriVolumeSol.hpp"
+
+/*---------------------------------------------------------------------*/
+/*---          Public member functions of CMeshFEM_DG.              ---*/
+/*---------------------------------------------------------------------*/
+
+CMeshFEM_DG::~CMeshFEM_DG(void) {
+
+  for(unsigned long i=0; i<standardVolumeElementsSolution.size(); ++i) {
+    if( standardVolumeElementsSolution[i] ) delete standardVolumeElementsSolution[i];
+    standardVolumeElementsSolution[i] = nullptr;
+  }
+}
 
 CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
   : CMeshFEM_Base(geometry, config) {
@@ -407,10 +424,8 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
             the elements with constant and non-constant Jacobians are
             considered the same. ---*/
       if( JacConstant ) {
-        const unsigned short orderExactStraight =
-          (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
-        const unsigned short orderExactCurved =
-          (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+        const unsigned short orderExactStraight = config->GetOrderExactIntegrationFEM(nPolySol, true);
+        const unsigned short orderExactCurved   = config->GetOrderExactIntegrationFEM(nPolySol, false);
         if(orderExactStraight == orderExactCurved) JacConstant = false;
       }
 
@@ -1783,7 +1798,82 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
 void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Easier storage of the solver to be used. ---*/
+  const unsigned short Kind_Solver = config->GetKind_Solver();
+
+  /*--- Check if an incompressible solver is used. ---*/
+  const bool incompressible = (Kind_Solver == FEM_INC_EULER) ||
+                              (Kind_Solver == FEM_INC_NAVIER_STOKES) ||
+                              (Kind_Solver == FEM_INC_RANS) ||
+                              (Kind_Solver == FEM_INC_LES);
+
+  /*--- Vector of three unsigned shorts per entity to determine the different
+        element types in the locally stored volume elements. ---*/
+  vector<CUnsignedShort3T> elemTypesGrid, elemTypesSol;
+  elemTypesGrid.reserve(nVolElemTot);
+  if( incompressible ) elemTypesSol.reserve(2*nVolElemTot);
+  else                 elemTypesSol.reserve(nVolElemTot);
+
+  /*--- Loop over the number of elements. ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+
+    /*--- Determine the polynomial order that must be integrated exactly. ---*/
+    const unsigned short orderExact = config->GetOrderExactIntegrationFEM(volElem[i].nPolySol,
+                                                                          volElem[i].JacIsConsideredConstant);
+
+    /*--- Store the required information in elemTypesGrid and elemTypesSol. ---*/
+    elemTypesGrid.push_back(CUnsignedShort3T(volElem[i].VTK_Type, volElem[i].nPolyGrid, orderExact));
+
+    elemTypesSol.push_back(CUnsignedShort3T(volElem[i].VTK_Type, volElem[i].nPolySol, orderExact));
+    if( incompressible )
+      elemTypesSol.push_back(CUnsignedShort3T(volElem[i].VTK_Type, volElem[i].nPolySol-1, orderExact));
+  }
+
+  /*--- Sort elemTypesGrid and elemTypesSol in increasing order
+        and remove the multiple entities. ---*/
+  vector<CUnsignedShort3T>::iterator lastEntry;
+  sort(elemTypesGrid.begin(), elemTypesGrid.end());
+  lastEntry = unique(elemTypesGrid.begin(), elemTypesGrid.end());
+  elemTypesGrid.erase(lastEntry, elemTypesGrid.end());
+
+  sort(elemTypesSol.begin(), elemTypesSol.end());
+  lastEntry = unique(elemTypesSol.begin(), elemTypesSol.end());
+  elemTypesSol.erase(lastEntry, elemTypesSol.end());
+
+  /*--- Call the functions to actually create the standard elements. ---*/
+  CreateStandardVolumeElementsGrid(elemTypesGrid);
+  CreateStandardVolumeElementsSolution(elemTypesSol, config->GetKind_FEM_GridDOFsLocation());
+
+  /*--- Loop again over the volume elements to set the pointers to the appropriate
+        standard elements. ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+
+    const unsigned short orderExact = config->GetOrderExactIntegrationFEM(volElem[i].nPolySol,
+                                                                          volElem[i].JacIsConsideredConstant);
+
+    /*--- Create the CUnsignedShort3T types to search the grid and solution elements. ---*/
+    const CUnsignedShort3T gridType(volElem[i].VTK_Type, volElem[i].nPolyGrid,  orderExact);
+    const CUnsignedShort3T solType( volElem[i].VTK_Type, volElem[i].nPolySol,   orderExact);
+    const CUnsignedShort3T pType(   volElem[i].VTK_Type, volElem[i].nPolySol-1, orderExact);
+
+    /*--- Set the pointer for the standard element of the grid. ---*/
+    unsigned long j;
+    for(j=0; j<elemTypesGrid.size(); ++j)
+      if(gridType == elemTypesGrid[j]) break;
+    volElem[i].standardElemGrid = standardVolumeElementsGrid[j];
+
+    /*--- Set the pointer for the standard element of the solution. ---*/
+    for(j=0; j<elemTypesSol.size(); ++j)
+      if(solType == elemTypesSol[j]) break;
+    volElem[i].standardElemFlow = standardVolumeElementsSolution[j];
+
+    /*--- Set the pointer for the standard element of the pressure, if needed. ---*/
+    if( incompressible ) {
+      for(j=0; j<elemTypesSol.size(); ++j)
+        if(pType == elemTypesSol[j]) break;
+      volElem[i].standardElemP = standardVolumeElementsSolution[j];
+    }
+  }
 }
 
 void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
@@ -1815,4 +1905,50 @@ void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
 void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+/*---------------------------------------------------------------------*/
+/*---          Private member functions of CMeshFEM_DG.             ---*/
+/*---------------------------------------------------------------------*/
+
+void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedShort3T> &elemTypes,
+                                                       const unsigned short           locGridDOFs) {
+
+  /*--- Allocate the memory for the pointers. ---*/
+  standardVolumeElementsSolution.resize(elemTypes.size(), nullptr);
+
+  /*--- Loop over the different element types for the grid. ---*/
+  for(unsigned long i=0; i<elemTypes.size(); ++i) {
+
+    /*--- Abbreviate the element type, polynomial degree and polynomial order that
+          must be integrated exactly for readability. ---*/
+    const unsigned short VTK_Type   = elemTypes[i].short0;
+    const unsigned short nPoly      = elemTypes[i].short1;
+    const unsigned short orderExact = elemTypes[i].short2;
+
+    /*--- Determine the element type and allocate the appropriate object. ---*/
+    switch( VTK_Type ) {
+      case TRIANGLE:
+        standardVolumeElementsSolution[i] = new CFEMStandardTriVolumeSol(nPoly, orderExact, locGridDOFs);
+        break;
+      case QUADRILATERAL:
+        standardVolumeElementsSolution[i] = new CFEMStandardQuadVolumeSol(nPoly, orderExact, locGridDOFs);
+        break;
+      case TETRAHEDRON:
+        standardVolumeElementsSolution[i] = new CFEMStandardTetVolumeSol(nPoly, orderExact, locGridDOFs);
+        break;
+      case PYRAMID:
+        standardVolumeElementsSolution[i] = new CFEMStandardPyraVolumeSol(nPoly, orderExact, locGridDOFs);
+        break;
+      case PRISM:
+        standardVolumeElementsSolution[i] = new CFEMStandardPrismVolumeSol(nPoly, orderExact, locGridDOFs);
+        break;
+      case HEXAHEDRON:
+        standardVolumeElementsSolution[i] = new CFEMStandardHexVolumeSol(nPoly, orderExact, locGridDOFs);
+        break;
+      default:  /*--- To avoid a compiler warning. ---*/
+        SU2_MPI::Error(string("Unknown volume element. This should not happen"),
+                         CURRENT_FUNCTION);
+    }
+  }
 }

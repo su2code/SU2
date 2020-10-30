@@ -198,9 +198,13 @@ enum ENUM_MAIN_SOLVER {
   FEM_NAVIER_STOKES = 27,           /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 28,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
-  MULTIPHYSICS = 30,
+  FEM_INC_EULER = 30,               /*!< \brief Definition of the finite element incompressible Euler's solver. */
+  FEM_INC_NAVIER_STOKES = 31,       /*!< \brief Definition of the finite element incompressible Navier-Stokes' solver. */
+  FEM_INC_RANS = 32,                /*!< \brief Definition of the finite element incompressible Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_INC_LES = 33,                 /*!< \brief Definition of the finite element incompressible Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIPHYSICS = 34,
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42          /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -214,6 +218,10 @@ static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
   MakePair("FEM_RANS", FEM_RANS)
   MakePair("FEM_LES", FEM_LES)
+  MakePair("FEM_INC_EULER", FEM_INC_EULER)
+  MakePair("FEM_INC_NAVIER_STOKES", FEM_INC_NAVIER_STOKES)
+  MakePair("FEM_INC_RANS", FEM_INC_RANS)
+  MakePair("FEM_INC_LES", FEM_INC_LES)
   MakePair("NEMO_EULER",NEMO_EULER)
   MakePair("NEMO_NAVIER_STOKES",NEMO_NAVIER_STOKES)
   MakePair("ADJ_EULER", ADJ_EULER)

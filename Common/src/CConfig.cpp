@@ -9271,6 +9271,17 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
   return -1;
 }
 
+unsigned short CConfig::GetOrderExactIntegrationFEM(unsigned short val_nPoly,
+                                                    bool           val_JacIsConstant) const {
+
+  /*--- Determine the quadrature factor, which depends
+        on whether or not the Jacobian is constant. ---*/
+  const su2double fact = val_JacIsConstant ? Quadrature_Factor_Straight : Quadrature_Factor_Curved;
+
+  /*--- Return the appropriate value, which is rounded up. ---*/
+  return static_cast<unsigned short>(ceil(val_nPoly*fact));
+}
+
 void CConfig::Tick(double *val_start_time) {
 
 #ifdef PROFILE

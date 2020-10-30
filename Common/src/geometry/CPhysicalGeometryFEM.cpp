@@ -356,7 +356,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
     /*--- Determine the standard element of the volume element. ---*/
     const unsigned short VTK_Parent = elem[l]->GetVTK_Type();
     const unsigned short nPolyGrid  = elem[l]->GetNPolyGrid();
-    const unsigned short orderExact = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+    const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPolyGrid, false);
 
     unsigned long ii;
     for(ii=0; ii<standardVolumeElements.size(); ++ii)
@@ -556,12 +556,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
               /*--- Abbreviate the boundary element type, polynomial degree of the
                     solution and determine the polynomial degree that must be integrated
                     exactly, based on the polynomial degree of the solution. ---*/
-              const unsigned short VTK_Type = bound[iMarker][l]->GetVTK_Type();
-              const unsigned short nPolySol = elem[elemID]->GetNPolySol();
-
-              unsigned short orderExact;
-              if( constJac ) orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
-              else           orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+              const unsigned short VTK_Type   = bound[iMarker][l]->GetVTK_Type();
+              const unsigned short nPolySol   = elem[elemID]->GetNPolySol();
+              const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPolySol, constJac);
 
               /*--- Determine the corresponding standard element of the face. ---*/
               unsigned long jj;
@@ -984,7 +981,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
             Jacobians are constant, it suffices to look at the polynomial degree
             of the grid. ---*/
       const unsigned short nPolyGrid  = elem[i]->GetNPolyGrid();
-      const unsigned short orderExact = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+      const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPolyGrid, false);
 
       /*--- Determine the standard element of the volume element. ---*/
       unsigned long ii;
@@ -1138,7 +1135,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
             Jacobians are constant, it suffices to look at the polynomial degree
             of the grid. ---*/
       const unsigned short nPolyGrid  = elem[i]->GetNPolyGrid();
-      const unsigned short orderExact = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
+      const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPolyGrid, false);
 
       /*--- Determine the standard element of the volume element. ---*/
       unsigned long ii;
@@ -1281,17 +1278,14 @@ void CPhysicalGeometry::DetermineFEMGraphWeights(CConfig                        
     const unsigned long ind0 = 2*i;
     const unsigned long ind1 = ind0 + 1;
 
-    /*--- Determine whether or not the Jacobian is constant and get
-          the VTK type and the polynomial degree of the solution. ---*/
+    /*--- Determine whether or not the Jacobian is constant, get the VTK
+          type and the polynomial degree of the solution, and determine
+          the polynomial degree that must be integrated exactly. ---*/
     bool constJac = elem[i]->GetJacobianConsideredConstant();
 
-    unsigned short VTK_Type = elem[i]->GetVTK_Type();
-    unsigned short nPolySol = elem[i]->GetNPolySol();
-
-    /*--- Determine the polynomial degree that must be integrated exactly. ---*/
-    unsigned short orderExact;
-    if( constJac ) orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
-    else           orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+    unsigned short VTK_Type   = elem[i]->GetVTK_Type();
+    unsigned short nPolySol   = elem[i]->GetNPolySol();
+    unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPolySol, constJac);;
 
     /*--- Determine the corresponding standard volume element. ---*/
     unsigned long ii;
@@ -1326,11 +1320,9 @@ void CPhysicalGeometry::DetermineFEMGraphWeights(CConfig                        
         /*--- Determine the VTK type of the face element, whether or not the
               Jacobian of the face is constant and the order of the polynomials
               that must be integrated exactly. ---*/
-        VTK_Type = standardVolumeElements[ii]->GetVTK_Face(j);
-        constJac = elem[i]->GetJacobianConstantFace(j);
-
-        if( constJac ) orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
-        else           orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+        VTK_Type   = standardVolumeElements[ii]->GetVTK_Face(j);
+        constJac   = elem[i]->GetJacobianConstantFace(j);
+        orderExact = config->GetOrderExactIntegrationFEM(nPolySol, constJac);
 
         /*--- Determine the standard element for this face. ---*/
         unsigned long jj;
@@ -1411,15 +1403,12 @@ void CPhysicalGeometry::DetermineFEMGraphWeights(CConfig                        
 
             /*--- Retrieve the information from the boundary face, such that
                   the corresponding standard element can be determined. ---*/
-            const unsigned short VTK_Type = bound[iMarker][l]->GetVTK_Type();
-            const unsigned long  elemID   = bound[iMarker][l]->GetDomainElement()
-                                          - elemPartitioner.GetFirstIndexOnRank(rank);
-            const unsigned short nPolySol = elem[elemID]->GetNPolySol();
-            const bool constJac           = bound[iMarker][l]->GetJacobianConsideredConstant();
-
-            unsigned short orderExact;
-            if( constJac ) orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
-            else           orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+            const unsigned short VTK_Type   = bound[iMarker][l]->GetVTK_Type();
+            const unsigned long  elemID     = bound[iMarker][l]->GetDomainElement()
+                                            - elemPartitioner.GetFirstIndexOnRank(rank);
+            const unsigned short nPolySol   = elem[elemID]->GetNPolySol();
+            const bool constJac             = bound[iMarker][l]->GetJacobianConsideredConstant();
+            const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPolySol, constJac);
 
             /*--- Determine the corresponding standard element of the face. ---*/
             unsigned long jj;
@@ -1547,9 +1536,9 @@ void CPhysicalGeometry::DetermineFEMStandardElements(CConfig *config) {
           is actually constant and b) and c) are needed to create the face
           elements to determine the integration points for the wall model
           as well as to estimate the amount of work per element. ---*/
-    const unsigned short orderExactA = (unsigned short) ceil(nPolyGrid*config->GetQuadrature_Factor_Curved());
-    const unsigned short orderExactB = (unsigned short) ceil(nPolySol *config->GetQuadrature_Factor_Straight());
-    const unsigned short orderExactC = (unsigned short) ceil(nPolySol *config->GetQuadrature_Factor_Curved());
+    const unsigned short orderExactA = config->GetOrderExactIntegrationFEM(nPolyGrid, false);
+    const unsigned short orderExactB = config->GetOrderExactIntegrationFEM(nPolySol,  true);
+    const unsigned short orderExactC = config->GetOrderExactIntegrationFEM(nPolySol,  false);
 
     /*--- Store the five variants in elemTypes. ---*/
     unsigned long ind = 5*i;

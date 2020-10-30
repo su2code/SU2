@@ -3693,8 +3693,9 @@ public:
    */
   bool GetFEMSolver(void) const {
     switch (Kind_Solver) {
-      case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
-      case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
+      case FEM_EULER:          case FEM_NAVIER_STOKES:     case FEM_RANS:     case FEM_LES:
+      case FEM_INC_EULER:      case FEM_INC_NAVIER_STOKES: case FEM_INC_RANS: case FEM_INC_LES:
+      case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS:       case DISC_ADJ_FEM_RANS:
         return true;
       default:
         return false;
@@ -8729,16 +8730,15 @@ public:
   unsigned short GetRiemann_Solver_FEM(void) const { return Riemann_Solver_FEM; }
 
   /*!
-   * \brief Get the factor applied during quadrature of straight elements.
-   * \return The specified straight element quadrature factor.
+   * \brief Get the order of the polynomial that must be integrated
+   *        exactly by the integration rule used by the FEM solver.
+   * \param[in] val_nPoly         - Polynomial order of the FEM basis function.
+   * \param[in] val_JacIsConstant - Whether or not the Jacobian of the transformation
+   *                                to the standard element is constant.
+   * \return The order of the polynomial that must be integrated exactly.
    */
-  su2double GetQuadrature_Factor_Straight(void) const { return Quadrature_Factor_Straight; }
-
-  /*!
-   * \brief Get the factor applied during quadrature of curved elements.
-   * \return The specified curved element quadrature factor.
-   */
-  su2double GetQuadrature_Factor_Curved(void) const { return Quadrature_Factor_Curved; }
+  unsigned short GetOrderExactIntegrationFEM(unsigned short val_nPoly,
+                                             bool           val_JacIsConstant) const;
 
   /*!
    * \brief Get the factor applied during time quadrature for ADER-DG.
