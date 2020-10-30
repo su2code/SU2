@@ -3095,6 +3095,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
 
+  const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
+
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
 
@@ -3159,7 +3161,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (muscl) {
       /*--- Reconstruction ---*/
 
-      const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
                        &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
