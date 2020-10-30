@@ -325,33 +325,6 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
     }
   }
   
-  // for (iRank = 0; iRank < size; iRank++) {
-  //   nPoint_Flag[iRank]= -1;
-  // }
-
-  /*--- Loop through all of our SEND_RECEIVE markers and track
-   our recvs with each rank. ---*/
-
-  // for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-  //   if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-  //       (config->GetMarker_All_SendRecv(iMarker) < 0)) {
-
-  //     /*--- Get the destination rank and number of points to send. ---*/
-
-  //     iRank    = abs(config->GetMarker_All_SendRecv(iMarker))-1;
-  //     nVertexR = geometry->nVertex[iMarker];
-
-  //     /*--- If we have not visited this element yet, increment our
-  //      number of elements that must be sent to a particular proc. ---*/
-
-  //     if ((nPoint_Flag[iRank] != (int)iMarker)) {
-  //       nPoint_Flag[iRank]        = (int)iMarker;
-  //       nPoint_Recv_All[iRank+1] += nVertexR;
-  //     }
-
-  //   }
-  // }
-
   delete [] nPoint_Flag;
 
   /*--- Communicate the number of points to be sent/recv'd amongst
