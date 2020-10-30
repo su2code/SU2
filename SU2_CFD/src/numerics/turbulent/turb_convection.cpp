@@ -204,25 +204,29 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
 
-  for (auto iVar = 0; iVar < 3; iVar++) {
-    su2double Wave_i = ProjVel_i;
-    su2double Wave_j = ProjVel_j;
-    if (iVar == 1) {
-      Wave_i += SoundSpeed_i;
-      Wave_j += SoundSpeed_j;
-    }
-    if (iVar == 2) {
-      Wave_i -= SoundSpeed_i;
-      Wave_j -= SoundSpeed_j;
-    }
-
-    su2double Epsilon = max((Lambda[iVar]-Wave_i),
-                            (Wave_j-Lambda[iVar]));
-    Epsilon = max(4.0*Epsilon, 0.0);
-
-    Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
-                                                   : su2double(fabs(Lambda[iVar]));
+  for (auto iLoop = 0; iLoop < 3; iLoop++) {
+    Lambda[iLoop] = fabs(Lambda[iLoop]);
   }
+
+  // for (auto iVar = 0; iVar < 3; iVar++) {
+  //   su2double Wave_i = ProjVel_i;
+  //   su2double Wave_j = ProjVel_j;
+  //   if (iVar == 1) {
+  //     Wave_i += SoundSpeed_i;
+  //     Wave_j += SoundSpeed_j;
+  //   }
+  //   if (iVar == 2) {
+  //     Wave_i -= SoundSpeed_i;
+  //     Wave_j -= SoundSpeed_j;
+  //   }
+
+  //   su2double Epsilon = max((Lambda[iVar]-Wave_i),
+  //                           (Wave_j-Lambda[iVar]));
+  //   Epsilon = max(4.0*Epsilon, 0.0);
+
+  //   Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
+  //                                                  : su2double(fabs(Lambda[iVar]));
+  // }
 
   /*--- Fluxes ---*/
 
