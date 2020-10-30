@@ -3153,11 +3153,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    bool good_i = true, good_j = true;
-    // bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
-    // bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    // bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && good_i && good_j;
-    bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
+    // bool good_i = true, good_j = true;
+    bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
+    bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
+    bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && good_i && good_j;
+    // bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
@@ -3387,7 +3387,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
 
   const su2double Kappa = config->GetMUSCL_Kappa();
-  const su2double eps   = numeric_limits<passivedouble>::epsilon();
 
   /*--- Reconstruct flow primitive variables. ---*/
 
@@ -3457,14 +3456,12 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       good_i = good_i && (Project_Grad_i*T_ij >= 0);
       good_j = good_j && (Project_Grad_j*T_ij >= 0);
 
-      // const bool good_edge = good_i || good_j;
       const bool good_edge = good_i && good_j;
 
       /*--- Edge-based limiters ---*/
 
       auto Limiter_i = turbNodes->GetLimiter(iPoint);
       auto Limiter_j = turbNodes->GetLimiter(jPoint);
-      // if (limiterTurb && good_i && good_j) {
       if (limiterTurb && good_edge) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
@@ -3506,12 +3503,9 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
 
   /*--- Positive turbulent kinetic energy ---*/
 
-  const su2double tke_i = tkeNeeded? turbvar_i[0] : 0.0;
-  const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
-
   if (tkeNeeded) {
-    good_i = good_i && (tke_i >= 0.0);
-    good_j = good_j && (tke_j >= 0.0);
+    good_i = good_i && (turbvar_i[0] >= 0.0);
+    good_j = good_j && (turbvar_j[0] >= 0.0);
   }
 
   /*--- Positive Roe sound speed ---*/
@@ -3527,14 +3521,14 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig   *config,
     SqVel_j += pow(primvar_j[iDim+1],2);
   }
   
-  const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+tke_i+0.5*SqVel_i;
-  const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+tke_j+0.5*SqVel_j;
+  const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+turbvar_i[0]+0.5*SqVel_i;
+  const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+turbvar_j[0]+0.5*SqVel_j;
 
   const su2double Enthalpy_i = Energy_i+primvar_i[nDim+1]/primvar_i[nDim+2];
   const su2double Enthalpy_j = Energy_j+primvar_j[nDim+1]/primvar_j[nDim+2];
 
   const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-  const su2double RoeTke = tkeNeeded? su2double((R*tke_j+tke_i)/R_Plus_One) : su2double(0.0);
+  const su2double RoeTke = (R*turbvar_j[0]+turbvar_i[0])/R_Plus_One;
 
   good_i = good_i && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
   good_j = good_j && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
