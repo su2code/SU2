@@ -1492,7 +1492,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
-  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND *ModVel_FreeStreamND;
+  Energy_FreeStreamND = energies[0] + 0.5*ModVel_FreeStreamND *ModVel_FreeStreamND;
 
   if (viscous) {
 
@@ -1547,8 +1547,9 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     PrintingToolbox::CTablePrinter ModelTable(&ModelTableOut);
     ModelTableOut <<"-- Models:"<< endl;
 
-    ModelTable.AddColumn("Transport Model", 38);
-    ModelTable.AddColumn("Fluid Model", 38);
+    ModelTable.AddColumn("Mixture", 25);
+    ModelTable.AddColumn("Fluid Model", 25);
+    ModelTable.AddColumn("Transport Model", 25);
     ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     ModelTable.PrintHeader();
 
@@ -1564,11 +1565,31 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     NonDimTable.PrintHeader();
 
+    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
+    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
+    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
+    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
+    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
+    Unit.str("");
+
+    ModelTable << config->GetGasModel();
+
+    switch(config->GetKind_FluidModel()){
+    case USER_DEFINED_NONEQ:
+      ModelTable << "User Defined for 2T";
+      break;
+    case MUTATIONPP:
+      ModelTable << "Mutation++ Library";
+      break;
+    }
+
     if (viscous) {
 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
-      ModelTable << "Wilke-Blottner-Eucken ";
+      ModelTable << "Wilke-Blottner-Eucken";
         NonDimTable.PrintFooter();
         break;
 
@@ -1584,29 +1605,9 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       ModelTable << "-" ;
     }
 
-    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
-    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
-    Unit.str("");
-    if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
-    else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
-    Unit.str("");
-    switch(config->GetKind_FluidModel()){
-    case USER_DEFINED_NONEQ:
-      ModelTable << "Park Two-Temperature";
-      break;
-    case MUTATIONPP:
-      ModelTable << "Mutation++ Library";
-      break;
-    }
-
     NonDimTable.PrintFooter();
     NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
     NonDimTable.PrintHeader();
-
-    NonDimTable << "Mixture" << config->GetGasModel() << "-"<< "-"<< config->GetGasModel();
-    Unit.str("");
 
     if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
     else if (config->GetSystemMeasurements() == US) Unit << "psf";
