@@ -142,7 +142,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    bool good_i = true, good_j = true;
+    // bool good_i = true, good_j = true;
     bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
     bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
