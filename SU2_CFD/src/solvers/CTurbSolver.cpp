@@ -142,9 +142,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    // bool good_i = true, good_j = true;
-    bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
-    bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
+    bool good_i = true, good_j = true;
+    // bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
+    // bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
     // bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
     bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
@@ -156,26 +156,27 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        which is typically only active during the start-up of a calculation. ---*/
 
       CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, good_i, good_j);
-      // muscl = good_i && good_j;
-      muscl = good_i || good_j;
+      muscl = good_i && good_j;
+
+      /*--- Store the state ---*/
+
+      numerics->SetPrimitive(muscl ? flowPrimVar_i : V_i, 
+                             muscl ? flowPrimVar_j : V_j);
+      numerics->SetTurbVar(  muscl ? turbPrimVar_i : T_i, 
+                             muscl ? turbPrimVar_j : T_j);
+      // muscl = good_i || good_j;
+
+      // /*--- Store the state ---*/
+
+      // numerics->SetPrimitive(good_i ? flowPrimVar_i : V_i, 
+      //                        good_j ? flowPrimVar_j : V_j);
+      // numerics->SetTurbVar(  good_i ? turbPrimVar_i : T_i, 
+      //                        good_j ? turbPrimVar_j : T_j);
     }
     else {
-      for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
-        flowPrimVar_i[iVar] = V_i[iVar];
-        flowPrimVar_j[iVar] = V_j[iVar];
-      }
-      for (auto iVar = 0; iVar < nVar; iVar++) {
-        turbPrimVar_i[iVar] = T_i[iVar];
-        turbPrimVar_j[iVar] = T_j[iVar];
-      }
+      numerics->SetPrimitive(V_i, V_j);
+      numerics->SetTurbVar(  T_i, T_j);
     }
-
-    /*--- Store the state ---*/
-
-    numerics->SetPrimitive(good_i ? flowPrimVar_i : V_i, 
-                           good_j ? flowPrimVar_j : V_j);
-    numerics->SetTurbVar(  good_i ? turbPrimVar_i : T_i, 
-                           good_j ? turbPrimVar_j : T_j);
 
     /*--- Update convective residual value ---*/
 
