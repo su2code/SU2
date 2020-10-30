@@ -2483,8 +2483,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Store the mean flow, and turbulence solvers more clearly. */
 
-    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
-    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+    // CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
+    // CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
     /* Total number of variables between all solvers */
     // unsigned short nVarTot = solverFlow->GetnVar();

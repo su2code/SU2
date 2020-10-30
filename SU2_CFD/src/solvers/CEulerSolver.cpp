@@ -3217,10 +3217,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       }
     }
     else {
-
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
-      if (tkeNeeded) numerics->SetTurbKineticEnergy(tke_i, tke_j);
+      if (tkeNeeded) numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+                                                    turbNodes->GetPrimitive(jPoint,0));
 
     }
 

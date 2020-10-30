@@ -156,7 +156,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
        which is typically only active during the start-up of a calculation. ---*/
 
       CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, good_i, good_j);
-      
+
       // muscl = good_i && good_j;
 
       // /*--- Store the state ---*/
@@ -780,7 +780,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   
   const bool sst_model = ((config->GetKind_Turb_Model() == SST)      ||
                           (config->GetKind_Turb_Model() == SST_SUST));
-  // const bool sst_model = false;
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
