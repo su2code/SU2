@@ -349,7 +349,7 @@ protected:
                               const su2double     *turbvar_j,
                               const unsigned long nTurbVar,
                               bool &good_i, 
-                              bool &good_j) override;
+                              bool &good_j);
 
   /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.

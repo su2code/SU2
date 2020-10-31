@@ -124,13 +124,13 @@ private:
    * \param[in/out] good_i - Whether the extrapolated state from node i is good.
    * \param[in/out] good_j - Whether the extrapolated state from node j is good.
    */
-  void CheckExtrapolatedState(const CConfig       *config,
-                              const su2double     *primvar_i, 
-                              const su2double     *primvar_j, 
-                              const su2double     *turbvar_i, 
-                              const su2double     *turbvar_j,
+  void CheckExtrapolatedState(const CConfig   *config,
+                              const su2double *primvar_i, 
+                              const su2double *primvar_j, 
+                              const su2double *turbvar_i, 
+                              const su2double *turbvar_j,
                               bool &good_i, 
-                              bool &good_j) override;
+                              bool &good_j);
 
   /*!
    * \brief Modify the Jacobian based on the MUSCL extrapolation, including nodal gradient terms.
