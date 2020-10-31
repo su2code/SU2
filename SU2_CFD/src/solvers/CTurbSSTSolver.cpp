@@ -1864,13 +1864,13 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
       Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
+      // LinSysRes.SetBlock_Zero(iPoint);
 
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (auto iVar = 0; iVar < nVar; iVar++) {
-        const unsigned long total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
+      // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      // for (auto iVar = 0; iVar < nVar; iVar++) {
+      //   const unsigned long total_index = iPoint*nVar+iVar;
+      //   Jacobian.DeleteValsRowi(total_index);
+      // }
       
     }
   }
@@ -1935,13 +1935,13 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       Solution[1] = Density_Normal * Omega;
       
       nodes->SetSolution_Old(iPoint,Solution);
-      LinSysRes.SetBlock_Zero(iPoint);
+      // LinSysRes.SetBlock_Zero(iPoint);
 
-      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      for (auto iVar = 0; iVar < nVar; iVar++) {
-        const unsigned long total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
-      }
+      // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      // for (auto iVar = 0; iVar < nVar; iVar++) {
+      //   const unsigned long total_index = iPoint*nVar+iVar;
+      //   Jacobian.DeleteValsRowi(total_index);
+      // }
       
     }
   }
