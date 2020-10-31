@@ -273,8 +273,8 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = 0.5*(rkv_i+rkv_j-Diff_rk)*Area;
   Flux[1] = 0.5*(rov_i+rov_j-Diff_ro)*Area;
 
-  if (Flux[0] >  1000*Density_i*TurbVar_i[0]) cout << "I, k_i= " << TurbVar_i[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
-  if (Flux[0] < -1000*Density_j*TurbVar_j[0]) cout << "J, k_j= " << TurbVar_j[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
+  // if (Flux[0] >  1000*Density_i*TurbVar_i[0]) cout << "I, k_i= " << TurbVar_i[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
+  // if (Flux[0] < -1000*Density_j*TurbVar_j[0]) cout << "J, k_j= " << TurbVar_j[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
 
   Jacobian_i[0][0] = 0.5*(ProjVel_i+Lambda[0])*Area;
   Jacobian_j[0][0] = 0.5*(ProjVel_j-Lambda[0])*Area;
