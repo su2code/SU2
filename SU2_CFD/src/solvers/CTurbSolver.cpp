@@ -145,8 +145,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     // bool good_i = true, good_j = true;
     bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
-    // bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
+    // bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
+    bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
