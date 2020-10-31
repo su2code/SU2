@@ -28,7 +28,7 @@
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
-CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, nDim){
+CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, val_nDim){
 
   unsigned short maxEl = 0;
   su2double mf;
