@@ -128,31 +128,31 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
       // Lambda[0] += RoeVelocity*UnitNormal[iDim];
       ProjVel_i += Velocity_i[iDim]*UnitNormal[iDim];
       ProjVel_j += Velocity_j[iDim]*UnitNormal[iDim];
-      RoeSqVel  += RoeVelocity*RoeVelocity;
+      // RoeSqVel  += RoeVelocity*RoeVelocity;
     }
     Lambda[0] = 0.5*(ProjVel_i+ProjVel_j);
   }
 
-  RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
-  RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
-  RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
+  // RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
+  // RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
+  // RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
 
   /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
 
-  if (RoeSoundSpeed2 <= 0.0) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      Flux[iVar] = 0.0;
-      for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
+  // if (RoeSoundSpeed2 <= 0.0) {
+  //   for (auto iVar = 0; iVar < nVar; iVar++) {
+  //     Flux[iVar] = 0.0;
+  //     for (auto jVar = 0; jVar < nVar; jVar++) {
+  //       Jacobian_i[iVar][jVar] = 0.0;
+  //       Jacobian_j[iVar][jVar] = 0.0;
+  //     }
+  //   }
 
-    AD::SetPreaccOut(Flux, nVar);
-    AD::EndPreacc();
+  //   AD::SetPreaccOut(Flux, nVar);
+  //   AD::EndPreacc();
 
-    return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-  }
+  //   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+  // }
 
   /*--- Positive RoeSoundSpeed^2, compute fluxes and Jacobian ---*/
 
