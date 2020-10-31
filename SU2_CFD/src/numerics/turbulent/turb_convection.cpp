@@ -265,10 +265,10 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   // Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro_ro)*Area;
   // Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro_ro)*Area;
 
+  Lambda[0] = fabs(Lambda[0]);
+  
   const su2double Diff_rk = Lambda[0]*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
   const su2double Diff_ro = Lambda[0]*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
-
-  Lambda[0] = fabs(Lambda[0]);
 
   Flux[0] = 0.5*(rkv_i+rkv_j-Diff_rk)*Area;
   Flux[1] = 0.5*(rov_i+rov_j-Diff_ro)*Area;
