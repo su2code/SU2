@@ -993,12 +993,9 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   bool frozen = config->GetFrozen();
   bool err = false;
-  bool monoatomic = false;
+  bool monoatomic = config->GetMonoatomic();
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
-
-  /*--- Set monoatomic flag ---*/
-  if (config->GetGasModel() == "ARGON") monoatomic=true;
 
   /*--- Initialize the error counter ---*/
   eAxi_local = 0;
