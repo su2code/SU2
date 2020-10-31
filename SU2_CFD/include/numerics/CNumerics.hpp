@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,9 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
+#include "../fluid/CNEMOGas.hpp"
+#include "../../include/fluid/CMutationTCLib.hpp"
+#include "../../include/fluid/CUserDefinedTCLib.hpp"
 
 using namespace std;
 
@@ -75,6 +78,8 @@ protected:
   su2double
   Thermal_Conductivity_i,    /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_j,    /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_i, /*!< \brief vibrational-electronic Thermal conductivity at point i. */
+  Thermal_Conductivity_ve_j, /*!< \brief vibrational-electronic Thermal conductivity at point j. */
   Thermal_Diffusivity_i,     /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j;     /*!< \brief Thermal diffusivity at point j. */
   su2double
@@ -216,7 +221,8 @@ protected:
 
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
-  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  bool using_uq,                  /*!< \brief Flag for UQ methodology  */
+  nemo;                           /*!< \brief Flag for NEMO problems  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -252,6 +258,8 @@ public:
      * allows discarding the Jacobians when they are not needed.
      */
     operator Vector_t() { return residual; }
+
+    su2double operator[] (unsigned long idx) const { return residual[idx]; }
   };
 
   /*!
@@ -526,6 +534,18 @@ public:
                                      su2double val_thermal_conductivity_j) {
     Thermal_Conductivity_i = val_thermal_conductivity_i;
     Thermal_Conductivity_j = val_thermal_conductivity_j;
+  }
+
+    /*!
+   * \brief Set the thermal conductivity (translational/rotational)
+   * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
+   * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
+   * \param[in] iSpecies - Value of the species.
+   */
+  inline void SetThermalConductivity_ve(su2double val_thermal_conductivity_ve_i,
+                                     su2double val_thermal_conductivity_ve_j) {
+    Thermal_Conductivity_ve_i = val_thermal_conductivity_ve_i;
+    Thermal_Conductivity_ve_j = val_thermal_conductivity_ve_j;
   }
 
   /*!
@@ -1186,6 +1206,18 @@ public:
 
   /*!
    * \overload
+   * \param[out] val_resconv - Pointer to the convective residual.
+   * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ComputeResidual(su2double *val_resconv, su2double *val_resvisc,
+                               su2double **val_Jacobian_i, su2double **val_Jacobian_j,
+                               CConfig *config) {}
+
+  /*!
+   * \overload
    * \param[in] config - Definition of the particular problem.
    * \param[out] val_residual - residual of the source terms
    * \param[out] val_Jacobian_i - Jacobian of the source terms
@@ -1205,6 +1237,27 @@ public:
                                               su2double **val_Jacobian_j, CConfig* config,
                                               su2double &gamma_sep) { }
 
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual ResidualType<> ComputeAxisymmetric(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
+
+  /*!
+   * \overload For numerics classes that store the residual/flux and Jacobians internally.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  inline virtual ResidualType<> ComputeVibRelaxation(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
+
+  /*!
+   * \brief Calculation of the chemistry source term
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] val_residual - residual of the source terms
+   * \param[out] val_Jacobian_i - Jacobian of the source terms
+   */
+  inline virtual ResidualType<> ComputeChemistry(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
   /*!
    * \brief Set intermittency for numerics (used in SA with LM transition model)
    */
@@ -1443,6 +1496,16 @@ public:
                                const su2double val_laminar_viscosity,
                                const su2double val_eddy_viscosity,
                                const su2double val_turb_ke);
+
+  virtual inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       { }
+
+  virtual inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       { }
+
+  virtual inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { }
+
+  virtual inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          { }
+
+  virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }
 
 };
 

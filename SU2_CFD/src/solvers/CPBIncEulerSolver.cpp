@@ -1228,8 +1228,9 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
      *    one face might be strong BC and another weak BC (mostly for farfield boundary
      *    where the boundary face is strong or weak depending on local flux. ---*/
     if (nodes->GetStrongBC(iPoint)) {
-        for (iVar = 0; iVar < nVar; iVar++)
-            LinSysRes.SetBlock_Zero(iPoint, iVar);
+       // for (iVar = 0; iVar < nVar; iVar++)
+            //LinSysRes.SetBlock_Zero(iPoint, iVar);
+       LinSysRes.SetBlock_Zero(iPoint);
     }
 
     for (iVar = 0; iVar < nVar; iVar ++ ) {
@@ -1284,8 +1285,9 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
-        LinSysRes.SetBlock_Zero(iPoint, iVar);
+        //LinSysRes.SetBlock_Zero(iPoint, iVar);
       }
+      LinSysRes.SetBlock_Zero(iPoint);
     }
 
     /*--- Read the volume ---*/
@@ -2516,8 +2518,9 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 
         /*--- Set this face as an inlet. ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          LinSysRes.SetBlock_Zero(iPoint, iDim);
+        /*for (iDim = 0; iDim < nDim; iDim++)
+          LinSysRes.SetBlock_Zero(iPoint, iDim);*/
+        LinSysRes.SetBlock_Zero(iPoint);
 
         nodes->SetStrongBC(iPoint);
 
@@ -2662,8 +2665,9 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       nodes->SetStrongBC(iPoint);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim);
+      /*for (iDim = 0; iDim < nDim; iDim++)
+        LinSysRes.SetBlock_Zero(iPoint, iDim);*/
+      LinSysRes.SetBlock_Zero(iPoint);
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit) {

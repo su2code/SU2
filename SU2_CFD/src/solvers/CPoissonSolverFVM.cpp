@@ -313,8 +313,9 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
-        LinSysRes.SetBlock_Zero(iPoint, iVar);
+        //LinSysRes.SetBlock_Zero(iPoint, iVar);
       }
+      LinSysRes.SetBlock_Zero(iPoint);
     }
   
     /*--- Read the residual ---*/
@@ -417,42 +418,23 @@ for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
        * and a dirichlet BC is applied. For velocity, based on the sign of massflux, either 
        * a dirichlet or a neumann BC is applied (in Flow_Correction routine). ---*/		
        
-       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-       
-       
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+
        for (iVar = 0; iVar < nVar; iVar++) {
 		   Residual[iVar] = 0.0;
 	   }
-       
-		/*MassFlux_Part = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-           MassFlux_Part -= solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*(solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim))*Normal[iDim];
-		} 
-		if ((MassFlux_Part < 0.0) && (fabs(MassFlux_Part) > EPS)) {
-			 LinSysRes.SubtractBlock(iPoint, Residual);
-				 
-		    if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
-			   Jacobian_i[0][0] = 0.0;
-			   Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		    }			    
-		}*/
-		//else {
-			 for (iVar = 0; iVar < nVar; iVar++) {
-			   LinSysRes.SetBlock_Zero(iPoint, iVar);
-			   Residual[iVar] = 0.0;
-		      }
-		     
-		      nodes->SetSolution(iPoint, Residual);
-		      nodes->SetSolution_Old(iPoint,Residual);
-		      nodes->SetStrongBC(iPoint);
-		     if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
-				 Jacobian.DeleteValsRowi(iPoint);
-		     }
-		//}
-   }
+       LinSysRes.SetBlock_Zero(iPoint);
+
+       nodes->SetSolution(iPoint, Residual);
+       nodes->SetSolution_Old(iPoint,Residual);
+       nodes->SetStrongBC(iPoint);
+       if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
+         Jacobian.DeleteValsRowi(iPoint);
+       }
+    }
   }
-   delete [] Normal;
-   delete [] MomCoeffxNormal;
+  delete [] Normal;
+  delete [] MomCoeffxNormal;
 }
                                 
                                 
@@ -561,8 +543,9 @@ unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
       switch (Kind_Outlet) {
 		  
 		  case PRESSURE_OUTLET:
-		     for (iVar = 0; iVar < nVar; iVar++)
-		       LinSysRes.SetBlock_Zero(iPoint, iVar);
+		     /*for (iVar = 0; iVar < nVar; iVar++)
+		       LinSysRes.SetBlock_Zero(iPoint, iVar);*/
+		     LinSysRes.SetBlock_Zero(iPoint);
 		     
 		     nodes->SetSolution(iPoint, Residual);
 		     nodes->SetSolution_Old(iPoint, Residual);
@@ -577,28 +560,14 @@ unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 		     MassFlux_Part = 0.0;
 		     for (iDim = 0; iDim < nDim; iDim++) 
                MassFlux_Part -= solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint)*(solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim))*Normal[iDim];
-		     
-		     /*if (MassFlux_Part >= 0.0) {
-				 for (iVar = 0; iVar < nVar; iVar++)
-				   LinSysRes.SetBlock_Zero(iPoint, iVar);
-		     
-		         node[iPoint]->SetSolution(Residual);
-		         node[iPoint]->Set_OldSolution();
-		     
-		         if (config->GetKind_TimeIntScheme_Poisson()==EULER_IMPLICIT) {
-					 Jacobian.DeleteValsRowi(iPoint);
-		         }
-				 
-		     }*/
-		    //else {
-				 LinSysRes.SubtractBlock(iPoint, Residual);
-				 
-				 if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
-					 Jacobian_i[0][0] = 0.0;
-					 Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-			    }
-			 //}
-		  break;
+
+              LinSysRes.SubtractBlock(iPoint, Residual);
+
+              if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+                Jacobian_i[0][0] = 0.0;
+                Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+              }
+          break;
 		}
      }
   }

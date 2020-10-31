@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.7 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -36,6 +36,58 @@ def main():
 
     test_list = []
 
+    #########################
+    ## NEMO solver ###
+    #########################
+
+    # Adiabatic thermal bath
+    thermalbath           = TestCase('thermalbath')
+    thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
+    thermalbath.cfg_file  = "thermalbath.cfg"
+    thermalbath.test_iter = 10
+    thermalbath.test_vals = [-2.898714,   -2.898714,   -1.991121,   -1.991121,   -1.696300,    6.000000] #last 4 columns
+    thermalbath.su2_exec  = "SU2_CFD"
+    thermalbath.timeout   = 1600
+    thermalbath.new_output = True
+    thermalbath.tol       = 0.00001
+    test_list.append(thermalbath)
+
+    # Adiabatic frozen thermal bath
+    thermalbath_frozen           = TestCase('thermalbath_frozen')
+    thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
+    thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
+    thermalbath_frozen.test_iter = 10
+    thermalbath_frozen.test_vals = [ -9.543019,   -9.844050,   -1.991146,   -1.991146,   -1.696315,    6.000000] #last 4 columns
+    thermalbath_frozen.su2_exec  = "SU2_CFD"
+    thermalbath_frozen.timeout   = 1600
+    thermalbath_frozen.new_output = True
+    thermalbath_frozen.tol       = 0.00001
+    test_list.append(thermalbath_frozen)
+
+    # Inviscid single wedge
+    invwedge           = TestCase('invwedge')
+    invwedge.cfg_dir   = "nonequilibrium/invwedge"
+    invwedge.cfg_file  = "invwedge.cfg"
+    invwedge.test_iter = 10
+    invwedge.test_vals = [  -0.954130,   -1.478893,  -16.737310,  -17.063693,  -17.010416,    2.374072,    1.733626,    5.401966,    0.955538] #last 4 columns
+    invwedge.su2_exec  = "SU2_CFD"
+    invwedge.timeout   = 1600
+    invwedge.new_output = False
+    invwedge.tol       = 0.00001
+    test_list.append(invwedge)
+
+    # Viscous single wedge
+    viscwedge           = TestCase('viscwedge')
+    viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
+    viscwedge.cfg_file  = "viscwedge.cfg"
+    viscwedge.test_iter = 10
+    viscwedge.test_vals = [-5.267324,   -5.792087,  -20.236749,  -20.204632,  -20.221054,   -1.780516,   -2.208251,    1.723062,   -2.871713]
+    viscwedge.su2_exec  = "SU2_CFD"
+    viscwedge.timeout   = 1600
+    viscwedge.new_output = False
+    viscwedge.tol       = 0.00001
+    test_list.append(viscwedge)    
+    
     #########################
     ## Compressible Euler ###
     #########################
@@ -281,7 +333,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.075861, -16.146770, 1.064326, 0.019770] #last 4 columns
+    turb_naca0012_sa.test_vals = [-11.141831, -14.498856, 1.064330, 0.019756] #last 4 columns
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.new_output = True
     turb_naca0012_sa.timeout   = 3200
@@ -293,7 +345,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.273739, -6.243814, 1.049988, 0.019165] #last 4 columns
+    turb_naca0012_sst.test_vals = [-12.797476, -5.873045, 1.049989, 0.019163] #last 4 columns
     turb_naca0012_sst.su2_exec  = "SU2_CFD"
     turb_naca0012_sst.new_output  = True
     turb_naca0012_sst.timeout   = 3200
@@ -305,7 +357,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-14.851215, -6.062229, 1.005233, 0.019014] #last 4 columns
+    turb_naca0012_sst_sust.test_vals = [-12.640277, -5.752224, 1.005233, 0.019017] #last 4 columns
     turb_naca0012_sst_sust.su2_exec  = "SU2_CFD"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
@@ -1755,7 +1807,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-15.273739, -6.243814, 1.049988, 0.019165] #last 4 columns
+    pywrapper_turb_naca0012_sst.test_vals = [-12.797476, -5.873045, 1.049989, 0.019163] #last 4 columns
     pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.new_output = True
     pywrapper_turb_naca0012_sst.timeout   = 3200

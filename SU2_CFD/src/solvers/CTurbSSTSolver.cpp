@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subrotuines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -418,12 +418,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         /*--- Set wall values ---*/
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        su2double WallShearStress = solver_container[FLOW_SOL]->GetWallShearStress(val_marker, iVertex);
 
-        su2double WallShearStress = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++)
-          WallShearStress += pow(solver_container[FLOW_SOL]->GetCSkinFriction(val_marker, iVertex, iDim),2.0);
-
-        WallShearStress = sqrt(WallShearStress);
         /*--- Compute non-dimensional velocity ---*/
         su2double FrictionVel = sqrt(fabs(WallShearStress)/density);
 

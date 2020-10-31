@@ -2,7 +2,7 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,8 @@
 #include "../../include/solvers/CIncNSSolver.hpp"
 #include "../../include/solvers/CPBIncNSSolver.hpp"
 #include "../../include/solvers/CPoissonSolverFVM.hpp"
+#include "../../include/solvers/CNEMOEulerSolver.hpp"
+#include "../../include/solvers/CNEMONSSolver.hpp"
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/solvers/CTransLMSolver.hpp"
@@ -73,6 +75,9 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
     case EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       break;
+    case NEMO_EULER:
+      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
+      break;    
     case INC_NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -81,6 +86,9 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       break;
     case NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      break;
+    case NEMO_NAVIER_STOKES:
+      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       break;
     case RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -242,10 +250,18 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
+    case SUB_SOLVER_TYPE::NEMO_EULER:
+      genericSolver = CreateNEMOSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
+      break;    
     case SUB_SOLVER_TYPE::NAVIER_STOKES:
       genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
+    case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
+      genericSolver = CreateNEMOSolver(SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
+      break;    
     case SUB_SOLVER_TYPE::INC_EULER:
       genericSolver = CreateFlowSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
@@ -461,5 +477,26 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
   }
 
   return flowSolver;
+
+}
+
+CSolver* CSolverFactory::CreateNEMOSolver(SUB_SOLVER_TYPE kindNEMO_Solver, CSolver **solver,  CGeometry *geometry, CConfig *config, int iMGLevel){
+
+  CSolver *NEMOSolver = nullptr;
+
+  switch (kindNEMO_Solver) {
+    case SUB_SOLVER_TYPE::NEMO_EULER:
+      NEMOSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);
+      NEMOSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      break;
+    case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
+      NEMOSolver = new CNEMONSSolver(geometry, config, iMGLevel);    
+      break;
+    default:
+      SU2_MPI::Error("NEMO flow solver not found", CURRENT_FUNCTION);
+      break;
+  }
+
+  return NEMOSolver;
 
 }

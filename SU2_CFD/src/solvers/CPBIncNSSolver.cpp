@@ -530,8 +530,9 @@ void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
       nodes->SetVelocity_Old(iPoint, Vector);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim);
+      /*for (iDim = 0; iDim < nDim; iDim++)
+        LinSysRes.SetBlock_Zero(iPoint, iDim);*/
+      LinSysRes.SetBlock_Zero(iPoint);
 
       nodes->SetStrongBC(iPoint);
 

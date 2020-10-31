@@ -63,6 +63,9 @@ protected:
 
 
 public:
+
+   static constexpr size_t MAXNVAR = 7;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_pressure - value of the pressure.
