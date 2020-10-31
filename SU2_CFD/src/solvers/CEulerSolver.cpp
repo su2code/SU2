@@ -3116,6 +3116,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
                        &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
+      /*--- Check for non-physical solutions after reconstruction. If found, use the
+       cell-average value of the solution. This is a locally 1st order approximation,
+       which is typically only active during the start-up of a calculation. ---*/
+
+      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
+
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
       if (!ideal_gas || low_mach_corr) {
@@ -3431,11 +3437,11 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     }
   }
 
-  /*--- Check for non-physical solutions after reconstruction. If found, use the
-       cell-average value of the solution. This is a locally 1st order approximation,
-       which is typically only active during the start-up of a calculation. ---*/
+  // /*--- Check for non-physical solutions after reconstruction. If found, use the
+  //      cell-average value of the solution. This is a locally 1st order approximation,
+  //      which is typically only active during the start-up of a calculation. ---*/
 
-  CheckExtrapolatedState(config, primvar_i, primvar_j, turbvar_i, turbvar_j, nTurbVarGrad, good_i, good_j);
+  // CheckExtrapolatedState(config, primvar_i, primvar_j, turbvar_i, turbvar_j, nTurbVarGrad, good_i, good_j);
 }
 
 void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
@@ -3460,12 +3466,17 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double tke_i = tkeNeeded? turbvar_i[0] : 0.0;
   const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
 
-  if (turb) {
-    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
-      good_i = good_i && (turbvar_i[iVar] >= 0.0);
-      good_j = good_j && (turbvar_j[iVar] >= 0.0);
-    }
+  if (tkeNeeded) {
+    good_i = good_i && (tke_i >= 0.0);
+    good_j = good_j && (tke_j >= 0.0);
   }
+
+  // if (turb) {
+  //   for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+  //     good_i = good_i && (turbvar_i[iVar] >= 0.0);
+  //     good_j = good_j && (turbvar_j[iVar] >= 0.0);
+  //   }
+  // }
 
   /*--- Positive Roe sound speed ---*/
 

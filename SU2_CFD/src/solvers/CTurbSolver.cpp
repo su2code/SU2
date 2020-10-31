@@ -153,6 +153,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
                                          turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
 
+      /*--- Check for non-physical solutions after reconstruction. If found, use the
+       cell-average value of the solution. This is a locally 1st order approximation,
+       which is typically only active during the start-up of a calculation. ---*/
+
+      CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, good_i, good_j);
+
       // muscl = good_i && good_j;
 
       // /*--- Store the state ---*/
@@ -302,6 +308,31 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+    }
+  }
+}
+
+void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
+                                         const su2double     *primvar_i, 
+                                         const su2double     *primvar_j, 
+                                         const su2double     *turbvar_i, 
+                                         const su2double     *turbvar_j, 
+                                         bool &good_i, 
+                                         bool &good_j) {
+  const unsigned short turbModel = config->GetKind_Turb_Model();
+  const bool sa_neg = (turbModel != SA_NEG);
+
+  /*--- Positive density ---*/
+
+  good_i = good_i && (primvar_i[nDim+2] > 0.0);
+  good_j = good_j && (primvar_j[nDim+2] > 0.0);
+
+  /*--- Positive turbulent variables ---*/
+
+  if (!sa_neg) {
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      good_i = good_i && (turbvar_i[iVar] >= 0.0);
+      good_j = good_j && (turbvar_j[iVar] >= 0.0);
     }
   }
 }
