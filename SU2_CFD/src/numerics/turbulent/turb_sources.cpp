@@ -856,19 +856,17 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      }
      
      /*--- omega production Jacobian ---*/
-
-     if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)){
-     // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
-      if ((S2 - TWO3*zeta*diverg) <= (20.*beta_star*TurbVar_i[1]*TurbVar_i[1]))
+     if ((S2 - TWO3*zeta*diverg) > (20.*beta_star*TurbVar_i[1]*zeta)) {
+       Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended*Volume;
+       Jacobian_i[1][1] *= (TurbVar_i[1] > VorticityMag_i*F2_i/a1)? 2.0 : 1.0;
+     }
+     else if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)) {
        Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-      else
-        Jacobian_i[1][1] += 20.*beta_star*TurbVar_i[1]*alfa_blended*Volume;
-
      }
    }
     
     pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-    pw = min(pw, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[1]*alfa_blended);
+    pw = min(pw, 20.*beta_star*Density_i*TurbVar_i[1]*zeta*alfa_blended);
     
     pk = max(pk, 0.0);
     pw = max(pw, 0.0);
