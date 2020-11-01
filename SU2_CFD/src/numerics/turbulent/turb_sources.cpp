@@ -839,7 +839,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    else {
      const su2double S2 = StrainMag_i*StrainMag_i;
      pk = Eddy_Viscosity_i*S2 - TWO3*Density_i*TurbVar_i[0]*diverg;
-     pw = S2 - TWO3*zeta*diverg;
+     pw = Density_i*alfa_blended*(S2 - TWO3*zeta*diverg);
        
      /*--- k production Jacobian ---*/
 
@@ -857,12 +857,18 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
      
      /*--- omega production Jacobian ---*/
 
-     if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
+     if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)){
      // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+      if ((S2 - TWO3*zeta*diverg) <= (20.*beta_star*TurbVar_i[1]*TurbVar_i[1]))
        Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
+      else
+        Jacobian_i[1][1] += 20.*beta_star*TurbVar_i[1]*alfa_blended*Volume;
+
+     }
    }
     
-    // pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+    pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+    pw = min(pw, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[1]*alfa_blended);
     
     pk = max(pk, 0.0);
     pw = max(pw, 0.0);
@@ -885,7 +891,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /*--- Add the production terms to the residuals. ---*/
 
    Residual[0] += pk*Volume;
-   Residual[1] += pw*Volume*alfa_blended*Density_i;;
+   Residual[1] += pw*Volume;
 
    /*--- Dissipation ---*/
 
