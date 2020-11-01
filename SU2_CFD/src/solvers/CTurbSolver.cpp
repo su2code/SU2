@@ -659,19 +659,19 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   /*--- Set residual to 0 if turbulent variables are calculated with wall functions ---*/
 
-  // if (wall_functions) {
-  //   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //     const auto node_i = geometry->node[iPoint];
-  //     if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
+  if (wall_functions) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      const auto node_i = geometry->node[iPoint];
+      if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
 
-  //       LinSysRes.SetBlock_Zero(iPoint);
-  //       for (auto iVar = 0; iVar < nVar; iVar++) {
-  //         const unsigned long total_index = iPoint*nVar+iVar;
-  //         Jacobian.DeleteValsRowi(total_index);
-  //       }
-  //     }
-  //   }
-  // }
+        LinSysRes.SetBlock_Zero(iPoint);
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          const unsigned long total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
 
   /*--- Build implicit system ---*/
 
