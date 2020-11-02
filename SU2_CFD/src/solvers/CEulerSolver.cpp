@@ -3747,8 +3747,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
 
     su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
-    /*--- Right hand side of the system (-Residual) ---*/
-
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
@@ -3790,21 +3788,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   vector<double> r_red(n,0.0);
   double ReducedRes = 0.0;
   
-  /*--- Compute Initial Reduced Coordinates based on IC ---*/
-  if (InnerIter == 0) {
-  for (int i = 0; i < n; i++) {
-    double sum = 0.0;
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        auto sol = nodes->GetSolution(iPoint,iVar);
-        sum += TrialBasis[iPoint*nVar + iVar][i] * (sol - nodes->Get_RefSolution(iPoint, iVar));
-      }
-    }
-    GenCoordsY[i] = sum;
-  }
-  }
-  
-  /*--- Compute Test Basis: W = J * Phi and reduced residual ---*/
+  /*--- Compute Test Basis: W = J * Phi ---*/
   
   vector<double> TestBasis2(m*n, 0.0);
   su2double* prod   = new su2double[nVar]();
@@ -3829,7 +3813,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           phi[i]    = TrialBasis[kPoint*nVar + i][jPoint];
         }
         
-        // TODO: try .MatrixVectorProduct(vec,prod,geometry,config) function for speed
         for (iVar = 0; iVar < nVar; iVar++) {
           prod[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++) {
@@ -3837,9 +3820,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
           }
         }
         
-        for (unsigned long i = 0; i < nVar; i++){ // column order
+        for (unsigned long iVar = 0; iVar < nVar; iVar++){ // column order
           //TestBasis2[jPoint*m + iPoint_mask*nVar + i] += prod[i];
-          TestBasis2[jPoint*m + iPoint*nVar + i] += prod[i];
+          TestBasis2[jPoint*m + iPoint*nVar + iVar] += prod[iVar];
         }
         
         /*--- Jacobian is defined for (iPoint, k=iPoint) but won't be listed as a neighbor ---*/
@@ -3895,6 +3878,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   fs.close();
   
+  
   /*--- Check for convergence ---*/
   
   std::string fname = "check_reduced_residual.csv";
@@ -3907,39 +3891,14 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   for(int i=0; i < n; i++){
     ReducedRes += r_red[i] * r_red[i];
   }
+  ReducedRes = sqrt(ReducedRes);
   
-  if (InnerIter == 0) {
-    RomConverged = false;
-    SetResOld_ROM(sqrt(ReducedRes));
-  }
-  
-  else {
-    if (1.0 / sqrt(ReducedRes) >= 1e8) {
-      RomConverged = true;
-      return;
-    }
-    
-    else if (ReducedResNorm_Cur == sqrt(ReducedRes)) {
-      if (InnerIter > 20) RomConverged = true;
-      else RomConverged = false;
-    }
-    
-    else if (sqrt(ReducedRes) > ReducedResNorm_Cur*1.5) {
-      //RomConverged = true;
-      std::cout << "ROM Residual Increased." << std::endl;
-      //SetRes_ROM(sqrt(ReducedRes));
-      //return;
-    }
-    
-    else {
-      RomConverged = false;
-    }
-  }
-  
+  CheckROMConvergence(config, ReducedRes);
   if (RomConverged == true) std::cout << "ROM Converged." << std::endl;
-  SetRes_ROM(sqrt(ReducedRes));
   
-  // Set up variables for QR decomposition, A = QR
+  
+  /*--- Set up variables for QR decomposition ---*/
+  
   char TRANS = 'N';
   int NRHS = 1;
   int LWORK = n+n;
@@ -3954,7 +3913,6 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     for(int i=0; i < m; i++){
       for(int j=0; j < n; j++){
         fs << TestBasis2[i +j*m] << "," ;
-        //TestBasis2[i +j*m] = TestBasis2[i +j*m] *(-1.0);
       }
       fs << "\n";
     }
@@ -3974,19 +3932,9 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs.open(fname2);
     for(int i=0; i < m; i++){
       fs << r[i] << "\n" ;
-      //r[i] = r[i] * (-1.0);
     }
     fs.close();
   }
-  
-  //std::ofstream f;
-  //su2double* Coord;
-  //f.open("meshsave.csv");
-  //   for (iPoint = 0; iPoint< nPointDomain; iPoint++) {
-  //      Coord = geometry->node[iPoint]->GetCoord();
-  //      f << Coord[0] << ", " << Coord[1] << "\n";
-  //   }
-  //f.close();
   
   // Compute least-squares solution using QR decomposition
   // https://johnwlambert.github.io/least-squares/
@@ -4008,6 +3956,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   }
   fs.close();
   
+  /*--- Backtracking line search ---*/
   // TODO: backtracking line search to find step size:
   double a = 0.5;
   

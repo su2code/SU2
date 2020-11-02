@@ -4389,6 +4389,7 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   unsigned short pod_basis = config->GetKind_PODBasis(); //TODO: POD BASIS KIND
   unsigned long TimeIter = config->GetTimeIter();
   unsigned long nTimeIter = config->GetnTime_Iter();
+  int dim = int(nPointDomain * nVar);
   //bool StopCalc = ((TimeIter+1) == nTimeIter);
 
   /*--- Get solver nodes ---*/
@@ -4397,25 +4398,24 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   if (!u_basis_generator) {
     if (pod_basis == STATIC_POD) {
         std::cout << "Creating static basis generator." << std::endl;
+        CAROM::StaticSVDOptions static_svd_options(dim, 2);
+        static_svd_options.max_basis_dimension = 2;
+      
         u_basis_generator.reset(new CAROM::StaticSVDBasisGenerator(
-          int(nPointDomain * nVar),
-          5,
+          static_svd_options,
           filename));
     }
     else {
         std::cout << "Creating incremental basis generator." << std::endl;
-        u_basis_generator.reset(new CAROM::IncrementalSVDBasisGenerator(
-          int(nPointDomain * nVar),
-          1.0e-2,
-          true,
-          true,
-          500, // max basis size
-          config->GetDelta_UnstTimeND(),
-          5000,
-          1.0e-2,
-          config->GetDelta_UnstTimeND(),
-          filename));
+        CAROM::IncrementalSVDOptions incremental_svd_options(dim, 2, 1.0e-2, dim,
+                                                             config->GetDelta_UnstTimeND(),
+                                                             1.0e-2,
+                                                             config->GetDelta_UnstTimeND()*100);
+        incremental_svd_options.fast_update = true;
+        u_basis_generator.reset(new CAROM::IncrementalSVDBasisGenerator(incremental_svd_options,
+                                                                        filename));
     }
+    
     // Print nodes for each rank for now
     std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
     
@@ -4590,11 +4590,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
     }
     GenCoordsY.push_back(sum);
   }
-  GenCoordsY[0] = -15957437.9358702;
-  GenCoordsY[1] =-7939.73902059381;
-  GenCoordsY[2] =440.690025768359;
-  GenCoordsY[3] =204.247905440978;
-  GenCoordsY[4] =8.52312544989400;
+
   delete[] ref_sol;
   delete[] init_sol;
 }
@@ -4843,32 +4839,38 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   
 }
 
-bool CSolver::CheckROMConvergence() {
+bool CSolver::GetROMConvergence() {
   return RomConverged;
 }
 
-//void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
-//
-//  unsigned long InnerIter = config->GetInnerIter();
-//
-//  if (InnerIter == 0) {
-//    RomConverged = false;
-//    SetResOld_ROM(sqrt(ReducedRes));
-//  }
-//  else {
-//    if (ReducedResNorm_Old / sqrt(ReducedRes) >= 1e8) {
-//      RomConverged = true;
-//      std::cout << "ROM Converged." << std::endl;
-//      return;
-//    }
-//    else if (sqrt(ReducedRes) > ReducedResNorm_Cur) {
-//      RomConverged = true;
-//      std::cout << "ROM Residual Increased." << std::endl;
-//      return;
-//    }
-//    else {
-//      RomConverged = false;
-//    }
-//  }
-//  SetRes_ROM(sqrt(ReducedRes));
-//}
+void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
+
+  unsigned long InnerIter = config->GetInnerIter();
+  SetRes_ROM(ReducedRes);
+
+  if (InnerIter == 0) {
+    RomConverged = false;
+    SetResOld_ROM(ReducedRes);
+  }
+  
+  else {
+    if (1.0 / ReducedRes >= 1e8) {
+      RomConverged = true;
+      return;
+    }
+    
+    else if (ReducedResNorm_Cur == ReducedRes) {
+      if (InnerIter > 20) RomConverged = true;
+      else RomConverged = false;
+    }
+    
+    else if (ReducedRes > ReducedResNorm_Cur) {
+      //RomConverged = true;
+      std::cout << "ROM Residual Increased." << std::endl;
+    }
+    
+    else {
+      RomConverged = false;
+    }
+  }
+}

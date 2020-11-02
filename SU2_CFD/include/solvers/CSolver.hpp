@@ -1638,14 +1638,14 @@ public:
    * \brief Check for ROM convergence.
    * \param[out] bool - returns value of bool RomConverged
    */
-  bool CheckROMConvergence();
+  bool GetROMConvergence();
   
   /*!
-   * \brief Convert masked nodes to masked edges.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Check for ROM convergence
    * \param[in] config - Definition of the particular problem.
+   * \param[in] ReducedRes - Value of the reduced residual.
    */
-  //void CheckROMConvergence(CConfig *config, double ReducedRes);
+  void CheckROMConvergence(CConfig *config, double ReducedRes);
   
   /*!
    * \brief A virtual member.
