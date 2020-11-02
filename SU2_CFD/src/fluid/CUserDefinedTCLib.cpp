@@ -1089,7 +1089,16 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
 
 void CUserDefinedTCLib::ViscosityWBE(){
 
-  su2double tmp1, tmp2;
+  su2double tmp1, tmp2, conc;
+
+  /*--- Calculate species mole fraction ---*/
+  conc = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    MolarFracWBE[iSpecies] = rhos[iSpecies]/MolarMass[iSpecies];
+    conc               += MolarFracWBE[iSpecies];
+  }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    MolarFracWBE[iSpecies] = MolarFracWBE[iSpecies]/conc;
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     mus[iSpecies] = 0.1*exp((Blottner[iSpecies][0]*log(T)  +
