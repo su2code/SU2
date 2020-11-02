@@ -3341,14 +3341,17 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
   }
 
-  const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
-  const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
-
   const su2double Kappa = config->GetMUSCL_Kappa();
 
   /*--- Reconstruct flow primitive variables. ---*/
 
+  auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+  auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
+
   for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
+
+    const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint)[iVar];
+    const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint)[iVar];
 
     const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
@@ -3356,8 +3359,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     su2double Project_Grad_j = -V_ij;
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-      Project_Grad_j += Vector_ij[iDim]*Gradient_j[iVar][iDim];
+      Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
+      Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
     }
 
     // good_i = good_i && (Project_Grad_i*V_ij >= 0);
@@ -3365,8 +3368,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     /*--- Edge-based limiters ---*/
 
-    auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-    auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
     if (limiter) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
@@ -3392,10 +3393,13 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   if (turb) {
 
-    const auto TurbGrad_i = turbNodes->GetGradient_Reconstruction(iPoint);
-    const auto TurbGrad_j = turbNodes->GetGradient_Reconstruction(jPoint);
+    auto Limiter_i = turbNodes->GetLimiter(iPoint);
+    auto Limiter_j = turbNodes->GetLimiter(jPoint);
 
     for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
+
+      const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[iVar];
+      const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[iVar];
 
       const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
@@ -3403,8 +3407,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       su2double Project_Grad_j = -T_ij;
 
       for (auto iDim = 0; iDim < nDim; iDim++) {
-        Project_Grad_i += Vector_ij[iDim]*TurbGrad_i[iVar][iDim];
-        Project_Grad_j += Vector_ij[iDim]*TurbGrad_j[iVar][iDim];
+        Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
+        Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
       }
 
       // good_i = good_i && (Project_Grad_i*T_ij >= 0);
@@ -3412,8 +3416,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       /*--- Edge-based limiters ---*/
 
-      auto Limiter_i = turbNodes->GetLimiter(iPoint);
-      auto Limiter_j = turbNodes->GetLimiter(jPoint);
       if (limiterTurb) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
