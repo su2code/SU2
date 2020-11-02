@@ -2,7 +2,7 @@
  * \file CIsoparametric.hpp
  * \brief Isoparametric interpolation using FE shape functions.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,8 +42,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone
-   * \param[in] jZone - index of the target zone
+   * \param[in] iZone - index of the donor zone.
+   * \param[in] jZone - index of the target zone.
    */
   CIsoparametric(CGeometry ****geometry_container, const CConfig* const* config,
                  unsigned int iZone, unsigned int jZone);
