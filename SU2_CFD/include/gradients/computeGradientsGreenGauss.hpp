@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file computeGradientsGreenGauss.hpp
  * \brief Generic implementation of Green-Gauss gradient computation.
  * \note This allows the same implementation to be used for conservative

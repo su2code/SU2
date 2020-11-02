@@ -394,6 +394,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Common preprocessing steps ---*/
+
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Upwind second order reconstruction ---*/
@@ -807,7 +808,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
 
-
   su2double lim_i, lim_j, lim_ij = 0.0;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -989,7 +989,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   /*--- Assign booleans ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
   bool frozen = config->GetFrozen();
   bool err = false;
   bool monoatomic = false;
@@ -1049,26 +1048,26 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
         eAxi_local++;
     }
     
-    if(nSpecies!=1){
+    if(!monoatomic){
       if(!frozen){
-          /*--- Compute the non-equilibrium chemistry ---*/
-          auto residual = numerics->ComputeChemistry(config);
+        /*--- Compute the non-equilibrium chemistry ---*/
+        auto residual = numerics->ComputeChemistry(config);
 
-          /*--- Check for errors before applying source to the linear system ---*/
-          err = false;
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = false;
+        for (iVar = 0; iVar < nVar; iVar++)
+          if (residual[iVar] != residual[iVar]) err = true;
+        if (implicit)
           for (iVar = 0; iVar < nVar; iVar++)
-            if (residual[iVar] != residual[iVar]) err = true;
+            for (jVar = 0; jVar < nVar; jVar++)
+              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+        /*--- Apply the chemical sources to the linear system ---*/
+        if (!err) {
+          LinSysRes.SubtractBlock(iPoint, residual);
           if (implicit)
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (jVar = 0; jVar < nVar; jVar++)
-                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-          /*--- Apply the chemical sources to the linear system ---*/
-          if (!err) {
-            LinSysRes.SubtractBlock(iPoint, residual);
-            if (implicit)
-              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-          } else
-            eChm_local++;
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        } else
+          eChm_local++;
       }      
     }
 
@@ -1912,7 +1911,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
         /*--- Eddy viscosity ---*/
         visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                   node_infty->GetEddyViscosity(0) );
+                                        node_infty->GetEddyViscosity(0) );
 
         /*--- Thermal conductivity ---*/
         visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),

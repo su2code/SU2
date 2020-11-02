@@ -39,22 +39,23 @@ class CUserDefinedTCLib : public CNEMOGas {
 private:
 
   bool ionization;                  /*!< \brief Presence of charged species in gas mixture. */
-  
-  unsigned short nReactions,                      /*!< \brief Number of reactions in chemical model. */
+  bool monoatomic;                  /*!< \brief Monoatomic gas (ARGON) being used. */
+  unsigned short nReactions,        /*!< \brief Number of reactions in chemical model. */
   iEl;                              /*!< \brief Common iteration counter for electrons */
 
-  string String_GasModel;             /*!< \brief String gas model. */
+  string String_GasModel;           /*!< \brief String gas model. */
 
   vector<unsigned short> nElStates; /*!< \brief Number of electron states. */
 
-  C3DIntMatrix Reactions;                /*!</brief reaction map for chemically reacting flows */
+  C3DIntMatrix Reactions;           /*!</brief reaction map for chemically reacting flows */
   
-  vector<su2double> ArrheniusCoefficient, /*!< \brief Arrhenius reaction coefficient */
-  ArrheniusEta,				   /*!< \brief Arrhenius reaction temperature exponent */
-  ArrheniusTheta,				   /*!< \brief Arrhenius reaction characteristic temperature */
-  CharVibTemp,					   /*!< \brief Characteristic vibrational temperature for e_vib */
-  RotationModes,			       /*!< \brief Rotational modes of energy storage */
-  Ref_Temperature,   			   /*!< \brief Reference temperature for thermodynamic relations */
+  vector<su2double>
+  ArrheniusCoefficient,             /*!< \brief Arrhenius reaction coefficient */
+  ArrheniusEta,                     /*!< \brief Arrhenius reaction temperature exponent */
+  ArrheniusTheta,                   /*!< \brief Arrhenius reaction characteristic temperature */
+  CharVibTemp,                      /*!< \brief Characteristic vibrational temperature for e_vib */
+  RotationModes,		    /*!< \brief Rotational modes of energy storage */
+  Ref_Temperature,   		  /*!< \brief Reference temperature for thermodynamic relations */
   Tcf_a,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcf_b,                          /*!< \brief Rate controlling temperature exponent (fwd) */
   Tcb_a,                          /*!< \brief Rate controlling temperature exponent (bkw) */
@@ -68,14 +69,14 @@ private:
   phis, mus,                      /*!< \brief Auxiliary vectors to be used in Wilke/Blottner/Eucken model */
   A;                              /*!< \brief Auxiliary vector to be used in net production rate computation */
 
-  su2activematrix CharElTemp,                    /*!< \brief Characteristic temperature of electron states. */
+  su2activematrix CharElTemp,    /*!< \brief Characteristic temperature of electron states. */
   ElDegeneracy,                  /*!< \brief Degeneracy of electron states. */
   RxnConstantTable,              /*!< \brief Table of chemical equiibrium reaction constants */
   Blottner,                      /*!< \brief Blottner viscosity coefficients */
   Dij;                           /*!< \brief Binary diffusion coefficients. */
   
-  C3DDoubleMatrix Omega00,                      /*!< \brief Collision integrals (Omega(0,0)) */
-  Omega11;                      /*!< \brief Collision integrals (Omega(1,1)) */
+  C3DDoubleMatrix Omega00,       /*!< \brief Collision integrals (Omega(0,0)) */
+  Omega11;                       /*!< \brief Collision integrals (Omega(1,1)) */
 
 public:
 

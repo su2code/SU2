@@ -51,7 +51,8 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
 
 }
 
-void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve){
+void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature,
+                              su2double val_temperature_ve){
 
   su2double denom;
 
@@ -75,7 +76,6 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
     MassFrac[iSpecies] = rhos[iSpecies]/Density;
   } 
 }
-
 
 su2double CNEMOGas::GetSoundSpeed(){
 

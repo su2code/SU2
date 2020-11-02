@@ -41,17 +41,17 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 
     hs.resize(nSpecies,0.0);
 
-    RHOS_INDEX    = 0; 
-    T_INDEX       = nSpecies;
-    TVE_INDEX     = nSpecies+1;
-    VEL_INDEX     = nSpecies+2;
-    P_INDEX       = nSpecies+nDim+2;
-    RHO_INDEX     = nSpecies+nDim+3;
-    H_INDEX       = nSpecies+nDim+4;
-    A_INDEX       = nSpecies+nDim+5;
-    RHOCVTR_INDEX = nSpecies+nDim+6;
-    RHOCVVE_INDEX = nSpecies+nDim+7;  
-    LAM_VISC_INDEX = nSpecies+nDim+8;
+    RHOS_INDEX      = 0;
+    T_INDEX         = nSpecies;
+    TVE_INDEX       = nSpecies+1;
+    VEL_INDEX       = nSpecies+2;
+    P_INDEX         = nSpecies+nDim+2;
+    RHO_INDEX       = nSpecies+nDim+3;
+    H_INDEX         = nSpecies+nDim+4;
+    A_INDEX         = nSpecies+nDim+5;
+    RHOCVTR_INDEX   = nSpecies+nDim+6;
+    RHOCVVE_INDEX   = nSpecies+nDim+7;
+    LAM_VISC_INDEX  = nSpecies+nDim+8;
     EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
@@ -99,7 +99,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
   P      = val_V[P_INDEX];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  rhos = &val_V[RHOS_INDEX];
+  rhos   = &val_V[RHOS_INDEX];
 
   if (nDim == 2) {
 
@@ -356,6 +356,8 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                        su2double **val_Jac_i, su2double **val_Jac_j,
                                        const CConfig *config) {
 
+
+  //TODO UPDATE WITH EDDY VISC
 //  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
 //  su2double rho, rho_i, rho_j, vel[3], T, Tve;
 //  su2double mu, ktr, kve, *Ds, dij, Ru, RuSI;

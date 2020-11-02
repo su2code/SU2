@@ -50,25 +50,26 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   su2double soundspeed, sqvel, rho;
 
   /*--- Setting variable amounts ---*/
-  nDim         = ndim;
-  nPrimVar     = nvarprim;
-  nPrimVarGrad = nvarprimgrad;
+  nDim            = ndim;
+  nPrimVar        = nvarprim;
+  nPrimVarGrad    = nvarprimgrad;
 
-  nSpecies     = config->GetnSpecies();
-  RHOS_INDEX    = 0;
-  T_INDEX       = nSpecies;
-  TVE_INDEX     = nSpecies+1;
-  VEL_INDEX     = nSpecies+2;
-  P_INDEX       = nSpecies+nDim+2;
-  RHO_INDEX     = nSpecies+nDim+3;
-  H_INDEX       = nSpecies+nDim+4;
-  A_INDEX       = nSpecies+nDim+5;
-  RHOCVTR_INDEX = nSpecies+nDim+6;
-  RHOCVVE_INDEX = nSpecies+nDim+7;
+  nSpecies        = config->GetnSpecies();
+  RHOS_INDEX      = 0;
+  T_INDEX         = nSpecies;
+  TVE_INDEX       = nSpecies+1;
+  VEL_INDEX       = nSpecies+2;
+  P_INDEX         = nSpecies+nDim+2;
+  RHO_INDEX       = nSpecies+nDim+3;
+  H_INDEX         = nSpecies+nDim+4;
+  A_INDEX         = nSpecies+nDim+5;
+  RHOCVTR_INDEX   = nSpecies+nDim+6;
+  RHOCVVE_INDEX   = nSpecies+nDim+7;
   LAM_VISC_INDEX  = nSpecies+nDim+8;
   EDDY_VISC_INDEX = nSpecies+nDim+9;
 
   /*--- Set monoatomic flag ---*/
+  //TDO change this to fluid model?
   if (config->GetGasModel() == "ARGON") monoatomic = true;
   else monoatomic = false;
 
@@ -130,6 +131,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Non_Physical.resize(nPoint) = false;
 
   /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
 
   /*--- Loop over all points --*/
@@ -262,6 +264,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[T_INDEX] = T[0];
   
   // Determine if the temperature lies within the acceptable range
+  //TODO fIX THIS
   if (V[T_INDEX] == Tmin) {
     nonPhys = true;
   } else if (V[T_INDEX] == Tmax){
@@ -292,7 +295,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       V[TVE_INDEX]   = T[1];
     }
   }
-    
+
   // Determine other properties of the mixture at the current state  
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 

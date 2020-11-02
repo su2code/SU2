@@ -44,7 +44,9 @@ public:
 protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
-  VectorType Velocity2;   /*!< \brief Square of the velocity vector. */
+  bool monoatomic;          /*!< \brief Presence of monoatomic gas. */
+
+  VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
@@ -75,7 +77,6 @@ protected:
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
-  bool monoatomic;
 
 public:
 

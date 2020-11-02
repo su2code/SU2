@@ -12,7 +12,7 @@
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
- * modify it under the terMolarMass of the GNU Lesser General Public
+ * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
@@ -32,7 +32,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
 
   nDim = val_nDim;
   unsigned short maxEl = 0;
-  su2double mf;
+  su2double mf = 0.0;
 
   const auto MassFrac_Freestream = config->GetGas_Composition();
 
@@ -71,11 +71,12 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     if (mf != 1.0) {
       cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << " mf is equal to "<< mf <<endl;
     }
-    
+
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.667;
     nReactions  = 0;
     ionization  = false;
+    monoatomic  = true;
 
     // Molar mass [kg/kmol]
     MolarMass[0] = 39.948;
@@ -113,9 +114,8 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     ElDegeneracy(0,4) = 3;
     ElDegeneracy(0,5) = 5;
     ElDegeneracy(0,6) = 15;
-  }
 
-  if (String_GasModel == "N2"){
+  } else if (String_GasModel == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -1186,16 +1186,20 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
       jSpecies = nSpecies-1;
       Mj       = MolarMass[jSpecies];
       gam_j    = rhos[iSpecies] / (Density*Mj);
+      
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega00(iSpecies,jSpecies,1)*log(Tve)
           + Omega00(iSpecies,jSpecies,2));
+      
       /*--- Calculate "delta1_ij" ---*/
       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
     }
+    
     /*--- Assign species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
+    if (nSpecies == 1) DiffusionCoeff[0]=0.0;
+    else DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
   if (ionization) {
     iSpecies = nSpecies-1;
@@ -1446,8 +1450,8 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   rhoCvve = V[RHOCVVE_INDEX];
 
   /*--- Determine the number of heavy species ---*/
-  if (ionization) { rho_el = rhos[RHOS_INDEX+nSpecies-1];
-  } else {         rho_el = 0.0; }
+  if (ionization) { rho_el = rhos[RHOS_INDEX+nSpecies-1];}
+  else            { rho_el  = 0.0;                       }
 
   /*--- Pre-compute useful quantities ---*/
   CvtrBAR = 0.0;
@@ -1493,7 +1497,7 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
 
   // Vib.-el energy
   val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
-                              rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
+                               rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
 
 }
 
@@ -1707,6 +1711,5 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
   }    
 }
 
-//su2double CUserDefinedTCLib::GetGamma(){}
 
 

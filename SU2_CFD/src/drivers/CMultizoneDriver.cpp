@@ -79,7 +79,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       fluid_zone = true;
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
       fluid_zone = true;
       break;  
     case FEM_ELASTICITY:
@@ -569,7 +569,8 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
       /*--- Aditional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == RANS ||
-          config_container[targetZone]->GetKind_Solver() == INC_RANS)
+          config_container[targetZone]->GetKind_Solver() == INC_RANS ||
+          config_container[targetZone]->GetKind_Solver() == NEMO_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
           solver_container[donorZone][INST_0][MESH_0][TURB_SOL],

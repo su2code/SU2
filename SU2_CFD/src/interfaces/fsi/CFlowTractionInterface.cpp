@@ -105,10 +105,10 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
   // Check the kind of fluid problem
   bool viscous_flow;
   switch (flow_config->GetKind_Solver()) {
-    case RANS: case INC_RANS:
+    case RANS: case INC_RANS: case NEMO_RANS:
     case NAVIER_STOKES: case INC_NAVIER_STOKES:
-    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
-    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
+    case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS: case DISC_ADJ_NEMO_RANS:
+    case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_NEMO_NAVIER_STOKES:
       viscous_flow = true; break;
     default:
       viscous_flow = false; break;

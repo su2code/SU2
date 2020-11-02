@@ -967,8 +967,6 @@ void CNumerics::GetRMatrix(su2double val_pressure, su2double val_soundspeed, su2
 
 }
 
-
-
 void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix) const {
 
   su2double cc, rhoc;
@@ -1758,12 +1756,9 @@ void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
   }
 }
 
-
-
 void CNumerics::CreateBasis(const su2double *val_Normal) {
   unsigned short iDim;
   su2double modm, modl;
-
 
   if (nDim ==2){
 

@@ -159,6 +159,7 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
+
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
