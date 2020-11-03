@@ -291,7 +291,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
-    //CGarbacz: is it just me who thinks this next block of code doesn't make sense?
     err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
@@ -388,7 +387,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       // This is only scaling Kve by same factor as ktr
       // Could add to fluid model?
       su2double         Mass = 0.0;
-      vector<su2double> Ms   = FluidModel->GetMolarMass();
+      vector<su2double> Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
       su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
@@ -770,7 +769,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       // This is only scaling Kve by same factor as ktr
       V = nodes->GetPrimitive(iPoint);
       su2double         Mass = 0.0;
-      vector<su2double> Ms   = FluidModel->GetMolarMass();
+      vector<su2double> Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
       su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
@@ -825,7 +824,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
   bool implicit;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, RHOS_INDEX, RHO_INDEX, T_INDEX;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar,
+      RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
   dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
@@ -844,12 +844,13 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   /*--- Get universal information ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
-  Ms   = FluidModel->GetMolarMass();
+  Ms   = FluidModel->GetSpeciesMolarMass();
   
   /*--- Get the locations of the primitive variables ---*/
   RHOS_INDEX    = nodes->GetRhosIndex();
   RHO_INDEX     = nodes->GetRhoIndex();
   T_INDEX       = nodes ->GetTIndex();
+  TVE_INDEX     = nodes ->GetTveIndex();
 
   /*--- Allocate arrays ---*/
   Yj    = new su2double[nSpecies];
@@ -897,7 +898,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Vj   = nodes->GetPrimitive(jPoint);
       Di   = nodes->GetDiffusionCoeff(iPoint);
       eves = nodes->GetEve(iPoint);
-      hs   = FluidModel->GetSpeciesEnthalpy(Vi[T_INDEX], eves);
+      hs   = FluidModel->GetSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)      
         Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       rho    = Vi[RHO_INDEX];
@@ -1108,12 +1109,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       rhoCv=nodes->GetRhoCv_tr(iPoint);
       rhoCvve=nodes->GetRhoCv_ve(iPoint);
 
-
       /*--- Retrieve Flow Data ---*/
       Viscosity = nodes->GetLaminarViscosity(iPoint);
-      Density = nodes->GetDensity(iPoint);
+      Density   = nodes->GetDensity(iPoint);
 
-      Ms = FluidModel->GetMolarMass();
+      Ms = FluidModel->GetSpeciesMolarMass();
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);

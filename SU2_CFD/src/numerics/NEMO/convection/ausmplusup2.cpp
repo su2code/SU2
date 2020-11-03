@@ -153,7 +153,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
 
   /*--- Compute Gamma ---*/
   //TODO move to fluidmodel
-  vector<su2double> Ms = fluidmodel->GetMolarMass();
+  vector<su2double> Ms = fluidmodel->GetSpeciesMolarMass();
   su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
   su2double rhoRi = 0.0; su2double rhoRj = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {

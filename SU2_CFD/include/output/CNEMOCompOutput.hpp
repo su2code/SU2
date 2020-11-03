@@ -42,7 +42,6 @@ private:
                  iSpecies,   /*!< \brief Species index */
                  nSpecies;   /*!< \brief Number of species */
   unsigned long lastInnerIter;
-  string Species;            /*!< \brief String vector containing species index as char */
 
 public:
 

@@ -69,9 +69,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   EDDY_VISC_INDEX = nSpecies+nDim+9;
 
   /*--- Set monoatomic flag ---*/
-  //TDO change this to fluid model?
-  if (config->GetGasModel() == "ARGON") monoatomic = true;
-  else monoatomic = false;
+  if (config->GetMonoatomic()) {
+    monoatomic = true;
+    Tve_Freestream = config->GetTemperature_ve_FreeStream();
+  }
 
   /*--- Allocate & initialize residual vectors ---*/
 
@@ -258,7 +259,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Assign temperatures ---*/
-  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
+  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
   
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
@@ -294,9 +295,13 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     } else {
       V[TVE_INDEX]   = T[1];
     }
+  } else {
+    //TODO, can e-modes/vibe modes be active?
+    V[TVE_INDEX] = Tve_Freestream;
   }
 
-  // Determine other properties of the mixture at the current state  
+  /*--- Determine other properties of the mixture at the current state ---*/
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
@@ -323,7 +328,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   fluidmodel->GetdPdU  (V, eves, val_dPdU  );
   fluidmodel->GetdTdU  (V, val_dTdU );
   fluidmodel->GetdTvedU(V, eves, val_dTvedU);
-
 
   /*--- Sound speed ---*/
   V[A_INDEX] = fluidmodel->GetSoundSpeed();

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -1160,6 +1160,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
   addBoolOption("IONIZATION", ionization, false);
+  /* DESCRIPTION: Specify if there VT transfer residual limiting */
+  addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
+  /* DESCRIPTION: Specify if there is the gas is monoatomic */
+  addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -3548,8 +3552,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
-    SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
+  //TODO delete me
+  //if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
+  //  SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
+  //}
+
+  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ && Kind_FluidModel != MUTATIONPP) {
+    SU2_MPI::Error("Only USER_DEFINED_NONEQ or MUTATIONPP nonequilibrium fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
   }
 
   if (!ideal_gas && !nemo) {
@@ -3601,11 +3610,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Check for Boundary condition option agreement ---*/
   if (Kind_InitOption == REYNOLDS){
     if ((Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) && Reynolds <=0){
-      SU2_MPI::Error("Reynolds number required for NAVIER_STOKES and RANS !!", CURRENT_FUNCTION);
-    }
-  }
-  if (Kind_InitOption == REYNOLDS){
-    if ((Kind_Solver == NEMO_NAVIER_STOKES || Kind_Solver == NEMO_RANS) && Reynolds <=0){
       SU2_MPI::Error("Reynolds number required for NAVIER_STOKES and RANS !!", CURRENT_FUNCTION);
     }
   }
@@ -6120,10 +6124,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
-    if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
-        (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == NEMO_EULER)     || (Kind_Solver == NEMO_NAVIER_STOKES)     || (Kind_Solver == NEMO_RANS) ||
-        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
+    if ((Kind_Solver == EULER)               || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_EULER)           || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_EULER)          || (Kind_Solver == NEMO_NAVIER_STOKES)     || (Kind_Solver == NEMO_RANS) ||
+        (Kind_Solver == DISC_ADJ_EULER)      || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
         (Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {

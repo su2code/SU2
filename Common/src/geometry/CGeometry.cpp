@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon

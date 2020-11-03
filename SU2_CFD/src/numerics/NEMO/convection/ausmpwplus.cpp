@@ -150,7 +150,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   rhoCvtr_i = V_i[RHOCVTR_INDEX];   rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX];   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-  vector<su2double> Ms = fluidmodel->GetMolarMass();
+  vector<su2double> Ms = fluidmodel->GetSpeciesMolarMass();
   
   rhoRi = 0.0;  rhoRj = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {

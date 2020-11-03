@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
@@ -27,47 +27,219 @@
 
 #include "../../include/fluid/CMutationTCLib.hpp"
 
-CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
-  
-  //CGarbacz: if wilke - transportmodel = 'wilke' and so on;
+CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
 
-  //CGarbacz: nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;
+  //TODO
+  //Mutation::MixtureOptions opt(Kind_GasModel);
+  string transport_model, state_model;
 
-  //CGarbacz: if frozen send nonchecmttv
+  /* Allocating memory*/
+  Cv_ks.resize(nEnergyEq*nSpecies,0.0);
+  h_RT.resize(nSpecies,0.0);
+  es.resize(nEnergyEq*nSpecies,0.0);
+  omega_vec.resize(1,0.0);
+
+  /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
+
+  /*--- Define thermochemical nonequilibrium model ---*/
+  if(!frozen)
+    state_model = "ChemNonEqTTv";
+  else
+    state_model = "NonEqTTv";
+
+  /*--- Define transport model ---*/
+  if(Kind_TransCoeffModel == WILKE)
+    transport_model = "Wilke";
+  else if (Kind_TransCoeffModel == GUPTAYOS)
+    transport_model = "Gupta-Yos";
+
+  //TODO
+  //opt.setStateModel(state_model);
+  //opt.setViscosityAlgorithm(transport_model);
+  //opt.setThermalConductivityAlgorithm(transport_model);
+
+  //TODO
+  /* Initialize mixture object */
+  //mix.reset(new Mutation::Mixture(opt));
+
+  //TODO
+  /*--- Initialize molar mass ---*/
+  //for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
+
+  //TODO
+  /*--- Check ionization ---*/
+  //if (mix->hasElectrons()) { nHeavy = nSpecies-1; nEl = 1; }
+  //else                     { nHeavy = nSpecies;   nEl = 0; }
 
 }
 
-//CGarbacz returning random things to avoid warnings. This will be properly implemented once NEMO is in develop
-
 CMutationTCLib::~CMutationTCLib(){}
   
-void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){}
+void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
+  temperatures[0] = val_temperature;
+  temperatures[1] = val_temperature_ve;
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){return MassFrac;}
+  T   = temperatures[0];
+  Tve = temperatures[1];
 
-vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
+  rhos = val_rhos;
 
-vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){return MassFrac;}
+  Density = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Density += rhos[iSpecies];
 
-vector<su2double>& CMutationTCLib::GetNetProductionRates(){return MassFrac;}
+  Pressure = GetPressure();
 
-su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
+  //TODO
+  //mix->setState(rhos.data(), temperatures.data(), 1);
+}
 
-vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){return MassFrac;}
+vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){
 
-vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){return MassFrac;}
+  //TODO
+  //for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
 
-su2double CMutationTCLib::GetViscosity(){return 0;}
+  return MolarMass;
+}
 
-vector<su2double>& CMutationTCLib::GetThermalConductivities(){return MassFrac;}
+vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
 
-vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){return MassFrac;}
+  //TODO
+  //mix->getCvsMass(Cv_ks.data());
 
-void CMutationTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) Cvtrs[iSpecies] = Cv_ks[iSpecies];
 
-void CMutationTCLib::GetdTdU(su2double *V, su2double *val_dTdU){}
- 
-void CMutationTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
+  return Cvtrs;
 
+}
+
+vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){
+
+  //TODO
+  //mix->getCvsMass(Cv_ks.data());
+
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) Cvves[iSpecies] = Cv_ks[nSpecies+iSpecies];
+
+  return Cvves;
+}
+
+vector<su2double>& CMutationTCLib::GetMixtureEnergies(){
+
+  SetTDStateRhosTTv(rhos, T, Tve);
+
+  //TODO
+  //mix->mixtureEnergies(energies.data());
+
+  return energies;
+}
+
+vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){
+
+  SetTDStateRhosTTv(rhos, T, val_T);
+
+  //TODO
+  //mix->getEnergiesMass(es.data());
+
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) eves[iSpecies] = es[nSpecies+iSpecies];
+
+  return eves;
+}
+
+vector<su2double>& CMutationTCLib::GetNetProductionRates(){
+
+  //TODO
+  //mix->netProductionRates(ws.data());
+
+  return ws;
+}
+
+su2double CMutationTCLib::GetEveSourceTerm(){
+
+  //TODO
+  //mix->energyTransferSource(omega_vec.data());
+
+  omega = omega_vec[0];
+
+  return omega;
+}
+
+vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
+
+  su2double RuSI = UNIVERSAL_GAS_CONSTANT;
+  su2double Ru   = 1000.0*RuSI;
+
+  //TODO
+  //mix->speciesHOverRT(val_T, val_Tve, val_T, val_Tve, val_Tve, h_RT.data(), NULL, NULL, NULL, NULL, NULL);
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) hs[iSpecies] = h_RT[iSpecies]*(RuSI*val_T);
+
+  return hs;
+}
+
+vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){
+
+  //TODO
+  //mix->averageDiffusionCoeffs(DiffusionCoeff.data());
+
+  return DiffusionCoeff;
+}
+
+su2double CMutationTCLib::GetViscosity(){
+
+  //TODO
+  //Mu = mix->viscosity();
+
+  return Mu;
+}
+
+vector<su2double>& CMutationTCLib::GetThermalConductivities(){
+
+  //TODO
+  //mix->frozenThermalConductivityVector(ThermalConductivities.data());
+
+  return ThermalConductivities;
+}
+
+vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+
+  rhos = val_rhos;
+
+  energies[0] = rhoE - rhoEvel;
+  energies[1] = rhoEve;
+
+  //TODO
+  //mix->setState(rhos.data(), energies.data(), 0);
+  //TODO
+  //mix->getTemperatures(temperatures.data());
+
+  T   = temperatures[0];
+  Tve = temperatures[1];
+
+  return temperatures;
+}
+
+vector<su2double>& CMutationTCLib::GetRefTemperature() {
+
+  //TODO
+  //Tref = mix->standardStateT();
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) Ref_Temperature[iSpecies] = Tref;
+
+  return Ref_Temperature;
+}
+
+vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
+
+   vector<su2double> hf_RT; hf_RT.resize(nSpecies,0.0);
+
+   //TODO
+   //Tref = mix->standardStateT();
+
+   //TODO
+   //mix->speciesHOverRT(Tref, Tref, Tref, Tref, Tref, NULL, NULL, NULL, NULL, NULL, hf_RT.data());
+
+   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) Enthalpy_Formation[iSpecies] = hf_RT[iSpecies]*(RuSI*Tref);
+
+   return Enthalpy_Formation;
+}
