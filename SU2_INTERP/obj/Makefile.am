@@ -1,9 +1,9 @@
 ################################################################################
 #
 # \file Makefile.am
-# \brief Global makefile for the SU2 project
+# \brief Makefile for SU2_SOL
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.6 "Blackbird"
+# \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
 #  - Prof. Edwin van der Weide's group at the University of Twente.
 #  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
 #                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
@@ -38,45 +38,25 @@
 ################################################################################
 
 AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-# build third-party optional dependencies first
-SUBDIRS = externals
+bin_PROGRAMS = ../bin/SU2_INTERP
 
-SUBDIRS += Common/lib
+___bin_SU2_INTERP_SOURCES = \
+  ../include/SU2_INTERP.hpp \
+  ../src/SU2_INTERP.cpp
 
-if BUILD_PY
-SUBDIRS += SU2_PY
-endif
+___bin_SU2_INTERP_CXXFLAGS =
+___bin_SU2_INTERP_LDADD = \
+  ../../SU2_CFD/obj/libSU2Core.a \
+  ../../Common/lib/libSU2.a
 
-if BUILD_CFD
-SUBDIRS +=SU2_CFD/obj
-endif
+# always link to built dependencies from ./externals
+___bin_SU2_INTERP_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_INTERP_LDADD += @su2_externals_LIBS@
+___bin_SU2_INTERP_LDADD += @su2_externals_LIBPTHREAD@
 
-if BUILD_DOT
-SUBDIRS +=SU2_DOT/obj
-endif
-
-if BUILD_MSH
-SUBDIRS +=SU2_MSH/obj
-endif
-
-if BUILD_DEF
-SUBDIRS +=SU2_DEF/obj
-endif
-
-if BUILD_SOL
-SUBDIRS +=SU2_SOL/obj
-endif
-
-if BUILD_GEO
-SUBDIRS +=SU2_GEO/obj
-endif
-
-if BUILD_INTERP
-SUBDIRS +=SU2_INTERP/obj
-endif
-
-if BUILD_PY_WRAPPER
-SUBDIRS += SU2_PY/pySU2
-endif
+# if BUILD_MUTATIONPP
+___bin_SU2_INTERP_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_INTERP_LDADD += @MUTATIONPP_LD@
+# endif
