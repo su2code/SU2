@@ -38,6 +38,7 @@
 #include "../../include/output/CAdjFlowIncOutput.hpp"
 #include "../../include/output/CHeatOutput.hpp"
 #include "../../include/output/CAdjHeatOutput.hpp"
+#include "../../include/output/COneShotOutput.hpp"
 
 COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* config, int nDim){
 
