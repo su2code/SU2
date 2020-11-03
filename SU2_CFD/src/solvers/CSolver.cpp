@@ -2487,9 +2487,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
 
     /* Total number of variables between all solvers */
-    // unsigned short nVarTot = solverFlow->GetnVar();
-    // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-    //   nVarTot += solverTurb->GetnVar();
+    unsigned short nVarTot = solverFlow->GetnVar();
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      nVarTot += solverTurb->GetnVar();
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -2504,19 +2504,19 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     bool reduceCFL = false;
-    // su2double linResFlow = solverFlow->GetResLinSolver();
-    // su2double linResTurb = -1.0;
-    // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-    //   linResTurb = solverTurb->GetResLinSolver();
-    // }
-    // su2double maxLinResid = max(linResFlow, linResTurb);
-    // if (maxLinResid > 0.5) {
-    //   reduceCFL = true;
-    //   if (linResFlow > 0.5 && rank == MASTER_NODE) cout << "linResFlow" << endl;
-    //   if (linResTurb > 0.5 && rank == MASTER_NODE) cout << "linResTurb" << endl;
-    // }
-    if (ResLinSolver > 0.5)
+    su2double linResFlow = solverFlow->GetResLinSolver();
+    su2double linResTurb = -1.0;
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      linResTurb = solverTurb->GetResLinSolver();
+    }
+    su2double maxLinResid = max(linResFlow, linResTurb);
+    if (maxLinResid > 0.5) {
       reduceCFL = true;
+      // if (linResFlow > 0.5 && rank == MASTER_NODE) cout << "linResFlow" << endl;
+      // if (linResTurb > 0.5 && rank == MASTER_NODE) cout << "linResTurb" << endl;
+    }
+    // if (ResLinSolver > 0.5)
+    //   reduceCFL = true;
 
     /* Check that we are meeting our nonlinear residual reduction target
      over time so that we do not get stuck in limit cycles. */
@@ -2527,27 +2527,27 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     Old_Func = New_Func;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
-    // if (config->GetInnerIter() == config->GetStartConv_Iter  ()) {
-    //   for (auto iVar = 0; iVar < nVar; iVar++)
-    //     solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-    //   if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-    //     for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
-    //       solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
-    // }
-    if (config->GetInnerIter() == config->GetStartConv_Iter())
+    if (config->GetInnerIter() == config->GetStartConv_Iter()) {
       for (auto iVar = 0; iVar < nVar; iVar++)
-        Residual_Ini[iVar] = Residual_RMS[iVar];
+        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+        for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
+          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
+    }
+    // if (config->GetInnerIter() == config->GetStartConv_Iter())
+    //   for (auto iVar = 0; iVar < nVar; iVar++)
+    //     Residual_Ini[iVar] = Residual_RMS[iVar];
 
     /* Sum the RMS residuals for all equations. */
 
     New_Func = 0.0;
-    // for (auto iVar = 0; iVar < solverFlow->GetnVar(); iVar++)
-    //   New_Func += solverFlow->GetRes_RMS(iVar)/(su2double(nVarTot)*solverFlow->GetRes_Ini(iVar));
-    // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-    //   for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
-    //     New_Func += solverTurb->GetRes_RMS(iVar)/(su2double(nVarTot)*solverTurb->GetRes_Ini(iVar));
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
+    for (auto iVar = 0; iVar < solverFlow->GetnVar(); iVar++)
+      New_Func += solverFlow->GetRes_RMS(iVar)/(su2double(nVarTot)*solverFlow->GetRes_Ini(iVar));
+    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
+        New_Func += solverTurb->GetRes_RMS(iVar)/(su2double(nVarTot)*solverTurb->GetRes_Ini(iVar));
+    // for (auto iVar = 0; iVar < nVar; iVar++)
+    //   New_Func += Residual_RMS[iVar]/(su2double(nVar)*Residual_Ini[iVar]);
 
     /* Compute the difference in the nonlinear residuals between the
      current and previous iterations. */
@@ -2578,13 +2578,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     if ((NonLinRes_Value > -0.1*New_Func && NonLinRes_Counter >= Res_Count) || reduceCFL) {
       for (auto iCounter = 0; iCounter < Res_Count; iCounter++)
         NonLinRes_Series[iCounter] = 1.0;
-      // for (auto iVar = 0; iVar < nVar; iVar++)
-      //   solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
-      // if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
-      //   for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
-      //     solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
       for (auto iVar = 0; iVar < nVar; iVar++)
-        Residual_Ini[iVar] = Residual_RMS[iVar];
+        solverFlow->SetRes_Ini(iVar, solverFlow->GetRes_RMS(iVar));
+      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+        for (auto iVar = 0; iVar < solverTurb->GetnVar(); iVar++)
+          solverTurb->SetRes_Ini(iVar, solverTurb->GetRes_RMS(iVar));
+      // for (auto iVar = 0; iVar < nVar; iVar++)
+      //   Residual_Ini[iVar] = Residual_RMS[iVar];
     }
 
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
