@@ -859,20 +859,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  inline virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  inline virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetBoundSensitivity(CConfig *config) {}
 

@@ -7637,7 +7637,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   if (config->GetKind_Streamwise_Periodic() != NONE) {
 
     /*-------------------------------------------------------------------------------------------*/
-    /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/ 
+    /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
     /*--- of recovered pressure/temperature, such that this found node is independent of the  ---*/
     /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
     /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
@@ -7667,16 +7667,16 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
       if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
 
         /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
-        iPeriodic = config->GetMarker_All_PerBound(iMarker); 
-        if (iPeriodic == 1) { 
-          
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        if (iPeriodic == 1) {
+
           for (iPoint = 0; iPoint < GetnVertex(iMarker); iPoint++) {
 
             /*--- Get the squared norm of the current point. ---*/
             norm = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               norm += pow(nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim),2);
-            
+
             /*--- Check if new unique reference node is found. ---*/
             if (norm < min_norm || iPoint == 0) {
               min_norm = norm;
@@ -7691,7 +7691,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
     } // marker loop
 
     /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
-    SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE, 
+    SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE,
                        Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, MPI_COMM_WORLD);
 
     /*-------------------------------------------------------------------------------------------*/
@@ -7706,7 +7706,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
       norm = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         norm += pow(Buffer_Recv_RefNode[iPoint*nDim + iDim],2);
-      
+
       /*--- Check if new unique reference node is found. ---*/
       if (norm < min_norm || iPoint == 0) {
         min_norm = norm;
@@ -7990,95 +7990,6 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
 
 #endif
 
-}
-
-void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
-  unsigned long iElem, iPoint, iElem_Bound;
-  unsigned short iMarker, iNodes, iDim;
-  ofstream output_file;
-  string Grid_Marker;
-  char *cstr;
-
-  cstr = new char [val_mesh_out_filename.size()+1];
-  strcpy (cstr, val_mesh_out_filename.c_str());
-
-  /*--- Open .su2 grid file ---*/
-
-  output_file.precision(15);
-  output_file.open(cstr, ios::out);
-
-  /*--- Write dimension, number of elements and number of points ---*/
-
-  output_file << "NDIME= " << nDim << endl;
-  output_file << "NELEM= " << nElem << endl;
-  for (iElem = 0; iElem < nElem; iElem++) {
-    output_file << elem[iElem]->GetVTK_Type();
-    for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-      output_file << "\t" << elem[iElem]->GetNode(iNodes);
-    output_file << "\t"<<iElem<< endl;
-  }
-
-  /*--- Write the node coordinates ---*/
-
-  output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
-  output_file.precision(15);
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << nodes->GetCoord(iPoint, iDim) ;
-#ifndef HAVE_MPI
-    output_file << "\t" << iPoint << endl;
-#else
-    output_file << "\t" << iPoint << "\t" << nodes->GetGlobalIndex(iPoint) << endl;
-#endif
-
-  }
-
-  /*--- Loop through and write the boundary info ---*/
-
-  output_file << "NMARK= " << nMarker << endl;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    /*--- Ignore SEND_RECEIVE for the moment ---*/
-    if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
-
-      Grid_Marker = config->GetMarker_All_TagBound(iMarker);
-      output_file << "MARKER_TAG= " << Grid_Marker << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-
-      if (nDim == 2) {
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file << iElem_Bound << endl;
-        }
-      }
-
-      if (nDim == 3) {
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file << iElem_Bound << endl;
-        }
-      }
-
-    } else if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-      if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-      if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
-        bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
-        bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
-      }
-
-    }
-  }
-
-  output_file.close();
 }
 
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
@@ -9020,8 +8931,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   iPoint_Global = 0;
 
-  filename = config->GetSolution_AdjFileName();
-
   filename = config->GetObjFunc_Extension(filename);
 
 
@@ -9029,9 +8938,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
-    char str_buf[CGNS_STRING_SIZE], fname[100];
+    char str_buf[CGNS_STRING_SIZE];
     unsigned short iVar;
-    strcpy(fname, filename.c_str());
     int nRestart_Vars = 5, nFields;
     int *Restart_Vars = new int[5];
     passivedouble *Restart_Data = nullptr;
@@ -9044,13 +8952,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Serial binary input. ---*/
 
     FILE *fhw;
-    fhw = fopen(fname,"rb");
+    fhw = fopen(filename.c_str(),"rb");
     size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + fname, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points. ---*/
@@ -9064,7 +8972,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (Restart_Vars[0] != 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+      SU2_MPI::Error(string("File ") + filename + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
@@ -9137,12 +9045,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
@@ -9161,7 +9069,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     if (Restart_Vars[0] != 535532) {
 
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
+      SU2_MPI::Error(string("File ") + filename + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
@@ -9352,8 +9260,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- First, check that this is not a binary restart file. ---*/
 
-    char fname[100];
-    strcpy(fname, filename.c_str());
     int magic_number;
 
 #ifndef HAVE_MPI
@@ -9361,13 +9267,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Serial binary input. ---*/
 
     FILE *fhw;
-    fhw = fopen(fname,"rb");
+    fhw = fopen(filename.c_str(),"rb");
     size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
     }
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
@@ -9381,7 +9287,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+      SU2_MPI::Error(string("File ") + filename + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
@@ -9398,12 +9304,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
     }
 
     /*--- Have the master attempt to read the magic number. ---*/
@@ -9420,7 +9326,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     if (magic_number == 535532) {
 
-      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
+      SU2_MPI::Error(string("File ") + filename + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);

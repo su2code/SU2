@@ -40,7 +40,6 @@ class CMultiGridGeometry final : public CGeometry {
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
-  using CGeometry::SetMeshFile;
   using CGeometry::SetControlVolume;
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetPoint_Connectivity;
