@@ -568,8 +568,12 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
     }
   }
 
+  cout << "    initialization done, compute the adjoints " << endl;
+
   /*--- Compute derivatives and extract gradient ---*/
   AD::ComputeAdjoint();
+
+  cout << "    computation done, extract the adjoints " << endl;
 
   iDV_index = 0;
   for (iDV = 0; iDV  < nDV; iDV++){
@@ -586,7 +590,11 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
     }
   }
 
+  cout << "    calculation done, clear the adjoints " << endl;
+
   AD::ClearAdjoints();
+
+  cout << "    end of ProjectMeshToDV " << endl;
 
 }
 

@@ -1032,7 +1032,11 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   ReadVector2Geometry(geometry,config, helperVecOut);
 
+  cout << endl << "Leaving vector copy." << endl;
+
   ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
+
+  cout << endl << "Leaving projection." << endl;
 
   OutputDVGradient("orig_grad.dat");
 }
@@ -1234,10 +1238,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     /// forward projection
     ProjectDVtoMesh(geometry, config, seedvector, helperVecIn, activeCoord);
 
-    ofstream helperVecInStream("helperVecIn.dat");
-    helperVecIn.printVec(helperVecInStream);
-    helperVecInStream.close();
-
     /// matrix vector product in the middle
     if (config->GetSmoothOnSurface()) {
 
@@ -1252,15 +1252,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
             }
           }
 
-          ofstream matVecInStream("matVecIn.dat");
-          matVecIn.printVec(matVecInStream);
-          matVecInStream.close();
-
           mat_vec(matVecIn, matVecOut);
-
-          ofstream matVecOutStream("matVecOut.dat");
-          matVecOut.printVec(matVecOutStream);
-          matVecOutStream.close();
 
           /// get full vector back
           for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
@@ -1286,14 +1278,20 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
       grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
       ReadVector2Geometry(geometry,config, helperVecOut);
 
+      cout << "    finish backward volume deformation " << column << endl;
+
     }
 
+    /*
     ofstream helperVecOutStream("helperVecOut.dat");
     helperVecOut.printVec(helperVecOutStream);
     helperVecOutStream.close();
+    */
 
     /// reverse projection
     ProjectMeshToDV(geometry, config, helperVecOut, seedvector, activeCoord);
+
+    cout << "    finish projection" << column << endl;
 
     /// extract projected direction
     hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
@@ -1336,9 +1334,11 @@ CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMat
   }
 
   // for debugging
+  /*
   ofstream stiffness("sobolevstiffness.dat");
   Jacobian.printMat(stiffness);
   stiffness.close();
+  */
 
   return CSysMatrixVectorProduct<su2mixedfloat>(Jacobian, geometry, config);
 }

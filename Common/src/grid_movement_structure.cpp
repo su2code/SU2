@@ -186,15 +186,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
-    // addition for debugging only
-    ofstream stiffness("meshstiffness.dat");
-    StiffMatrix.printMat(stiffness);
-    stiffness.close();
-    ofstream meshVecOutStream("meshInputVector.dat");
-    LinSysRes.printVec(meshVecOutStream);
-    meshVecOutStream.close();
-
-
     /*--- If we want no derivatives or the direct derivatives, we solve the system using the
      * normal matrix vector product and preconditioner. For the mesh sensitivities using
      * the discrete adjoint method we solve the system using the transposed matrix. ---*/
@@ -208,10 +199,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
       Tot_Iter = System.Solve_b(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     }
     su2double Residual = System.GetResidual();
-
-    ofstream matVecInStream("meshOutputVector.dat");
-    LinSysSol.printVec(matVecInStream);
-    matVecInStream.close();
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
