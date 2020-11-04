@@ -5232,7 +5232,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
-    localUnderRelaxation = min(localUnderRelaxation, solver[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+    // localUnderRelaxation = min(localUnderRelaxation, solver[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
