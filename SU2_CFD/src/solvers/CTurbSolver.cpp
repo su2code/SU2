@@ -788,7 +788,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
    system for this nonlinear iteration. */
 
   const su2double allowableDecrease = 0.5;
-  const su2double allowableIncrease = 1.0;
+  // const su2double allowableIncrease = 1.0;
+  const su2double allowableIncrease = 1.0e12;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
