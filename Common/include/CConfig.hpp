@@ -5289,6 +5289,11 @@ public:
   bool GetMonoatomic(void) const { return monoatomic; }
 
   /*!
+   * \brief Indicates if mixture is monoatomic.
+   */
+  bool GetSolutionInterpolation(void) const { return interpolate_solution; }
+
+  /*!
    * \brief Information about computing and plotting the equivalent area distribution.
    * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
    */
