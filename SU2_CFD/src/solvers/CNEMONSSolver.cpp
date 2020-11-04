@@ -764,8 +764,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       kve     = nodes->GetThermalConductivity_ve(iPoint);
 
       /*--- Scale thermal conductivity with turb ---*/
-      //delete me, todo
-      // Need to determine proper way to incorporate eddy viscosity
+      // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
       V = nodes->GetPrimitive(iPoint);
       su2double         Mass = 0.0;

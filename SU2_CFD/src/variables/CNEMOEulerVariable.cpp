@@ -69,7 +69,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   EDDY_VISC_INDEX = nSpecies+nDim+9;
 
   /*--- Set monoatomic flag ---*/
-  //TDO change this to fluid model?
+  //TODO change this to fluid model?
   if (config->GetGasModel() == "ARGON") monoatomic = true;
   else monoatomic = false;
 

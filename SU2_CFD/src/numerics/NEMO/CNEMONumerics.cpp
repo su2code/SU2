@@ -123,7 +123,6 @@ CNEMONumerics::~CNEMONumerics(void) {
   delete fluidmodel;
 }
 
-
 void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
                                         const su2double *val_V,
                                         const su2double *val_normal,
@@ -308,8 +307,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
   
   /*--- Scale thermal conductivity with turb visc ---*/
-  //delete me todo
-  // Need to determine proper way to incorporate eddy viscosity
+  // TODO: Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
@@ -327,7 +325,6 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += GV[VEL_INDEX+iDim][iDim];
-
 
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {

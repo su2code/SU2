@@ -1939,19 +1939,15 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-
-
-  SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
-
-  unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
+  unsigned short iVar, iDim, iSpecies, nSpecies,
+      RHO_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, H_INDEX, A_INDEX, P_INDEX,
+      RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
       Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
       alpha, aa, bb, cc, dd, Area, UnitNormal[3];
-  const su2double *Flow_Dir;    
+  const su2double *Flow_Dir;
 
-  bool dynamic_grid         = config->GetGrid_Movement();
-  su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -1959,11 +1955,19 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   su2double *U_domain = new su2double[nVar];      su2double *U_inlet = new su2double[nVar];
   su2double *V_domain = new su2double[nPrimVar];  su2double *V_inlet = new su2double[nPrimVar];
   su2double *Normal   = new su2double[nDim];
+  su2double *Ys       = new su2double[config->GetnSpecies()];
 
-  su2double Spec_Density[config->GetnSpecies()];
-  nSpecies = config->GetnSpecies();
-
-  RHO_INDEX = nodes->GetRhoIndex();
+  /*--- Extract NEMO variables ---*/
+  nSpecies      = config->GetnSpecies();
+  VEL_INDEX     = nodes->GetVelIndex();
+  P_INDEX       = nodes->GetPIndex();
+  RHO_INDEX     = nodes->GetRhoIndex();
+  A_INDEX       = nodes->GetAIndex();
+  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
+  T_INDEX       = nodes->GetTIndex();
+  TVE_INDEX     = nodes->GetTveIndex();
+  H_INDEX       = nodes->GetHIndex();
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1985,8 +1989,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Retrieve solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
+      U_domain = nodes->GetSolution(iPoint);
+      V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
@@ -2011,7 +2015,19 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         P_Total /= config->GetPressure_Ref();
         T_Total /= config->GetTemperature_Ref();
 
+        /*--- Compute Gamma ---*/
+        //TODO move to fluidmodel
+        vector<su2double> Ms = FluidModel->GetMolarMass();
+        su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
+        su2double rhoR = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          rhoR += V_domain[iSpecies]*Ru/Ms[iSpecies];        }
+        Gamma = rhoR/(V_domain[RHOCVTR_INDEX]+
+                      V_domain[RHOCVVE_INDEX])+1;
+        Gamma_Minus_One = Gamma-1.0;
+
         /*--- Store primitives and set some variables for clarity. ---*/
+        //TODO NEED TO RECOMPUTE GAS_CONSTANT?
         Density = V_domain[RHO_INDEX];
         Velocity2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -2022,6 +2038,10 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
         H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
         SoundSpeed2 = Gamma*Pressure/Density;
+
+        /*--- Mass fractions of gas species ---*/
+        //for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+        //  Ys[iSpecies] = V_domain[iSpecies];              }
 
         /*--- Compute the acoustic Riemann invariant that is extrapolated
            from the domain interior. ---*/
@@ -2042,12 +2062,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
         bb = -1.0*Gamma_Minus_One*alpha*Riemann;
         cc =  0.5*Gamma_Minus_One*Riemann*Riemann
-            -2.0*SoundSpeed_Total2/Gamma_Minus_One;
+             -2.0*SoundSpeed_Total2/Gamma_Minus_One;
 
         /*--- Solve quadratic equation for velocity magnitude. Value must
            be positive, so the choice of root is clear. ---*/
-        dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(max(0.0,dd));
+        dd        = bb*bb - 4.0*aa*cc;
+        dd        = sqrt(max(0.0,dd));
         Vel_Mag   = (-bb + dd)/(2.0*aa);
         Vel_Mag   = max(0.0,Vel_Mag);
         Velocity2 = Vel_Mag*Vel_Mag;
@@ -2068,105 +2088,107 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
         /*--- Static temperature from the speed of sound relation ---*/
         Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-        //NEED TVE AS WELL
+        //Temperature_ve = V_domain[TVE_INDEX]; //TODO NEED TVE AS WELL
 
         /*--- Static pressure using isentropic relation at a point ---*/
         Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
 
         /*--- Density at the inlet from the gas law ---*/
         Density = Pressure/(Gas_Constant*Temperature);
-        //NEED SPECIES DENSITIES
+        //TODO NEED SPECIES DENSITIES
 
         /*--- Using pressure, density, & velocity, compute the energy ---*/
         Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
         //NEED EVE AS WELL
 
         /*--- Conservative variables, using the derived quantities ---*/
+        //TODO EVE
         for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-          U_inlet[iSpecies] = Spec_Density[iSpecies];
+          U_inlet[iSpecies] = 1.0*Density;
         for (iDim = 0; iDim < nDim; iDim++)
           U_inlet[nSpecies+iDim] = Velocity[iDim]*Density;
         U_inlet[nVar-2] = Energy*Density;
-        //U_inlet[nVar-1]=Eve
+        U_inlet[nVar-1] = U_domain[nVar-1];
 
         /*--- Primitive variables, using the derived quantities ---*/
         for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
-          V_inlet[iSpecies] = Spec_Density[iSpecies];
-        V_inlet[nSpecies] = Temperature;
-        //V_inlet[nSpecies+1] = Tve
+          V_inlet[iSpecies] = 1.0*Density;
+        V_inlet[T_INDEX]   = Temperature;
+        V_inlet[TVE_INDEX] = V_domain[TVE_INDEX];
         for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[nSpecies+2] = Velocity[iDim];
-        V_inlet[nSpecies+nDim+2] = Pressure;
+          V_inlet[VEL_INDEX+iDim] = Velocity[iDim];
+        V_inlet[P_INDEX]   = Pressure;
         V_inlet[RHO_INDEX] = Density;
-        //V_inlet[H_INDEX] = H;
-        //V_inlet[A_INDEX] = A;
-        //V_inlet[RHO_CVTR_INDEX] = rcvtr;
-        //V_inlet[RHO_CVVE_INDEX] = rcvve;
+        V_inlet[H_INDEX] = H_Total;
+        V_inlet[A_INDEX] = sqrt(SoundSpeed2);
+        V_inlet[RHOCVTR_INDEX] = V_domain[RHOCVTR_INDEX];
+        V_inlet[RHOCVVE_INDEX] = V_domain[RHOCVVE_INDEX];
 
         break;
 
-        /*--- Mass flow has been specified at the inlet. ---*/
-      case MASS_FLOW:
+      /*--- Mass flow has been specified at the inlet. ---*/
+//      case MASS_FLOW:
 
-        /*--- Retrieve the specified mass flow for the inlet. ---*/
-        Density  = config->GetInlet_Ttotal(Marker_Tag);
-        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+//        SU2_MPI::Error("BC_INLET: If you somehow got here....you are very special..", CURRENT_FUNCTION);
 
-        /*--- Non-dim. the inputs if necessary. ---*/
-        Density /= config->GetDensity_Ref();
-        Vel_Mag /= config->GetVelocity_Ref();
+//        /*--- Retrieve the specified mass flow for the inlet. ---*/
+//        Density  = config->GetInlet_Ttotal(Marker_Tag);
+//        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
+//        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
-        /*--- Get primitives from current inlet state. ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
-        Pressure    = nodes->GetPressure(iPoint);
-        SoundSpeed2 = Gamma*Pressure/U_domain[0];
+//        /*--- Non-dim. the inputs if necessary. ---*/
+//        Density /= config->GetDensity_Ref();
+//        Vel_Mag /= config->GetVelocity_Ref();
 
-        /*--- Compute the acoustic Riemann invariant that is extrapolated
-           from the domain interior. ---*/
-        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-        for (iDim = 0; iDim < nDim; iDim++)
-          Riemann += Velocity[iDim]*UnitNormal[iDim];
+//        /*--- Get primitives from current inlet state. ---*/
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
+//        Pressure    = nodes->GetPressure(iPoint);
+//        SoundSpeed2 = Gamma*Pressure/U_domain[0];
 
-        /*--- Speed of sound squared for fictitious inlet state ---*/
-        SoundSpeed2 = Riemann;
-        for (iDim = 0; iDim < nDim; iDim++)
-          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
+//        /*--- Compute the acoustic Riemann invariant that is extrapolated
+//           from the domain interior. ---*/
+//        Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Riemann += Velocity[iDim]*UnitNormal[iDim];
 
-        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+//        /*--- Speed of sound squared for fictitious inlet state ---*/
+//        SoundSpeed2 = Riemann;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
-        /*--- Pressure for the fictitious inlet state ---*/
-        Pressure = SoundSpeed2*Density/Gamma;
+//        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+//        SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
-        /*--- Energy for the fictitious inlet state ---*/
-        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
+//        /*--- Pressure for the fictitious inlet state ---*/
+//        Pressure = SoundSpeed2*Density/Gamma;
 
-        /*--- Conservative variables, using the derived quantities ---*/
-        U_inlet[0] = Density;
-        for (iDim = 0; iDim < nDim; iDim++)
-          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
-        U_inlet[nDim+1] = Energy*Density;
+//        /*--- Energy for the fictitious inlet state ---*/
+//        Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
 
-        /*--- Primitive variables, using the derived quantities ---*/
-        V_inlet[0] = Pressure / ( Gas_Constant * Density);
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-        V_inlet[nDim+1] = Pressure;
-        V_inlet[nDim+2] = Density;
+//        /*--- Conservative variables, using the derived quantities ---*/
+//        U_inlet[0] = Density;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          U_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim]*Density;
+//        U_inlet[nDim+1] = Energy*Density;
 
-        break;
+//        /*--- Primitive variables, using the derived quantities ---*/
+//        V_inlet[0] = Pressure / ( Gas_Constant * Density);
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+//        V_inlet[nDim+1] = Pressure;
+//        V_inlet[nDim+2] = Density;
+
+//        break;
       }
 
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetConservative(U_domain, U_inlet);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
+
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
@@ -2198,11 +2220,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   }
 
   /*--- Free locally allocated memory ---*/
-  delete [] U_domain;
-  delete [] U_inlet;
-  delete [] V_domain;
-  delete [] V_inlet;
-  delete [] Normal;
+  //delete [] U_domain;
+  //delete [] U_inlet;
+  //delete [] V_domain;
+  //delete [] V_inlet;
+  //delete [] Normal;
+
 }
 
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_container,
@@ -2258,8 +2281,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         UnitNormal[iDim] = Normal[iDim]/Area;
 
       /*--- Current solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint, iVar);
+      for (iVar = 0; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint,iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Initialize solution at outlet ---*/
       for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = 0.0;
@@ -2269,7 +2292,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
       if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
-      else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
+      else         P_Exit = config->GetOutlet_Pressure(Marker_Tag);
   
       /*--- Non-dim. the inputs if necessary. ---*/
       P_Exit = P_Exit/config->GetPressure_Ref();
@@ -2294,6 +2317,17 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
         Ys[iSpecies] = V_domain[iSpecies]/Density;
       }        
+
+      /*--- Compute Gamma ---*/
+      //TODO: Move to fluidmodel
+      vector<su2double> Ms = FluidModel->GetMolarMass();
+      su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
+      su2double rhoR = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        rhoR += V_domain[iSpecies]*Ru/Ms[iSpecies];
+      Gamma =rhoR/(V_domain[RHOCVTR_INDEX] +
+                   V_domain[RHOCVVE_INDEX])+1;
+      Gamma_Minus_One = Gamma - 1.0;
 
       /*--- Recompute boundary state depending Mach number ---*/
       if (Mach_Exit >= 1.0) {

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file ausmplusup2.hpp
  * \brief Declaration of numerics classes for the AUSM family of schemes in NEMO - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz.

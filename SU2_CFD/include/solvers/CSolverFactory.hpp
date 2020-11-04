@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
@@ -97,7 +97,7 @@ private:
    * \param[in] config        - The configuration
    * \param[in] iMGLevel      - The multigrid level
    * \param[in] adjoint       - Boolean indicating whether a primal or adjoint solver should be allocated
-   * \param[in] adjoint       - Boolean indicating whether a nemo solver should be allocated
+   * \param[in] nemo          - Boolean indicating whether a nemo solver should be allocated
    * \return                  - A pointer to the allocated turbulent solver
    */
   static CSolver* CreateTurbSolver(ENUM_TURB_MODEL kindTurbModel, CSolver **solver, CGeometry *geometry,

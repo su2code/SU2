@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -1160,6 +1160,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
   addBoolOption("IONIZATION", ionization, false);
+  /* DESCRIPTION: Specify if there VT transfer residual limiting */
+  addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
+  /* DESCRIPTION: Specify if there is the gas is monoatomic */
+  addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -3548,8 +3552,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
-    SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
+  //TODO delete me
+  //if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
+  //  SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
+  //}
+
+  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ && Kind_FluidModel != MUTATIONPP) {
+    SU2_MPI::Error("Only USER_DEFINED_NONEQ or MUTATIONPP nonequilibrium fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
   }
 
   if (!ideal_gas && !nemo) {

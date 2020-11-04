@@ -1,7 +1,7 @@
 ﻿/*!
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
- * \author F. Palacios, W.Maier, C. Garbacz
+ * \author F. Palacios, W. Maier, C. Garbacz
  * \version 7.0.6 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io

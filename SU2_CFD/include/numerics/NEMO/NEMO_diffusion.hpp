@@ -67,8 +67,10 @@ public:
    * \param[in] val_nPrimVarGrad - Number of variables in the primitive variable gradient.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-                unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+  CAvgGrad_NEMO(unsigned short val_nDim,
+                unsigned short val_nVar,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
                 CConfig *config);
 
   /*!
@@ -106,7 +108,7 @@ private:
   Mean_Laminar_Viscosity,       /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */ 
   *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
   dist_ij;                      /*!< \brief Length of the edge and face. */
   bool implicit;                /*!< \brief Implicit calculus. */
@@ -123,8 +125,10 @@ public:
    * \param[in] val_nPrimVarGrad - Number of variables in the primitive variable gradient.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGradCorrected_NEMO(unsigned short val_nDim, unsigned short val_nVar,
-                         unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+  CAvgGradCorrected_NEMO(unsigned short val_nDim,
+                         unsigned short val_nVar,
+                         unsigned short val_nPrimVar,
+                         unsigned short val_nPrimVarGrad,
                          CConfig *config);
 
   /*!

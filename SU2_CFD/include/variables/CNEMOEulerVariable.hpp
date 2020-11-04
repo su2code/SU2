@@ -44,8 +44,8 @@ public:
 protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
-  bool monoatomic;          /*!< \brief Presence of monoatomic gas. */
-
+  bool monoatomic = false;  /*!< \brief Presence of single species gas. */
+  
   VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
@@ -53,12 +53,12 @@ protected:
   CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   
   /*--- Primitive variable definition ---*/
-  MatrixType Primitive;               /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
-  MatrixType Primitive_Aux;           /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
+  MatrixType Primitive;                /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
+  MatrixType Primitive_Aux;            /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
   CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (rhos_s, T, Tve, ...). */
   
   /*--- Secondary variable definition ---*/
-  MatrixType Secondary;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Secondary;                /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   CVectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   
   /*--- New solution container for Classical RK4 ---*/
@@ -77,6 +77,8 @@ protected:
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
+
+  su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
 
 public:
 

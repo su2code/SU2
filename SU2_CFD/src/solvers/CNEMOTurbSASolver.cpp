@@ -564,7 +564,7 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
-      conv_numerics->SetPrimitive(U_domain, U_infty);
+      conv_numerics->SetConservative(U_domain, U_infty);
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
       /*--- Load the inlet turbulence variable (uniform by default). ---*/

@@ -1451,7 +1451,7 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
 
   /*--- Determine the number of heavy species ---*/
   if (ionization) { rho_el = rhos[RHOS_INDEX+nSpecies-1];}
-  else            { rho_el  = 0.0;                       }
+  else            { rho_el = 0.0;                       }
 
   /*--- Pre-compute useful quantities ---*/
   CvtrBAR = 0.0;
