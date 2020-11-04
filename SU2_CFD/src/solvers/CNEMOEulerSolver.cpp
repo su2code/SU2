@@ -1579,15 +1579,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     ModelTable << config->GetGasModel();
 
-    switch(config->GetKind_FluidModel()){
-    case USER_DEFINED_NONEQ:
-      ModelTable << "User Defined for 2T";
-      break;
-    case MUTATIONPP:
-      ModelTable << "Mutation++ Library";
-      break;
-    }
-
     if (viscous) {
 
       switch(config->GetKind_TransCoeffModel()){
@@ -1606,6 +1597,15 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       }
     } else {
       ModelTable << "-" ;
+    }
+
+    switch(config->GetKind_FluidModel()){
+    case USER_DEFINED_NONEQ:
+      ModelTable << "Park Two-Temperature";
+      break;
+    case MUTATIONPP:
+      ModelTable << "Mutation++ Library";
+      break;
     }
 
     NonDimTable.PrintFooter();
