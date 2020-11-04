@@ -3345,10 +3345,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   /*--- Reconstruct flow primitive variables. ---*/
 
-  auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-  auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
-
   for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
+
+    auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
+    auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
 
     const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint)[iVar];
     const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint)[iVar];
@@ -3393,10 +3393,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   if (turb) {
 
-    auto Limiter_i = turbNodes->GetLimiter(iPoint);
-    auto Limiter_j = turbNodes->GetLimiter(jPoint);
-
     for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
+
+      auto Limiter_i = turbNodes->GetLimiter(iPoint);
+      auto Limiter_j = turbNodes->GetLimiter(jPoint);
 
       const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[iVar];
       const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[iVar];
