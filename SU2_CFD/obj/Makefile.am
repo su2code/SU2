@@ -49,7 +49,6 @@ noinst_LIBRARIES+= libSU2Core_AD.a
 endif
 
 libSU2Core_sources = ../src/definition_structure.cpp \
-  ../src/fem_interpolation_structure.cpp \
   ../src/fluid/CFluidModel.cpp \
   ../src/fluid/CIdealGas.cpp \
   ../src/fluid/CPengRobinson.cpp \
