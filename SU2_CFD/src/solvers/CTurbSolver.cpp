@@ -669,6 +669,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
           const unsigned long total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
+        Jacobian.SetVal2Diag(iPoint, 0.0);
       }
     }
   }
@@ -684,19 +685,10 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-
-      su2double Delta = (sst) ? su2double(Vol / nodes->GetDelta_Time(iPoint))
-                              : su2double(Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint)));
-      // su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
-      Jacobian.AddVal2Diag(iPoint, Delta);
-      
-    }
-    else {
-      Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        LinSysRes(iPoint,iVar) = 0.0;
-    }
+    su2double Delta = (sst) ? su2double(Vol / nodes->GetDelta_Time(iPoint))
+                            : su2double(Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint)));
+    // su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
+    Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
