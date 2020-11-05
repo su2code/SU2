@@ -713,6 +713,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver, CNu
       /*--- Set the solution values and zero the residual ---*/
       nodes->SetSolution_Old(iPoint,Solution);
       LinSysRes.SetBlock_Zero(iPoint);
+      nodes->SetDelta_Time(iPoint,0.0);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
       for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -1938,6 +1939,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       
       nodes->SetSolution_Old(iPoint,Solution);
       nodes->SetSolution(iPoint,Solution);
+      nodes->SetDelta_Time(iPoint,0.0);
       // LinSysRes.SetBlock_Zero(iPoint);
 
       // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
