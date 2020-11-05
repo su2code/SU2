@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -285,6 +285,11 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
+
+  if (rank == MASTER_NODE && kind_recording != NONE && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+    AD::PrintStatistics();
+    cout << "-------------------------------------------------------------------------\n" << endl;
+  }
 
   AD::StopRecording();
 

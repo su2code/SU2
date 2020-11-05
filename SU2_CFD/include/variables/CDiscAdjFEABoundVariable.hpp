@@ -2,11 +2,11 @@
  * \file CDiscAdjFEABoundVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver at the boundary.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -28,14 +28,14 @@
 #pragma once
 
 #include "CDiscAdjFEAVariable.hpp"
-#include "../../../Common/include/toolboxes/CVertexMap.hpp"
+#include "../../../Common/include/containers/CVertexMap.hpp"
 
 /*!
  * \class CDiscAdjFEABoundVariable
  * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
  * \ingroup Discrete_Adjoint
  * \author R. Sanchez.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CDiscAdjFEABoundVariable final : public CDiscAdjFEAVariable {
 private:

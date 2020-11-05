@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Main class for defining the NEMO Euler's flow solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
 protected:
@@ -45,8 +45,7 @@ protected:
   Prandtl_Lam = 0.0,              /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
 
-  unsigned short
-  nSpecies;                       /*!< \brief Number of species in the gas mixture. */
+  unsigned short nSpecies;        /*!< \brief Number of species in the gas mixture. */
                   
   su2double                  
   Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
@@ -55,9 +54,9 @@ protected:
 
   su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
-  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
+  unsigned long ErrorCounter = 0; /*!< \brief Counter for number of un-physical states. */
 
-  CNEMOGas  *FluidModel;             /*!< \brief fluid model used in the solver */
+  CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
 
   CNEMOEulerVariable* node_infty = nullptr;
 
@@ -86,7 +85,7 @@ public:
      * \param[in] config - Definition of the particular problem.
      */
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-  
+
    /*!
   * \brief Compute the time step for solving the Euler equations.
   * \param[in] geometry - Geometrical definition of the problem.

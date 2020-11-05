@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DEF.
  *        The subroutines and functions are in the <i>SU2_DEF.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,6 +41,5 @@
 #include "../../SU2_CFD/include/output/CMeshOutput.hpp"
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
