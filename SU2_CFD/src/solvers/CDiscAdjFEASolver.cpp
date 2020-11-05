@@ -879,6 +879,67 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CC
     }
   }
   SetSurface_Sensitivity(geometry, config);
+
+  // Temporary Output
+  if (config->GetAdvanced_FEAElementBased()) {
+    if (rank == MASTER_NODE) {
+      unsigned short iVar;
+
+      /*--- Header of the temporary adjoint output file ---*/
+      ofstream myfile_res;
+      myfile_res.open("Results_Reverse_Adjoint.txt", ios::app);
+      myfile_res.precision(15);
+      myfile_res << config->GetTimeIter() << "\t";
+      switch (config->GetKind_ObjFunc()) {
+        case REFERENCE_NODE:
+          myfile_res << scientific << direct_solver->GetTotal_OFRefNode() << "\t";
+          break;
+        default:
+          myfile_res << scientific << 0.0 << "\t";
+            break;
+      }
+      for (iVar = 0; iVar < nMPROP; iVar++)
+        myfile_res << scientific << Total_Sens_E[iVar] << "\t";
+      for (iVar = 0; iVar < nDV; iVar++) {
+        myfile_res << scientific << Total_Sens_DV[iVar] << "\t";
+      }
+      myfile_res << endl;
+      myfile_res.close();
+
+
+      /*--- Header of the temporary dv sensitivity output file ---*/
+      ofstream myfile2_res;
+      bool outputDVFEA = false;
+
+      switch (config->GetDV_FEA()) {
+        case YOUNG_MODULUS:
+          myfile2_res.open("grad_young.opt");
+          outputDVFEA = true;
+          break;
+        default:
+          outputDVFEA = false;
+          break;
+      }
+
+      if (outputDVFEA) {
+        unsigned short iDV;
+
+        myfile2_res << "INDEX"
+                  << "\t"
+                  << "GRAD" << endl;
+
+        myfile2_res.precision(15);
+
+        for (iDV = 0; iDV < nDV; iDV++) {
+          myfile2_res << iDV;
+          myfile2_res << "\t";
+          myfile2_res << scientific << Total_Sens_DV[iDV];
+          myfile2_res << endl;
+        }
+      }
+      myfile2_res.close();
+    }
+  }
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
