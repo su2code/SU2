@@ -320,7 +320,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             }
 
             /*--- Set total deformation values in config ---*/
-	    if (config->GetKind_SU2() == SU2_DEF){
+            if (config->GetKind_SU2() == SU2_DEF){
               unsigned short iDV_Value;
               su2double dv_value;
               for (iDV = 0; iDV < config->GetnDV(); iDV++) {
@@ -354,17 +354,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                 }
 
                 /*--- Lower the deformation magnitude and add this to the total deformation value in config ---*/
-	        for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+                for (iDV = 0; iDV < config->GetnDV(); iDV++) {
                   for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
                     dv_value = config->GetDV_Value(iDV, iDV_Value);
                     config->SetDV_Value(iDV, iDV_Value, -dv_value/2);
                     totaldeformation[iDV][iDV_Value] -= dv_value/2;
                   }
                 }
-	      
-	        DeformationDifference /= 2.0;
-	        DeformationFactor -= DeformationDifference;
-	        nNegativeDeterminants_previous = nNegativeDeterminants;
+
+                DeformationDifference /= 2.0;
+                DeformationFactor -= DeformationDifference;
+                nNegativeDeterminants_previous = nNegativeDeterminants;
 
                 /*--- Recursively check for self-intersections. ---*/
                 unsigned short FFD_IntPrev_Iter, FFD_IntPrev_Depth = 0;
@@ -393,7 +393,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                   /*--- Recompute cartesian coordinates using the new control point location ---*/
                   MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
 
-                   /*--- Check for self-intersections in FFD box ---*/
+                  /*--- Check for self-intersections in FFD box ---*/
                   nNegativeDeterminants = calculateJacobianDeterminant(geometry, config, FFDBox[iFFDBox]);  
 
                   if (rank == MASTER_NODE) {
@@ -404,8 +404,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
                   /*--- Recursively change deformation magnitude. 
                   Increase if there are no points with negative determinants, decrease otherwise. ---*/
-		  if (nNegativeDeterminants == 0){
-		    DeformationDifference = abs(DeformationDifference/2.0);
+                  if (nNegativeDeterminants == 0){
+                    DeformationDifference = abs(DeformationDifference/2.0);
 
                     /*--- Update recursion depth if there are no points with negative determinant. 
                     Quit if maximum depth is reached. ---*/
