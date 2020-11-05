@@ -1032,11 +1032,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   ReadVector2Geometry(geometry,config, helperVecOut);
 
-  cout << endl << "Leaving vector copy." << endl;
-
   ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
-
-  cout << endl << "Leaving projection." << endl;
 
   OutputDVGradient("orig_grad.dat");
 }
@@ -1278,8 +1274,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
       grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
       ReadVector2Geometry(geometry,config, helperVecOut);
 
-      cout << "    finish backward volume deformation " << column << endl;
-
     }
 
     /*
@@ -1290,8 +1284,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
 
     /// reverse projection
     ProjectMeshToDV(geometry, config, helperVecOut, seedvector, activeCoord);
-
-    cout << "    finish projection" << column << endl;
 
     /// extract projected direction
     hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());

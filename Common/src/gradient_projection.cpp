@@ -34,7 +34,7 @@
  */
 void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nTotal_Index, nVertex;
+  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
   su2double* VarCoord;
   su2double DV_Value;
@@ -44,9 +44,7 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nPoint  = geometry->GetnPoint();
-  nTotal_Index = nPoint*nDim;
   nDV     = config->GetnDV();
-  nDV_Total = config->GetnDV_Total();
 
   // structure to calculate and manage the total number of marked points
   unsigned* visitedPoints = new unsigned[nPoint];
@@ -164,7 +162,7 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nVertex;
+  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iMarker, iVertex, iDim;
   su2double* VarCoord;
   su2double** DV_Value;
@@ -174,7 +172,6 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
   nDim    = geometry->GetnDim();
   nPoint  = geometry->GetnPoint();
   nDV     = config->GetnDV();
-  nDV_Total = config->GetnDV_Total();
 
   /*--- Start recording of operations ---*/
 
@@ -259,7 +256,7 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nTotal_Index, nVertex;
+  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
   su2double* VarCoord;
   su2double DV_Value;
@@ -269,9 +266,7 @@ void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *co
   nMarker = config->GetnMarker_All();
   nDim    = geometry->GetnDim();
   nPoint  = geometry->GetnPoint();
-  nTotal_Index = nPoint*nDim;
   nDV     = config->GetnDV();
-  nDV_Total = config->GetnDV_Total();
 
   // structure to calculate and manage the total number of marked points
   unsigned* visitedPoints = new unsigned[nPoint];
@@ -313,7 +308,7 @@ void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *co
     }
   }
 
-  /*--- Mark designe variables as preaccumulation input ---*/
+  /*--- Mark design variables as preaccumulation input ---*/
   AD::StartPreacc();
   su2double** DV_Values = config->GetDV_Pointer();
   for (iDV = 0; iDV < nDV; iDV++){
@@ -423,7 +418,7 @@ void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *co
  */
 void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nDV_Total, nPoint, nVertex;
+  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
   unsigned short iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
   su2double* VarCoord;
   su2double** DV_Value;
@@ -433,7 +428,6 @@ void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfa
   nDim    = geometry->GetnDim();
   nPoint  = geometry->GetnPoint();
   nDV     = config->GetnDV();
-  nDV_Total = config->GetnDV_Total();
 
   /*--- Start recording of operations ---*/
 
@@ -548,7 +542,7 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
   unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
   unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
   su2double** DV_Value = config->GetDV_Pointer();
-  double my_Gradient, localGradient;
+  su2double my_Gradient, localGradient;
 
   // get some numbers from config
   nMarker = config->GetnMarker_All();
@@ -568,12 +562,8 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
     }
   }
 
-  cout << "    initialization done, compute the adjoints " << endl;
-
   /*--- Compute derivatives and extract gradient ---*/
   AD::ComputeAdjoint();
-
-  cout << "    computation done, extract the adjoints " << endl;
 
   iDV_index = 0;
   for (iDV = 0; iDV  < nDV; iDV++){
@@ -590,11 +580,7 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
     }
   }
 
-  cout << "    calculation done, clear the adjoints " << endl;
-
   AD::ClearAdjoints();
-
-  cout << "    end of ProjectMeshToDV " << endl;
 
 }
 
