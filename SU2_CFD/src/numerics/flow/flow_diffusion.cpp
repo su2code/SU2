@@ -759,16 +759,16 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     v2_j += V_j[iDim+1]*V_j[iDim+1];
   }
 
-  const su2double T_i = V_i[0], r_i = V_i[nDim+2],
-                  T_j = V_j[0], r_j = V_j[nDim+2];
+  const su2double T_i = V_i[0], r_i = V_i[nDim+2];
+  const su2double T_j = V_j[0], r_j = V_j[nDim+2];
   
   const su2double dmudT_i = muref*(Tref+Sref)/pow(Tref,1.5) 
-                          * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.)),
-                  dmudT_j = muref*(Tref+Sref)/pow(Tref,1.5) 
+                          * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.));
+  const su2double dmudT_j = muref*(Tref+Sref)/pow(Tref,1.5) 
                           * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.));
 
-  const su2double factor_i = 0.5*dmudT_i/(r_i*Cv),
-                  factor_j = 0.5*dmudT_j/(r_j*Cv);
+  const su2double factor_i = 0.5*dmudT_i/(r_i*Cv);
+  const su2double factor_j = 0.5*dmudT_j/(r_j*Cv);
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0; jDim < nDim; jDim++) {

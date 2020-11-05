@@ -811,103 +811,105 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
   Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
 
-  if (dist_i > 1e-10) {
+  /*--- Computation of blended constants for the source terms---*/
 
-    /*--- Computation of blended constants for the source terms---*/
+  const su2double alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
+  const su2double beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
 
-    const su2double alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
-    const su2double beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
-
-   /*--- Production ---*/
+  /*--- Production ---*/
 
   su2double diverg = 0., pk = 0., pw = 0.;
-   for (auto iDim = 0; iDim < nDim; iDim++)
-     diverg += PrimVar_Grad_i[iDim+1][iDim];
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-   const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
+  const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
 
-   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
+  /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
-   if (using_uq){
-     SetReynoldsStressMatrix(TurbVar_i[0]);
-     SetPerturbedRSM(TurbVar_i[0], config);
-     SetPerturbedStrainMag(TurbVar_i[0]);
-     pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-          - TWO3*Density_i*TurbVar_i[0]*diverg;
-     pw = PerturbedStrainMag * PerturbedStrainMag - TWO3*zeta*diverg;
-   }
-   else {
-     const su2double S2 = StrainMag_i*StrainMag_i;
-     pk = Eddy_Viscosity_i*S2 - TWO3*Density_i*TurbVar_i[0]*diverg;
-     pw = Density_i*alfa_blended*(S2 - TWO3*zeta*diverg);
-       
-     /*--- k production Jacobian ---*/
-
-     if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
-       Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
-       Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
-     }
-     // else if (pk >= 0) {
-     else {
-     // if (pk >= 0) {
-       Jacobian_i[0][0] += (S2/zeta-TWO3*diverg)*Volume;
-       if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
-         Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
-     }
-     
-     /*--- omega production Jacobian ---*/
-
-     // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
-     if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
-       Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-   }
-    
-    pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-    
-    // pk = max(pk, 0.0);
-    // pw = max(pw, 0.0);
-
-   /*--- Sustaining terms, if desired. Note that if the production terms are
-         larger equal than the sustaining terms, the original formulation is
-         obtained again. This is in contrast to the version in literature
-         where the sustaining terms are simply added. This latter approach could
-         lead to problems for very big values of the free-stream turbulence
-         intensity. ---*/
-
-   if ( sustaining_terms ) {
-     const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
-     const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
-
-     pk = max(pk, sust_k);
-     pw = max(pw, sust_w);
-   }
-
-   /*--- Add the production terms to the residuals. ---*/
-
-   Residual[0] += pk*Volume;
-   Residual[1] += pw*Volume;
-
-   /*--- Dissipation ---*/
-
-   Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
-   Residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
-
-   /*--- Cross diffusion ---*/
-
-   Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-   // Residual[1] += (1.0 - F1_i)*max(CDkw_i,0.0)*Volume;
-
-   /*--- Implicit part ---*/
-
-   Jacobian_i[0][0] -= beta_star*TurbVar_i[1]*Volume;
-   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
-   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
-
-   Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
-   // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
-   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
-
+  if (using_uq){
+    SetReynoldsStressMatrix(TurbVar_i[0]);
+    SetPerturbedRSM(TurbVar_i[0], config);
+    SetPerturbedStrainMag(TurbVar_i[0]);
+    pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
+       - TWO3*Density_i*TurbVar_i[0]*diverg;
+    pw = PerturbedStrainMag * PerturbedStrainMag - TWO3*zeta*diverg;
   }
+  else {
+    const su2double S2 = StrainMag_i*StrainMag_i;
+    pk = Eddy_Viscosity_i*S2 - TWO3*Density_i*TurbVar_i[0]*diverg;
+    pw = Density_i*alfa_blended*(S2 - TWO3*zeta*diverg);
+       
+    /*--- k production Jacobian ---*/
+
+    if (pk > 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]) {
+      Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
+      Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
+    }
+    // else if (pk >= 0) {
+    else {
+    // if (pk >= 0) {
+      Jacobian_i[0][0] += (S2/zeta-TWO3*diverg)*Volume;
+      if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+        Jacobian_i[0][1] -= S2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+    }
+     
+    /*--- omega production Jacobian ---*/
+
+    // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
+    if (pw >= 20.*beta_star*Density_i*TurbVar_i[1]*zeta*alfa_blended) {
+      Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended;
+      if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
+    }
+    else if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
+    // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+      Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
+  }
+    
+  pk = min(pk, 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+  pk = min(pw, 20.*beta_star*Density_i*TurbVar_i[1]*zeta*alfa_blended);
+    
+  // pk = max(pk, 0.0);
+  // pw = max(pw, 0.0);
+
+  /*--- Sustaining terms, if desired. Note that if the production terms are
+        larger equal than the sustaining terms, the original formulation is
+        obtained again. This is in contrast to the version in literature
+        where the sustaining terms are simply added. This latter approach could
+        lead to problems for very big values of the free-stream turbulence
+        intensity. ---*/
+
+  if ( sustaining_terms ) {
+    const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
+    const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
+
+    pk = max(pk, sust_k);
+    pw = max(pw, sust_w);
+  }
+
+  /*--- Add the production terms to the residuals. ---*/
+
+  Residual[0] += pk*Volume;
+  Residual[1] += pw*Volume;
+
+  /*--- Dissipation ---*/
+
+  Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+  Residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
+
+  /*--- Cross diffusion ---*/
+
+  Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+  // Residual[1] += (1.0 - F1_i)*max(CDkw_i,0.0)*Volume;
+
+  /*--- Implicit part ---*/
+
+  Jacobian_i[0][0] -= beta_star*TurbVar_i[1]*Volume;
+  Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
+  Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
+
+  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+  // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
+  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
   
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
