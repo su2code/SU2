@@ -39,11 +39,9 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
 CSurfaceMovement::~CSurfaceMovement(void) {}
 
-void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
+void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config, su2double** totaldeformation) {
 
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
-  unsigned short iDV_Value;
-  su2double dv_value;
   unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
   su2double MaxDiff, Current_Scale, Ratio, New_Scale;
   string FFDBoxTag;
@@ -54,10 +52,6 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   bool polar       = (config->GetFFD_CoordSystem() == POLAR);
   bool cartesian   = (config->GetFFD_CoordSystem() == CARTESIAN);
   su2double BoundLimit = config->GetOpt_LineSearch_Bound();
-
-  unsigned long nNegativeDeterminants, nNegativeDeterminants_previous;
-  unsigned short FFD_IntPrev_Iter, FFD_IntPrev_Depth = 0;
-  su2double deformationDifference = 1.0, deformationFactor = 1.0;
 
   /*--- Setting the Free Form Deformation ---*/
 
@@ -301,24 +295,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             if (iLevel > 0) UpdateParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
             /*--- Apply the design variables to the control point position ---*/
-
-            for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-              switch ( config->GetDesign_Variable(iDV) ) {
-                case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_TWIST_2D :         SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_NACELLE :          SetFFDNacelle(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_GULL :             SetFFDGull(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_TWIST :            SetFFDTwist(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-              }
-            }
+            ApplyDesignVariables(geometry, config, FFDBox, iFFDBox);
 
             /*--- Recompute cartesian coordinates using the new control point location ---*/
 
@@ -334,24 +311,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
               config->SetOpt_RelaxFactor(New_Scale);
 
               /*--- Apply the design variables to the control point position ---*/
-
-              for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-                switch ( config->GetDesign_Variable(iDV) ) {
-                  case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_TWIST_2D :         SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_NACELLE :          SetFFDNacelle(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_GULL :             SetFFDGull(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_TWIST :            SetFFDTwist(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                }
-              }
+              ApplyDesignVariables(geometry, config, FFDBox, iFFDBox);
 
               /*--- Recompute cartesian coordinates using the new control point location ---*/
 
@@ -360,141 +320,140 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             }
 
             /*--- Set total deformation values in config ---*/
-	    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-              for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-		dv_value = config->GetDV_Value(iDV, iDV_Value);
-                config->SetTotalDeformation(iDV, iDV_Value, dv_value);
-              }
-            }
-
-            /*--- Calculate Jacobian determinant for FFD-deformation to check for self-intersection in FFD box.
-            Procedure from J.E. Gain & N.A. Dodgson, "Preventing Self-Intersection under Free Form Deformation".
-            IEEE transactions on Visualization and Computer Graphics, vol. 7 no. 4. October-December 2001 ---*/
-
-            nNegativeDeterminants = calculateJacobianDeterminant(geometry, config, FFDBox[iFFDBox]);
-
-            /*--- If enabled: start recursive procedure to decrease deformation magnitude 
-            to remove self-intersections in FFD box ---*/
-            if (config->GetFFD_IntPrev() && nNegativeDeterminants > 0) {
-
-              if (rank == MASTER_NODE) {
-                cout << "Self-intersections within FFD box present." << endl;
-                cout << "Performing iterative deformation reduction procedure." << endl;
-              }
-
-              /*--- Lower the deformation magnitude and add this to the total deformation value in config ---*/
-	      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+	    if (config->GetKind_SU2() == SU2_DEF){
+              unsigned short iDV_Value;
+              su2double dv_value;
+              for (iDV = 0; iDV < config->GetnDV(); iDV++) {
                 for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-		  dv_value = config->GetDV_Value(iDV, iDV_Value);
-                  config->SetDV_Value(iDV, iDV_Value, -dv_value/2);
-                  config->AddTotalDeformation(iDV, iDV_Value, -dv_value/2);
+                  dv_value = config->GetDV_Value(iDV, iDV_Value);
+                  totaldeformation[iDV][iDV_Value] = dv_value;
                 }
               }
-	      
-	      deformationDifference /= 2.0;
-	      deformationFactor = deformationFactor - deformationDifference;
-	      nNegativeDeterminants_previous = nNegativeDeterminants;
 
-              /*--- Recursively check for self-intersections. ---*/
-              for (FFD_IntPrev_Iter = 1; FFD_IntPrev_Iter <= config->GetFFD_IntPrev_Iter(); FFD_IntPrev_Iter++){
+              /*--- Calculate Jacobian determinant for FFD-deformation to check for self-intersection in FFD box.
+              Procedure from J.E. Gain & N.A. Dodgson, "Preventing Self-Intersection under Free Form Deformation".
+              IEEE transactions on Visualization and Computer Graphics, vol. 7 no. 4. October-December 2001 ---*/
+              unsigned long nNegativeDeterminants, nNegativeDeterminants_previous;
+              su2double DeformationDifference = 1.0, DeformationFactor = 1.0;
 
-                if (rank == MASTER_NODE) cout << "Checking FFD box intersections with the solid surfaces." << endl;
-                  CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
+              nNegativeDeterminants = calculateJacobianDeterminant(geometry, config, FFDBox[iFFDBox]);
 
-                /*--- Compute the parametric coordinates of the child box
-                control points (using the parent FFDBox)  ---*/
-                for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
-                  FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
-                  for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
-                    if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
-                    SetParametricCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
-                }
+              /*--- Get parameters for FFD self-intersection prevention ---*/
+              bool FFD_IntPrev;
+              unsigned short FFD_IntPrev_MaxIter, FFD_IntPrev_MaxDepth;
+              
+              tie(FFD_IntPrev, FFD_IntPrev_MaxIter, FFD_IntPrev_MaxDepth) = config->GetFFD_IntPrev();
 
-                /*--- Update the parametric coordinates if it is a child FFDBox ---*/
-                iLevel = FFDBox[iFFDBox]->GetLevel();
-                if (iLevel > 0) UpdateParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
-
-                /*--- Apply the design variables to the control point position ---*/
-
-                for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-                  switch ( config->GetDesign_Variable(iDV) ) {
-                    case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_TWIST_2D :         SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_NACELLE :          SetFFDNacelle(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_GULL :             SetFFDGull(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_TWIST :            SetFFDTwist(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                    case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
-                  }
-                }
-
-                /*--- Recompute cartesian coordinates using the new control point location ---*/
-                MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
-
-                /*--- Check for self-intersections in FFD box ---*/
-                nNegativeDeterminants = calculateJacobianDeterminant(geometry, config, FFDBox[iFFDBox]);  
+              /*--- If enabled: start recursive procedure to decrease deformation magnitude 
+              to remove self-intersections in FFD box ---*/
+              if (FFD_IntPrev && nNegativeDeterminants > 0) {
 
                 if (rank == MASTER_NODE) {
-                  cout << "Amount of points with negative Jacobian determinant: " << nNegativeDeterminants << endl;
-                  cout << "Remaining amount of original deformation: " << deformationFactor*100.0 << " percent." << endl;
+                  cout << "Self-intersections within FFD box present. ";
+                  cout << "Performing iterative deformation reduction procedure." << endl;
                 }
 
-                /*--- Recursively change deformation magnitude. 
-                Increase if there are no points with negative determinants, decrease otherwise. ---*/
-		if (nNegativeDeterminants == 0){
-		  deformationDifference = abs(deformationDifference/2.0);
-
-                  /*--- Update recursion depth if there are no points with negative determinant. 
-                  Quit if maximum depth is reached. ---*/
-                  FFD_IntPrev_Depth++;
-
-                  if (FFD_IntPrev_Depth == config->GetFFD_IntPrev_Depth()) {
-                    if (rank == MASTER_NODE) {
-                      cout << "Maximum recursion depth reached." << endl;
-                      cout << "Remaining amount of original deformation: " << deformationFactor*100.0 << " percent." << endl;
-                    }
-                    break;
+                /*--- Lower the deformation magnitude and add this to the total deformation value in config ---*/
+	        for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+                  for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
+                    dv_value = config->GetDV_Value(iDV, iDV_Value);
+                    config->SetDV_Value(iDV, iDV_Value, -dv_value/2);
+                    totaldeformation[iDV][iDV_Value] -= dv_value/2;
                   }
-                } else {
-                  deformationDifference = -abs(deformationDifference/2.0);
                 }
+	      
+	        DeformationDifference /= 2.0;
+	        DeformationFactor -= DeformationDifference;
+	        nNegativeDeterminants_previous = nNegativeDeterminants;
 
-                if (FFD_IntPrev_Iter < config->GetFFD_IntPrev_Iter()) {
-                  deformationFactor += deformationDifference;
-                }
+                /*--- Recursively check for self-intersections. ---*/
+                unsigned short FFD_IntPrev_Iter, FFD_IntPrev_Depth = 0;
 
-                /*--- Set DV values for next iteration. Always decrease absolute value, 
-                since starting point of iteration is previously deformed value. ---*/
-                if (FFD_IntPrev_Iter < config->GetFFD_IntPrev_Iter()) {
-                  if ((nNegativeDeterminants_previous > 0 && nNegativeDeterminants > 0) || 
-                      (nNegativeDeterminants_previous == 0 && nNegativeDeterminants == 0)){
-                    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-                      for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-                        dv_value = config->GetDV_Value(iDV, iDV_Value);
-                        config->SetDV_Value(iDV, iDV_Value, dv_value/2);
-                        config->AddTotalDeformation(iDV, iDV_Value, dv_value/2);
+                for (FFD_IntPrev_Iter = 1; FFD_IntPrev_Iter <= FFD_IntPrev_MaxIter; FFD_IntPrev_Iter++){
+
+                  if (rank == MASTER_NODE) cout << "Checking FFD box intersections with the solid surfaces." << endl;
+                    CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+                  /*--- Compute the parametric coordinates of the child box
+                  control points (using the parent FFDBox)  ---*/
+                  for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
+                    FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
+                    for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+                      if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+                      SetParametricCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
+                  }
+
+                  /*--- Update the parametric coordinates if it is a child FFDBox ---*/
+                  iLevel = FFDBox[iFFDBox]->GetLevel();
+                  if (iLevel > 0) UpdateParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+                  /*--- Apply the design variables to the control point position ---*/
+                  ApplyDesignVariables(geometry, config, FFDBox, iFFDBox);
+
+                  /*--- Recompute cartesian coordinates using the new control point location ---*/
+                  MaxDiff = SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, false);
+
+                   /*--- Check for self-intersections in FFD box ---*/
+                  nNegativeDeterminants = calculateJacobianDeterminant(geometry, config, FFDBox[iFFDBox]);  
+
+                  if (rank == MASTER_NODE) {
+                    cout << "Amount of points with negative Jacobian determinant for iteration ";
+                    cout << FFD_IntPrev_Iter << ": " << nNegativeDeterminants << endl;
+                    cout << "Remaining amount of original deformation: " << DeformationFactor*100.0 << " percent." << endl;
+                  }
+
+                  /*--- Recursively change deformation magnitude. 
+                  Increase if there are no points with negative determinants, decrease otherwise. ---*/
+		  if (nNegativeDeterminants == 0){
+		    DeformationDifference = abs(DeformationDifference/2.0);
+
+                    /*--- Update recursion depth if there are no points with negative determinant. 
+                    Quit if maximum depth is reached. ---*/
+                    FFD_IntPrev_Depth++;
+
+                    if (FFD_IntPrev_Depth == FFD_IntPrev_MaxDepth) {
+                      if (rank == MASTER_NODE) {
+                        cout << "Maximum recursion depth reached." << endl;
+                        cout << "Remaining amount of original deformation: " << endl; 
+                        cout << DeformationFactor*100.0 << " percent." << endl;
                       }
+                      break;
                     }
                   } else {
-                    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-                      for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-                        dv_value = config->GetDV_Value(iDV, iDV_Value);
-                        config->SetDV_Value(iDV, iDV_Value, -dv_value/2);
-                        config->AddTotalDeformation(iDV, iDV_Value, -dv_value/2);
+                    DeformationDifference = -abs(DeformationDifference/2.0);
+                  }
+
+                  if (FFD_IntPrev_Iter < FFD_IntPrev_MaxIter) {
+                    DeformationFactor += DeformationDifference;
+                  }
+
+                  /*--- Set DV values for next iteration. Always decrease absolute value, 
+                  since starting point of iteration is previously deformed value. ---*/
+                  if (FFD_IntPrev_Iter < FFD_IntPrev_MaxIter) {
+                    if ((nNegativeDeterminants_previous > 0 && nNegativeDeterminants > 0) || 
+                        (nNegativeDeterminants_previous == 0 && nNegativeDeterminants == 0)){
+                      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+                        for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
+                          dv_value = config->GetDV_Value(iDV, iDV_Value);
+                          config->SetDV_Value(iDV, iDV_Value, dv_value/2.0);
+                          totaldeformation[iDV][iDV_Value] += dv_value/2.0;
+                        }
+                      }
+                    } else {
+                      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+                        for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
+                          dv_value = config->GetDV_Value(iDV, iDV_Value);
+                          config->SetDV_Value(iDV, iDV_Value, -dv_value/2.0);
+                          totaldeformation[iDV][iDV_Value] -= dv_value/2.0;
+                        }
                       }
                     }
                   }
+
+                  nNegativeDeterminants_previous = nNegativeDeterminants;
                 }
 
-                nNegativeDeterminants_previous = nNegativeDeterminants;
               }
-
             }
 
             /*--- Reparametrization of the parent FFD box ---*/
@@ -1486,6 +1445,29 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
   if (rank == MASTER_NODE)
     cout << "Update parametric coord       | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
 
+}
+
+void CSurfaceMovement::ApplyDesignVariables(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, unsigned short iFFDBox) {
+
+  unsigned short iDV;
+
+  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+    switch ( config->GetDesign_Variable(iDV) ) {
+      case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_TWIST_2D :         SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_NACELLE :          SetFFDNacelle(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_GULL :             SetFFDGull(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_TWIST :            SetFFDTwist(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+      case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+    }
+  } 
 }
 
 su2double CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, bool ResetDef) {
@@ -4942,29 +4924,11 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
   }
 }
 
-void CSurfaceMovement::SetDeformationMagnitude(CGeometry *geometry, CConfig *config, su2double factor, su2double** initialDef) {
-unsigned short iDV, iDV_Value;
-su2double dv_value;
-
-  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-      dv_value = initialDef[iDV][iDV_Value];
-      config->SetDV_Value(iDV, iDV_Value, dv_value*factor);
-    }
-  }
-}
-
 unsigned long CSurfaceMovement::calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox){
 
-  su2double *ParamCoord, *CartCoord;
-  su2double determinant, d_du[3] = {0.0, 0.0, 0.0}, d_dv[3] = {0.0, 0.0, 0.0}, d_dw[3] = {0.0, 0.0, 0.0};
-  su2double CartCoords[3] = {0.0, 0.0, 0.0};
-  su2double Ba, Bb, Bc, Ba_der, Bb_der, Bc_der;
-
+  su2double *ParamCoord;
   unsigned long iSurfacePoints;
-  unsigned short nDim = geometry->GetnDim();
-  unsigned short iMarker, iDim;
-  unsigned short iDegree, jDegree, kDegree, lDegree, mDegree, nDegree;
+  unsigned short iMarker;
   unsigned long negative_determinants = 0;
 
   /*--- Loop over the surface points ---*/
@@ -4977,14 +4941,11 @@ unsigned long CSurfaceMovement::calculateJacobianDeterminant(CGeometry *geometry
 
       ParamCoord = FFDBox->Get_ParametricCoord(iSurfacePoints);
 
-      /*--- Set partial derivatives and cartesian coordinates to 0 ---*/
-      for (iDim = 0; iDim < 3; iDim ++) {
-        d_du[iDim] = 0.0;
-        d_dv[iDim] = 0.0;
-        d_dw[iDim] = 0.0;
-      }
-
       /*--- Calculate partial derivatives ---*/
+      unsigned short iDegree, jDegree, kDegree, lDegree, mDegree, nDegree;
+      su2double Ba, Bb, Bc, Ba_der, Bb_der, Bc_der;
+      su2double determinant, d_du[3] = {0.0, 0.0, 0.0}, d_dv[3] = {0.0, 0.0, 0.0}, d_dw[3] = {0.0, 0.0, 0.0};
+
       for (iDegree = 0; iDegree <= FFDBox->lDegree; iDegree++){ 
         Ba = FFDBox->BlendingFunction[0]->GetBasis(iDegree, ParamCoord[0]);
         Ba_der = FFDBox->BlendingFunction[0]->GetDerivative(iDegree, ParamCoord[0], 1);
@@ -4998,17 +4959,17 @@ unsigned long CSurfaceMovement::calculateJacobianDeterminant(CGeometry *geometry
             Bc = FFDBox->BlendingFunction[2]->GetBasis(kDegree, ParamCoord[2]);
             Bc_der = FFDBox->BlendingFunction[2]->GetDerivative(kDegree, ParamCoord[2], 1);
 
-	    d_du[0] += Ba_der*Bb*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][0];
-	    d_du[1] += Ba_der*Bb*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][1];
-	    d_du[2] += Ba_der*Bb*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][2];
+            d_du[0] += Ba_der*Bb*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][0];
+            d_du[1] += Ba_der*Bb*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][1];
+            d_du[2] += Ba_der*Bb*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][2];
 
-	    d_dv[0] += Ba*Bb_der*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][0];
-	    d_dv[1] += Ba*Bb_der*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][1];
-	    d_dv[2] += Ba*Bb_der*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][2];
+            d_dv[0] += Ba*Bb_der*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][0];
+            d_dv[1] += Ba*Bb_der*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][1];
+            d_dv[2] += Ba*Bb_der*Bc*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][2];
 
-	    d_dw[0] += Ba*Bb*Bc_der*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][0];
-	    d_dw[1] += Ba*Bb*Bc_der*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][1];
-	    d_dw[2] += Ba*Bb*Bc_der*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][2];
+            d_dw[0] += Ba*Bb*Bc_der*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][0];
+            d_dw[1] += Ba*Bb*Bc_der*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][1];
+            d_dw[2] += Ba*Bb*Bc_der*FFDBox->Coord_Control_Points[iDegree][jDegree][kDegree][2];
 
           }
         }
@@ -5023,10 +4984,8 @@ unsigned long CSurfaceMovement::calculateJacobianDeterminant(CGeometry *geometry
     }
   }
 
-  #ifdef HAVE_MPI
-        unsigned long negative_determinants_local = negative_determinants; negative_determinants = 0;
-        SU2_MPI::Allreduce(&negative_determinants_local, &negative_determinants, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  #endif
+  unsigned long negative_determinants_local = negative_determinants; negative_determinants = 0;
+  SU2_MPI::Allreduce(&negative_determinants_local, &negative_determinants, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   return negative_determinants;
 }

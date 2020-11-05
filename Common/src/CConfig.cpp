@@ -2607,19 +2607,19 @@ void CConfig::SetConfig_Options() {
   addBoolOption("FFD_INTPREV", FFD_IntPrev, NO);
 
   /* DESCRIPTION: Number of total iterations in the convexity check procedure */
-  addUnsignedShortOption("FFD_INTPREV_ITER", FFD_IntPrev_Iter, 10);
+  addUnsignedShortOption("FFD_INTPREV_ITER", FFD_IntPrev_MaxIter, 10);
 
   /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
-  addUnsignedShortOption("FFD_INTPREV_DEPTH", FFD_IntPrev_Depth, 3);
+  addUnsignedShortOption("FFD_INTPREV_DEPTH", FFD_IntPrev_MaxDepth, 3);
 
   /* DESCRIPTION: Convexity check on all mesh elements */
   addBoolOption("CONVEXITY_CHECK", ConvexityCheck, NO);
 
   /* DESCRIPTION: Number of total iterations in the convexity check procedure */
-  addUnsignedShortOption("CONVEXITY_CHECK_ITER", ConvexityCheck_Iter, 10);
+  addUnsignedShortOption("CONVEXITY_CHECK_ITER", ConvexityCheck_MaxIter, 10);
 
   /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
-  addUnsignedShortOption("CONVEXITY_CHECK_DEPTH", ConvexityCheck_Depth, 3);
+  addUnsignedShortOption("CONVEXITY_CHECK_DEPTH", ConvexityCheck_MaxDepth, 3);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
