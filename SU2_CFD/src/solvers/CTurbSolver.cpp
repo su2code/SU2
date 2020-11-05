@@ -377,8 +377,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double lim_i[MAXNVAR] = {0.0}, lim_j[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    lim_i[iVar] = limiter? nodes->GetLimiter(iPoint,iVar) : 1.0;
-    lim_j[iVar] = limiter? nodes->GetLimiter(jPoint,iVar) : 1.0;
+    lim_i[iVar] = nodes->GetLimiter(iPoint,iVar);
+    lim_j[iVar] = nodes->GetLimiter(jPoint,iVar);
   }
 
   /*--- Store reconstruction weights ---*/
