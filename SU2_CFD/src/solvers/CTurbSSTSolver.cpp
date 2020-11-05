@@ -776,15 +776,15 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       
       /*--- Set primitive state based on flow direction ---*/
       
-      Vn_Infty = 0;
-      for (auto iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
+      // Vn_Infty = 0;
+      // for (auto iDim = 0; iDim < nDim; iDim++) Vn_Infty += Vel_Infty[iDim]*Normal[iDim];
 
-      if (Vn_Infty > 0.0) {
-        /*--- Outflow conditions ---*/
-        Primitive_j[0] = Primitive_i[0];
-        Primitive_j[1] = Primitive_i[1];
-      }
-      else {
+      // if (Vn_Infty > 0.0) {
+      //   /*--- Outflow conditions ---*/
+      //   Primitive_j[0] = Primitive_i[0];
+      //   Primitive_j[1] = Primitive_i[1];
+      // }
+      // else {
         /*--- Inflow conditions ---*/
         Velocity2 = 0.0;
         for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
@@ -795,7 +795,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
         Primitive_j[0] = Kine_Infty;
         Primitive_j[1] = Omega_Infty;
-      }
+      // }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
 
