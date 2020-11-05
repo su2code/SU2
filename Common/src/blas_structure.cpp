@@ -124,7 +124,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const passivedouble
   for(int l=0; l<N; ++l) {
     const passivedouble *AA = A + l*M;
 
-    SU2_OMP_SIMD
+    SU2_OMP_SIMD_IF_NOT_AD
     for(int k=0; k<M; ++k)
       y[k] += AA[k]*x[l];
   }
@@ -185,7 +185,7 @@ void CBlasStructure::gemm_arbitrary(int m, int n, int k, const passivedouble *a,
   /* The order of these loops is tuned for column-major matrices. */
   for (int p = 0; p < k; p++) {
     for (int j = 0; j < n; j++) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (int i = 0; i < m; i++) {
         C(i, j) += A(i, p) * B(p, j);
       }
