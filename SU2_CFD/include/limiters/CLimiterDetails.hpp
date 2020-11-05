@@ -99,7 +99,7 @@ namespace LimiterHelpers
     const su2double r = proj / (delta + sign*epsilon());
     const su2double phi = min((3.0*pow(r, 2.0) - 6.0*r + 19.0) / (pow(r, 3.0) - 3.0*r + 18.0),
                               1.0 + (1.5*r + 1.0)*pow(r - 1.0, 3.0));
-    const su2double psi = (1.0/3.0 + 2.0/(3.0*r)) * phi;
+    const su2double psi = (1.0/3.0 + 2.0/(3.0*r+epsilon())) * phi;
 
     return psi * (r >= 0.0);
   }
