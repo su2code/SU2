@@ -147,7 +147,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
 
     /*--- Loop over the padded number of integration points
           to compute the 2D metric terms. ---*/
-    SU2_OMP_SIMD
+    SU2_OMP_SIMD_IF_NOT_AD
     for(unsigned short i=0; i<nIntegrationPad; ++i) {
 
       /*--- Easier storage of the derivatives of the Cartesian coordinates
@@ -188,7 +188,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
 
     /*--- Loop over the padded number of integration points
           to compute the 3D metric terms. ---*/
-    SU2_OMP_SIMD
+    SU2_OMP_SIMD_IF_NOT_AD
     for(unsigned short i=0; i<nIntegrationPad; ++i) {
 
       /*--- Easier storage of the derivatives of the Cartesian coordinates
@@ -316,7 +316,7 @@ void CFEMStandardElementBase::UnitFaceNormals(const bool                        
 
     /*--- Loop over the padded number of integration points
           to compute the normals. ---*/
-    SU2_OMP_SIMD
+    SU2_OMP_SIMD_IF_NOT_AD
     for(unsigned short i=0; i<nIntegrationPad; ++i) {
 
       /*--- Abbreviate dxdr and dydr for readability. ---*/
@@ -343,7 +343,7 @@ void CFEMStandardElementBase::UnitFaceNormals(const bool                        
 
     /*--- Loop over the padded number of integration points
           to compute the normals. ---*/
-    SU2_OMP_SIMD
+    SU2_OMP_SIMD_IF_NOT_AD
     for(unsigned short i=0; i<nIntegrationPad; ++i) {
 
       /*--- Easier storage of the derivatives of the Cartesian coordinates. ---*/
