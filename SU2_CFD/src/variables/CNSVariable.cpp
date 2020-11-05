@@ -85,8 +85,8 @@ bool CNSVariable::SetVorticity_StrainMag() {
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
 
-    if (nDim == 2)
-      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
+    // if (nDim == 2)
+    //   StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
 
     /*--- Add off diagonals ---*/
 
