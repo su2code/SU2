@@ -504,6 +504,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       auto residual = numerics->ComputeResidual(config);
 
+      if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "SouRes[" << iPoint << "][0]= " <<  residual[0] << endl;
+
       /*--- Subtract residual and the Jacobian ---*/
 
       LinSysRes.SubtractBlock(iPoint, residual);
