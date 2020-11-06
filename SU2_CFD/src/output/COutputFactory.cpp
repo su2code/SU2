@@ -59,7 +59,11 @@ COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
       break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      output = new CAdjFlowCompOutput(config, nDim);
+      if (config->GetOneShot()) {
+        output = new COneShotOutput(config, nDim);
+      } else {
+        output = new CAdjFlowCompOutput(config, nDim);
+      }
       break;
     case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       output = new CAdjFlowIncOutput(config, nDim);

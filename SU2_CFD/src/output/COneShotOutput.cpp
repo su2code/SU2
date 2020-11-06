@@ -84,6 +84,7 @@ COneShotOutput::COneShotOutput(CConfig *config, unsigned short nDim) : COutput(c
 
   /*--- Set the restart filename --- */
 
+  restartFlowFilename = config->GetRestart_FileName();
   restartFilename = config->GetRestart_AdjFileName();
 
   /*--- Add the obj. function extension --- */
@@ -101,7 +102,7 @@ COneShotOutput::~COneShotOutput(void) {}
 void COneShotOutput::SetHistoryOutputFields(CConfig *config){
 
   // For OneShot we are interested in the flow and adjoint solver outputs!
-  // First group, residuals
+  // First group, residuals (BGS residuals are not included, only relevant for multizone.)
   {
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables.
   /// DESCRIPTION: Root-mean square residual of the density.
@@ -153,33 +154,6 @@ void COneShotOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("MAX_TKE", "max[k]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of kinetic energy (SST model).", HistoryFieldType::RESIDUAL);
     /// DESCRIPTION: Maximum residual of the dissipation (SST model).
     AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
-    break;
-  default: break;
-  }
-  /// END_GROUP
-
-  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
-  /// DESCRIPTION: Maximum residual of the density.
-  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the density.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum x-component.
-  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum y-component.
-  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the momentum y-component.",  HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the momentum z-component.
-  if (nDim == 3) AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the z-component.",  HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the energy.
-  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the energy.",  HistoryFieldType::RESIDUAL);
-
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).",  HistoryFieldType::RESIDUAL);
-    break;
-  case SST: case SST_SUST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model).
-    AddHistoryOutput("BGS_TKE", "bgs[k]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of kinetic energy (SST model).",  HistoryFieldType::RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).
-    AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
   }
@@ -241,34 +215,6 @@ void COneShotOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
 
-
-  ///  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The Block Gauss Seidel residuals of the SOLUTION variables.
-  /// DESCRIPTION: BGS residual of the adjoint density.
-  AddHistoryOutput("BGS_ADJ_DENSITY",    "bgs[A_Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint density.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: BGS residual of the adjoint momentum x-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-X", "bgs[A_RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: BGS residual of the adjoint momentum y-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-Y", "bgs[A_RhoV]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum y-component", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: BGS residual of the adjoint momentum z-component
-  AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: BGS residual of the adjoint energy.
-  AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
-  if (!config->GetFrozen_Visc_Disc()){
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: BGS residual of the adjoint nu tilde.
-      AddHistoryOutput("BGS_ADJ_NU_TILDE", "bgs[A_nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint nu tilde.", HistoryFieldType::RESIDUAL);
-      break;
-    case SST:
-      /// DESCRIPTION: BGS residual of the adjoint kinetic energy.
-      AddHistoryOutput("BGS_ADJ_TKE", "bgs[A_k]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint kinetic energy.", HistoryFieldType::RESIDUAL);
-      /// DESCRIPTION: BGS residual of the adjoint dissipation.
-      AddHistoryOutput("BGS_ADJ_DISSIPATION",    "bgs[A_w]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint dissipation.", HistoryFieldType::RESIDUAL);
-      break;
-    default: break;
-    }
-  }
-  /// END_GROUP
   }
 
   // Second group, aerodynamic coefficients
@@ -355,9 +301,53 @@ void COneShotOutput::SetHistoryOutputFields(CConfig *config){
 
 void COneShotOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver){
 
+  CSolver* flow_solver = solver[FLOW_SOL];
+  CSolver* turb_solver = solver[TURB_SOL];
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
   CSolver* adjturb_solver = solver[ADJTURB_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
+
+  /*--- first group: residuals ---*/
+
+  SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
+  if (nDim == 2)
+    SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(3)));
+  else {
+    SetHistoryOutputValue("RMS_MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
+  }
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
+    break;
+  case SST: case SST_SUST:
+    SetHistoryOutputValue("RMS_TKE", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    break;
+  default: break;
+  }
+
+  SetHistoryOutputValue("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
+  SetHistoryOutputValue("MAX_MOMENTUM-X", log10(flow_solver->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_MOMENTUM-Y", log10(flow_solver->GetRes_Max(2)));
+  if (nDim == 2)
+    SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(3)));
+  else {
+    SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
+    SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
+  }
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
+    break;
+  case SST: case SST_SUST:
+    SetHistoryOutputValue("MAX_TKE", log10(turb_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
+    break;
+  default: break;
+  }
 
   SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
@@ -402,29 +392,48 @@ void COneShotOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     }
   }
 
-  if (multiZone){
-    SetHistoryOutputValue("BGS_ADJ_DENSITY", log10(adjflow_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(1)));
-    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(2)));
-    if (geometry->GetnDim() == 3) {
-      SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_BGS(3)));
-      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(4)));
-    } else {
-      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(3)));
+  /*--- second group: residuals ---*/
+
+  SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
+  SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
+  if (nDim == 3)
+    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
+  if (nDim == 3){
+    SetHistoryOutputValue("MOMENT_X", flow_solver->GetTotal_CMx());
+    SetHistoryOutputValue("MOMENT_Y", flow_solver->GetTotal_CMy());
+  }
+  SetHistoryOutputValue("MOMENT_Z", flow_solver->GetTotal_CMz());
+  SetHistoryOutputValue("FORCE_X", flow_solver->GetTotal_CFx());
+  SetHistoryOutputValue("FORCE_Y", flow_solver->GetTotal_CFy());
+  if (nDim == 3)
+    SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
+  SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
+
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3)
+      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3){
+      SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
     }
-    if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
-      switch(turb_model){
-      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-        SetHistoryOutputValue("BGS_ADJ_NU_TILDE", log10(adjturb_solver->GetRes_BGS(0)));
-        break;
-      case SST:
-        SetHistoryOutputValue("BGS_ADJ_TKE", log10(adjturb_solver->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_BGS(1)));
-        break;
-      default: break;
-      }
+    SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3)
+      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);
+
+    SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
+    if (config->GetAeroelastic_Simulation()){
+      SetHistoryOutputPerSurfaceValue("PITCH", config->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("PLUNGE", config->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
     }
   }
+
+  SetHistoryOutputValue("AOA", config->GetAoA());
+
+  /*--- third group: sensitivities ---*/
 
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
   SetHistoryOutputValue("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
@@ -444,101 +453,248 @@ void COneShotOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
 void COneShotOutput::SetVolumeOutputFields(CConfig *config){
 
+  /*--- First group: Grid coordinates and solution variables ---*/
+
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  /// BEGIN_GROUP: SOLUTION, DESCRIPTION: The SOLUTION variables of the adjoint solver.
-  /// DESCRIPTION: Adjoint density.
+  // Solution variables
+  AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
+  AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
+  AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
+  if (nDim == 3)
+    AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
+  AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
+  // Turbulent Residuals
+  switch(config->GetKind_Turb_Model()){
+  case SST: case SST_SUST:
+    AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
+    AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+    break;
+  case SA: case SA_COMP: case SA_E:
+  case SA_E_COMP: case SA_NEG:
+    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
+    break;
+  case NONE:
+    break;
+  }
+  // Grid velocity
+  if (config->GetGrid_Movement()){
+    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
+    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
+    if (nDim == 3 )
+      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
+  }
+  // Primitive variables
+  AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
+  AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
+  AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
+    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
+    if (nDim == 3)
+      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
+    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
+    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
+  }
+  if (config->GetKind_Solver() == RANS) {
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+  }
+  if (config->GetKind_Trans_Model() == BC){
+    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
+  }
+
+  // adjoint solution
   AddVolumeOutput("ADJ_DENSITY",    "Adjoint_Density",    "SOLUTION", "Adjoint density");
-  /// DESCRIPTION: Adjoint momentum x-component.
   AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "SOLUTION", "x-component of the adjoint momentum vector");
-  /// DESCRIPTION: Adjoint momentum y-component.
   AddVolumeOutput("ADJ_MOMENTUM-Y", "Adjoint_Momentum_y", "SOLUTION", "y-component of the adjoint momentum vector");
   if (nDim == 3)
-    /// DESCRIPTION: Adjoint momentum z-component.
     AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "SOLUTION", "z-component of the adjoint momentum vector");
-  /// DESCRIPTION: Adjoint energy.
   AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION", "Adjoint energy");
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: Adjoint nu tilde.
       AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION", "Adjoint Spalart-Allmaras variable");
       break;
     case SST:
-      /// DESCRIPTION: Adjoint kinetic energy.
       AddVolumeOutput("ADJ_TKE", "Adjoint_TKE", "SOLUTION", "Adjoint kinetic energy");
-      /// DESCRIPTION: Adjoint dissipation.
       AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION", "Adjoint rate of dissipation");
       break;
     default: break;
     }
   }
-  /// END_GROUP
 
-  /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables.
-  /// DESCRIPTION: Residual of the adjoint density.
+  /*--- Second group: residuals and limiters ---*/
+
+  //Residuals
+  AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL", "Residual of the density");
+  AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
+  AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL", "Residual of the y-momentum component");
+  if (nDim == 3)
+    AddVolumeOutput("RES_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL", "Residual of the z-momentum component");
+  AddVolumeOutput("RES_ENERGY", "Residual_Energy", "RESIDUAL", "Residual of the energy");
+  switch(config->GetKind_Turb_Model()){
+  case SST: case SST_SUST:
+    AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
+    AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation");
+    break;
+  case SA: case SA_COMP: case SA_E:
+  case SA_E_COMP: case SA_NEG:
+    AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
+    break;
+  case NONE:
+    break;
+  }
+  // Limiter values
+  AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
+  AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
+  if (nDim == 3) {
+    AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
+  }
+  AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
+  AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER", "Limiter value of the density");
+  AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
+  switch(config->GetKind_Turb_Model()){
+  case SST: case SST_SUST:
+    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
+    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
+    break;
+  case SA: case SA_COMP: case SA_E:
+  case SA_E_COMP: case SA_NEG:
+    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
+    break;
+  case NONE:
+    break;
+  }
+  // Hybrid RANS-LES
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+  }
+  // Roe Low Dissipation
+  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION", "Value of the Roe dissipation");
+  }
+  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    if (nDim == 3){
+      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION", "x-component of the vorticity vector");
+      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION", "y-component of the vorticity vector");
+      AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION", "z-component of the vorticity vector");
+    } else {
+      AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
+    }
+  }
+
+  // adjoint residuals
   AddVolumeOutput("RES_ADJ_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL", "Residual of the adjoint density");
-  /// DESCRIPTION: Residual of the adjoint momentum x-component.
   AddVolumeOutput("RES_ADJ_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL", "Residual of the adjoint x-momentum");
-  /// DESCRIPTION: Residual of the adjoint momentum y-component.
   AddVolumeOutput("RES_ADJ_MOMENTUM-Y", "Residual_Adjoint_Momentum_y", "RESIDUAL", "Residual of the adjoint y-momentum");
   if (nDim == 3)
-    /// DESCRIPTION: Residual of the adjoint momentum z-component.
     AddVolumeOutput("RES_ADJ_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL", "Residual of the adjoint z-momentum");
-  /// DESCRIPTION: Residual of the adjoint energy.
   AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL", "Residual of the adjoint energy");
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      /// DESCRIPTION: Residual of the nu tilde.
       AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
       break;
     case SST:
-      /// DESCRIPTION: Residual of the adjoint kinetic energy.
       AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL", "Residual of the turb. kinetic energy");
-      /// DESCRIPTION: Residual of the adjoint dissipation.
       AddVolumeOutput("RES_ADJ_DISSIPATION", "Residual_Adjoint_Omega", "RESIDUAL", "Residual of the rate of dissipation");
       break;
     default: break;
     }
   }
-  /// END_GROUP
 
-  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
-  /// DESCRIPTION: Sensitivity x-component.
+  /*--- Third group: Sensitivities ---*/
+
   AddVolumeOutput("SENSITIVITY-X", "Sensitivity_x", "SENSITIVITY", "x-component of the sensitivity vector");
-  /// DESCRIPTION: Sensitivity y-component.
   AddVolumeOutput("SENSITIVITY-Y", "Sensitivity_y", "SENSITIVITY", "y-component of the sensitivity vector");
   if (nDim == 3)
-    /// DESCRIPTION: Sensitivity z-component.
     AddVolumeOutput("SENSITIVITY-Z", "Sensitivity_z", "SENSITIVITY", "z-component of the sensitivity vector");
-  /// DESCRIPTION: Sensitivity in normal direction.
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
-  /// END_GROUP
 
 }
 
 void COneShotOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
+  /*--- Preprocess: get all necessary pointers ---*/
+
+  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  CVariable* Node_Turb = nullptr;
+  if (config->GetKind_Turb_Model() != NONE){
+    Node_Turb = solver[TURB_SOL]->GetNodes();
+  }
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
   CVariable* Node_AdjTurb = nullptr;
   CPoint*    Node_Geo     = geometry->nodes;
-
   if (config->GetKind_Turb_Model() != NONE &&
       ((!config->GetFrozen_Visc_Disc() && !cont_adj) ||
        (!config->GetFrozen_Visc_Cont() && cont_adj))){
     Node_AdjTurb = solver[ADJTURB_SOL]->GetNodes();
   }
 
+  /*--- First group: Grid coordinates and solution variables ---*/
+
+  // coordinates
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
   SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
+  // flow solver variables
+  SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
+  SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
+  if (nDim == 3){
+    SetVolumeOutputValue("MOMENTUM-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
+    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 4));
+  } else {
+    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 3));
+  }
+  // Turbulent Residuals
+  switch(config->GetKind_Turb_Model()){
+  case SST: case SST_SUST:
+    SetVolumeOutputValue("TKE",         iPoint, Node_Turb->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+    break;
+  case SA: case SA_COMP: case SA_E:
+  case SA_E_COMP: case SA_NEG:
+    SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
+    break;
+  case NONE:
+    break;
+  }
+  if (config->GetGrid_Movement()){
+    SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
+    SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
+    if (nDim == 3)
+      SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
+  }
+  SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
+  SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+  SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2(iPoint))/Node_Flow->GetSoundSpeed(iPoint));
+  su2double VelMag = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    VelMag += pow(solver[FLOW_SOL]->GetVelocity_Inf(iDim),2.0);
+  }
+  su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
+  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+  }
+  if (config->GetKind_Solver() == RANS) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+  }
+  if (config->GetKind_Trans_Model() == BC){
+    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC(iPoint));
+  }
+
+  // adjoint solver variables
   SetVolumeOutputValue("ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(iPoint, 0));
   SetVolumeOutputValue("ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1));
   SetVolumeOutputValue("ADJ_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(iPoint, 2));
@@ -548,7 +704,6 @@ void COneShotOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   } else {
     SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
   }
-
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     // Turbulent
     switch(turb_model){
@@ -565,7 +720,69 @@ void COneShotOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     }
   }
 
-  // Residuals
+  /*--- Second group: residuals and limiters ---*/
+
+  // Flow residuals
+  SetVolumeOutputValue("RES_DENSITY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+  SetVolumeOutputValue("RES_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
+  SetVolumeOutputValue("RES_MOMENTUM-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
+  if (nDim == 3){
+    SetVolumeOutputValue("RES_MOMENTUM-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
+    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 4));
+  } else {
+    SetVolumeOutputValue("RES_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
+  }
+  switch(config->GetKind_Turb_Model()){
+  case SST: case SST_SUST:
+    SetVolumeOutputValue("RES_TKE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
+    SetVolumeOutputValue("RES_DISSIPATION", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 1));
+    break;
+  case SA: case SA_COMP: case SA_E:
+  case SA_E_COMP: case SA_NEG:
+    SetVolumeOutputValue("RES_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes(iPoint, 0));
+    break;
+  case NONE:
+    break;
+  }
+  // flow limiters
+  SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
+  SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
+  if (nDim == 3){
+    SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
+  }
+  SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+1));
+  SetVolumeOutputValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+2));
+  SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+3));
+  switch(config->GetKind_Turb_Model()){
+  case SST: case SST_SUST:
+    SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter_Primitive(iPoint, 0));
+    SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter_Primitive(iPoint, 1));
+    break;
+  case SA: case SA_COMP: case SA_E:
+  case SA_E_COMP: case SA_NEG:
+    SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter_Primitive(iPoint, 0));
+    break;
+  case NONE:
+    break;
+  }
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+  }
+  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+    SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
+  }
+  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    if (nDim == 3){
+      SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
+      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
+      SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
+    } else {
+      SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
+    }
+  }
+
+  // Adjoint residuals
   SetVolumeOutputValue("RES_ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(iPoint, 0) - Node_AdjFlow->GetSolution_Old(iPoint, 0));
   SetVolumeOutputValue("RES_ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1) - Node_AdjFlow->GetSolution_Old(iPoint, 1));
   SetVolumeOutputValue("RES_ADJ_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(iPoint, 2) - Node_AdjFlow->GetSolution_Old(iPoint, 2));
@@ -575,7 +792,6 @@ void COneShotOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   } else {
     SetVolumeOutputValue("RES_ADJ_ENERGY", iPoint, Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
   }
-
   if ((!config->GetFrozen_Visc_Disc() && !cont_adj) || (!config->GetFrozen_Visc_Cont() && cont_adj)){
     switch(config->GetKind_Turb_Model()){
     case SST:
@@ -590,6 +806,8 @@ void COneShotOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       break;
     }
   }
+
+  /*--- Third group: Sensitivities ---*/
 
   SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 0));
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 1));

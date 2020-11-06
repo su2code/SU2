@@ -38,10 +38,11 @@
 class COneShotOutput final: public COutput {
 private:
 
-  bool cont_adj;             /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
-  unsigned short turb_model; /*!< \brief The kind of turbulence model*/
+  bool cont_adj;              /*!< \brief Boolean indicating whether we run a cont. adjoint problem */
+  unsigned short turb_model;  /*!< \brief The kind of turbulence model*/
 
-  string volumeFlowFilename; /*!< Volume output filename for the flow
+  string volumeFlowFilename,  /*!< Volume output filename for the flow*/
+         restartFlowFilename; /*!< Restart output filename for the flow*/
 
 public:
 
