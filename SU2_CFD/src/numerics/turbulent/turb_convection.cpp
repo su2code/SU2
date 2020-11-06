@@ -67,14 +67,6 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   ExtraADPreaccIn();
 
-  Area = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
-
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = Normal[iDim]/Area;
-
   /*--- Primitive variables ---*/
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
@@ -82,79 +74,24 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     Velocity_j[iDim] = V_j[iDim+1];
   }
 
-  Pressure_i = V_i[nDim+1];
-  Pressure_j = V_j[nDim+1];
-
   Density_i  = V_i[nDim+2];
   Density_j  = V_j[nDim+2];
 
-  turb_ke_i = tkeNeeded ? TurbVar_i[0] : 0.0;
-  turb_ke_j = tkeNeeded ? TurbVar_j[0] : 0.0;
-
-  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
-  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    Energy_i += 0.5*pow(Velocity_i[iDim],2);
-    Energy_j += 0.5*pow(Velocity_j[iDim],2);
-  }
-
-  Enthalpy_i = Energy_i + Pressure_i/Density_i;
-  Enthalpy_j = Energy_j + Pressure_j/Density_j;
-
-  SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-  SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
-    
-  /*--- Compute variables that are common to the derived schemes ---*/
-
-  /*--- Roe-averaged variables at interface between i & j ---*/
-
-  R = sqrt(fabs(Density_j/Density_i));
-  inv_R_Plus_One = 1./(R+1.);
-
-  Lambda[0] = 0.0;
-  ProjVel_i = 0.0;
-  ProjVel_j = 0.0;
-  RoeSqVel  = 0.0;
+  a_ij = 0.0;
   if (dynamic_grid) {
     for (auto iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
       su2double Velocity_j = V_j[iDim+1] - GridVel_j[iDim];
-      Lambda[0] += 0.5*(Velocity_i+Velocity_j)*UnitNormal[iDim];
+      a_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
   else {
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      // const su2double RoeVelocity = (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One;
-      // Lambda[0] += RoeVelocity*UnitNormal[iDim];
-      ProjVel_i += Velocity_i[iDim]*UnitNormal[iDim];
-      ProjVel_j += Velocity_j[iDim]*UnitNormal[iDim];
-      // RoeSqVel  += RoeVelocity*RoeVelocity;
-    }
-    Lambda[0] = 0.5*(ProjVel_i+ProjVel_j);
+    for (iDim = 0; iDim < nDim; iDim++)
+      a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
   }
 
-  // RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)*inv_R_Plus_One;
-  // RoeTke = (R*turb_ke_j+turb_ke_i)*inv_R_Plus_One;
-  // RoeSoundSpeed2 = Gamma_Minus_One*(RoeEnthalpy-0.5*RoeSqVel-RoeTke);
-
-  /*--- Negative RoeSoundSpeed^2, the jump variables are too large, clear fluxes and exit ---*/
-
-  // if (RoeSoundSpeed2 <= 0.0) {
-  //   for (auto iVar = 0; iVar < nVar; iVar++) {
-  //     Flux[iVar] = 0.0;
-  //     for (auto jVar = 0; jVar < nVar; jVar++) {
-  //       Jacobian_i[iVar][jVar] = 0.0;
-  //       Jacobian_j[iVar][jVar] = 0.0;
-  //     }
-  //   }
-
-  //   AD::SetPreaccOut(Flux, nVar);
-  //   AD::EndPreacc();
-
-  //   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-  // }
-
-  /*--- Positive RoeSoundSpeed^2, compute fluxes and Jacobian ---*/
+  a_i = 0.5*(a_ij+fabs(a_ij));
+  a_j = 0.5*(a_ij-fabs(a_ij));
 
   FinishResidualCalc(config);
   
@@ -197,88 +134,12 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  // RoeOmega = (R*TurbVar_j[1]+TurbVar_i[1])*inv_R_Plus_One;
-  // RoeSoundSpeed = sqrt(RoeSoundSpeed2);
+  Flux[0] = a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0];
+  Flux[1] = a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1];
 
-  // Lambda[1] = Lambda[0] + RoeSoundSpeed;
-  // Lambda[2] = Lambda[0] - RoeSoundSpeed;
+  Jacobian_i[0][0] = a_i;
+  Jacobian_i[1][1] = a_i;
 
-  /*--- Harten and Hyman (1983) entropy correction ---*/
-
-  // for (auto iLoop = 0; iLoop < 3; iLoop++) {
-  //   Lambda[iLoop] = fabs(Lambda[iLoop]);
-  // }
-
-  // for (auto iVar = 0; iVar < 3; iVar++) {
-  //   su2double Wave_i = ProjVel_i;
-  //   su2double Wave_j = ProjVel_j;
-  //   if (iVar == 1) {
-  //     Wave_i += SoundSpeed_i;
-  //     Wave_j += SoundSpeed_j;
-  //   }
-  //   if (iVar == 2) {
-  //     Wave_i -= SoundSpeed_i;
-  //     Wave_j -= SoundSpeed_j;
-  //   }
-
-  //   su2double Epsilon = max((Lambda[iVar]-Wave_i),
-  //                           (Wave_j-Lambda[iVar]));
-  //   Epsilon = max(4.0*Epsilon, 0.0);
-
-  //   Lambda[iVar]  = (fabs(Lambda[iVar]) < Epsilon) ? su2double(0.5*(Lambda[iVar]*Lambda[iVar]/Epsilon + Epsilon))
-  //                                                  : su2double(fabs(Lambda[iVar]));
-  // }
-
-  /*--- Fluxes ---*/
-
-  const su2double rkv_i = Density_i*TurbVar_i[0]*ProjVel_i;
-  const su2double rkv_j = Density_j*TurbVar_j[0]*ProjVel_j;
-
-  const su2double rov_i = Density_i*TurbVar_i[1]*ProjVel_i;
-  const su2double rov_j = Density_j*TurbVar_j[1]*ProjVel_j;
-
-  /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
-
-  // const su2double Diff_rk = Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0];
-  // const su2double Diff_ro = Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1];
-
-  // const su2double Lambda_G = (Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])*(Gamma - FIVE3)/RoeSoundSpeed2;
-  // // const su2double Lambda_G = (Lambda[0]-0.5*Lambda[1]-0.5*Lambda[2])*Gamma_Minus_One/RoeSoundSpeed2; 
-
-  // const su2double Diss_rk_rk = Lambda[0]+RoeTke*Lambda_G;
-  // const su2double Diss_ro_ro = Lambda[0];
-  // const su2double Diss_ro_rk = RoeOmega*Lambda_G;
-
-  // Flux[0] = 0.5*(rkv_i+rkv_j-Diss_rk_rk*Diff_rk)*Area;
-  // Flux[1] = 0.5*(rov_i+rov_j-Diss_ro_rk*Diff_rk
-  //                           -Diss_ro_ro*Diff_ro)*Area;
-
-  // if (Flux[0] >  1000*Density_i*TurbVar_i[0]) cout << "I, k_i= " << TurbVar_i[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
-  // if (Flux[0] < -1000*Density_j*TurbVar_j[0]) cout << "J, k_j= " << TurbVar_j[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
-
-  // Jacobian_i[0][0] = 0.5*(ProjVel_i+Diss_rk_rk)*Area;
-  // Jacobian_j[0][0] = 0.5*(ProjVel_j-Diss_rk_rk)*Area;
-
-  // Jacobian_i[1][0] =  0.5*Diss_ro_rk*Area;
-  // Jacobian_j[1][0] = -0.5*Diss_ro_rk*Area;
-
-  // Jacobian_i[1][1] = 0.5*(ProjVel_i+Diss_ro_ro)*Area;
-  // Jacobian_j[1][1] = 0.5*(ProjVel_j-Diss_ro_ro)*Area;
-
-  Lambda[0] = fabs(Lambda[0]);
-  
-  const su2double Diff_rk = Lambda[0]*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]);
-  const su2double Diff_ro = Lambda[0]*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]);
-
-  Flux[0] = 0.5*(rkv_i+rkv_j-Diff_rk)*Area;
-  Flux[1] = 0.5*(rov_i+rov_j-Diff_ro)*Area;
-
-  // if (Flux[0] >  1000*Density_i*TurbVar_i[0]) cout << "I, k_i= " << TurbVar_i[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
-  // if (Flux[0] < -1000*Density_j*TurbVar_j[0]) cout << "J, k_j= " << TurbVar_j[0] <<", ProjVel_i= " << ProjVel_i << ", ProjVel_j= " << ProjVel_j << ", RoeVel= " << Lambda[0] << endl;
-
-  Jacobian_i[0][0] = 0.5*(ProjVel_i+Lambda[0])*Area;
-  Jacobian_j[0][0] = 0.5*(ProjVel_j-Lambda[0])*Area;
-
-  Jacobian_i[1][1] = 0.5*(ProjVel_i+Lambda[0])*Area;
-  Jacobian_j[1][1] = 0.5*(ProjVel_j-Lambda[0])*Area;
+  Jacobian_j[0][0] = a_j;
+  Jacobian_j[1][1] = a_j;
 }
