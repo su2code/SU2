@@ -4941,12 +4941,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /* Set MUSCL kappa blending constant to required values if
-     edge limiters are used. */
-  switch(Kind_SlopeLimit_Flow) {
-    case PIPERNO:
-      MUSCL_Kappa = 1.0/3.0;
-      break;
-  }
+     Piperno edge limiters are used. */
+  if((Kind_SlopeLimit_Flow == PIPERNO) || (Kind_SlopeLimit_Turb == PIPERNO))
+    MUSCL_Kappa = 1.0/3.0;
 
   /* Simpler boolean to control allocation of least-squares memory. */
 
