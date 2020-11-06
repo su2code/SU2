@@ -834,10 +834,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   const su2double StrainMag2 = using_uq? PerturbedStrainMag*PerturbedStrainMag : StrainMag_i*StrainMag_i;
 
-  // su2double pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*diverg;
-  // su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*diverg);
-  su2double pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*min(diverg,0.0);
-  su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*min(diverg,0.0));
+  su2double pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*diverg;
+  su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*diverg);
 
   const su2double pkmax = 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0];
   // const su2double pwmax = 20.*beta_star*Density_i*TurbVar_i[1]*zeta*alfa_blended;
@@ -851,8 +849,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   // else if (pk >= 0) {
   else {
   // if (pk >= 0) {
-    // Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-    Jacobian_i[0][0] -= TWO3*max(diverg,0.0)*Volume;
+    Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
+    if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+      Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
   }
    
   /*--- omega production Jacobian ---*/
@@ -864,8 +863,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   // }
   // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)) {
   if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-    // Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-    Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.0)*Volume;
+    Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
   }
     
   pk = min(pk, pkmax);
@@ -901,8 +899,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   /*--- Cross diffusion ---*/
 
-  // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-  Residual[1] += (1.0 - F1_i)*max(CDkw_i,0.0)*Volume;
+  Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+  // Residual[1] += (1.0 - F1_i)*max(CDkw_i,0.0)*Volume;
 
   /*--- Implicit part ---*/
 
@@ -910,8 +908,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
-  Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*min(CDkw_i,0.0);
+  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+  // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
   
   AD::SetPreaccOut(Residual, nVar);
