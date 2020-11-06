@@ -137,9 +137,6 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Flux[0] = a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0];
   Flux[1] = a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1];
 
-  Jacobian_i[0][0] = a_i;
-  Jacobian_i[1][1] = a_i;
-
-  Jacobian_j[0][0] = a_j;
-  Jacobian_j[1][1] = a_j;
+  Jacobian_i[0][0] = Jacobian_i[1][1] = a_i;
+  Jacobian_j[0][0] = Jacobian_j[1][1] = a_j;
 }

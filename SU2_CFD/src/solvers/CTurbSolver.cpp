@@ -669,7 +669,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
           const unsigned long total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
-        Jacobian.SetVal2Diag(iPoint, 0.0);
       }
     }
   }
