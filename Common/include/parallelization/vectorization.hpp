@@ -32,6 +32,9 @@
 #include <initializer_list>
 #include <algorithm>
 #include <cmath>
+#ifdef __SSE2__
+#include "x86intrin.h"
+#endif
 
 namespace simd {
 
@@ -163,7 +166,6 @@ constexpr auto abs_mask_d = 0x7FFFFFFFFFFFFFFFL;
 constexpr auto sign_mask_d = 0x8000000000000000L;
 
 #ifdef __SSE2__
-#include "x86intrin.h"
 /*!
  * Create specialization for array of 2 doubles (this should be always available).
  */
