@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "../../Common/include/adt_structure.hpp"
+#include "../../Common/include/adt/CADTElemClass.hpp"
 #include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
