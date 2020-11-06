@@ -187,8 +187,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "UpwRes[" << iPoint << "][0]= " <<  residual[0] << endl;
-    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "UpwRes[" << jPoint << "][0]= " << -residual[0] << endl;
+    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "UpwRes[" << iPoint << "][0]= " << -residual[0] << endl;
+    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "UpwRes[" << jPoint << "][0]= " <<  residual[0] << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
@@ -683,6 +683,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Sol[" << iPoint << "][0]= " << nodes->GetSolution(iPoint,0) << endl;
 
     /*--- Read the volume ---*/
 
