@@ -86,7 +86,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     }
   }
   else {
-    for (iDim = 0; iDim < nDim; iDim++)
+    for (auto iDim = 0; iDim < nDim; iDim++)
       a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
   }
 
@@ -115,10 +115,10 @@ void CUpwSca_TurbSA::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = 0.5*(ProjVel_i*TurbVar_i[0]+ProjVel_j*TurbVar_j[0])*Area;
+  Flux[0] = a_i*TurbVar_i[0]+a_j*TurbVar_j[0];
 
-  Jacobian_i[0][0] = 0.5*ProjVel_i*Area;
-  Jacobian_j[0][0] = 0.5*ProjVel_j*Area;
+  Jacobian_i[0][0] = a_i;
+  Jacobian_j[0][0] = a_j;
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
