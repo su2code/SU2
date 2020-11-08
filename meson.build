@@ -156,6 +156,13 @@ elif get_option('enable-openblas')
 
 endif
 
+extra_deps = get_option('extra-deps').split(',')
+foreach dep : extra_deps
+  if dep != ''
+    su2_deps += dependency(dep)
+  endif
+endforeach
+
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 # compile common library
