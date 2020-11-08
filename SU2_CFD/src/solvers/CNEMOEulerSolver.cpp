@@ -403,15 +403,15 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetSolution_Gradient_GG(geometry, config, true);
+      SetPrimitive_Gradient_GG(geometry, config, true);
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetSolution_Gradient_LS(geometry, config, true);
+      SetPrimitive_Gradient_LS(geometry, config, true);
     }
 
     /*--- Limiter computation ---*/
     if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
-      SetSolution_Limiter(geometry, config);
+      SetPrimitive_Limiter(geometry, config);
     }
   }
 }
@@ -457,9 +457,9 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
 
-  Min_Delta_Time = 1.E6;
+  Min_Delta_Time = 1.E30;
   Max_Delta_Time = 0.0;
-  K_v    = 0.5;
+  K_v    = 0.25;
 
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
@@ -803,7 +803,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   su2double *U_i, *U_j, *V_i, *V_j;
-  su2double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
+  su2double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
   su2double *Limiter_i, *Limiter_j;
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
@@ -869,15 +869,15 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       /*---+++ Conserved variable reconstruction & limiting +++---*/
       
       /*--- Retrieve gradient information & limiter ---*/
-      GradU_i = nodes->GetGradient_Reconstruction(iPoint);
-      GradU_j = nodes->GetGradient_Reconstruction(jPoint);
+      GradV_i = nodes->GetGradient_Reconstruction(iPoint);
+      GradV_j = nodes->GetGradient_Reconstruction(jPoint);
       
       if (limiter) {
-        Limiter_i = nodes->GetLimiter(iPoint);
-        Limiter_j = nodes->GetLimiter(jPoint);
+        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
         lim_i = 1.0;
         lim_j = 1.0;
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
           if (lim_i > Limiter_i[iVar]) lim_i = Limiter_i[iVar];
           if (lim_j > Limiter_j[iVar]) lim_j = Limiter_j[iVar];
         }
@@ -885,47 +885,49 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       }
       
       /*--- Reconstruct conserved variables at the edge interface ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        ProjGradU_i = 0.0; ProjGradU_j = 0.0;
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          ProjGradU_i += Vector_i[iDim]*GradU_i[iVar][iDim];
-          ProjGradU_j += Vector_j[iDim]*GradU_j[iVar][iDim];
+          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
+          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
         }
         if (limiter) {
-          Conserved_i[iVar] = U_i[iVar] + lim_ij*ProjGradU_i;
-          Conserved_j[iVar] = U_j[iVar] + lim_ij*ProjGradU_j;
+          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
+          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
         }
+
         else {
-          Conserved_i[iVar] = U_i[iVar] + ProjGradU_i;
-          Conserved_j[iVar] = U_j[iVar] + ProjGradU_j;
+          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
+          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
         }
       }   
-      
-      chk_err_i = nodes->Cons2PrimVar(Conserved_i, Primitive_i,
+
+      /*--- Check for non-physical solutions after reconstruction. If found, use the
+       cell-average value of the solution. This is a locally 1st order approximation,
+       which is typically only active during the start-up of a calculation. ---*/
+
+      chk_err_i = nodes->CheckNonPhys(Conserved_i, Primitive_i,
                                              dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
-      chk_err_j = nodes->Cons2PrimVar(Conserved_j, Primitive_j,
+      chk_err_j = nodes->CheckNonPhys(Conserved_j, Primitive_j,
                                              dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
-      
-       /*--- Check for physical solutions in the reconstructed values ---*/
-      // Note: If non-physical, revert to first order
-      if ( chk_err_i || chk_err_j) {
-        numerics->SetPrimitive   (V_i, V_j);
-        numerics->SetConservative(U_i, U_j);
-        numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-        numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-        numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-        numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-        numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-      } else {
-        numerics->SetConservative(Conserved_i, Conserved_j);
-        numerics->SetPrimitive   (Primitive_i, Primitive_j);
-        numerics->SetdPdU  (dPdU_i,   dPdU_j  );
-        numerics->SetdTdU  (dTdU_i,   dTdU_j  );
-        numerics->SetdTvedU(dTvedU_i, dTvedU_j);
-        numerics->SetEve   (Eve_i,    Eve_j   );
-        numerics->SetCvve  (Cvve_i,   Cvve_j  );
-      }
-    } else {
+
+      nodes->SetNon_Physical(iPoint, chk_err_i);
+      nodes->SetNon_Physical(jPoint, chk_err_j);
+
+      /*--- Get updated state, in case the point recovered after the set. ---*/
+      chk_err_i = nodes->GetNon_Physical(iPoint);
+      chk_err_j = nodes->GetNon_Physical(jPoint);
+
+      /*--- If non-physical, revert to first order ---*/
+      numerics->SetConservative(chk_err_i ? U_i : Conserved_i, chk_err_j ? U_j : Conserved_j);
+      numerics->SetPrimitive   (chk_err_i ? V_i : Primitive_i, chk_err_j ? V_j : Primitive_j);
+      numerics->SetdPdU  (chk_err_i ? nodes->GetdPdU(iPoint) : dPdU_i,     chk_err_j ? nodes->GetdPdU(jPoint) : dPdU_j);
+      numerics->SetdTdU  (chk_err_i ? nodes->GetdTdU(iPoint) : dTdU_i,     chk_err_j ? nodes->GetdTdU(jPoint) : dTdU_j);
+      numerics->SetdTvedU(chk_err_i ? nodes->GetdTvedU(iPoint) : dTvedU_i, chk_err_j ? nodes->GetdTvedU(jPoint) : dTvedU_j);
+      numerics->SetEve   (chk_err_i ? nodes->GetEve(iPoint) : Eve_i,       chk_err_j ? nodes->GetEve(jPoint) : Eve_j);
+      numerics->SetCvve  (chk_err_i ? nodes->GetCvve(iPoint) : Cvve_i,     chk_err_j ? nodes->GetCvve(jPoint) : Cvve_j);
+    }
+    else {
       /*--- Set variables without reconstruction ---*/
       numerics->SetPrimitive   (V_i, V_j);
       numerics->SetConservative(U_i, U_j);
