@@ -307,12 +307,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
-  su2double teste=0;
-
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     val_eves[iSpecies]  = eves[iSpecies];
     val_Cvves[iSpecies] = cvves[iSpecies];
-    teste+=eves[iSpecies]*rhos[iSpecies];
   }
 
   rhoCvtr = fluidmodel->GetrhoCvtr();
