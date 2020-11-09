@@ -883,12 +883,14 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
     const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
 
-    Jacobian_i[0][0] *= (sust_k < pk)? 1.0 : 0.0;
-    Jacobian_i[0][1] *= (sust_k < pk)? 1.0 : 0.0;
-    Jacobian_i[1][1] *= (sust_w < pw)? 1.0 : 0.0;
+    // Jacobian_i[0][0] *= (sust_k < pk)? 1.0 : 0.0;
+    // Jacobian_i[0][1] *= (sust_k < pk)? 1.0 : 0.0;
+    // Jacobian_i[1][1] *= (sust_w < pw)? 1.0 : 0.0;
 
-    pk = max(pk, sust_k);
-    pw = max(pw, sust_w);
+    // pk = max(pk, sust_k);
+    // pw = max(pw, sust_w);
+    pk += sust_k;
+    pw += sust_w;
   }
 
   /*--- Add the production terms to the residuals. ---*/
