@@ -684,7 +684,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Sol[" << iPoint << "][0]= " << nodes->GetSolution(iPoint,0) << endl;
+    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Sol[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " << nodes->GetSolution(iPoint,0) << endl;
 
     /*--- Read the volume ---*/
 
