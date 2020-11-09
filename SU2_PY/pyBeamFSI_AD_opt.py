@@ -81,8 +81,8 @@ def main():
         else:
             print("Working directory is set to {}".format(os.getcwd()))
 
-    # starts timer
-    start = timer.time()
+        # starts timer
+        start = timer.time()
 
     confFile = str(options.filename)
 
@@ -183,7 +183,9 @@ def main():
     if FluidSolver is not None:
         del FluidSolver
 
-
+    if myid == rootProcess:
+       elapsed_time =  timer.time() - start
+       print('Primal problem elapsed time: ', elapsed_time)
     return
 
 

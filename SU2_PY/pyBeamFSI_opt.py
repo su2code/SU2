@@ -82,8 +82,8 @@ def main():
         else:
             print("Working directory is set to {}".format(os.getcwd()))
 
-    # starts timer
-    start = timer.time()
+        # starts timer
+        start = timer.time()
 
     confFile = str(options.filename)
 
@@ -179,9 +179,11 @@ def main():
 
     cl, cd = FSIInterface.SteadyFSI(FSI_config, FluidSolver, SolidSolver, MLS)
     
-    if myid == rootProcess:    
+    if myid == rootProcess:
+       elapsed_time =  timer.time() - start
        print('DRAG COEFFICIENT: ', cd)
        print('LIFT COEFFICIENT: ', cl)
+       print('Primal problem elapsed time: ', elapsed_time)
        obj_file = open("Objectives.dat", "w")
        obj_file.write('%20s \t' % 'DRAG COEFFICIENT' )
        obj_file.write('%20s \n' % 'LIFT COEFFICIENT' )
