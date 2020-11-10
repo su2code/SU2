@@ -956,7 +956,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
 
   unsigned short iDim, jDim, iVar, iSpecies;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX,
+      RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve;
   su2double Ti, Tvei, Tj, Tvej;
@@ -1008,6 +1009,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   T_INDEX       = nodes->GetTIndex();
   VEL_INDEX     = nodes->GetVelIndex();
   TVE_INDEX     = nodes->GetTveIndex();
+  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
+  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1021,6 +1024,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
+
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
 
@@ -1056,13 +1060,12 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       kve  = nodes->GetThermalConductivity_ve(iPoint);
 
       /*--- Retrieve Cv*density ---*/
-      rhoCv=nodes->GetRhoCv_tr(iPoint);
-      rhoCvve=nodes->GetRhoCv_ve(iPoint);
-
+      rhoCv   = nodes->GetRhoCv_tr(iPoint);
+      rhoCvve = nodes->GetRhoCv_ve(iPoint);
 
       /*--- Retrieve Flow Data ---*/
       Viscosity = nodes->GetLaminarViscosity(iPoint);
-      Density = nodes->GetDensity(iPoint);
+      Density   = nodes->GetDensity(iPoint);
 
       Ms = FluidModel->GetSpeciesMolarMass();
 
@@ -1070,9 +1073,16 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
       /*--- Calculate specific gas constant --- */
-      GasConstant=0;
-      for(iSpecies=0;iSpecies<nSpecies;iSpecies++)
+      GasConstant = 0.0;
+      for(iSpecies = 0; iSpecies<nSpecies; iSpecies++)
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
+      
+      /*--- Compute Gamma ---*/
+      //TODO: Move to fluidmodel?
+      rhoR = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
+      Gamma = rhoR/(nodes->GetRhoCv_tr(iPoint) + nodes->GetRhoCv_ve(iPoint))+1;
 
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
