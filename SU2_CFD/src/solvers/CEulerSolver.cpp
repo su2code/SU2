@@ -12125,7 +12125,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       /*--- Load local CFL number ---*/
 
       if (restart_cfl) {
-        index += nDim*(config->GetGrid_Movement());
+        index = counter*Restart_Vars[1] + skipVars + nVar + turbVars + nDim*(config->GetGrid_Movement());
         nodes->SetLocalCFL(iPoint, Restart_Data[index]);
       }
 

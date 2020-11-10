@@ -1195,7 +1195,7 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       /*--- Load local CFL number ---*/
 
       if (restart_cfl) {
-        index += nVar + nDim*(config->GetGrid_Movement()) + 1;
+        index = counter*Restart_Vars[1] + skipVars + nVar + nDim*(config->GetGrid_Movement()) + 1;
         nodes->SetLocalCFL(iPoint, Restart_Data[index]);
       }
 
