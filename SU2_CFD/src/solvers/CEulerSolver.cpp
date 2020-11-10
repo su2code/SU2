@@ -3105,8 +3105,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    bool good_i = tkeNeeded? (turbNodes->GetPrimitive(iPoint,0) > 1e-20) : true;
-    bool good_j = tkeNeeded? (turbNodes->GetPrimitive(jPoint,0) > 1e-20) : true;
+    bool good_i = true, good_j = true;
+    // bool good_i = tkeNeeded? (turbNodes->GetPrimitive(iPoint,0) > 1e-20) : true;
+    // bool good_j = tkeNeeded? (turbNodes->GetPrimitive(jPoint,0) > 1e-20) : true;
     bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
