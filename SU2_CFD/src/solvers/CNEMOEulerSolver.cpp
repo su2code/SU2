@@ -1835,6 +1835,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   /*--- Set booleans from configuration parameters ---*/
   //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
+
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
 
@@ -1944,7 +1945,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
-      Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
+      Temperature_ve, Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
       alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   const su2double *Flow_Dir;
 
@@ -2031,7 +2032,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         Density = V_domain[RHO_INDEX];
         Velocity2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = U_domain[nSpecies+iDim]/Density;
+          Velocity[iDim] = V_domain[VEL_INDEX+iDim];
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy      = U_domain[nVar-2]/Density;
@@ -2088,7 +2089,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 
         /*--- Static temperature from the speed of sound relation ---*/
         Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-        //Temperature_ve = V_domain[TVE_INDEX]; //TODO NEED TVE AS WELL
+        Temperature_ve = V_domain[TVE_INDEX]; //TODO NEED TVE AS WELL
 
         /*--- Static pressure using isentropic relation at a point ---*/
         Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
@@ -2111,6 +2112,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
         U_inlet[nVar-1] = U_domain[nVar-1];
 
         /*--- Primitive variables, using the derived quantities ---*/
+        //TODO, 1species only
         for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
           V_inlet[iSpecies] = 1.0*Density;
         V_inlet[T_INDEX]   = Temperature;
@@ -2251,7 +2253,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   unsigned short T_INDEX       = nodes->GetTIndex();
   unsigned short TVE_INDEX     = nodes->GetTveIndex();
   unsigned short VEL_INDEX     = nodes->GetVelIndex();
-  unsigned short PRESS_INDEX   = nodes->GetPIndex();
+  unsigned short P_INDEX       = nodes->GetPIndex();
   unsigned short RHO_INDEX     = nodes->GetRhoIndex();
   unsigned short H_INDEX       = nodes->GetHIndex();
   unsigned short A_INDEX       = nodes->GetAIndex();
@@ -2264,9 +2266,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Index of the closest interior node ---*/
-      //Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); //only for implicit
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -2308,7 +2307,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       }
       Temperature = V_domain[T_INDEX];
       Tve         = V_domain[TVE_INDEX];
-      Pressure    = V_domain[PRESS_INDEX];
+      Pressure    = V_domain[P_INDEX];
       SoundSpeed  = V_domain[A_INDEX];
       Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
   
@@ -2335,7 +2334,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         /*--- Supersonic exit flow: there are no incoming characteristics,
          so no boundary condition is necessary. Set outlet state to current
          state so that upwinding handles the direction of propagation. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) U_outlet[iVar] = U_domain[iVar];
+        for (iVar = 0; iVar < nVar; iVar++)     U_outlet[iVar] = U_domain[iVar];
         for (iVar = 0; iVar < nPrimVar; iVar++) V_outlet[iVar] = V_domain[iVar];
 
       } else {
@@ -2377,9 +2376,9 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
           V_outlet[VEL_INDEX+iDim] = Velocity[iDim];
         }
 
-        V_outlet[PRESS_INDEX] = Pressure;
-        V_outlet[RHO_INDEX]   = Density;
-        V_outlet[A_INDEX]     = SoundSpeed;
+        V_outlet[P_INDEX]   = Pressure;
+        V_outlet[RHO_INDEX] = Density;
+        V_outlet[A_INDEX]   = SoundSpeed;
 
         /*--- Set mixture state and compute quantities ---*/
         FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
@@ -2760,14 +2759,6 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
   delete [] Normal;
 
 }
-
-//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  /*--- Call the Euler wall routine ---*/
-//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//}
 
 void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
                                             CSolver **solution_container,
