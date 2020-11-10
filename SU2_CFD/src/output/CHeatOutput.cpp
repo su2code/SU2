@@ -131,6 +131,12 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   // Residuals
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
 
+  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
+  // WRT_MESH_QUALITY= YES has to be set, otherwise the memory holding the data is freed.
+  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality, additionally set \"WRT_MESH_QUALITY= YES\"");
+  AddVolumeOutput("ASPECT_RATIO", "Aspect_Ratio", "MESH_QUALITY", "Aspect ratio, additionally set \"WRT_MESH_QUALITY= YES\"");
+  AddVolumeOutput("VOLUME_RATIO", "Volume_Ratio", "MESH_QUALITY", "Volume Ratio, additionally set \"WRT_MESH_QUALITY= YES\"");
+
 }
 
 
@@ -150,6 +156,13 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
 
   // Residuals
   SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes(iPoint, 0));
+
+  // Mesh quality metrics
+  if (config->GetWrt_MeshQuality()) {
+    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
+    SetVolumeOutputValue("ASPECT_RATIO", iPoint, geometry->Aspect_Ratio[iPoint]);
+    SetVolumeOutputValue("VOLUME_RATIO", iPoint, geometry->Volume_Ratio[iPoint]);
+  }
 
 }
 
