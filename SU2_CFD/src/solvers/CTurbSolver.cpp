@@ -197,12 +197,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       << ", ProjVel_j= " << flowNodes->GetProjVel(jPoint,geometry->edge[iEdge]->GetNormal()) << endl;
     if (nodes->GetUnderRelaxation(jPoint) < 1e-6) 
       cout << "UpwRes[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] 
-      << ", rk_i= " << nodes->GetSolution(iPoint,0) 
-      << ", rk_j= " << nodes->GetSolution(jPoint,0) 
-      << ", rk_fi= " << V_i[nDim+2]*T_i[0] 
-      << ", rk_fj= " << V_j[nDim+2]*T_j[0] 
-      << ", ProjVel_i= " << flowNodes->GetProjVel(iPoint,geometry->edge[iEdge]->GetNormal())
-      << ", ProjVel_j= " << flowNodes->GetProjVel(jPoint,geometry->edge[iEdge]->GetNormal()) << endl;
+      << ", rk_i= " << nodes->GetSolution(jPoint,0) 
+      << ", rk_j= " << nodes->GetSolution(iPoint,0) 
+      << ", rk_fi= " << V_j[nDim+2]*T_j[0] 
+      << ", rk_fj= " << V_i[nDim+2]*T_i[0] 
+      << ", ProjVel_i= " << flowNodes->GetProjVel(jPoint,geometry->edge[iEdge]->GetNormal())
+      << ", ProjVel_j= " << flowNodes->GetProjVel(iPoint,geometry->edge[iEdge]->GetNormal()) << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
