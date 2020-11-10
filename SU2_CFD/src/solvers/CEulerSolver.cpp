@@ -3047,7 +3047,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
 
-  const auto nTurbVarGrad = tkeNeeded ? 1 : 0;
+  const auto nTurbVarGrad = tkeNeeded? 1 : 0;
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
@@ -3105,12 +3105,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    // bool good_i = true, good_j = true;
     bool good_i = tkeNeeded? (turbNodes->GetPrimitive(iPoint,0) > 1e-20) : true;
     bool good_j = tkeNeeded? (turbNodes->GetPrimitive(jPoint,0) > 1e-20) : true;
-    // bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
-    // bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    // bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && good_i && good_j;
     bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
@@ -3137,36 +3133,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
         LowMachPrimitiveCorrection(GetFluidModel(), nDim, Primitive_i, Primitive_j);
       }
 
-      // muscl = good_i && good_j;
-      // counter_local += (!good_i+!good_j);
-
-      // numerics->SetPrimitive(muscl ? Primitive_i : V_i, 
-      //                        muscl ? Primitive_j : V_j);
-      // numerics->SetSecondary(muscl ? Secondary_i : S_i, 
-      //                        muscl ? Secondary_j : S_j);
-
-      // /*--- Turbulent variables ---*/
-
-      // if (tkeNeeded) {
-      //   tke_i = muscl ? tke_i : turbNodes->GetPrimitive(iPoint,0);
-      //   tke_j = muscl ? tke_j : turbNodes->GetPrimitive(jPoint,0);
-      //   numerics->SetTurbKineticEnergy(tke_i, tke_j);
-      // }
-
       muscl = good_i || good_j;
 
       counter_local += (!good_i+!good_j);
 
-      numerics->SetPrimitive(good_i ? Primitive_i : V_i, 
-                             good_j ? Primitive_j : V_j);
-      numerics->SetSecondary(good_i ? Secondary_i : S_i, 
-                             good_j ? Secondary_j : S_j);
+      numerics->SetPrimitive(good_i? Primitive_i : V_i, 
+                             good_j? Primitive_j : V_j);
+      numerics->SetSecondary(good_i? Secondary_i : S_i, 
+                             good_j? Secondary_j : S_j);
 
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = good_i ? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = good_j ? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        tke_i = good_i? tke_i : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = good_j? tke_j : turbNodes->GetPrimitive(jPoint,0);
         numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
@@ -3225,8 +3205,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Set implicit computation ---*/
       if (implicit) {
         if (muscl && kappa) {
-          su2double *primvar_i = good_i ? Primitive_i : V_i,
-                    *primvar_j = good_j ? Primitive_j : V_j;
+          su2double *primvar_i = good_i? Primitive_i : V_i,
+                    *primvar_j = good_j? Primitive_j : V_j;
           SetExtrapolationJacobian(solver, geometry, config,
                                    primvar_i, primvar_j,
                                    &tke_i, &tke_j,
@@ -3331,8 +3311,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   su2double *T_i, *T_j;
   if (turb) {
-    T_i = tkeNeeded ? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
-    T_j = tkeNeeded ? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
+    T_i = tkeNeeded? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
+    T_j = tkeNeeded? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
   }
 
   const auto Coord_i = geometry->node[iPoint]->GetCoord();
@@ -3519,7 +3499,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   const bool wasActive = AD::BeginPassive();
 
   const bool reconRequired = config->GetReconstructionGradientRequired();
-  const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
+  const unsigned short kindRecon = reconRequired? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
   const bool gg = (kindRecon == GREEN_GAUSS);

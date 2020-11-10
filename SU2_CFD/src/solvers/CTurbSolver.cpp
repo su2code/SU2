@@ -97,7 +97,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
-  const bool sa_neg = (turbModel != SA_NEG);
+  const bool sa_neg = (turbModel == SA_NEG);
   const bool kappa  = config->GetUse_Accurate_Kappa_Jacobians();
 
   const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
@@ -134,8 +134,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    const auto T_i = sst ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
-    const auto T_j = sst ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
+    const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
+    const auto T_j = sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
 
     /*--- Grid Movement ---*/
 
@@ -148,9 +148,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       good_i = good_i && (T_i[0] > 1.0e-20);
       good_j = good_j && (T_j[0] > 1.0e-20);
     }
-    // bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
-    // bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
-    // bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
     bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
@@ -164,22 +161,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, good_i, good_j);
 
-      // muscl = good_i && good_j;
-
-      // /*--- Store the state ---*/
-
-      // numerics->SetPrimitive(muscl ? flowPrimVar_i : V_i, 
-      //                        muscl ? flowPrimVar_j : V_j);
-      // numerics->SetTurbVar(  muscl ? turbPrimVar_i : T_i, 
-                             // muscl ? turbPrimVar_j : T_j);
       muscl = good_i || good_j;
 
       /*--- Store the state ---*/
 
-      numerics->SetPrimitive(good_i ? flowPrimVar_i : V_i, 
-                             good_j ? flowPrimVar_j : V_j);
-      numerics->SetTurbVar(  good_i ? turbPrimVar_i : T_i, 
-                             good_j ? turbPrimVar_j : T_j);
+      numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
+                             good_j? flowPrimVar_j : V_j);
+      numerics->SetTurbVar(  good_i? turbPrimVar_i : T_i, 
+                             good_j? turbPrimVar_j : T_j);
     }
     else {
       /*--- Nodal values ---*/
@@ -201,7 +190,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     const su2double k_fi = good_i? turbPrimVar_i[0] : T_i[0];
     const su2double k_fj = good_j? turbPrimVar_j[0] : T_j[0];
-
 
     if (nodes->GetUnderRelaxation(iPoint) < 1e-6) 
       cout << "UpwRes[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] 
@@ -232,8 +220,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
       if (muscl && kappa) {
-        const su2double rho_i = good_i ? flowPrimVar_i[nDim+2] : V_i[nDim+2],
-                        rho_j = good_j ? flowPrimVar_j[nDim+2] : V_j[nDim+2];
+        const su2double rho_i = good_i? flowPrimVar_i[nDim+2] : V_i[nDim+2],
+                        rho_j = good_j? flowPrimVar_j[nDim+2] : V_j[nDim+2];
         SetExtrapolationJacobian(solver, geometry, config,
                                  &rho_i, &rho_j,
                                  residual.jacobian_i, 
@@ -293,8 +281,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-  numerics->SetTurbVar(sst ? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint),
-                       sst ? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint));
+  numerics->SetTurbVar(sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint),
+                       sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint));
 
   numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                nodes->GetGradient(jPoint));
@@ -360,7 +348,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
                                          bool &good_i, 
                                          bool &good_j) {
   const unsigned short turbModel = config->GetKind_Turb_Model();
-  const bool sa_neg = (turbModel != SA_NEG);
+  const bool sa_neg = (turbModel == SA_NEG);
 
   /*--- Positive density ---*/
 
@@ -392,7 +380,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const bool wasActive = AD::BeginPassive();
 
   const bool reconRequired = config->GetReconstructionGradientRequired();
-  const unsigned short kindRecon = reconRequired ? config->GetKind_Gradient_Method_Recon()
+  const unsigned short kindRecon = reconRequired? config->GetKind_Gradient_Method_Recon()
                                                  : config->GetKind_Gradient_Method();
 
   const bool gg = (kindRecon == GREEN_GAUSS);
@@ -726,7 +714,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    su2double Delta = (sst) ? su2double(Vol / nodes->GetDelta_Time(iPoint))
+    su2double Delta = (sst)? su2double(Vol / nodes->GetDelta_Time(iPoint))
                             : su2double(Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint)));
     // su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
     Jacobian.AddVal2Diag(iPoint, Delta);
@@ -847,7 +835,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
          turbulence variables can change over a nonlinear iteration. */
 
         const unsigned long index = iPoint * nVar + iVar;
-        const su2double allowableRatio = (LinSysSol[index] > 0) ? allowableIncrease : allowableDecrease;
+        const su2double allowableRatio = (LinSysSol[index] > 0)? allowableIncrease : allowableDecrease;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
         if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);

@@ -3219,8 +3219,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
 
 void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeometry *geometry, const CConfig *config, 
                              const unsigned long iPoint, const unsigned long jPoint, const bool reconstruction) {
-  const unsigned short kindGrad = reconstruction ? config->GetKind_Gradient_Method_Recon()
-                                                 : config->GetKind_Gradient_Method();
+  const unsigned short kindGrad = reconstruction? config->GetKind_Gradient_Method_Recon()
+                                                : config->GetKind_Gradient_Method();
   switch (kindGrad) {
     case GREEN_GAUSS:
       {
@@ -3246,8 +3246,8 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
           weight = pow(weight, 0.5*config->GetWeighted_Least_Squares_Coeff());
         }
         weight = 1.0/weight;
-        const auto Smat = reconstruction ? solver->GetNodes()->GetSmatrix_Aux(iPoint)
-                                         : solver->GetNodes()->GetSmatrix(iPoint);
+        const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Aux(iPoint)
+                                        : solver->GetNodes()->GetSmatrix(iPoint);
         for (auto iDim = 0; iDim < nDim; iDim++) {
           gradWeight[iDim] = 0.0;
           for (auto jDim = 0; jDim < nDim; jDim++)
@@ -6581,7 +6581,7 @@ void CSolver::NormalizeMetric2(CGeometry *geometry,
     for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
-    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
+    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
     for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
@@ -6703,7 +6703,7 @@ void CSolver::NormalizeMetric3(CGeometry *geometry,
     for(auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
     
     unsigned short iMax = 0;
-    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax]) ? iDim : iMax;
+    for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
     for (auto iDim = 0; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
 
     CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
