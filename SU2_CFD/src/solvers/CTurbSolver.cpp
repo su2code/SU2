@@ -187,8 +187,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "UpwRes[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " << -residual[0] << endl;
-    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "UpwRes[" << geometry->node[jPoint]->GetGlobalIndex() << "][0]= " <<  residual[0] << endl;
+    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "UpwRes[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] << ", rk_i= " << nodes->GetSolution(iPoint,0) << ", rk_f= " << V_i[nDim+2]*T_i[0] << endl;
+    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "UpwRes[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] << ", rk_j= " << nodes->GetSolution(jPoint,0) << ", rk_f= " << V_j[nDim+2]*T_j[0] << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
@@ -279,8 +279,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   auto residual = numerics->ComputeResidual(config);
 
-  if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "VisRes[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " <<  residual[0] << endl;
-  if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "VisRes[" << geometry->node[jPoint]->GetGlobalIndex() << "][0]= " << -residual[0] << endl;
+  // if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "VisRes[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " <<  residual[0] << endl;
+  // if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "VisRes[" << geometry->node[jPoint]->GetGlobalIndex() << "][0]= " << -residual[0] << endl;
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
@@ -684,7 +684,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Sol[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " << nodes->GetSolution(iPoint,0) << endl;
+    // if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Sol[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " << nodes->GetSolution(iPoint,0) << endl;
 
     /*--- Read the volume ---*/
 
