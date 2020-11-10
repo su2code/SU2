@@ -91,7 +91,7 @@ void computeLimiters_impl(CSolver* solver,
                   (kindPeriodicComm1 != PERIODIC_NONE) &&
                   (config.GetnMarker_Periodic() > 0);
 
-  su2double kappa = config.GetMUSCL_Kappa();
+  su2double kappa = config.GetMUSCL_Kappa_Flow();
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
