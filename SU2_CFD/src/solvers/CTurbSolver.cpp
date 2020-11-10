@@ -97,6 +97,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
   const unsigned short turbModel = config->GetKind_Turb_Model();
   const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
+  const bool sa_neg = (turbModel != SA_NEG);
   const bool kappa  = config->GetUse_Accurate_Kappa_Jacobians();
 
   const auto nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
@@ -143,6 +144,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            geometry->node[jPoint]->GetGridVel());
 
     bool good_i = true, good_j = true;
+    if (!sa_neg) {
+      good_i = good_i && (T_i[0] > 1.0e-20);
+      good_j = good_j && (T_j[0] > 1.0e-20);
+    }
     // bool good_i = (!geometry->node[iPoint]->GetPhysicalBoundary());
     // bool good_j = (!geometry->node[jPoint]->GetPhysicalBoundary());
     // bool muscl = (config->GetMUSCL_Turb()) && good_i && good_j;
