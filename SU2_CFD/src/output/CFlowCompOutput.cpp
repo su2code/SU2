@@ -415,10 +415,9 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
-  // WRT_MESH_QUALITY= YES has to be set, otherwise the memory holding the data is freed.
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality, additionally set \"WRT_MESH_QUALITY= YES\"");
-  AddVolumeOutput("ASPECT_RATIO", "Aspect_Ratio", "MESH_QUALITY", "Aspect ratio, additionally set \"WRT_MESH_QUALITY= YES\"");
-  AddVolumeOutput("VOLUME_RATIO", "Volume_Ratio", "MESH_QUALITY", "Volume Ratio, additionally set \"WRT_MESH_QUALITY= YES\"");
+  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
+  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
+  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
 
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
@@ -563,8 +562,8 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   // Mesh quality metrics
   if (config->GetWrt_MeshQuality()) {
     SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO", iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO", iPoint, geometry->Volume_Ratio[iPoint]);
+    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
+    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
   if (config->GetTime_Domain()){
