@@ -1,6 +1,6 @@
 ﻿/*!
  * \file CNEMONSSolver.cpp
- * \brief Headers of the CNEMONSEulerSolver class
+ * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
  * \version 7.0.7 "Blackbird"
  *
@@ -969,7 +969,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
   su2double TMAC, TAC;
   su2double Viscosity, Lambda;
-  su2double Density, GasConstant;
+  su2double Density, GasConstant, rhoR;
 
   su2double **Grad_PrimVar;
   su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
@@ -1082,7 +1082,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       rhoR = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      Gamma = rhoR/(nodes->GetRhoCv_tr(iPoint) + nodes->GetRhoCv_ve(iPoint))+1;
+      Gamma = rhoR/(rhoCv + rhoCvve)+1;
 
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
