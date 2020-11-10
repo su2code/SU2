@@ -186,9 +186,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Update convective residual value ---*/
 
     auto residual = numerics->ComputeResidual(config);
-
-    const su2double ProjVel = 0.5*(flowNodes->GetProjVel(iPoint,geometry->edge[iEdge]->GetNormal())
-                            + flowNodes->GetProjVel(jPoint,geometry->edge[iEdge]->GetNormal()));
+    
     su2double ProjVel = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double Vel_i = good_i? flowPrimVar_i[iDim+1] : V_i[iDim+1];
