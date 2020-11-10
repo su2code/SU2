@@ -535,7 +535,9 @@ private:
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
-  su2double MUSCL_Kappa;   /*!< \brief MUSCL parameter. */
+  su2double 
+  MUSCL_Kappa_Flow,        /*!< \brief MUSCL parameter for flow. */
+  MUSCL_Kappa_Turb;        /*!< \brief MUSCL parameter for turbulence. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
@@ -4385,10 +4387,16 @@ public:
   su2double GetWeighted_Least_Squares_Coeff(void) const { return Weighted_Least_SquaresCoeff; }
 
   /*!
-   * \brief Get the MUSCL parameter.
+   * \brief Get the MUSCL parameter for the flow problem.
    * \return MUSCL parameter.
    */
-  su2double GetMUSCL_Kappa(void) const { return MUSCL_Kappa; }
+  su2double GetMUSCL_Kappa_Flow(void) const { return MUSCL_Kappa_Flow; }
+
+  /*!
+   * \brief Get the MUSCL parameter for the turbulent problem.
+   * \return MUSCL parameter.
+   */
+  su2double GetMUSCL_Kappa_Turb(void) const { return MUSCL_Kappa_Turb; }
 
   /*!
    * \brief Return true if an edge-based limiter is in use.

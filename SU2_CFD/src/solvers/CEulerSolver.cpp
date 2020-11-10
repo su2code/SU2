@@ -3303,6 +3303,9 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
+  const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
+  const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
+
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   CVariable* turbNodes = nullptr;
   if (turb) turbNodes = solver[TURB_SOL]->GetNodes();
@@ -3323,8 +3326,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
   }
-
-  const su2double Kappa = config->GetMUSCL_Kappa();
 
   /*--- Reconstruct flow primitive variables. ---*/
 
@@ -3351,8 +3352,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     if (limiter) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
-          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa);
-          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa);
+          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa_Flow);
+          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa_Flow);
           break;
         case PIPERNO:
           Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
@@ -3361,8 +3362,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       }
     }
     else {
-      Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa);
-      Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa);
+      Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
+      Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
     }
 
     primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Limiter_i[iVar];
@@ -3396,8 +3397,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       if (limiterTurb) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
-            Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa);
-            Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa);
+            Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa_Turb);
+            Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa_Turb);
             break;
           case PIPERNO:
             Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
@@ -3406,8 +3407,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         }
       }
       else {
-        Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa);
-        Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa);
+        Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa_Turb);
+        Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa_Turb);
       }
 
       turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Limiter_i[iVar];

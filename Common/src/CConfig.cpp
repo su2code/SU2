@@ -1788,7 +1788,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief MUSCL_KAPPA \n DESCRIPTION: MUSCL parameter \ingroup Config*/
-  addDoubleOption("MUSCL_KAPPA", MUSCL_Kappa, 0.0);
+  addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
+  /*!\brief MUSCL_KAPPA \n DESCRIPTION: MUSCL parameter \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_TURB", MUSCL_Kappa_Turb, 0.0);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
@@ -4942,8 +4944,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /* Set MUSCL kappa blending constant to required values if
      Piperno edge limiters are used. */
-  if((Kind_SlopeLimit_Flow == PIPERNO) || (Kind_SlopeLimit_Turb == PIPERNO))
-    MUSCL_Kappa = 1.0/3.0;
+  if(Kind_SlopeLimit_Flow == PIPERNO)
+    MUSCL_Kappa_Flow = 1.0/3.0;
+  if(Kind_SlopeLimit_Turb == PIPERNO)
+    MUSCL_Kappa_Turb = 1.0/3.0;
 
   /* Simpler boolean to control allocation of least-squares memory. */
 
