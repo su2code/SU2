@@ -403,6 +403,5 @@ bool CNEMOEulerVariable::CheckNonPhys(su2double *U, su2double *V,
     /*--- Enthalpy ---*/
  // V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
-  if (nonPhys) cout<<V[RHO_INDEX]<<" "<<V[P_INDEX]<<" "<<V[T_INDEX]<<" "<<V[TVE_INDEX]<<" "<<V[A_INDEX]<<endl;
   return nonPhys;
 } 

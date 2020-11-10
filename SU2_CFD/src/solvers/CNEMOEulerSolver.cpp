@@ -815,6 +815,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   
   CNumerics* numerics = numerics_container[CONV_TERM];
 
+  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+
   /*--- Set booleans based on config settings ---*/
    /*--- Set booleans based on config settings ---*/
   bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
