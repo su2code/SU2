@@ -1014,6 +1014,10 @@ vector<su2double>& CUserDefinedTCLib::GetDiffusionCoeff(){
    DiffusionCoeffWBE();
   if(Kind_TransCoeffModel == GUPTAYOS)
    DiffusionCoeffGY();
+  if(Kind_TransCoeffModel == STANDARD)
+   DiffusionCoeffS();
+    if(!monoatomic)
+      SU2_MPI::Error("Standard Coeff Model only for single species DEBUGGING", CURRENT_FUNCTION);
 
   return DiffusionCoeff;
 
@@ -1025,6 +1029,8 @@ su2double CUserDefinedTCLib::GetViscosity(){
     ViscosityWBE();
   if(Kind_TransCoeffModel == GUPTAYOS)
     ViscosityGY();
+  if(Kind_TransCoeffModel == STANDARD)
+    ViscosityS();
 
   return Mu;
     
@@ -1036,6 +1042,8 @@ vector<su2double>& CUserDefinedTCLib::GetThermalConductivities(){
     ThermalConductivitiesWBE();
   if(Kind_TransCoeffModel == GUPTAYOS)
     ThermalConductivitiesGY();
+  if(Kind_TransCoeffModel == STANDARD)
+    ThermalConductivitiesS();
 
   return ThermalConductivities;
 
@@ -1062,9 +1070,11 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     M += MolarMass[iSpecies]*MolarFracWBE[iSpecies];
   M = M*1E-3;
+
   /*---+++                  +++---*/
   /*--- Diffusion coefficients ---*/
   /*---+++                  +++---*/
+
   /*--- Solve for binary diffusion coefficients ---*/
   // Note: Dij = Dji, so only loop through req'd indices
   // Note: Correlation requires kg/mol, hence 1E-3 conversion from kg/kmol
@@ -1081,6 +1091,7 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
       Dij(jSpecies,iSpecies) = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(Density*Omega_ij);
     }
   }
+
   /*--- Calculate species-mixture diffusion coefficient --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     DiffusionCoeff[iSpecies] = 0.0;
@@ -1090,7 +1101,7 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
       }
     }
-    if (nSpecies==1) DiffusionCoeff[0] = 0;
+    if (monoatomic) DiffusionCoeff[0] = 0;
     else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
   }    
 }
@@ -1101,8 +1112,9 @@ void CUserDefinedTCLib::ViscosityWBE(){
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     mus[iSpecies] = 0.1*exp((Blottner[iSpecies][0]*log(T)  +
-                            Blottner[iSpecies][1])*log(T) +
-                            Blottner[iSpecies][2]);
+                             Blottner[iSpecies][1])*log(T) +
+                             Blottner[iSpecies][2]);
+
   /*--- Determine species 'phi' value for Blottner model ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     phis[iSpecies] = 0.0;
@@ -1131,7 +1143,7 @@ void CUserDefinedTCLib::ThermalConductivitiesWBE(){
   Cvves = GetSpeciesCvVibEle();  
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    ks[iSpecies] = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
+    ks[iSpecies]   = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
     kves[iSpecies] = mus[iSpecies]*Cvves[iSpecies];
   }
   /*--- Calculate mixture tr & ve conductivities ---*/
@@ -1158,10 +1170,13 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     gam_t += rhos[iSpecies] / (Density*MolarMass[iSpecies]);
   }
+
   /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+
     /*--- Initialize the species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = 0.0;
+
     /*--- Calculate molar concentration ---*/
     Mi      = MolarMass[iSpecies];
     gam_i   = rhos[iSpecies] / (Density*Mi);
@@ -1236,6 +1251,7 @@ void CUserDefinedTCLib::ViscosityGY(){
   pi   = PI_NUMBER;
   Na   = AVOGAD_CONSTANT;
   Mu = 0.0;
+
   /*--- Mixture viscosity via Gupta-Yos approximation ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     denom = 0.0;
@@ -1359,6 +1375,41 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 
   ThermalConductivities[0] = ThermalCond_tr;
   ThermalConductivities[1] = ThermalCond_ve;    
+
+}
+
+void CUserDefinedTCLib::DiffusionCoeffS(){
+
+  if (!monoatomic) SU2_MPI::Error("Monoatomic Only", CURRENT_FUNCTION);
+  else             DiffusionCoeff[0] = 0;
+
+}
+
+void CUserDefinedTCLib::ViscosityS(){
+
+  const su2double Mu_Ref = 1.716E-5;
+  const su2double T_Ref  = 273.15;
+  const su2double S      = 110.4;
+
+  Mu = Mu_Ref * T * sqrt(T) * ((T_Ref + S) / (T + S));
+
+}
+
+void CUserDefinedTCLib::ThermalConductivitiesS(){
+
+  const su2double Pr_Lam = 0.90;
+
+  /*--- Calculate mixture gas constant ---*/
+  su2double Gas_Constant = Ru / MolarMass[iSpecies];
+  su2double Gamma = 1.667;
+  su2double Gamma_Minus_One = Gamma - 1.0;
+
+  Cp = Gamma / Gamma_Minus_One * Gas_Constant;
+  ThermalCond_tr = Mu * Cp / Pr_Lam;
+  ThermalCond_ve = 0.0;
+
+  ThermalConductivities[0] = ThermalCond_tr;
+  ThermalConductivities[1] = ThermalCond_ve;
 
 }
 

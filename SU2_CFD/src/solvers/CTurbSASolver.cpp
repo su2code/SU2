@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CTurbSASolver.cpp
  * \brief Main subrotuines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
@@ -336,7 +336,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
@@ -345,7 +344,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
-
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -493,6 +491,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
         Jacobian.DeleteValsRowi(iPoint);
        } else {
+        cout <<"delete me rough wall"<<endl;
          /*--- For rough walls, the boundary condition is given by
           * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
           * where \nu is the solution variable, $n$ is the wall normal direction

@@ -301,7 +301,7 @@ void CNEMOTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
 void CNEMOTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  const su2double cv1_3 = 7.1*7.1*7.1;
+  const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
   const bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
 
@@ -313,10 +313,17 @@ void CNEMOTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
     su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    su2double nu  = mu/rho;
-    su2double nu_hat = nodes->GetSolution(iPoint,0);
+    su2double nu        = mu/rho;
+    su2double nu_hat    = nodes->GetSolution(iPoint,0);
+    su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
+    su2double dist      = geometry->nodes->GetWall_Distance(iPoint);
+
+    dist += rough_const*roughness;
 
     su2double Ji   = nu_hat/nu;
+    if (roughness > 1.0e-10)
+      Ji+= cR1*roughness/(dist+EPS);
+
     su2double Ji_3 = Ji*Ji*Ji;
     su2double fv1  = Ji_3/(Ji_3+cv1_3);
 
@@ -619,7 +626,6 @@ void CNEMOTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 void CNEMOTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  //TODO THIS HAS NOT BEEN TESTED (ie TNE2 version did not look at this)
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -630,6 +636,7 @@ void CNEMOTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
     /*--- Allocate the value at the outlet ---*/
 
     auto V_outlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetPrimitive(0);
+    auto U_outlet = solver_container[FLOW_SOL]->GetNode_Infty()->GetSolution(0);
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
@@ -638,10 +645,12 @@ void CNEMOTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       /*--- Retrieve solution at the farfield boundary node ---*/
 
       auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+      auto U_domain = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
 
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetConservative(U_domain, U_outlet);
 
       /*--- Set the turbulent variables. Here we use a Neumann BC such
        that the turbulent variable is copied from the interior of the

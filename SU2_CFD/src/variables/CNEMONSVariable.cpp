@@ -65,6 +65,63 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure, const su2double *val_ma
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 }
 
+bool CNEMONSVariable::SetVorticity_StrainMag() {
+
+  //TODO SU2_OMP_FOR_STAT(256)
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    /*--- Vorticity ---*/
+    su2double u_y = Gradient_Primitive(iPoint, VEL_INDEX  , 1);
+    su2double v_x = Gradient_Primitive(iPoint, VEL_INDEX+1, 0);
+    su2double u_z = 0.0;
+    su2double v_z = 0.0;
+    su2double w_x = 0.0;
+    su2double w_y = 0.0;
+
+    if (nDim == 3) {
+      u_z = Gradient_Primitive(iPoint,VEL_INDEX, 2);
+      v_z = Gradient_Primitive(iPoint,VEL_INDEX+1, 2);
+      w_x = Gradient_Primitive(iPoint,VEL_INDEX+2, 0);
+      w_y = Gradient_Primitive(iPoint,VEL_INDEX+2, 1);
+    }
+
+    Vorticity(iPoint,0) = w_y-v_z;
+    Vorticity(iPoint,1) = -(w_x-u_z);
+    Vorticity(iPoint,2) = v_x-u_y;
+
+    /*--- Strain Magnitude ---*/
+    su2double Div = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Div += Gradient_Primitive(iPoint,VEL_INDEX+iDim,iDim);
+
+    StrainMag(iPoint) = 0.0;
+
+    /*--- Add diagonal part ---*/
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,VEL_INDEX+iDim,iDim) - 1.0/3.0*Div, 2.0);
+    }
+    if (nDim == 2) {
+      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
+    }
+
+    /*--- Add off diagonals ---*/
+    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,VEL_INDEX,1) +
+                                      Gradient_Primitive(iPoint,VEL_INDEX+1,0)), 2);
+
+    if (nDim == 3) {
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,VEL_INDEX,2) +
+                                        Gradient_Primitive(iPoint,VEL_INDEX+2,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,VEL_INDEX+1,2) +
+                                        Gradient_Primitive(iPoint,VEL_INDEX+2,1)), 2);
+    }
+
+    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+
+  }
+  return false;
+}
+
 bool CNEMONSVariable::SetVorticity(void) {
 
   for (unsigned long iPoint=0; iPoint<nPoint; ++iPoint) {

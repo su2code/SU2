@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
@@ -596,11 +596,13 @@ MakePair("ONESPECIES", ONESPECIES)
  */
 enum ENUM_TRANSCOEFFMODEL {
   WILKE      = 0,
-  GUPTAYOS   = 1
+  GUPTAYOS   = 1,
+  STANDARD   = 2
 };
 static const MapType<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = {
 MakePair("WILKE", WILKE)
 MakePair("GUPTA-YOS", GUPTAYOS)
+MakePair("STANDARD", STANDARD)
 };
 
 /*!

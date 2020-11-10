@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
@@ -47,8 +47,9 @@ protected:
   nEl,                                   /*!< \brief Number of electrons in gas */
   nDim,                                  /*!< \brief Number of dimensions. */ 
   nEnergyEq = 2,                         /*!< \brief Number of energy equations for the 2T model. */
-  Kind_TransCoeffModel;                  /*!< \brief Transport coefficients model for NEMO solver. */
-              
+  Kind_TransCoeffModel,                  /*!< \brief Transport coefficients model for NEMO solver. */
+  Kind_ViscosityModel;                   /*!< \brief Viscosity Model for NEMO -> Debugging purposes. */
+
   unsigned iSpecies,                     /*!< \brief Common iteration counter for species */
   jSpecies,                              /*!< \brief Common iteration counter for species */
   iDim;                                  /*!< \brief Common iteration counter for dimensions */
@@ -79,6 +80,7 @@ protected:
   ws,                                    /*!< \brief Species net production rates */
   DiffusionCoeff;                        /*!< \brief Species diffusion coefficients*/
 
+  su2double mu_cv;                       /*!< \brief constant visc for debugging */
 public:
 
   /*!

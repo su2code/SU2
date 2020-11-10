@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CUserDefinedTCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
@@ -212,6 +212,20 @@ public:
    */
   void ThermalConductivitiesGY();
 
+  /*!
+   * \brief Get species diffusion coefficients with Standard/Debug transport model.
+   */
+  void DiffusionCoeffS();
+
+  /*!
+   * \brief Get viscosity with Standard/Debug mode (Sutherland) transport model.
+   */
+  void ViscosityS();
+
+  /*!
+   * \brief Get T-R and V-E thermal conductivities vector with Standord/Debug transport model.
+   */
+  void ThermalConductivitiesS();
 
 
   };

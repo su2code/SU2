@@ -111,20 +111,19 @@ if ((muscl && !center) && (iMesh == MESH_0)) {
   }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
-  //TODO THIS NEEDS TO BE UPDATED ASAP!
   StrainMag_Max = 0.0;
   Omega_Max = 0.0;
-  //nodes->SetVorticity_StrainMag();
+  nodes->SetVorticity_StrainMag();
 
   su2double strainMax = 0.0, omegaMax = 0.0;
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    //su2double StrainMag = nodes->GetStrainMag(iPoint);
+    su2double StrainMag = nodes->GetStrainMag(iPoint);
     const su2double* Vorticity = nodes->GetVorticity(iPoint);
     su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
-    //strainMax = max(strainMax, StrainMag);
+    strainMax = max(strainMax, StrainMag);
     omegaMax = max(omegaMax, Omega);
 
   }
@@ -363,9 +362,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       Area = sqrt (Area);
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Visc[iVar] = 0.0;
-      }
+      for (iVar = 0; iVar < nVar; iVar++) { Res_Visc[iVar] = 0.0;}
 
       /*--- Set the residual on the boundary with the specified heat flux ---*/
       // Note: Contributions from qtr and qve are used for proportional control
@@ -406,6 +403,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                       Wall_HeatFlux*Area;
       Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
                                       Wall_HeatFlux*Area;
+
       /*--- Apply viscous residual to the linear system ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
 

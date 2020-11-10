@@ -174,5 +174,15 @@ public:
    */
   inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
 
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
+
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity_StrainMag() override;
 
 };

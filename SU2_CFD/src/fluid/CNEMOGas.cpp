@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
@@ -46,8 +46,9 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
   ThermalConductivities.resize(nEnergyEq,0.0);
 
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
-
+  Kind_ViscosityModel  = config->GetKind_ViscosityModel();
   frozen = config->GetFrozen();
+  mu_cv  = config->GetMu_ConstantND();
 
 }
 

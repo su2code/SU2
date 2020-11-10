@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
  * \version 7.0.6 "Blackbird"
@@ -2095,8 +2095,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         }
 
         /// TODO: Move the temperature index logic to a function.
-
-        if (FlowRegime == COMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
+        if (FlowRegime == COMPRESSIBLE){
+          if (!nemo) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, 0, iDim);
+          else       Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, T_INDEX, iDim);
+        }
 
         if (FlowRegime == INCOMPRESSIBLE) Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, nDim + 1, iDim);
       }
@@ -2222,7 +2224,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
 
       } else {
-
+        //TODO check signs
         dTn = 0.0; dTven = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];

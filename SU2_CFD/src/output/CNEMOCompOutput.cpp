@@ -401,6 +401,10 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  if (config->GetKind_Solver() == NEMO_RANS) {
+    AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+  }
+
   if (config->GetKind_Trans_Model() == BC){
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
@@ -571,8 +575,12 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   su2double factor = 1.0/(0.5*solver[FLOW_SOL]->GetDensity_Inf()*VelMag);
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())*factor);
 
-  if (config->GetKind_Solver() == NEMO_NAVIER_STOKES){
+  if (config->GetKind_Solver() == NEMO_RANS || config->GetKind_Solver() == NEMO_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+  }
+
+  if (config->GetKind_Solver() == NEMO_RANS) {
+    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
   }
 
   if (config->GetKind_Trans_Model() == BC){
