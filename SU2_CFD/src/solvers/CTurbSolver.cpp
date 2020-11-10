@@ -186,7 +186,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Update convective residual value ---*/
 
     auto residual = numerics->ComputeResidual(config);
-    
+
     su2double ProjVel = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       const su2double Vel_i = good_i? flowPrimVar_i[iDim+1] : V_i[iDim+1];
@@ -194,20 +194,23 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       ProjVel += 0.5*(Vel_i+Vel_j)*geometry->edge[iEdge]->GetNormal()[iDim];
     }
 
+    const su2double rk_fi = good_i? flowPrimVar_i[nDim+2]*turbPrimVar_i[0] : V_i[nDim+2]*T_i[0];
+    const su2double rk_fj = good_j? flowPrimVar_j[nDim+2]*turbPrimVar_j[0] : V_j[nDim+2]*T_j[0];
+
     if (nodes->GetUnderRelaxation(iPoint) < 1e-6) 
       cout << "UpwRes[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] 
       << ", rk_i= " << nodes->GetSolution(iPoint,0) 
       << ", rk_j= " << nodes->GetSolution(jPoint,0) 
-      << ", rk_fi= " << good_i? flowPrimVar_i[nDim+2]*turbPrimVar_i[0] : V_i[nDim+2]*T_i[0] 
-      << ", rk_fj= " << good_i? flowPrimVar_j[nDim+2]*turbPrimVar_j[0] : V_j[nDim+2]*T_j[0] 
+      << ", rk_fi= " << rk_fi
+      << ", rk_fj= " << rk_fj 
       << ", ProjVel_i= " << 0.5*(ProjVel + fabs(ProjVel))
       << ", ProjVel_j= " << 0.5*(ProjVel - fabs(ProjVel)) << endl;
     if (nodes->GetUnderRelaxation(jPoint) < 1e-6) 
       cout << "UpwRes[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] 
       << ", rk_i= " << nodes->GetSolution(iPoint,0) 
       << ", rk_j= " << nodes->GetSolution(jPoint,0) 
-      << ", rk_fi= " << good_i? flowPrimVar_i[nDim+2]*turbPrimVar_i[0] : V_i[nDim+2]*T_i[0] 
-      << ", rk_fj= " << good_i? flowPrimVar_j[nDim+2]*turbPrimVar_j[0] : V_j[nDim+2]*T_j[0] 
+      << ", rk_fi= " << rk_fi
+      << ", rk_fj= " << rk_fj 
       << ", ProjVel_i= " << 0.5*(ProjVel + fabs(ProjVel))
       << ", ProjVel_j= " << 0.5*(ProjVel - fabs(ProjVel)) << endl;
 
