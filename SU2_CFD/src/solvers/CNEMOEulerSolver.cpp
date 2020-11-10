@@ -878,6 +878,11 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         lim_i = 1.0;
         lim_j = 1.0;
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+            if (van_albada) {
+              su2double V_ij = V_j[iVar] - V_i[iVar];
+              Limiter_i[iVar] = V_ij*( 2.0*ProjGradV_i + V_ij) / (4*pow(ProjGradV_i, 2) + pow(V_ij, 2) + EPS);
+              Limiter_j[iVar] = V_ij*(-2.0*ProjGradV_j + V_ij) / (4*pow(ProjGradV_j, 2) + pow(V_ij, 2) + EPS);
+            }
           if (lim_i > Limiter_i[iVar]) lim_i = Limiter_i[iVar];
           if (lim_j > Limiter_j[iVar]) lim_j = Limiter_j[iVar];
         }
@@ -892,8 +897,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
           ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
         }
         if (limiter) {
-          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
-          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
+          Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i;
+          Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j;
         }
 
         else {

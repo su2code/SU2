@@ -1088,9 +1088,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       if (dTven==0) Tslip_ve = Twall;
       else Tslip_ve = (Tslip-Twall)*(kve*rhoCv/dTn)/(ktr*rhoCvve/dTven)+Twall;
 
-      /*--- Retrieve Primitive Gradients ---*/
-      Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
-
       /*--- Calculate temperature gradients tangent to surface ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_Tangent_dT[iDim]   = Grad_PrimVar[T_INDEX][iDim] - dTn * UnitNormal[iDim];
