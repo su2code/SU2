@@ -700,12 +700,12 @@ void CNSSolver::HeatFluxJacobian(CSolver             **solver,
     Jacobian_j[nVar-1][nVar-1] = factor*Phi_k;
 
     /*--- Tke term ---*/
-    // if (tkeNeeded) {
-    //   const su2double tke_k = turbNodes->GetPrimitive(kPoint,0);
-    //   factor *= tke_visc/ConductivityOnR;
-    //   Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i*sign_grad_i;
-    //   Jacobian_j[nVar-1][0] -= factor*tke_k/Density_k;
-    // }
+    if (tkeNeeded) {
+      const su2double tke_k = turbNodes->GetPrimitive(kPoint,0);
+      factor *= tke_visc/ConductivityOnR;
+      Jacobian_i[nVar-1][0] -= factor*tke_i/Density_i*sign_grad_i;
+      Jacobian_j[nVar-1][0] -= factor*tke_k/Density_k;
+    }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
