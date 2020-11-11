@@ -325,8 +325,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // CFL number
-  AddVolumeOutput("CFL_NUMBER_FLOW", "Flow CFL number", "CFL_NUMBER", "Current local flow CFL number");
-  AddVolumeOutput("CFL_NUMBER_TURB", "Turb CFL number", "CFL_NUMBER", "Current local turbulent CFL number");
+  AddVolumeOutput("CFL_NUMBER_FLOW", "Flow_CFL_Number", "CFL_NUMBER", "Current local flow CFL number");
+  AddVolumeOutput("CFL_NUMBER_TURB", "Turb_CFL_Number", "CFL_NUMBER", "Current local turbulent CFL number");
 
   // Primitive variables
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
