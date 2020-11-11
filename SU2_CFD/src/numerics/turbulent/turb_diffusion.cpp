@@ -113,10 +113,10 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   dist_ij_2 = 0; proj_vector_ij = 0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = (correct_gradient) ? Coord_j[iDim]-Coord_i[iDim] : Normal[iDim];
-    // dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    // proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
-    dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
-    proj_vector_ij += Normal[iDim]*Normal[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
+    // dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
+    // proj_vector_ij += Normal[iDim]*Normal[iDim];
   }
   proj_vector_ij /= (correct_gradient) ? su2double(dist_ij_2) 
                                        : su2double(-4.0*Volume_i);
