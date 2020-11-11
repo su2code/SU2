@@ -137,6 +137,22 @@ void CNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
     /// DESCRIPTION: Root-mean square residual of the density.
     AddHistoryOutput("RMS_DENSITY_O",   "rms[Rho_O]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the O density.", HistoryFieldType::RESIDUAL);
   }
+  if (nSpecies == 7){
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_N2",  "rms[Rho_N2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N2 density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_O2",  "rms[Rho_O2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the O2 density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_NO",  "rms[Rho_NO]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the NO density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_N",   "rms[Rho_N]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the N density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_O",   "rms[Rho_O]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the O density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_NO+",   "rms[Rho_NO+]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the NO+ density.", HistoryFieldType::RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the density.
+    AddHistoryOutput("RMS_DENSITY_e-",   "rms[Rho_e-]",   ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the e- density.", HistoryFieldType::RESIDUAL);
+  }
   /// DESCRIPTION: Root-mean square residual of the momentum x-component.
   AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the momentum x-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the momentum y-component.
@@ -383,10 +399,13 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
 
-  //Residuals
+  //Densities and Density Residuals
   if (nSpecies == 2){
     AddVolumeOutput("RES_DENSITY_N2", "Residual_Density_N2", "RESIDUAL", "Residual of the N2 density");
     AddVolumeOutput("RES_DENSITY_N",  "Residual_Density_N",  "RESIDUAL", "Residual of the N density");
+
+    AddVolumeOutput("DENSITY_N2", "Density_N2", "SOLUTION", "N2 density");
+    AddVolumeOutput("DENSITY_N",  "Density_N",  "SOLUTION", "N density");
   }
   if (nSpecies == 5){
     AddVolumeOutput("RES_DENSITY_N2", "Residual_Density_N2", "RESIDUAL", "Residual of the N2 density");
@@ -394,6 +413,29 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("RES_DENSITY_NO", "Residual_Density_NO", "RESIDUAL", "Residual of the NO density");
     AddVolumeOutput("RES_DENSITY_N",  "Residual_Density_N",  "RESIDUAL", "Residual of the N density");
     AddVolumeOutput("RES_DENSITY_O",  "Residual_Density_O",  "RESIDUAL", "Residual of the O density");
+
+    AddVolumeOutput("DENSITY_N2", "Density_N2", "SOLUTION", "N2 density");
+    AddVolumeOutput("DENSITY_O2", "Density_O2", "SOLUTION", "O2 density");
+    AddVolumeOutput("DENSITY_NO", "Density_NO", "SOLUTION", "NO density");
+    AddVolumeOutput("DENSITY_N",  "Density_N",  "SOLUTION", "N density");
+    AddVolumeOutput("DENSITY_O",  "Density_O",  "SOLUTION", "O density");
+  }
+if (nSpecies == 7){
+    AddVolumeOutput("RES_DENSITY_N2", "Residual_Density_N2", "RESIDUAL", "Residual of the N2 density");
+    AddVolumeOutput("RES_DENSITY_O2", "Residual_Density_O2", "RESIDUAL", "Residual of the O2 density");
+    AddVolumeOutput("RES_DENSITY_NO", "Residual_Density_NO", "RESIDUAL", "Residual of the NO density");
+    AddVolumeOutput("RES_DENSITY_N",  "Residual_Density_N",  "RESIDUAL", "Residual of the N density");
+    AddVolumeOutput("RES_DENSITY_O",  "Residual_Density_O",  "RESIDUAL", "Residual of the O density");
+    AddVolumeOutput("RES_DENSITY_NO+",  "Residual_Density_NO+",  "RESIDUAL", "Residual of the NO+ density");
+    AddVolumeOutput("RES_DENSITY_e-",  "Residual_Density_e",  "RESIDUAL", "Residual of the e- density");
+
+    AddVolumeOutput("DENSITY_N2", "Density_N2", "SOLUTION", "N2 density");
+    AddVolumeOutput("DENSITY_O2", "Density_O2", "SOLUTION", "O2 density");
+    AddVolumeOutput("DENSITY_NO", "Density_NO", "SOLUTION", "NO density");
+    AddVolumeOutput("DENSITY_N",  "Density_N",  "SOLUTION", "N density");
+    AddVolumeOutput("DENSITY_O",  "Density_O",  "SOLUTION", "O density");
+    AddVolumeOutput("DENSITY_NO+",  "Density_NO+",  "SOLUTION", "NO+ density");
+    AddVolumeOutput("DENSITY_e-",  "Density_e",  "SOLUTION", "e- density");
   }
   AddVolumeOutput("RES_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL", "Residual of the x-momentum component");
   AddVolumeOutput("RES_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL", "Residual of the y-momentum component");
@@ -483,12 +525,21 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 3));
     SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
   }
-
+  if (nSpecies == 7){
+    SetVolumeOutputValue("DENSITY_N2",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("DENSITY_O2",   iPoint, Node_Flow->GetSolution(iPoint, 1));
+    SetVolumeOutputValue("DENSITY_NO",   iPoint, Node_Flow->GetSolution(iPoint, 2));
+    SetVolumeOutputValue("DENSITY_N",    iPoint, Node_Flow->GetSolution(iPoint, 3));
+    SetVolumeOutputValue("DENSITY_O",    iPoint, Node_Flow->GetSolution(iPoint, 4));
+    SetVolumeOutputValue("DENSITY_NO+",    iPoint, Node_Flow->GetSolution(iPoint, 5));
+    SetVolumeOutputValue("DENSITY_e-",    iPoint, Node_Flow->GetSolution(iPoint, 6));
+  }
+/*
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
      Species = std::to_string(iSpecies);
      SetVolumeOutputValue("DENSITY_" + Species, iPoint, Node_Flow->GetSolution(iPoint, iSpecies));
   }
-  
+  */
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
      Species = std::to_string(iSpecies);
@@ -647,6 +698,16 @@ void CNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     SetHistoryOutputValue("RMS_DENSITY_N",  log10(NEMO_solver->GetRes_RMS(3)));
     SetHistoryOutputValue("RMS_DENSITY_O",  log10(NEMO_solver->GetRes_RMS(4)));
   }
+  if (nSpecies == 7) {
+    SetHistoryOutputValue("RMS_DENSITY_N2", log10(NEMO_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_DENSITY_O2", log10(NEMO_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("RMS_DENSITY_NO", log10(NEMO_solver->GetRes_RMS(2)));
+    SetHistoryOutputValue("RMS_DENSITY_N",  log10(NEMO_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_DENSITY_O",  log10(NEMO_solver->GetRes_RMS(4)));
+    SetHistoryOutputValue("RMS_DENSITY_NO+",  log10(NEMO_solver->GetRes_RMS(5)));
+    SetHistoryOutputValue("RMS_DENSITY_e-",  log10(NEMO_solver->GetRes_RMS(6)));
+  }
+
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(NEMO_solver->GetRes_RMS(nSpecies)));
   SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(NEMO_solver->GetRes_RMS(nSpecies+1)));
   if (nDim == 2){
