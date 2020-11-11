@@ -974,7 +974,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double **Grad_PrimVar;
   su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
   su2double dTn, dTven;
-  su2double rhoCv, rhoCvve;
+  su2double rhoCvtr, rhoCvve;
 
   su2double TauElem[3], TauTangent[3];
   su2double Tau[3][3];
@@ -1060,7 +1060,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       kve  = nodes->GetThermalConductivity_ve(iPoint);
 
       /*--- Retrieve Cv*density ---*/
-      rhoCv   = nodes->GetRhoCv_tr(iPoint);
+      rhoCvtr = nodes->GetRhoCv_tr(iPoint);
       rhoCvve = nodes->GetRhoCv_ve(iPoint);
 
       /*--- Retrieve Flow Data ---*/
@@ -1082,7 +1082,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       rhoR = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      Gamma = rhoR/(rhoCv + rhoCvve)+1;
+      Gamma = rhoR/(rhoCvtr + rhoCvve)+1;
+      Gamma= config->GetGamma(); // overwriting gamma computation since it has not been tested yet
 
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
@@ -1096,7 +1097,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Calculate Temperature Slip ---*/
       Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
-      Tslip_ve = (Tslip-Twall)*(kve*rhoCv/dTn)/(ktr*rhoCvve/dTven)+Twall;
+      Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);

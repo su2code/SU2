@@ -2291,13 +2291,14 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       /*--- Compute Gamma ---*/
       //TODO: Move to fluidmodel?
-      vector<su2double> Ms = FluidModel->GetMolarMass();
+      vector<su2double> Ms = FluidModel->GetSpeciesMolarMass();
       su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
       su2double rhoR = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         rhoR += V_domain[iSpecies]*Ru/Ms[iSpecies];
       Gamma =rhoR/(V_domain[RHOCVTR_INDEX] +
                    V_domain[RHOCVVE_INDEX])+1;
+      Gamma= config->GetGamma(); // overwriting gamma computation since it has not been tested yet
       Gamma_Minus_One = Gamma - 1.0;
 
       /*--- Recompute boundary state depending Mach number ---*/
