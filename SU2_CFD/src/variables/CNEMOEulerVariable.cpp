@@ -378,30 +378,12 @@ bool CNEMOEulerVariable::CheckNonPhys(su2double *U, su2double *V,
 
   if (V[A_INDEX] < 0.0 ) nonPhys = true;
 
-
 // Determine other properties of the mixture at the current state  
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
-  vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     val_eves[iSpecies]  = eves[iSpecies];
-    val_Cvves[iSpecies] = cvves[iSpecies];
-  }
-
-  rhoCvtr = fluidmodel->GetrhoCvtr();
-  rhoCvve = fluidmodel->GetrhoCvve();  
-  
-  /*--- Pressure ---*/
- // V[P_INDEX] = fluidmodel->GetPressure();
-
-  V[RHOCVTR_INDEX] = rhoCvtr;
-  V[RHOCVVE_INDEX] = rhoCvve;
-
- // V[A_INDEX] = fluidmodel->GetSoundSpeed();
-
-    /*--- Enthalpy ---*/
- // V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
   return nonPhys;
 } 
