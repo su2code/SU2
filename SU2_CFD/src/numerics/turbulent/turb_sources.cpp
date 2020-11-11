@@ -846,8 +846,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
     Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
   }
-  // else if (pk >= 0) {
-  else {
+  else if (pk >= 0) {
+  // else {
   // if (pk >= 0) {
     Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
     if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
@@ -861,16 +861,16 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   //   Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended;
   //   if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
   // }
-  // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)) {
-  if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
+  if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)) {
+  // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
     Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
   }
     
   pk = min(pk, pkmax);
   // pw = min(pw, pwmax);
     
-  // pk = max(pk, 0.0);
-  // pw = max(pw, 0.0);
+  pk = max(pk, 0.0);
+  pw = max(pw, 0.0);
 
   /*--- Sustaining terms, if desired. Note that if the production terms are
         larger equal than the sustaining terms, the original formulation is
@@ -905,8 +905,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   /*--- Cross diffusion ---*/
 
-  Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-  // Residual[1] += (1.0 - F1_i)*max(CDkw_i,0.0)*Volume;
+  // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+  Residual[1] += (1.0 - F1_i)*max(CDkw_i,0.0)*Volume;
 
   /*--- Implicit part ---*/
 
@@ -914,8 +914,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
-  // Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
+  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+  Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,0.0);
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
   
   AD::SetPreaccOut(Residual, nVar);
