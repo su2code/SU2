@@ -12126,7 +12126,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
       if (restart_cfl) {
         index = counter*Restart_Vars[1] + skipVars + nVar + turbVars + nDim*(config->GetGrid_Movement());
-        nodes->SetLocalCFL(iPoint, Restart_Data[index]);
+        nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
       }
 
       /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
