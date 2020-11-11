@@ -1255,11 +1255,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
 
-  /*--- Store the CFL number if loaded from restart ---*/
-  if (restart_cfl)
-    for (auto iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++)
-      nodes->SetLocalCFL(iPoint, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint)*config->GetCFLRedCoeff_Turb());
-
   /*--- Go back to single threaded execution. ---*/
   SU2_OMP_MASTER
   {
