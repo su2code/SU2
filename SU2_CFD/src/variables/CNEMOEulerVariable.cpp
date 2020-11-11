@@ -43,7 +43,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                     ndim,
                                                                     nvar,
                                                                     config   ),
-                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
  
   vector<su2double> energies; 
   unsigned short iDim, iSpecies;
@@ -95,9 +95,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
   Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
-  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
-  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Primitive and secondary variables ---*/
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
@@ -130,6 +131,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
 
   /* Under-relaxation parameter. */
   LocalCFL.resize(nPoint) = su2double(0.0);
@@ -264,7 +266,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Assign temperatures ---*/
-  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
+  vector<su2double>  T = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
 
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
@@ -345,3 +347,49 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 }
 
 void CNEMOEulerVariable::SetSolution_New() { Solution_New = Solution; }
+
+bool CNEMOEulerVariable::CheckNonPhys(su2double *U, su2double *V,
+                                      su2double *val_dPdU, su2double *val_dTdU,
+                                      su2double *val_dTvedU, su2double *val_eves,
+                                      su2double *val_Cvves) {
+
+  bool nonPhys;
+  unsigned short iDim, iSpecies;
+  su2double rho, rhoE, rhoEve, rhoEve_min, rhoEve_max,
+  sqvel, rhoCvtr, rhoCvve, Tmin, Tmax, Tvemin, Tvemax;
+  vector<su2double> rhos;
+
+  //--- Set booleans ---
+  nonPhys = false;
+
+  //--- Set temperature clipping values ---
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = 50.0; Tvemax = 8E4;
+
+  rhos.resize(nSpecies,0.0);
+
+  V[RHO_INDEX] = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    if (V[RHOS_INDEX+iSpecies] < 0.0)
+      nonPhys = true;
+    rhos[iSpecies] = V[RHOS_INDEX+iSpecies];
+    V[RHO_INDEX] += V[RHOS_INDEX+iSpecies];
+  }
+
+  if (V[P_INDEX] < 0.0) nonPhys = true;
+
+  if (V[T_INDEX] < Tmin || V[T_INDEX] > Tmax) nonPhys = true;
+
+  if (V[TVE_INDEX] < Tvemin || V[TVE_INDEX] > Tvemax) nonPhys = true;
+
+  if (V[A_INDEX] < 0.0 ) nonPhys = true;
+
+// Determine other properties of the mixture at the current state  
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
+  vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_eves[iSpecies]  = eves[iSpecies];
+
+  return nonPhys;
+} 

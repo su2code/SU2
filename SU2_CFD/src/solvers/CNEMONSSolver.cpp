@@ -83,10 +83,10 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if ((muscl && !center) && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetSolution_Gradient_GG(geometry, config, true); break;
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetSolution_Gradient_LS(geometry, config, true); break;
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
   } 
@@ -104,7 +104,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
-    SetSolution_Limiter(geometry, config);
+    SetPrimitive_Limiter(geometry, config);
   }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
@@ -143,8 +143,8 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
-
-  auto& gradient = nodes->GetGradient_Primitive();
+  
+  auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
   /*--- Get indices of species & mixture density ---*/
   RHOS_INDEX = nodes->GetRhosIndex();
@@ -178,8 +178,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig 
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
 
   auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = nodes->GetGradient_Primitive();
-
+  auto& gradient = reconstruction? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
@@ -669,7 +668,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  C = 5;
+  C = 1;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -991,11 +990,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  C = 5;
+  C = 1;
 
   /*---Define under-relaxation factors --- */
-  alpha_V = 0.01;
-  alpha_T = 0.25;
+  alpha_V = 0.1;
+  alpha_T = 1.0;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -1097,10 +1096,9 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Calculate Temperature Slip ---*/
       Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
-      Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
-
-      /*--- Retrieve Primitive Gradients ---*/
-      Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
+      
+      if (dTven==0) Tslip_ve = Twall;
+      else Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
 
       /*--- Calculate temperature gradients tangent to surface ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
