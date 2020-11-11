@@ -332,6 +332,7 @@ AC_OUTPUT(Makefile \
 	      SU2_DEF/obj/Makefile \
 	      SU2_SOL/obj/Makefile \
 	      SU2_GEO/obj/Makefile \
+	      SU2_INTERP/obj/Makefile \
 	      SU2_PY/Makefile \
 	      SU2_PY/pySU2/Makefile)
 
