@@ -407,8 +407,10 @@ void CNSSolver::CorrectJacobian(CSolver             **solver,
 
   su2double ProjVec = 0.0, Dist2 = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++){
-    ProjVec += Normal[iDim]*EdgVec[iDim];
-    Dist2   += EdgVec[iDim]*EdgVec[iDim];
+    // ProjVec += Normal[iDim]*EdgVec[iDim];
+    // Dist2   += EdgVec[iDim]*EdgVec[iDim];
+    ProjVec += Normal[iDim]*Normal[iDim];
+    Dist2   += EdgVec[iDim]*Normal[iDim];
   }
 
   /*--- Get vector to be multiplied by Jacobian weights ---*/
