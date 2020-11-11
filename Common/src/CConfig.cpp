@@ -2893,9 +2893,12 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           newString.append("\n");
           if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
             newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
-                             "and it also applies to discrete adjoint problems\n.");
+                             "and it also applies to discrete adjoint problems.\n\n");
+          if (!option_name.compare("WRT_MESH_QUALITY"))
+            newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
           errorString.append(newString);
           err_count++;
+          line_count++;
         continue;
       }
 
@@ -2908,6 +2911,7 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
         newString.append("\n");
         errorString.append(newString);
         err_count++;
+        line_count++;
         continue;
       }
 
