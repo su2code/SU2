@@ -1062,6 +1062,11 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double
 }
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
+
+  unsigned short iElectron = nSpecies-1;
+
+  if(ionization) {
+    Cvtrs[iElectron] = 0.0;}
  
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
@@ -1079,7 +1084,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
     /*--- If requesting electron specific heat ---*/
     if (ionization && iSpecies == iElectron) {
       Cvvs = 0.0;
-      Cves = 3.0/2.0 * Ru/MolarMass[nSpecies-1];
+      Cves = 3.0/2.0 * Ru/MolarMass[iElectron];
     }
   
     /*--- Heavy particle specific heat ---*/
@@ -1181,7 +1186,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
 
     /*--- Electron species energy ---*/
-    if ( ionization && (iSpecies == iElectron)) {
+    if ( ionization && iSpecies == iElectron) {
       /*--- Calculate formation energy ---*/
       Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
   
@@ -1920,8 +1925,6 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
       + rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
 }
 
-
-
 void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
 
   su2double v2, ef, rhoCvtr;
@@ -1943,10 +1946,11 @@ void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
     ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
   }
+  /*
   if (ionization) {
     cout << "CNEMOVariable: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
     exit(1);
-  }
+  } */
 
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)
