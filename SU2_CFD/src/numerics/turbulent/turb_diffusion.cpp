@@ -151,6 +151,19 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
 }
 
+void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
+  
+  /*--- Add contributions of nodal gradients ---*/
+ 
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    const su2double weight = 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim]);
+    for (auto iVar= 0; iVar < nVar; iVar++) {
+      jacobianWeights_i[iVar][iDim] = -weight*Jacobian_i[iVar][iVar];      
+      jacobianWeights_j[iVar][iDim] =  weight*Jacobian_j[iVar][iVar];
+    }
+  }
+}
+
 CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                  bool correct_grad, const CConfig* config) :
                  CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) { }
@@ -237,23 +250,20 @@ void CAvgGrad_TurbSST::ExtraADPreaccIn() {
 
 void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
-  su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
-
   /*--- Compute the blended constant for the viscous terms ---*/
-  sigma_kine_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-  sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
-  sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
-  sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
+  const su2double sigma_kine_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  const su2double sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  const su2double sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+  const su2double sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
   /*--- Compute mean effective viscosity ---*/
-  diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
-  diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
-  diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
-  diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
+  const su2double diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
+  const su2double diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
+  const su2double diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
+  const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
 
-  su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
-  su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+  const su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
+  const su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
 
   Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];
   Flux[1] = diff_omega*Proj_Mean_GradTurbVar[1];
@@ -262,8 +272,8 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   const bool wasActive = AD::BeginPassive();
 
-  const su2double proj_on_rho_i = proj_vector_ij/Density_i,
-                  proj_on_rho_j = proj_vector_ij/Density_j;
+  const su2double proj_on_rho_i = proj_vector_ij/Density_i;
+  const su2double proj_on_rho_j = proj_vector_ij/Density_j;
       
   Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
   Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
@@ -315,17 +325,4 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   AD::EndPassive(wasActive);
 
-}
-
-void CAvgGrad_Scalar::CorrectJacobian(const CConfig *config) {
-  
-  /*--- Add contributions of nodal gradients ---*/
- 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    const su2double weight = 0.5*(Normal[iDim]/proj_vector_ij - Edge_Vector[iDim]);
-    for (auto iVar= 0; iVar < nVar; iVar++) {
-      jacobianWeights_i[iVar][iDim] = -weight*Jacobian_i[iVar][iVar];      
-      jacobianWeights_j[iVar][iDim] =  weight*Jacobian_j[iVar][iVar];
-    }
-  }
 }
