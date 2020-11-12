@@ -153,13 +153,13 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-                                         turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
+                                         turbPrimVar_i, turbPrimVar_j, nFlowVarGrad, nVar);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, good_i, good_j);
+      CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, nVar, good_i, good_j);
 
       muscl = good_i || good_j;
 
@@ -345,6 +345,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
                                          const su2double     *primvar_j, 
                                          const su2double     *turbvar_i, 
                                          const su2double     *turbvar_j, 
+                                         const unsigned long nTurbVar,
                                          bool &good_i, 
                                          bool &good_j) {
   const unsigned short turbModel = config->GetKind_Turb_Model();
@@ -358,7 +359,7 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
   /*--- Positive turbulent variables ---*/
 
   if (!sa_neg) {
-    for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
       good_i = good_i && (turbvar_i[iVar] >= 0.0);
       good_j = good_j && (turbvar_j[iVar] >= 0.0);
     }
@@ -713,9 +714,9 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    su2double Delta = (sst)? su2double(Vol / nodes->GetDelta_Time(iPoint))
-                            : su2double(Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint)));
-    // su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
+    su2double Delta = Vol / ((nodes->GetLocalCFL(iPoint)/flowNodes->GetLocalCFL(iPoint))*flowNodes->GetDelta_Time(iPoint));
+    if (sst)  Delta = Vol / nodes->GetDelta_Time(iPoint);
+
     Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/

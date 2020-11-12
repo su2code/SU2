@@ -3113,7 +3113,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                       &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
+                       &tke_i, &tke_j, nPrimVarGrad, nTurbVarGrad);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
@@ -3291,8 +3291,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
                                     su2double           *primvar_j,
                                     su2double           *turbvar_i, 
                                     su2double           *turbvar_j,
-                                    bool                &good_i,
-                                    bool                &good_j,
                                     const unsigned long nFlowVarGrad,
                                     const unsigned long nTurbVarGrad) {
 
@@ -3416,12 +3414,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     }
   }
-
-  // /*--- Check for non-physical solutions after reconstruction. If found, use the
-  //      cell-average value of the solution. This is a locally 1st order approximation,
-  //      which is typically only active during the start-up of a calculation. ---*/
-
-  // CheckExtrapolatedState(config, primvar_i, primvar_j, turbvar_i, turbvar_j, nTurbVarGrad, good_i, good_j);
 }
 
 void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
