@@ -69,6 +69,14 @@ def reduced_sqp(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_ieq
                                       fprime, fprime_eqcons, unit_hessian,
                                       project, iter, acc, None)
 
+    # call to gradient descend under constraint.
+    elif SQP_MODE =='SIMPLIFIEDCVXOPT':
+
+        sys.stdout.write('Using simplified SQP iterations \n')
+        outputs = SQPconstrained(x0, func, f_eqcons, f_ieqcons,
+                                fprime, fprime_eqcons, fprime_ieqcons, unit_hessian,
+                                project, iter, acc, None)
+
     else:
         sys.stdout.write('Please choose a valid SQP_MODE! \n')
 
