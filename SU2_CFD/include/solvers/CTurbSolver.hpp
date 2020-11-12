@@ -121,6 +121,7 @@ private:
    * \param[in] primvar_j - Primitive vector extrapolated from node j to face.
    * \param[in] turbvar_i - Turbulent vector extrapolated from node i to face.
    * \param[in] turbvar_j - Turbulent vector extrapolated from node j to face.
+   * \param[in] nTurbVar - Length of turbulent vector.
    * \param[in/out] good_i - Whether the extrapolated state from node i is good.
    * \param[in/out] good_j - Whether the extrapolated state from node j is good.
    */
@@ -129,6 +130,7 @@ private:
                               const su2double *primvar_j, 
                               const su2double *turbvar_i, 
                               const su2double *turbvar_j,
+                              const unsigned long nTurbVar,
                               bool &good_i, 
                               bool &good_j);
 
