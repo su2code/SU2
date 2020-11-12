@@ -54,6 +54,11 @@ COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile,
   /*---------- One-shot works on all design variables - get the total number of design variables from Config ---------*/
   nDV_Total = config->GetnDV_Total();
 
+  /*--- Preprocess the additional COutput class for the flow output ---*/
+  flowoutput = COutputFactory::CreateOutput(EULER, config, nDim);
+  flowoutput->PreprocessHistoryOutput(config, false);
+  flowoutput->PreprocessVolumeOutput(config);
+
 }
 
 COneShotSinglezoneDriver::~COneShotSinglezoneDriver(void){
@@ -71,13 +76,6 @@ void COneShotSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   iteration->Preprocess(output_container[ZONE_0], integration_container, geometry_container,
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
-  /*--- For Piggyback (coupled primal/adjoint) recording is done in each iteration ---*/
-  /*
-  if (RecordingState != MainVariables){
-    MainRecording();
-  }
-  */
 
 }
 
@@ -113,13 +111,17 @@ void COneShotSinglezoneDriver::PiggyBack() {
 
     PrimalDualStep(PiggyIter);
 
+    /*--- If maximum number of iteration is reached or the iteration converged, force flow output. ---*/
+
+    if (PiggyIter == nPiggyIter-1 || StopCalc) {
+      flowoutput->SetResult_Files(geometry, config, solver, PiggyIter, true);
+    }
+
     /*--- If the convergence detection in PrimalDualStep succeded, then stop ---*/
 
     if (StopCalc) break;
 
   }
-
-
 
 }
 
@@ -133,6 +135,7 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   } else {
     kind_recording = SOLUTION_VARIABLES;
   }
+
   SetRecording(kind_recording);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
@@ -158,7 +161,6 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
                      solver_container, numerics_container, config_container,
                      surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
-
   /*--- Extract the computed sensitivity values. ---*/
 
   if (RecordingState == SOLUTION_AND_MESH) {
@@ -181,6 +183,8 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   if (!config->GetTime_Domain()) {
     iteration->Output(output_container[ZONE_0], geometry_container, solver_container,
                       config_container, iPiggyIter, false, ZONE_0, INST_0);
+    // for OneShot set flow output aswell
+    flowoutput->SetResult_Files(geometry, config, solver, iPiggyIter);
   }
 
 }

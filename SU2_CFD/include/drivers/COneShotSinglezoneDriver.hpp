@@ -53,6 +53,7 @@ protected:
   unsigned long nPiggyIter;           /*!< \brief The number of coupled primal and adjoint iterations that are run on the PiggyBack solver.*/
   unsigned short nDV_Total;           /*!< \brief Total number of design variables used in optimization.*/
 
+  COutput* flowoutput;                /*!< \brief Additional instance of an output class to write flow solution/restart files.*/
 
 public:
 
