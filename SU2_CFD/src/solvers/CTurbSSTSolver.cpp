@@ -1596,6 +1596,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
         /*--- Check the extrapolation ---*/
 
+        bool good_i = true, good_j = true;
         CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
 
         /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
