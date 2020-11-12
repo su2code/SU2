@@ -189,7 +189,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   // nodes = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nPoint, nDim, nVar, constants, config);
-  nodes = new CTurbSSTVariable(lowerlimit[0], lowerlimit[1], rhoInf*lowerlimit[0]/lowerlimit[1], nPoint, nDim, nVar, constants, config);
+  nodes = new CTurbSSTVariable(lowerlimit[0], omega_Inf, rhoInf*lowerlimit[0]/omega_Inf, nPoint, nDim, nVar, constants, config);
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
