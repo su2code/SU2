@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon

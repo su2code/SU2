@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
@@ -3047,6 +3047,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                                (config->GetKind_FluidModel() == IDEAL_GAS);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -3154,15 +3156,18 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
 
-      /*--- If viscous, we need gradients for extra terms. ---*/
+      /*--- Set primitive variables ---*/
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
-      if (viscous) {
+      /*--- Set gradient of primitive variables ---*/
+      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
 
-        /*--- Primitive variables ---*/
-        numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
+      if (!ideal_gas) {
+        /*--- Set secondary variables ---*/
+        numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      }
 
-        /*--- Gradient of the primitive variables ---*/
-        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nullptr);
+      if (viscous){
 
         /*--- Load the aux variable gradient that we already computed. ---*/
         numerics->SetAxiAuxVarGrad(nodes->GetAxiAuxVarGradient(iPoint), nullptr);

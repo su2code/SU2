@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers

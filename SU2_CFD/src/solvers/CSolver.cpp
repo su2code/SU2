@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon

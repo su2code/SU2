@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
