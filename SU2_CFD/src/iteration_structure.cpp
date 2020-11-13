@@ -2232,13 +2232,14 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver,
   if (turbulent && !frozen_visc) {
     solver[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
     solver[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry[iZone][iInst][MESH_0], config[iZone], SOLUTION);
-    if (sst) static_cast<CTurbSSTSolver*>(solver[iZone][iInst][MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[iZone][iInst][MESH_0]);
+    // if (sst) static_cast<CTurbSSTSolver*>(solver[iZone][iInst][MESH_0][TURB_SOL])->SetPrimitive_Variables(solver[iZone][iInst][MESH_0]);
+    if (sst) solver[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0],solver[iZone][iInst][MESH_0], config[iZone], MESH_0);
   }
   solver[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[iZone][iInst][MESH_0], solver[iZone][iInst][MESH_0], config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
-  if (turbulent && !frozen_visc){
-    solver[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0],solver[iZone][iInst][MESH_0], config[iZone], MESH_0);
-  }
+  // if (turbulent && !frozen_visc){
+  //   solver[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[iZone][iInst][MESH_0],solver[iZone][iInst][MESH_0], config[iZone], MESH_0);
+  // }
 
   if (heat){
     solver[iZone][iInst][MESH_0][HEAT_SOL]->Set_Heatflux_Areas(geometry[iZone][iInst][MESH_0], config[iZone]);

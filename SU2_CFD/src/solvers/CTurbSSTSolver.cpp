@@ -1527,7 +1527,7 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
   const auto turb_model    = config->GetKind_Turb_Model();
   const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool muscl         = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  const bool muscl         = (config->GetMUSCL_Turb() && (iMesh == MESH_0));
   const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
   const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                              (config->GetTime_Marching() == DT_STEPPING_2ND);
