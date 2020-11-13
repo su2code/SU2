@@ -513,7 +513,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
       if (config->GetUse_Accurate_Turb_Jacobians())
-      // if (config->GetUse_Accurate_Turb_Jacobians() && (nodes->GetCrossDiff(iPoint) > 0))
         CrossDiffusionJacobian(solver, geometry, config, iPoint);
       
     }// if dist
@@ -1935,7 +1934,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       
       nodes->SetSolution_Old(iPoint,Solution);
       nodes->SetSolution(iPoint,Solution);
-      nodes->SetDelta_Time(iPoint,0.0);
+      // nodes->SetDelta_Time(iPoint,0.0);
       // LinSysRes.SetBlock_Zero(iPoint);
 
       // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/

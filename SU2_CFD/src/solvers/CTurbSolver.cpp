@@ -144,10 +144,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                            geometry->node[jPoint]->GetGridVel());
 
     bool good_i = true, good_j = true;
-    // if (!sa_neg) {
-    //   good_i = good_i && (T_i[0] > 1.0e-20);
-    //   good_j = good_j && (T_j[0] > 1.0e-20);
-    // }
     bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
@@ -180,37 +176,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Update convective residual value ---*/
 
     auto residual = numerics->ComputeResidual(config);
-
-    // su2double ProjVel = 0.0;
-    // for (auto iDim = 0; iDim < nDim; iDim++) {
-    //   const su2double Vel_i = good_i? flowPrimVar_i[iDim+1] : V_i[iDim+1];
-    //   const su2double Vel_j = good_j? flowPrimVar_j[iDim+1] : V_j[iDim+1];
-    //   ProjVel += 0.5*(Vel_i+Vel_j)*geometry->edge[iEdge]->GetNormal()[iDim];
-    // }
-
-    // const su2double k_fi = good_i? turbPrimVar_i[0] : T_i[0];
-    // const su2double k_fj = good_j? turbPrimVar_j[0] : T_j[0];
-
-    // if (nodes->GetUnderRelaxation(iPoint) < 1e-6) 
-    //   cout << "UpwRes[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] 
-    //   << ", r_i= " << V_i[nDim+2]
-    //   << ", r_j= " << V_j[nDim+2]
-    //   << ", k_i= " << nodes->GetPrimitive(iPoint,0) 
-    //   << ", k_j= " << nodes->GetPrimitive(jPoint,0) 
-    //   << ", k_fi= " << k_fi
-    //   << ", k_fj= " << k_fj 
-    //   << ", ProjVel_i= " << 0.5*(ProjVel + fabs(ProjVel))
-    //   << ", ProjVel_j= " << 0.5*(ProjVel - fabs(ProjVel)) << endl;
-    // if (nodes->GetUnderRelaxation(jPoint) < 1e-6) 
-    //   cout << "UpwRes[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] 
-    //   << ", r_i= " << V_i[nDim+2]
-    //   << ", r_j= " << V_j[nDim+2]
-    //   << ", k_i= " << nodes->GetPrimitive(iPoint,0) 
-    //   << ", k_j= " << nodes->GetPrimitive(jPoint,0) 
-    //   << ", k_fi= " << k_fi
-    //   << ", k_fj= " << k_fj 
-    //   << ", ProjVel_i= " << 0.5*(ProjVel + fabs(ProjVel))
-    //   << ", ProjVel_j= " << 0.5*(ProjVel - fabs(ProjVel)) << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
@@ -300,9 +265,6 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
   /*--- Compute residual, and Jacobians ---*/
 
   auto residual = numerics->ComputeResidual(config);
-
-  // if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "VisRes[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " <<  residual[0] << endl;
-  // if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "VisRes[" << geometry->node[jPoint]->GetGlobalIndex() << "][0]= " << -residual[0] << endl;
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
