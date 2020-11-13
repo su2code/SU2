@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -519,12 +519,12 @@ public:
   /*!
    * \brief Move ctor, implemented by base class (if fully static works as copy).
    */
-  C2DContainer(C2DContainer&&) noexcept(std::is_nothrow_move_constructible<Scalar>::value) = default;
+  C2DContainer(C2DContainer&&) = default;
 
   /*!
    * \brief Move assign operator, implemented by base class (if fully static works as copy).
    */
-  C2DContainer& operator= (C2DContainer&&) noexcept(std::is_nothrow_move_assignable<Scalar>::value) = default;
+  C2DContainer& operator= (C2DContainer&&) = default;
 
   /*!
    * \overload Set all entries to rhs value (syntax sugar, see "resize").
@@ -601,7 +601,7 @@ public:
     assert(Size <= cols()-start);
     StaticContainer ret;
     for (size_t k=0; k<N; ++k) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t i=0; i<Size; ++i)
         ret.data()[i][k] = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
     }

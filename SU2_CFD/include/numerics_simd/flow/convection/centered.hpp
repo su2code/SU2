@@ -2,7 +2,7 @@
  * \file centered.hpp
  * \brief Centered convective schemes.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -175,8 +175,7 @@ public:
 
     /*--- Stop preaccumulation. ---*/
 
-    AD::SetPreaccOut(flux, nVar, Double::Size);
-    AD::EndPreacc();
+    stopPreacc(flux);
 
     /*--- Update the vector and system matrix. ---*/
 

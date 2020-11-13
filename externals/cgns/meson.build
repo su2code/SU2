@@ -1,4 +1,4 @@
-if build_machine.system() == 'windows'
+if build_machine.system() == 'windows' or meson.get_compiler('cpp').get_id() == 'intel'
   cgns_default_warnings = []
 else
   cgns_default_warnings = ['-Wno-unused-result']
