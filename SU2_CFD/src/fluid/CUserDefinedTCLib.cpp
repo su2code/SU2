@@ -632,7 +632,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.4;
     nReactions  = 22;
-    ionization  = true;
+    ionization  = false;
 
     Reactions.resize(nReactions,2,6,0.0);
     ArrheniusCoefficient.resize(nReactions,0.0);
@@ -1041,8 +1041,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Omega11(4,4,0) = -4.2451096E-03;  Omega11(4,4,1) = 9.6820337E-02;   Omega11(4,4,2) = -9.9770795E-01;  Omega11(4,4,3) = 8.3320644E+02;
   }
 
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
+   nHeavy = nSpecies;   nEl = 0; 
 }
 
 CUserDefinedTCLib::~CUserDefinedTCLib(){}
@@ -1889,14 +1888,14 @@ void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2do
   }
 
   // Species density
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ef                 = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dPdU[iSpecies] =  T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
         (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
          ef + 0.5*sqvel);
   }
   if (ionization) {
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (iSpecies = 0; iSpecies < nSpecies-1; iSpecies++) {
       //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
       //      num = 0.0;
       //      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
@@ -1946,11 +1945,6 @@ void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
     ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
   }
-  /*
-  if (ionization) {
-    cout << "CNEMOVariable: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
-    exit(1);
-  } */
 
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)
