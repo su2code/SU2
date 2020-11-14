@@ -82,18 +82,18 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
   ExtraADPreaccIn();
 
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
+    AD::SetPreaccIn(V_i, nDim+6); 
+    AD::SetPreaccIn(V_j, nDim+6);
 
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
+    Density_i = V_i[nDim+2]; Laminar_Viscosity_i = V_i[nDim+4]; Eddy_Viscosity_i = V_i[nDim+5];
+    Density_j = V_j[nDim+2]; Laminar_Viscosity_j = V_j[nDim+4]; Eddy_Viscosity_j = V_j[nDim+5];
   }
   else {
-    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
+    AD::SetPreaccIn(V_i, nDim+7); 
+    AD::SetPreaccIn(V_j, nDim+7);
 
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
-    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+    Density_i = V_i[nDim+2]; Laminar_Viscosity_i = V_i[nDim+5]; Eddy_Viscosity_i = V_i[nDim+6];
+    Density_j = V_j[nDim+2]; Laminar_Viscosity_j = V_j[nDim+5]; Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   for (auto iVar = 0; iVar < nVar; iVar++) {

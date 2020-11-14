@@ -175,12 +175,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
   /*--- Initialize lower and upper limits---*/
-  // lowerlimit[0] = rhoInf*kine_Inf;
-  lowerlimit[0] = numeric_limits<passivedouble>::epsilon();
+  lowerlimit[0] = 1.0e-16;
   upperlimit[0] = 1.0e15;
 
-  lowerlimit[1] = rhoInf*omega_Inf*1.0e-3;
-  // lowerlimit[1] = numeric_limits<passivedouble>::epsilon();
+  lowerlimit[1] = 1.0e-16;
   upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
@@ -308,11 +306,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
                             (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
 
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   for (auto iVar = 0; iVar < nVar; iVar++) {
-  //     const su2double sol = max(numeric_limits<passivedouble>::epsilon(), nodes->GetSolution(iPoint,iVar));
-  //     nodes->SetSolution(iPoint, iVar, sol);
-  //   }
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
+      nodes->SetSolution(iPoint, iVar, sol);
+    }
   
   SetPrimitive_Variables(solver);
   
@@ -1934,14 +1932,6 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
       
       nodes->SetSolution_Old(iPoint,Solution);
       nodes->SetSolution(iPoint,Solution);
-      // nodes->SetDelta_Time(iPoint,0.0);
-      // LinSysRes.SetBlock_Zero(iPoint);
-
-      // /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      // for (auto iVar = 0; iVar < nVar; iVar++) {
-      //   const unsigned long total_index = iPoint*nVar+iVar;
-      //   Jacobian.DeleteValsRowi(total_index);
-      // }
       
     }
   }
