@@ -2905,6 +2905,10 @@ void CFlowOutput::SetTimeAveragedFields(CConfig *config){
     if (nDim == 3)
       AddVolumeOutput("MEAN_TAUWALL-Z",  "MeanTauWall_z",   "TIME_AVERAGE", "Wall Model Shear Stress projected in z-direction");
   }
+  
+  if ((config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) || config->GetWall_Models()){
+    AddVolumeOutput("MEAN_EDDYVISRATIO",  "MeanEddyVisRatio",   "TIME_AVERAGE", "Hybrid RANS/LES Eddy Visc Ratio");
+  }
 }
 
 void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flow, CConfig *config){
@@ -2953,5 +2957,9 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, CVariable *Node_Flo
     SetAvgVolumeOutputValue("MEAN_TAUWALL-Y", iPoint, Node_Flow->GetTauWallDir(iPoint,1));
     if (nDim == 3)
       SetAvgVolumeOutputValue("MEAN_TAUWALL-Z", iPoint, Node_Flow->GetTauWallDir(iPoint,2));
+  }
+  
+  if ((config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) || config->GetWall_Models()){
+    SetAvgVolumeOutputValue("MEAN_EDDYVISRATIO", iPoint, Node_Flow->GetEddyViscosity(iPoint)/Node_Flow->GetLaminarViscosity(iPoint));
   }
 }
