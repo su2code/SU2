@@ -412,7 +412,11 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
 
       case DISC_ADJ_HEAT:
 
-        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, solvers, config);
+        if(Has_Deformation(iZone)) {
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
+        } else {
+          solvers[ADJHEAT_SOL]->SetSensitivity(geometry, solvers, config);
+        }
         break;
 
       case DISC_ADJ_FEM:
