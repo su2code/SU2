@@ -3170,6 +3170,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         /*--- Set gradient of auxillary variables ---*/
         numerics->SetAxiAuxVarGrad(nodes->GetAxiAuxVarGradient(iPoint), nullptr);
       }
+      
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);
 
