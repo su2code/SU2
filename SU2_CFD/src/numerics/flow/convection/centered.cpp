@@ -340,11 +340,13 @@ bool CCentJST_Flow::SetPreaccInVars(void) {
 
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
-  implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  implicit               = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  variable_density       = (config->GetKind_DensityModel() == VARIABLE);
+  energy                 = config->GetEnergy_Equation();
+  flamelet_thermo_system = config->GetKind_FlameletThermoSystem();
+
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  energy           = config->GetEnergy_Equation();
 
   /*--- Artificial dissipation part ---*/
 
@@ -539,7 +541,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Remove energy contributions if we aren't solving the energy equation. ---*/
 
-  if (!energy) {
+  if (!energy || flamelet_thermo_system == ADIABATIC) {
     ProjFlux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -559,9 +561,11 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 
 CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
-  implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = (config->GetKind_DensityModel() == VARIABLE);
-  energy           = config->GetEnergy_Equation();
+  implicit               = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  variable_density       = (config->GetKind_DensityModel() == VARIABLE);
+  energy                 = config->GetEnergy_Equation();
+  flamelet_thermo_system = config->GetKind_FlameletThermoSystem();
+
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
@@ -767,7 +771,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Remove energy contributions if not solving the energy equation. ---*/
 
-  if (!energy) {
+  if (!energy  || flamelet_thermo_system == ADIABATIC) {
     ProjFlux[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

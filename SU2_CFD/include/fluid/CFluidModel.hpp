@@ -34,6 +34,8 @@
 #include "../../../Common/include/basic_types/datatype_structure.hpp"
 #include "CConductivityModel.hpp"
 #include "CViscosityModel.hpp"
+#include "CDiffusivityModel.hpp"
+#include "../numerics/CLookUpTable.hpp"
 
 using namespace std;
 
@@ -67,9 +69,14 @@ class CFluidModel {
   su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
   su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
   su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
+  su2double source_energy{0.0};
+  su2double mass_diffusivity{0.0};
 
-  unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
-  unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
+  unique_ptr<CViscosityModel> LaminarViscosity;        /*!< \brief Laminar Viscosity Model */
+  unique_ptr<CConductivityModel> ThermalConductivity;  /*!< \brief Thermal Conductivity Model */
+  unique_ptr<CDiffusivityModel> MassDiffusivity;       /*!< \brief Mass Diffusivity Model */
+
+  CLookUpTable* look_up_table;
 
  public:
   virtual ~CFluidModel() {}
@@ -119,10 +126,38 @@ class CFluidModel {
    */
   su2double GetCv() const { return Cv; }
 
+  virtual su2double GetSourceEnergy() { return 37; }
+
+  //virtual su2double GetMassDiffusivity() { return 37; }
+
+    /*!
+   * \brief Get the source term of the transported scalar
+   */
+  virtual inline su2double GetSourceScalar(int){ return 37; }
+
+  /*!
+   * \brief Get the looked up scalar field for combustion
+   */
+  virtual inline su2double GetLookupScalar(int){ return 37; }
+
+
+  virtual CLookUpTable* GetLookUpTable() {return look_up_table; }
+
+  virtual inline unsigned long GetEnthFromTemp(su2double *enthalpy, 
+                                               su2double  val_prog, 
+                                               su2double  val_temp) { return 73; }
+
+  virtual inline pair<su2double, su2double> GetTableLimitsEnth() { return make_pair(73,37); }
+  virtual inline pair<su2double, su2double> GetTableLimitsProg() { return make_pair(73,37); }
+
+  virtual inline su2double GetdDensitydPV() { return 0.0; }
+  virtual inline su2double GetdSourcePVdPV() { return 0.0; }
+  virtual inline su2double GetdDensitydEnth() { return 0.0; }
+
   /*!
    * \brief Get fluid dynamic viscosity.
    */
-  su2double GetLaminarViscosity() {
+  virtual inline su2double GetLaminarViscosity() {
     LaminarViscosity->SetViscosity(Temperature, Density);
     Mu = LaminarViscosity->GetViscosity();
     LaminarViscosity->SetDerViscosity(Temperature, Density);
@@ -134,8 +169,7 @@ class CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-
-  su2double GetThermalConductivity() {
+  virtual inline su2double GetThermalConductivity() {
     ThermalConductivity->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp);
     Kt = ThermalConductivity->GetConductivity();
     ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
@@ -143,7 +177,17 @@ class CFluidModel {
     dktdT_rho = ThermalConductivity->GetdktdT_rho();
     return Kt;
   }
-
+/*!
+   * \brief Get fluid mass diffusivity.
+   */
+  virtual inline su2double GetMassDiffusivity() {
+    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp);
+    mass_diffusivity = MassDiffusivity->GetDiffusivity();
+    //ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
+    //dktdrho_T = ThermalConductivity->Getdktdrho_T();
+    //dktdT_rho = ThermalConductivity->GetdktdT_rho();
+    return mass_diffusivity;
+  }
   /*!
    * \brief Get fluid pressure partial derivative.
    */
@@ -220,6 +264,24 @@ class CFluidModel {
   void SetThermalConductivityModel(const CConfig* config);
 
   /*!
+   * \brief Set mass diffusivity model.
+   */
+  void SetMassDiffusivityModel(const CConfig* config);
+
+  /*!
+   * \brief Set the state needed for the mass diffusivity model.
+   */
+  /* nijso: why do we need this? put in constructor or delete */
+  void SetDiffusivityState(su2double val_temperature, su2double val_Density,
+                           su2double val_Mu, su2double val_Mu_Turb, su2double val_Cp) {
+  Temperature = val_temperature;
+  Density = val_Density;
+  Mu = val_Mu;
+  Mu_Turb = val_Mu_Turb;
+  Cp = val_Cp;
+}
+
+  /*!
    * \brief virtual member that would be different for each gas model implemented
    * \param[in] InputSpec - Input pair for FLP calls ("e, rho").
    * \param[in] rho - first thermodynamic variable.
@@ -291,7 +353,9 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature) {}
+  virtual unsigned long SetTDState_T(su2double val_Temperature, su2double *val_scalars = nullptr) {return 0;}
+
+  virtual unsigned long SetScalarSources(su2double *val_scalars) {return 0;}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

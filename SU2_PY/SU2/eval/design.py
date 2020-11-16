@@ -30,6 +30,7 @@
 # ----------------------------------------------------------------------
 
 import os, copy
+import sys
 from .. import io   as su2io
 from .  import func as su2func
 from .  import grad as su2grad
@@ -73,7 +74,7 @@ class Design(object):
             con_cieq(dvs)  - inequality constraints          : list
             con_dcieq(dvs) - inequality constraint gradients : list[list]
             
-            Fucntional Interface
+            Functional Interface
             The following methods take an objective function name for input.
             func(func_name)                  - function of specified name
             grad(func_name,method='CONTINUOUS_ADJOINT') - gradient of specified name
@@ -237,7 +238,6 @@ def obj_f(dvs,config,state=None):
         scale = def_objs[this_obj]['SCALE']
         global_factor = float(config['OPT_GRADIENT_FACTOR'])
         sign  = su2io.get_objectiveSign(this_obj)
-
         # Evaluate Objective Function scaling and sign
         # If default evaluate as normal, 
         if def_objs[this_obj]['OBJTYPE']=='DEFAULT':

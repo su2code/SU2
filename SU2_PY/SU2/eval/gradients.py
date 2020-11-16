@@ -290,6 +290,10 @@ def adjoint( func_name, config, state=None ):
       config['OUTPUT_FILES'].append('SURFACE_CSV')
     
 
+    # files: look up table
+    if 'FLAMELET_FLUID_MODEL' in special_cases:
+        pull.append(files['LOOK_UP_TABLE'])
+
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
@@ -850,6 +854,9 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
+    # files: target heat flux distribution
+    if 'FLAMELET_FLUID_MODEL' in special_cases and 'LOOK_UP_TABLE' in files:
+        pull.append(files['LOOK_UP_TABLE'])
        
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
@@ -1138,6 +1145,10 @@ def directdiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
+    # files: target heat flux distribution
+    if 'FLAMELET_FLUID_MODEL' in special_cases and 'LOOK_UP_TABLE' in files:
+        pull.append(files['LOOK_UP_TABLE'])
+    
     # output redirection
     with redirect_folder('DIRECTDIFF',pull,link) as push:
         with redirect_output(log_directdiff):

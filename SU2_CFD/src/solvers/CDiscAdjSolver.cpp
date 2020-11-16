@@ -133,6 +133,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
     break;
+  //nijso: do we really need this?
+  //case RUNTIME_SCALAR_SYS:
+  //  SolverName = "ADJ.SCALAR";
+  //  break;
   case RUNTIME_RADIATION_SYS:
     SolverName = "ADJ.RAD";
     break;
@@ -919,6 +923,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Skip coordinates ---*/
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  bool turbulent =(config->GetKind_Turb_Model() !=NONE); 
+  bool turb_SST  = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  bool turb_SA   = ((turbulent) && (config->GetKind_Turb_Model() == SA));
+  // nijso: daniel, we have to add progvar here?
+  cout << "nijso: check restart for correct reading of data !!!!!!!!" << endl; 
 
   /*--- Skip flow adjoint variables ---*/
   if (KindDirect_Solver== RUNTIME_TURB_SYS) {
@@ -937,6 +946,15 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
+  if (KindDirect_Solver== RUNTIME_SCALAR_SYS) {
+    //nijso: daniel, are you sure it is skipvars = 2*nDim+2 and not +=2*nDim+2"<<endl;
+    skipVars = 2*nDim+2 ;
+    if (turbulent) {
+      if (turb_SA) skipVars += 1;
+      else if (turb_SST) skipVars += 2;
+    }
+  }
+ 
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;

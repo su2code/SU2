@@ -56,6 +56,10 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CNEMOGas.cpp \
   ../src/fluid/CUserDefinedTCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
+  ../src/CFluidFlamelet.cpp \
+  ../src/CLookUpTable.cpp \
+  ../src/CFileReaderLUT.cpp \
+  ../src/CTrapezoidalMap.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
@@ -83,6 +87,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/template.cpp \
   ../src/numerics/transition.cpp \
   ../src/numerics/heat.cpp \
+  ../src/numerics/scalar.cpp \
   ../src/numerics/radiation.cpp \
   ../src/numerics/flow/convection/roe.cpp \
   ../src/numerics/flow/convection/fds.cpp \
@@ -108,6 +113,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/turbulent/turb_convection.cpp \
   ../src/numerics/turbulent/turb_diffusion.cpp \
   ../src/numerics/turbulent/turb_sources.cpp \
+  ../src/numerics_direct_scalar.cpp \
   ../src/numerics/elasticity/CFEAElasticity.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
@@ -187,6 +193,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CTurbSSTSolver.cpp \
   ../src/solvers/CSolverFactory.cpp \
   ../src/limiters/CLimiterDetails.cpp \
+  ../src/solvers/CFlameletSolver.cpp \
+  ../src/solvers/CScalarSolver.cpp \
+  ../src/solvers/CPassiveScalarSolver.cpp \
   ../src/CMarkerProfileReaderFVM.cpp \
   ../src/interfaces/CInterface.cpp \
   ../src/interfaces/cfd/CConservativeVarsInterface.cpp \
@@ -213,6 +222,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CDiscAdjFEAVariable.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
+  ../src/variables/CScalarVariable.cpp \
+  ../src/variables/CPassiveScalarVariable.cpp \
+  ../src/variables/CFlameletVariable.cpp \
   ../src/variables/CNSVariable.cpp \
   ../src/variables/CNEMOEulerVariable.cpp \
   ../src/variables/CNEMONSVariable.cpp \

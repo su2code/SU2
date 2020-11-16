@@ -59,7 +59,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
-  unsigned long InnerIter     = config->GetInnerIter();
+  unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
@@ -162,8 +162,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, *scalar = NULL;
   unsigned short turb_model = config->GetKind_Turb_Model();
+  bool scalar_model = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
   bool physical = true;
 
   bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
@@ -181,9 +182,14 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
       }
     }
 
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (scalar_model) {
+      scalar = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+
     /*--- Incompressible flow, primitive variables --- */
 
-    physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
+    physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, scalar, FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -563,7 +569,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
-      if (energy) {
+      if (energy && config->GetKind_FlameletThermoSystem() != ADIABATIC) {
 
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/
@@ -660,7 +666,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
-      if (energy) {
+      if (energy && config->GetKind_FlameletThermoSystem() != ADIABATIC) {
 
         /*--- Compute dual grid area and boundary normal ---*/
 

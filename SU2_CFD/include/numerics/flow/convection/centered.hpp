@@ -250,7 +250,8 @@ private:
   bool implicit,                   /*!< \brief Implicit calculation. */
   dynamic_grid,                    /*!< \brief Modification for grid movement. */
   variable_density,                /*!< \brief Variable density incompressible flows. */
-  energy;                          /*!< \brief computation with the energy equation. */
+  energy,                          /*!< \brief computation with the energy equation. */
+  flamelet_thermo_system;
 
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
@@ -310,7 +311,9 @@ private:
   bool implicit,         /*!< \brief Implicit calculation. */
   dynamic_grid,          /*!< \brief Modification for grid movement. */
   variable_density,      /*!< \brief Variable density incompressible flows. */
-  energy;                /*!< \brief computation with the energy equation. */
+  energy,                /*!< \brief computation with the energy equation. */
+  flamelet_thermo_system;
+
 
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */

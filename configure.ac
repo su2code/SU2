@@ -40,6 +40,7 @@ AC_INIT([SU2], [6.2.0], [su2code-dev@lists.stanford.edu],
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
@@ -114,6 +115,9 @@ AC_ARG_ENABLE(GEO,
 AC_ARG_ENABLE(PY_WRAPPER,
    	AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
 	[build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
+AC_ARG_ENABLE(MKL,
+   	AS_HELP_STRING([--disable-MKL], [use Intel MKL if available (default = yes)]),
+	[with_MKL=$enableval], [with_MKL="yes"])
 
 # Check for data types
 
@@ -255,14 +259,25 @@ AC_SUBST([MUTATIONPP_LD])
 # Check if MKL is available, enable if 2019.0 or newer.
 
 have_MKL="no"
+
 if test "${MKLROOT+set}" = set; then
   FOUND_MKL_VERSION=$(grep -F "INTEL_MKL_VERSION" ${MKLROOT}/include/mkl_version.h | tr -dc '0-9')
   REQUIRED_MKL_VERSION=20190000
   if [[ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]]; then
-    CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
-    CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
-    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS" 
     have_MKL="yes"
+    if test "$with_MKL" == "yes"
+    then
+      CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
+      CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
+      case "${host_os}" in
+        linux*)
+          LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS"
+          ;;
+        darwin*)
+          LIBS="${MKLROOT}/lib/libmkl_intel_lp64.a ${MKLROOT}/lib/libmkl_sequential.a ${MKLROOT}/lib/libmkl_core.a -lpthread -lm -ldl $LIBS" 
+          ;;
+      esac
+    fi
   fi
 fi
 
@@ -316,6 +331,7 @@ AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
 AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
 AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
+AM_CONDITIONAL([with_MKL],[test $with_MKL != "no"])
 
 ###########################
 
@@ -376,29 +392,30 @@ AC_MSG_RESULT([
 
 Build Configuration Summary:
 
-    Source code location: ${abs_srcdir}
-    Install location: 	  ${abs_prefix}
-    Version:              ${VERSION}
-    C++ Compiler:         ${CXX}
-    C Compiler:           ${CC}
-    Preprocessor flags:   ${CPPFLAGS}
-    Compiler flags:       ${CXXFLAGS}
-    Linker flags:         ${LDFLAGS}
-    MPI support:          $have_MPI
-    Metis support:        $enablemetis
-    Parmetis support:     $enableparmetis
-    TecIO support:        $enabletecio
-    CGNS support:         $enablecgns
-    Mutation++ support:   $have_Mutationpp
-    MKL support:          $have_MKL
+    Source code location:    ${abs_srcdir}
+    Install location: 	     ${abs_prefix}
+    Version:                 ${VERSION}
+    C++ Compiler:            ${CXX}
+    C Compiler:              ${CC}
+    Preprocessor flags:      ${CPPFLAGS}
+    Compiler flags:          ${CXXFLAGS}
+    Linker flags:            ${LDFLAGS}
+    MPI support:             $have_MPI
+    Metis support:           $enablemetis
+    Parmetis support:        $enableparmetis
+    TecIO support:           $enabletecio
+    CGNS support:            $enablecgns
+    Mutation++ support:      $have_Mutationpp
+    MKL support:             $have_MKL
+    With MKL (if supported): $with_MKL
     Datatype support:
-        double            $build_NORMAL
-        codi_reverse      $build_CODI_REVERSE
-        codi_forward      $build_CODI_FORWARD
+        double               $build_NORMAL
+        codi_reverse         $build_CODI_REVERSE
+        codi_forward         $build_CODI_FORWARD
 
-    External includes:    $su2_externals_INCLUDES
-    External libs:        $su2_externals_LIBS
-    External libpthreads: $su2_externals_LIBPTHREAD
+    External includes:       $su2_externals_INCLUDES
+    External libs:           $su2_externals_LIBS
+    External libpthreads:    $su2_externals_LIBPTHREAD
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DOT:        $build_DOT

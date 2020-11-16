@@ -1451,6 +1451,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  inline virtual bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel) { return true; }
+  
+  /*!
+   * \brief A virtual member.
+   */
   inline virtual bool SetPrimVar(unsigned long iPoint, su2double Density_Inf, CConfig *config) { return true; }
 
   /*!
@@ -2671,6 +2676,12 @@ public:
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
 
+  inline virtual void SetDiffusivity(unsigned long iPoint, su2double val_diffusivity, unsigned short val_ivar) { }
+  
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+  
+  inline virtual su2double* GetDiffusivity(unsigned long iPoint) { return NULL; }
+  
   inline virtual void SetDynamic_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
 
   inline virtual void SetDynamic_Derivative_n(unsigned long iPoint, unsigned long iVar, su2double der) {}
@@ -2699,6 +2710,27 @@ public:
 
   inline virtual su2double GetSolution_Old_Accel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
+
+  inline virtual void SetSourceScalar(unsigned long iPoint, su2double val_source_scalar, unsigned short val_ivar)  { }
+  inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar)  { }
+  //inline virtual void SetSourceScalarRescaled(unsigned long iPoint, su2double val_source_scalar_rescaled, unsigned short val_ivar)  { }
+
+
+  inline virtual su2double GetSourceScalar(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+  inline virtual su2double GetLookupScalar(unsigned long iPoint, unsigned short val_ivar) { return 0.0; }
+
+  
+  inline virtual su2double *GetSourceScalar(unsigned long iPoint) { return nullptr; }
+  inline virtual su2double *GetLookupScalar(unsigned long iPoint) { return nullptr; }
+
+
+
+
+  
+  inline virtual void SetSourceEnergy(unsigned long iPoint, su2double val_source_energy) { }
+
+  inline virtual su2double GetSourceEnergy(unsigned long iPoint) { return 0.0; }
+  
   /*!
    * \brief Virtual member: Set the Radiative source term at the node
    * \return value of the radiative source term

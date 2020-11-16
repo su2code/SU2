@@ -439,6 +439,9 @@ def get_adjointSuffix(objective_function=None):
                  "SURFACE_MOM_DISTORTION"      : "distort"   ,
                  "SURFACE_SECOND_OVER_UNIFORM" : "sou"       ,
                  "SURFACE_PRESSURE_DROP"       : "dp"        ,
+                 "AVG_CO"                      : "yco"       ,
+                 "AVG_NOX"                     : "ynox"      ,
+                 "AVG_TEMP"                    : "avgtemp"   ,
                  "CUSTOM_OBJFUNC"              : "custom"    ,
                  "KINETIC_ENERGY_LOSS"         : "ke"        ,
                  "TOTAL_PRESSURE_LOSS"         : "pl"        ,
@@ -715,8 +718,8 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","HeatFlux_Total","HeatFlux_Maximum","Temperature_Total"])
-    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+    header_list.extend(["Iteration","CL","CD","CSF","CMx","CMy","CMz","CFx","CFy","CFz","CL/CD","Custom_ObjFunc","Surface_CO","Surface_NOx","Surface_Temperature","HeatFlux_Total","HeatFlux_Maximum","Temperature_Total"])
+    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
     for key in special_cases: 
@@ -791,6 +794,7 @@ def get_specialCases(config):
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
                           'INV_DESIGN_HEATFLUX'              ]
+
     
     special_cases = []
     for key in all_special_cases:
@@ -814,7 +818,11 @@ def get_specialCases(config):
     # Special case for rotating frame
     if 'GRID_MOVEMENT_KIND' in config and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
-        
+    
+    # Special case for look up table
+    if 'FLUID_MODEL' in config and config['FLUID_MODEL'] == 'FLAMELET_FLUID_MODEL':
+      special_cases.append('FLAMELET_FLUID_MODEL')
+
     return special_cases
 
 #: def get_specialCases()

@@ -51,6 +51,8 @@
 #include "../../include/solvers/CBaselineSolver.hpp"
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
+#include "../../include/solvers/CFlameletSolver.hpp"
+#include "../../include/solvers/CPassiveScalarSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -75,9 +77,10 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NEMO_EULER, solver, geometry, config, iMGLevel);
       break;    
     case INC_NAVIER_STOKES:
-      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]   = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[HEAT_SOL]   = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[RAD_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[SCALAR_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SCALAR, solver, geometry, config, iMGLevel);
       break;
     case NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -92,6 +95,7 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
     case INC_RANS:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[SCALAR_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SCALAR, solver, geometry, config, iMGLevel);
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       break;
@@ -123,6 +127,8 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
     case DISC_ADJ_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[SCALAR_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SCALAR, solver, geometry, config, iMGLevel);
+      solver[ADJSCALAR_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SCALAR, solver, geometry, config, iMGLevel); 
       solver[TURB_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       break;
@@ -133,12 +139,14 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_INC_NAVIER_STOKES:
-      solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
-      solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
-      solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
-      solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
-      solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
-      solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[FLOW_SOL]      = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      solver[ADJFLOW_SOL]   = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
+      solver[HEAT_SOL]      = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      solver[ADJHEAT_SOL]   = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      solver[RAD_SOL]       = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[ADJRAD_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[SCALAR_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::SCALAR, solver, geometry, config, iMGLevel);
+      solver[ADJSCALAR_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SCALAR, solver, geometry, config, iMGLevel);
       break;
     case DISC_ADJ_INC_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -287,6 +295,14 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       genericSolver = CreateHeatSolver(solver, geometry, config, iMGLevel, true);
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
+    case SUB_SOLVER_TYPE::SCALAR:
+      genericSolver = CreateScalarSolver(solver, geometry, config, iMGLevel, false);
+      metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
+      break;
+    case SUB_SOLVER_TYPE::DISC_ADJ_SCALAR:
+      genericSolver = CreateScalarSolver(solver, geometry, config, iMGLevel, true);
+      metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
+      break;
     case SUB_SOLVER_TYPE::TRANSITION:
       genericSolver = new CTransLMSolver(geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
@@ -381,6 +397,31 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
   }
   return heatSolver;
 
+}
+
+CSolver* CSolverFactory::CreateScalarSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){
+
+  CSolver *scalarSolver = nullptr;
+
+  switch (config->GetKind_Scalar_Model()){
+
+    case PROGRESS_VARIABLE:
+      if (adjoint){
+        scalarSolver = new CDiscAdjSolver(geometry, config, solver[SCALAR_SOL], RUNTIME_SCALAR_SYS, iMGLevel);
+      } else {
+        scalarSolver = new CFlameletSolver(geometry, config, iMGLevel);
+      }
+      break;
+
+    case PASSIVE_SCALAR:
+      if (adjoint){
+        scalarSolver = new CDiscAdjSolver(geometry, config, solver[SCALAR_SOL], RUNTIME_SCALAR_SYS, iMGLevel);
+      } else {
+        scalarSolver = new CPassiveScalarSolver(geometry, config, iMGLevel);
+      }
+      break;
+  }
+  return scalarSolver;
 }
 
 CSolver* CSolverFactory::CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){

@@ -35,6 +35,8 @@
 #include "../interfaces/CInterface.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../solvers/CPassiveScalarSolver.hpp"
+#include "../solvers/CFlameletSolver.hpp"
 
 using namespace std;
 

@@ -129,6 +129,10 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
+    if (config_container[ZONE_0]->GetKind_Scalar_Model() != NO_SCALAR_MODEL)
+      solver_container[ZONE_0][INST_0][MESH_0][SCALAR_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
   }
 
 #ifdef HAVE_MPI

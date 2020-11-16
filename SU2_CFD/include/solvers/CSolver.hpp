@@ -121,6 +121,9 @@ protected:
   **Jacobian_jj;            /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;            /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2double **Smatrix;        /*!< \brief Auxiliary structure for computing gradients by least-squares */
+  su2double **Cvector;                  /*!< \brief Auxiliary structure for computing gradients by least-squares */
+
 
   int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
@@ -432,6 +435,18 @@ public:
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
    */
   inline su2double GetRes_RMS(unsigned short val_var) const { return Residual_RMS[val_var]; }
+
+  /*! 
+   * \brief Set the number of table look up misses.
+   * \param[in] val_n_table_miss - Number of table look up misses.
+   */
+  inline virtual void SetNTableMisses(unsigned short val_n_table_miss) { }
+
+  /*! 
+   * \brief Get the number of table look up misses.
+   * \return Number of table look up misses.
+   */
+  inline virtual unsigned long GetNTableMisses() { return 0; }
 
   /*!
    * \brief Set the maximal residual, this is useful for the convergence history.
@@ -1691,6 +1706,14 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics_container - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -1712,10 +1735,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Source_Residual(CGeometry *geometry,
-                                      CSolver **solver_container,
-                                      CNumerics **numerics_container,
-                                      CConfig *config,
+  inline virtual void Source_Residual(CGeometry     *geometry,
+                                      CSolver      **solver_container,
+                                      CNumerics    **numerics_container,
+                                      CConfig       *config,
                                       unsigned short iMesh) { }
 
   /*!

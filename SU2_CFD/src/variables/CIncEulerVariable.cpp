@@ -109,6 +109,11 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
 
+  if (axisymmetric && viscous) {
+    AuxVar.resize(nPoint);
+    Grad_AuxVar.resize(nPoint,nDim);
+  }
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 

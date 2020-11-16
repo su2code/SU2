@@ -46,6 +46,11 @@
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+
 COutput::COutput(CConfig *config, unsigned short nDim, bool fem_output): femOutput(fem_output) {
 
   this->nDim = nDim;
@@ -339,6 +344,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   unsigned short lastindex = fileName.find_last_of(".");
   fileName = fileName.substr(0, lastindex);
 
+  std::stringstream inner_iter_ss;
+  inner_iter_ss << "_" << std::setw(8) << std::setfill('0') << curInnerIter;
+
   /*--- Write files depending on the format --- */
 
   switch (format) {
@@ -445,9 +453,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case PARAVIEW_XML:
 
-      if (fileName.empty())
-        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
-
+      if (fileName.empty()){
+          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        if (!config->GetWrt_Sol_Overwrite()){ 
+          fileName.append(inner_iter_ss.str());
+        }
+      }
+        
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
@@ -575,8 +587,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case PARAVIEW:
 
-      if (fileName.empty())
-        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (fileName.empty()){
+          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        if (!config->GetWrt_Sol_Overwrite()){ 
+          fileName.append(inner_iter_ss.str());
+        }
+      }
 
       /*--- Load and sort the output data and connectivity. ---*/
 
@@ -593,8 +609,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case SURFACE_PARAVIEW:
 
-      if (fileName.empty())
-        fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (fileName.empty()){
+          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+        if (!config->GetWrt_Sol_Overwrite()){ 
+          fileName.append(inner_iter_ss.str());
+        }
+      }
 
       /*--- Load and sort the output data and connectivity. ---*/
 

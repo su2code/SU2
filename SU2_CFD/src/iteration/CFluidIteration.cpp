@@ -119,6 +119,12 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     }
   }
 
+  if (config[val_iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL){
+    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_SCALAR_SYS);
+    integration[val_iZone][val_iInst][SCALAR_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, 
+                                                                       RUNTIME_SCALAR_SYS, val_iZone, val_iInst);
+  }
+
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
     config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,

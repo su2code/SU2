@@ -171,7 +171,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel) override;
   using CVariable::SetPrimVar;
 
   /*!

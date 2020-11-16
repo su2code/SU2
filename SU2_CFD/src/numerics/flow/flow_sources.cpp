@@ -127,10 +127,10 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                              CSourceBase_Flow(val_nDim, val_nVar, config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  energy   = config->GetEnergy_Equation();
-  viscous  = config->GetViscous();
-
+  implicit               = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  energy                 = config->GetEnergy_Equation();
+  viscous                = config->GetViscous();
+  flamelet_thermo_system = config->GetKind_FlameletThermoSystem();
 }
 
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
@@ -238,7 +238,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
   }
 
-  if (!energy) {
+  if (!energy || flamelet_thermo_system == ADIABATIC) {
     residual[nDim+1] = 0.0;
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {

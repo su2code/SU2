@@ -34,6 +34,7 @@
 CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
+  scalar_model = config->GetKind_Scalar_Model();
   lastInnerIter = curInnerIter;
   gridMovement = config->GetGrid_Movement();
 
@@ -130,6 +131,13 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddHistoryOutput("RMS_PASSIVE_SCALAR", "rms[c]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      break;
+    default: break;
+  }
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -157,6 +165,13 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddHistoryOutput("MAX_PASSIVE_SCALAR", "max[c]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      break;
+    default: break;
+  }
   /// END_GROUP
 
   /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The block Gauss Seidel residuals of the SOLUTION variables.
@@ -183,6 +198,13 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
+  }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddHistoryOutput("BGS_PASSIVE_SCALAR", "bgs[c]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      break;
+    default: break;
   }
   /// END_GROUP
 
@@ -311,7 +333,15 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddVolumeOutput("PASSIVE_SCALAR", "Passive_Scalar", "SOLUTION", "Passive scalar solution");
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   // Grid velocity
   if (config->GetGrid_Movement()){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
@@ -367,7 +397,15 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddVolumeOutput("RES_PASSIVE_SCALAR", "Residual_Passive_Scalar", "RESIDUAL", "Residual of passive scalar equation");
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   // Limiter values
   AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
   AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
@@ -391,7 +429,14 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     break;
   }
 
-
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddVolumeOutput("LIMITER_PASSIVE_SCALAR", "Limiter_Passive_Scalar", "LIMITER", "Limiter value for the passive scalar");
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
@@ -426,13 +471,18 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
-  CVariable* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  CVariable* Node_Turb = nullptr;
-
+  CVariable* Node_Flow   = solver[FLOW_SOL]->GetNodes();
+  CVariable* Node_Turb   = nullptr;
+  CVariable* Node_Scalar = nullptr;
+  
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
-
+  
+  if (config->GetKind_Scalar_Model() != NONE){
+    Node_Scalar = solver[SCALAR_SOL]->GetNodes();
+  }
+  
   CPoint*    Node_Geo  = geometry->nodes;
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
@@ -463,7 +513,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   if (config->GetGrid_Movement()){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
@@ -516,7 +574,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetVolumeOutputValue("RES_PASSIVE_SCALAR", iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, 0));
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
   SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
   if (nDim == 3){
@@ -538,7 +604,15 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetVolumeOutputValue("LIMITER_PASSIVE_SCALAR", iPoint, Node_Scalar->GetLimiter(iPoint, 0));
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
@@ -585,10 +659,11 @@ void CFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSol
 }
 
 void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
-
-  CSolver* flow_solver = solver[FLOW_SOL];
-  CSolver* turb_solver = solver[TURB_SOL];
-  CSolver* mesh_solver = solver[MESH_SOL];
+  
+  CSolver* flow_solver   = solver[FLOW_SOL];
+  CSolver* turb_solver   = solver[TURB_SOL];
+  CSolver* mesh_solver   = solver[MESH_SOL];
+  CSolver* scalar_solver = solver[SCALAR_SOL];
 
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
@@ -610,7 +685,13 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     break;
   default: break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetHistoryOutputValue("RMS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_RMS(0)));
+      break;
+  }
+  
   SetHistoryOutputValue("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_MOMENTUM-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_MOMENTUM-Y", log10(flow_solver->GetRes_Max(2)));
@@ -631,7 +712,13 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     break;
   default: break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetHistoryOutputValue("MAX_PASSIVE_SCALAR", log10(scalar_solver->GetRes_Max(0)));
+      break;
+  }
+  
   if (multiZone){
     SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_MOMENTUM-X", log10(flow_solver->GetRes_BGS(1)));
@@ -642,8 +729,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
       SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
     }
-
-
+    
     switch(turb_model){
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
@@ -653,6 +739,12 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
       SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
       break;
     default: break;
+    }
+    
+    switch(scalar_model){
+      case PASSIVE_SCALAR:
+        SetHistoryOutputValue("BGS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_BGS(0)));
+        break;
     }
   }
 
@@ -687,7 +779,7 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   /*--- Set the analyse surface history values --- */
 
-  SetAnalyzeSurface(flow_solver, geometry, config, false);
+  SetAnalyzeSurface(solver, geometry, config, false);
 
   /*--- Set aeroydnamic coefficients --- */
 

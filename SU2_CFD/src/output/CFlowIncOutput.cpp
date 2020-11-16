@@ -34,9 +34,8 @@
 CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
   turb_model = config->GetKind_Turb_Model();
-
+  scalar_model = config->GetKind_Scalar_Model();
   heat = config->GetEnergy_Equation();
-
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -84,7 +83,6 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   if (convFields.empty() ) convFields.emplace_back("RMS_PRESSURE");
 
-
 }
 
 CFlowIncOutput::~CFlowIncOutput(void) {}
@@ -119,6 +117,20 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddHistoryOutput("RMS_PASSIVE_SCALAR", "rms[c]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      break;
+    case PROGRESS_VARIABLE:
+      AddHistoryOutput("RMS_PROGRESS_VARIABLE", "rms[PV]"       , ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the progress variable equation.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("RMS_ENTHALPY"         , "rms[Enth]"     , ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the enthalpy equation."         , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("RMS_Y_CO"             , "rms[Y_CO]"     , ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the CO mass fraction equation." , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("RMS_Y_NOX"            , "rms[Y_NOx]"    , ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the NOx mass fraction equation.", HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("N_TABLE_MISSES"       , "# table misses", ScreenOutputFormat::INTEGER, "RMS_RES", "number of table misses"                              , HistoryFieldType::RESIDUAL);
+      break;
+    default: break;
+  }
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
@@ -147,6 +159,19 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
+  }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddHistoryOutput("MAX_PASSIVE_SCALAR", "max[c]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      break;
+    case PROGRESS_VARIABLE:
+      AddHistoryOutput("MAX_PROGRESS_VARIABLE" , "max[PV]"    , ScreenOutputFormat::FIXED , "MAX_RES", "Maximum residual of the progress variable equation." , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("MAX_ENTHALPY"          , "max[Enth]"  , ScreenOutputFormat::FIXED , "MAX_RES", "Maximum residual of the enthalpy equation."          , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("MAX_Y_CO"              , "max[Y_CO]"  , ScreenOutputFormat::FIXED , "MAX_RES", "Maximum residual of the CO mass fraction equation."  , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("MAX_Y_NOX"             , "max[Y_NOx]" , ScreenOutputFormat::FIXED , "MAX_RES", "Maximum residual of the NOx mass fraction equation." , HistoryFieldType::RESIDUAL);
+      break;
+    default: break;
   }
   /// END_GROUP
 
@@ -178,6 +203,19 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of dissipation (SST model).", HistoryFieldType::RESIDUAL);
     break;
   default: break;
+  }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddHistoryOutput("BGS_PASSIVE_SCALAR", "bgs[c]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the passive scalar equation.", HistoryFieldType::RESIDUAL);
+      break;
+    case PROGRESS_VARIABLE:
+      AddHistoryOutput("BGS_PROGRESS_VARIABLE" , "bgs[PV]"    , ScreenOutputFormat::FIXED , "BGS_RES", "BGS residual of the progress variable equation." , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("BGS_ENTHALPY"          , "bgs[Enth]"  , ScreenOutputFormat::FIXED , "BGS_RES", "BGS residual of the enthalpy equation."          , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("BGS_Y_CO"              , "bgs[Y_CO]"  , ScreenOutputFormat::FIXED , "BGS_RES", "BGS residual of the CO mass fraction equation."  , HistoryFieldType::RESIDUAL);
+      AddHistoryOutput("BGS_Y_NOX"             , "bgs[Y_NOx]" , ScreenOutputFormat::FIXED , "BGS_RES", "BGS residual of the NOx mass fraction equation." , HistoryFieldType::RESIDUAL);
+      break;
+    default: break;
   }
   /// END_GROUP
 
@@ -237,6 +275,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
+  CSolver* scalar_solver = solver[SCALAR_SOL];
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
   SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
@@ -256,6 +295,20 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
 
 
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetHistoryOutputValue("RMS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_RMS(0)));
+      break;
+    case PROGRESS_VARIABLE:
+      SetHistoryOutputValue("RMS_PROGRESS_VARIABLE", log10(scalar_solver->GetRes_RMS(I_PROG_VAR)));
+      SetHistoryOutputValue("RMS_ENTHALPY"         , log10(scalar_solver->GetRes_RMS(I_ENTHALPY)));
+      SetHistoryOutputValue("RMS_Y_CO"             , log10(scalar_solver->GetRes_RMS(I_CO)      ));
+      SetHistoryOutputValue("RMS_Y_NOX"            , log10(scalar_solver->GetRes_RMS(I_NOX)     ));
+      SetHistoryOutputValue("N_TABLE_MISSES"       , scalar_solver->GetNTableMisses());
+      break;
+  }
+  
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
@@ -270,7 +323,19 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetHistoryOutputValue("MAX_PASSIVE_SCALAR", log10(scalar_solver->GetRes_Max(0)));
+      break;
+    case PROGRESS_VARIABLE:
+      SetHistoryOutputValue("MAX_PROGRESS_VARIABLE", log10(scalar_solver->GetRes_Max(I_PROG_VAR)));
+      SetHistoryOutputValue("MAX_ENTHALPY"         , log10(scalar_solver->GetRes_Max(I_ENTHALPY)));
+      SetHistoryOutputValue("MAX_Y_CO"             , log10(scalar_solver->GetRes_Max(I_CO)      ));
+      SetHistoryOutputValue("MAX_Y_NOX"            , log10(scalar_solver->GetRes_Max(I_NOX)     ));
+      break;
+  }
+  
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
@@ -290,6 +355,18 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     if (config->AddRadiation())
       SetHistoryOutputValue("BGS_RAD_ENERGY", log10(rad_solver->GetRes_BGS(0)));
 
+    
+    switch(scalar_model){
+      case PASSIVE_SCALAR:
+        SetHistoryOutputValue("BGS_PASSIVE_SCALAR", log10(scalar_solver->GetRes_BGS(0)));
+        break;
+      case PROGRESS_VARIABLE:
+        SetHistoryOutputValue("BGS_PROGRESS_VARIABLE", log10(scalar_solver->GetRes_BGS(I_PROG_VAR)));
+        SetHistoryOutputValue("BGS_ENTHALPY"         , log10(scalar_solver->GetRes_BGS(I_ENTHALPY)));
+        SetHistoryOutputValue("BGS_Y_CO"             , log10(scalar_solver->GetRes_BGS(I_CO)      ));
+        SetHistoryOutputValue("BGS_Y_NOX"            , log10(scalar_solver->GetRes_BGS(I_NOX)     )); 
+        break;
+    }
   }
 
   if (weakly_coupled_heat){
@@ -334,9 +411,9 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("AVG_CFL", flow_solver->GetAvg_CFL_Local());
 
   /*--- Set the analyse surface history values --- */
-
-  SetAnalyzeSurface(flow_solver, geometry, config, false);
-
+  
+  SetAnalyzeSurface(solver, geometry, config, false);
+  
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
@@ -362,10 +439,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat)
-    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
-
-  switch(config->GetKind_Turb_Model()){
+  if (heat || weakly_coupled_heat) 
+    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");  
+  
+  switch(turb_model){
   case SST: case SST_SUST:
     AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
     AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
@@ -377,10 +454,43 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddVolumeOutput("PASSIVE_SCALAR", "Passive_Scalar", "SOLUTION", "Passive scalar solution");
+      break;
+    case PROGRESS_VARIABLE:
+      AddVolumeOutput("PROGRESS_VARIABLE", "Progress_Variable", "SOLUTION", "Progress variable solution");
+      AddVolumeOutput("ENTHALPY"         , "Enthalpy"         , "SOLUTION", "Enthalpy solution"         );
+      AddVolumeOutput("Y_CO"             , "Y_CO"             , "SOLUTION", "CO Mass fraction solution" );
+      AddVolumeOutput("Y_NOX"            , "Y_NOx"            , "SOLUTION", "NOx Mass fraction solution");
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup)
+        if (config->GetLookupName(i_lookup)!="NULL"){ 
+          string strname1="lookup_"+config->GetLookupName(i_lookup);
+          AddVolumeOutput(config->GetLookupName(i_lookup),strname1,"LOOKUP",config->GetLookupName(i_lookup));
+        }
+
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
 
   // Radiation variables
   if (config->AddRadiation())
     AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION", "Radiative Energy");
+
+  // Sources
+  switch (scalar_model) {
+    case PASSIVE_SCALAR:
+      break;
+    case PROGRESS_VARIABLE:
+      AddVolumeOutput("SOURCE_PROGRESS_VARIABLE", "Source_Progress_Variable", "SOURCE", "Source Progress Variable");
+      AddVolumeOutput("SOURCE_ENTHALPY"         , "Source_Enthalpy"         , "SOURCE", "Source Enthalpy"         );
+      AddVolumeOutput("SOURCE_Y_CO"             , "Source_Y_CO"             , "SOURCE", "Source Y_CO"             );
+      AddVolumeOutput("SOURCE_Y_NOX"            , "Source_Y_NOx"            , "SOURCE", "Source Y_NOx"            );
+    case NO_SCALAR_MODEL:
+      break;
+  }
 
   // Grid velocity
   if (config->GetGrid_Movement()){
@@ -422,8 +532,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
   AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
-
-  switch(config->GetKind_Turb_Model()){
+  
+  switch(turb_model){
   case SST: case SST_SUST:
     AddVolumeOutput("RES_TKE", "Residual_TKE", "RESIDUAL", "Residual of turbulent kinetic energy");
     AddVolumeOutput("RES_DISSIPATION", "Residual_Omega", "RESIDUAL", "Residual of the rate of dissipation.");
@@ -435,7 +545,22 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddVolumeOutput("RES_PASSIVE_SCALAR", "Residual_Passive_Scalar", "RESIDUAL", "Residual of passive scalar equation");
+      break;
+    case PROGRESS_VARIABLE:
+      AddVolumeOutput("RES_PROGRESS_VARIABLE", "Residual_Progress_Variable", "RESIDUAL", "Residual of the Progress Variable equation");
+      AddVolumeOutput("RES_ENTHALPY"         , "Residual_Enthalpy"         , "RESIDUAL", "Residual of the Enthalpy equation"         );
+      AddVolumeOutput("RES_Y_CO"             , "Residual_Y_CO"             , "RESIDUAL", "Residual of the Y_CO equation"             );
+      AddVolumeOutput("RES_Y_NOX"            , "Residual_Y_NOx"            , "RESIDUAL", "Residual of the Y_NOx equation"            );
+    break;
 
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   // Limiter values
   AddVolumeOutput("LIMITER_PRESSURE", "Limiter_Pressure", "LIMITER", "Limiter value of the pressure");
   AddVolumeOutput("LIMITER_VELOCITY-X", "Limiter_Velocity_x", "LIMITER", "Limiter value of the x-velocity");
@@ -443,8 +568,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
   AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
-
-  switch(config->GetKind_Turb_Model()){
+  
+  switch(turb_model){
   case SST: case SST_SUST:
     AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy.");
     AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate.");
@@ -456,7 +581,21 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      AddVolumeOutput("LIMITER_PASSIVE_SCALAR", "Limiter_Passive_Scalar", "LIMITER", "Limiter value for the passive scalar");
+      break;
+    case PROGRESS_VARIABLE:
+      AddVolumeOutput("LIMITER_PROGRESS_VARIABLE", "Limiter_Progress_Variable", "LIMITER", "Limiter value for the Progress Variable equation");
+      AddVolumeOutput("LIMITER_ENTHALPY"         , "Limiter_Enthalpy"         , "LIMITER", "Limiter value for the Enthalpy equation"         );
+      AddVolumeOutput("LIMITER_Y_CO"             , "Limiter_Y_CO"             , "LIMITER", "Limiter value for the Y_CO equation"             );
+      AddVolumeOutput("LIMITER_Y_NOX"            , "Limiter_Y_NOx"            , "LIMITER", "Limiter value for the Y_NOx equation"            );
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   // Hybrid RANS-LES
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
@@ -479,6 +618,11 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
+  if(config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT){
+    AddVolumeOutput("TIMESTEP", "timestep", "TIMESTEP", "local timestep");
+  }
+
+
   // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
   AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
@@ -493,13 +637,17 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   CVariable* Node_Turb = nullptr;
   CVariable* Node_Rad = nullptr;
 
+  CVariable* Node_Scalar = NULL;
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->GetNodes();
   }
   if (weakly_coupled_heat){
     Node_Heat = solver[HEAT_SOL]->GetNodes();
   }
-
+  if (config->GetKind_Scalar_Model() != NONE){
+    Node_Scalar = solver[SCALAR_SOL]->GetNodes();
+  }
+  
   CPoint*    Node_Geo  = geometry->nodes;
 
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
@@ -530,11 +678,44 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   case NONE:
     break;
   }
+  
+  // Solution data
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetVolumeOutputValue("PASSIVE_SCALAR", iPoint, Node_Scalar->GetSolution(iPoint, 0));
+      break;
+    case PROGRESS_VARIABLE:
+      SetVolumeOutputValue("PROGRESS_VARIABLE", iPoint, Node_Scalar->GetSolution(iPoint, I_PROG_VAR));
+      SetVolumeOutputValue("ENTHALPY"         , iPoint, Node_Scalar->GetSolution(iPoint, I_ENTHALPY));
+      SetVolumeOutputValue("Y_CO"             , iPoint, Node_Scalar->GetSolution(iPoint, I_CO      ));
+      SetVolumeOutputValue("Y_NOX"            , iPoint, Node_Scalar->GetSolution(iPoint, I_NOX     ));
+      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup){
+        if (config->GetLookupName(i_lookup)!="NULL") 
+          SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, Node_Scalar->GetLookupScalar(iPoint, i_lookup));
+      }
+      break;
+    case NO_SCALAR_MODEL:
+      break;
+  }
 
   // Radiation solver
   if (config->AddRadiation()){
     Node_Rad = solver[RAD_SOL]->GetNodes();
     SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(iPoint,0));
+  }
+
+  // Sources
+    switch(scalar_model){
+    case PASSIVE_SCALAR:
+      break;
+    case PROGRESS_VARIABLE:
+      SetVolumeOutputValue("SOURCE_PROGRESS_VARIABLE", iPoint, Node_Scalar->GetSourceScalar(iPoint, I_PROG_VAR));
+      SetVolumeOutputValue("SOURCE_ENTHALPY"         , iPoint, Node_Scalar->GetSourceScalar(iPoint, I_ENTHALPY));
+      SetVolumeOutputValue("SOURCE_Y_CO"             , iPoint, Node_Scalar->GetSourceScalar(iPoint, I_CO      ));
+      SetVolumeOutputValue("SOURCE_Y_NOX"            , iPoint, Node_Scalar->GetSourceScalar(iPoint, I_NOX     ));
+      break;
+    case NO_SCALAR_MODEL:
+      break;
   }
 
   if (config->GetGrid_Movement()){
@@ -586,7 +767,21 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetVolumeOutputValue("RES_PASSIVE_SCALAR", iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, 0));
+      break;
+    case PROGRESS_VARIABLE:
+      SetVolumeOutputValue("RES_PROGRESS_VARIABLE", iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_PROG_VAR));
+      SetVolumeOutputValue("RES_ENTHALPY"         , iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_ENTHALPY));
+      SetVolumeOutputValue("RES_Y_CO"             , iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_CO      ));
+      SetVolumeOutputValue("RES_Y_NOX"            , iPoint, solver[SCALAR_SOL]->LinSysRes(iPoint, I_NOX     ));
+     break;      
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
   SetVolumeOutputValue("LIMITER_VELOCITY-X", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 1));
   SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
@@ -609,7 +804,21 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   case NONE:
     break;
   }
-
+  
+  switch(scalar_model){
+    case PASSIVE_SCALAR:
+      SetVolumeOutputValue("LIMITER_PASSIVE_SCALAR", iPoint, Node_Scalar->GetLimiter(iPoint, 0));
+      break;
+    case PROGRESS_VARIABLE:
+      SetVolumeOutputValue("LIMITER_PROGRESS_VARIABLE", iPoint, Node_Scalar->GetLimiter(iPoint, I_PROG_VAR));
+      SetVolumeOutputValue("LIMITER_ENTHALPY"         , iPoint, Node_Scalar->GetLimiter(iPoint, I_ENTHALPY));
+      SetVolumeOutputValue("LIMITER_Y_CO"             , iPoint, Node_Scalar->GetLimiter(iPoint, I_CO      ));
+      SetVolumeOutputValue("LIMITER_Y_NOX"            , iPoint, Node_Scalar->GetLimiter(iPoint, I_NOX     ));
+      break;          
+    case NO_SCALAR_MODEL:
+      break;
+  }
+  
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
@@ -628,6 +837,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
+  }
+
+  if(config->GetKind_TimeIntScheme_Flow()==EULER_IMPLICIT){
+    SetVolumeOutputValue("TIMESTEP", iPoint, Node_Flow->GetDelta_Time(iPoint));
   }
 }
 

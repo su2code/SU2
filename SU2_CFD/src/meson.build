@@ -1,5 +1,6 @@
 su2_cfd_include = include_directories('./')
 su2_cfd_src = files(['definition_structure.cpp',
+
                      'python_wrapper_structure.cpp',
                      'CMarkerProfileReaderFVM.cpp'])
 
@@ -9,7 +10,9 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
-                      'fluid/CUserDefinedTCLib.cpp'])
+                      'fluid/CUserDefinedTCLib.cpp',
+                      'fluid/CFluidFlamelet.cpp',
+                      ])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -46,7 +49,8 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/filewriter/CParaviewXMLFileWriter.cpp',
                       'output/filewriter/CParaviewVTMFileWriter.cpp',
                       'output/filewriter/CSU2MeshFileWriter.cpp',
-                      'output/tools/CWindowingTools.cpp'])
+                      'output/tools/CWindowingTools.cpp',
+                      ])
 
 su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CTransLMVariable.cpp',
@@ -74,7 +78,10 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CIncEulerVariable.cpp',
                       'variables/CEulerVariable.cpp',
                       'variables/CNEMOEulerVariable.cpp',
-                      'variables/CNEMONSVariable.cpp'])
+                      'variables/CNEMONSVariable.cpp',
+                      'variables/CScalarVariable.cpp',
+                      'variables/CPassiveScalarVariable.cpp',
+                      'variables/CFlameletVariable.cpp'])
 
 su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CAdjEulerSolver.cpp',
@@ -103,12 +110,17 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CTransLMSolver.cpp',
                       'solvers/CTurbSolver.cpp',
                       'solvers/CTurbSASolver.cpp',
-                      'solvers/CTurbSSTSolver.cpp'])
+                      'solvers/CTurbSSTSolver.cpp',
+                      'solvers/CScalarSolver.cpp',
+                      'solvers/CPassiveScalarSolver.cpp',
+                      'solvers/CFlameletSolver.cpp',
+                     ])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/template.cpp',
                       'numerics/transition.cpp',
                       'numerics/heat.cpp',
+                      'numerics/scalar.cpp',
                       'numerics/radiation.cpp',
                       'numerics/flow/convection/roe.cpp',
                       'numerics/flow/convection/fds.cpp',
@@ -137,7 +149,11 @@ su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/elasticity/CFEAElasticity.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
-                      'numerics/elasticity/nonlinear_models.cpp'])
+                      'numerics/elasticity/nonlinear_models.cpp',
+                      'numerics/CLookUpTable.cpp',
+                      'numerics/CFileReaderLUT.cpp',
+                      'numerics/CTrapezoidalMap.cpp',
+                      ])
 
 su2_cfd_src += files(['../include/numerics_simd/CNumericsSIMD.cpp'])
 
@@ -155,14 +171,16 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CSinglezoneDriver.cpp',
                       'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
-                      'drivers/CDummyDriver.cpp'])
+                      'drivers/CDummyDriver.cpp',
+                      ])
 
 su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CIntegrationFactory.cpp',
                       'integration/CSingleGridIntegration.cpp',
                       'integration/CMultiGridIntegration.cpp',
                       'integration/CStructuralIntegration.cpp',
-                      'integration/CFEM_DG_Integration.cpp'])
+                      'integration/CFEM_DG_Integration.cpp',
+                      ])
 
 su2_cfd_src += files(['iteration/CIteration.cpp',
                       'iteration/CIterationFactory.cpp',

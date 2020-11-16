@@ -57,8 +57,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Boolean indicating whether information should be written to screen
    */
-  void SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-
+  void SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConfig *config, bool output);
   /*!
    * \brief Add aerodynamic coefficients as output fields
    * \param[in] config - Definition of the particular problem.

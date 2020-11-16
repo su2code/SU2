@@ -33,6 +33,7 @@ import copy
 
 from .. import io  as su2io
 from .interface import DEF as SU2_DEF
+from .interface import REMSH as REMSH
 
 
 # ----------------------------------------------------------------------
@@ -84,13 +85,56 @@ def deform ( config, dv_new=None, dv_old=None ):
         return info
     
     # setup mesh name
-    suffix = 'deform'
+    suffix = 'deformed'
     mesh_name = konfig['MESH_FILENAME']
-    meshname_suffixed = su2io.add_suffix( mesh_name , suffix )
-    konfig['MESH_OUT_FILENAME'] = meshname_suffixed
+    mesh_name_suffixed = su2io.add_suffix( mesh_name , suffix )
+    konfig['MESH_OUT_FILENAME'] = mesh_name_suffixed
     
     # Run Deformation
     SU2_DEF(konfig)
+
+    # run re-meshing
+    # check if re-meshing is enabled in config file
+    if konfig['ENABLE_REMESHING'] == 'YES':
+
+        # setup mesh name
+        mesh_name = konfig['MESH_OUT_FILENAME']
+        suffix = 'remeshed'
+
+        # FIXME dan: for now, overwrite the deformed mesh in case remeshing is skipped
+        #            and there is no suffixed mesh available
+        #mesh_name_suffixed = su2io.add_suffix( mesh_name , suffix )
+        #konfig['MESH_OUT_FILENAME'] = mesh_name_suffixed
+        konfig['MESH_OUT_FILENAME'] = mesh_name
+
+        REMSH(konfig)
+
+        # run deformation again to generate deformation boxes (removed during re-meshing step)
+        mesh_name = konfig['MESH_OUT_FILENAME']
+        suffix = 'ffd'
+        konfig['MESH_FILENAME'] = mesh_name
+
+        # FIXME dan: for now, overwrite the deformed mesh in case remeshing was skipped
+        #            and there is no suffixed mesh available
+        #mesh_name_suffixed = su2io.add_suffix( mesh_name , suffix )
+        #konfig['MESH_OUT_FILENAME'] = mesh_name_suffixed
+        konfig['MESH_OUT_FILENAME'] = mesh_name
+
+    # setup DV_* flags to export deformation boxes
+    dv_kind_before = konfig['DV_KIND']
+    dv_value_before = konfig['DV_VALUE']
+    dv_param_before = konfig['DV_PARAM']
+    konfig['DV_KIND'] = 'FFD_SETTING'
+    konfig['DV_PARAM'] = {'FFDTAG': ['1'], 'PARAM': [[0.0, 0.5]], 'SIZE': [1]}
+    konfig['DV_VALUE'] = '0.0'
+    konfig['DV_VALUE_NEW'] = '0.0'
+    # run Deformation
+    SU2_DEF(konfig)
+    # set DV_KIND back
+    konfig['DV_KIND'] = dv_kind_before
+    konfig['DV_PARAM'] = dv_param_before
+    konfig['DV_VALUE'] = dv_value_before
+    konfig['DV_VALUE_NEW'] = dv_value_before
     
     # update super config
     config.update({ 'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
@@ -103,7 +147,7 @@ def deform ( config, dv_new=None, dv_old=None ):
         
     # info out
     info = su2io.State()
-    info.FILES.MESH = meshname_suffixed
+    info.FILES.MESH = mesh_name_suffixed
     info.VARIABLES.DV_VALUE_NEW = konfig.DV_VALUE_NEW
     
     return info

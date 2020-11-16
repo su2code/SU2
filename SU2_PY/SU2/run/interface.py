@@ -253,6 +253,26 @@ def SOL_FSI(config):
     
     return
 
+def REMSH(config):
+    """ run re-meshing app (pointwise)
+        partitions set by config.NUMBER_PART
+        forced to run in serial, expects merged mesh input
+    """
+    konfig = copy.deepcopy(config)
+    
+    tempname = 'config_REMSH.cfg'
+    konfig.dump(tempname) 
+    
+    # must run with rank 1
+    processes = konfig['NUMBER_PART']
+
+    # get file name from config
+    mesh_name = konfig['MESH_OUT_FILENAME']
+
+    the_Command = 'pointwise -b pointwise_remesh.glf ' + mesh_name
+    run_command( the_Command )
+
+    return
 
 # ------------------------------------------------------------
 #  Helper functions

@@ -3804,6 +3804,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
     }
 
+  unsigned int nVar_Scalar = 0;
+  bool scalartransport=(config->GetKind_FluidModel()==FLAMELET_FLUID_MODEL);
+  if (scalartransport) {
+    nVar_Scalar = config->GetNScalars();
+  }
+
   /*--- Count the number of columns that we have for this flow case,
    excluding the coordinates. Here, we have 2 entries for the total
    conditions or mass flow, another nDim for the direction vector, and
@@ -3811,7 +3817,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
    necessary in case we are writing a template profile file or for Inlet
    Interpolation purposes. ---*/
 
-  unsigned short nCol_InletFile = 2 + nDim + nVar_Turb;
+  unsigned short nCol_InletFile = 2 + nDim + nVar_Turb + nVar_Scalar;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 

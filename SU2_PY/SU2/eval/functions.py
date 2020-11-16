@@ -263,6 +263,10 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+    # files: look up table
+    if ( 'FLAMELET_FLUID_MODEL' in special_cases and
+        'LOOK_UP_TABLE' in files ) :
+        pull.append( files['LOOK_UP_TABLE'] )
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
@@ -397,6 +401,11 @@ def stability( config, state=None, step=1e-2 ):
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
+
+    # files: look up table
+    if ( 'FLAMELET_FLUID_MODEL' in special_cases and
+        'LOOK_UP_TABLE' in files ) :
+        pull.append( files['LOOK_UP_TABLE'] )
 
     # pull needed files, start folder
     with redirect_folder( folder, pull, link ) as push:
@@ -580,6 +589,11 @@ def multipoint( config, state=None, step=1e-2 ):
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
         'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
+
+    # files: look up table
+    if ( 'FLAMELET_FLUID_MODEL' in special_cases and
+        'LOOK_UP_TABLE' in files ) :
+        pull.append( files['LOOK_UP_TABLE'] )
 
     # pull needed files, start folder_0
     with redirect_folder( folder[0], pull, link ) as push:
@@ -903,12 +917,18 @@ def update_mesh(config,state=None):
     # redundancy check
     deform_set  = config['DV_KIND'] == config['DEFINITION_DV']['KIND']
     deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
+    do_remesh   = config['ENABLE_REMESHING']
     if deform_set and deform_todo:
     
         # files to pull
         pull = []
         link = config['MESH_FILENAME']
         link = su2io.expand_part(link,config)
+        
+        # add pointwise re-meshing glyph
+        if do_remesh:
+            pull.append('../../pointwise_remesh.glf')
+            pull.append('../../pointwise_defaults.pw')
         
         # output redirection
         with redirect_folder('DEFORM',pull,link) as push:

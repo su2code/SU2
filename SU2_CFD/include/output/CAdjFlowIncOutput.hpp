@@ -42,6 +42,7 @@ private:
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
 
+  unsigned short scalar_model; /*!< \brief The kind of scalar model*/ 
 public:
 
 
