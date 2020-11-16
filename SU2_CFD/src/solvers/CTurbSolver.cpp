@@ -145,7 +145,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     // bool good_i = true, good_j = true;
     bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
-    bool muscl = (config->GetMUSCL_Turb()) && (good_i && good_j);
+    bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
@@ -158,14 +158,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       CheckExtrapolatedState(config, flowPrimVar_i, flowPrimVar_j, turbPrimVar_i, turbPrimVar_j, nVar, good_i, good_j);
 
-      muscl = good_i && good_j;
+      muscl = good_i || good_j;
 
       /*--- Store the state ---*/
 
-      numerics->SetPrimitive(muscl? flowPrimVar_i : V_i, 
-                             muscl? flowPrimVar_j : V_j);
-      numerics->SetTurbVar(  muscl? turbPrimVar_i : T_i, 
-                             muscl? turbPrimVar_j : T_j);
+      numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
+                             good_j? flowPrimVar_j : V_j);
+      numerics->SetTurbVar(  good_i? turbPrimVar_i : T_i, 
+                             good_j? turbPrimVar_j : T_j);
     }
     else {
       /*--- Nodal values ---*/
