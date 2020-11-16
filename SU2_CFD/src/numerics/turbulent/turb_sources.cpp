@@ -822,7 +822,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   for (auto iDim = 0; iDim < nDim; iDim++)
     diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-  const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
+  // const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
+  const su2double zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
 
   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -847,37 +848,40 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   su2double pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*diverg;
   su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*diverg);
 
-  const su2double pkmax = 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0];
-  // const su2double pwmax = 20.*beta_star*Density_i*TurbVar_i[1]*zeta*alfa_blended;
+  const su2double pkmax = 10.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0];
+  const su2double pwmax = 10.*beta_star*Density_i*TurbVar_i[1]*zeta*alfa_blended;
      
   /*--- k production Jacobian ---*/
 
   if (pk > pkmax) {
-    Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
-    Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
+    Jacobian_i[0][0] += 10.*beta_star*TurbVar_i[1]*Volume;
+    Jacobian_i[0][1] += 10.*beta_star*TurbVar_i[0]*Volume;
   }
   // else if (pk >= 0) {
   else {
   // if (pk >= 0) {
     Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-    if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+    // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+    if (TurbVar_i[1] > StrainMag_i*F2_i/a1)
       Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
   }
    
   /*--- omega production Jacobian ---*/
 
   // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
-  // if (pw > pwmax) {
-  //   Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended;
-  //   if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
-  // }
+  if (pw > pwmax) {
+    Jacobian_i[1][1] += 10.*beta_star*zeta*alfa_blended;
+    // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
+    if (TurbVar_i[1] > StrainMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
+  }
   // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)) {
-  if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
+  // else if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
+  else if (TurbVar_i[1] > StrainMag_i*F2_i/a1) {
     Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
   }
     
   pk = min(pk, pkmax);
-  // pw = min(pw, pwmax);
+  pw = min(pw, pwmax);
     
   // pk = max(pk, 0.0);
   // pw = max(pw, 0.0);
