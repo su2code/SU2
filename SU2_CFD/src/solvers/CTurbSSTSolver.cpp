@@ -154,10 +154,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-  // constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
-  // constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
-  constants[8] = 5./9.;  //alfa_1
-  constants[9] = 0.44;   //alfa_2
+  constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
+  constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
 
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
@@ -391,12 +389,10 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
 
     const su2double F2 = nodes->GetF2blending(iPoint);
     const su2double VorticityMag = flowNodes->GetVorticityMag(iPoint);
-    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    // const su2double zeta  = max(omega, VorticityMag*F2/a1);
-    const su2double zeta  = max(omega, StrainMag*F2/a1);
+    const su2double zeta  = max(omega, VorticityMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
