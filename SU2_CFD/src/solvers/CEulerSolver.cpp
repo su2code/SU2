@@ -3156,24 +3156,20 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
 
-      /*--- Set primitive variables ---*/
-      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
+      /*--- Set primitive variables for viscous terms and/or generalised source ---*/
+      if (!ideal_gas || viscous) numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
-      /*--- Set gradient of primitive variables ---*/
-      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+      /*--- Set secondary variables for generalised source ---*/
+      if (!ideal_gas) numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
-      if (!ideal_gas) {
-        /*--- Set secondary variables ---*/
-        numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
-      }
-
-      if (viscous){
-
-        /*--- Load the aux variable gradient that we already computed. ---*/
+      if (viscous) {
+        
+        /*--- Set gradient of primitive variables ---*/
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+      
+        /*--- Set gradient of auxillary variables ---*/
         numerics->SetAxiAuxVarGrad(nodes->GetAxiAuxVarGradient(iPoint), nullptr);
-
       }
-
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);
 
