@@ -870,7 +870,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
   if (pw > pwmax) {
-    Jacobian_i[1][1] += 10.*beta_star*zeta*alfa_blended;
+    Jacobian_i[1][1] += 10.*beta_star*zeta*alfa_blended*Volume;
     // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
     if (TurbVar_i[1] > StrainMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
   }
