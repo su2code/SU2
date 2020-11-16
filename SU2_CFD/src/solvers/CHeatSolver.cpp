@@ -770,65 +770,20 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex, Point_Normal;
-  unsigned short iDim;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, laminar_viscosity, thermal_diffusivity, Twall, dTdn, Prandtl_Lam;
-  //su2double Prandtl_Turb;
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
 
-  bool flow = ((config->GetKind_Solver() == INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == INC_RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_INC_RANS));
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-  Prandtl_Lam = config->GetPrandtl_Lam();
-//  Prandtl_Turb = config->GetPrandtl_Turb();
-  laminar_viscosity = config->GetMu_ConstantND();
-  //Prandtl_Turb = config->GetPrandtl_Turb();
-  //laminar_viscosity = config->GetViscosity_FreeStreamND(); // TDE check for consistency for CHT
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+    nodes->SetSolution_Old(iPoint,&Twall);
+    LinSysRes(iPoint, 0) = 0.0;
+    nodes->SetRes_TruncErrorZero(iPoint);
 
-  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
-
-        Coord_i = geometry->nodes->GetCoord(iPoint);
-        Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        dist_ij = 0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-        dist_ij = sqrt(dist_ij);
-
-        dTdn = -(nodes->GetSolution(Point_Normal,0) - Twall)/dist_ij;
-
-        if(flow) {
-          thermal_diffusivity = laminar_viscosity/Prandtl_Lam;
-        }
-        else
-          thermal_diffusivity = config->GetThermalDiffusivity_Solid();
-
-        Res_Visc[0] = thermal_diffusivity*dTdn*Area;
-
-        if(implicit) {
-
-          Jacobian_i[0][0] = -thermal_diffusivity/dist_ij * Area;
-        }
-
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    }
+    if (implicit) Jacobian.DeleteValsRowi(iPoint);
   }
 }
 
@@ -1143,6 +1098,12 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
           HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
           HeatFlux          = HeatFluxDensity * Area;
+
+          if (implicit) {
+
+            Jacobian_i[0][0] = -thermal_diffusivity*Area;
+            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          }
         }
         else {
 
@@ -1152,12 +1113,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
         Res_Visc[0] = -HeatFlux;
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-        if (implicit) {
-
-          Jacobian_i[0][0] = thermal_diffusivity*Area;
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-        }
       }
     }
   }
@@ -1642,7 +1597,9 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system ---*/
 
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SetIterLinSolver(iter);
+  SetResLinSolver(System.GetResidual());
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
