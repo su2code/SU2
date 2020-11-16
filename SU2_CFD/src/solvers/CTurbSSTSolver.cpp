@@ -1550,8 +1550,6 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
   const su2double *Normal = nullptr;
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
-  su2double Mean_Visc, Mean_Density, Lambda_1, Lambda_2;
-  su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
 
   /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
   su2double Primitive_i[MAXNVARFLOW] = {0.0}, TurbVar_i[MAXNVAR] = {0.0};
@@ -1589,54 +1587,21 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       if (muscl) {
         /*--- Extrapolate the state ---*/
 
-        su2double tke_i = 0.0, tke_j = 0.0;
         const unsigned long nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
-        const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
         solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
                                            TurbVar_i, TurbVar_j, nFlowVarGrad, nVar);
 
         /*--- Check the extrapolation ---*/
 
         bool good_i = true, good_j = true;
-        CheckExtrapolatedState(config, Primitive_i, Primitive_j, TurbVar_i, TurbVar_j, nTurbVarGrad, good_i, good_j);
+        CheckExtrapolatedState(config, Primitive_i, Primitive_j, TurbVar_i, TurbVar_j, nVar, good_i, good_j);
 
         if (!good_i) nodes->SetNon_Physical(iPoint, true);
         if (!good_j) nodes->SetNon_Physical(jPoint, true);
-
-        /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
-        /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
-
-        // su2double ProjVel_i = 0, SoundSpeed_i = 0;
-        // su2double ProjVel_j = 0, SoundSpeed_j = 0;
-
-        // if (good_i) {
-        //   for (auto iDim = 0; iDim < nDim; iDim++)
-        //     ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];   
-        //   SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
-        // }
-        // else {
-        //   ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
-        //   SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
-        // }
-        // if (good_j) {
-        //   for (auto iDim = 0; iDim < nDim; iDim++)
-        //     ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];          
-        //   SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
-        // }
-        // else {
-        //   ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
-        //   SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
-        // }
-
-        // /*--- Compute the mean values ---*/
-
-        // Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
-        // Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
       }
-      // else {
-        Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
-        Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
-      // }
+
+      Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
+      Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
 
       /*--- Adjustment for grid movement ---*/
 
@@ -1655,21 +1620,21 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
       /*--- Viscous contribution ---*/
 
-      F1_i = nodes->GetF1blending(iPoint);
-      F1_j = nodes->GetF1blending(jPoint);
+      const su2double F1_i = nodes->GetF1blending(iPoint);
+      const su2double F1_j = nodes->GetF1blending(jPoint);
 
-      sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-      sigma_k_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
-      sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
-      sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
+      const su2double sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+      const su2double sigma_k_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+      const su2double sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+      const su2double sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
-      visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-      visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
-      visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
-      visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_om_j*nodes->GetmuT(jPoint);
+      const su2double visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
+      const su2double visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
+      const su2double visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
+      const su2double visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_om_j*nodes->GetmuT(jPoint);
 
-      Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
-      Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
+      const su2double Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
+      const su2double Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
 
       Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
       nodes->AddMax_Lambda_Visc(iPoint, Lambda);
@@ -1720,16 +1685,16 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
         /*--- Viscous contribution ---*/
 
-        F1_i = nodes->GetF1blending(iPoint);
+        const su2double F1_i = nodes->GetF1blending(iPoint);
 
-        sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-        sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
+        const su2double sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+        const su2double sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
 
-        visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-        visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
+        const su2double visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
+        const su2double visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
 
-        Mean_Visc    = (visc_k_i + visc_om_i);
-        Mean_Density = flowNodes->GetDensity(iPoint);
+        const su2double Mean_Visc    = (visc_k_i + visc_om_i);
+        const su2double Mean_Density = flowNodes->GetDensity(iPoint);
 
         Lambda = Mean_Visc*Area*Area/(K_v*Mean_Density*Vol);
         nodes->AddMax_Lambda_Visc(iPoint, Lambda);
