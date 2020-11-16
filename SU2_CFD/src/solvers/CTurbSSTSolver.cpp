@@ -1554,7 +1554,8 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
   su2double F1_i, F1_j, sigma_k_i, sigma_k_j, sigma_om_i, sigma_om_j, visc_k_i, visc_k_j, visc_om_i, visc_om_j;
 
   /*--- Static arrays of MUSCL-reconstructed primitives(thread safety). ---*/
-  su2double Primitive_i[MAXNVARFLOW] = {0.0}, Primitive_j[MAXNVARFLOW] = {0.0};
+  su2double Primitive_i[MAXNVARFLOW] = {0.0}, TurbVar_i[MAXNVAR] = {0.0};
+  su2double Primitive_j[MAXNVARFLOW] = {0.0}, TurbVar_j[MAXNVAR] = {0.0};
 
   CVariable *flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -1592,15 +1593,15 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         const unsigned long nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
         const unsigned long nTurbVarGrad = tkeNeeded ? 1 : 0;
         solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                                           &tke_i, &tke_j, nFlowVarGrad, nTurbVarGrad);
+                                           TurbVar_i, TurbVar_j, nFlowVarGrad, nVar);
 
         /*--- Check the extrapolation ---*/
 
         bool good_i = true, good_j = true;
-        CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
+        CheckExtrapolatedState(config, Primitive_i, Primitive_j, TurbVar_i, TurbVar_j, nTurbVarGrad, good_i, good_j);
 
-        if (!good_i) nodes->SetNon_Physical(iPoint, !good_i);
-        if (!good_j) nodes->SetNon_Physical(jPoint, !good_i);
+        if (!good_i) nodes->SetNon_Physical(iPoint, true);
+        if (!good_j) nodes->SetNon_Physical(jPoint, true);
 
         /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
         /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
