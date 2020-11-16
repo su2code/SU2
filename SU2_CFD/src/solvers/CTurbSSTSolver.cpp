@@ -311,6 +311,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   //     const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
   //     nodes->SetSolution(iPoint, iVar, sol);
   //   }
+
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    nodes->SetNon_Physical(iPoint, false);
   
   SetPrimitive_Variables(solver);
   
@@ -1596,40 +1599,43 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
         bool good_i = true, good_j = true;
         CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
 
+        if (!good_i) nodes->SetNon_Physical(iPoint, !good_i);
+        if (!good_j) nodes->SetNon_Physical(jPoint, !good_i);
+
         /*--- If the extrapolated state is good, compute the mean projected velocity ---*/
         /*--- and soundspeed using the face values; otherwise, use the nodal values  ---*/
 
-        su2double ProjVel_i = 0, SoundSpeed_i = 0;
-        su2double ProjVel_j = 0, SoundSpeed_j = 0;
+        // su2double ProjVel_i = 0, SoundSpeed_i = 0;
+        // su2double ProjVel_j = 0, SoundSpeed_j = 0;
 
-        if (good_i) {
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];   
-          SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
-        }
-        else {
-          ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
-          SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
-        }
-        if (good_j) {
-          for (auto iDim = 0; iDim < nDim; iDim++)
-            ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];          
-          SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
-        }
-        else {
-          ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
-          SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
-        }
+        // if (good_i) {
+        //   for (auto iDim = 0; iDim < nDim; iDim++)
+        //     ProjVel_i += Primitive_i[iDim+1]*Normal[iDim];   
+        //   SoundSpeed_i = sqrt(fabs(Primitive_i[nDim+1]*Gamma/Primitive_i[nDim+2]));
+        // }
+        // else {
+        //   ProjVel_i = flowNodes->GetProjVel(iPoint,Normal);
+        //   SoundSpeed_i = flowNodes->GetSoundSpeed(iPoint);
+        // }
+        // if (good_j) {
+        //   for (auto iDim = 0; iDim < nDim; iDim++)
+        //     ProjVel_j += Primitive_j[iDim+1]*Normal[iDim];          
+        //   SoundSpeed_j = sqrt(fabs(Primitive_j[nDim+1]*Gamma/Primitive_j[nDim+2]));
+        // }
+        // else {
+        //   ProjVel_j = flowNodes->GetProjVel(jPoint,Normal);
+        //   SoundSpeed_j = flowNodes->GetSoundSpeed(jPoint);
+        // }
 
-        /*--- Compute the mean values ---*/
+        // /*--- Compute the mean values ---*/
 
-        Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
-        Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
+        // Mean_ProjVel = 0.5 * (ProjVel_i + ProjVel_j);
+        // Mean_SoundSpeed = 0.5 * (SoundSpeed_i + SoundSpeed_j) * Area;
       }
-      else {
+      // else {
         Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
         Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
-      }
+      // }
 
       /*--- Adjustment for grid movement ---*/
 

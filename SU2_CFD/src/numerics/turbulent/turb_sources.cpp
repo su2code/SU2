@@ -823,6 +823,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     diverg += PrimVar_Grad_i[iDim+1][iDim];
     
   const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
+  const bool stress_limited = (TurbVar_i[1] < VorticityMag_i*F2_i/a1);
 
   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -860,19 +861,19 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   else {
   // if (pk >= 0) {
     Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-    if (TurbVar_i[1] > VorticityMag_i*F2_i/a1)
+    if (!stress_limited)
       Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
   }
    
   /*--- omega production Jacobian ---*/
 
-  // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1))
+  // if ((pw >= 0) && (!stress_limited))
   // if (pw > pwmax) {
   //   Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended;
-  //   if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) Jacobian_i[1][1] *= 2.0;
+  //   if (!stress_limited) Jacobian_i[1][1] *= 2.0;
   // }
-  // if ((pw >= 0) && (TurbVar_i[1] > VorticityMag_i*F2_i/a1)) {
-  if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
+  // if ((pw >= 0) && (!stress_limited)) {
+  if (!stress_limited) {
     Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
   }
     

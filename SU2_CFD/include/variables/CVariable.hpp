@@ -227,15 +227,16 @@ public:
    * \param[in] value - identification of the non-physical point.
    */
   inline void SetNon_Physical(unsigned long iPoint, bool val_value) {
-    if (val_value) {
-      Non_Physical(iPoint) = val_value;
-      Non_Physical_Counter(iPoint) = 0;
-    } else {
-      Non_Physical_Counter(iPoint)++;
-      if (Non_Physical_Counter(iPoint) > 20) {
-        Non_Physical(iPoint) = false;
-      }
-    }
+    Non_Physical(iPoint) = val_value;
+    // if (val_value) {
+    //   Non_Physical(iPoint) = val_value;
+    //   Non_Physical_Counter(iPoint) = 0;
+    // } else {
+    //   Non_Physical_Counter(iPoint)++;
+    //   if (Non_Physical_Counter(iPoint) > 20) {
+    //     Non_Physical(iPoint) = false;
+    //   }
+    // }
   }
 
   /*!
