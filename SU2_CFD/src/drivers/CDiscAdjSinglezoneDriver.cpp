@@ -555,20 +555,15 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Extract the computed sensitivity values. ---*/
 
-  int IDX_SOL;
-
   if (config->GetKind_Solver() == DISC_ADJ_FEM) {
-    IDX_SOL = ADJFEA_SOL;
-  } else if(SecondaryVariables == MESH_COORDS) {
-    IDX_SOL = ADJFLOW_SOL;
-  } else if(SecondaryVariables == MESH_DEFORM) {
-    IDX_SOL = ADJMESH_SOL;
-  } else {
-    IDX_SOL = -1;
+    solver[ADJFEA_SOL]->SetSensitivity(geometry, config);
   }
-
-  if(IDX_SOL >= 0)
-    solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
+  else if(SecondaryVariables == MESH_COORDS) {
+    solver[ADJFLOW_SOL]->SetSensitivity(geometry, config);
+  }
+  else { // MESH_DEFORM
+    solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[ADJFLOW_SOL]);
+  }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

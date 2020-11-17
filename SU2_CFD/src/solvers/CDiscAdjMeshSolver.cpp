@@ -198,12 +198,10 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
 
 }
 
-void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
 
-  unsigned long iPoint;
-  unsigned short iDim;
-  su2double Sensitivity, eps;
-  bool time_stepping = (config->GetTime_Marching() != STEADY);
+  const bool time_stepping = (config->GetTime_Marching() != STEADY);
+  const auto eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
 
   /*--- Extract the sensitivities ---*/
   ExtractAdjoint_Solution(geometry, config);
@@ -212,30 +210,28 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, C
   ExtractAdjoint_Variables(geometry, config);
 
   /*--- Store the sensitivities in the flow adjoint container ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
 
-    for (iDim = 0; iDim < nDim; iDim++) {
+    /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+    su2double limiter = 1.0;
+    if (config->GetSens_Remove_Sharp() && (geometry->nodes->GetSharpEdge_Distance(iPoint) < eps)) {
+      limiter = 0.0;
+    }
 
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       /*--- The sensitivity was extracted using ExtractAdjoint_Solution ---*/
-      Sensitivity = nodes->GetSolution(iPoint,iDim);
-
-      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-      if (config->GetSens_Remove_Sharp()) {
-        eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->nodes->GetSharpEdge_Distance(iPoint) < config->GetAdjSharp_LimiterCoeff()*eps )
-          Sensitivity = 0.0;
-      }
+      const su2double Sensitivity = limiter * nodes->GetSolution(iPoint,iDim);
 
       /*--- Store the sensitivities ---*/
       if (!time_stepping) {
-        solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint, iDim, Sensitivity);
+        solver->GetNodes()->SetSensitivity(iPoint, iDim, Sensitivity);
       } else {
-        solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint, iDim,
-          solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint, iDim) + Sensitivity);
+        solver->GetNodes()->SetSensitivity(iPoint, iDim,
+          solver->GetNodes()->GetSensitivity(iPoint, iDim) + Sensitivity);
       }
     }
   }
-  solver[ADJFLOW_SOL]->SetSurface_Sensitivity(geometry, config);
+  solver->SetSurface_Sensitivity(geometry, config);
 
 }
 
