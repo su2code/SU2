@@ -33,9 +33,6 @@
 #include <sstream>
 #include <vector>
 
-#include "../../../include/parallelization/vectorization.hpp"
-#include "../../../include/fem/CFEMStandardElementBase.hpp"
-
 /*----------------------------------------------------------------------------*/
 /* This program creates the source files to compute the data in the 2D        */
 /* integration points of a hexadral element using tensor products. The number */
@@ -63,14 +60,12 @@ const std::string Pairs = "1-2_1-3_1-4_1-5_2-2_2-3_2-4_2-5_3-3_3-4_3-5_3-6_"
                           "6-7_6-8_6-9_7-7_7-8_7-9_7_12_8-8_8-12_8-13_9-9_"
                           "9-13_9-14_10-10_10-14";
 
-/*--- Definition of the base vector length. Make sure this variable is equal
-      to the value defined in CFEMStandardElementBase (baseVectorLen). ---*/
-const size_t baseVectorLen = CFEMStandardElementBase::baseVectorLen;
-//const size_t baseVectorLen = simd::preferredLen<su2double>();
-
 /*--- Define the name of the include file. ---*/
 const std::string IncludeDir  = "../../../include/tensor_products";
 const std::string IncludeFile = "TensorProductVolumeIntPoints2D.hpp";
+
+/*--- Define the name of the include file for the standard element. ---*/
+const std::string StandardElemIncludeFile = "../../../include/fem/CFEMStandardElementBase.hpp";
 
 /*----------------------------------------------------------------------------*/
 /*                          Function prototypes.                              */
@@ -354,8 +349,9 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
               << nDOFs1D << "," << nInt1D << ")";
   WriteFileHeader(sourceFile, fileName.c_str(), description.str().c_str());
 
-  /* Write the line for the include file. */
-  sourceFile << "#include \"" << IncludeDir << "/" << IncludeFile << "\"" << std::endl
+  /* Write the lines for the include file. */
+  sourceFile << "#include \"" << IncludeDir << "/" << IncludeFile << "\"" << std::endl;
+  sourceFile << "#include \"" << StandardElemIncludeFile << "\"" << std::endl
              << std::endl;
 
   /* Write the header of the function. */
@@ -380,7 +376,10 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "su2double           *C) {" << std::endl;
 
   /* Compute the padded value of the number of integration points. */
-  const int MP = ((nInt1D+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  sourceFile << std::endl;
+  sourceFile << "  /*--- Compute the padded value of the number of integration points. ---*/" << std::endl;
+  sourceFile << "  const size_t baseVectorLen = CFEMStandardElementBase::baseVectorLen;" << std::endl;
+  sourceFile << "  const int MP = ((" << nInt1D-1 << "+baseVectorLen)/baseVectorLen)*baseVectorLen;" << std::endl;
 
   /* Cast the components of the A tensor to a 2D array. */
   sourceFile << std::endl;
@@ -388,17 +387,16 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "        Note that C++ stores multi-dimensional arrays in row major order,"    << std::endl;
   sourceFile << "        hence the indices are reversed compared to the column major order"    << std::endl;
   sourceFile << "        storage of e.g. Fortran. ---*/"                                       << std::endl;
-  sourceFile << "  const passivedouble (*ai)[" << MP << "] = (const passivedouble (*)["
-             << MP << "]) Ai;" << std::endl;
-  sourceFile << "  const passivedouble (*aj)[" << MP << "] = (const passivedouble (*)["
-             << MP << "]) Aj;" << std::endl;
+  sourceFile << "  const passivedouble (*ai)[MP] = (const passivedouble (*)[MP]) Ai;" << std::endl;
+  sourceFile << "  const passivedouble (*aj)[MP] = (const passivedouble (*)[MP]) Aj;" << std::endl;
 
   /* Define the variables to store the intermediate results. */
   sourceFile << std::endl;
   sourceFile << "  /*--- Define the variables to store the intermediate results. ---*/" << std::endl;
-  sourceFile << "  su2double tmpJ[" << nDOFs1D << "][" << MP << "];" << std::endl;
-  if(MP > nInt1D)
-    sourceFile << "  su2double tmpI[" << nInt1D << "][" << MP << "];" << std::endl;
+  sourceFile << "  su2double tmpJ[" << nDOFs1D << "][MP];" << std::endl;
+  sourceFile << "#if MP > " << nInt1D << std::endl;
+  sourceFile << "  su2double tmpI[" << nInt1D << "][MP];" << std::endl;
+  sourceFile << "#endif" << std::endl;
 
   /* Start the outer loop over N. */
   sourceFile << std::endl;
@@ -419,10 +417,10 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "          in the integration points in j-direction. ---*/"      << std::endl;
   sourceFile << "    for(int i=0; i<" << nDOFs1D << "; ++i) {" << std::endl;
   sourceFile << "      SU2_OMP_SIMD" << std::endl;
-  sourceFile << "      for(int j=0; j<" << MP << "; ++j) tmpJ[i][j] = 0.0;" << std::endl;
+  sourceFile << "      for(int j=0; j<MP; ++j) tmpJ[i][j] = 0.0;" << std::endl;
   sourceFile << "      for(int jj=0; jj<" << nDOFs1D << "; ++jj) {" << std::endl;
   sourceFile << "        SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
-  sourceFile << "        for(int j=0; j<" << MP << "; ++j)" << std::endl;
+  sourceFile << "        for(int j=0; j<MP; ++j)" << std::endl;
   sourceFile << "          tmpJ[i][j] += aj[jj][j] * b[jj][i];" << std::endl;
   sourceFile << "      }" << std::endl;
   sourceFile << "    }" << std::endl;
@@ -433,30 +431,32 @@ void CreateTensorProductSourceFile(const int nDOFs1D,
   sourceFile << "          in the integration points in i-direction. This is"    << std::endl;
   sourceFile << "          the final result of the tensor product. ---*/"        << std::endl;
   sourceFile << "    for(int j=0; j<" << nInt1D << "; ++j) {" << std::endl;
+  sourceFile << "#if MP > " << nInt1D << std::endl;
   sourceFile << "      SU2_OMP_SIMD" << std::endl;
-  if(MP > nInt1D)
-  sourceFile << "      for(int i=0; i<" << MP << "; ++i) tmpI[j][i] = 0.0;" << std::endl;
-  else
-  sourceFile << "      for(int i=0; i<" << MP << "; ++i) c[j][i] = 0.0;" << std::endl;
+  sourceFile << "      for(int i=0; i<MP; ++i) tmpI[j][i] = 0.0;" << std::endl;
   sourceFile << "      for(int ii=0; ii<" << nDOFs1D << "; ++ii) {" << std::endl;
   sourceFile << "        SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
-  sourceFile << "        for(int i=0; i<" << MP << "; ++i)" << std::endl;
-  if(MP > nInt1D)
+  sourceFile << "        for(int i=0; i<MP; ++i)" << std::endl;
   sourceFile << "          tmpI[j][i] += ai[ii][i] * tmpJ[ii][j];" << std::endl;
-  else
+  sourceFile << "#else" << std::endl;
+  sourceFile << "      SU2_OMP_SIMD" << std::endl;
+  sourceFile << "      for(int i=0; i<MP; ++i) c[j][i] = 0.0;" << std::endl;
+  sourceFile << "      for(int ii=0; ii<" << nDOFs1D << "; ++ii) {" << std::endl;
+  sourceFile << "        SU2_OMP_SIMD_IF_NOT_AD" << std::endl;
+  sourceFile << "        for(int i=0; i<MP; ++i)" << std::endl;
   sourceFile << "          c[j][i] += ai[ii][i] * tmpJ[ii][j];" << std::endl;
+  sourceFile << "#endif" << std::endl;
   sourceFile << "      }" << std::endl;
   sourceFile << "    }" << std::endl;
 
   /* If the data was stored in tmpI, copy it to c. */
-  if(MP > nInt1D)
-  {
-    sourceFile << std::endl;
-    sourceFile << "    /*--- Copy the values to the appropriate location in c. ---*/" << std::endl;
-    sourceFile << "    for(int j=0; j<" << nInt1D << "; ++j)" << std::endl;
-    sourceFile << "      for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
-    sourceFile << "        c[j][i] = tmpI[j][i];" << std::endl;
-  }
+  sourceFile << std::endl;
+  sourceFile << "#if MP > " << nInt1D << std::endl;
+  sourceFile << "    /*--- Copy the values to the appropriate location in c. ---*/" << std::endl;
+  sourceFile << "    for(int j=0; j<" << nInt1D << "; ++j)" << std::endl;
+  sourceFile << "      for(int i=0; i<" << nInt1D << "; ++i)" << std::endl;
+  sourceFile << "        c[j][i] = tmpI[j][i];" << std::endl;
+  sourceFile << "#endif" << std::endl;
 
   /* Close the outer loop over N. */
   sourceFile << std::endl;

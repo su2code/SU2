@@ -34,6 +34,7 @@
 
 #include "../CConfig.hpp"
 #include "../containers/C2DContainer.hpp"
+#include "../parallelization/vectorization.hpp"
 
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 #include "mkl.h"
@@ -51,10 +52,8 @@ using namespace std;
  */
 class CFEMStandardElementBase {
 public:
-  static const size_t baseVectorLen = 8;
-  //static const size_t baseVectorLen = simd::preferredLen<su2double>();   /*!< \brief Vector length must be a multiple of
-  //                                                                                   basevectorLen for good performance. */
-
+  static const size_t baseVectorLen = simd::preferredLen<su2double>();   /*!< \brief Vector length must be a multiple of
+                                                                                     basevectorLen for good performance. */
 protected:
   unsigned short VTK_Type;         /*!< \brief Element type using the VTK convention. */
   unsigned short nPoly;            /*!< \brief Polynomial order of the element. */

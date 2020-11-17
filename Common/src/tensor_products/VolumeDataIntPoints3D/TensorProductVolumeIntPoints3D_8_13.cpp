@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/tensor_products/TensorProductVolumeIntPoints3D.hpp"
+#include "../../../include/fem/CFEMStandardElementBase.hpp"
 
 void TensorProductVolumeIntPoints3D_8_13(const int           N,
                                          const int           ldb,
@@ -36,18 +37,24 @@ void TensorProductVolumeIntPoints3D_8_13(const int           N,
                                          const su2double     *B,
                                          su2double           *C) {
 
+  /*--- Compute the padded value of the number of integration points. ---*/
+  const size_t baseVectorLen = CFEMStandardElementBase::baseVectorLen;
+  const int MP = ((12+baseVectorLen)/baseVectorLen)*baseVectorLen;
+
   /*--- Cast the one dimensional input arrays for the A-tensor to 2D arrays.
         Note that C++ stores multi-dimensional arrays in row major order,
         hence the indices are reversed compared to the column major order
         storage of e.g. Fortran. ---*/
-  const passivedouble (*ai)[16] = (const passivedouble (*)[16]) Ai;
-  const passivedouble (*aj)[16] = (const passivedouble (*)[16]) Aj;
-  const passivedouble (*ak)[16] = (const passivedouble (*)[16]) Ak;
+  const passivedouble (*ai)[MP] = (const passivedouble (*)[MP]) Ai;
+  const passivedouble (*aj)[MP] = (const passivedouble (*)[MP]) Aj;
+  const passivedouble (*ak)[MP] = (const passivedouble (*)[MP]) Ak;
 
   /*--- Define the variables to store the intermediate results. ---*/
-  su2double tmpK[8][8][16];
-  su2double tmpJ[13][8][16];
-  su2double tmpI[13][13][16];
+  su2double tmpK[8][8][MP];
+  su2double tmpJ[13][8][MP];
+#if MP > 13
+  su2double tmpI[13][13][MP];
+#endif
 
   /*--- Outer loop over N. ---*/
   for(int l=0; l<N; ++l) {
@@ -61,10 +68,10 @@ void TensorProductVolumeIntPoints3D_8_13(const int           N,
     for(int i=0; i<8; ++i) {
       for(int j=0; j<8; ++j) {
         SU2_OMP_SIMD
-        for(int k=0; k<16; ++k) tmpK[i][j][k] = 0.0;
+        for(int k=0; k<MP; ++k) tmpK[i][j][k] = 0.0;
         for(int kk=0; kk<8; ++kk) {
           SU2_OMP_SIMD_IF_NOT_AD
-          for(int k=0; k<16; ++k)
+          for(int k=0; k<MP; ++k)
             tmpK[i][j][k] += ak[kk][k] * b[kk][j][i];
         }
       }
@@ -75,10 +82,10 @@ void TensorProductVolumeIntPoints3D_8_13(const int           N,
     for(int k=0; k<13; ++k) {
       for(int i=0; i<8; ++i) {
         SU2_OMP_SIMD
-        for(int j=0; j<16; ++j) tmpJ[k][i][j] = 0.0;
+        for(int j=0; j<MP; ++j) tmpJ[k][i][j] = 0.0;
         for(int jj=0; jj<8; ++jj) {
           SU2_OMP_SIMD_IF_NOT_AD
-          for(int j=0; j<16; ++j)
+          for(int j=0; j<MP; ++j)
             tmpJ[k][i][j] += aj[jj][j] * tmpK[i][jj][k];
         }
       }
@@ -89,21 +96,32 @@ void TensorProductVolumeIntPoints3D_8_13(const int           N,
           the final result of the tensor product. ---*/
     for(int k=0; k<13; ++k) {
       for(int j=0; j<13; ++j) {
+#if MP > 13
         SU2_OMP_SIMD
-        for(int i=0; i<16; ++i) tmpI[k][j][i] = 0.0;
+        for(int i=0; i<MP; ++i) tmpI[k][j][i] = 0.0;
         for(int ii=0; ii<8; ++ii) {
           SU2_OMP_SIMD_IF_NOT_AD
-          for(int i=0; i<16; ++i)
+          for(int i=0; i<MP; ++i)
             tmpI[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];
+#else
+        SU2_OMP_SIMD
+        for(int i=0; i<MP; ++i) c[k][j][i] = 0.0;
+        for(int ii=0; ii<8; ++ii) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(int i=0; i<MP; ++i)
+            c[k][j][i] += ai[ii][i] * tmpJ[k][ii][j];
+#endif
         }
       }
     }
 
+#if MP > 13
     /*--- Copy the values to the appropriate location in c. ---*/
     for(int k=0; k<13; ++k)
       for(int j=0; j<13; ++j)
         for(int i=0; i<13; ++i)
           c[k][j][i] = tmpI[k][j][i];
+#endif
 
   } /*--- End of the loop over N. ---*/
 }

@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/tensor_products/TensorProductVolumeIntPoints2D.hpp"
+#include "../../../include/fem/CFEMStandardElementBase.hpp"
 
 void TensorProductVolumeIntPoints2D_3_8(const int           N,
                                         const int           ldb,
@@ -35,15 +36,22 @@ void TensorProductVolumeIntPoints2D_3_8(const int           N,
                                         const su2double     *B,
                                         su2double           *C) {
 
+  /*--- Compute the padded value of the number of integration points. ---*/
+  const size_t baseVectorLen = CFEMStandardElementBase::baseVectorLen;
+  const int MP = ((7+baseVectorLen)/baseVectorLen)*baseVectorLen;
+
   /*--- Cast the one dimensional input arrays for the A-tensor to 2D arrays.
         Note that C++ stores multi-dimensional arrays in row major order,
         hence the indices are reversed compared to the column major order
         storage of e.g. Fortran. ---*/
-  const passivedouble (*ai)[8] = (const passivedouble (*)[8]) Ai;
-  const passivedouble (*aj)[8] = (const passivedouble (*)[8]) Aj;
+  const passivedouble (*ai)[MP] = (const passivedouble (*)[MP]) Ai;
+  const passivedouble (*aj)[MP] = (const passivedouble (*)[MP]) Aj;
 
   /*--- Define the variables to store the intermediate results. ---*/
-  su2double tmpJ[3][8];
+  su2double tmpJ[3][MP];
+#if MP > 8
+  su2double tmpI[8][MP];
+#endif
 
   /*--- Outer loop over N. ---*/
   for(int l=0; l<N; ++l) {
@@ -56,10 +64,10 @@ void TensorProductVolumeIntPoints2D_3_8(const int           N,
           in the integration points in j-direction. ---*/
     for(int i=0; i<3; ++i) {
       SU2_OMP_SIMD
-      for(int j=0; j<8; ++j) tmpJ[i][j] = 0.0;
+      for(int j=0; j<MP; ++j) tmpJ[i][j] = 0.0;
       for(int jj=0; jj<3; ++jj) {
         SU2_OMP_SIMD_IF_NOT_AD
-        for(int j=0; j<8; ++j)
+        for(int j=0; j<MP; ++j)
           tmpJ[i][j] += aj[jj][j] * b[jj][i];
       }
     }
@@ -68,14 +76,30 @@ void TensorProductVolumeIntPoints2D_3_8(const int           N,
           in the integration points in i-direction. This is
           the final result of the tensor product. ---*/
     for(int j=0; j<8; ++j) {
+#if MP > 8
       SU2_OMP_SIMD
-      for(int i=0; i<8; ++i) c[j][i] = 0.0;
+      for(int i=0; i<MP; ++i) tmpI[j][i] = 0.0;
       for(int ii=0; ii<3; ++ii) {
         SU2_OMP_SIMD_IF_NOT_AD
-        for(int i=0; i<8; ++i)
+        for(int i=0; i<MP; ++i)
+          tmpI[j][i] += ai[ii][i] * tmpJ[ii][j];
+#else
+      SU2_OMP_SIMD
+      for(int i=0; i<MP; ++i) c[j][i] = 0.0;
+      for(int ii=0; ii<3; ++ii) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(int i=0; i<MP; ++i)
           c[j][i] += ai[ii][i] * tmpJ[ii][j];
+#endif
       }
     }
+
+#if MP > 8
+    /*--- Copy the values to the appropriate location in c. ---*/
+    for(int j=0; j<8; ++j)
+      for(int i=0; i<8; ++i)
+        c[j][i] = tmpI[j][i];
+#endif
 
   } /*--- End of the loop over N. ---*/
 }
