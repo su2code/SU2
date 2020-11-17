@@ -51,7 +51,9 @@ using namespace std;
  */
 class CFEMStandardElementBase {
 public:
-  static const size_t baseVectorLen = 8;   /*!< \brief Vector length must be a multiple of basevectorLen for good performance. */
+  static const size_t baseVectorLen = 8;
+  //static const size_t baseVectorLen = simd::preferredLen<su2double>();   /*!< \brief Vector length must be a multiple of
+  //                                                                                   basevectorLen for good performance. */
 
 protected:
   unsigned short VTK_Type;         /*!< \brief Element type using the VTK convention. */

@@ -33,6 +33,9 @@
 #include <sstream>
 #include <vector>
 
+#include "../../../include/parallelization/vectorization.hpp"
+#include "../../../include/fem/CFEMStandardElementBase.hpp"
+
 /*----------------------------------------------------------------------------*/
 /* This program creates the source files to compute the data in the 3D        */
 /* integration points of a hexadral element using tensor products. The number */
@@ -62,7 +65,8 @@ const std::string Pairs = "1-2_1-3_1-4_1-5_2-2_2-3_2-4_2-5_3-3_3-4_3-5_3-6_"
 
 /*--- Definition of the base vector length. Make sure this variable is equal
       to the value defined in CFEMStandardElementBase (baseVectorLen). ---*/
-const size_t baseVectorLen = 8;
+const size_t baseVectorLen = CFEMStandardElementBase::baseVectorLen;
+//const size_t baseVectorLen = simd::preferredLen<su2double>();
 
 /*--- Define the name of the include file. ---*/
 const std::string IncludeDir  = "../../../include/tensor_products";
@@ -98,6 +102,9 @@ void WriteFileHeader(std::ofstream &file,
 /*----------------------------------------------------------------------------*/
 
 int main() {
+
+  // std::cout << "simd::preferredLen<su2double>(): " << simd::preferredLen<su2double>() << std::endl;
+  // std::exit(1);
 
   /* Extract the pairing information from the global string Pairs to integer data. */
   std::vector<int> nDOFs1D, nInt1D;
