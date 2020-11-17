@@ -28,15 +28,15 @@
 #include "../../include/fem/CFEMStandardElementBase.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*         Protected member functions of CFEMStandardElementBase.                   */
+/*--- Member functions of CFEMStandardElementBase related to the quadrature      ---*/
+/*--- rules for triangles.                                                       ---*/
 /*----------------------------------------------------------------------------------*/
 
-void CFEMStandardElementBase::IntegrationPointsTriangle(vector<passivedouble> &rTriangle,
-                                                        vector<passivedouble> &sTriangle,
-                                                        vector<passivedouble> &wTriangle) {
+unsigned short CFEMStandardElementBase::GetNIntTriangleStatic(unsigned short orderExact) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
+  unsigned short nIntegration;
   switch( orderExact ) {
     case  0:
     case  1: nIntegration =   1; break;
@@ -70,6 +70,18 @@ void CFEMStandardElementBase::IntegrationPointsTriangle(vector<passivedouble> &r
     default:
       SU2_MPI::Error("Polynomial order not supported", CURRENT_FUNCTION);
   }
+
+  /*--- Return the value of the number of integration points. ---*/
+  return nIntegration;
+}
+
+void CFEMStandardElementBase::IntegrationPointsTriangle(vector<passivedouble> &rTriangle,
+                                                        vector<passivedouble> &sTriangle,
+                                                        vector<passivedouble> &wTriangle) {
+
+  /*--- Set the number of integration points, depending on the order of
+        polynomials that must be integrated exactly. ---*/
+  nIntegration = GetNIntTriangleStatic(orderExact); 
 
   /*--- Allocate the memory for the integration points and their weights. ---*/
   rTriangle.resize(nIntegration);

@@ -28,16 +28,15 @@
 #include "../../include/fem/CFEMStandardElementBase.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*         Protected member functions of CFEMStandardElementBase.                   */
+/*--- Member functions of CFEMStandardElementBase related to the quadrature      ---*/
+/*--- rules for tetrahedra.                                                      ---*/
 /*----------------------------------------------------------------------------------*/
 
-void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<passivedouble> &rTet,
-                                                           vector<passivedouble> &sTet,
-                                                           vector<passivedouble> &tTet,
-                                                           vector<passivedouble> &wTet) {
+unsigned short CFEMStandardElementBase::GetNIntTetrahedronStatic(unsigned short orderExact) {
 
-  /*--- Set the number of integration points, depending on the order of
+ /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
+  unsigned short nIntegration;
   switch( orderExact ) {
     case  0: nIntegration =   1; break;
     case  1: nIntegration =   1; break;
@@ -58,6 +57,19 @@ void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<passivedouble>
     default:
       SU2_MPI::Error("Polynomial order not supported", CURRENT_FUNCTION);
   }
+
+  /*--- Return the value of the number of integration points. ---*/
+  return nIntegration;
+}
+
+void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<passivedouble> &rTet,
+                                                           vector<passivedouble> &sTet,
+                                                           vector<passivedouble> &tTet,
+                                                           vector<passivedouble> &wTet) {
+
+  /*--- Set the number of integration points, depending on the order of
+        polynomials that must be integrated exactly. ---*/
+  nIntegration = GetNIntTetrahedronStatic(orderExact); 
 
   /*--- Allocate the memory for the integration points and their weights. ---*/
   rTet.resize(nIntegration);

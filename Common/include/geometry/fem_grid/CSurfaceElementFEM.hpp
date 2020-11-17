@@ -47,15 +47,25 @@ struct CSurfaceElementFEM {
   unsigned long boundElemIDGlobal; /*!< \brief Global ID of this surface element inside
                                                the boundary to which it belongs. */
 
-  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element.
-                                                 In this vector the original sequence of the grid file
-                                                 is stored. */
+  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 
-  CFEMStandardElementBase *standardElem; /*!< \brief Pointer to the standard element. */
+  CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
+  CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
+                                                                   standard flow solution variables. */
+  CFEMStandardElementBase *standardElemP    = nullptr; /*!< \brief Pointer to the standard element for the
+                                                                   pressure for an incompressible flow. */
 
   /*!
    * \brief Less than operator of the class. Needed for the sorting.
             The criterion for comparison is the corresponding (local) volume ID.
    */
   bool operator<(const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
+
+  /*!
+   *  \brief Function, which determines the corner points of this surface element.
+   *  \param[out] nPointsPerFace - Number of corner points of the face.
+   *  \param[out] faceConn       - The corner points of the face.
+   */
+  void GetCornerPointsFace(unsigned short &nPointsPerFace,
+                           unsigned long  faceConn[]);
 };

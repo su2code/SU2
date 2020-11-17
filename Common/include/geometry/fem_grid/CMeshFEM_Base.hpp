@@ -30,6 +30,7 @@
 
 #include "../../../include/toolboxes/classes_multiple_integers.hpp"
 #include "../../fem/CFEMStandardElementBase.hpp"
+#include "../../fem/CGemmBase.hpp"
 #include "../CGeometry.hpp"
 #include "CPointFEM.hpp"
 #include "CBoundaryFEM.hpp"
@@ -49,8 +50,12 @@ protected:
   vector<CPointFEM>    meshPoints;   /*!< \brief Vector of the points of the FEM mesh. */
   vector<CBoundaryFEM> boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
 
-  vector<CFEMStandardElementBase *> standardVolumeElementsGrid; /*!< \brief Vector of standard volume
-                                                                            elements for the grid. */
+  vector<CFEMStandardElementBase *> standardVolumeElementsGrid;  /*!< \brief Vector of standard volume
+                                                                             elements for the grid. */
+  vector<CFEMStandardElementBase *> standardSurfaceElementsGrid; /*!< \brief Vector of standard surface
+                                                                             elements for the grid. */
+
+  vector<CGemmBase *> gemmTypesFaces;   /*!< \brief Vector of gemm types that occur for the faces. */
 
 public:
   /*!

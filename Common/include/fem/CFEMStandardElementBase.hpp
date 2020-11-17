@@ -80,7 +80,7 @@ protected:
   void *jitter;                 /*!< \brief Pointer to the data for the jitted gemm function. */
   dgemm_jit_kernel_t my_dgemm;  /*!< \brief Pointer to the function to carry out the jitted gemm call. */
 #else
-  CBlasStructure blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
+  CBlasStructure blasFunctions; /*!< \brief  The object to carry out the BLAS functionalities. */
 #endif
 
 public:
@@ -430,6 +430,16 @@ public:
   }
 
   /*!
+   * \brief Static function, which makes available the number of integration
+   *        points for an element corresponding to the arguments.
+   * \param[in] VTK_Type   - Type of the element using the VTK convention.
+   * \param[in] orderExact - Polynomial degree that must be integrated exactly.
+   * \return The number of integration points.
+   */
+  static unsigned short GetNIntStatic(unsigned short VTK_Type,
+                                      unsigned short orderExact);
+
+  /*!
    * \brief Static function, which makes available the number of DOFs for an element
    *        corresponding to the arguments.
    * \param[in] VTK_Type   - Type of the element using the VTK convention.
@@ -613,6 +623,22 @@ protected:
                        const int K);
 
 private:
+  /*!
+   * \brief Static function, which makes available the number of integration
+   *        points for a tetrahedron.
+   * \param[in] orderExact - Polynomial degree that must be integrated exactly.
+   * \return The number of integration points for a tetrahedron.
+   */
+  static unsigned short GetNIntTetrahedronStatic(unsigned short orderExact);
+
+  /*!
+   * \brief Static function, which makes available the number of integration
+   *        points for a triangle.
+   * \param[in] orderExact - Polynomial degree that must be integrated exactly.
+   * \return The number of integration points for a triangle.
+   */
+  static unsigned short GetNIntTriangleStatic(unsigned short orderExact);
+
   /*!
    * \brief Function, which computes the value of the unscaled Legendre polynomial for the given x-coordinate.
    * \param[in] n     - Order of the Jacobi polynomial.

@@ -28,8 +28,7 @@
 
 #pragma once
 
-#include "../../mpi_structure.hpp"
-#include "../../option_structure.hpp"
+#include "../../geometry/fem_grid/CVolumeElementFEM_DG.hpp"
 
 #include <vector>
 #include <algorithm>
@@ -69,35 +68,91 @@ public:
   bool elem0IsOwner;                     /*!< \brief Whether or not the neighboring element 0 is the owner
                                                      of the face. If false, element 1 is the owner. */
 
-  /* Standard constructor and destructor. */
+  /*!
+   * \brief Default constructor of the class. Set the default values of the members.
+   */
   CFaceOfElement();
-  ~CFaceOfElement(){}
 
-  /* Alternative constructor to set the corner points. */
+  /*!
+   * \brief Destructor. Nothing to be done.
+   */
+  ~CFaceOfElement() = default;
+
+  /*!
+   * \overload
+   * \param[in] VTK_Type - Element type of the face following the VTK convention.
+   * \param[in] nPoly    - Polynomial degree of the face.
+   * \param[in] Nodes    - Pointer to the array containing the node numbers of the grid DOFs.
+   */
   CFaceOfElement(const unsigned short VTK_Type,
                  const unsigned short nPoly,
                  const unsigned long  *Nodes);
 
-  /* Copy constructor and assignment operator. */
+  /*!
+   * \brief Copy constructor.
+   * \param[in] other - Object from which the data must be copied.
+   */
   inline CFaceOfElement(const CFaceOfElement &other) { Copy(other); }
 
+  /*!
+   * \brief assignment operator.
+   * \param[in] other - Object to which the current object must be assigned to.
+   */
   inline CFaceOfElement& operator=(const CFaceOfElement &other) { Copy(other); return (*this); }
 
-  /* Less than operator. Needed for the sorting and searching. */
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \return True if considered less and false otherwise.
+   */
   bool operator<(const CFaceOfElement &other) const;
 
-  /* Equal operator. Needed for removing double entities. */
+  /*!
+   * \brief Equal operator. Needed for removing double entities.
+   * \param[in] other - Object to compare against.
+   * \return True if considered the same and false otherwise.
+   */
   bool operator ==(const CFaceOfElement &other) const;
 
-  /*--- Member function, which creates a unique numbering for the corner points.
-        A sort in increasing order is OK for this purpose.                       ---*/
+  /*!
+   * \brief Function, which creates a unique numbering for the corner points.
+   *        A sort in increasing order is OK for this purpose.
+   */
   inline void CreateUniqueNumbering(void) { sort(cornerPoints, cornerPoints+nCornerPoints); }
 
-  /*--- Member function, which creates a unique numbering for the corner points
-        while the orientation is taken into account. ---*/
+  /*!
+   * \brief Function, which creates a unique numbering for the corner points
+   *        while the orientation is taken into account.
+   */
   void CreateUniqueNumberingWithOrientation(void);
 
+  /*!
+   * \brief Function, which determines the orientation of the element on side 1
+   *        compared to the orientation of the face.
+   * \param[in] volElem - vector, which contains the local volume elements.
+   * \return - Short hand for the orientation of the element on side 1.
+   */
+  unsigned short DetermineOrientationElemSide1(const vector<CVolumeElementFEM_DG> &volElem) const;
+
+  /*!
+   * \brief Function, which makes sure that the orientation of the face
+   *        matches the orientation of the corresponding face of the element
+   *        on side 0.
+   * \param[in] volElem - vector, which contains the local volume elements.
+   */
+  void MatchOrientationElemSide0(const vector<CVolumeElementFEM_DG> &volElem);
+
+  /*!
+   * \brief Function, which swaps the sides of the face if the logic requires this.
+   * \param[in] nVolElemOwned - Number of owned volume elements on this MPI rank.
+   * \param[in] nVolElemTot   - Total number of volume elements on this MPI rank.
+   */
+  void SwapSidesIfNeeded(const unsigned long nVolElemOwned,
+                         const unsigned long nVolElemTot);
+
 private:
-  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  /*!
+   * \brief Copy function, which copies the data of the given object into the current object.
+   * \param[in] other - Object to be copied.
+   */
   void Copy(const CFaceOfElement &other);
 };

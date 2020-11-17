@@ -54,6 +54,46 @@ CFEMStandardElementBase::~CFEMStandardElementBase() {
 /*          Public member functions of CFEMStandardElementBase.                     */
 /*----------------------------------------------------------------------------------*/
 
+unsigned short CFEMStandardElementBase::GetNIntStatic(unsigned short VTK_Type,
+                                                      unsigned short orderExact) {
+
+  /*--- Determine the number of integration points in 1D for a line. ---*/
+  const unsigned short nInt1D = orderExact/2 + 1;
+
+  /*--- Determine the element type and set the number of integration points. ---*/
+  unsigned short nInt;
+  switch(VTK_Type) {
+
+    case LINE:                 // Tensor products elements for
+    case QUADRILATERAL:        // which the number of integration
+    case HEXAHEDRON:           // points in 1D is returned.
+      nInt = nInt1D;
+      break;
+
+    case TRIANGLE:
+      nInt = GetNIntTriangleStatic(orderExact);
+      break;
+
+    case TETRAHEDRON:
+      nInt = GetNIntTetrahedronStatic(orderExact);
+      break;
+
+    case PRISM:
+      nInt = nInt1D*GetNIntTetrahedronStatic(orderExact);
+      break;
+
+    case PYRAMID:
+      nInt = nInt1D*nInt1D*nInt1D;
+      break;
+
+    default:
+      nInt = 0;  // Indicates an invalid element.
+      break;
+  }
+
+  return nInt;
+}
+
 unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
                                                        unsigned short nPoly) {
   unsigned short nDOFsEdge = nPoly + 1;

@@ -72,6 +72,32 @@ public:
 
   su2double lenScale;                /*!< \brief Length scale of the element. */
 
+  ColMajorMatrix<su2double> metricTerms;          /*!< \brief The metric terms in the integration
+                                                              points of this element. */
+  ColMajorMatrix<su2double> metricTermsSolDOFs;   /*!< \brief The metric terms in the nodal
+                                                              solution DOFs of this element. */
+
+  ColMajorMatrix<su2double> coorIntegrationPoints;  /*!< \brief Coordinates of the integration points of this element. */
+  ColMajorMatrix<su2double> gridVelocities;         /*!< \brief Grid velocities of the integration points of this element. */
+  ColMajorMatrix<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
+                                                                the integration points of this element. */
+
+  ColMajorMatrix<su2double> coorSolDOFs;            /*!< \brief Coordinates of the nodal solution DOFs of this element. */
+  ColMajorMatrix<su2double> gridVelocitiesSolDOFs;  /*!< \brief Grid velocities of the nodal solution DOFs of this element. */
+  ColMajorMatrix<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
+                                                                the nodal solution DOFs of this element. */    
 
   CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
+
+  /*!
+   * \brief Get all the corner points of all the faces of this element. It must be made sure
+            that the numbering of the faces is identical to the numbering used for the
+            standard elements.
+   * \param[out] nFaces         - Number of faces of this element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
+  void GetCornerPointsAllFaces(unsigned short &numFaces,
+                               unsigned short nPointsPerFace[],
+                               unsigned long  faceConn[6][4]) const;
 };

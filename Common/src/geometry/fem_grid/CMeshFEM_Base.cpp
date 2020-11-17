@@ -51,6 +51,16 @@ CMeshFEM_Base::~CMeshFEM_Base(void) {
     if( standardVolumeElementsGrid[i] ) delete standardVolumeElementsGrid[i];
     standardVolumeElementsGrid[i] = nullptr;
   }
+
+  for(unsigned long i=0; i<standardSurfaceElementsGrid.size(); ++i) {
+    if( standardSurfaceElementsGrid[i] ) delete standardSurfaceElementsGrid[i];
+    standardSurfaceElementsGrid[i] = nullptr;
+  }
+
+  for(unsigned long i=0; i<gemmTypesFaces.size(); ++i) {
+    if( gemmTypesFaces[i] ) delete gemmTypesFaces[i];
+    gemmTypesFaces[i] = nullptr;
+  }
 }
 
 /*---------------------------------------------------------------------*/

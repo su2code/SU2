@@ -53,6 +53,12 @@ public:
 
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
 
+  ColMajorMatrix<su2double> metricTerms2ndDer; /*!< \brief The metric terms needed for the computation
+                                                           of the 2nd derivatives in the integration
+                                                           points. Only determined when needed (ADER-DG
+                                                           with non-aliased predictor for the
+                                                           Navier-Stokes equations). */
+
   CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
                                                                    standard flow solution variables. */
   CFEMStandardElementBase *standardElemP    = nullptr; /*!< \brief Pointer to the standard element for the

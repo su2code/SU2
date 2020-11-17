@@ -27,7 +27,9 @@
 
 #include "../../../include/geometry/fem_grid/CMeshFEM_DG.hpp"
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../../include/toolboxes/fem/CFaceOfElement.hpp"
 #include "../../../include/toolboxes/fem/CReorderElements.hpp"
+#include "../../../include/toolboxes/fem/CSortFaces.hpp"
 #include "../../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../include/fem/CFEMStandardHexVolumeSol.hpp"
 #include "../../../include/fem/CFEMStandardPrismVolumeSol.hpp"
@@ -35,6 +37,25 @@
 #include "../../../include/fem/CFEMStandardQuadVolumeSol.hpp"
 #include "../../../include/fem/CFEMStandardTetVolumeSol.hpp"
 #include "../../../include/fem/CFEMStandardTriVolumeSol.hpp"
+#include "../../../include/fem/CGemmFaceHex.hpp"
+#include "../../../include/fem/CGemmFaceQuad.hpp"
+#include "../../../include/fem/CGemmStandard.hpp"
+#include "../../../include/fem/CFEMStandardLineAdjacentTriGrid.hpp"
+#include "../../../include/fem/CFEMStandardLineAdjacentQuadGrid.hpp"
+#include "../../../include/fem/CFEMStandardTriAdjacentTetGrid.hpp"
+#include "../../../include/fem/CFEMStandardTriAdjacentPyraGrid.hpp"
+#include "../../../include/fem/CFEMStandardTriAdjacentPrismGrid.hpp"
+#include "../../../include/fem/CFEMStandardQuadAdjacentPyraGrid.hpp"
+#include "../../../include/fem/CFEMStandardQuadAdjacentHexGrid.hpp"
+#include "../../../include/fem/CFEMStandardQuadAdjacentPrismGrid.hpp"
+#include "../../../include/fem/CFEMStandardLineAdjacentTriSol.hpp"
+#include "../../../include/fem/CFEMStandardLineAdjacentQuadSol.hpp"
+#include "../../../include/fem/CFEMStandardTriAdjacentTetSol.hpp"
+#include "../../../include/fem/CFEMStandardTriAdjacentPyraSol.hpp"
+#include "../../../include/fem/CFEMStandardTriAdjacentPrismSol.hpp"
+#include "../../../include/fem/CFEMStandardQuadAdjacentPyraSol.hpp"
+#include "../../../include/fem/CFEMStandardQuadAdjacentHexSol.hpp"
+#include "../../../include/fem/CFEMStandardQuadAdjacentPrismSol.hpp"
 
 /*---------------------------------------------------------------------*/
 /*---          Public member functions of CMeshFEM_DG.              ---*/
@@ -42,9 +63,25 @@
 
 CMeshFEM_DG::~CMeshFEM_DG(void) {
 
+  /*--- Release the memory of the standard elements. ---*/
   for(unsigned long i=0; i<standardVolumeElementsSolution.size(); ++i) {
     if( standardVolumeElementsSolution[i] ) delete standardVolumeElementsSolution[i];
     standardVolumeElementsSolution[i] = nullptr;
+  }
+
+  for(unsigned long i=0; i<standardSurfaceElementsSolution.size(); ++i) {
+    if( standardSurfaceElementsSolution[i] ) delete standardSurfaceElementsSolution[i];
+    standardSurfaceElementsSolution[i] = nullptr;
+  }
+
+  for(unsigned long i=0; i<standardInternalFaceGrid.size(); ++i) {
+    if( standardInternalFaceGrid[i] ) delete standardInternalFaceGrid[i];
+    standardInternalFaceGrid[i] = nullptr;
+  }
+
+  for(unsigned long i=0; i<standardInternalFaceSolution.size(); ++i) {
+    if( standardInternalFaceSolution[i] ) delete standardInternalFaceSolution[i];
+    standardInternalFaceSolution[i] = nullptr;
   }
 }
 
@@ -1793,15 +1830,344 @@ void CMeshFEM_DG::CoordinatesSolDOFs(void) {
 
 void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the faces of the locally stored part of the grid. ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /*--- Loop over the volume elements stored on this rank, including the halos. ---*/
+  vector<CFaceOfElement> localFaces;
+
+  for(unsigned long k=0; k<nVolElemTot; ++k) {
+
+    /*--- Determine the corner points of all the faces of this element. ---*/
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    volElem[k].GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Loop over the faces of this element, set the appropriate information,
+          create a unique numbering and add the faces to localFaces. ---*/
+    for(unsigned short i=0; i<nFaces; ++i) {
+      CFaceOfElement thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+
+      /*--- Copy the data from the volume element. ---*/
+      thisFace.elemID0       =  k;
+      thisFace.nPolyGrid0    =  volElem[k].nPolyGrid;
+      thisFace.nPolySol0     =  volElem[k].nPolySol;
+      thisFace.nDOFsElem0    =  volElem[k].nDOFsSol;
+      thisFace.elemType0     =  volElem[k].VTK_Type;
+      thisFace.faceID0       =  i;
+      thisFace.faceIndicator = -2;   // Initialized to an invalid face.
+
+      thisFace.JacFaceIsConsideredConstant = volElem[k].JacFacesIsConsideredConstant[i];
+      thisFace.elem0IsOwner                = volElem[k].ElementOwnsFaces[i];
+
+      /*--- Renumber the corner points of the face, but keep the orientation.
+            Afterwards, add it to localFaces. ---*/
+      thisFace.CreateUniqueNumberingWithOrientation();
+
+      localFaces.push_back(thisFace);
+    }
+  }
+
+  /*--- Sort the the local faces in increasing order. ---*/
+  sort(localFaces.begin(), localFaces.end());
+
+  /*--- Loop over the faces to merge the matching faces. ---*/
+  for(unsigned long i=1; i<localFaces.size(); ++i) {
+
+    /*--- Check for a matching face with the previous face in the vector.
+          Note that the == operator only checks the node IDs. ---*/
+    if(localFaces[i] == localFaces[i-1]) {
+
+      /*--- Faces are matching. Check if it should be kept, i.e. if one
+            of the elements owns the face. ---*/
+      if(localFaces[i].elem0IsOwner || localFaces[i-1].elem0IsOwner) {
+
+        /*--- Store the data for this matching face in faces[i-1]. ---*/
+        if(localFaces[i].elemID0 < nVolElemTot) {
+          localFaces[i-1].elemID0      = localFaces[i].elemID0;
+          localFaces[i-1].nPolyGrid0   = localFaces[i].nPolyGrid0;
+          localFaces[i-1].nPolySol0    = localFaces[i].nPolySol0;
+          localFaces[i-1].nDOFsElem0   = localFaces[i].nDOFsElem0;
+          localFaces[i-1].elemType0    = localFaces[i].elemType0;
+          localFaces[i-1].faceID0      = localFaces[i].faceID0;
+          localFaces[i-1].elem0IsOwner = localFaces[i].elem0IsOwner;
+        }
+        else {
+          localFaces[i-1].elemID1    = localFaces[i].elemID1;
+          localFaces[i-1].nPolyGrid1 = localFaces[i].nPolyGrid1;
+          localFaces[i-1].nPolySol1  = localFaces[i].nPolySol1;
+          localFaces[i-1].nDOFsElem1 = localFaces[i].nDOFsElem1;
+          localFaces[i-1].elemType1  = localFaces[i].elemType1;
+          localFaces[i-1].faceID1    = localFaces[i].faceID1;
+        }
+
+        /*--- Adapt the boolean to indicate whether or not the face has a constant
+              Jacobian of the transformation, although in principle this info
+              should be the same for both faces. --- */
+        if(localFaces[i-1].JacFaceIsConsideredConstant !=
+           localFaces[i].JacFaceIsConsideredConstant)
+          localFaces[i-1].JacFaceIsConsideredConstant = false;
+
+        /*--- Set this face indicator to -1 to indicate an internal face
+              and set elem0IsOwner for localFaces[i] to false. ---*/
+        localFaces[i-1].faceIndicator = -1;
+        localFaces[i].elem0IsOwner    = false;
+      }
+    }
+  }
+
+  /*--- Loop over the boundary markers and its boundary elements to search for
+        the corresponding faces in localFaces. These faces should be found.
+        Note that periodic boundaries are skipped, because these are treated
+        via the halo elements, which are already in place. ---*/
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+      for(unsigned long k=0; k<boundaries[iMarker].surfElem.size(); ++k) {
+
+        /*--- Determine the corner points of the face of this element. ---*/
+        unsigned short nPointsPerFace;
+        unsigned long  faceConn[4];
+
+        boundaries[iMarker].surfElem[k].GetCornerPointsFace(nPointsPerFace, faceConn);
+
+        /*--- Create an object of CFaceOfElement to carry out the search. ---*/
+        CFaceOfElement thisFace;
+        thisFace.nCornerPoints = nPointsPerFace;
+        for(unsigned short j=0; j<nPointsPerFace; ++j)
+          thisFace.cornerPoints[j] = faceConn[j];
+        thisFace.CreateUniqueNumberingWithOrientation();
+
+        /*--- Search for thisFace in localFaces. It must be found. ---*/
+        vector<CFaceOfElement>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        bool thisFaceFound = false;
+        if(low != localFaces.end()) {
+          if( !(thisFace < *low) ) thisFaceFound = true;
+        }
+
+        if( thisFaceFound ) {
+          low->faceIndicator = iMarker;
+
+          /*--- A few additional checks. ---*/
+          bool side0IsBoundary = low->elemID0 < nVolElemTot;
+          unsigned long elemID = side0IsBoundary ? low->elemID0    : low->elemID1;
+          unsigned short nPoly = side0IsBoundary ? low->nPolyGrid0 : low->nPolyGrid1;
+
+          if(elemID != boundaries[iMarker].surfElem[k].volElemID ||
+             nPoly  != boundaries[iMarker].surfElem[k].nPolyGrid)
+            SU2_MPI::Error(string("Element ID and/or polynomial degree do not match ") +
+                           string("for this boundary element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+        else
+          SU2_MPI::Error("Boundary face not found in localFaces. This should not happen.",
+                         CURRENT_FUNCTION);
+      }
+    }
+  }
+
+  /*--- It is possible that owned non-matching faces are present in the list.
+        These faces are indicated by an owned face and a faceIndicator of -2.
+        To avoid that these faces are removed afterwards, set their
+        faceIndicator to -1. ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -2 && localFaces[i].elem0IsOwner)
+      localFaces[i].faceIndicator = -1;
+  }
+
+  /*--- Remove the invalid faces. This is accomplished by giving the face four
+        points and global node ID's that are larger than the largest local point
+        ID in the grid. In this way the sorting operator puts these faces at the
+        end of the vector, see also the < operator of CFaceOfElement. ---*/
+  unsigned long nFacesLoc = localFaces.size();
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -2) {
+      unsigned long invalID = meshPoints.size();
+      localFaces[i].nCornerPoints = 4;
+      localFaces[i].cornerPoints[0] = invalID;
+      localFaces[i].cornerPoints[1] = invalID;
+      localFaces[i].cornerPoints[2] = invalID;
+      localFaces[i].cornerPoints[3] = invalID;
+      --nFacesLoc;
+    }
+  }
+
+  sort(localFaces.begin(), localFaces.end());
+  localFaces.resize(nFacesLoc);
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 2: Preparation of the localFaces vector, such that the info    ---*/
+  /*---         stored in this vector can be separated in a contribution    ---*/
+  /*---         from the internal faces and a contribution from the faces   ---*/
+  /*---         that belong to physical boundaries.                         ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /*--- Sort localFaces again, but now such that the boundary faces are numbered
+        first, followed by the matching faces and at the end of localFaces the
+        non-matching faces are stored. In order to carry out this sorting the
+        functor CSortFaces is used for comparison. Within the categories
+        the sorting depends on the time levels of the adjacent volume elements
+        of the face. ---*/
+  sort(localFaces.begin(), localFaces.end(),
+       CSortFaces(nVolElemOwned, nVolElemTot, volElem.data()));
+
+  /*--- Carry out a possible swap of side 0 and side 1 of the faces and renumber
+        the nodes of the faces, such that the orientation of the faces matches
+        the orientation of the face of the element on side 0. ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    localFaces[i].SwapSidesIfNeeded(nVolElemOwned, nVolElemTot);
+    localFaces[i].MatchOrientationElemSide0(volElem);
+  }
+
+  /*--- Determine the number of matching and non-matching internal faces.
+        For the matching faces, determine these numbers per time level
+        and also make a distinction between internal faces and faces that
+        involve a halo element. ---*/
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  nMatchingFacesInternal.assign(nTimeLevels+1, 0);
+  nMatchingFacesWithHaloElem.assign(nTimeLevels+1, 0);
+
+  unsigned long nNonMatchingFaces = 0;
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -1) {
+      const unsigned long e0 = localFaces[i].elemID0;
+      const unsigned long e1 = localFaces[i].elemID1;
+
+      if(e1 < nVolElemTot) {
+        const unsigned short timeLevel = min(volElem[e0].timeLevel,
+                                             volElem[e1].timeLevel);
+        if(e1 < nVolElemOwned) ++nMatchingFacesInternal[timeLevel+1];
+        else                   ++nMatchingFacesWithHaloElem[timeLevel+1];
+      }
+      else ++nNonMatchingFaces;
+    }
+  }
+
+  if( nNonMatchingFaces ) {
+    ostringstream message;
+    message << nNonMatchingFaces << " non-matching internal faces found.\n"
+            << "This is not supported yet." << endl;
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Put nMatchingFacesInternal and nMatchingFacesWithHaloElem in
+        cumulative storage format. ---*/
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    nMatchingFacesInternal[i+1] += nMatchingFacesInternal[i];
+
+  nMatchingFacesWithHaloElem[0] = nMatchingFacesInternal[nTimeLevels];
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    nMatchingFacesWithHaloElem[i+1] += nMatchingFacesWithHaloElem[i];
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 3: Create the local face based data structure for the internal ---*/
+  /*---         faces. These are needed for the computation of the surface  ---*/
+  /*---         integral in DG-FEM.                                         ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /*--- Allocate the memory for the matching faces. ---*/
+  matchingFaces.resize(nMatchingFacesWithHaloElem[nTimeLevels]);
+
+  /*--- Initialize the matching faces and flag the elements that share
+        one or more faces with elements from a lower time level. ---*/
+  vector<bool> elemAdjLowTimeLevel(nVolElemTot, false);
+
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+
+    /*--- Check for a matching internal face. ---*/
+    if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
+
+      /*--- Abbreviate the adjacent element ID's and store them in matchingFaces.
+            Update the counter ii afterwards. ---*/
+      const unsigned long e0 = localFaces[i].elemID0;
+      const unsigned long e1 = localFaces[i].elemID1;
+
+      matchingFaces[ii].elemID0 = e0;
+      matchingFaces[ii].elemID1 = e1;
+      ++ii;
+
+      /*--- Compare the time levels of the adjacent elements and set
+            elemAdjLowTimeLevel accordingly. ---*/
+      if(volElem[e0].timeLevel > volElem[e1].timeLevel) elemAdjLowTimeLevel[e0] = true;
+      if(volElem[e1].timeLevel > volElem[e0].timeLevel) elemAdjLowTimeLevel[e1] = true;
+    }
+  }
+
+  /*--- Determine the list of elements per time level, which share one or more
+        faces with elements of the lower time level. Make a distinction between
+        owned and halo elements. ---*/
+  ownedElemAdjLowTimeLevel.resize(nTimeLevels);
+  haloElemAdjLowTimeLevel.resize(nTimeLevels);
+
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    if( elemAdjLowTimeLevel[i] )
+      ownedElemAdjLowTimeLevel[volElem[i].timeLevel].push_back(i);
+  }
+
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
+    if( elemAdjLowTimeLevel[i] )
+      haloElemAdjLowTimeLevel[volElem[i].timeLevel].push_back(i);
+  }
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 4: Determine the number boundary surfaces per time level for   ---*/
+  /*---         the physical boundaries.                                    ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /*--- Loop over the boundary markers. ---*/
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    /*--- Initialize the number of surface elements per time level to zero. ---*/
+    boundaries[iMarker].nSurfElem.assign(nTimeLevels+1, 0);
+
+    /*--- The periodic boundaries are skipped, because these are not physical
+          boundaries and are treated via the halo elements. These have already
+          been created. ---*/
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+      /*--- Easier storage of the surface elements for this boundary and
+            loop over them. ---*/
+      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+      for(unsigned long i=0; i<surfElem.size(); ++i) {
+
+        /*--- Determine the time level of the adjacent element and increment
+              the number of surface elements for this time level. The +1 is there,
+              because this vector will be put in cumulative storage format
+              afterwards. ---*/
+        const unsigned short timeLevel = volElem[surfElem[i].volElemID].timeLevel;
+        ++boundaries[iMarker].nSurfElem[timeLevel+1];
+      }
+
+      /*--- Put boundaries[iMarker].nSurfElem in cumulative storage. ---*/
+      for(unsigned short i=0; i<nTimeLevels; ++i)
+        boundaries[iMarker].nSurfElem[i+1] += boundaries[iMarker].nSurfElem[i];
+    }
+  } 
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 5: Create the standard elements for the faces. It is called    ---*/
+  /*---         from within this function, because the data of localFaces   ---*/
+  /*---         is needed to construct these standard elements.             ---*/
+  /*---------------------------------------------------------------------------*/
+
+  if (rank == MASTER_NODE) cout << "Creating standard face elements." << endl;
+  CreateStandardFaces(config, localFaces);
 }
 
 void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
-  /*--- Easier storage of the solver to be used. ---*/
-  const unsigned short Kind_Solver = config->GetKind_Solver();
-
   /*--- Check if an incompressible solver is used. ---*/
+  const unsigned short Kind_Solver = config->GetKind_Solver();
   const bool incompressible = (Kind_Solver == FEM_INC_EULER) ||
                               (Kind_Solver == FEM_INC_NAVIER_STOKES) ||
                               (Kind_Solver == FEM_INC_RANS) ||
@@ -1910,6 +2276,788 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 /*---------------------------------------------------------------------*/
 /*---          Private member functions of CMeshFEM_DG.             ---*/
 /*---------------------------------------------------------------------*/
+
+void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
+                                      const vector<CFaceOfElement> &localFaces) {
+
+  /*--- Check if an incompressible solver is used. ---*/
+  const unsigned short Kind_Solver = config->GetKind_Solver();
+  const bool incompressible = (Kind_Solver == FEM_INC_EULER) ||
+                              (Kind_Solver == FEM_INC_NAVIER_STOKES) ||
+                              (Kind_Solver == FEM_INC_RANS) ||
+                              (Kind_Solver == FEM_INC_LES);
+
+  /*--- Define the number of variables for each type of solve,
+        depending on the situation. If MKL is used the actual number
+        of variables per point must be known, such that a jitted
+        gemm call can be constructed. Otherwise this is not necessary
+        and this variable can change during runtime. ---*/
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  const unsigned short nGridVar = nDim;
+  const unsigned short nSolVar  = incompressible ? nDim : nDim+2;
+#else
+  const unsigned short nGridVar = 1;
+  const unsigned short nSolVar  = 1;
+#endif
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the types of surface standard elements needed    ---*/
+  /*---         for the handling of the boundary conditions. This data is  ---*/
+  /*---         stored in a vector of the class CUnsignedShort7T, which    ---*/
+  /*---         can store 7 short integers as one entity. Find below the   ---*/
+  /*---         explanation of the 7 parameters that define a surface.     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Every standard face for a boundary surface is determined by 7
+        parameters, namely
+        1: VTK type of the face. Although this is not an independent parameter,
+           it is taken into account for convenience.
+        2: Number of integration points of the face.
+        3: VTK type of the volume element.
+        4: Polynomial degree of the volume element.
+        5: Face ID of the volume element. This determines parameter 1.
+        6: Orientation of the element w.r.t. the face. For a boundary surface
+           this is always 0, but not for internally matching faces, for which
+           standard faces are also used.
+        7: The number of variables per point.
+        Define the variables to store this information for both the grid
+        and solution. ---*/
+  vector<CUnsignedShort7T> surfaceTypesGrid, surfaceTypesSol;
+
+  /*--- Loop over all faces and select the boundary faces. ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator > -1) {
+
+      /*--- Determine the polynomial degree that must be integrated exactly
+            by the integration rule of the face. ---*/
+      const unsigned short nPoly      = max(localFaces[i].nPolyGrid0, localFaces[i].nPolySol0);
+      const bool           constJac   = localFaces[i].JacFaceIsConsideredConstant;
+      const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPoly, constJac);
+
+      /*--- Determine the type of the face according to the VTK convention. ---*/
+      unsigned short VTK_Type;
+      if(     localFaces[i].nCornerPoints == 2) VTK_Type = LINE;
+      else if(localFaces[i].nCornerPoints == 3) VTK_Type = TRIANGLE;
+      else                                      VTK_Type = QUADRILATERAL;
+
+      /*--- Determine the number of integration points of the face.
+            Note that for a quadrilateral the number of integration points
+            in one direction is determined. ---*/
+      const unsigned short nInt = CFEMStandardElementBase::GetNIntStatic(VTK_Type, orderExact);
+
+      /*--- Store this face in surfaceTypesGrid and surfaceTypesSol. For an
+            incompressible solver two solution types must be added, one for
+            the regular velocities and one for the pressure. ---*/
+      surfaceTypesGrid.push_back(CUnsignedShort7T(VTK_Type, nInt, localFaces[i].elemType0,
+                                                  localFaces[i].nPolyGrid0, localFaces[i].faceID0,
+                                                  0, nGridVar));
+
+      surfaceTypesSol.push_back(CUnsignedShort7T(VTK_Type, nInt, localFaces[i].elemType0,
+                                                 localFaces[i].nPolySol0, localFaces[i].faceID0,
+                                                 0, nSolVar));
+      if( incompressible )
+        surfaceTypesSol.push_back(CUnsignedShort7T(VTK_Type, nInt, localFaces[i].elemType0,
+                                                   localFaces[i].nPolySol0-1, localFaces[i].faceID0,
+                                                   0, 1));
+    }
+  }
+
+  /*--- Copy the face types for the grid, sort them and remove the
+        double entities. ---*/
+  vector<CUnsignedShort7T> typesSurfaceGrid = surfaceTypesGrid;
+  vector<CUnsignedShort7T>::iterator lastEntry7T;
+  sort(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
+  lastEntry7T = unique(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
+  typesSurfaceGrid.erase(lastEntry7T, typesSurfaceGrid.end());
+
+  /*--- Copy the face types for the solution, sort them and remove the
+        double entities. ---*/
+  vector<CUnsignedShort7T> typesSurfaceSol = surfaceTypesSol;
+  sort(typesSurfaceSol.begin(), typesSurfaceSol.end());
+  lastEntry7T = unique(typesSurfaceSol.begin(), typesSurfaceSol.end());
+  typesSurfaceSol.erase(lastEntry7T, typesSurfaceSol.end());
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Determine the types of the standard elements for internal  ---*/
+  /*---         matching faces. This data is stored in a vector of the     ---*/
+  /*---         the class CUnsignedShort10T, which can store 10 short      ---*/
+  /*---         integers as one entity. Find below the explanation of the  ---*/
+  /*---         10 parameters that define an internal matching face.       ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- For the internally matching faces every situation gets its own standard
+        element to avoid copying and indirect addressing during the residual
+        computation. This means that quite a few standard internal faces may be
+        present.  The standard element for internal matching faces is defined by
+        10 parameters, which are
+        1:  VTK type of the face. Although this is not an independent parameter,
+            it is taken into account for convenience.
+        2:  Number of integration points of the face.
+        3:  VTK type of the volume element on side 0.
+        4:  Polynomial degree of the volume element on side 0.
+        5:  Face ID of the volume element on side 0. This determines parameter 1.
+        6:  VTK type of the volume element on side 1.
+        7:  Polynomial degree of the volume element on side 1.
+        8:  Face ID of the volume element on side 1.
+        9:  Orientation of the element on side 1 w.r.t. the face.
+            Note that the orientation of the element on side 0 is not needed,
+            because the face has been constructed to match this orientation,
+            see the call to localFaces[i].MatchOrientationElemSide0.
+        10: The number of variables per point.
+        Define the variables to store this information for both the grid
+        and solution. ---*/
+  vector<CUnsignedShort10T> faceTypesGrid, faceTypesSol;
+
+  /*--- Loop over all faces and select the matching internal faces. ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
+
+      /*--- Determine the polynomial degree that must be integrated exactly
+            by the integration rule of the face. ---*/
+      const unsigned short nPoly      = max(max(localFaces[i].nPolyGrid0, localFaces[i].nPolySol0),
+                                            max(localFaces[i].nPolyGrid1, localFaces[i].nPolySol1));
+      const bool           constJac   = localFaces[i].JacFaceIsConsideredConstant;
+      const unsigned short orderExact = config->GetOrderExactIntegrationFEM(nPoly, constJac);
+
+      /*--- Determine the type of the face according to the VTK convention. ---*/
+      unsigned short VTK_Type;
+      if(     localFaces[i].nCornerPoints == 2) VTK_Type = LINE;
+      else if(localFaces[i].nCornerPoints == 3) VTK_Type = TRIANGLE;
+      else                                      VTK_Type = QUADRILATERAL;
+
+      /*--- Store the grid data for this face. ---*/
+      CUnsignedShort10T thisFace;
+      thisFace.short0 = VTK_Type;
+      thisFace.short1 = CFEMStandardElementBase::GetNIntStatic(VTK_Type, orderExact);
+      thisFace.short2 = localFaces[i].elemType0;
+      thisFace.short3 = localFaces[i].nPolyGrid0;
+      thisFace.short4 = localFaces[i].faceID0;
+      thisFace.short5 = localFaces[i].elemType1;
+      thisFace.short6 = localFaces[i].nPolyGrid1;
+      thisFace.short7 = localFaces[i].faceID1;
+      thisFace.short8 = localFaces[i].DetermineOrientationElemSide1(volElem);
+      thisFace.short9 = nGridVar;
+
+      /*--- Store this face in faceTypesGrid. ---*/
+      faceTypesGrid.push_back(thisFace);
+
+      /*--- Adapt this face for the solution and add it to faceTypesSol. ---*/
+      thisFace.short3 = localFaces[i].nPolySol0;
+      thisFace.short6 = localFaces[i].nPolySol1;
+      thisFace.short9 = nSolVar;
+
+      faceTypesSol.push_back(thisFace);
+
+      /*--- In case of an incompressible solver, reduce the polynomial
+            degree of the solution by 1, set the number of variables to 1
+            and add it to faceTypesSol. ---*/
+      if( incompressible ) {
+        thisFace.short3 = localFaces[i].nPolySol0-1;
+        thisFace.short6 = localFaces[i].nPolySol1-1;
+        thisFace.short9 = 1;
+
+        faceTypesSol.push_back(thisFace);
+      }
+    }
+  }
+
+  /*--- Copy the face types for the grid, sort them and remove the
+        double entities. ---*/
+  vector<CUnsignedShort10T> typesFaceGrid = faceTypesGrid;
+  vector<CUnsignedShort10T>::iterator lastEntry10T;
+  sort(typesFaceGrid.begin(), typesFaceGrid.end());
+  lastEntry10T = unique(typesFaceGrid.begin(), typesFaceGrid.end());
+  typesFaceGrid.erase(lastEntry10T, typesFaceGrid.end());
+
+  /*--- Copy the face types for the solution, sort them and remove the
+        double entities. ---*/
+  vector<CUnsignedShort10T> typesFaceSol = faceTypesSol;
+  sort(typesFaceSol.begin(), typesFaceSol.end());
+  lastEntry10T = unique(typesFaceSol.begin(), typesFaceSol.end());
+  typesFaceSol.erase(lastEntry10T, typesFaceSol.end());
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Every standard face for an internal matching face is a     ---*/
+  /*---         combination of two standard surface faces, i.e. one for    ---*/
+  /*---         each side of the internal matching face. The surface face  ---*/
+  /*---         takes care of all the work and the internal matching face  ---*/
+  /*---         is just the correct combination of two surface faces.      ---*/
+  /*---         This information is added to the already stored standard   ---*/
+  /*---         faces needed to handle the boundary conditions.            ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop over the standard internal matching faces for the grid and
+        add the two surfaces to typesSurfaceGrid. Note that the element
+        on side 0 has an orientation of 0 per definition. ---*/
+  for(unsigned int i=0; i<typesFaceGrid.size(); ++i) {
+    typesSurfaceGrid.push_back(CUnsignedShort7T(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+                                                typesFaceGrid[i].short2, typesFaceGrid[i].short3,
+                                                typesFaceGrid[i].short4, 0,
+                                                typesFaceGrid[i].short9));
+    typesSurfaceGrid.push_back(CUnsignedShort7T(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+                                                typesFaceGrid[i].short5, typesFaceGrid[i].short6,
+                                                typesFaceGrid[i].short7, typesFaceGrid[i].short8,
+                                                typesFaceGrid[i].short9));
+  }
+
+  /*--- Sort typesSurfaceGrid and remove the double entities. ---*/
+  sort(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
+  lastEntry7T = unique(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
+  typesSurfaceGrid.erase(lastEntry7T, typesSurfaceGrid.end());
+
+  /*--- Loop over the standard internal matching faces for the solution and
+        add the two surfaces to typesSurfaceSol. Note that the element
+        on side 0 has an orientation of 0 per definition. ---*/
+  for(unsigned int i=0; i<typesFaceSol.size(); ++i) {
+    typesSurfaceSol.push_back(CUnsignedShort7T(typesFaceSol[i].short0, typesFaceSol[i].short1,
+                                               typesFaceSol[i].short2, typesFaceSol[i].short3,
+                                               typesFaceSol[i].short4, 0,
+                                               typesFaceSol[i].short9));
+    typesSurfaceSol.push_back(CUnsignedShort7T(typesFaceSol[i].short0, typesFaceSol[i].short1,
+                                               typesFaceSol[i].short5, typesFaceSol[i].short6,
+                                               typesFaceSol[i].short7, typesFaceSol[i].short8,
+                                               typesFaceSol[i].short9));
+  }
+
+  /*--- Sort typesSurfaceSol and remove the double entities. ---*/
+  sort(typesSurfaceSol.begin(), typesSurfaceSol.end());
+  lastEntry7T = unique(typesSurfaceSol.begin(), typesSurfaceSol.end());
+  typesSurfaceSol.erase(lastEntry7T, typesSurfaceSol.end());
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 4: Determine the different GEMM calls present in the standard ---*/
+  /*---         surface elements. This data is stored in a vector of the   ---*/
+  /*---         the class CUnsignedShort4T, which can store 4 short        ---*/
+  /*---         integers as one entity. Find below the explanation of the  ---*/
+  /*---         4 parameters that define a GEMM call.                      ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- 1: VTK type of the adjacent volume element. Needed to check whether a
+           tensor product can be used or a full gemm call.
+        2: M, the first matrix dimension of A and C in the gemm call.
+           When a tensor product is used, these are the first
+           dimensions of the tensor A.
+        3: K, the first matrix dimension of B and second matrix dimension
+           of A. When a tensor product is used these are the first dimensions
+           of tensor B and the last of tensor A.
+        4: N, the last dimension of B and C in the gemm call. This is the
+           number of variables per point, if relevant.
+        Define the variable to store this information. ---*/
+  vector<CUnsignedShort4T> gemmTypes;
+
+  /*--- Loop over the entries of typesSurfaceGrid to fill gemmTypes.
+        Note that when no tensor product is used, the element type
+        is not relevant and it is set to a LINE. ---*/
+  for(unsigned long i=0; i<typesSurfaceGrid.size(); ++i) {
+
+    unsigned short VTK_Type_Elem = typesSurfaceGrid[i].short2;
+    unsigned short nDOFs;
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
+      nDOFs = typesSurfaceGrid[i].short3+1;
+    }
+    else {
+      VTK_Type_Elem = LINE;
+      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(typesSurfaceGrid[i].short2,
+                                                      typesSurfaceGrid[i].short3);
+    }
+
+    gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, typesSurfaceGrid[i].short1,
+                                         nDOFs, typesSurfaceGrid[i].short6));
+  }
+
+  /*--- Loop over the entries of typesSurfaceSol to fill gemmTypes.
+        Note that two gemm types are created, which correspond to
+        the interpolation to the integration points from the DOFs
+        of the element and vice versa to obtain the residual
+        contribution from the surface integral. Also here, when no
+        tensor product is used, the element type is not relevant. ---*/
+  for(unsigned long i=0; i<typesSurfaceSol.size(); ++i) {
+
+    unsigned short VTK_Type_Elem = typesSurfaceSol[i].short2;
+    unsigned short nDOFs;
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
+      nDOFs = typesSurfaceSol[i].short3+1;
+    }
+    else {
+      VTK_Type_Elem = LINE;
+      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(typesSurfaceSol[i].short2,
+                                                      typesSurfaceSol[i].short3);
+    }
+
+    gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, typesSurfaceSol[i].short1,
+                                         nDOFs, typesSurfaceSol[i].short6));
+    gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, nDOFs,
+                                         typesSurfaceSol[i].short1,
+                                         typesSurfaceSol[i].short6));
+  }
+
+  /*--- Sort gemmTypes and remove the double entities. ---*/
+  vector<CUnsignedShort4T>::iterator lastEntry4T;
+  sort(gemmTypes.begin(), gemmTypes.end());
+  lastEntry4T = unique(gemmTypes.begin(), gemmTypes.end());
+  gemmTypes.erase(lastEntry4T, gemmTypes.end());
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 5: Create the objects that carry out the gemm functionality   ---*/
+  /*---         for the faces.                                             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop to create the gemm types for the faces. ---*/
+  gemmTypesFaces.resize(gemmTypes.size(), nullptr);
+  for(unsigned long i=0; i<gemmTypes.size(); ++i) {
+
+    /*--- Abbreviate the variables for readability. ---*/
+    const unsigned short VTK_Type_Elem = gemmTypes[i].short0;
+    const unsigned short M             = gemmTypes[i].short1;
+    const unsigned short K             = gemmTypes[i].short2;
+    const unsigned short N             = gemmTypes[i].short3;
+
+    /*--- Determine the VTK type of the element and allocate the
+          memory for the correct gemm type. ---*/
+    switch( VTK_Type_Elem ) {
+      case QUADRILATERAL:
+        gemmTypesFaces[i] = new CGemmFaceQuad(M, N, K);
+        break;
+      case HEXAHEDRON:
+        gemmTypesFaces[i] = new CGemmFaceHex(M, N, K);
+        break;
+      default:
+        gemmTypesFaces[i] = new CGemmStandard(M, N, K);
+        break;
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 6: Create the standard elements for the faces, both for the   ---*/
+  /*---         grid and the solution.                                     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop to create the standard surface elements for the grid. ---*/
+  standardSurfaceElementsGrid.resize(typesSurfaceGrid.size(), nullptr);
+  for(unsigned long i=0; i<typesSurfaceGrid.size(); ++i) {
+
+    /*--- Abbreviate the variables for readability. ---*/
+    unsigned short VTK_Type_Face = typesSurfaceGrid[i].short0;
+    unsigned short nInt          = typesSurfaceGrid[i].short1;
+    unsigned short VTK_Type_Elem = typesSurfaceGrid[i].short2;
+    unsigned short nPoly         = typesSurfaceGrid[i].short3;
+    unsigned short faceID_Elem   = typesSurfaceGrid[i].short4;
+    unsigned short orientation   = typesSurfaceGrid[i].short5;
+    unsigned short nVarPerPoint  = typesSurfaceGrid[i].short6;
+
+    /*--- Correct the VTK type of the element if no tensor product
+          is used. Also determine the number of DOFs. ---*/
+    unsigned short nDOFs;
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
+      nDOFs = typesSurfaceGrid[i].short3+1;
+    }
+    else {
+      VTK_Type_Elem = LINE;
+      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
+      VTK_Type_Elem = LINE;
+    }
+
+    /*--- Create the data for the gemm type used in this standard
+          surface element. ---*/
+    CUnsignedShort4T thisGemmType(VTK_Type_Elem, nInt, nDOFs, nVarPerPoint);
+
+    /*--- Find this gemm type in gemmTypes. ---*/
+    vector<CUnsignedShort4T>::const_iterator low;
+    low = lower_bound(gemmTypes.begin(), gemmTypes.end(), thisGemmType);
+    const unsigned long ind = low - gemmTypes.begin();
+
+    /*--- Determine the type of the surface element. ---*/
+    switch( VTK_Type_Face ) {
+      case LINE: {
+
+        /*--- 2D simulation. Determine the type of the adjacent volume
+              element and allocate the appropriate standard element.
+              Note that typesSurfaceGrid[i].short2 must be used. ---*/
+        switch( typesSurfaceGrid[i].short2 ) {
+          case TRIANGLE:
+            standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentTriGrid(nPoly, faceID_Elem,
+                                                                                 orientation,
+                                                                                 gemmTypesFaces[ind]);
+            break;
+
+          case QUADRILATERAL:
+            standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentQuadGrid(nPoly, faceID_Elem,
+                                                                                  orientation,
+                                                                                  gemmTypesFaces[ind]);
+            break;
+
+          default:
+            SU2_MPI::Error(string("Unknown adjacent volume element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+
+        break;
+      }
+
+      case TRIANGLE: {
+
+        /*--- Triangular face. Determine the type of the adjacent volume
+              element and allocate the appropriate standard element.
+              Note that typesSurfaceGrid[i].short2 must be used. ---*/
+        switch( typesSurfaceGrid[i].short2 ) {
+          case TETRAHEDRON:
+            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentTetGrid(nPoly, faceID_Elem,
+                                                                                orientation,
+                                                                                gemmTypesFaces[ind]);
+            break;
+
+          case PYRAMID:
+            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPyraGrid(nPoly, faceID_Elem,
+                                                                                 orientation,
+                                                                                 gemmTypesFaces[ind]);
+            break;
+
+          case PRISM:
+            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPrismGrid(nPoly, faceID_Elem,
+                                                                                  orientation,
+                                                                                  gemmTypesFaces[ind]);
+            break;
+
+          default:
+            SU2_MPI::Error(string("Unknown adjacent volume element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+
+        break;
+      }
+
+      case QUADRILATERAL: {
+
+        /*--- Quadrilateral face. Determine the type of the adjacent volume
+              element and allocate the appropriate standard element.
+              Note that typesSurfaceGrid[i].short2 must be used. ---*/
+        switch( typesSurfaceGrid[i].short2 ) {
+          case HEXAHEDRON:
+            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentHexGrid(nPoly, faceID_Elem,
+                                                                                 orientation,
+                                                                                 gemmTypesFaces[ind]);
+            break;
+
+          case PYRAMID:
+            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPyraGrid(nPoly, faceID_Elem,
+                                                                                  orientation,
+                                                                                  gemmTypesFaces[ind]);
+            break;
+
+          case PRISM:
+            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPrismGrid(nPoly, faceID_Elem,
+                                                                                   orientation,
+                                                                                   gemmTypesFaces[ind]);
+            break;
+
+          default:
+            SU2_MPI::Error(string("Unknown adjacent volume element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+
+        break;
+      }
+
+      default: 
+        SU2_MPI::Error(string("Unknown surface element. This should not happen."),
+                       CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- Loop to create the standard surface elements for the solution. ---*/
+  standardSurfaceElementsSolution.resize(typesSurfaceSol.size(), nullptr);
+  for(unsigned long i=0; i<typesSurfaceSol.size(); ++i) {
+
+    /*--- Abbreviate the variables for readability. ---*/
+    unsigned short VTK_Type_Face = typesSurfaceSol[i].short0;
+    unsigned short nInt          = typesSurfaceSol[i].short1;
+    unsigned short VTK_Type_Elem = typesSurfaceSol[i].short2;
+    unsigned short nPoly         = typesSurfaceSol[i].short3;
+    unsigned short faceID_Elem   = typesSurfaceSol[i].short4;
+    unsigned short orientation   = typesSurfaceSol[i].short5;
+    unsigned short nVarPerPoint  = typesSurfaceSol[i].short6;
+
+    /*--- Correct the VTK type of the element if no tensor product
+          is used. Also determine the number of DOFs. ---*/
+    unsigned short nDOFs;
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
+      nDOFs = typesSurfaceSol[i].short3+1;
+    }
+    else {
+      VTK_Type_Elem = LINE;
+      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
+      VTK_Type_Elem = LINE;
+    }
+
+    /*--- Create the data for the gemm type used in this standard
+          surface element. ---*/
+    CUnsignedShort4T thisGemmType(VTK_Type_Elem, nInt, nDOFs, nVarPerPoint);
+
+    /*--- Find this gemm type in gemmTypes. ---*/
+    vector<CUnsignedShort4T>::const_iterator low;
+    low = lower_bound(gemmTypes.begin(), gemmTypes.end(), thisGemmType);
+    const unsigned long ind1 = low - gemmTypes.begin();
+
+    /*--- Also search  for the gemm type with the number of integration points
+          and number of DOFs swapped. ---*/
+    swap(thisGemmType.short1, thisGemmType.short2);
+    low = lower_bound(gemmTypes.begin(), gemmTypes.end(), thisGemmType);
+    const unsigned long ind2 = low - gemmTypes.begin();
+
+    /*--- Determine the type of the surface element. ---*/
+    switch( VTK_Type_Face ) {
+      case LINE: {
+
+        /*--- 2D simulation. Determine the type of the adjacent volume
+              element and allocate the appropriate standard element.
+              Note that typesSurfaceSol[i].short2 must be used. ---*/
+        switch( typesSurfaceSol[i].short2 ) {
+          case TRIANGLE:
+            standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentTriSol(nPoly, faceID_Elem,
+                                                                                    orientation,
+                                                                                    gemmTypesFaces[ind1],
+                                                                                    gemmTypesFaces[ind2]);
+            break;
+
+          case QUADRILATERAL:
+            standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentQuadSol(nPoly, faceID_Elem,
+                                                                                     orientation,
+                                                                                     gemmTypesFaces[ind1],
+                                                                                     gemmTypesFaces[ind2]);
+            break;
+
+          default:
+            SU2_MPI::Error(string("Unknown adjacent volume element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+
+        break;
+      }
+
+      case TRIANGLE: {
+
+        /*--- Triangular face. Determine the type of the adjacent volume
+              element and allocate the appropriate standard element.
+              Note that typesSurfaceSol[i].short2 must be used. ---*/
+        switch( typesSurfaceSol[i].short2 ) {
+          case TETRAHEDRON:
+            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentTetSol(nPoly, faceID_Elem,
+                                                                                   orientation,
+                                                                                   gemmTypesFaces[ind1],
+                                                                                   gemmTypesFaces[ind2]);
+            break;
+
+          case PYRAMID:
+            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPyraSol(nPoly, faceID_Elem,
+                                                                                    orientation,
+                                                                                    gemmTypesFaces[ind1],
+                                                                                    gemmTypesFaces[ind2]);
+            break;
+
+          case PRISM:
+            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPrismSol(nPoly, faceID_Elem,
+                                                                                     orientation,
+                                                                                     gemmTypesFaces[ind1],
+                                                                                     gemmTypesFaces[ind2]);
+            break;
+
+          default:
+            SU2_MPI::Error(string("Unknown adjacent volume element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+
+        break;
+      }
+
+      case QUADRILATERAL: {
+
+        /*--- Quadrilateral face. Determine the type of the adjacent volume
+              element and allocate the appropriate standard element.
+              Note that typesSurfaceSol[i].short2 must be used. ---*/
+        switch( typesSurfaceSol[i].short2 ) {
+          case HEXAHEDRON:
+            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentHexSol(nPoly, faceID_Elem,
+                                                                                    orientation,
+                                                                                    gemmTypesFaces[ind1],
+                                                                                    gemmTypesFaces[ind2]);
+            break;
+
+          case PYRAMID:
+            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPyraSol(nPoly, faceID_Elem,
+                                                                                     orientation,
+                                                                                     gemmTypesFaces[ind1],
+                                                                                     gemmTypesFaces[ind2]);
+            break;
+
+          case PRISM:
+            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPrismSol(nPoly, faceID_Elem,
+                                                                                      orientation,
+                                                                                      gemmTypesFaces[ind1],
+                                                                                      gemmTypesFaces[ind2]);
+            break;
+
+          default:
+            SU2_MPI::Error(string("Unknown adjacent volume element. This should not happen."),
+                           CURRENT_FUNCTION);
+        }
+
+        break;
+      }
+
+      default: 
+        SU2_MPI::Error(string("Unknown surface element. This should not happen."),
+                       CURRENT_FUNCTION);
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 7: Set the pointers to standard surface elements for the      ---*/
+  /*---         faces belonging to physical boundaries.                    ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop over the physical boundaries. Exclude the periodic boundaries. ---*/
+  unsigned long indGrid = 0, indSol = 0;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+      /*--- Easier storage of the surfaces of this boundary and loop over them. ---*/
+      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+      for(unsigned long i=0; i<surfElem.size(); ++i) {
+
+        /*--- Determine the index in the standard element for the grid that corresponds
+              to this surface element and set the pointer accordingly. ---*/
+        vector<CUnsignedShort7T>::const_iterator low;
+        low = lower_bound(typesSurfaceGrid.begin(), typesSurfaceGrid.end(),
+                          surfaceTypesGrid[indGrid++]);
+        unsigned long ind = low - typesSurfaceGrid.begin();
+
+        surfElem[i].standardElemGrid = standardSurfaceElementsGrid[ind];
+
+        /*--- Determine the index in the standard element for the solution that corresponds
+              to this surface element and set the pointer accordingly. ---*/
+        low = lower_bound(typesSurfaceSol.begin(), typesSurfaceSol.end(),
+                          surfaceTypesSol[indSol++]);
+        ind = low - typesSurfaceSol.begin();
+
+        surfElem[i].standardElemFlow = standardSurfaceElementsSolution[ind];
+
+        /*--- When the incompressible equations are solved, also the standard element
+              that corresponds to the pressure solution must be set. ---*/
+        if( incompressible ) {
+          low = lower_bound(typesSurfaceSol.begin(), typesSurfaceSol.end(),
+                            surfaceTypesSol[indSol++]);
+          ind = low - typesSurfaceSol.begin();
+
+          surfElem[i].standardElemP = standardSurfaceElementsSolution[ind];
+        }
+      }
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 8: Create the standard elements for internal matching faces.  ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop to create the standard elements for the internal matching
+        faces for the grid. ---*/
+  standardInternalFaceGrid.resize(typesFaceGrid.size(), nullptr);
+  for(unsigned long i=0; i<typesFaceGrid.size(); ++i) {
+
+    /*--- Create the data for the standard surface elements on side 0
+          and side 1 of the internal matching face. ---*/
+    CUnsignedShort7T surf0(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+                           typesFaceGrid[i].short2, typesFaceGrid[i].short3,
+                           typesFaceGrid[i].short4, 0,
+                           typesFaceGrid[i].short9);
+    CUnsignedShort7T surf1(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+                           typesFaceGrid[i].short5, typesFaceGrid[i].short6,
+                           typesFaceGrid[i].short7, typesFaceGrid[i].short8,
+                           typesFaceGrid[i].short9);
+
+    /*--- Determine the indices of surf0 and surf1 in the vector of standard
+          elements for the surfaces, which are the same indices as in the
+          vector typesSurfaceGrid. ---*/
+    vector<CUnsignedShort7T>::const_iterator low;
+    low = lower_bound(typesSurfaceGrid.begin(), typesSurfaceGrid.end(), surf0);
+    const unsigned long ind0 = low - typesSurfaceGrid.begin();
+
+    low = lower_bound(typesSurfaceGrid.begin(), typesSurfaceGrid.end(), surf1);
+    const unsigned long ind1 = low - typesSurfaceGrid.begin();
+
+    /*--- Create the standard element. ---*/
+    standardInternalFaceGrid[i] = new CFEMStandardInternalFaceGrid(standardSurfaceElementsGrid[ind0],
+                                                                   standardSurfaceElementsGrid[ind1]);
+  }
+
+  /*--- Loop to create the standard elements for the internal matching
+        faces for the solution. ---*/
+  standardInternalFaceSolution.resize(typesFaceSol.size(), nullptr);
+  for(unsigned long i=0; i<typesFaceSol.size(); ++i) {
+
+    /*--- Create the data for the standard surface elements on side 0
+          and side 1 of the internal matching face. ---*/
+    CUnsignedShort7T surf0(typesFaceSol[i].short0, typesFaceSol[i].short1,
+                           typesFaceSol[i].short2, typesFaceSol[i].short3,
+                           typesFaceSol[i].short4, 0,
+                           typesFaceSol[i].short9);
+    CUnsignedShort7T surf1(typesFaceSol[i].short0, typesFaceSol[i].short1,
+                           typesFaceSol[i].short5, typesFaceSol[i].short6,
+                           typesFaceSol[i].short7, typesFaceSol[i].short8,
+                           typesFaceSol[i].short9);
+
+    /*--- Determine the indices of surf0 and surf1 in the vector of standard
+          elements for the surfaces, which are the same indices as in the
+          vector typesSurfaceSol. ---*/
+    vector<CUnsignedShort7T>::const_iterator low;
+    low = lower_bound(typesSurfaceSol.begin(), typesSurfaceSol.end(), surf0);
+    const unsigned long ind0 = low - typesSurfaceSol.begin();
+
+    low = lower_bound(typesSurfaceSol.begin(), typesSurfaceSol.end(), surf1);
+    const unsigned long ind1 = low - typesSurfaceSol.begin();
+
+    /*--- Create the standard element. ---*/
+    standardInternalFaceSolution[i] = new CFEMStandardInternalFaceSol(standardSurfaceElementsSolution[ind0],
+                                                                      standardSurfaceElementsSolution[ind1]);
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 9: Set the pointers to standard internal faces for the        ---*/
+  /*---         internal matching faces.                                   ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop over the internal matching faces. ---*/
+  indSol = 0;
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+    /*--- Determine the index of faceTypesGrid in typesFaceGrid, which is also
+          the index of the matching face in the standard matching faces.
+          Set the pointer afterwards. ---*/
+    vector<CUnsignedShort10T>::const_iterator low;
+    low = lower_bound(typesFaceGrid.begin(), typesFaceGrid.end(), faceTypesGrid[i]);
+    unsigned long ind = low - typesFaceGrid.begin();
+
+    matchingFaces[i].standardElemGrid = standardInternalFaceGrid[ind];
+
+    /*--- Determine the index of faceTypesSol in typesFaceSol, which is also
+          the index of the matching face in the standard matching faces.
+          Set the pointer afterwards. Note that it is possible that there is also
+          a standard face for the pressure solution, hence the index indSol must
+          be used instead of i. ---*/
+    low = lower_bound(typesFaceSol.begin(), typesFaceSol.end(), faceTypesSol[indSol++]);
+    ind = low - typesFaceSol.begin();
+
+    matchingFaces[i].standardElemFlow = standardInternalFaceSolution[ind];
+
+    /*--- When the incompressible equations are solved, also the standard element
+          that corresponds to the pressure solution must be set. ---*/
+    if( incompressible ) {
+      low = lower_bound(typesFaceSol.begin(), typesFaceSol.end(), faceTypesSol[indSol++]);
+      ind = low - typesFaceSol.begin();
+
+      matchingFaces[i].standardElemP = standardInternalFaceSolution[ind];
+    }
+  }
+}
 
 void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedShort3T> &elemTypes,
                                                        const unsigned short           locGridDOFs) {

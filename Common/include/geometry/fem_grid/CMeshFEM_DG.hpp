@@ -30,6 +30,10 @@
 
 #include "CMeshFEM_Base.hpp"
 #include "CVolumeElementFEM_DG.hpp"
+#include "CInternalFaceFEM_DG.hpp"
+
+/*--- Forward declarations. ---*/
+class CFaceOfElement;
 
 using namespace std;
 
@@ -51,10 +55,28 @@ protected:
   vector<unsigned long> nVolElemHaloPerTimeLevel;    /*!< \brief Number of local halo volume elements
                                                                  per time level. Cumulative storage. */
 
-  vector<CVolumeElementFEM_DG> volElem;      /*!< \brief Vector of the local volume elements, including halos. */
+  vector<vector<unsigned long> > ownedElemAdjLowTimeLevel; /*!< \brief List of owned elements per time level that are
+                                                                       adjacent to elements of the lower time level. */
+  vector<vector<unsigned long> > haloElemAdjLowTimeLevel; /*!< \brief List of halo elements per time level that are
+                                                                      adjacent to elements of the lower time level. */
 
-  vector<CFEMStandardElementBase *> standardVolumeElementsSolution; /*!< \brief Vector of standard volume
-                                                                                elements for the solution. */
+  vector<unsigned long> nMatchingFacesInternal;      /*!< \brief Number of matching faces between between two owned elements
+                                                                 per time level. Cumulative storage format. */
+  vector<unsigned long> nMatchingFacesWithHaloElem;  /*!< \brief Number of matching faces between an owned element and a halo
+                                                                 element per time level. Cumulative storage format. */
+
+  vector<CVolumeElementFEM_DG> volElem;       /*!< \brief Vector of the local volume elements, including halos. */
+  vector<CInternalFaceFEM_DG>  matchingFaces; /*!< \brief Vector of the local matching internal faces. */
+
+  vector<CFEMStandardElementBase *> standardVolumeElementsSolution;    /*!< \brief Vector of standard volume
+                                                                                   elements for the solution. */
+  vector<CFEMStandardElementBase *> standardSurfaceElementsSolution;   /*!< \brief Vector of standard surface
+                                                                                   elements for the solution. */
+
+  vector<CFEMStandardInternalFaceGrid *> standardInternalFaceGrid;     /*!< \brief Vector of standard elements of internal
+                                                                                   matching faces for the grid. */
+  vector<CFEMStandardInternalFaceSol *>  standardInternalFaceSolution; /*!< \brief Vector of standard elements of internal
+                                                                                   matching faces for the solution. */ 
 
 public:
   /*!
@@ -139,6 +161,14 @@ public:
   void WallFunctionPreprocessing(CConfig *config);
 
 private:
+
+  /*!
+   * \brief Function, which creates the standard elements for the faces.
+   * \param[in] config     - Definition of the particular problem.
+   * \param[in] localFaces - Vector, which stores all the faces in the grid.
+   */
+  void CreateStandardFaces(CConfig                      *config,
+                           const vector<CFaceOfElement> &localFaces);
 
   /*!
    * \brief Function, which creates the standard elements for the solution.

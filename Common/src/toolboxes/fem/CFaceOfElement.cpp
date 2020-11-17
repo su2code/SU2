@@ -166,9 +166,9 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
   switch( nCornerPoints ) {
 
     case 2: {
-      /* Element is a line. Check if the node numbering must be swapped. If so
-         also the element information must be swapped, because element 0 is to
-         the left of the face and element 1 to the right. */
+      /*--- Element is a line. Check if the node numbering must be swapped. If so
+            also the element information must be swapped, because element 0 is to
+            the left of the face and element 1 to the right. ---*/
       if(cornerPoints[1] < cornerPoints[0]) {
         swap(cornerPoints[0], cornerPoints[1]);
         swapElements = true;
@@ -177,10 +177,10 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
     }
 
     case 3: {
-      /* Element is a triangle. The vertices are sorted in increasing order.
-         If the sequence of the new numbering is opposite to the current
-         numbering, the element information must be exchanged, because
-         element 0 is to the left of the face and element 1 to the right. */
+      /*--- Element is a triangle. The vertices are sorted in increasing order.
+            If the sequence of the new numbering is opposite to the current
+            numbering, the element information must be exchanged, because
+            element 0 is to the left of the face and element 1 to the right. ---*/
       unsigned long nn[] = {cornerPoints[0], cornerPoints[1], cornerPoints[2]};
       unsigned short ind = 0;
       if(nn[1] < nn[ind]) ind = 1;
@@ -191,16 +191,16 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
 
       if(nn[indp1] < nn[indm1]) {
 
-        /* The orientation of the triangle remains the same.
-           Store the new sorted node numbering. */
+        /*--- The orientation of the triangle remains the same.
+              Store the new sorted node numbering. ---*/
         cornerPoints[0] = nn[ind];
         cornerPoints[1] = nn[indp1];
         cornerPoints[2] = nn[indm1];
       }
       else {
 
-        /* The orientation of the triangle changes. Store the new
-           sorted node numbering and set swapElements to true. */
+        /*--- The orientation of the triangle changes. Store the new
+              sorted node numbering and set swapElements to true. ---*/
         cornerPoints[0] = nn[ind];
         cornerPoints[1] = nn[indm1];
         cornerPoints[2] = nn[indp1];
@@ -211,11 +211,11 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
     }
 
     case 4: {
-      /* Element is a quadrilateral. The vertices are sorted in increasing order
-         under the condition neighboring vertices remain neighbors. If the
-         sequence of the new numbering is opposite to the current
-         numbering, the element information must be exchanged, because
-         element 0 is to the left of the face and element 1 to the right. */
+      /*--- Element is a quadrilateral. The vertices are sorted in increasing order
+            under the condition neighboring vertices remain neighbors. If the
+            sequence of the new numbering is opposite to the current
+            numbering, the element information must be exchanged, because
+            element 0 is to the left of the face and element 1 to the right. ---*/
       unsigned long nn[] = {cornerPoints[0], cornerPoints[1],
                             cornerPoints[2], cornerPoints[3]};
       unsigned short ind = 0;
@@ -229,8 +229,8 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
 
       if(nn[indp1] < nn[indm1]) {
 
-        /* The orientation of the quadrilateral remains the same.
-           Store the new sorted node numbering. */
+        /*--- The orientation of the quadrilateral remains the same.
+              Store the new sorted node numbering. ---*/
         cornerPoints[0] = nn[ind];
         cornerPoints[1] = nn[indp1];
         cornerPoints[2] = nn[indp2];
@@ -238,8 +238,8 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
       }
       else {
 
-        /* The orientation of the quadrilateral changes. Store the new
-           sorted node numbering and set swapElements to true. */
+        /*--- The orientation of the quadrilateral changes. Store the new
+              sorted node numbering and set swapElements to true. ---*/
         cornerPoints[0] = nn[ind];
         cornerPoints[1] = nn[indm1];
         cornerPoints[2] = nn[indp2];
@@ -258,7 +258,7 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
     }
   }
 
-  /* Swap the element information, if needed. */
+  /*--- Swap the element information, if needed. ---*/
   if( swapElements ) {
     swap(elemID0,    elemID1);
     swap(nPolyGrid0, nPolyGrid1);
@@ -266,5 +266,174 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
     swap(nDOFsElem0, nDOFsElem1);
     swap(elemType0,  elemType1);
     swap(faceID0,    faceID1);
+  }
+}
+
+unsigned short CFaceOfElement::DetermineOrientationElemSide1(
+                               const vector<CVolumeElementFEM_DG> &volElem) const {
+
+  /*--- Determine the corner points of all the faces of the element on side 1. ---*/
+  unsigned short nFaces;
+  unsigned short nPointsPerFace[6];
+  unsigned long  faceConn[6][4];
+
+  volElem[elemID1].GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+  /*--- Define the return variable orientation and initialize it to avoid a
+        compiler warning. Also initialize the bool wrongOrientation to false. ---*/
+  unsigned short orientation      = 0;
+  bool           wrongOrientation = false;
+
+  /*--- Make a distinction between the possible surface elements. ---*/
+  switch( nCornerPoints ) {
+
+    case 2: {
+
+      /*---- Element is a line. Abbreviate the points of the face. ---*/
+      const unsigned long n0 = faceConn[faceID1][0], n1 = faceConn[faceID1][1];
+
+      /*--- Determine the situation and set orientation accordingly. ---*/
+      if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0])) orientation = 0;
+      else wrongOrientation = true;
+
+      break;
+    }
+
+    case 3: {
+
+      /*---- Element is a triangle. Abbreviate the points of the face. ---*/
+      const unsigned long n0 = faceConn[faceID1][0], n1 = faceConn[faceID1][1],
+                          n2 = faceConn[faceID1][2];
+
+      /*--- Determine the situation and set orientation accordingly. ---*/
+      if(     (n0 == cornerPoints[0]) && (n1 == cornerPoints[2]) &&
+              (n2 == cornerPoints[1])) orientation = 0;
+      else if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0]) &&
+              (n2 == cornerPoints[2])) orientation = 1;
+      else if((n0 == cornerPoints[2]) && (n1 == cornerPoints[1]) &&
+              (n2 == cornerPoints[0])) orientation = 2;
+      else wrongOrientation = true;
+
+      break;
+    }
+
+    case 4: {
+
+      /*---- Element is a quadrilateral. Abbreviate the points of the face. ---*/
+      const unsigned long n0 = faceConn[faceID1][0], n1 = faceConn[faceID1][1],
+                          n2 = faceConn[faceID1][2], n3 = faceConn[faceID1][3];
+
+      /*--- Determine the situation and set orientation accordingly. ---*/
+      if(     (n0 == cornerPoints[0]) && (n1 == cornerPoints[3]) &&
+              (n2 == cornerPoints[2]) && (n3 == cornerPoints[1])) orientation = 0;
+      else if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0]) &&
+              (n2 == cornerPoints[3]) && (n3 == cornerPoints[2])) orientation = 1;
+      else if((n0 == cornerPoints[2]) && (n1 == cornerPoints[1]) &&
+              (n2 == cornerPoints[0]) && (n3 == cornerPoints[3])) orientation = 2;
+      else if((n0 == cornerPoints[3]) && (n1 == cornerPoints[2]) &&
+              (n2 == cornerPoints[1]) && (n3 == cornerPoints[0])) orientation = 3;
+      else wrongOrientation = true;
+
+      break;
+    }
+
+    default: {
+      ostringstream message;
+      message << "Unknown surface element type with " << nCornerPoints
+              << " corners." << endl;
+      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- Check if something went wrong. ---*/
+  if( wrongOrientation )
+    SU2_MPI::Error(string("No matching orientation found"), CURRENT_FUNCTION);
+
+  /*--- Return the value of orientation. ---*/
+  return orientation;
+}
+
+void CFaceOfElement::MatchOrientationElemSide0(const vector<CVolumeElementFEM_DG> &volElem) {
+
+  /*--- Determine the corner points of all the faces of the element on side 0. ---*/
+  unsigned short nFaces;
+  unsigned short nPointsPerFace[6];
+  unsigned long  faceConn[6][4];
+
+  volElem[elemID0].GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+  /*--- Reset the node number of this face to the node numbering of the
+        corresponding face of the element. ---*/
+  for(unsigned short j=0; j<nCornerPoints; ++j)
+    cornerPoints[j] = faceConn[faceID0][j];
+}
+
+void CFaceOfElement::SwapSidesIfNeeded(const unsigned long nVolElemOwned,
+                                       const unsigned long nVolElemTot) {
+ 
+  /*--- Definition of the boolean, which defines whether or not the adjacent
+        elements must be swapped. ---*/
+  bool swapElements;
+
+  /*--- Check if this is an internal matching face. ---*/
+  if(elemID0 < nVolElemTot && elemID1 < nVolElemTot) {
+
+    /*--- Internal matching face. The criteria for swapping are such that
+          the least amount of standard elements for matching faces need
+          to be created. ---*/
+    if(elemType0 == elemType1) {
+
+      /*--- Elements are of the same type. The elements are swapped if the
+            face ID of element 1 is lower. In this way the element with the
+            lowest face ID is always on side 0 of the face. If the face ID's
+            are the same, look at the polynomial degree. ---*/
+      if(faceID0 != faceID1) swapElements = faceID1 < faceID0;
+      else                   swapElements = nPolySol1 > nPolySol0;
+    }
+    else {
+
+      /*--- Adjacent elements are of a different type. Below follow some criteria
+            to swap the elements. ---*/
+      if(nCornerPoints == 2) {
+
+        /*--- 2D simulation. The quadrilateral is always on side 0. ---*/
+        swapElements = elemType1 == QUADRILATERAL;
+      }
+      else if(nCornerPoints == 3) {
+
+        /*--- Triangular face. The prism is always on side 0 and
+              the tetrahedron never. ---*/
+        swapElements = (elemType0 == TETRAHEDRON) || (elemType1 == PRISM);
+      }
+      else {
+
+        /*--- Quadrilateral face. The pyramid is always on side 0 and
+              the prism never. ---*/
+        swapElements = (elemType0 == PRISM) || (elemType1 == PYRAMID);
+      }
+    }
+  }
+  else {
+
+    /*--- Either a boundary face or a non-matching face. It must be swapped
+          if the element is currently on side 1 of the face. ---*/
+    swapElements = elemID1 < nVolElemTot;
+  }
+
+  /*--- Swap the adjacent elements of the face, if needed. Note that
+        also the sequence of the corner points must be altered in order
+        to obey the right hand rule. ---*/
+  if( swapElements ) {
+    swap(elemID0,    elemID1);
+    swap(nPolyGrid0, nPolyGrid1);
+    swap(nPolySol0,  nPolySol1);
+    swap(nDOFsElem0, nDOFsElem1);
+    swap(elemType0,  elemType1);
+    swap(faceID0,    faceID1);
+
+    if(nCornerPoints == 2) swap(cornerPoints[0], cornerPoints[1]);
+    else                   swap(cornerPoints[0], cornerPoints[2]);
+
+    elem0IsOwner = !elem0IsOwner;
   }
 }
