@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -166,7 +166,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   w     = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   onemw = 1.0 - w;
 
-  /*--- Calculate weighted state vector(*) ---*/
+  /*--- Calculate weighted state vector (*) for i & j ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Ust_i[iVar] = onemw*U_i[iVar] + w*U_j[iVar];
     Ust_j[iVar] = onemw*U_j[iVar] + w*U_i[iVar];

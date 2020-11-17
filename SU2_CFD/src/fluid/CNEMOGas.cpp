@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,11 +53,10 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
 
   frozen               = config->GetFrozen();
   ionization           = config->GetIonization();
-
 }
 
-void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature,
-                              su2double val_temperature_ve){
+void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac,
+                              su2double val_temperature, su2double val_temperature_ve){
 
   su2double denom;
 
@@ -101,8 +100,7 @@ su2double CNEMOGas::GetSoundSpeed(){
   }
   SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
 
-  return(sqrt(SoundSpeed2));
-
+ return(sqrt(SoundSpeed2));
 }
 
 su2double CNEMOGas::GetPressure(){
@@ -117,7 +115,6 @@ su2double CNEMOGas::GetPressure(){
   Pressure = P;
 
   return P;
-
 }
 
 su2double CNEMOGas::GetGasConstant(){
@@ -128,7 +125,7 @@ su2double CNEMOGas::GetGasConstant(){
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
-
+ 
   return GasConstant;
 }
 
@@ -165,12 +162,13 @@ void CNEMOGas::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
 
   /*--- Extract variables ---*/
+
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhos[iSpecies] = V[RHOS_INDEX+iSpecies];
 
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
   Ref_Temperature    = GetRefTemperature();
-
+  
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
@@ -192,6 +190,7 @@ void CNEMOGas::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val
     val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
                          (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
                          ef + 0.5*sqvel);
+
   }
   if (ionization) {
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -221,32 +220,32 @@ void CNEMOGas::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val
 
   /*--- Vib.-el energy derivative ---*/
   val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
-                               rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
+                               rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
 }
 
 void CNEMOGas::GetdTdU(su2double *V, su2double *val_dTdU){
 
-  su2double ef, rhoCvtr;
+  su2double v2, ef, rhoCvtr;
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long VEL_INDEX     = nSpecies+2;
-
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
 
   /*--- Rename for convenience ---*/
-  rhoCvtr            = V[RHOCVTR_INDEX];
+  rhoCvtr = V[RHOCVTR_INDEX];
+
   Cvtrs              = GetSpeciesCvTraRot();
   Enthalpy_Formation = GetSpeciesFormationEnthalpy();
   Ref_Temperature    = GetRefTemperature();
 
   /*--- Calculate supporting quantities ---*/
-  su2double v2 = 0.0;
+  v2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     v2 += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
 
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    ef                   = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
+    ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
     val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
   }
   if (ionization) {
@@ -262,27 +261,29 @@ void CNEMOGas::GetdTdU(su2double *V, su2double *val_dTdU){
   val_dTdU[nSpecies+nDim]   =  1.0 / V[RHOCVTR_INDEX];
   val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
 
-}
+}    
 
 void CNEMOGas::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
 
-  /*--- Necessary indexes to assess primitive variables ---*/
-  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
+  su2double rhoCvve;
 
+  /*--- Necessary indexes to assess primitive variables ---*/  
+  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
+ 
   /*--- Rename for convenience ---*/
-  su2double rhoCvve = V[RHOCVVE_INDEX];
+  rhoCvve = V[RHOCVVE_INDEX];
 
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     val_dTvedU[iSpecies] = -val_eves[iSpecies]/rhoCvve;
   }
-
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     val_dTvedU[nSpecies+iDim] = 0.0;
 
   /*--- Energy derivatives ---*/
   val_dTvedU[nSpecies+nDim]   = 0.0;
-  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
+  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;  
 
 }
+

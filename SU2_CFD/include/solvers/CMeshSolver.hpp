@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CFEASolver.hpp"
+#include "../variables/CMeshBoundVariable.hpp"
 #include "../variables/CMeshElement.hpp"
 
 class CMeshSolver final : public CFEASolver {
@@ -133,7 +134,7 @@ public:
   inline su2double Get_ValCoord(const CGeometry*,
                                 unsigned long indexNode,
                                 unsigned short iDim) const override {
-    return nodes->GetMesh_Coord(indexNode,iDim);
+    return static_cast<const CMeshBoundVariable*>(nodes)->GetMesh_Coord(indexNode,iDim);
   }
 
   /*!

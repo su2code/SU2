@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -79,7 +79,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       fluid_zone = true;
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;  
     case FEM_ELASTICITY:
@@ -569,10 +569,10 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
       /*--- Aditional transfer for turbulence variables. ---*/
       if (config_container[targetZone]->GetKind_Solver() == RANS ||
-          config_container[targetZone]->GetKind_Solver() == INC_RANS ||
-          config_container[targetZone]->GetKind_Solver() == NEMO_RANS)
+          config_container[targetZone]->GetKind_Solver() == INC_RANS)
       {
         interface_container[donorZone][targetZone]->BroadcastData(
+          *interpolator_container[donorZone][targetZone].get(),
           solver_container[donorZone][INST_0][MESH_0][TURB_SOL],
           solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
           geometry_container[donorZone][INST_0][MESH_0],
@@ -632,6 +632,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
   if(donorSolver >= 0 && targetSolver >= 0) {
     interface_container[donorZone][targetZone]->BroadcastData(
+      *interpolator_container[donorZone][targetZone].get(),
       solver_container[donorZone][INST_0][MESH_0][donorSolver],
       solver_container[targetZone][INST_0][MESH_0][targetSolver],
       geometry_container[donorZone][INST_0][MESH_0],

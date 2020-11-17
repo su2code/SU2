@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -183,6 +183,44 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
     SetOutput(val_software, val_iZone);
 
   Multizone_Problem = config->GetMultizone_Problem();
+
+}
+
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
+
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
+
+  base_config = false;
+
+  iZone = val_iZone;
+  nZone = val_nZone;
+
+  Init();
+
+  /*--- Parsing the config file  ---*/
+
+  SetConfig_Parsing(case_filename);
+
+  /*--- Set the default values for all of the options that weren't set ---*/
+
+  SetDefault();
+
+  /*--- Set number of zone ---*/
+
+  SetnZone();
+
+  /*--- Configuration file postprocessing ---*/
+
+  SetPostprocessing(val_software, val_iZone, val_nDim);
+
+  /*--- Configuration file boundaries/markers setting ---*/
+
+  SetMarkers(val_software);
+
+  /*--- Configuration file output ---*/
+
+  if ((rank == MASTER_NODE) && verb_high)
+    SetOutput(val_software, val_iZone);
 
 }
 
@@ -1087,8 +1125,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
-  /*!\brief FULL_TAPE \n DESCRIPTION: Use full (coupled) tapes for multiphysics discrete adjoint. \ingroup Config*/
-  addBoolOption("FULL_TAPE", FullTape, YES);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
@@ -1603,6 +1639,8 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
+  /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
+  addBoolOption("USE_VECTORIZATION", UseVectorization, false);
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
@@ -1816,7 +1854,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("USE_ACCURATE_FLUX_JACOBIANS", Use_Accurate_Jacobians, false);
   /*!\brief CENTRAL_JACOBIAN_FIX_FACTOR \n DESCRIPTION: Improve the numerical properties (diagonal dominance) of the global Jacobian matrix, 3 to 4 is "optimum" (central schemes) \ingroup Config*/
   addDoubleOption("CENTRAL_JACOBIAN_FIX_FACTOR", Cent_Jac_Fix_Factor, 4.0);
-  
+
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
@@ -1948,12 +1986,12 @@ void CConfig::SetConfig_Options() {
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
 
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
-  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
-  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
+  default_mesh_box_length[0] = 1.0; default_mesh_box_length[1] = 1.0; default_mesh_box_length[2] = 1.0;
+  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length);
 
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
-  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
-  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
+  default_mesh_box_offset[0] = 0.0; default_mesh_box_offset[1] = 0.0; default_mesh_box_offset[2] = 0.0;
+  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset);
 
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
@@ -2814,6 +2852,15 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
+  /* DESCRIPTION: Interpolating solutions between two meshes */
+  addBoolOption("INTERPOLATE_SOLUTION", interpolate_solution, false);
+
+  /* DESCRIPTION: Interpolated output file restart flow */
+  addStringOption("INTERPOLATED_RESTART_FILENAME", Interpolated_Restart_FileName, string("interpolated_restart_flow.dat"));
+
+  /* DESCRIPTION: Target mesh for solution interpolation */
+  addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
+  
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2836,14 +2883,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-  void CConfig::SetConfig_Parsing(istream& config_buffer){
+void CConfig::SetConfig_Parsing(istream& config_buffer){
 
   string text_line, option_name;
   vector<string> option_value;
 
   string errorString;
 
-  int  err_count = 0;  // How many errors have we found in the config file
+  int err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
   int line_count = 1;
 
@@ -3064,7 +3111,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.7 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3224,17 +3271,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Kind_Solver == INC_NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= INC_NAVIER_STOKES", CURRENT_FUNCTION);
   }
-  if (Kind_Solver == NEMO_NAVIER_STOKES && Kind_Turb_Model != NONE){
-    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NEMO_NAVIER_STOKES", CURRENT_FUNCTION);
-  }
   if (Kind_Solver == RANS && Kind_Turb_Model == NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= RANS", CURRENT_FUNCTION);
   }
   if (Kind_Solver == INC_RANS && Kind_Turb_Model == NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
-  }
-  if (Kind_Solver == NEMO_RANS && Kind_Turb_Model == NONE){
-    SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= NEMO_RANS", CURRENT_FUNCTION);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -3460,7 +3501,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Solver == RANS ||
       Kind_Solver == NEMO_EULER ||
       Kind_Solver == NEMO_NAVIER_STOKES ||
-      Kind_Solver == NEMO_RANS ||
       Kind_Solver == FEM_EULER ||
       Kind_Solver == FEM_NAVIER_STOKES ||
       Kind_Solver == FEM_RANS ||
@@ -3551,11 +3591,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (SystemMeasurements == US && !standard_air) {
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
-
-  //TODO delete me
-  //if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
-  //  SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
-  //}
 
   if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ && Kind_FluidModel != MUTATIONPP) {
     SU2_MPI::Error("Only USER_DEFINED_NONEQ or MUTATIONPP nonequilibrium fluid model can be used with the NEMO solver.", CURRENT_FUNCTION);
@@ -4029,10 +4064,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Turb_Model != NONE))
     Kind_Solver = INC_RANS;
 
-  if ((Kind_Solver == NEMO_NAVIER_STOKES) &&
-      (Kind_Turb_Model != NONE))
-    Kind_Solver = NEMO_RANS;
-
   if (Kind_Solver == EULER ||
       Kind_Solver == INC_EULER ||
       Kind_Solver == NEMO_EULER ||
@@ -4338,7 +4369,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == NEMO_NAVIER_STOKES     ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
-             ( Kind_Solver == NEMO_RANS              ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
              ( Kind_Solver == FEM_NAVIER_STOKES      ) ||
              ( Kind_Solver == FEM_RANS               ) ||
@@ -4673,7 +4703,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        nRough_Wall = nWall;
        Roughness_Height = new su2double [nWall];
        Kind_Wall = new unsigned short [nWall];
-       for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+       for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
          Kind_Wall[iMarker] = SMOOTH;
        }
@@ -4825,9 +4855,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver != ADJ_RANS) &&
       (Kind_Solver != DISC_ADJ_RANS) &&
       (Kind_Solver != INC_RANS) &&
-      (Kind_Solver != DISC_ADJ_INC_RANS) &&
-      (Kind_Solver != NEMO_RANS) &&
-      (Kind_Solver != DISC_ADJ_NEMO_RANS)){
+      (Kind_Solver != DISC_ADJ_INC_RANS)){
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
 
@@ -4922,15 +4950,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
-      case NEMO_EULER:
-        Kind_Solver = DISC_ADJ_NEMO_EULER;
-        break;
-      case NEMO_RANS:
-        Kind_Solver = DISC_ADJ_NEMO_RANS;
-        break;
-      case NEMO_NAVIER_STOKES:
-        Kind_Solver = DISC_ADJ_NEMO_NAVIER_STOKES;
-        break;
       case HEAT_EQUATION:
         Kind_Solver = DISC_ADJ_HEAT;
         break;
@@ -4997,16 +5016,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    (Kind_Solver == INC_RANS) ||
                    (Kind_Solver == EULER) ||
                    (Kind_Solver == NAVIER_STOKES) ||
-                   (Kind_Solver == RANS) ||
                    (Kind_Solver == NEMO_EULER) ||
                    (Kind_Solver == NEMO_NAVIER_STOKES) ||
-                   (Kind_Solver == NEMO_RANS) ||
+                   (Kind_Solver == RANS) ||
                    (Kind_Solver == DISC_ADJ_EULER) ||
                    (Kind_Solver == DISC_ADJ_RANS) ||
                    (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-                   (Kind_Solver == DISC_ADJ_NEMO_EULER) ||
-                   (Kind_Solver == DISC_ADJ_NEMO_RANS) ||
-                   (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) ||
                    (Kind_Solver == DISC_ADJ_INC_EULER) ||
                    (Kind_Solver == DISC_ADJ_INC_RANS) ||
                    (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
@@ -5040,7 +5055,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (edgeColorGroupSize==0) edgeColorGroupSize = 1<<30;
 
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
-  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true; 
+  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
 }
 
@@ -5073,7 +5088,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + 
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
   nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -5348,7 +5363,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL;
     iMarker_CfgFile++;
   }
- 
+
   for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = SMOLUCHOWSKI_MAXWELL;
@@ -5610,35 +5625,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
-      case NEMO_EULER: case DISC_ADJ_NEMO_EULER:
+      case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
-      case NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_NAVIER_STOKES:
+      case NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){  
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
-        }
-        break;
-      case NEMO_RANS: case DISC_ADJ_NEMO_RANS:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
-          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
-            SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
-        }
-        cout << "Turbulence model: ";
-        switch (Kind_Turb_Model) {
-          case SA:        cout << "Spalart Allmaras" << endl; break;
-          case SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
-          case SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
-          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
-          case SST:       cout << "Menter's SST"     << endl; break;
-          case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         break;
       case FEM_LES:
@@ -5685,7 +5683,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
-          (Kind_Solver == NEMO_NAVIER_STOKES) || (Kind_Solver == NEMO_RANS))
+          (Kind_Solver == NEMO_NAVIER_STOKES))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
         cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -6124,27 +6122,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." << endl;
 
-    if ((Kind_Solver == EULER)               || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
-        (Kind_Solver == INC_EULER)           || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == NEMO_EULER)          || (Kind_Solver == NEMO_NAVIER_STOKES)     || (Kind_Solver == NEMO_RANS) ||
-        (Kind_Solver == DISC_ADJ_EULER)      || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)) {
+    if ((Kind_Solver == EULER)          || (Kind_Solver == NAVIER_STOKES)          || (Kind_Solver == RANS) ||
+        (Kind_Solver == INC_EULER)      || (Kind_Solver == INC_NAVIER_STOKES)      || (Kind_Solver == INC_RANS) ||
+        (Kind_Solver == NEMO_EULER)     || (Kind_Solver == NEMO_NAVIER_STOKES)     ||
+        (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
-        if (Kind_Centered_Flow == JST) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
-        if (Kind_Centered_Flow == JST_KE) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
         if (Kind_Centered_Flow == LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << "." << endl;
           cout << "First order integration." << endl;
+        }
+        else {
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
+          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
       }
 
@@ -6206,8 +6198,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == NEMO_RANS) || (Kind_Solver == DISC_ADJ_NEMO_RANS)) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
         if (MUSCL_Turb) {
@@ -6339,8 +6330,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
         (Kind_Solver == NEMO_NAVIER_STOKES) ||
         (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS)) {
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
@@ -6348,9 +6338,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
-    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
-        (Kind_Solver == NEMO_RANS) || (Kind_Solver == DISC_ADJ_NEMO_RANS)) {
+    if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS) ) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
@@ -6442,10 +6430,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) || (Kind_Solver == NEMO_RANS) ||
+        (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) ||
         (Kind_Solver == DISC_ADJ_INC_EULER) || (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == DISC_ADJ_NEMO_EULER) || (Kind_Solver == DISC_ADJ_NEMO_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_NEMO_RANS) ||
         (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
       switch (Kind_TimeIntScheme_Flow) {
         case RUNGE_KUTTA_EXPLICIT:
@@ -6645,7 +6632,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS) ||
-        (Kind_Solver == NEMO_RANS) || (Kind_Solver == DISC_ADJ_NEMO_RANS) ||
         (Kind_Solver == INC_RANS) || (Kind_Solver == DISC_ADJ_INC_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
@@ -8150,7 +8136,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case RANS: case INC_RANS: case NEMO_RANS:
+    case RANS: case INC_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -9850,7 +9836,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:

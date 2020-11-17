@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
  * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,7 +142,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     u_i[iDim] = V_i[VEL_INDEX+iDim];
     u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-
   P_i       = V_i[P_INDEX];         P_j       = V_j[P_INDEX];
   h_i       = V_i[H_INDEX];         h_j       = V_j[H_INDEX];
   rho_i     = V_i[RHO_INDEX];       rho_j     = V_j[RHO_INDEX];
@@ -192,7 +191,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   mL  = ProjVel_i/aij;
   mR  = ProjVel_j/aij;
   if (fabs(mL) <= 1.0) {
-    mLP = 0.25*(mL+1.0)*(mL+1.0);  
+    mLP = 0.25*(mL+1.0)*(mL+1.0);
     pLP = P_i*(0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
   } else {
     mLP = 0.5*(mL+fabs(mL));
@@ -210,7 +209,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   w  = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
   ps = pLP + pRM;
 
-  // simplified f function (Literature requires information from cells from
+  // simplified f function (Literature requires information from cells
   // above and below  (TODO)
   fL = 0.0; fR = 0.0;
   if (ps != 0.0){

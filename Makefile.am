@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.6 "Blackbird"
+# \version 7.0.7 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -57,10 +57,6 @@ if BUILD_DOT
 SUBDIRS +=SU2_DOT/obj
 endif
 
-if BUILD_MSH
-SUBDIRS +=SU2_MSH/obj
-endif
-
 if BUILD_DEF
 SUBDIRS +=SU2_DEF/obj
 endif
@@ -71,6 +67,10 @@ endif
 
 if BUILD_GEO
 SUBDIRS +=SU2_GEO/obj
+endif
+
+if BUILD_INTERP
+SUBDIRS +=SU2_INTERP/obj
 endif
 
 if BUILD_PY_WRAPPER

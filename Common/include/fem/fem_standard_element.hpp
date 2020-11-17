@@ -3,7 +3,7 @@
  * \brief Headers of the main functions for the FEM standard elements.
  *        The functions are in the <i>fem_standard_element.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,7 @@ using namespace std;
  * \class CFEMStandardElementBase
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardElementBase {
 protected:
@@ -781,7 +781,7 @@ private:
  * \class CFEMStandardElement
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardElement : public CFEMStandardElementBase {
 private:
@@ -1220,7 +1220,7 @@ private:
  * \class CFEMStandardInternalFace
  * \brief Class to define a FEM standard internal face.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardInternalFace : public CFEMStandardElementBase {
 private:
@@ -1546,7 +1546,7 @@ private:
  * \class CFEMStandardBoundaryFace
  * \brief Class to define a FEM standard boundary face.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
 private:
@@ -1589,7 +1589,7 @@ private:
                                                                      the residuals of the symmetrizing terms can be computed
                                                                      with a single matrix multiplication. */
 
-
+  vector<su2double> matVandermondeFaceInv;   /*!< \brief TODO what is this? */
   vector<unsigned short> subConnForPlotting; /*!< \brief Local subconnectivity of the high order element.
                                                          Used for plotting. */
 public:
@@ -1704,6 +1704,16 @@ public:
   inline unsigned short GetNDOFsFace(void) const {return nDOFsFace;}
 
   /*!
+  * \brief What is this?
+  */
+  inline const vector<su2double>* GetRDOFsFace(void)  {return &rDOFsFace;}
+  
+  /*!
+  * \brief What is this?
+  */
+  inline const vector<su2double>* GetSDOFsFace(void)  {return &sDOFsFace;}
+
+  /*!
   * \brief Function, which makes available the number of linear subfaces used
            for plotting, among others.
   * \return  The number of linear subfaces of the face.
@@ -1760,6 +1770,12 @@ public:
   */
   su2double WorkEstimateMetisWallFunctions(CConfig              *config,
                                            const unsigned short nPointsWF);
+  /*!
+  * \brief What is this?
+  */
+  void FaceBasisFunctionsAndDerivativesInPoint(const su2double            *parCoor,
+                                               vector<su2double>          &lagBasis,
+                                               vector<vector<su2double> > &dLagBasis);  
 
 private:
   /*!

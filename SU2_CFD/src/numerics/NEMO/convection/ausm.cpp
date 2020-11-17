@@ -2,7 +2,7 @@
  * \file ausm.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -97,8 +97,13 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   a_j       = V_j[A_INDEX];
   rho_i     = V_i[RHO_INDEX];
   rho_j     = V_j[RHO_INDEX];
-  e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
-  e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
+  e_ve_i    = 0;
+  e_ve_j    = 0;
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
+    e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
+  }
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -149,7 +154,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-
+  
 //  if (implicit)
 
 //    /*--- Initialize the Jacobians ---*/

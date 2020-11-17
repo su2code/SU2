@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 7.0.6 "Blackbird"
+# \version 7.0.7 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -88,35 +88,35 @@ AC_CHECK_SIZEOF(void *)
 # optional bindings for external packages
 
 AC_ARG_WITH(Mutationpp-lib,
-   	AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.a]),
-	[with_Mutationpp_lib=$withval], [with_Mutationpp_lib="no"])
+    AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.a]),
+  [with_Mutationpp_lib=$withval], [with_Mutationpp_lib="no"])
 AC_ARG_WITH(Mutationpp-include,
-   	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]),
-	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
+    AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]),
+  [with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
 
 # Check for disabling of SU2 modules
 
 AC_ARG_ENABLE(CFD,
-   	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
-	[build_CFD=$enableval], [build_CFD="yes"])
+    AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
+  [build_CFD=$enableval], [build_CFD="yes"])
 AC_ARG_ENABLE(DOT,
    	AS_HELP_STRING([--disable-DOT], [build the SU2_DOT executable (default = yes)]),
 	[build_DOT=$enableval], [build_DOT="yes"])
-AC_ARG_ENABLE(MSH,
-   	AS_HELP_STRING([--disable-MSH], [build the SU2_MSH executable (default = yes)]),
-	[build_MSH=$enableval], [build_MSH="yes"])
 AC_ARG_ENABLE(DEF,
-   	AS_HELP_STRING([--disable-DEF], [build the SU2_DEF executable (default = yes)]),
-	[build_DEF=$enableval], [build_DEF="yes"])
+    AS_HELP_STRING([--disable-DEF], [build the SU2_DEF executable (default = yes)]),
+  [build_DEF=$enableval], [build_DEF="yes"])
 AC_ARG_ENABLE(SOL,
-   	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]),
-	[build_SOL=$enableval], [build_SOL="yes"])
+    AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]),
+  [build_SOL=$enableval], [build_SOL="yes"])
 AC_ARG_ENABLE(GEO,
-   	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
-	[build_GEO=$enableval], [build_GEO="yes"])
+    AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
+  [build_GEO=$enableval], [build_GEO="yes"])
+AC_ARG_ENABLE(INTERP,
+    AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
+  [build_INTERP=$enableval], [build_INTERP="yes"])
 AC_ARG_ENABLE(PY_WRAPPER,
-   	AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
-	[build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
+    AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
+  [build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
 
 # Check for data types
 
@@ -295,10 +295,10 @@ AM_CONDITIONAL([BUILD_REVERSE], [test $build_REVERSE != "no"])
 if test $build_NORMAL == "no"
 then
   build_DOT=no
-  build_MSH=no
   build_DEF=no
   build_SOL=no
   build_GEO=no
+  build_INTERP=no
   build_PY=no
 fi
 
@@ -315,10 +315,10 @@ fi
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
 AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
-AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_INTERP],[test $build_INTERP != "no"])
 AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
 AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 
@@ -326,15 +326,15 @@ AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 
 AC_OUTPUT(Makefile \
         externals/Makefile \
-	Common/lib/Makefile \
-	SU2_CFD/obj/Makefile \
-	SU2_DOT/obj/Makefile \
-	SU2_MSH/obj/Makefile \
-	SU2_DEF/obj/Makefile \
-	SU2_SOL/obj/Makefile \
-	SU2_GEO/obj/Makefile \
-	SU2_PY/Makefile \
-	SU2_PY/pySU2/Makefile)
+	      Common/lib/Makefile \
+	      SU2_CFD/obj/Makefile \
+	      SU2_DOT/obj/Makefile \
+	      SU2_DEF/obj/Makefile \
+	      SU2_SOL/obj/Makefile \
+	      SU2_GEO/obj/Makefile \
+	      SU2_INTERP/obj/Makefile \
+	      SU2_PY/Makefile \
+	      SU2_PY/pySU2/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
 abs_prefix=$prefix #`(cd $prefix && pwd)`
@@ -408,10 +408,10 @@ Build Configuration Summary:
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DOT:        $build_DOT
-    Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build SU2_INTERP:     $build_INTERP
     Build Py Wrapper:     $build_PY_WRAPPER
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,

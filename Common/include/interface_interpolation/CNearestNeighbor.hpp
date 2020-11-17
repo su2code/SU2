@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.hpp
  * \brief Nearest Neighbor interpolation class.
  * \author H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,10 +43,11 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone
-   * \param[in] jZone - index of the target zone
+   * \param[in] iZone - index of the donor zone.
+   * \param[in] jZone - index of the target zone.
    */
-  CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
+  CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
+                   unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes.

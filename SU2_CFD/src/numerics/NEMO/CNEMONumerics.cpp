@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,7 +64,6 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      // TODO - Not working NEMO-update
       fluidmodel = new CMutationTCLib(config, nDim);
       break;
       case USER_DEFINED_NONEQ:
@@ -679,10 +678,10 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     }
 
     for (iDim = 0; iDim < nDim; iDim++){
-      val_p_tensor[nSpecies][nSpecies]     += l[iDim];
-      val_p_tensor[nSpecies][nSpecies+1]   += (V[VEL_INDEX]+a*val_normal[iDim]) / (2.0*a2);
-      val_p_tensor[nSpecies][nSpecies+2]   += (V[VEL_INDEX]-a*val_normal[iDim]) / (2.0*a2);
-      val_p_tensor[nSpecies][nSpecies+3]   += 0.0;
+      val_p_tensor[nSpecies+iDim][nSpecies]     += l[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+1]   += (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+2]   += (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+3]   += 0.0;
     }
 
     val_p_tensor[nSpecies+2][nSpecies]   += vV;
@@ -714,11 +713,11 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     }
 
     for (iDim = 0; iDim < nDim; iDim++){
-      val_p_tensor[nSpecies][nSpecies]     = l[iDim];
-      val_p_tensor[nSpecies][nSpecies+1]   = m[iDim];
-      val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]+a*val_normal[iDim]) / (2.0*a2);
-      val_p_tensor[nSpecies][nSpecies+3]   = (V[VEL_INDEX]-a*val_normal[iDim]) / (2.0*a2);
-      val_p_tensor[nSpecies][nSpecies+4]   = 0.0;
+      val_p_tensor[nSpecies+iDim][nSpecies]     = l[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+1]   = m[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+2]   = (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+3]   = (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+4]   = 0.0;  
     }
 
     val_p_tensor[nSpecies+3][nSpecies]   = vV;

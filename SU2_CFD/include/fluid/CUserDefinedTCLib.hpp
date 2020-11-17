@@ -2,7 +2,7 @@
  * \file CUserDefinedTCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -150,7 +150,7 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
 
   private:
 
@@ -204,8 +204,7 @@ public:
   /*!
    * \brief Get species formation enthalpy.
    */
-  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }
-
+  vector<su2double>& GetSpeciesFormationEnthalpy() final { return Enthalpy_Formation; }  
 
   };
 

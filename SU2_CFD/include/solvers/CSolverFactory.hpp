@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
@@ -58,7 +58,6 @@ enum class SUB_SOLVER_TYPE {
   TURB_SA,                 /*!< \brief SA turbulence model solver */
   TURB_SST,                /*!< \brief SST turbulence model solver */
   TURB,                    /*!< \brief Turbulence model solver */
-  NEMO_TURB,               /*!< \brief Turbulence model for NonEq flows solver */
   MESH,                    /*!< \brief Mesh solver */
   RADIATION,               /*!< \brief Radiation solver */
   DISC_ADJ_RADIATION,      /*!< \brief Discrete adjoint radiation solver */

@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.6 "Blackbird"',
+        version: '7.0.7 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -12,14 +12,15 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-if build_machine.system() == 'windows'
-  default_warning_flags = []
-else
-  default_warning_flags = ['-Wno-unused-parameter',
-                           '-Wno-empty-body',
-                           '-Wno-format-security',
-                           '-Wno-deprecated-declarations',
-                           '-Wno-non-virtual-dtor']
+default_warning_flags = []
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    default_warning_flags += ['-Wno-empty-body']
+  endif
+  default_warning_flags += ['-Wno-unused-parameter',
+                            '-Wno-format-security',
+                            '-Wno-deprecated-declarations',
+                            '-Wno-non-virtual-dtor']
 endif
 
 # meson script path
@@ -155,6 +156,13 @@ elif get_option('enable-openblas')
 
 endif
 
+extra_deps = get_option('extra-deps').split(',')
+foreach dep : extra_deps
+  if dep != ''
+    su2_deps += dependency(dep)
+  endif
+endforeach
+
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 # compile common library
@@ -167,10 +175,10 @@ subdir('SU2_DOT/src')
 subdir('SU2_DEF/src')
 # compile SU2_GEO executable
 subdir('SU2_GEO/src')
-# compile SU2_MSH executable
-subdir('SU2_MSH/src')
 # compile SU2_SOL executable
 subdir('SU2_SOL/src')
+# compile SU2_INTERP executable
+subdir('SU2_INTERP/src')
 # install python scripts
 subdir('SU2_PY')
 # unit tests
@@ -182,7 +190,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.6 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.0.7 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
