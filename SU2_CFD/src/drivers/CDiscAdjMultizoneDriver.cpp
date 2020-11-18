@@ -703,18 +703,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
           // Aerodynamic coefficients
 
-          case DRAG_COEFFICIENT:      FieldName = "DRAG";       break;
-          case LIFT_COEFFICIENT:      FieldName = "LIFT";       break;
-          case SIDEFORCE_COEFFICIENT: FieldName = "SIDEFORCE";  break;
-          case EFFICIENCY:            FieldName = "EFFICIENCY"; break;
-          case MOMENT_X_COEFFICIENT:  FieldName = "MOMENT_X";   break;
-          case MOMENT_Y_COEFFICIENT:  FieldName = "MOMENT_Y";   break;
-          case MOMENT_Z_COEFFICIENT:  FieldName = "MOMENT_Z";   break;
-          case FORCE_X_COEFFICIENT:   FieldName = "FORCE_X";    break;
-          case FORCE_Y_COEFFICIENT:   FieldName = "FORCE_Y";    break;
-          case FORCE_Z_COEFFICIENT:   FieldName = "FORCE_Z";    break;
+          case DRAG_COEFFICIENT:
+          case LIFT_COEFFICIENT:
+          case SIDEFORCE_COEFFICIENT:
+          case EFFICIENCY:
+          case MOMENT_X_COEFFICIENT:
+          case MOMENT_Y_COEFFICIENT:
+          case MOMENT_Z_COEFFICIENT:
+          case FORCE_X_COEFFICIENT:
+          case FORCE_Y_COEFFICIENT:
+          case FORCE_Z_COEFFICIENT:
+            FieldName = config->GetName_ObjFunc();
+            break;
 
           // Other surface-related output values
+          // The names are different than in CConfig...
 
           case SURFACE_MASSFLOW:            FieldName = "AVG_MASSFLOW";              break;
           case SURFACE_MACH:                FieldName = "AVG_MACH";                  break;
