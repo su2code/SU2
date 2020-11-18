@@ -1,10 +1,10 @@
-﻿/*!
+/*!
  * \file CNEMONumerics.cpp
  * \brief Implementation of the base for NEMO numerics classes.
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,7 +64,8 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      fluidmodel = new CMutationTCLib(config, nDim);
+      //fluidmodel = new CMutationTCLib(config, nDim);
+      cout << "TODO: Mutation coming soon" << endl;
       break;
       case USER_DEFINED_NONEQ:
       fluidmodel = new CUserDefinedTCLib(config, nDim, false);

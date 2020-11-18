@@ -2,7 +2,7 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,6 +118,7 @@ su2double CNEMOGas::GetPressure(){
   Pressure = P;
 
   return P;
+
 }
 
 su2double CNEMOGas::GetGasConstant(){

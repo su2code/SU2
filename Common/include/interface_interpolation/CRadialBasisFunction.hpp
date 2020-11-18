@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.hpp
  * \brief Radial basis function interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,14 +28,13 @@
 
 #include "CInterpolator.hpp"
 #include "../option_structure.hpp"
-#include "../toolboxes/C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
 
 /*!
  * \brief Radial basis function interpolation.
  */
 class CRadialBasisFunction final : public CInterpolator {
-  static_assert(su2passivematrix::Storage == StorageType::RowMajor,
-                "This class relies on row major storage throughout.");
+  static_assert(su2passivematrix::IsRowMajor, "This class relies on row major storage throughout.");
 private:
   unsigned long MinDonors = 0, AvgDonors = 0, MaxDonors = 0;
   passivedouble Density = 0.0, AvgCorrection = 0.0, MaxCorrection = 0.0;
@@ -45,8 +44,8 @@ public:
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - index of the donor zone
-   * \param[in] jZone - index of the target zone
+   * \param[in] iZone - index of the donor zone.
+   * \param[in] jZone - index of the target zone.
    */
   CRadialBasisFunction(CGeometry ****geometry_container, const CConfig* const* config,
                        unsigned int iZone, unsigned int jZone);

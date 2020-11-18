@@ -2,7 +2,7 @@
  * \file CMutationTCLib.hpp
  * \brief Defines the class for the link to Mutation++ ThermoChemistry library.
  * \author C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CNEMOGas.hpp"
-#include "mutation++.h"
 
 /*!
  * \derived class CMutationTCLib
@@ -38,8 +37,6 @@
 class CMutationTCLib : public CNEMOGas {
 
 private:
-
-  std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */

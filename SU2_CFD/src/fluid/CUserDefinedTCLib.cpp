@@ -2,7 +2,7 @@
  * \file CUserDefinedTCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,12 +31,12 @@
 CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, val_nDim){
 
   unsigned short maxEl = 0;
-  su2double mf;
+  su2double mf = 0.0;
 
   const auto MassFrac_Freestream = config->GetGas_Composition();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      mf += MassFrac_Freestream[iSpecies];
+    mf += MassFrac_Freestream[iSpecies];
 
   /*--- Allocate vectors for gas properties ---*/
   nElStates.resize(nSpecies,0);
@@ -50,11 +50,13 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   RxnConstantTable.resize(6,5) = su2double(0.0);
   Blottner.resize(nSpecies,3)  = su2double(0.0);
 
-  if(viscous){ 
+  if(viscous){
     MolarFracWBE.resize(nSpecies,0.0);
     phis.resize(nSpecies,0.0);
     mus.resize(nSpecies,0.0);
   }
+
+  String_GasModel = config->GetGasModel();
 
   if (gas_model =="ARGON"){
     if (nSpecies != 1) {
@@ -120,10 +122,11 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     if (mf != 1.0) {
       cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
     }
-    
+
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.4;
     nReactions  = 2;
+    ionization  = false;
 
     Reactions.resize(nReactions,2,6,0.0);
     ArrheniusCoefficient.resize(nReactions,0.0);
@@ -133,7 +136,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Tcf_b.resize(nReactions,0.0);
     Tcb_a.resize(nReactions,0.0);
     Tcb_b.resize(nReactions,0.0);
-    
+
     /*--- Assign gas properties ---*/
     // Wall mass fractions for catalytic boundaries
     Wall_Catalycity[0] = 0.999;
@@ -253,7 +256,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Omega11(0,1,0) = -8.3493693E-03;  Omega11(0,1,1) = 1.7808911E-01;   Omega11(0,1,2) = -1.4466155E+00;  Omega11(0,1,3) = 1.9324210E+03;
     Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
- 
+
   } else if (gas_model == "AIR-5"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
@@ -265,7 +268,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     if (mf != 1.0) {
       cout << "CONFIG ERROR: Initial gas mass fractions do not sum to 1!" << endl;
     }
-    
+
     /*--- Define parameters of the gas model ---*/
     gamma       = 1.4;
     nReactions  = 17;
@@ -278,7 +281,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Tcf_b.resize(nReactions,0.0);
     Tcb_a.resize(nReactions,0.0);
     Tcb_b.resize(nReactions,0.0);
-    
+
     // Wall mass fractions for catalytic boundaries
     Wall_Catalycity[0] = 0.4;
     Wall_Catalycity[1] = 0.4;
@@ -336,8 +339,8 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
       maxEl = max(maxEl, nElStates[iSpecies]);
     /*--- Allocate and initialize electron data arrays ---*/
     CharElTemp.resize(nSpecies,maxEl) = su2double(0.0);
-    ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);      
-   
+    ElDegeneracy.resize(nSpecies,maxEl) = su2double(0.0);
+
     //N2: 15 states
     CharElTemp(0,0)  = 0.000000000000000E+00;
     CharElTemp(0,1)  = 7.223156514095200E+04;
@@ -441,7 +444,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Reactions(1,0,0)=0;    Reactions(1,0,1)=1;   Reactions(1,0,2)=nSpecies;    Reactions(1,1,0)=3;   Reactions(1,1,1)=3;   Reactions(1,1,2) =1;
     Reactions(2,0,0)=0;    Reactions(2,0,1)=2;   Reactions(2,0,2)=nSpecies;    Reactions(2,1,0)=3;   Reactions(2,1,1)=3;   Reactions(2,1,2) =2;
     Reactions(3,0,0)=0;    Reactions(3,0,1)=3;   Reactions(3,0,2)=nSpecies;    Reactions(3,1,0)=3;   Reactions(3,1,1)=3;   Reactions(3,1,2) =3;
-    Reactions(4,0,0)=0;    Reactions(4,0,1)=4;   Reactions(4,0,2)=nSpecies;    Reactions(4,1,0)=3;   Reactions(4,1,1)=3;   Reactions(4,1,2) =4;      
+    Reactions(4,0,0)=0;    Reactions(4,0,1)=4;   Reactions(4,0,2)=nSpecies;    Reactions(4,1,0)=3;   Reactions(4,1,1)=3;   Reactions(4,1,2) =4;
     // O2 dissociation
     Reactions(5,0,0)=1;    Reactions(5,0,1)=0;   Reactions(5,0,2)=nSpecies;    Reactions(5,1,0)=4;   Reactions(5,1,1)=4;   Reactions(5,1,2) =0;
     Reactions(6,0,0)=1;    Reactions(6,0,1)=1;   Reactions(6,0,2)=nSpecies;    Reactions(6,1,0)=4;   Reactions(6,1,1)=4;   Reactions(6,1,2) =1;
@@ -453,7 +456,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Reactions(11,0,0)=2;   Reactions(11,0,1)=1;  Reactions(11,0,2)=nSpecies;   Reactions(11,1,0)=3;  Reactions(11,1,1)=4;    Reactions(11,1,2) =1;
     Reactions(12,0,0)=2;   Reactions(12,0,1)=2;  Reactions(12,0,2)=nSpecies;   Reactions(12,1,0)=3;  Reactions(12,1,1)=4;    Reactions(12,1,2) =2;
     Reactions(13,0,0)=2;   Reactions(13,0,1)=3;  Reactions(13,0,2)=nSpecies;   Reactions(13,1,0)=3;  Reactions(13,1,1)=4;    Reactions(13,1,2) =3;
-    Reactions(14,0,0)=2;   Reactions(14,0,1)=4;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=3;  Reactions(14,1,1)=4;    Reactions(14,1,2) =4;    
+    Reactions(14,0,0)=2;   Reactions(14,0,1)=4;  Reactions(14,0,2)=nSpecies;   Reactions(14,1,0)=3;  Reactions(14,1,1)=4;    Reactions(14,1,2) =4;
     // N2 + O -> NO + N
     Reactions(15,0,0)=0;   Reactions(15,0,1)=4;  Reactions(15,0,2)=nSpecies;   Reactions(15,1,0)=2;  Reactions(15,1,1)=3;    Reactions(15,1,2)= nSpecies;
     // NO + O -> O2 + N
@@ -575,7 +578,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Omega00(4,2,0) = -1.0885815E-03;  Omega00(4,2,1) = 1.1883688E-02;   Omega00(4,2,2) = -2.1844909E-01;  Omega00(4,2,3) = 7.5512560E+01;
     Omega00(4,3,0) = -7.8147689E-03;  Omega00(4,3,1) = 1.6792705E-01;   Omega00(4,3,2) = -1.4308628E+00;  Omega00(4,3,3) = 1.6628859E+03;
     Omega00(4,4,0) = -6.4040535E-03;  Omega00(4,4,1) = 1.4629949E-01;   Omega00(4,4,2) = -1.3892121E+00;  Omega00(4,4,3) = 2.0903441E+03;
- 
+
     // Omega(1,1) ----------------------
     //N2
     Omega11(0,0,0) = -7.6303990E-03;  Omega11(0,0,1) = 1.6878089E-01;   Omega11(0,0,2) = -1.4004234E+00;  Omega11(0,0,3) = 2.1427708E+03;
@@ -614,7 +617,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
 }
 
 CUserDefinedTCLib::~CUserDefinedTCLib(){}
-  
+
 void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
   rhos = val_rhos;
@@ -630,7 +633,7 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double
 }
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
- 
+
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
 
@@ -639,7 +642,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
 
-  su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves; 
+  su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
 
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
@@ -649,10 +652,10 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
       Cvvs = 0.0;
       Cves = 3.0/2.0 * Ru/MolarMass[nSpecies-1];
     }
-  
+
     /*--- Heavy particle specific heat ---*/
     else {
-  
+
       /*--- Vibrational energy ---*/
       if (CharVibTemp[iSpecies] != 0.0) {
         thoTve = CharVibTemp[iSpecies]/Tve;
@@ -661,7 +664,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
       } else {
         Cvvs = 0.0;
       }
-  
+
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
         num = 0.0; num2 = 0.0;
@@ -670,7 +673,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
         for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
           thoTve = CharElTemp[iSpecies][iEl]/Tve;
           exptv = exp(-CharElTemp[iSpecies][iEl]/Tve);
-  
+
           num   += ElDegeneracy[iSpecies][iEl] * CharElTemp[iSpecies][iEl] * exptv;
           denom += ElDegeneracy[iSpecies][iEl] * exptv;
           num2  += ElDegeneracy[iSpecies][iEl] * (thoTve*thoTve) * exptv;
@@ -679,11 +682,11 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
         Cves = Ru/MolarMass[iSpecies] * (num2/denom - num*num3/(denom*denom));
       } else {
         Cves = 0.0;
-      }  
+      }
     }
 
     Cvves[iSpecies] = Cvvs + Cves;
-  }  
+  }
 
   return Cvves;
 
@@ -698,7 +701,7 @@ vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
   denom   = 0.0;
 
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++){
-    
+
     // Species formation energy
     Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
 
@@ -707,7 +710,7 @@ vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
       Ev = Ru/MolarMass[iSpecies] * CharVibTemp[iSpecies] / (exp(CharVibTemp[iSpecies]/Tve)-1.0);
     else
       Ev = 0.0;
-    
+
     // Species electronic energy
     num = 0.0;
     denom = ElDegeneracy(iSpecies,0) * exp(CharElTemp(iSpecies,0)/Tve);
@@ -726,14 +729,14 @@ vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
   }
 
   for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-    
+
     // Species formation energy
     Ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1] * Ref_Temperature[nSpecies-1];
-    
+
     // Electron t-r mode contributes to mixture vib-el energy
     rhoEve += (3.0/2.0) * Ru/MolarMass[nSpecies-1] * (Tve - Ref_Temperature[nSpecies-1]); //bug? not multiplying by rhos[iSpecies]
   }
-  
+
   energies[0] = rhoEmix/Density;
   energies[1] = rhoEve/Density;
 
@@ -752,7 +755,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
     if ( ionization && (iSpecies == iElectron)) {
       /*--- Calculate formation energy ---*/
       Ef = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies] * Ref_Temperature[iSpecies];
-  
+
       /*--- Electron t-r mode contributes to mixture vib-el energy ---*/
       Eel = (3.0/2.0) * Ru/MolarMass[iSpecies] * (val_T - Ref_Temperature[iSpecies]) + Ef;
       Ev  = 0.0;
@@ -849,12 +852,12 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
 
       /*--- Products ---*/
       iSpecies = Reactions(iReaction,1,ii);
-      if (iSpecies != nSpecies) 
+      if (iSpecies != nSpecies)
         ws[iSpecies] += MolarMass[iSpecies] * (fwdRxn-bkwRxn);
 
       /*--- Reactants ---*/
       iSpecies = Reactions(iReaction,0,ii);
-      if (iSpecies != nSpecies) 
+      if (iSpecies != nSpecies)
         ws[iSpecies] -= MolarMass[iSpecies] * (fwdRxn-bkwRxn);
     }
   }
@@ -958,7 +961,7 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
     }
 
     tauMW = num / denom;
-  
+
     /*--- Park limiting cross section ---*/
     Cs    = sqrt((8.0*Ru*T)/(PI_NUMBER*MolarMass[iSpecies]));
     sig_s = 1E-20*(5E4*5E4)/(T*T);
@@ -991,10 +994,10 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2dou
 
   cvtrs = GetSpeciesCvTraRot();
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     eves[iSpecies] = val_eves[iSpecies];
     hs[iSpecies] = Ru/MolarMass[iSpecies]*val_T + cvtrs[iSpecies]*val_T + Enthalpy_Formation[iSpecies] + eves[iSpecies];
-  }    
+  }
 
   return hs;
 
@@ -1019,7 +1022,7 @@ su2double CUserDefinedTCLib::GetViscosity(){
     ViscosityGY();
 
   return Mu;
-    
+
 }
 
 vector<su2double>& CUserDefinedTCLib::GetThermalConductivities(){
@@ -1082,6 +1085,7 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
       }
     }
+
     if (nSpecies==1) DiffusionCoeff[0] = 0;
     else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
   }    
@@ -1118,18 +1122,18 @@ void CUserDefinedTCLib::ViscosityWBE(){
   Mu = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     Mu += MolarFracWBE[iSpecies]*mus[iSpecies]/phis[iSpecies];
-  } 
+  }
 }
 
 void CUserDefinedTCLib::ThermalConductivitiesWBE(){
 
-  vector<su2double> ks, kves;  
+  vector<su2double> ks, kves;
 
   ks.resize(nSpecies,0.0);
   kves.resize(nSpecies,0.0);
 
 
-  Cvves = GetSpeciesCvVibEle();  
+  Cvves = GetSpeciesCvVibEle();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ks[iSpecies] = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
@@ -1144,7 +1148,7 @@ void CUserDefinedTCLib::ThermalConductivitiesWBE(){
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
-  ThermalConductivities[1] = ThermalCond_ve;     
+  ThermalConductivities[1] = ThermalCond_ve;
 }
 
 void CUserDefinedTCLib::DiffusionCoeffGY(){
@@ -1223,7 +1227,7 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
       }
     }
     DiffusionCoeff[iSpecies] = gam_t*gam_t*MolarMass[iSpecies]*(1-MolarMass[iSpecies]*gam_i) / denom;
-  }     
+  }
 }
 
 void CUserDefinedTCLib::ViscosityGY(){
@@ -1355,7 +1359,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
   }
 
   ThermalConductivities[0] = ThermalCond_tr;
-  ThermalConductivities[1] = ThermalCond_ve;    
+  ThermalConductivities[1] = ThermalCond_ve;
 
 }
 
@@ -1377,7 +1381,7 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
     rhoCvtr  += rhos[iSpecies] * Cvtrs[iSpecies];
     rhoE_ref += rhos[iSpecies] * Cvtrs[iSpecies] * Ref_Temperature[iSpecies];
     rhoE_f   += rhos[iSpecies] * (Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies]);
-  }       
+  }
 
   T = (rhoE - rhoEve - rhoE_f + rhoE_ref - rhoEvel) / rhoCvtr;
 
@@ -1403,7 +1407,7 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
     Tve      = (Tve_o+Tve2)/2.0;
     val_eves = GetSpeciesEve(Tve);
     rhoEve_t = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies]; 
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
     if (fabs(rhoEve_t - rhoEve) < Btol) {
       Bconvg = true;
       break;
@@ -1416,10 +1420,148 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
   if (!Bconvg) Tve = T;
 
   temperatures[0] = T;
-  temperatures[1] = Tve;  
+  temperatures[1] = Tve;
 
   return temperatures;
-  
+
+}
+
+void CUserDefinedTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
+
+  // Note: Electron energy not included properly.
+
+  su2double CvtrBAR, rhoCvtr, rhoCvve, rho_el, sqvel, conc, ef;
+
+  if (val_dPdU == NULL) {
+    cout << "ERROR: CalcdPdU - Array dPdU not allocated!" << endl;
+    exit(1);
+  }
+
+  /*--- Determine the number of heavy species ---*/
+  if (ionization) {
+    rho_el = rhos[nSpecies-1];
+  } else {
+    rho_el = 0.0;
+  }
+
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
+  unsigned long VEL_INDEX     = nSpecies+nDim+2;
+
+  /*--- Rename for convenience ---*/
+  rhoCvtr = V[RHOCVTR_INDEX];
+  rhoCvve = V[RHOCVVE_INDEX];
+
+  /*--- Pre-compute useful quantities ---*/
+  CvtrBAR = 0.0;
+  sqvel   = 0.0;
+  conc    = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    sqvel += V[VEL_INDEX+iDim] * V[VEL_INDEX+iDim];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    CvtrBAR += rhos[iSpecies]*Cvtrs[iSpecies];
+    conc    += rhos[iSpecies]/MolarMass[iSpecies];
+  }
+
+  // Species density
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    ef                 = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
+    val_dPdU[iSpecies] =  T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
+        (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
+         ef + 0.5*sqvel);
+  }
+  if (ionization) {
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
+      //      num = 0.0;
+      //      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
+      //      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+      //        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      //        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      //      }
+      //      eels = Ru/MolarMass[iSpecies] * (num/denom);
+
+      val_dPdU[iSpecies] -= rho_el * Ru/MolarMass[nSpecies-1] * (val_eves[iSpecies])/rhoCvve;
+    }
+    ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1]*Ref_Temperature[nSpecies-1];
+    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
+        + Ru/MolarMass[nSpecies-1]*Tve
+        - rho_el*Ru/MolarMass[nSpecies-1] * (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
+  }
+  // Momentum
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_dPdU[nSpecies+iDim] = -conc*Ru*V[VEL_INDEX+iDim]/rhoCvtr;
+
+  // Total energy
+  val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;
+
+  // Vib.-el energy
+  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim]
+      + rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;
+}
+
+
+
+void CUserDefinedTCLib::GetdTdU(su2double *V, su2double *val_dTdU){
+
+  su2double v2, ef, rhoCvtr;
+
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+  unsigned long VEL_INDEX     = nSpecies+nDim+2;
+
+  /*--- Rename for convenience ---*/
+  rhoCvtr = V[RHOCVTR_INDEX];
+
+  /*--- Calculate supporting quantities ---*/
+  v2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    v2 += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+
+  /*--- Species density derivatives ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
+    val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
+  }
+  if (ionization) {
+    cout << "CNEMOVariable: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
+    exit(1);
+  }
+
+  /*--- Momentum derivatives ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_dTdU[nSpecies+iDim] = -V[VEL_INDEX+iDim] / V[RHOCVTR_INDEX];
+
+  /*--- Energy derivatives ---*/
+  val_dTdU[nSpecies+nDim]   =  1.0 / V[RHOCVTR_INDEX];
+  val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
+
+}
+
+
+void CUserDefinedTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
+
+  su2double rhoCvve;
+
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
+
+  /*--- Rename for convenience ---*/
+  rhoCvve = V[RHOCVVE_INDEX];
+
+  /*--- Species density derivatives ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    val_dTvedU[iSpecies] = -val_eves[iSpecies]/rhoCvve;
+  }
+  /*--- Momentum derivatives ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_dTvedU[nSpecies+iDim] = 0.0;
+
+  /*--- Energy derivatives ---*/
+  val_dTvedU[nSpecies+nDim]   = 0.0;
+  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
+
 }
 
 void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
@@ -1569,7 +1711,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
       RxnConstantTable(4,0) = -0.53538;  RxnConstantTable(4,1) = -7.3252; RxnConstantTable(4,2) = -1.937;  RxnConstantTable(4,3) = -3.2572; RxnConstantTable(4,4) = 0.01823;
       RxnConstantTable(5,0) = -0.52801;  RxnConstantTable(5,1) = -7.3281; RxnConstantTable(5,2) = -1.9264; RxnConstantTable(5,3) = -3.2618; RxnConstantTable(5,4) = 0.01854;
     }
-  }    
+  }
 }
 
 

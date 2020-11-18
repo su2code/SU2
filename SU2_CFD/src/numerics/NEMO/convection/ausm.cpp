@@ -2,7 +2,7 @@
  * \file ausm.cpp
  * \brief Implementations of the AUSM-family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -149,7 +149,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
 
   for (iDim = 0; iDim < nDim; iDim++)
     Flux[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-  
+
 //  if (implicit)
 
 //    /*--- Initialize the Jacobians ---*/

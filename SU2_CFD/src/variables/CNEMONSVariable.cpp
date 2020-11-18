@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,7 +118,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   SetVelocity2(iPoint);
 
-  Ds = fluidmodel->GetDiffusionCoeff();
+  Ds                       = fluidmodel->GetDiffusionCoeff();
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
   

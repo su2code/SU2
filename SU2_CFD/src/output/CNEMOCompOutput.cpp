@@ -296,8 +296,6 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-
-
   // Solution variables
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     AddVolumeOutput("DENSITY_" + std::to_string(iSpecies),  "Density_" + std::to_string(iSpecies),  "SOLUTION", "Density_"  + std::to_string(iSpecies));

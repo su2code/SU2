@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -143,7 +143,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
-  
+
   auto& gradient = nodes->GetGradient_Primitive();
 
   /*--- Get indices of species & mixture density ---*/
@@ -184,7 +184,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, const CConfig 
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
   const auto& primitives = nodes->GetPrimitive();
-  
+
   computeGradientsLeastSquares(this, PRIMITIVE_GRADIENT, kindPeriodicComm, *geometry, *config,
                                weighted, primitives, 0, nPrimVarGrad, gradient, rmatrix);
 }
@@ -387,7 +387,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       nodes->SetVelocity_Old(iPoint,Vector);
       for (iDim = 0; iDim < nDim; iDim++) {
-        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        LinSysRes(iPoint, nSpecies+iDim) = 0.0;
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
       if (implicit) {
@@ -431,14 +431,14 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
     } else {
 
       iMarker_Catalytic++;
-     
+
     }
   }
 
   if(!catalytic) BC_HeatFluxNonCatalytic_Wall(geometry, solution_container, conv_numerics,
                                               sour_numerics, config, val_marker);
 
-  
+
 }
 
 void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -512,7 +512,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       /*--- Set the residual, truncation error, and velocity value ---*/
       nodes->SetVelocity_Old(iPoint,Vector);
       for (iDim = 0; iDim < nDim; iDim++) {
-        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        LinSysRes(iPoint, nSpecies+iDim) = 0.0;
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
 
@@ -641,7 +641,7 @@ void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                   sour_numerics, config, val_marker);
       break;
     } else {
-      iMarker_Catalytic++;     
+      iMarker_Catalytic++;
     }
   }
 
@@ -720,7 +720,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        LinSysRes(iPoint, nSpecies+iDim) = 0.0;
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
 
@@ -756,7 +756,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       //} // implicit
     }
-  } 
+  }
 }
 
 void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
@@ -795,7 +795,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
   Ms   = FluidModel->GetSpeciesMolarMass();
-  
+
   /*--- Get the locations of the primitive variables ---*/
   RHOS_INDEX    = nodes->GetRhosIndex();
   RHO_INDEX     = nodes->GetRhoIndex();
@@ -981,7 +981,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double div_vel=0, Delta;
 
   vector<su2double> Ms;
-  
+
   bool ionization = config->GetIonization();
 
   if (ionization) {
@@ -1073,7 +1073,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       GasConstant=0;
       for(iSpecies=0;iSpecies<nSpecies;iSpecies++)
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
-      
+
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1100,7 +1100,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       /*--- Calculate Heatflux tangent to surface ---*/
       for (iDim = 0; iDim < nDim; iDim++) 
         Vector_Tangent_HF[iDim] = -ktr*Vector_Tangent_dT[iDim]-kve*Vector_Tangent_dTve[iDim];
-      
+
       /*--- Initialize viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar ++)
         Res_Visc[iVar] = 0.0;
@@ -1144,7 +1144,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        LinSysRes(iPoint, nSpecies+iDim) = 0.0;
         nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+iDim);
       }
 
@@ -1155,5 +1155,5 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
     }
-  } 
+  }
 }
