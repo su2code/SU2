@@ -3492,7 +3492,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool reconRequired = config->GetReconstructionGradientRequired();
   const unsigned short kindRecon = reconRequired? config->GetKind_Gradient_Method_Recon()
-                                                 : config->GetKind_Gradient_Method();
+                                                : config->GetKind_Gradient_Method();
 
   const bool gg = (kindRecon == GREEN_GAUSS);
 

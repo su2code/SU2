@@ -178,6 +178,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
+    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Upw[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " << -residual[0] << endl;
+    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "Upw[" << geometry->node[jPoint]->GetGlobalIndex() << "][0]= " <<  residual[0] << endl;
+
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
       Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -267,6 +270,9 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   auto residual = numerics->ComputeResidual(config);
 
+  if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Vis[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " <<  residual[0] << endl;
+  if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "Vis[" << geometry->node[jPoint]->GetGlobalIndex() << "][0]= " << -residual[0] << endl;
+
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
     Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
@@ -345,7 +351,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool reconRequired = config->GetReconstructionGradientRequired();
   const unsigned short kindRecon = reconRequired? config->GetKind_Gradient_Method_Recon()
-                                                 : config->GetKind_Gradient_Method();
+                                                : config->GetKind_Gradient_Method();
 
   const bool gg = (kindRecon == GREEN_GAUSS);
   
@@ -668,8 +674,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    // if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "Sol[" << geometry->node[iPoint]->GetGlobalIndex() << "][0]= " << nodes->GetSolution(iPoint,0) << endl;
 
     /*--- Read the volume ---*/
 
