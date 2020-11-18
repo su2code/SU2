@@ -807,7 +807,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   su2double *U_i, *U_j, *V_i, *V_j;
-  su2double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
+  su2double **GradV_i, **GradV_j, *ProjGradV_i, *ProjGradV_j;
   su2double *Limiter_i, *Limiter_j;
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
@@ -844,7 +844,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   Eve_j       = new su2double[nSpecies];
   Cvve_i      = new su2double[nSpecies];
   Cvve_j      = new su2double[nSpecies];
-
+  ProjGradV_i = new su2double[nSpecies];
+  ProjGradV_j = new su2double[nSpecies];
 
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -884,32 +885,32 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         lim_i = 1.0;
         lim_j = 1.0;
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-            if (van_albada) {
-              su2double V_ij = V_j[iVar] - V_i[iVar];
-              Limiter_i[iVar] = V_ij*( 2.0*ProjGradV_i + V_ij) / (4*pow(ProjGradV_i, 2) + pow(V_ij, 2) + EPS);
-              Limiter_j[iVar] = V_ij*(-2.0*ProjGradV_j + V_ij) / (4*pow(ProjGradV_j, 2) + pow(V_ij, 2) + EPS);
-            }
-          if (lim_i > Limiter_i[iVar]) lim_i = Limiter_i[iVar];
-          if (lim_j > Limiter_j[iVar]) lim_j = Limiter_j[iVar];
+          ProjGradV_i[iVar] = 0.0; ProjGradV_j[iVar] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            ProjGradV_i[iVar] += Vector_i[iDim]*GradV_i[iVar][iDim];
+            ProjGradV_j[iVar] += Vector_j[iDim]*GradV_j[iVar][iDim];
+          }
+          if (van_albada) {
+            su2double V_ij = V_j[iVar] - V_i[iVar];
+            Limiter_i[iVar] = V_ij*( 2.0*ProjGradV_i[iVar] + V_ij) / (4*pow(ProjGradV_i[iVar], 2) + pow(V_ij, 2) + EPS);
+            Limiter_j[iVar] = V_ij*(-2.0*ProjGradV_j[iVar] + V_ij) / (4*pow(ProjGradV_j[iVar], 2) + pow(V_ij, 2) + EPS);
+          }
+          if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
+          if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
         }
         lim_ij = min(lim_i, lim_j);
       }
 
       /*--- Reconstruct conserved variables at the edge interface ---*/
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
-          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
-        }
         if (limiter) {
-          Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i;
-          Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j;
+          Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i[iVar];
+          Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j[iVar];
         }
 
         else {
-          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
-          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
+          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i[iVar];
+          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j[iVar];
         }
       }   
 
@@ -991,6 +992,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   delete [] Eve_j;
   delete [] Cvve_i;
   delete [] Cvve_j;
+  delete [] ProjGradV_i;
+  delete [] ProjGradV_j;
 
 }
 
