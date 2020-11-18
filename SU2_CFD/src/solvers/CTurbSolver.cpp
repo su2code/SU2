@@ -180,8 +180,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     const su2double TKEi = good_i? turbPrimVar_i[0] : T_i[0];
     const su2double TKEj = good_j? turbPrimVar_j[0] : T_j[0];
-    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "I: TKEj= " << TKEj << "Upw[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] << endl;
-    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "J: TKEi= " << TKEi << "Upw[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] << endl;
+    if (nodes->GetUnderRelaxation(iPoint) < 1e-6) cout << "TKEj= " << TKEj << ",TKEi= " << TKEi << ", Upw[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] << endl;
+    if (nodes->GetUnderRelaxation(jPoint) < 1e-6) cout << "TKEi= " << TKEi << ",TKEj= " << TKEj << ", Upw[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
