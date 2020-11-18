@@ -178,10 +178,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     auto residual = numerics->ComputeResidual(config);
 
-    const su2double TKEi = good_i? turbPrimVar_i[0] : T_i[0];
-    const su2double TKEj = good_j? turbPrimVar_j[0] : T_j[0];
-    if (nodes->GetUnderRelaxation(iPoint) < 1e-6 && residual[0] >  nodes->GetSolution(iPoint,0)) cout << "rki= " << nodes->GetSolution(iPoint,0) << ", rkj= " << nodes->GetSolution(jPoint,0) << ", Upw[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] << endl;
-    if (nodes->GetUnderRelaxation(jPoint) < 1e-6 && residual[0] < -nodes->GetSolution(jPoint,0)) cout << "rkj= " << nodes->GetSolution(jPoint,0) << ", rki= " << nodes->GetSolution(iPoint,0) << ", Upw[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] << endl;
+    // const su2double TKEi = good_i? turbPrimVar_i[0] : T_i[0];
+    // const su2double TKEj = good_j? turbPrimVar_j[0] : T_j[0];
+    // if (nodes->GetUnderRelaxation(iPoint) < 1e-6 && residual[0] >  nodes->GetSolution(iPoint,0)) cout << "rki= " << nodes->GetSolution(iPoint,0) << ", rkj= " << nodes->GetSolution(jPoint,0) << ", Upw[" << geometry->node[iPoint]->GetGlobalIndex() << "]= " << -residual[0] << endl;
+    // if (nodes->GetUnderRelaxation(jPoint) < 1e-6 && residual[0] < -nodes->GetSolution(jPoint,0)) cout << "rkj= " << nodes->GetSolution(jPoint,0) << ", rki= " << nodes->GetSolution(iPoint,0) << ", Upw[" << geometry->node[jPoint]->GetGlobalIndex() << "]= " <<  residual[0] << endl;
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
