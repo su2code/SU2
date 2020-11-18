@@ -115,7 +115,7 @@ CNumerics::ResidualType<> CUpwPB_Flow::ComputeResidual(const CConfig *config) {
   if (dynamic_grid) {
 	  ProjGridVelFlux = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) {
-		  ProjGridVelFlux   += 0.5*MeanDensity*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+		  ProjGridVelFlux += 0.5*MeanDensity*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 	  }
 	  Face_Flux -= ProjGridVelFlux;
   }
@@ -129,14 +129,12 @@ CNumerics::ResidualType<> CUpwPB_Flow::ComputeResidual(const CConfig *config) {
 
   /*--- Find flux. ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-	  Flux[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
-	  Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1]; 
-	  if (dynamic_grid) Velocity_upw[iVar] -= (Upw_i*GridVel_i[iVar] + Upw_j*GridVel_j[iVar]); 
+    Flux[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
+    Velocity_upw[iVar] = Upw_i*V_i[iVar+1] + Upw_j*V_j[iVar+1]; 
+    if (dynamic_grid) Velocity_upw[iVar] -= (Upw_i*GridVel_i[iVar] + Upw_j*GridVel_j[iVar]); 
   }
-    
-    	
+
   if (implicit) {
-	  
 	  for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++) {
           Jacobian_j[iVar][jVar] = 0.0;
@@ -215,7 +213,8 @@ CNumerics::ResidualType<> CCentPB_Flow::ComputeResidual(const CConfig *config) {
   
   
   su2double MeanDensity, Flux0, Flux1, MeanPressure, Area, FF, Vel0, Vel1, ProjGridVelFlux = 0.0;
-  
+  su2double dissipation, kappa=0.15, ProjVel_i = 0.0, ProjVel_j = 0.0;
+
   /*--- Conservative variables at point i and j ---*/
   
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
@@ -236,6 +235,8 @@ CNumerics::ResidualType<> CCentPB_Flow::ComputeResidual(const CConfig *config) {
     Velocity_j[iDim] = V_j[iDim+1];
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
+    ProjVel_i += Velocity_i[iDim]*Normal[iDim];
+    ProjVel_j += Velocity_j[iDim]*Normal[iDim];
   }
   
   if (dynamic_grid) {
@@ -257,6 +258,35 @@ CNumerics::ResidualType<> CCentPB_Flow::ComputeResidual(const CConfig *config) {
 	  if (dynamic_grid) Velocity_upw[iVar] -= (Upw_i*GridVel_i[iVar] + Upw_j*GridVel_j[iVar]); 
 	  Flux[iVar] = Face_Flux*MeanVelocity[iVar];
   }
+  
+  //Dissipation
+  su2double lambda_i = 0.0, lambda_j = 0.0;
+  lambda_i = 2.0*abs(ProjVel_i);
+  lambda_j = 2.0*abs(ProjVel_j);
+
+  su2double lambda_mean = 0.5*(lambda_i + lambda_j);
+  if (lambda_mean < EPS) {
+    lambda_i = 2.0*abs(config->GetVelocity_Ref()*Area);
+    lambda_j = 2.0*abs(config->GetVelocity_Ref()*Area);
+    lambda_mean = abs(config->GetVelocity_Ref()*Area);
+  }
+
+  su2double Param_p = 0.3, SF=0.0;
+  su2double Phi_i = pow((lambda_i/(4.0*lambda_mean)),Param_p);
+  su2double Phi_j = pow((lambda_j/(4.0*lambda_mean)),Param_p);
+
+  if ((Phi_i + Phi_j) != 0.0)
+    SF = 4.0*Phi_i*Phi_j/(Phi_i + Phi_j);
+
+  su2double sc0 = 3.0*(Neighbor_i + Neighbor_j)/(Neighbor_i*Neighbor_j);
+  su2double E_0 = kappa*sc0*2.0/3.0;
+
+  su2double diss[MAXNDIM];
+  for (iDim = 0; iDim < nDim; iDim++) 
+    diss[iDim] = E_0*(DensityInc_i*Velocity_i[iDim] - DensityInc_j*Velocity_j[iDim])*SF*lambda_mean;
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    Flux[iVar] += diss[iVar];
 
   /*--- For implicit schemes, compute jacobians based on the upwind scheme for stability issues. (See ANSYS user guide) ---*/
   if (implicit) {
@@ -267,15 +297,21 @@ CNumerics::ResidualType<> CCentPB_Flow::ComputeResidual(const CConfig *config) {
         Jacobian_upw[iVar][jVar] = 0.0;
 	}
 
+	GetInviscidPBProjJac(&DensityInc_i, MeanVelocity,  Normal, 0.5, Jacobian_upw);
 	//GetInviscidPBProjJac(&DensityInc_i, Velocity_upw,  Normal, 0.5, val_Jacobian_upw);
-	GetInviscidPBProjJac(&DensityInc_i, Velocity_i,  Normal, 0.5, Jacobian_i);
-	GetInviscidPBProjJac(&DensityInc_i, Velocity_j,  Normal, 0.5, Jacobian_j);
+	/*GetInviscidPBProjJac(&DensityInc_i, Velocity_i,  Normal, 0.5, Jacobian_i);
+	GetInviscidPBProjJac(&DensityInc_i, Velocity_j,  Normal, 0.5, Jacobian_j);*/
 
-	 /*for (iVar = 0; iVar < nVar; iVar++)
+	 for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = Upw_i*Jacobian_upw[iVar][jVar];
         Jacobian_j[iVar][jVar] = Upw_j*Jacobian_upw[iVar][jVar];
-	}*/
+	}
+	for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar][iVar] += E_0*DensityInc_i*SF*lambda_mean;
+      Jacobian_i[iVar][iVar] -= E_0*DensityInc_j*SF*lambda_mean;
+    }
+	
   }
   
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);

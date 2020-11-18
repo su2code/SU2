@@ -313,7 +313,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
-        //LinSysRes.SetBlock_Zero(iPoint, iVar);
       }
       LinSysRes.SetBlock_Zero(iPoint);
     }

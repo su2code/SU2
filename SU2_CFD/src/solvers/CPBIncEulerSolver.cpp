@@ -927,18 +927,13 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, Normal[3], *GV,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, Non_Physical = 1.0;
+  su2double *V_i, *V_j;
 
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
 
   unsigned long InnerIter = config->GetInnerIter();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Loop over all the edges ---*/
 
@@ -948,6 +943,8 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+    numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
+
 
     /*--- Grid movement ---*/
 
@@ -1228,13 +1225,11 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
      *    one face might be strong BC and another weak BC (mostly for farfield boundary
      *    where the boundary face is strong or weak depending on local flux. ---*/
     if (nodes->GetStrongBC(iPoint)) {
-       // for (iVar = 0; iVar < nVar; iVar++)
-            //LinSysRes.SetBlock_Zero(iPoint, iVar);
        LinSysRes.SetBlock_Zero(iPoint);
     }
 
     for (iVar = 0; iVar < nVar; iVar ++ ) {
-      Res = local_Residual[iVar] + local_Res_TruncError[jVar];
+      Res = local_Residual[iVar] + local_Res_TruncError[iVar];
       nodes->AddSolution(iPoint, iVar, -alfa*Res*Delta);
       AddRes_RMS(iVar, Res*Res);
       AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
@@ -1374,41 +1369,54 @@ void CPBIncEulerSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_contai
 
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iPoint, jPoint, iNeigh;
-  su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+  su2double Mom_Coeff[MAXNDIM], Mom_Coeff_nb[MAXNDIM], Vol, delT;
   bool simplec = (config->GetKind_PBIter() == SIMPLEC);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   if (!periodic)  {
 
-    /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (implicit) {
+      /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Self contribution. ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
-      }
+        /*--- Self contribution. ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
+        }
 
-      /*--- Contribution from neighbors. ---*/
-      nodes->Set_Mom_Coeff_nbZero(iPoint);
+        /*--- Contribution from neighbors. ---*/
+        nodes->Set_Mom_Coeff_nbZero(iPoint);
 
-      if (simplec) {
-        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          for (iVar = 0; iVar < nVar; iVar++) {
-            nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+        if (simplec) {
+          for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+            jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+            for (iVar = 0; iVar < nVar; iVar++) {
+              nodes->Add_Mom_Coeff_nb(iPoint, Jacobian.GetBlock(iPoint,jPoint,iVar,iVar),iVar);
+            }
           }
         }
+
+        Vol = geometry->nodes->GetVolume(iPoint); delT = nodes->GetDelta_Time(iPoint);
+
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - config->GetRCFactor()*(Vol/delT);
+          Mom_Coeff[iVar] = nodes->GetDensity(iPoint)*Vol/Mom_Coeff[iVar];
+        }
+
+        nodes->Set_Mom_Coeff(iPoint, Mom_Coeff);
       }
-
-      Vol = geometry->nodes->GetVolume(iPoint); delT = nodes->GetDelta_Time(iPoint);
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Mom_Coeff[iVar] = Mom_Coeff[iVar] - nodes->Get_Mom_Coeff_nb(iPoint, iVar) - config->GetRCFactor()*(Vol/delT);
-        Mom_Coeff[iVar] = nodes->GetDensity(iPoint)*Vol/Mom_Coeff[iVar];
-      }
-
-      nodes->Set_Mom_Coeff(iPoint, Mom_Coeff);
     }
+    else {
+      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
+        Vol = geometry->nodes->GetVolume(iPoint); delT = nodes->GetDelta_Time(iPoint);
+
+        for(iVar = 0; iVar < nVar; iVar++)
+          Mom_Coeff[iVar] = delT/Vol;
+
+        nodes->Set_Mom_Coeff(iPoint, Mom_Coeff);
+      }
+    }
   /*--- Insert MPI call here. ---*/
   InitiateComms(geometry, config, MOM_COEFF);
   CompleteComms(geometry, config, MOM_COEFF);
@@ -1421,7 +1429,7 @@ void CPBIncEulerSolver::SetMomCoeffPer(CGeometry *geometry, CSolver **solver_con
 
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iPoint, jPoint, iNeigh;
-  su2double Mom_Coeff[3], Mom_Coeff_nb[3], Vol, delT;
+  su2double Mom_Coeff[MAXNDIM], Mom_Coeff_nb[MAXNDIM], Vol, delT;
   bool simplec = (config->GetKind_PBIter() == SIMPLEC);
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1469,9 +1477,6 @@ void CPBIncEulerSolver::UpdateFaceVelocity(CGeometry *geometry, CSolver **solver
       FaceVelocity[iEdge][iDim] = 0.5*(nodes->GetSolution_Old(iPoint,iDim) + nodes->GetSolution_Old(jPoint,iDim));
     }
   }
-
-
-
 }
 
 void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -2007,6 +2012,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   bool inflow = false;
   int rank = SU2_MPI::GetRank();
   long Pref_local;
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   Normal = new su2double [nDim];
   alpha_p = new su2double [nPointDomain];
@@ -2041,9 +2047,12 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     for (iVar = 0; iVar < nVar; iVar++) {
       Coeff_Mom = nodes->Get_Mom_Coeff(iPoint,iVar);
       vel_corr[iPoint][iVar] = Coeff_Mom*(solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iVar));
-      factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
+      if (implicit) factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
     }
-    alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
+    if (implicit)
+      alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow()*(Vol/delT) / (factor);
+    else
+      alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow();
   }
 
   /*--- Correct face velocity. ---*/
