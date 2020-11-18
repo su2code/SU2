@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file ausmplusup2.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
  * \author W. Maier, A. Sachedeva, C. Garbacz
@@ -155,7 +155,8 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   //TODO move to fluidmodel
   vector<su2double> Ms = fluidmodel->GetSpeciesMolarMass();
   su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
-  su2double rhoRi = 0.0; su2double rhoRj = 0.0;
+  su2double rhoRi = 0.0;
+  su2double rhoRj = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhoRi += rhos_i[iSpecies]*Ru/Ms[iSpecies];
     rhoRj += rhos_j[iSpecies]*Ru/Ms[iSpecies];

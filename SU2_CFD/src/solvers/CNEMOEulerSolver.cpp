@@ -2241,9 +2241,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
-      /*--- Index of the closest interior node ---*/
-      //Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); //only for implicit
-
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
@@ -2289,13 +2286,13 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       Mach_Exit   = sqrt(Velocity2)/SoundSpeed;
 
       /*--- Compute Species Concentrations ---*/
-      //Using partial pressures, maybe not
+      // TODO: Using partial pressures, maybe not
       for (iSpecies =0; iSpecies<nSpecies;iSpecies++){
         Ys[iSpecies] = V_domain[iSpecies]/Density;
       }
 
       /*--- Compute Gamma ---*/
-      //TODO: Move to fluidmodel?
+      //TODO: Move to fluidmodel
       vector<su2double> Ms = FluidModel->GetSpeciesMolarMass();
       su2double Ru = 1000.0* UNIVERSAL_GAS_CONSTANT;
       su2double rhoR = 0.0;
@@ -2303,7 +2300,6 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         rhoR += V_domain[iSpecies]*Ru/Ms[iSpecies];
       Gamma =rhoR/(V_domain[RHOCVTR_INDEX] +
                    V_domain[RHOCVVE_INDEX])+1;
-      Gamma= config->GetGamma(); // overwriting gamma computation since it has not been tested yet
       Gamma_Minus_One = Gamma - 1.0;
 
       /*--- Recompute boundary state depending Mach number ---*/
