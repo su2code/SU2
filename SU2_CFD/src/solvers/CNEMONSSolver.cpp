@@ -218,10 +218,6 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 
     if (nonphysical) nonPhysicalPoints++;
 
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
   }
 
   return nonPhysicalPoints;
