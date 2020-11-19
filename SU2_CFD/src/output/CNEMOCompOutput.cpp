@@ -42,10 +42,10 @@
 
 CNEMOCompOutput::CNEMOCompOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
-  turb_model = config->GetKind_Turb_Model();
+  turb_model    = config->GetKind_Turb_Model();
   lastInnerIter = curInnerIter;
-  gridMovement = config->GetGrid_Movement();
-  nSpecies = config->GetnSpecies();
+  gridMovement  = config->GetGrid_Movement();
+  nSpecies      = config->GetnSpecies();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 

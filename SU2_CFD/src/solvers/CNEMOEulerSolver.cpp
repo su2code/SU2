@@ -344,7 +344,7 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
+  //bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);

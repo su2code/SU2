@@ -114,7 +114,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   Omega_Max = 0.0;
   //nodes->SetVorticity_StrainMag();
 
-  su2double strainMax = 0.0, omegaMax = 0.0;
+  su2double omegaMax = 0.0; //strainMax = 0.0
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -1001,8 +1001,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
 
   unsigned short iDim, jDim, iVar, iSpecies;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX,
-      RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve;
   su2double Ti, Tvei, Tj, Tvej;
@@ -1014,7 +1013,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
   su2double TMAC, TAC;
   su2double Viscosity, Lambda;
-  su2double Density, GasConstant, rhoR;
+  su2double Density, GasConstant;
 
   su2double **Grad_PrimVar;
   su2double Vector_Tangent_dT[3], Vector_Tangent_dTve[3], Vector_Tangent_HF[3];
@@ -1054,8 +1053,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   T_INDEX       = nodes->GetTIndex();
   VEL_INDEX     = nodes->GetVelIndex();
   TVE_INDEX     = nodes->GetTveIndex();
-  RHOCVTR_INDEX = nodes->GetRhoCvtrIndex();
-  RHOCVVE_INDEX = nodes->GetRhoCvveIndex();
 
   /*--- Loop over boundary points to calculate energy flux ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
