@@ -158,31 +158,21 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
 
   /*--- Far-field flow state quantities and initialization. ---*/
-  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
 
-  rhoInf    = config->GetDensity_FreeStreamND();
-  VelInf    = config->GetVelocity_FreeStreamND();
-  muLamInf  = config->GetViscosity_FreeStreamND();
-  Intensity = config->GetTurbulenceIntensity_FreeStream();
-  viscRatio = config->GetTurb2LamViscRatio_FreeStream();
+  const su2double rho_Inf = config->GetDensity_FreeStreamND();
+  const su2double muT_Inf = rho_Inf*kine_Inf/omega_Inf;  
 
-  su2double VelMag = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    VelMag += VelInf[iDim]*VelInf[iDim];
-  VelMag = sqrt(VelMag);
-
-  kine_Inf  = 1.5*VelMag*VelMag*Intensity*Intensity;
-  omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+  kine_Inf  = config->GetTke_FreeStreamND();
+  omega_Inf = config->GetOmega_FreeStreamND();
 
   /*--- Initialize lower and upper limits---*/
+
   lowerlimit[0] = 1.0e-16;
   upperlimit[0] = 1.0e15;
 
   lowerlimit[1] = 1.0e-16;
   upperlimit[1] = 1.0e15;
-
-  /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
-  muT_Inf = rhoInf*kine_Inf/omega_Inf;  
+  
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -345,7 +335,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
     for (auto iVar = 0; iVar < nVar; iVar++)
       nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
 
