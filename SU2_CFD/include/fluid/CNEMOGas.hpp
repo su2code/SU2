@@ -42,7 +42,7 @@ protected:
   bool frozen,                           /*!< \brief Indicates if mixture is frozen. */
   ionization;                            /*!< \brief Presence of charged species in gas mixture. */
 
-  string gas_model;                      /*!< \brief String gas model. */
+  string Kind_GasModel;                  /*!< \brief String gas model. */
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
@@ -172,6 +172,11 @@ public:
   su2double GetPressure();
 
   /*!
+   * \brief Get gas constant.
+   */
+  su2double GetGasConstant();
+
+  /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
   void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
@@ -200,11 +205,6 @@ public:
    * \brief Set species vibrational energies.
    */
   inline void SetEves(vector<su2double>& val_eves) { eves = val_eves; }
-
-  /*!
-   * \brief Get gas constant.
-   */
-  su2double GetGasConstant();
 
   /*!
    * \brief Get rhoCvtr.

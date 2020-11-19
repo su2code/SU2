@@ -140,7 +140,6 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
 
 }
 
-
 CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
 
   caseName = config->GetCaseName();
@@ -355,7 +354,6 @@ void CConfig::addEnumOption(const string name, unsigned short & option_field, co
   option_map.insert(pair<string, COptionBase *>(name, val));
   return;
 }
-
 
 // input_size is the number of options read in from the config file
 template <class Tenum>
@@ -1167,7 +1165,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("IONIZATION", ionization, false);
   /* DESCRIPTION: Specify if there VT transfer residual limiting */
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
-  /* DESCRIPTION: Specify if there is ionization */
+  /* DESCRIPTION: Specify if there is the gas is monoatomic */
   addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
@@ -5615,6 +5613,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if(Kind_FluidModel == USER_DEFINED_NONEQ){  
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+        }
         break;
       case FEM_LES:
         if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
@@ -6131,7 +6130,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
 
         if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||

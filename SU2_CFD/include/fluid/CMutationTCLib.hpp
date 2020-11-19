@@ -43,7 +43,7 @@ private:
   omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
   h_RT;                                   /*!< \brief Enthalpy divided by R*T. */
 
-  su2double Tref;
+  su2double Tref;                         /*!< \brief Reference temperature. */
 
 public:
 
@@ -110,7 +110,6 @@ public:
    */
   su2double GetViscosity() final;
 
-  
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */

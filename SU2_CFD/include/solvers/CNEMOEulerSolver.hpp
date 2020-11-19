@@ -45,9 +45,7 @@ protected:
   Prandtl_Lam = 0.0,              /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
 
-  unsigned short
-
-  nSpecies;                       /*!< \brief Number of species in the gas mixture. */
+  unsigned short nSpecies;        /*!< \brief Number of species in the gas mixture. */
                   
   su2double                  
   Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
@@ -56,9 +54,9 @@ protected:
 
   su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
-  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
+  unsigned long ErrorCounter = 0; /*!< \brief Counter for number of un-physical states. */
 
-  CNEMOGas  *FluidModel;             /*!< \brief fluid model used in the solver */
+  CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
 
   CNEMOEulerVariable* node_infty = nullptr;
 
@@ -160,6 +158,7 @@ public:
                        CNumerics **numerics_container,
                        CConfig *config,
                        unsigned short iMesh) final;
+
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
