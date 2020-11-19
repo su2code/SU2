@@ -143,8 +143,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                            geometry->node[jPoint]->GetGridVel());
 
-    // bool good_i = true, good_j = true;
-    bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
+    bool good_i = true, good_j = true;
+    // bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
     bool muscl = (config->GetMUSCL_Turb()) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
@@ -785,7 +785,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
   const su2double allowableDecrease = 0.5;
   const su2double allowableIncrease = 1.0;
-  // const su2double allowableIncrease = 1.0e16;
+  // const su2double allowableIncrease = 1.0e99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
@@ -804,7 +804,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         const su2double allowableRatio = (LinSysSol[index] > 0)? allowableIncrease : allowableDecrease;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (change > allowableChange && LinSysSol[index] < 0) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
 

@@ -1580,23 +1580,23 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       Normal = geometry->edge[iEdge]->GetNormal();
       Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
+      // if (muscl) {
+      //   /*--- Extrapolate the state ---*/
+
+      //   const unsigned long nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
+      //   solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+      //                                      TurbVar_i, TurbVar_j, nFlowVarGrad, nVar);
+
+      //   /*--- Check the extrapolation ---*/
+
+      //   bool good_i = true, good_j = true;
+      //   CheckExtrapolatedState(config, Primitive_i, Primitive_j, TurbVar_i, TurbVar_j, nVar, good_i, good_j);
+
+      //   if (!good_i) nodes->SetNon_Physical(iPoint, true);
+      //   if (!good_j) nodes->SetNon_Physical(jPoint, true);
+      // }
+
       /*--- Mean Values ---*/
-
-      if (muscl) {
-        /*--- Extrapolate the state ---*/
-
-        const unsigned long nFlowVarGrad = solver[FLOW_SOL]->GetnPrimVarGrad();
-        solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                                           TurbVar_i, TurbVar_j, nFlowVarGrad, nVar);
-
-        /*--- Check the extrapolation ---*/
-
-        bool good_i = true, good_j = true;
-        CheckExtrapolatedState(config, Primitive_i, Primitive_j, TurbVar_i, TurbVar_j, nVar, good_i, good_j);
-
-        if (!good_i) nodes->SetNon_Physical(iPoint, true);
-        if (!good_j) nodes->SetNon_Physical(jPoint, true);
-      }
 
       Mean_ProjVel = 0.5 * (flowNodes->GetProjVel(iPoint,Normal) + flowNodes->GetProjVel(jPoint,Normal));
       Mean_SoundSpeed = 0.5 * (flowNodes->GetSoundSpeed(iPoint) + flowNodes->GetSoundSpeed(jPoint)) * Area;
