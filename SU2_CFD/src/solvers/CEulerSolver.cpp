@@ -3120,25 +3120,25 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         su2double xVelocity       = nodes->GetVelocity(iPoint,0);
         su2double Total_Viscosity = (nodes->GetLaminarViscosity(iPoint) +
                                      nodes->GetEddyViscosity(iPoint));
-        su2double AxiAuxVar[3] = {0.0};
+        su2double AuxVar[3] = {0.0};
 
         if (yCoord > EPS){
-          AxiAuxVar[0] = Total_Viscosity*yVelocity/yCoord;
-          AxiAuxVar[1] = Total_Viscosity*yVelocity*yVelocity/yCoord;
-          AxiAuxVar[2] = Total_Viscosity*xVelocity*yVelocity/yCoord;
+          AuxVar[0] = Total_Viscosity*yVelocity/yCoord;
+          AuxVar[1] = Total_Viscosity*yVelocity*yVelocity/yCoord;
+          AuxVar[2] = Total_Viscosity*xVelocity*yVelocity/yCoord;
         }
 
         /*--- Set the auxilairy variable for this node. ---*/
-        nodes->SetAxiAuxVar(iPoint, AxiAuxVar);
+        nodes->SetAuxVar(iPoint, AuxVar);
 
       }
 
       /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
       if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-        SetAxiAuxVar_Gradient_GG(geometry, config);
+        SetAuxVar_Gradient_GG(geometry, config);
       }
       if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-        SetAxiAuxVar_Gradient_LS(geometry, config);
+        SetAuxVar_Gradient_LS(geometry, config);
       }
 
     }
@@ -3168,7 +3168,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
       
         /*--- Set gradient of auxillary variables ---*/
-        numerics->SetAxiAuxVarGrad(nodes->GetAxiAuxVarGradient(iPoint), nullptr);
+        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
         
         /*--- Set turbulence kinetic energy ---*/
         CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();

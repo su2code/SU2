@@ -2385,7 +2385,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
           for (iDim = 0; iDim < nDim; iDim++) conspsi += U[iDim+1]*Psi[iDim+1];
 
-          nodes->SetAuxVar(iPoint,conspsi);
+          nodes->SetAuxVar(iPoint,0,conspsi); //TODO AUX
 
           /*--- Also load the auxiliary variable for first neighbors ---*/
 
@@ -2396,7 +2396,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(Neigh);
             conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
             for (iDim = 0; iDim < nDim; iDim++) conspsi += U[iDim+1]*Psi[iDim+1];
-            nodes->SetAuxVar(Neigh,conspsi);
+            nodes->SetAuxVar(Neigh,0,conspsi); //TODO AUX
           }
         }
       }
@@ -2423,7 +2423,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           Area = sqrt(Area);
 
           PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-          ConsPsi_Grad = nodes->GetAuxVarGradient(iPoint);
+          ConsPsi_Grad = nodes->GetAuxVarGradient(iPoint,0); //TODO AUX
           ConsPsi = nodes->GetAuxVar(iPoint);
 
           d_press = 0.0; grad_v = 0.0; v_gradconspsi = 0.0;

@@ -146,14 +146,14 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
   
   residual[0] -= 0.0;
   residual[1] -= Volume*(yinv*total_viscosity_i*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]) 
-                        -TWO3*AxiAuxVar_Grad_i[0][0]);
+                                                                -TWO3*AuxVar_Grad_i[0][0]);
   residual[2] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[2][1]-v*yinv)
-                        -TWO3*AxiAuxVar_Grad_i[0][1]);
+                                                                -TWO3*AuxVar_Grad_i[0][1]);
   residual[3] -= Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
-                                                +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
-                                                        -v*yinv+U_i[0]*turb_ke_i))
-                              -total_conductivity_i*PrimVar_Grad_i[0][1])
-                        -TWO3*(AxiAuxVar_Grad_i[1][1]+AxiAuxVar_Grad_i[2][1]));
+                                                 +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]
+                                                 -v*yinv+U_i[0]*turb_ke_i))
+                                                 -total_conductivity_i*PrimVar_Grad_i[0][1])
+                                                 -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][1]));
 }
   
 
@@ -327,10 +327,10 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       /*--- Viscous terms. ---*/
 
       residual[0] -= 0.0;
-      residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0]);
+      residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0][0]);
       residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
-                                 yinv*yinv*2.0*total_viscosity*Velocity_i[1] -
-                                 TWO3*AuxVar_Grad_i[1]);
+                             yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
+                             TWO3*AuxVar_Grad_i[0][1]);
       residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
 
     }

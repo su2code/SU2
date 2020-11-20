@@ -1646,11 +1646,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar*3;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case AUXVAR_GRADIENT:
-      COUNT_PER_POINT  = nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case AXIAUXVAR_GRADIENT:
+    case AUXVAR_GRADIENT: //TODO AUX This need to be made general
       COUNT_PER_POINT  = nDim*3;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1782,13 +1778,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = base_nodes->GetLimiter_Primitive(iPoint, iVar);
             break;
           case AUXVAR_GRADIENT:
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetAuxVarGradient(iPoint, iDim);
-            break;
-          case AXIAUXVAR_GRADIENT:
             for (iVar = 0; iVar < (nDim*3); iVar++){
               for (iDim = 0; iDim < nDim; iDim++){
-                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAxiAuxVarGradient(iPoint, iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAuxVarGradient(iPoint, iVar, iDim);
               }
             }
             break;
@@ -1964,13 +1956,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetLimiter_Primitive(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case AUXVAR_GRADIENT:
-            for (iDim = 0; iDim < nDim; iDim++)
-              base_nodes->SetAuxVarGradient(iPoint, iDim, bufDRecv[buf_offset+iDim]);
-            break;
-          case AXIAUXVAR_GRADIENT:
             for( iVar = 0; iVar < (nDim*3); iVar++ ){
               for (iDim = 0; iDim < nDim; iDim++){
-                base_nodes->SetAxiAuxVarGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+                base_nodes->SetAuxVarGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
               }
             }
             break;
@@ -2530,26 +2518,6 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
 
   computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
                                weighted, solution, 0, 1, gradient, rmatrix);
-}
-
-void CSolver::SetAxiAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) {
-
-  const auto& solution = base_nodes->GetAxiAuxVar();
-  auto& gradient = base_nodes->GetAxiAuxVarGradient();
-
-  computeGradientsGreenGauss(this, AXIAUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, solution, 0, 3, gradient);
-}
-
-void CSolver::SetAxiAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
-
-  bool weighted = true;
-  const auto& solution = base_nodes->GetAxiAuxVar();
-  auto& gradient = base_nodes->GetAxiAuxVarGradient();
-  auto& rmatrix  = base_nodes->GetRmatrix();
-
-  computeGradientsLeastSquares(this, AXIAUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, 3, gradient, rmatrix);
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {

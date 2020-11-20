@@ -2166,24 +2166,23 @@ enum MPI_QUANTITIES {
   MAX_EIGENVALUE       = 11,  /*!< \brief Maximum eigenvalue communication. */
   SENSOR               = 12,  /*!< \brief Dissipation sensor communication. */
   AUXVAR_GRADIENT      = 13,  /*!< \brief Auxiliary variable gradient communication. */
-  AXIAUXVAR_GRADIENT   = 14,  /*!< \brief Axisymmetric auxiliary variable gradient communication. */
-  COORDINATES          = 15,  /*!< \brief Vertex coordinates communication. */
-  COORDINATES_OLD      = 16,  /*!< \brief Old vertex coordinates communication. */
-  MAX_LENGTH           = 17,  /*!< \brief Maximum length communication. */
-  GRID_VELOCITY        = 18,  /*!< \brief Grid velocity communication. */
-  CROSS_TERM           = 19,  /*!< \brief Cross term communication. */
-  CROSS_TERM_GEOMETRY  = 20,  /*!< \brief Geometric cross term communication. */
-  REF_GEOMETRY         = 21,  /*!< \brief Reference geometry communication. */
-  SOLUTION_EDDY        = 22,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
-  SOLUTION_MATRIX      = 23,  /*!< \brief Matrix solution communication. */
-  SOLUTION_MATRIXTRANS = 24,  /*!< \brief Matrix transposed solution communication. */
-  NEIGHBORS            = 25,  /*!< \brief Neighbor point count communication (for JST). */
-  SOLUTION_FEA         = 26,  /*!< \brief FEA solution communication. */
-  SOLUTION_FEA_OLD     = 27,  /*!< \brief FEA solution old communication. */
-  MESH_DISPLACEMENTS   = 28,  /*!< \brief Mesh displacements at the interface. */
-  SOLUTION_TIME_N      = 29,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 30,  /*!< \brief Solution at time n-1. */
-  PRIMITIVE            = 31   /*!< \brief Primitive solution communication. */
+  COORDINATES          = 14,  /*!< \brief Vertex coordinates communication. */
+  COORDINATES_OLD      = 15,  /*!< \brief Old vertex coordinates communication. */
+  MAX_LENGTH           = 16,  /*!< \brief Maximum length communication. */
+  GRID_VELOCITY        = 17,  /*!< \brief Grid velocity communication. */
+  CROSS_TERM           = 18,  /*!< \brief Cross term communication. */
+  CROSS_TERM_GEOMETRY  = 19,  /*!< \brief Geometric cross term communication. */
+  REF_GEOMETRY         = 20,  /*!< \brief Reference geometry communication. */
+  SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
+  SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
+  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
+  SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
+  MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
+  SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
+  SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
+  PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
 };
 
 /*!

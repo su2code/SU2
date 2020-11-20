@@ -593,26 +593,6 @@ public:
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Compute the Green-Gauss gradient of the auxiliary variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SetAxiAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Compute the Least Squares gradient of the auxiliary variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAxiAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAxiAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
-
-  /*!
    * \brief Add External to Solution vector.
    */
   void Add_External_To_Solution();

@@ -84,8 +84,8 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   }
 
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
-  AuxVar.resize(nPoint);
-  Grad_AuxVar.resize(nPoint,nDim);
+  AuxVar.resize(1,nPoint);
+  Grad_AuxVar.resize(nPoint,1,nDim);  //TODO make general
 
   /*--- Allocate and initializate projection vector for wall boundary condition ---*/
   ForceProj_Vector.resize(nPoint,nDim) = su2double(0.0);
