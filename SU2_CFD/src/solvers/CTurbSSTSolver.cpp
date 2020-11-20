@@ -296,11 +296,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
                             (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
 
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   for (auto iVar = 0; iVar < nVar; iVar++) {
-  //     const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
-  //     nodes->SetSolution(iPoint, iVar, sol);
-  //   }
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
+      nodes->SetSolution(iPoint, iVar, sol);
+    }
 
   for (auto iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetNon_Physical(iPoint, false);
@@ -1964,7 +1964,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
 
   const su2double VorticityMag = varFlo->GetVorticityMag(iPoint);
 
-  const su2double lim = (omega > VorticityMag*F1/a1) ? 1.0 : 0.0;
+  const bool stress_limited = omega < VorticityMag*F1/a1;
   const su2double zeta = max(omega,VorticityMag*F1/a1);
 
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -2031,7 +2031,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   }
 
   TmpWeights[nVarFlo+0] += factor/zeta;
-  TmpWeights[nVarFlo+1] += -lim*k*factor/pow(zeta,2.);
+  TmpWeights[nVarFlo+1] += -(!stress_limited)*k*factor/pow(zeta,2.);
   // if (CDkw > CDKW_MIN)
     for (iDim = 0; iDim < nDim; ++iDim) {
       TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmaomega2/omega*gradomega[iDim]*varAdjTur->GetGradient_Adaptation(iPoint, 1, iDim);
@@ -2041,7 +2041,7 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   //--- Density weight
   for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
   TmpWeights[0] += -k*TmpWeights[nVarFlo+0] - omega*TmpWeights[nVarFlo+1]
-                 + lim*k/zeta*factor;
+                 + (!stress_limited)*k/zeta*factor;
 
   //--- Add TmpWeights to weights, then reset for second-order terms
   for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[1][iVar] += TmpWeights[iVar];
@@ -2081,17 +2081,17 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   // if (pk > 0.) {
     if (pk <= 20.*betastar*r*omega*k){
       weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0);
-      // weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
+      // weights[0][nVarFlo+1] += TWO3*(!stress_limited)*alfa*divu*varAdjTur->GetSolution(iPoint,1);
     }
     else {
       weights[0][0]         += 20.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
-                               // -20.*lim*betastar*alfa*omega*omega*varAdjTur->GetSolution(iPoint,1);
+                               // -20.*(!stress_limited)*betastar*alfa*omega*omega*varAdjTur->GetSolution(iPoint,1);
       weights[0][nVarFlo+0] += -20.*betastar*omega*varAdjTur->GetSolution(iPoint,0);
       weights[0][nVarFlo+1] += -20.*betastar*k*varAdjTur->GetSolution(iPoint,0);
                                // -20.*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1)
-                               // -20.*lim*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1);
+                               // -20.*(!stress_limited)*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1);
     }
-    weights[0][nVarFlo+1] += TWO3*lim*alfa*divu*varAdjTur->GetSolution(iPoint,1);
+    weights[0][nVarFlo+1] += TWO3*(!stress_limited)*alfa*divu*varAdjTur->GetSolution(iPoint,1);
   // }
   
   //--- Zeroth-order terms due to dissipation
