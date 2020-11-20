@@ -3169,6 +3169,10 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
         /*--- Set gradient of auxillary variables ---*/
         numerics->SetAxiAuxVarGrad(nodes->GetAxiAuxVarGradient(iPoint), nullptr);
+        
+        /*--- Set turbulence kinetic energy ---*/
+        CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+        numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
       }
       
       /*--- Compute Source term Residual ---*/
