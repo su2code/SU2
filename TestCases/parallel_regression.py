@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.7 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -295,7 +295,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.078780, -16.138902, 1.064326, 0.019770]
+    turb_naca0012_sa.test_vals = [-11.155953, -14.468619, 1.064330, 0.019756] #last 4 columns
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -306,7 +306,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.273776, -6.243795, 1.049988, 0.019165]
+    turb_naca0012_sst.test_vals = [-12.799245, -5.875128, 1.049989, 0.019163] #last 4 columns
     turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -317,7 +317,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-14.851220, -6.062220, 1.005233, 0.019014]
+    turb_naca0012_sst_sust.test_vals = [-12.641087, -5.753486, 1.005233, 0.019017] #last 4 columns
     turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
@@ -1235,7 +1235,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-15.273776, -6.243795, 1.049988, 0.019165] #last 4 columns
+    pywrapper_turb_naca0012_sst.test_vals = [-12.799245, -5.875128, 1.049989, 0.019163] #last 4 columns
     pywrapper_turb_naca0012_sst.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001

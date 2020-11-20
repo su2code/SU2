@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1087,8 +1087,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
+#ifdef CODI_REVERSE_TYPE
+  const bool discAdjDefault = true;
+#else
+  const bool discAdjDefault = false;
+#endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
@@ -1599,6 +1604,8 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
+  /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
+  addBoolOption("USE_VECTORIZATION", UseVectorization, false);
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
@@ -1946,12 +1953,12 @@ void CConfig::SetConfig_Options() {
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
 
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
-  array<su2double, 3> default_mesh_box_length = {{1.0, 1.0, 1.0}};
-  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length.data());
+  default_mesh_box_length[0] = 1.0; default_mesh_box_length[1] = 1.0; default_mesh_box_length[2] = 1.0;
+  addDoubleArrayOption("MESH_BOX_LENGTH", 3, Mesh_Box_Length, default_mesh_box_length);
 
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
-  array<su2double, 3> default_mesh_box_offset = {{0.0, 0.0, 0.0}};
-  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset.data());
+  default_mesh_box_offset[0] = 0.0; default_mesh_box_offset[1] = 0.0; default_mesh_box_offset[2] = 0.0;
+  addDoubleArrayOption("MESH_BOX_OFFSET", 3, Mesh_Box_Offset, default_mesh_box_offset);
 
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
@@ -2038,8 +2045,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
-  /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
-  addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
@@ -2834,14 +2839,14 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 }
 
-  void CConfig::SetConfig_Parsing(istream& config_buffer){
+void CConfig::SetConfig_Parsing(istream& config_buffer){
 
   string text_line, option_name;
   vector<string> option_value;
 
   string errorString;
 
-  int  err_count = 0;  // How many errors have we found in the config file
+  int err_count = 0;  // How many errors have we found in the config file
   int max_err_count = 30; // Maximum number of errors to print before stopping
   int line_count = 1;
 
@@ -2895,9 +2900,12 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           newString.append("\n");
           if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
             newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
-                             "and it also applies to discrete adjoint problems\n.");
+                             "and it also applies to discrete adjoint problems.\n\n");
+          if (!option_name.compare("WRT_MESH_QUALITY"))
+            newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
           errorString.append(newString);
           err_count++;
+          line_count++;
         continue;
       }
 
@@ -2910,6 +2918,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
         newString.append("\n");
         errorString.append(newString);
         err_count++;
+        line_count++;
         continue;
       }
 
@@ -3062,7 +3071,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.6 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.0.7 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3215,6 +3224,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Check if MESH_QUALITY is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
+  Wrt_MeshQuality = false;
+  for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
+    if(VolumeOutput[iField].find("MESH_QUALITY") != string::npos) {
+      Wrt_MeshQuality = true;
+    }
+  }
 
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
@@ -4632,6 +4648,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Rotating frame is not yet supported with the incompressible solver. ---*/
+
+  if ((Kind_Solver == INC_EULER || Kind_Solver == INC_NAVIER_STOKES || Kind_Solver == INC_RANS) && (Kind_GridMovement == ROTATING_FRAME)) {
+    SU2_MPI::Error("Support for rotating frame simulation not yet implemented for incompressible flows.", CURRENT_FUNCTION);
+  }
+
   /*--- Assert that there are two markers being analyzed if the
    pressure drop objective function is selected. ---*/
 
@@ -4653,7 +4675,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        nRough_Wall = nWall;
        Roughness_Height = new su2double [nWall];
        Kind_Wall = new unsigned short [nWall];
-       for (unsigned short iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
+       for (iMarker = 0; iMarker < nMarker_HeatFlux; iMarker++) {
          Roughness_Height[iMarker] = 0.0;
          Kind_Wall[iMarker] = SMOOTH;
        }
@@ -4841,6 +4863,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 #endif
 
+    /*--- Use the same linear solver on the primal as the one used in the adjoint. ---*/
+    Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
+    Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
+
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
@@ -5003,7 +5029,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (edgeColorGroupSize==0) edgeColorGroupSize = 1<<30;
 
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
-  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true; 
+  if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
 }
 
@@ -5036,7 +5062,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + 
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
   nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -5311,7 +5337,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL;
     iMarker_CfgFile++;
   }
- 
+
   for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = SMOLUCHOWSKI_MAXWELL;
@@ -5575,14 +5601,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){ 
+        if(Kind_FluidModel == USER_DEFINED_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }
         break;
-      case NEMO_NAVIER_STOKES: 
+      case NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){  
+        if(Kind_FluidModel == USER_DEFINED_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
         }
@@ -6076,20 +6102,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ) {
 
       if (Kind_ConvNumScheme_Flow == SPACE_CENTERED) {
-        if (Kind_Centered_Flow == JST) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
-        if (Kind_Centered_Flow == JST_KE) {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-        }
         if (Kind_Centered_Flow == LAX) {
           cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << "." << endl;
           cout << "First order integration." << endl;
+        }
+        else {
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << "." << endl;
+          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }
       }
 
@@ -6383,7 +6404,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == INC_EULER) || (Kind_Solver == INC_NAVIER_STOKES) || (Kind_Solver == INC_RANS) ||
-        (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) || 
+        (Kind_Solver == NEMO_EULER) || (Kind_Solver == NEMO_NAVIER_STOKES) ||
         (Kind_Solver == DISC_ADJ_INC_EULER) || (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_INC_RANS) ||
         (Kind_Solver == DISC_ADJ_EULER) || (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) ||
         (Kind_Solver == DISC_ADJ_FEM_EULER) || (Kind_Solver == DISC_ADJ_FEM_NS) || (Kind_Solver == DISC_ADJ_FEM_RANS)) {
@@ -9789,7 +9810,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
     switch (config_container[iZone]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    case NEMO_EULER: case NEMO_NAVIER_STOKES:     
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
       break;
     case FEM_ELASTICITY:

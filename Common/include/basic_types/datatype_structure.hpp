@@ -2,7 +2,7 @@
  * \file datatype_structure.hpp
  * \brief Headers for generalized datatypes, defines an interface for AD types.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,6 +39,29 @@
 #else
 #define FORCEINLINE inline
 #endif
+
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#define NEVERINLINE inline __attribute__((noinline))
+#else
+#define NEVERINLINE inline
+#endif
+
+#if defined(__INTEL_COMPILER)
+/*--- Disable warnings related to inline attributes. ---*/
+#pragma warning disable 2196
+#pragma warning disable 3415
+/*--- Disable warnings related to overloaded virtual. ---*/
+#pragma warning disable 654
+#pragma warning disable 1125
+#if defined(CODI_FORWARD_TYPE) || defined(CODI_REVERSE_TYPE)
+#pragma warning disable 1875
+#endif
+#endif
+
+/*--- Convenience SFINAE typedef to conditionally
+ * enable/disable function template overloads. ---*/
+template<bool condition>
+using su2enable_if = typename std::enable_if<condition,bool>::type;
 
 /*--- Depending on the datatype defined during the configuration,
  * include the correct definition, and create the main typedef. ---*/
@@ -194,10 +217,10 @@ namespace SU2_TYPE {
 
   /*--- Special handling of the sprintf routine for non-primitive types. ---*/
   /*--- Pass-through for built-in types. ---*/
-  template<class T, typename std::enable_if<std::is_trivial<T>::value,bool>::type = 0>
+  template<class T, su2enable_if<std::is_trivial<T>::value> = 0>
   FORCEINLINE const T& _printGetValue(const T& val) {return val;}
   /*--- Overload for expressions of active types. ---*/
-  template<class T, typename std::enable_if<!std::is_trivial<T>::value,bool>::type = 0>
+  template<class T, su2enable_if<!std::is_trivial<T>::value> = 0>
   FORCEINLINE passivedouble _printGetValue(const T& val) { return val.getValue(); }
 
   /*!

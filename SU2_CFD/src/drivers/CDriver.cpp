@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1635,6 +1635,11 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
             case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config); break;
             case JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_Flow(nDim, nVar_Flow, config); break;
             case JST_KE : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_KE_Flow(nDim, nVar_Flow, config); break;
+            case JST_MAT :
+              if (!config->GetUseVectorization()) {
+                SU2_MPI::Error("JST with matrix dissipation requires USE_VECTORIZATION=YES.", CURRENT_FUNCTION);
+              }
+              break;
             default:
               SU2_OMP_MASTER
               SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);

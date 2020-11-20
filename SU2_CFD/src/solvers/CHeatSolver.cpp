@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1108,7 +1108,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
         nodes->SetSolution_Old(iPoint,&T_Conjugate);
-        LinSysRes.SetBlock_Zero(iPoint, 0);
+        LinSysRes(iPoint, 0) = 0.0;
         nodes->SetRes_TruncErrorZero(iPoint);
 
         if (implicit) {
