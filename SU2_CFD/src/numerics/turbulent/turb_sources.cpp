@@ -878,7 +878,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   }
     
   pk = min(pk, pkmax);
-  // pw = min(pw, pwmax);
+  pw = min(pw, pwmax);
     
   // pk = max(pk, 0.0);
   // pw = max(pw, 0.0);
