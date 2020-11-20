@@ -1407,7 +1407,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "coupled_cht/incomp_2d_unsteady"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-1.356091, -0.080383, -0.080387, -0.080384] #last 4 columns
+    cht_incompressible_unsteady.test_vals = [-1.348104, -0.080392, -0.080391, -0.080391] #last 4 columns
     cht_incompressible_unsteady.su2_exec  = "SU2_CFD"
     cht_incompressible_unsteady.timeout   = 1600
     cht_incompressible_unsteady.multizone = True
