@@ -783,7 +783,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableDecrease = 0.5;
+  // const su2double allowableDecrease = 0.5;
+  const su2double allowableDecrease = 0.999999;
   const su2double allowableIncrease = 1.0;
   // const su2double allowableIncrease = 1.0e99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
@@ -804,7 +805,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         const su2double allowableRatio = (LinSysSol[index] > 0)? allowableIncrease : allowableDecrease;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (change > allowableChange && LinSysSol[index] < 0) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
 
