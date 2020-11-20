@@ -790,8 +790,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
 
-  // if (sa_model || sst_model) {
-  if (sa_model) {
+  if (sa_model || sst_model) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
