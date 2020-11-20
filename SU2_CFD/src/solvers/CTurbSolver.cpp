@@ -783,13 +783,14 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  // const su2double allowableDecrease = 0.5;
-  const su2double allowableDecrease = 0.999999;
-  const su2double allowableIncrease = 1.0;
-  // const su2double allowableIncrease = 1.0e99;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
   const su2double CFLInc = config->GetCFL_AdaptParam(1);
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
+
+  // const su2double allowableDecrease = 0.5;
+  const su2double allowableDecrease = 1.0-eps;
+  const su2double allowableIncrease = 1.0;
+  // const su2double allowableIncrease = 1.0e99;
 
   if (sa_model || sst_model) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
