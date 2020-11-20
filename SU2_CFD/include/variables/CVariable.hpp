@@ -105,6 +105,7 @@ protected:
   unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
+  unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
 
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
@@ -136,6 +137,11 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CVariable() = default;
+
+  /*!
+   * \brief Get the number of auxiliary variables.
+   */
+  inline unsigned long GetnAuxVar() const { return nAuxVar; }
 
   /*!
    * \brief Set the value of the solution, all variables.
@@ -564,13 +570,15 @@ public:
   inline su2double GetLocalCFL(unsigned long iPoint) const { return LocalCFL(iPoint); }
 
   /*!
-   * \brief Set auxiliary variables.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_auxvar - Value of the auxiliar variable.
+   * \brief Get the entire Aux matrix of the problem.
+   * \return Reference to the aux var  matrix.
    */
-  inline void SetAuxVar(unsigned long iPoint, const su2double *auxvar) {
-    for (unsigned long iVar = 0; iVar < 3; iVar++) AuxVar(iPoint,iVar) = auxvar[iVar];
-  }
+  inline const MatrixType& GetAuxVar(void) const { return AuxVar; }
+
+  /*!
+   * \brief Get the Aux var value at Point i, variable j.
+   */
+  inline su2double GetAuxVar(unsigned long iPoint, unsigned long iVar = 0) const { return AuxVar(iPoint,iVar); }
 
   /*!
    * \brief Set auxiliary variables.
@@ -579,20 +587,8 @@ public:
    * \param[in] val_auxvar - Value of the auxiliar variable.
    */
   inline void SetAuxVar(unsigned long iPoint, unsigned long iVar, const su2double auxvar) {
-    AuxVar(iPoint,iVar) = auxvar; //TODO AUX, this may be unneccesary
+    AuxVar(iPoint,iVar) = auxvar;
   }
-
-  /*!
-   * \brief Get the entire Aux vector of the problem.
-   * \return Reference to the aux matrix.
-   */
-  inline const MatrixType& GetAuxVar(void) const { return AuxVar; }
-
-  /*!
-   * \brief Get the entire Aux value at Point i.
-   * \return Reference to the aux matrix.
-   */
-  inline const su2double GetAuxVar(unsigned long iPoint) const { return AuxVar(iPoint,0); } //TODO AUX, is this unsafe?
 
   /*!
    * \brief Set value of auxillary gradients.
@@ -602,17 +598,7 @@ public:
    * \param[in] value - Value of the gradient.
    */
   inline void SetAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {
-    Grad_AuxVar(iPoint,iVar,iDim) = value; 
-  }
-
-  /*!
-   * \brief Add a value to the auxiliary variable gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient to be added for the index <i>iDim</i>.
-   */
-  inline void AddAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) { 
-    Grad_AuxVar(iPoint,iVar,iDim) += val_value;
+    Grad_AuxVar(iPoint,iVar,iDim) = value;
   }
 
   /*!
@@ -628,18 +614,17 @@ public:
    * \param[in] iDim - Index of the dimension.
    * \return Value of the solution gradient.
    */
-  inline su2double GetAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { 
+  inline su2double GetAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const {
     return Grad_AuxVar(iPoint,iVar,iDim);
   }
 
   /*!
    * \brief Get the value of the auxilliary gradient.
    * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
    * \return Value of the solution gradient.
    */
-  inline su2double *GetAuxVarGradient(unsigned long iPoint, unsigned long iVar) { 
-    return Grad_AuxVar(iPoint,iVar);
+  inline su2double** GetAuxVarGradient(unsigned long iPoint) {
+    return Grad_AuxVar[iPoint];
   }
 
   /*!
@@ -1972,12 +1957,6 @@ public:
    * \return Reference to variable reconstruction gradient.
    */
   inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
-
-  /*!
-   * \brief Get the gradient value of the axisymmetry variables.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double **GetAuxVarGradient(unsigned long iPoint) { return Grad_AuxVar[iPoint]; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.

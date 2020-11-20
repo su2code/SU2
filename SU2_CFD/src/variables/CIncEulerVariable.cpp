@@ -34,8 +34,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                       (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool viscous      = config->GetViscous();
-  bool axisymmetric = config->GetAxisymmetric();
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
@@ -104,10 +102,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-
-  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-
-  if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,1,nDim); //TODO AUX  make general?
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();

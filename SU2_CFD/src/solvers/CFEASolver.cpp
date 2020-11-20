@@ -3478,7 +3478,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
         sum += w * element_properties[iElem]->GetPhysicalDensity();
         vol += w;
       }
-      nodes->SetAuxVar(iPoint, 0, sum/vol); //TODO AUX
+      nodes->SetAuxVar(iPoint, 0, sum/vol);
     }
   }
 
