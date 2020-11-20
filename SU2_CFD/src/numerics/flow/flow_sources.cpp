@@ -150,10 +150,9 @@ void CSourceAxisymmetric_Flow::ResidualDiffusion(){
   residual[2] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[2][1]-v*yinv)
                         - TWO3*AxiAuxVar_Grad_i[0][1]);
   residual[3] -= Volume*(yinv*(total_viscosity_i*(u*(PrimVar_Grad_i[2][0]+PrimVar_Grad_i[1][1])
-                                                + v*(FOUR3*PrimVar_Grad_i[1][1]+TWO3*PrimVar_Grad_i[1][0])
-                                                - TWO3*v*v*yinv)
-                              - total_conductivity_i*PrimVar_Grad_i[0][1])
-                        - TWO3*(AxiAuxVar_Grad_i[1][1]+AxiAuxVar_Grad_i[2][1]));
+                                                 +v*TWO3*(2*PrimVar_Grad_i[1][1]-PrimVar_Grad_i[1][0]-v*yinv))
+                              -total_conductivity_i*PrimVar_Grad_i[0][1])
+                        -TWO3*(AxiAuxVar_Grad_i[1][1]+AxiAuxVar_Grad_i[2][1]));
 }
   
 
