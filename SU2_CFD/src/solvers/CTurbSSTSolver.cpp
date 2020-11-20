@@ -159,11 +159,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Far-field flow state quantities and initialization. ---*/
 
-  const su2double rho_Inf = config->GetDensity_FreeStreamND();
-  const su2double muT_Inf = rho_Inf*kine_Inf/omega_Inf;  
-
   kine_Inf  = config->GetTke_FreeStreamND();
   omega_Inf = config->GetOmega_FreeStreamND();
+
+  const su2double rho_Inf = config->GetDensity_FreeStreamND();
+  const su2double muT_Inf = rho_Inf*kine_Inf/omega_Inf;
 
   /*--- Initialize lower and upper limits---*/
 
