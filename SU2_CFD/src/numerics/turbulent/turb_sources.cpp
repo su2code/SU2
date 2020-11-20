@@ -869,7 +869,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   // if ((pw >= 0) && (!stress_limited))
   if (pw > pwmax) {
-    Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended;
+    Jacobian_i[1][1] += 20.*beta_star*zeta*alfa_blended*Volume;
     if (!stress_limited) Jacobian_i[1][1] *= 2.0;
   }
   // if ((pw >= 0) && (!stress_limited)) {
