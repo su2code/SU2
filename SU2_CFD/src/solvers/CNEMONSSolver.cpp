@@ -379,8 +379,8 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
       // Could add to fluid model?
-      su2double         Mass = 0.0;
-      vector<su2double> Ms   = FluidModel->GetSpeciesMolarMass();
+      su2double Mass = 0.0;
+      auto&     Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
       su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
@@ -760,8 +760,8 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
       V = nodes->GetPrimitive(iPoint);
-      su2double         Mass = 0.0;
-      vector<su2double> Ms   = FluidModel->GetSpeciesMolarMass();
+      su2double Mass = 0.0;
+      auto&     Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
       su2double Ru=1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double eddy_viscosity=nodes->GetEddyViscosity(iPoint);
@@ -821,7 +821,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
   dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
   const su2double *Yst;
-  vector<su2double> hs, Cvtrs, Ms;
+  vector<su2double> hs, Cvtrs;
 
   /*--- Assign booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -835,7 +835,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   /*--- Get universal information ---*/
   RuSI = UNIVERSAL_GAS_CONSTANT;
   Ru   = 1000.0*RuSI;
-  Ms   = FluidModel->GetSpeciesMolarMass();
+  auto& Ms   = FluidModel->GetSpeciesMolarMass();
 
   /*--- Get the locations of the primitive variables ---*/
   RHOS_INDEX    = nodes->GetRhosIndex();
@@ -1021,8 +1021,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double TauNormal;
   su2double div_vel=0, Delta;
 
-  vector<su2double> Ms;
-
   bool ionization = config->GetIonization();
 
   if (ionization) {
@@ -1105,7 +1103,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Density   = nodes->GetDensity(iPoint);
 
-      Ms = FluidModel->GetSpeciesMolarMass();
+      auto& Ms = FluidModel->GetSpeciesMolarMass();
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);

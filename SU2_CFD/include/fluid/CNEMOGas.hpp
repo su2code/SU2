@@ -101,6 +101,7 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
+   * \param[in] Ms   - Mass fraction of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
@@ -109,7 +110,7 @@ public:
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvTraRot() = 0;
+  virtual const vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
    * \brief Get species V-E specific heats at constant volume.
@@ -224,15 +225,15 @@ public:
   /*!
    * \brief Get species molar mass.
    */
-  virtual vector<su2double>& GetSpeciesMolarMass() = 0;
+  virtual const vector<su2double>& GetSpeciesMolarMass() = 0;
 
   /*!
    * \brief Get reference temperature.
    */
-  virtual vector<su2double>& GetRefTemperature() = 0;
+  virtual const vector<su2double>& GetRefTemperature() = 0;
 
   /*!
    * \brief Get species formation enthalpy.
    */
-  virtual vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
+  virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
 };

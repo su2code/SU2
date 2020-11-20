@@ -239,7 +239,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
   su2double rho, T, Tve, RuSI, Ru;
-  vector<su2double> Ms = fluidmodel->GetSpeciesMolarMass();
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

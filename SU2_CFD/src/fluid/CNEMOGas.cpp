@@ -90,7 +90,7 @@ su2double CNEMOGas::ComputeSoundSpeed(){
   rhoCvtr = 0.0; 
   Density = 0.0;
 
-  vector<su2double> Cvtrs = GetSpeciesCvTraRot();
+  auto& Cvtrs = GetSpeciesCvTraRot();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density+=rhos[iSpecies];
