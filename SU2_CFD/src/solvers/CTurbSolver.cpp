@@ -788,7 +788,8 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
   const su2double CFLMin = config->GetCFL_AdaptParam(2)*config->GetCFLMaxRedCoeff_Turb();
 
   // const su2double allowableDecrease = 0.5;
-  const su2double allowableDecrease = 1.0-eps;
+  // const su2double allowableDecrease = 1.0-eps;
+  const su2double allowableDecrease = 0.2;
   const su2double allowableIncrease = 1.0;
   // const su2double allowableIncrease = 1.0e99;
 
@@ -806,7 +807,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
         const su2double allowableRatio = (LinSysSol[index] > 0)? allowableIncrease : allowableDecrease;
         const su2double allowableChange = allowableRatio*fabs(nodes->GetSolution(iPoint, iVar));
         const su2double change = fabs(LinSysSol[index]);
-        if (change > allowableChange) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
+        if (change > allowableChange && LinSysSol[index] < 0) localUnderRelaxation = min(allowableChange/change, localUnderRelaxation);
         
       }
 
