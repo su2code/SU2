@@ -640,7 +640,7 @@ public:
    * \brief Get the entire axi aux vector of the problem.
    * \return Reference to the axi aux matrix.
    */
-  inline const MatrixType& GetAxiAuxVar(void) { return AxiAuxVar; }
+  inline const MatrixType& GetAxiAuxVar(void) const { return AxiAuxVar; }
 
   /*!
    * \brief Set value of axisymmetric auxillary gradients.
@@ -1998,10 +1998,10 @@ public:
   inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
   /*!
-   * \brief A virtual member.
+   * \brief Get the gradient value of the auxillary axisymmetry variables.
    * \return Value of the primitive variables gradient.
    */
-  inline virtual su2double **GetAxiAuxVarGradient(unsigned long iPoint) { return nullptr; }
+  inline su2double **GetAxiAuxVarGradient(unsigned long iPoint) { return Grad_AxiAuxVar[iPoint]; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
