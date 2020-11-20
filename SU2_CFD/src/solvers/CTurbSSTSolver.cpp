@@ -495,6 +495,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
 
       auto residual = numerics->ComputeResidual(config);
 
+      if (geometry->node[iPoint]->GetGlobalIndex() == 18687) cout << "Sou= (" << residual[0] << ", " << residual[1] << ")" << endl;
+
       /*--- Subtract residual and the Jacobian ---*/
 
       LinSysRes.SubtractBlock(iPoint, residual);
