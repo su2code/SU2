@@ -206,12 +206,6 @@ public:
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  inline su2double **GetAxiAuxVarGradient(unsigned long iPoint) final { return Grad_AxiAuxVar[iPoint]; }
-
-  /*!
    * \brief A virtual member.
    */
   inline void SetdPdrho_e(unsigned long iPoint, su2double dPdrho_e) final { Secondary(iPoint,0) = dPdrho_e;}
