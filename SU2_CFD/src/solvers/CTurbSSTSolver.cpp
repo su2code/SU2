@@ -296,11 +296,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
                             (!config->GetEdgeLimiter_Turb()) &&
                             (config->GetInnerIter() <= config->GetLimiterIter());
 
-  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-  //   for (auto iVar = 0; iVar < nVar; iVar++) {
-  //     const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
-  //     nodes->SetSolution(iPoint, iVar, sol);
-  //   }
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
+      nodes->SetSolution(iPoint, iVar, sol);
+    }
 
   for (auto iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetNon_Physical(iPoint, false);
