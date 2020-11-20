@@ -317,7 +317,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[RHOCVVE_INDEX] = rhoCvve;
 
   /*--- Pressure ---*/
-  V[P_INDEX] = fluidmodel->GetPressure();
+  V[P_INDEX] = fluidmodel->ComputePressure();
 
   if (V[P_INDEX] < 0.0) {
     V[P_INDEX] = 1E-20;
@@ -325,12 +325,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Partial derivatives of pressure and temperature ---*/
-  fluidmodel->GetdPdU  (V, eves, val_dPdU  );
-  fluidmodel->GetdTdU  (V, val_dTdU );
-  fluidmodel->GetdTvedU(V, eves, val_dTvedU);
+  fluidmodel->ComputedPdU  (V, eves, val_dPdU  );
+  fluidmodel->ComputedTdU  (V, val_dTdU );
+  fluidmodel->ComputedTvedU(V, eves, val_dTvedU);
 
   /*--- Sound speed ---*/
-  V[A_INDEX] = fluidmodel->GetSoundSpeed();
+  V[A_INDEX] = fluidmodel->ComputeSoundSpeed();
 
   /*--- Enthalpy ---*/
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];

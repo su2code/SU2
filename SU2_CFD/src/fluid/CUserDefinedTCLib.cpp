@@ -624,7 +624,7 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density += rhos[iSpecies];
 
-  Pressure = GetPressure();
+  Pressure = ComputePressure();
 
 }
 

@@ -164,32 +164,32 @@ public:
   /*!
    * \brief Get speed of sound.
    */
-  su2double GetSoundSpeed();
+  su2double ComputeSoundSpeed();
 
   /*!
    * \brief Get pressure.
    */
-  su2double GetPressure();
+  su2double ComputePressure();
 
   /*!
    * \brief Get gas constant.
    */
-  su2double GetGasConstant();
+  su2double ComputeGasConstant();
 
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
+  void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
   
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
    */
-  void GetdTdU(su2double *V, su2double *val_dTdU);
+  void ComputedTdU(su2double *V, su2double *val_dTdU);
   
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
+  void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 
   /*!
    * \brief Set the translational temperature.

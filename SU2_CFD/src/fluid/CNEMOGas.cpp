@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fluid/CNEMOGas.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(){
 
@@ -81,7 +82,7 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
   } 
 }
 
-su2double CNEMOGas::GetSoundSpeed(){
+su2double CNEMOGas::ComputeSoundSpeed(){
 
   su2double conc, rhoCvtr;
 
@@ -103,7 +104,7 @@ su2double CNEMOGas::GetSoundSpeed(){
  return(sqrt(SoundSpeed2));
 }
 
-su2double CNEMOGas::GetPressure(){
+su2double CNEMOGas::ComputePressure(){
 
   su2double P = 0.0;
 
@@ -118,7 +119,7 @@ su2double CNEMOGas::GetPressure(){
 
 }
 
-su2double CNEMOGas::GetGasConstant(){
+su2double CNEMOGas::ComputeGasConstant(){
 
   su2double Mass = 0.0;
 
@@ -141,7 +142,7 @@ su2double CNEMOGas::GetrhoCvve() {
     return rhoCvve;
 }
 
-void CNEMOGas::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
+void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
 
   // Note: Electron energy not included properly.
 
@@ -222,11 +223,13 @@ void CNEMOGas::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val
   /*--- Vib.-el energy derivative ---*/
   val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
                                rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
+
 }
 
-void CNEMOGas::GetdTdU(su2double *V, su2double *val_dTdU){
+void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
   su2double v2, ef, rhoCvtr;
+  su2double Vel[nDim] = {0.0};
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long VEL_INDEX     = nSpecies+2;
@@ -240,9 +243,9 @@ void CNEMOGas::GetdTdU(su2double *V, su2double *val_dTdU){
   Ref_Temperature    = GetRefTemperature();
 
   /*--- Calculate supporting quantities ---*/
-  v2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    v2 += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+    Vel[iDim] = V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+  v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
 
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -264,7 +267,7 @@ void CNEMOGas::GetdTdU(su2double *V, su2double *val_dTdU){
 
 }    
 
-void CNEMOGas::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
+void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
 
   su2double rhoCvve;
 

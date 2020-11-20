@@ -1326,12 +1326,12 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
                              Temperature_FreeStream, Temperature_ve_FreeStream);
 
   /*--- Compute Gas Constant ---*/
-  GasConstant_Inf = FluidModel->GetGasConstant();
+  GasConstant_Inf = FluidModel->ComputeGasConstant();
   config->SetGas_Constant(GasConstant_Inf);
 
   /*--- Compute the freestream density, soundspeed ---*/
   Density_FreeStream = FluidModel->GetDensity();
-  soundspeed = FluidModel->GetSoundSpeed();
+  soundspeed = FluidModel->ComputeSoundSpeed();
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
   if (nDim == 2) {
