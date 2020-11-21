@@ -4859,7 +4859,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
 
       /*--- If the averaging interval is not set, we average over all time-steps ---*/
-
+    }
+    if (Time_Domain) {
       if (Iter_Avg_Objective == 0.0) {
         Iter_Avg_Objective = nTimeIter;
       }
