@@ -925,7 +925,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   CrossDiff *= 2.0*Density_i*sigma_omega_2/zeta;
 
   // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-  Residual[1] += (1.0 - F1_i)*max(CrossDiff,CDKW_MIN)*Volume;
+  Residual[1] += (1.0 - F1_i)*CrossDiff*Volume;
 
   /*--- Implicit part ---*/
 
@@ -934,7 +934,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
-  Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CrossDiff,CDKW_MIN)*(!stress_limited);
+  Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited);
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
 
   if (Residual[1] > 1e10) {
