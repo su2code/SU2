@@ -931,6 +931,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   Jacobian_i[1][1] -= (1. - F1_i)/(Density_i*TurbVar_i[1])*Volume*max(CDkw_i,CDKW_MIN);
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
+
+  if (Residual[1] > 1e10) {
+    cout << "Production= " << pw*Volume << ", Destruction= " << -beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume << ", Cross-Diffusion= "  << (1.0 - F1_i)*max(CDkw_i,CDKW_MIN)*Volume << endl;
+  }
   
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
