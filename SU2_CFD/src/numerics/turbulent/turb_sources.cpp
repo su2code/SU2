@@ -933,7 +933,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
 
   if (Residual[1] > 1e10) {
-    cout << "Cross-Diffusion= "  << (1.0 - F1_i)*max(CDkw_i,CDKW_MIN)*Volume << ", (1-F1)= " << 1.0-F1_i << ", CDkw= " << CDkw_i << endl;
+    su2double dKdOmega = 0;
+    for (auto iDim = 0; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+    cout << "CDkw= "  << CDkw_i << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
   }
   
   AD::SetPreaccOut(Residual, nVar);
