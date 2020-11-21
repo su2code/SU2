@@ -921,8 +921,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   su2double CrossDiff = 0.0;
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
-    CrossDIff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-  CrossDIff *= 2.0*Density_i*sigma_omega_2/zeta;
+    CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+  CrossDiff *= 2.0*Density_i*sigma_omega_2/zeta;
 
   // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
   Residual[1] += (1.0 - F1_i)*max(CrossDiff,CDKW_MIN)*Volume;
