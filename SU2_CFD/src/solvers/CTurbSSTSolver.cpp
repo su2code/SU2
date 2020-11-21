@@ -531,7 +531,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
 
   const su2double r_i  = flowNodes->GetDensity(iPoint);
   const su2double om_i = nodes->GetPrimitive(iPoint,1);
-  const su2double z_i  = max(om_i, flowNodes->GetVorticityMag(iPoint)*F2_i/a1);
+  const su2double z_i  = max(om_i, flowNodes->GetVorticityMag(iPoint)*F2/a1);
 
   const su2double *gradk  = nodes->GetGradient(iPoint)[0];
   const su2double *gradom = nodes->GetGradient(iPoint)[1];
