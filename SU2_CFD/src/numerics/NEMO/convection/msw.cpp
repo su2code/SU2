@@ -181,8 +181,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   vector<su2double> eves_st_i = fluidmodel->GetSpeciesEve(Vst_i[TVE_INDEX]);
   vector<su2double> eves_st_j = fluidmodel->GetSpeciesEve(Vst_j[TVE_INDEX]);
 
-  fluidmodel->GetdPdU(Vst_i, eves_st_i, dPdUst_i);
-  fluidmodel->GetdPdU(Vst_j, eves_st_j, dPdUst_j);
+  fluidmodel->ComputedPdU(Vst_i, eves_st_i, dPdUst_i);
+  fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)

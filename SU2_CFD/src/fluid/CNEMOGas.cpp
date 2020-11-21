@@ -26,10 +26,12 @@
  */
 
 #include "../../include/fluid/CNEMOGas.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
+CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(){
 
   nSpecies = config->GetnSpecies();
+  nDim     = val_nDim;
 
   MassFrac.resize(nSpecies,0.0);
   MolarMass.resize(nSpecies,0.0);
@@ -41,17 +43,21 @@ CNEMOGas::CNEMOGas(const CConfig* config): CFluidModel(){
   hs.resize(nSpecies,0.0);            
   ws.resize(nSpecies,0.0);            
   DiffusionCoeff.resize(nSpecies,0.0);
+  Enthalpy_Formation.resize(nSpecies,0.0);
+  Ref_Temperature.resize(nSpecies,0.0);
   temperatures.resize(nEnergyEq,0.0);
   energies.resize(nEnergyEq,0.0);  
   ThermalConductivities.resize(nEnergyEq,0.0);
 
+  Kind_GasModel        = config->GetGasModel();
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
-  frozen = config->GetFrozen();
-
+  frozen               = config->GetFrozen();
+  ionization           = config->GetIonization();
 }
 
-void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve){
+void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massfrac,
+                              su2double val_temperature, su2double val_temperature_ve){
 
   su2double denom;
 
@@ -76,8 +82,7 @@ void CNEMOGas::SetTDStatePTTv(su2double val_pressure, const su2double *val_massf
   } 
 }
 
-
-su2double CNEMOGas::GetSoundSpeed(){
+su2double CNEMOGas::ComputeSoundSpeed(){
 
   su2double conc, rhoCvtr;
 
@@ -85,7 +90,7 @@ su2double CNEMOGas::GetSoundSpeed(){
   rhoCvtr = 0.0; 
   Density = 0.0;
 
-  vector<su2double> Cvtrs = GetSpeciesCvTraRot();
+  auto& Cvtrs = GetSpeciesCvTraRot();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density+=rhos[iSpecies];
@@ -96,11 +101,10 @@ su2double CNEMOGas::GetSoundSpeed(){
   }
   SoundSpeed2 = (1.0 + Ru/rhoCvtr*conc) * Pressure/Density;
 
-  return(sqrt(SoundSpeed2));
-
+ return(sqrt(SoundSpeed2));
 }
 
-su2double CNEMOGas::GetPressure(){
+su2double CNEMOGas::ComputePressure(){
 
   su2double P = 0.0;
 
@@ -115,11 +119,11 @@ su2double CNEMOGas::GetPressure(){
 
 }
 
-su2double CNEMOGas::GetGasConstant(){
+su2double CNEMOGas::ComputeGasConstant(){
 
   su2double Mass = 0.0;
 
-  // This needs work for Ionization and such
+  // TODO - extend for ionization
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Mass += MassFrac[iSpecies] * MolarMass[iSpecies];
   GasConstant = Ru / Mass;
@@ -138,4 +142,152 @@ su2double CNEMOGas::GetrhoCvve() {
     return rhoCvve;
 }
 
+void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){
+
+  // Note: Electron energy not included properly.
+
+  su2double CvtrBAR, rhoCvtr, rhoCvve, rho_el, sqvel, conc, ef;
+
+  if (val_dPdU == NULL) {
+    cout << "ERROR: CNEMOGas - CalcdPdU - Array dPdU not allocated!" << endl;
+    exit(1);
+  }
+
+  /*--- Determine the electron density (if ionized) ---*/
+  if (ionization) { rho_el = rhos[nSpecies-1]; }
+  else {            rho_el = 0.0;              }
+
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long RHOS_INDEX    = 0;
+  unsigned long VEL_INDEX     = nSpecies+2;
+  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
+
+  /*--- Extract variables ---*/
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhos[iSpecies] = V[RHOS_INDEX+iSpecies];
+
+  Cvtrs              = GetSpeciesCvTraRot();
+  Enthalpy_Formation = GetSpeciesFormationEnthalpy();
+  Ref_Temperature    = GetRefTemperature();
+  
+  /*--- Rename for convenience ---*/
+  rhoCvtr = V[RHOCVTR_INDEX];
+  rhoCvve = V[RHOCVVE_INDEX];
+
+  /*--- Pre-compute useful quantities ---*/
+  CvtrBAR = 0.0;
+  sqvel   = 0.0;
+  conc    = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    sqvel += V[VEL_INDEX+iDim] * V[VEL_INDEX+iDim];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    CvtrBAR += rhos[iSpecies]*Cvtrs[iSpecies];
+    conc    += rhos[iSpecies]/MolarMass[iSpecies];
+  }
+
+  /*--- Species density derivatives ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    ef                 = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
+    val_dPdU[iSpecies] = T*Ru/MolarMass[iSpecies] + Ru*conc/rhoCvtr *
+                         (-Cvtrs[iSpecies]*(T-Ref_Temperature[iSpecies]) -
+                         ef + 0.5*sqvel);
+
+  }
+  if (ionization) {
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      //      evibs = Ru/MolarMass[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
+      //      num = 0.0;
+      //      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
+      //      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+      //        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      //        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      //      }
+      //      eels = Ru/MolarMass[iSpecies] * (num/denom);
+
+      val_dPdU[iSpecies] -= rho_el * Ru/MolarMass[nSpecies-1] * (val_eves[iSpecies])/rhoCvve;
+    }
+    ef = Enthalpy_Formation[nSpecies-1] - Ru/MolarMass[nSpecies-1]*Ref_Temperature[nSpecies-1];
+    val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
+        + Ru/MolarMass[nSpecies-1]*Tve
+        - rho_el*Ru/MolarMass[nSpecies-1] * (-3.0/2.0*Ru/MolarMass[nSpecies-1]*Tve)/rhoCvve;
+  }
+
+  /*--- Momentum derivatives ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_dPdU[nSpecies+iDim] = -conc*Ru*V[VEL_INDEX+iDim]/rhoCvtr;
+
+  /*--- Total energy derivative ---*/
+  val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;
+
+  /*--- Vib.-el energy derivative ---*/
+  val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim] +
+                               rho_el*Ru/MolarMass[nSpecies-1]*1.0/rhoCvve;    
+
+}
+
+void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
+
+  su2double v2, ef, rhoCvtr;
+  su2double Vel[nDim] = {0.0};
+
+  /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long VEL_INDEX     = nSpecies+2;
+  unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
+
+  /*--- Rename for convenience ---*/
+  rhoCvtr = V[RHOCVTR_INDEX];
+
+  Cvtrs              = GetSpeciesCvTraRot();
+  Enthalpy_Formation = GetSpeciesFormationEnthalpy();
+  Ref_Temperature    = GetRefTemperature();
+
+  /*--- Calculate supporting quantities ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    Vel[iDim] = V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+  v2 = GeometryToolbox::SquaredNorm(nDim,Vel);
+
+  /*--- Species density derivatives ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    ef    = Enthalpy_Formation[iSpecies] - Ru/MolarMass[iSpecies]*Ref_Temperature[iSpecies];
+    val_dTdU[iSpecies]   = (-ef + 0.5*v2 + Cvtrs[iSpecies]*(Ref_Temperature[iSpecies]-T)) / rhoCvtr;
+  }
+  if (ionization) {
+    cout << "CNEMOGas: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
+    exit(1);
+  }
+
+  /*--- Momentum derivatives ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_dTdU[nSpecies+iDim] = -V[VEL_INDEX+iDim] / V[RHOCVTR_INDEX];
+
+  /*--- Energy derivatives ---*/
+  val_dTdU[nSpecies+nDim]   =  1.0 / V[RHOCVTR_INDEX];
+  val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
+
+}    
+
+void CNEMOGas::ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){
+
+  su2double rhoCvve;
+
+  /*--- Necessary indexes to assess primitive variables ---*/  
+  unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
+ 
+  /*--- Rename for convenience ---*/
+  rhoCvve = V[RHOCVVE_INDEX];
+
+  /*--- Species density derivatives ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    val_dTvedU[iSpecies] = -val_eves[iSpecies]/rhoCvve;
+  }
+  /*--- Momentum derivatives ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_dTvedU[nSpecies+iDim] = 0.0;
+
+  /*--- Energy derivatives ---*/
+  val_dTvedU[nSpecies+nDim]   = 0.0;
+  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;  
+
+}
 
