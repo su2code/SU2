@@ -140,7 +140,6 @@ CConfig::CConfig(istream &case_buffer, unsigned short val_software, bool verb_hi
 
 }
 
-
 CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, bool verb_high) {
 
   caseName = config->GetCaseName();
@@ -355,7 +354,6 @@ void CConfig::addEnumOption(const string name, unsigned short & option_field, co
   option_map.insert(pair<string, COptionBase *>(name, val));
   return;
 }
-
 
 // input_size is the number of options read in from the config file
 template <class Tenum>
@@ -1087,8 +1085,13 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
+#ifdef CODI_REVERSE_TYPE
+  const bool discAdjDefault = true;
+#else
+  const bool discAdjDefault = false;
+#endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
@@ -1160,6 +1163,10 @@ void CConfig::SetConfig_Options() {
   addBoolOption("FROZEN_MIXTURE", frozen, false);
   /* DESCRIPTION: Specify if there is ionization */
   addBoolOption("IONIZATION", ionization, false);
+  /* DESCRIPTION: Specify if there is VT transfer residual limiting */
+  addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
+  /* DESCRIPTION: Specify if the gas is monoatomic */
+  addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -2040,8 +2047,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
-  /* DESCRIPTION: Write the mesh quality metrics to the visualization files.  \ingroup Config*/
-  addBoolOption("WRT_MESH_QUALITY", Wrt_MeshQuality, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
@@ -2897,9 +2902,12 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           newString.append("\n");
           if (!option_name.compare("RELAXATION_FACTOR_ADJFLOW"))
             newString.append("Option RELAXATION_FACTOR_ADJFLOW is now RELAXATION_FACTOR_ADJOINT, "
-                             "and it also applies to discrete adjoint problems\n.");
+                             "and it also applies to discrete adjoint problems.\n\n");
+          if (!option_name.compare("WRT_MESH_QUALITY"))
+            newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
           errorString.append(newString);
           err_count++;
+          line_count++;
         continue;
       }
 
@@ -2912,6 +2920,7 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
         newString.append("\n");
         errorString.append(newString);
         err_count++;
+        line_count++;
         continue;
       }
 
@@ -3217,6 +3226,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Check if MESH_QUALITY is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
+  Wrt_MeshQuality = false;
+  for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
+    if(VolumeOutput[iField].find("MESH_QUALITY") != string::npos) {
+      Wrt_MeshQuality = true;
+    }
+  }
 
   if (Kind_Solver == NAVIER_STOKES && Kind_Turb_Model != NONE){
     SU2_MPI::Error("KIND_TURB_MODEL must be NONE if SOLVER= NAVIER_STOKES", CURRENT_FUNCTION);
@@ -3547,6 +3563,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
     SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
+  }
+
+  if (nemo && Kind_TransCoeffModel != WILKE ) {
+    SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver.", CURRENT_FUNCTION);
   }
 
   if (!ideal_gas && !nemo) {
@@ -4849,6 +4869,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 #endif
 
+    /*--- Use the same linear solver on the primal as the one used in the adjoint. ---*/
+    Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
+    Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
+
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
@@ -4985,6 +5009,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    (Kind_Solver == INC_RANS) ||
                    (Kind_Solver == EULER) ||
                    (Kind_Solver == NAVIER_STOKES) ||
+                   (Kind_Solver == NEMO_EULER) ||
+                   (Kind_Solver == NEMO_NAVIER_STOKES) ||
                    (Kind_Solver == RANS) ||
                    (Kind_Solver == DISC_ADJ_EULER) ||
                    (Kind_Solver == DISC_ADJ_RANS) ||
@@ -5595,15 +5621,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if(Kind_FluidModel == USER_DEFINED_NONEQ){
-          if ((GasModel != "N2") && (GasModel != "AIR-5"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case FEM_LES:
@@ -6121,7 +6147,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU2)  cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)    cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSMPLUSUP2)  cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP2) cout << "AUSM+-up2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSMPWPLUS)  cout << "AUSMPWPLUS solver for the flow inviscid terms."<< endl;
 
         if (Kind_Solver == EULER         || Kind_Solver == DISC_ADJ_EULER ||
