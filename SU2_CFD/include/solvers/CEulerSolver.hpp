@@ -376,6 +376,51 @@ protected:
                                 const unsigned long jPoint);
 
   /*!
+   * \brief Correction to viscous Jacobian that accounts for GG Jacobian.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] sign - Sign based on direction of edge.
+   */
+  void CorrectJacobian(CSolver             **solver,
+                       const CGeometry     *geometry,
+                       const CConfig       *config,
+                       const unsigned long iPoint,
+                       const unsigned long jPoint,
+                       const su2double     *Normal);
+
+  /*!
+   * \brief Correction to stress tensor Jacobian that accounts for nodal gradient Jacobian.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Vec - Corrected normal vector used in residual calculation
+   */
+  void StressTensorJacobian(CSolver             **solver,
+                            const CGeometry     *geometry,
+                            const CConfig       *config,
+                            const unsigned long iPoint,
+                            const unsigned long jPoint,
+                            const su2double     *Vec);
+
+  /*!
+   * \brief Correction to heat flux Jacobian that accounts for nodal gradient Jacobian.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of first point in residual calculation.
+   * \param[in] jPoint - Index of second point in residual calculation.
+   * \param[in] Vec - Corrected normal vector used in residual calculation.
+   */
+  void HeatFluxJacobian(CSolver             **solver,
+                        const CGeometry     *geometry,
+                        const CConfig       *config,
+                        const unsigned long iPoint,
+                        const unsigned long jPoint,
+                        const su2double     *Vec);
+
+  /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
