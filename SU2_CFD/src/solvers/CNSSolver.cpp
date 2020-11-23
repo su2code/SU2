@@ -416,8 +416,12 @@ void CNSSolver::CorrectJacobian(CSolver             **solver,
   /*--- Get vector to be multiplied by Jacobian weights ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
-  for (auto iDim = 0; iDim < nDim; iDim++)
-    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+  for (auto iDim = 0; iDim < nDim; iDim++){
+    if (iPoint != jPoint)
+      Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
+    else
+      Vec[iDim] = Normal[iDim];
+  }
 
   StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
   HeatFluxJacobian(solver, geometry, config, iPoint, jPoint, Vec);
@@ -506,7 +510,7 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
   }// physical boundary
 
   /*--------------------------------------------------------------------------*/
@@ -561,10 +565,10 @@ void CNSSolver::StressTensorJacobian(CSolver             **solver,
     }
 
     Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-    Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
 
     Jacobian.SubtractBlock(iPoint, kPoint, Jacobian_j);
-    Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
+    if (iPoint != jPoint) Jacobian.AddBlock(jPoint, kPoint, Jacobian_j);
   }// iNeigh
 
 }
