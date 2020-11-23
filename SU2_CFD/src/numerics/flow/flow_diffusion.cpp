@@ -819,19 +819,22 @@ void CAvgGrad_Flow::SetEddyViscosityJacobian(const su2double *val_Mean_PrimVar,
       proj_tke_flux     += Mean_GradTurbVar[iDim]*Normal[iDim];
     }
 
-    if (turb_omega_i > VorticityMag_i*F2_i/a1) {
-      const su2double factor = 0.5*turb_ke_i/turb_omega_i;
+    const su2double zeta_i = max(turb_omega_i, VorticityMag_i*F2_i/a1);
+    const su2double zeta_j = max(turb_omega_j, VorticityMag_j*F2_j/a1);
+
+    // if (turb_omega_i > VorticityMag_i*F2_i/a1) {
+      const su2double factor = 0.5*turb_ke_i/turb_zeta_i;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Jacobian_i[iDim+1][0] += factor*proj_stress[iDim];
       Jacobian_i[nDim+1][0] += factor*(proj_stress_dot_v + proj_heat_flux + sigma_k_i*proj_tke_flux);
-    }
+    // }
                     
-    if (turb_omega_j > VorticityMag_j*F2_j/a1) {
-      const su2double factor = 0.5*turb_ke_j/turb_omega_j;
+    // if (turb_omega_j > VorticityMag_j*F2_j/a1) {
+      const su2double factor = 0.5*turb_ke_j/turb_zeta_j;
       for (auto iDim = 0; iDim < nDim; iDim++)
         Jacobian_j[iDim+1][0] += factor*proj_stress[iDim];
       Jacobian_j[nDim+1][0] += factor*(proj_stress_dot_v + proj_heat_flux + sigma_k_j*proj_tke_flux);
-    }
+    // }
   }
   
 }
