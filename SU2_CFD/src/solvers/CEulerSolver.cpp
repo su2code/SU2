@@ -3717,12 +3717,6 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
                                           const unsigned long iPoint,
                                           const unsigned long jPoint,
                                           const su2double     *Normal) {
-  
-  
-  /*--- We're only computing contributions of first neighbors to the Jacobian.
-        In Green-Gauss, this contribution is scaled by 0.5*Sum(n_v)/r = 0 for
-        volume nodes and (0.5*Sum(n_v)+n_s)/r for surface nodes. So only add to
-        the Jacobian if iPoint is on a physical boundary. ---*/
 
   const bool wasActive = AD::BeginPassive();
 

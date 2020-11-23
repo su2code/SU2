@@ -501,7 +501,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver,
       Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
       /*--- Compute Jacobian for gradient terms in cross-diffusion ---*/
-      if (config->GetUse_Accurate_Turb_Jacobians() && (nodes->GetCrossDiff(iPoint) > 0))
+      if (config->GetUse_Accurate_Turb_Jacobians())
+      // if (config->GetUse_Accurate_Turb_Jacobians() && (nodes->GetCrossDiff(iPoint) > 0))
         CrossDiffusionJacobian(solver, geometry, config, iPoint);
       
     }// if dist
@@ -849,6 +850,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
 
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
+
       if (config->GetUse_Accurate_Turb_Jacobians())
         CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, visc_residual.jacobianWeights_i);
       // Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
