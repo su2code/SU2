@@ -8075,11 +8075,11 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
         /*--- Viscous Jacobian contribution for implicit integration ---*/
 
-        if (implicit)
+        if (implicit) {
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
-
-        if (config->GetUse_Accurate_Visc_Jacobians())
-          CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
+          if (config->GetUse_Accurate_Visc_Jacobians())
+            CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
+        }
         
       }
 
