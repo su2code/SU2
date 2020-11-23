@@ -3726,20 +3726,19 @@ void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
 
   /*--- Get norm of projection and distance vectors ---*/
 
-  su2double ProjVec = 0.0, Dist2 = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++){
-    ProjVec += Normal[iDim]*EdgVec[iDim];
-    Dist2   += EdgVec[iDim]*EdgVec[iDim];
+  su2double ProjVec = 0.0, Dist2 = (iPoint == jPoint)? 1.0 : 0.0;
+  if (iPoint != jPoint) {
+    for (auto iDim = 0; iDim < nDim; iDim++){
+      ProjVec += Normal[iDim]*EdgVec[iDim];
+      Dist2   += EdgVec[iDim]*EdgVec[iDim];
+    }
   }
 
   /*--- Get vector to be multiplied by Jacobian weights ---*/
 
   su2double Vec[MAXNDIM] = {0.0};
   for (auto iDim = 0; iDim < nDim; iDim++){
-    if (iPoint != jPoint)
-      Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
-    else
-      Vec[iDim] = Normal[iDim];
+    Vec[iDim] = Normal[iDim] - EdgVec[iDim]*ProjVec/Dist2;
   }
 
   StressTensorJacobian(solver, geometry, config, iPoint, jPoint, Vec);
