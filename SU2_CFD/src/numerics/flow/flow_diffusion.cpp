@@ -121,7 +121,6 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     }
     for (auto iDim = 0; iDim < nDim; iDim++) {
       GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
-      // GradPrimVar[iVar][iDim] -= (GradPrimVar_Edge - Delta)*Normal[iDim] / dist_ij_2;
     }
   }
 
@@ -133,7 +132,6 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
     }
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Mean_GradTurbVar[iDim] -= (GradTurbVar_Edge - Delta)*Edge_Vector[iDim] / dist_ij_2;
-      // Mean_GradTurbVar[iDim] -= (GradTurbVar_Edge - Delta)*Normal[iDim] / dist_ij_2;
     }
   }
 }
@@ -574,11 +572,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   proj_vector_ij = 0.0;
   dist_ij_2 = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = (correct_gradient) ? Coord_j[iDim]-Coord_i[iDim] : Normal[iDim];
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
-    // dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
-    // proj_vector_ij += Normal[iDim]*Normal[iDim];
   }
 
   /*--- Laminar and Eddy viscosity ---*/

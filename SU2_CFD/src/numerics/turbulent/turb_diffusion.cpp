@@ -112,14 +112,17 @@ CNumerics::ResidualType<> CAvgGrad_Scalar::ComputeResidual(const CConfig* config
 
   dist_ij_2 = 0; proj_vector_ij = 0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = (correct_gradient) ? Coord_j[iDim]-Coord_i[iDim] : Normal[iDim];
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Normal[iDim]*Edge_Vector[iDim];
     // dist_ij_2 += Edge_Vector[iDim]*Normal[iDim];
     // proj_vector_ij += Normal[iDim]*Normal[iDim];
   }
-  proj_vector_ij /= (correct_gradient) ? su2double(dist_ij_2) 
-                                       : su2double(-4.0*Volume_i);
+
+  if (correct_gradient)
+    proj_vector_ij /= dist_ij_2;
+  else
+    proj_vector_ij = 1.0;
 
   /*--- Mean gradient approximation ---*/
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -272,20 +275,16 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   const bool wasActive = AD::BeginPassive();
 
-  if (correct_gradient) {
+  const su2double proj_on_rho_i = proj_vector_ij/Density_i;
+  const su2double proj_on_rho_j = proj_vector_ij/Density_j;
+      
+  Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
+  Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
 
-    const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-    const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-        
-    Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
-    Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
+  Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
+  Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
 
-    Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
-    Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
-
-    if (correct_jacobian) CorrectJacobian(config);
-
-  }
+  if (correct_jacobian) CorrectJacobian(config);
   
   /*--- Jacobian wrt eddy viscosity ---*/
   
