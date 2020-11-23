@@ -642,8 +642,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
     const bool wasActive = AD::BeginPassive();
 
-    if (!correct_gradient) dist_ij_2 = -4.0*Volume_i;
-    if (dist_ij_2 != 0.0) {
+    // if (!correct_gradient) dist_ij_2 = -4.0*Volume_i;
+    // if (dist_ij_2 != 0.0) {
+    if (correct_gradient) {
       SetTauJacobian();
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
     }

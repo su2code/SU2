@@ -272,16 +272,20 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   const bool wasActive = AD::BeginPassive();
 
-  const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-  const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-      
-  Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
-  Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
+  if (correct_gradient) {
 
-  Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
-  Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
+    const su2double proj_on_rho_i = proj_vector_ij/Density_i;
+    const su2double proj_on_rho_j = proj_vector_ij/Density_j;
+        
+    Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
+    Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
 
-  if (correct_jacobian) CorrectJacobian(config);
+    Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
+    Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
+
+    if (correct_jacobian) CorrectJacobian(config);
+
+  }
   
   /*--- Jacobian wrt eddy viscosity ---*/
   
