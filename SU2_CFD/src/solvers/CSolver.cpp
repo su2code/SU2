@@ -1655,7 +1655,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_PRED_OLD:
-      COUNT_PER_POINT  = nVar*3;
+      COUNT_PER_POINT  = nVar*4;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case AUXVAR_GRADIENT:
@@ -1822,6 +1822,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar]        = base_nodes->GetSolution_Old(iPoint, iVar);
               bufDSend[buf_offset+nVar+iVar]   = base_nodes->GetSolution_Pred(iPoint, iVar);
               bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Pred_Old(iPoint, iVar);
+              bufDSend[buf_offset+nVar*3+iVar]   = base_nodes->GetSolution_Vel_Pred(iPoint, iVar);
             }
             break;
           case MESH_DISPLACEMENTS:
@@ -2001,6 +2002,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset+iVar]);
               base_nodes->SetSolution_Pred(iPoint, iVar, bufDRecv[buf_offset+nVar+iVar]);
               base_nodes->SetSolution_Pred_Old(iPoint, iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+              base_nodes->SetSolution_Vel_Pred(iPoint, iVar, bufDRecv[buf_offset+nVar*3+iVar]);
             }
             break;
           case MESH_DISPLACEMENTS:

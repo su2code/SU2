@@ -2916,6 +2916,10 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
     /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
     nodes->SetSolution_Old(iPoint, dispCalc);
 
+    /*--- Set predicted velocity to update in multizone iterations ---*/
+
+    if (config->GetTime_Domain()) nodes->SetSolution_Vel_Pred(iPoint);
+
     /*--- Apply the Aitken relaxation ---*/
     for (unsigned short iDim=0; iDim < nDim; iDim++) {
       dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];

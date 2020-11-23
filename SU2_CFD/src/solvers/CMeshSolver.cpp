@@ -601,6 +601,10 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       su2double val_vel = LinSysSol(iPoint, iDim);
+
+      /*--- Non-dimensionalize velocity ---*/
+      val_vel = val_vel/config->GetVelocity_Ref();
+
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
     }
   }
