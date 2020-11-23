@@ -34,7 +34,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
                                  const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
-  correct_jacobian(correct_grad && config->GetUse_Accurate_Turb_Jacobians()),
+  correct_jacobian(config->GetUse_Accurate_Turb_Jacobians()),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE)
 {
   Proj_Mean_GradTurbVar = new su2double [nVar];
