@@ -850,7 +850,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       /*--- Subtract residual, and update Jacobians ---*/
       LinSysRes.SubtractBlock(iPoint, visc_residual);
       if (config->GetUse_Accurate_Turb_Jacobians())
-        CorrectJacobian(solver, geometry, config, iPoint, iPoint, visc_residual.jacobianWeights_i);
+        CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, visc_residual.jacobianWeights_i);
       // Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
         
     }

@@ -199,12 +199,12 @@ public:
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] Jacobian_ic - Jacobian term obtained from CNumerics for iPoint.
    */
-  void CorrectJacobian(CSolver             **solver,
-                       const CGeometry     *geometry,
-                       const CConfig       *config,
-                       const unsigned long iPoint,
-                       const unsigned long jPoint,
-                       const su2double     *const *const jacobianWeights_i);
+  void CorrectViscousJacobian(CSolver             **solver,
+                              const CGeometry     *geometry,
+                              const CConfig       *config,
+                              const unsigned long iPoint,
+                              const unsigned long jPoint,
+                              const su2double     *const *const jacobianWeights_i);
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.

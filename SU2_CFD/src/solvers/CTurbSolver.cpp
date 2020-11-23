@@ -282,8 +282,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
     Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
 
     if (config->GetUse_Accurate_Turb_Jacobians()) {
-      CorrectJacobian(solver, geometry, config, iPoint, jPoint, residual.jacobianWeights_i);
-      CorrectJacobian(solver, geometry, config, jPoint, iPoint, residual.jacobianWeights_j);
+      CorrectViscousJacobian(solver, geometry, config, iPoint, jPoint, residual.jacobianWeights_i);
+      CorrectViscousJacobian(solver, geometry, config, jPoint, iPoint, residual.jacobianWeights_j);
     }
   }
   
@@ -455,12 +455,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   AD::EndPassive(wasActive);
 }
 
-void CTurbSolver::CorrectJacobian(CSolver             **solver,
-                                  const CGeometry     *geometry,
-                                  const CConfig       *config,
-                                  const unsigned long iPoint,
-                                  const unsigned long jPoint,
-                                  const su2double     *const *const jacobianWeights_i) {
+void CTurbSolver::CorrectViscousJacobian(CSolver             **solver,
+                                         const CGeometry     *geometry,
+                                         const CConfig       *config,
+                                         const unsigned long iPoint,
+                                         const unsigned long jPoint,
+                                         const su2double     *const *const jacobianWeights_i) {
 
   const bool wasActive = AD::BeginPassive();
 

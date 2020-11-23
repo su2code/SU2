@@ -383,12 +383,12 @@ protected:
    * \param[in] jPoint - Index of second point in residual calculation.
    * \param[in] sign - Sign based on direction of edge.
    */
-  void CorrectJacobian(CSolver             **solver,
-                       const CGeometry     *geometry,
-                       const CConfig       *config,
-                       const unsigned long iPoint,
-                       const unsigned long jPoint,
-                       const su2double     *Normal);
+  void CorrectViscousJacobian(CSolver             **solver,
+                              const CGeometry     *geometry,
+                              const CConfig       *config,
+                              const unsigned long iPoint,
+                              const unsigned long jPoint,
+                              const su2double     *Normal);
 
   /*!
    * \brief Correction to stress tensor Jacobian that accounts for nodal gradient Jacobian.

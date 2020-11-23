@@ -3711,12 +3711,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   AD::EndPassive(wasActive);
 }
 
-void CEulerSolver::CorrectJacobian(CSolver             **solver,
-                                   const CGeometry     *geometry,
-                                   const CConfig       *config,
-                                   const unsigned long iPoint,
-                                   const unsigned long jPoint,
-                                   const su2double     *Normal) {
+void CEulerSolver::CorrectViscousJacobian(CSolver             **solver,
+                                          const CGeometry     *geometry,
+                                          const CConfig       *config,
+                                          const unsigned long iPoint,
+                                          const unsigned long jPoint,
+                                          const su2double     *Normal) {
   
   
   /*--- We're only computing contributions of first neighbors to the Jacobian.
@@ -3736,8 +3736,6 @@ void CEulerSolver::CorrectJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++){
     ProjVec += Normal[iDim]*EdgVec[iDim];
     Dist2   += EdgVec[iDim]*EdgVec[iDim];
-    // ProjVec += Normal[iDim]*Normal[iDim];
-    // Dist2   += EdgVec[iDim]*Normal[iDim];
   }
 
   /*--- Get vector to be multiplied by Jacobian weights ---*/
@@ -8088,7 +8086,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
           Jacobian.SubtractBlock2Diag(iPoint, visc_residual.jacobian_i);
 
         if (config->GetUse_Accurate_Visc_Jacobians())
-          CorrectJacobian(solver, geometry, config, iPoint, iPoint, Normal);
+          CorrectViscousJacobian(solver, geometry, config, iPoint, iPoint, Normal);
         
       }
 
