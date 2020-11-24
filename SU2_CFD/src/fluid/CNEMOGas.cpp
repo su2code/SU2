@@ -229,7 +229,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
 
   su2double v2, ef, rhoCvtr;
-  su2double Vel[nDim] = {0.0};
+  su2double Vel[3] = {0.0};
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long VEL_INDEX     = nSpecies+2;
