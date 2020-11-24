@@ -579,8 +579,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Laminar and Eddy viscosity ---*/
 
-  Laminar_Viscosity_i = V_i[nDim+5]; Laminar_Viscosity_j = V_j[nDim+5];
-  Eddy_Viscosity_i = V_i[nDim+6]; Eddy_Viscosity_j = V_j[nDim+6];
+  Laminar_Viscosity_i = V_i[nDim+5]; Eddy_Viscosity_i = V_i[nDim+6];
+  Laminar_Viscosity_j = V_j[nDim+5]; Eddy_Viscosity_j = V_j[nDim+6];
 
   /*--- Mean Viscosities and turbulent kinetic energy---*/
 
@@ -764,9 +764,11 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
   const su2double T_j = V_j[0], r_j = V_j[nDim+2];
   
   const su2double dmudT_i = muref*(Tref+Sref)/pow(Tref,1.5) 
-                          * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.));
+                          * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))
+                          / (2.*pow((T_i+Sref),2.));
   const su2double dmudT_j = muref*(Tref+Sref)/pow(Tref,1.5) 
-                          * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.));
+                          * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))
+                          / (2.*pow((T_j+Sref),2.));
 
   const su2double factor_i = 0.5*dmudT_i/(r_i*Cv);
   const su2double factor_j = 0.5*dmudT_j/(r_j*Cv);

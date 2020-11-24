@@ -254,18 +254,18 @@ void CAvgGrad_TurbSST::ExtraADPreaccIn() {
 void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   /*--- Compute the blended constant for the viscous terms ---*/
-  const su2double sigma_kine_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-  const su2double sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+  const su2double sigma_kine_i  = F1_i*sigma_k1  + (1.0 - F1_i)*sigma_k2;
+  const su2double sigma_kine_j  = F1_j*sigma_k1  + (1.0 - F1_j)*sigma_k2;
   const su2double sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
   const su2double sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
   /*--- Compute mean effective viscosity ---*/
-  const su2double diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
-  const su2double diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
-  const su2double diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
-  const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
+  const su2double diff_i_kine  = Laminar_Viscosity_i + Eddy_Viscosity_i*sigma_kine_i;
+  const su2double diff_j_kine  = Laminar_Viscosity_j + Eddy_Viscosity_j*sigma_kine_j;
+  const su2double diff_i_omega = Laminar_Viscosity_i + Eddy_Viscosity_i*sigma_omega_i;
+  const su2double diff_j_omega = Laminar_Viscosity_j + Eddy_Viscosity_j*sigma_omega_j;
 
-  const su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
+  const su2double diff_kine  = 0.5*(diff_i_kine  + diff_j_kine);
   const su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
 
   Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];
@@ -294,18 +294,18 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double zeta_i = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
   const su2double zeta_j = max(TurbVar_j[1], VorticityMag_j*F2_j/a1);
 
-  Jacobian_i[0][0] += 0.5*sigma_kine_i/zeta_i*Proj_Mean_GradTurbVar[0];
-  Jacobian_i[1][0] += 0.5*sigma_omega_i/zeta_i*Proj_Mean_GradTurbVar[1];
+  Jacobian_i[0][0] += 0.5/zeta_i*Proj_Mean_GradTurbVar[0]*sigma_kine_i;
+  Jacobian_i[1][0] += 0.5/zeta_i*Proj_Mean_GradTurbVar[1]*sigma_omega_i;
   if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-    Jacobian_i[0][1] += -0.5*sigma_kine_i*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[0];
-    Jacobian_i[1][1] += -0.5*sigma_omega_i*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[1];
+    Jacobian_i[0][1] += -0.5*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[0]*sigma_kine_i;
+    Jacobian_i[1][1] += -0.5*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[1]*sigma_omega_i;
   }
 
-  Jacobian_j[0][0] += 0.5*sigma_kine_j/zeta_j*Proj_Mean_GradTurbVar[0];
-  Jacobian_j[1][0] += 0.5*sigma_omega_j/zeta_j*Proj_Mean_GradTurbVar[1];
+  Jacobian_j[0][0] += 0.5/zeta_j*Proj_Mean_GradTurbVar[0]*sigma_kine_j;
+  Jacobian_j[1][0] += 0.5/zeta_j*Proj_Mean_GradTurbVar[1]*sigma_omega_j;
   if (TurbVar_j[1] > VorticityMag_j*F2_j/a1) {
-    Jacobian_j[0][1] += -0.5*sigma_kine_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0];
-    Jacobian_j[1][1] += -0.5*sigma_omega_j*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1];
+    Jacobian_j[0][1] += -0.5*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0]*sigma_kine_j;
+    Jacobian_j[1][1] += -0.5*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1]*sigma_omega_j;
   }
   
   /*--- Jacobian wrt laminar viscosity ---*/
@@ -318,9 +318,11 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double T_i      = V_i[0];
   const su2double T_j      = V_j[0];
   const su2double dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
-                           * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))/(2.*pow((T_i+Sref),2.));
+                           * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))
+                           / (2.*pow((T_i+Sref),2.));
   const su2double dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
-                           * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))/(2.*pow((T_j+Sref),2.));
+                           * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))
+                           / (2.*pow((T_j+Sref),2.));
   const su2double factor_i = dmudT_i/(Density_i*Cv);
   const su2double factor_j = dmudT_j/(Density_j*Cv);
   

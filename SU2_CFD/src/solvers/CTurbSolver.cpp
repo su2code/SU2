@@ -354,8 +354,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool gg = (kindRecon == GREEN_GAUSS);
   
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (config->GetInnerIter() <= config->GetLimiterIter());
-
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
