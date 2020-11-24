@@ -4885,7 +4885,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                    (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
                    (Kind_Solver == DISC_ADJ_INC_EULER) ||
                    (Kind_Solver == DISC_ADJ_INC_RANS) ||
-                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES));
+                   (Kind_Solver == DISC_ADJ_INC_NAVIER_STOKES) || 
+                   (Kind_Solver == FEM_EULER) ||
+                   (Kind_Solver == FEM_NAVIER_STOKES));
   if (CFL_Adapt && !fvm_flow) {
     SU2_MPI::Error(string("CFL adaption only available for finite-volume fluid solvers.\n") +
                    string("Please select CFL_ADAPT = NO."),

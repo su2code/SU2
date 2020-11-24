@@ -7379,7 +7379,8 @@ double VecDot(const Eigen::VectorXd& A, const Eigen::VectorXd& B) {
 }
 
 template <typename Precond>
-unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M, int n, int restart, unsigned long* m_loc_long, unsigned long* fst_col_long){
+unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Precond& M, int n, int restart, 
+  su2double &LinRes, unsigned long* m_loc_long, unsigned long* fst_col_long){
   assert(A.cols() == b.size());
   int size = 1, rank = 0;
   unsigned long m = restart;
@@ -7471,7 +7472,11 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
   k = min(k, m - 1);
   Eigen::VectorXd y = LUSolve(H.block(0,0,k+1,k+1), beta.head(k+1), k);
   Eigen::VectorXd xxx = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
+  Eigen::VectorXd b_copy = b;
   b = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
+  LinRes = VecNorm(b_copy - MatVec(A, b, m_loc))/VecNorm(b_copy);
+  // cout << "Linear solver residual = " << LinRes << endl;
+  // cout << "b_norm = " << b_norm << " and b_copy norm = " << VecNorm(b_copy) << endl;
 
   delete m_loc;
   delete fst_col;
@@ -7506,31 +7511,6 @@ void LocalILU_Preconditioner(SpMat& Jacobian_global, Eigen::IncompleteLUT<double
   return;
 }
 
-// void printpair(vector<pair<int, int>>& vec){
-//   for (int i = 0; i < vec.size(); ++i){
-//     cout << "(" << vec[i].first << ", " << vec[i].second <<"), ";
-//   }
-//   cout << endl;
-// }
-
-// template <typename G>
-// void printvec(G& vec){
-//   for (int i = 0; i < vec.size(); ++i){
-//     cout << vec[i] << ", ";
-//   }
-//   cout << endl;
-// }
-
-// template <typename F, typename G>
-// void printvecind(F& vec, G& ind){
-//   // if (vec.size() == 2*ind.size()) {
-//     for (int i = 0; i < ind.size(); ++i){
-//       cout << vec[ind[i]*2] << ", " << vec[ind[i]*2+1] << ", ";
-//     }
-//     cout << endl;
-//   // }
-// }
-
 typedef Eigen::Triplet<double> T;
 void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config) {
@@ -7560,7 +7540,7 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   if (rank == MASTER_NODE) {
     cout << "ResRatio = " << ResRatio << endl;
   }
-
+  ResRatio = 1;
   /*------------------------------------------------------------------------------------*/
   /*---  Please choose one of the following 2 options for CSC/CSR format by setting  ---*/
   /*---  the boolean variable StorageCSR. Only CSR can be used for superlu.          ---*/
@@ -7755,7 +7735,8 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       //   cout << Coord_ij.format(CleanFmt) << endl;
     }
     else {
-      cout << "NACA_FILE not found" << endl;
+      if (rank == 0)
+        cout << "NACA_FILE not found" << endl;
     }
   }
 
@@ -8011,7 +7992,8 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     Timer_start = su2double(clock())/su2double(CLOCKS_PER_SEC);
   }
   unsigned long IterLinSol;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, &m_loc[0], &fst_row[0]);
+  su2double LinRes;
+  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, LinRes, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
@@ -8039,10 +8021,28 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   // if (rank == MASTER_NODE) {
   //   cout << "lambda = " << lambda << endl;
   // }
+
+  Eigen::VectorXd Ratio_vec= mSol_delta.cwiseQuotient(Sol_global);
+  const su2double allowableRatio = 0.2;
+  su2double underRelaxation_local = 1.0;
+  for (int i = 0; i < nVolElemOwned; ++i){
+    underRelaxation_local = min(allowableRatio/fabs(Ratio_vec(i*nVar)), underRelaxation_local);
+    underRelaxation_local = min(allowableRatio/fabs(Ratio_vec(i*nVar + nVar - 1)), underRelaxation_local);
+  }
+  su2double underRelaxation;
+  SU2_MPI::Allreduce(&underRelaxation_local, &underRelaxation, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  // cout << "local underRelaxation = " << underRelaxation_local << " in rank " << rank << endl;
+  if (rank == 0)
+    cout << "global underRelaxation = " << underRelaxation << endl;
   
   /*--- update final solution ---*/
-  Sol_global += mSol_delta * lambda;
-  Res_global += MassMatrix_global.block(fst_row[rank],0,nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta * lambda;
+  Sol_global += mSol_delta * SU2_TYPE::GetValue(underRelaxation);
+  if (StorageCSR) {
+    Res_global += MassMatrix_global.block(0, fst_row[rank],nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta * SU2_TYPE::GetValue(underRelaxation);
+  }
+  else {
+    Res_global += MassMatrix_global.block(fst_row[rank],0,nDOFsLocOwned*nVar,nDOFsLocOwned*nVar) * mSol_delta * SU2_TYPE::GetValue(underRelaxation);
+  }
 
   /*--- convert solution back into the SU2 solver format ---*/
   for (unsigned int i = 0; i < nDOFsLocOwned*nVar; ++i)
@@ -8061,6 +8061,80 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
     for (unsigned int iVar = 0; iVar<nVar; ++iVar) {
       ResRMSinitial[iVar] = GetRes_RMS(iVar);
     }
+  }
+  
+  if (config->GetCFL_Adapt() == YES) {
+    const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
+    const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
+    const su2double CFLMin            = config->GetCFL_AdaptParam(2);
+    const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+
+    bool reduceCFL = false;
+    su2double linResFlow = LinRes; //get residual of Linear solver
+    if (linResFlow > 0.5) {
+      reduceCFL = true;
+    }
+
+    Old_Func = New_Func; 
+    unsigned short Res_Count = 100;
+    if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0); 
+
+    New_Func = 0.0;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      New_Func += GetRes_RMS(iVar);
+    }
+
+    NonLinRes_Func = (New_Func - Old_Func);
+    NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
+
+    NonLinRes_Counter++;
+    if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
+
+    NonLinRes_Value = New_Func;
+    if (config->GetTimeIter() >= Res_Count) {
+      NonLinRes_Value = 0.0;
+      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+        NonLinRes_Value += NonLinRes_Series[iCounter];
+    }
+
+    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
+      reduceCFL = true;
+      NonLinRes_Counter = 0;
+      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
+        NonLinRes_Series[iCounter] = New_Func;
+    }
+
+    su2double CFLFactor = 1.0;
+    if ((underRelaxation < 0.1)) {
+      CFLFactor = CFLFactorDecrease;
+    } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+      CFLFactor = 1.0;
+    } else {
+      CFLFactor = CFLFactorIncrease;
+    }
+    
+    // cout << "CFLFactor = " << CFLFactor << " in rank " << rank << endl;
+    su2double CFL = config->GetCFL(0);
+    // cout << "CFL before multiplying factor = " << CFL << " in rank " << rank << endl;
+    // cout << CFLFactorDecrease << endl;
+    // cout << CFLFactorIncrease << endl;
+
+    if (CFL*CFLFactor <= CFLMin) {
+      CFL       = CFLMin;
+      // CFLFactor = MGFactor[iMesh];
+    } else if (CFL*CFLFactor >= CFLMax) {
+      CFL       = CFLMax;
+      // CFLFactor = MGFactor[iMesh];
+    }
+
+    if (reduceCFL) {
+      CFL       = CFLMin;
+      // CFLFactor = MGFactor[iMesh];
+    }
+
+    CFL *= CFLFactor;
+    // cout << "CFL after multiplying factor = " << CFL << " in rank " << rank << endl;
+    config->SetCFL(0, CFL);
   }
 
 #else
