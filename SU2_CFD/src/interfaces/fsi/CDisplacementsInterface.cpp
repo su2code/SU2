@@ -26,8 +26,8 @@
  */
 
 #include "../../../include/interfaces/fsi/CDisplacementsInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CDisplacementsInterface::CDisplacementsInterface(unsigned short val_nVar,

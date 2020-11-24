@@ -27,8 +27,8 @@
  */
 
 #include "../../../include/interfaces/cfd/CConservativeVarsInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CConservativeVarsInterface::CConservativeVarsInterface(unsigned short val_nVar, unsigned short val_nConst) :
