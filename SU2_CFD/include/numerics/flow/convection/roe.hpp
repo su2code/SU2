@@ -46,8 +46,6 @@ protected:
   su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
   su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeTke, ProjVelocity, RoeSoundSpeed2, RoeSqVel, kappa;
   su2double SoundSpeed_i, SoundSpeed_j, ProjVelocity_i, ProjVelocity_j;
-  su2double muscl_kappa;
-  bool muscl;
   unsigned short nPrimVarTot;
 
   su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
@@ -71,9 +69,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
-   * \param[in] val_muscl - Use MUSCL extrapolation.
    */
-  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation, bool val_muscl);
+  CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
 
   /*!
    * \brief Destructor of the class.
@@ -114,9 +111,8 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_low_dissipation - Use a low dissipation formulation.
-   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation, bool val_muscl);
+  CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation);
 
 };
 
@@ -145,9 +141,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
+  CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 
@@ -176,9 +171,8 @@ public:
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_muscl - Use MUSCL extrapolation
    */
-  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl);
+  CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
 };
 

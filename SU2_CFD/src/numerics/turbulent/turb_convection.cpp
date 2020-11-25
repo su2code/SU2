@@ -30,8 +30,7 @@
 
 CUpwScalar::CUpwScalar(unsigned short val_nDim,
                        unsigned short val_nVar,
-                       const CConfig* config,
-                       bool val_muscl) :
+                       const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
@@ -104,9 +103,8 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
-                               const CConfig* config,
-                               bool val_muscl) :
-                CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
+                               const CConfig* config) :
+                CUpwScalar(val_nDim, val_nVar, config) { }
 
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+1);
@@ -123,9 +121,8 @@ void CUpwSca_TurbSA::FinishResidualCalc(const CConfig* config) {
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
-                                 const CConfig* config,
-                                 bool val_muscl) :
-                 CUpwScalar(val_nDim, val_nVar, config, val_muscl) { }
+                                 const CConfig* config) :
+                 CUpwScalar(val_nDim, val_nVar, config) { }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+3);

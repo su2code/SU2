@@ -28,7 +28,7 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation, bool val_muscl) : CNumerics(val_nDim, val_nVar, config) {
+                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
@@ -288,7 +288,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 }
 
 CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-              bool val_low_dissipation, bool val_muscl) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation, val_muscl) {}
+              bool val_low_dissipation) : CUpwRoeBase_Flow(val_nDim, val_nVar, config, val_low_dissipation) {}
 
 void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                     su2double **val_Jacobian_j, const CConfig* config) {
@@ -334,8 +334,8 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
 
 }
 
-CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl) :
-                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false, val_muscl) {}
+CUpwL2Roe_Flow::CUpwL2Roe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
 
 void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, const CConfig* config) {
@@ -407,8 +407,8 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
 }
 
-CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_muscl) :
-                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false, val_muscl) {}
+CUpwLMRoe_Flow::CUpwLMRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                CUpwRoeBase_Flow(val_nDim, val_nVar, config, false) {}
 
 void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
                                       su2double **val_Jacobian_j, const CConfig* config) {
