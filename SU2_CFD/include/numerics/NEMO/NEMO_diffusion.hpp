@@ -49,13 +49,13 @@ private:
   *Mean_Cvve,
   *PrimVar_i, *PrimVar_j,       /*!< \brief Primitives variables at point i and 1. */
   **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
-  *Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
-  Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
-  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  *Mean_Diffusion_Coeff,        /*!< \brief Mean value of the species diffusion coefficient. */
+  Mean_Laminar_Viscosity,       /*!< \brief Mean value of the laminar viscosity. */
+  Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
+  Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
-
-  *ProjFlux,  /*!< \brief Projection of the viscous fluxes. */
-  dist_ij;            /*!< \brief Length of the edge and face. */
+  *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
+  dist_ij;                      /*!< \brief Length of the edge and face. */
  
 public:
 
@@ -94,25 +94,27 @@ public:
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;    /*!< \brief Iterators in dimension an variable. */
+  unsigned short iDim, iVar,
+  nPrimVar, nPrimVarGrad;       /*!< \brief Iterators in dimension an variable. */
   su2double
-  *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
+  *Mean_PrimVar,                /*!< \brief Mean primitive variables. */
   *PrimVar_i, *PrimVar_j,       /*!< \brief Primitives variables at point i and 1. */
   **Mean_GradPrimVar,           /*!< \brief Mean value of the gradient. */
-  *Mean_Eve,
-  *Mean_Cvve,
-  *Edge_Vector,
-  *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
-  *Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
-  Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
-  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  *Mean_Eve,                    /*!< \brief Mean value of eve. */
+  *Mean_Cvve,                   /*!< \brief Mean value of cvve. */
+  *Edge_Vector,                 /*!< \brief Vector from point i to point j. */
+  *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Inner product of the Mean gradient and the edge vector. */
+  *Mean_Diffusion_Coeff,        /*!< \brief Mean value of the species diffusion coefficient. */
+  Mean_Laminar_Viscosity,       /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
+  Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
   Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  
+  *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
+  dist_ij;                      /*!< \brief Length of the edge and face. */
+  bool implicit;                /*!< \brief Implicit calculus. */
 
-  *ProjFlux,  /*!< \brief Projection of the viscous fluxes. */
-  dist_ij;            /*!< \brief Length of the edge and face. */
-  bool implicit; /*!< \brief Implicit calculus. */
-
-  su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */
+  su2double* Flux = nullptr;    /*!< \brief The flux / residual across the edge. */
   
 public:
 

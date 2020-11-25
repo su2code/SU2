@@ -27,7 +27,7 @@
 
 #include "../../include/fluid/CMutationTCLib.hpp"
 
-CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
+CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
   
   //CGarbacz: if wilke - transportmodel = 'wilke' and so on;
 
@@ -37,11 +37,13 @@ CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
 
 }
 
-//CGarbacz returning random things to avoid warnings. This will be properly implemented once NEMO is in develop
+//CGarbacz returning random things to avoid warnings. This will be properly implemented once Mutation++ is in develop
 
 CMutationTCLib::~CMutationTCLib(){}
   
 void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){}
+
+vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
 
@@ -55,7 +57,7 @@ vector<su2double>& CMutationTCLib::GetNetProductionRates(){return MassFrac;}
 
 su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){return MassFrac;}
+vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){return MassFrac;}
 
@@ -65,9 +67,6 @@ vector<su2double>& CMutationTCLib::GetThermalConductivities(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){return MassFrac;}
 
-void CMutationTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
+vector<su2double>& CMutationTCLib::GetRefTemperature() {return MassFrac;}
 
-void CMutationTCLib::GetdTdU(su2double *V, su2double *val_dTdU){}
- 
-void CMutationTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
-
+vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {return MassFrac;}

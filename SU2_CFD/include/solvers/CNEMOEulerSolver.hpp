@@ -41,22 +41,24 @@
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
 protected:
 
-  unsigned short
-  nSpecies;                              /*!< \brief Number of species in the gas mixture. */
-
   su2double
-  Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
-  Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
-  const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
+  Prandtl_Lam = 0.0,              /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
 
-  su2double *Source;   /*!< \brief Auxiliary vector to store source terms. */
+  unsigned short nSpecies;        /*!< \brief Number of species in the gas mixture. */
+                  
+  su2double                  
+  Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
+  Temperature_ve_Inf;             /*!< \brief Vib.-el. free stream temperature. */
+  const su2double *MassFrac_Inf;  /*!< \brief Free stream species mass fraction. */
 
-  su2double
-  **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+  su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
-  CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
+  unsigned long ErrorCounter = 0; /*!< \brief Counter for number of un-physical states. */
 
-  CNEMOEulerVariable* node_infty;
+  CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
+
+  CNEMOEulerVariable* node_infty = nullptr;
 
 public:
 
@@ -158,6 +160,18 @@ public:
                        unsigned short iMesh) final;
 
   /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -175,15 +189,8 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       bool Output);
-
-  /*!
-     * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
-     * \param[in] iPoint - Index of the grid point
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPreconditioner(CConfig *config, unsigned short iPoint);
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                               CConfig *config, bool Output);
 
   /*!
    * \brief Set the fluid solver nondimensionalization.

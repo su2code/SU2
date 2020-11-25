@@ -108,7 +108,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   vector<su2double> roe_eves = fluidmodel->GetSpeciesEve(RoeV[TVE_INDEX]);
 
   /*--- Calculate derivatives of pressure ---*/
-  fluidmodel->GetdPdU(RoeV, roe_eves, RoedPdU);
+  fluidmodel->ComputedPdU(RoeV, roe_eves, RoedPdU);
 
   /*--- Calculate dual grid tangent vectors for P & invP ---*/
   CreateBasis(UnitNormal);

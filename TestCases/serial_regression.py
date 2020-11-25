@@ -45,7 +45,7 @@ def main():
     thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
-    thermalbath.test_vals = [-2.898714,   -2.898714,   -1.991121,   -1.991121,   -1.696300,    6.000000] #last 4 columns
+    thermalbath.test_vals = [2.473627,    2.473627,  -12.033039,  -11.945257,  -32.000000,   10.804939] #last 4 columns
     thermalbath.su2_exec  = "SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
@@ -57,7 +57,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [ -9.543019,   -9.844050,   -1.991146,   -1.991146,   -1.696315,    6.000000] #last 4 columns
+    thermalbath_frozen.test_vals = [-32.000000,  -32.000000,  -11.953727,  -12.066776,  -32.000000,   10.813864] #last 4 columns
     thermalbath_frozen.su2_exec  = "SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -81,7 +81,7 @@ def main():
     viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.267324,   -5.792087,  -20.236749,  -20.204632,  -20.221054,   -1.780516,   -2.208251,    1.723062,   -2.871713]
+    viscwedge.test_vals = [-5.204061,   -5.728824,  -20.259919,  -20.213137,  -20.252642,   -1.781679,   -2.150885,    1.724447,   -2.861733]
     viscwedge.su2_exec  = "SU2_CFD"
     viscwedge.timeout   = 1600
     viscwedge.new_output = False
