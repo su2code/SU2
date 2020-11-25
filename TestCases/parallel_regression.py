@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.7 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -47,7 +47,7 @@ def main():
     thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
-    thermalbath.test_vals = [-2.898714, -2.898714, -1.991121, -1.991121, -1.696300, 6.000000]
+    thermalbath.test_vals = [2.473627,    2.473627,  -11.989166,  -11.879331,  -32.000000,   10.804939]
     thermalbath.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
@@ -59,7 +59,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [ -9.543019, -9.844050, -1.991146, -1.991146, -1.696315, 6.000000] 
+    thermalbath_frozen.test_vals = [ -32.000000,  -32.000000,  -11.92359,  -11.962329,  -32.000000,   10.813864] 
     thermalbath_frozen.su2_exec  = "mpirun -n 2 SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
@@ -71,7 +71,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [ -0.954130, -1.478893, -16.737310, -17.063693, -17.010416, 2.374072, 1.733626, 5.401966, 0.955538]
+    invwedge.test_vals = [ -0.954130,   -1.478893,  -16.737310,  -17.063693,  -17.010416,    2.374072,   1.733626,    5.401966,    0.955538]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -83,7 +83,7 @@ def main():
     viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.267324,   -5.792087,  -20.236749,  -20.204632,  -20.221054,   -1.780516,   -2.208251,    1.723062,   -2.871713]
+    viscwedge.test_vals = [-5.204061,   -5.728824,  -20.259919,  -20.213137,  -20.252642,   -1.781679,   -2.150885,    1.724447,   -2.861733]
     viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     viscwedge.timeout   = 1600
     viscwedge.new_output = False
@@ -295,7 +295,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.078780, -16.138902, 1.064326, 0.019770]
+    turb_naca0012_sa.test_vals = [-11.155953, -14.468619, 1.064330, 0.019756] #last 4 columns
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -306,7 +306,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-15.273776, -6.243795, 1.049988, 0.019165]
+    turb_naca0012_sst.test_vals = [-12.799245, -5.875128, 1.049989, 0.019163] #last 4 columns
     turb_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -317,7 +317,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-14.851220, -6.062220, 1.005233, 0.019014]
+    turb_naca0012_sst_sust.test_vals = [-12.641087, -5.753486, 1.005233, 0.019017] #last 4 columns
     turb_naca0012_sst_sust.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_sust.timeout   = 3200
     turb_naca0012_sst_sust.tol       = 0.00001
@@ -1235,7 +1235,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-15.273776, -6.243795, 1.049988, 0.019165] #last 4 columns
+    pywrapper_turb_naca0012_sst.test_vals = [-12.799245, -5.875128, 1.049989, 0.019163] #last 4 columns
     pywrapper_turb_naca0012_sst.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001

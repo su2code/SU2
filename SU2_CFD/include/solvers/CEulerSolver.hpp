@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,9 +31,8 @@
 #include "../variables/CEulerVariable.hpp"
 
 /*!
- * \class CSolver
- * \brief Main class for defining the PDE solution, it requires
- * a child class for each particular solver (Euler, Navier-Stokes, etc.)
+ * \class CEulerSolver
+ * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */
 class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
@@ -166,12 +165,6 @@ protected:
    */
   template<ENUM_TIME_INT IntegrationType>
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
-
-  /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.

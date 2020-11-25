@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,7 +142,7 @@ const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallb
    assume a quartic form (5 coefficients). For example,
    Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
    are set to zero and will be properly non-dim. in the solver. ---*/
-constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */;
+constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
 
 /*!
  * \brief Boolean answers
@@ -200,7 +200,7 @@ enum ENUM_MAIN_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30,
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42          /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)
@@ -359,7 +359,7 @@ enum ENUM_INLET_SPANWISEINTERPOLATION {
   LINEAR_1D = 1,
   AKIMA_1D = 2,
 };
-static const map<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
+static const MapType<string, ENUM_INLET_SPANWISEINTERPOLATION> Inlet_SpanwiseInterpolation_Map = {
   MakePair("NONE", NO_INTERPOLATION)
   MakePair("LINEAR_1D",LINEAR_1D)
   MakePair("AKIMA_1D",AKIMA_1D)
@@ -372,7 +372,7 @@ enum ENUM_INLET_INTERPOLATIONTYPE {
   VR_VTHETA = 0,
   ALPHA_PHI = 1,
 };
-static const map<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
+static const MapType<string, ENUM_INLET_INTERPOLATIONTYPE> Inlet_SpanwiseInterpolationType_Map = {
   MakePair("VR_VTHETA",VR_VTHETA)
   MakePair("ALPHA_PHI",ALPHA_PHI)
 };
@@ -754,12 +754,14 @@ enum ENUM_CENTERED {
   NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
   JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
+  JST_MAT = 3,        /*!< \brief JST with matrix dissipation. */
   JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
 static const MapType<string, ENUM_CENTERED> Centered_Map = {
   MakePair("NONE", NO_CENTERED)
   MakePair("JST", JST)
   MakePair("JST_KE", JST_KE)
+  MakePair("JST_MAT", JST_MAT)
   MakePair("LAX-FRIEDRICH", LAX)
 };
 
@@ -964,11 +966,11 @@ static const MapType<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
  * \brief Types of Roe Low Dissipation Schemes
  */
 enum ENUM_ROELOWDISS {
-    NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
-    FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
-    NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
-    NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
-    FD_DUCROS     = 4  /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
+  NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
+  FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
+  NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
+  NTS_DUCROS    = 3, /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
+  FD_DUCROS     = 4  /*!< \brief Numerical Blending based on DDES's F_d function + Ducros' Shock Sensor */
 };
 static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
   MakePair("NONE", NO_ROELOWDISS)

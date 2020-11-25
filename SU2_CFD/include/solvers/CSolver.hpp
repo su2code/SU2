@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3117,6 +3117,15 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the wall shear stress is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the wall shear stress is evaluated.
+   * \return Value of the wall shear stress.
+   */
+  inline virtual su2double GetWallShearStress(unsigned short val_marker,
+                                              unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
@@ -4455,40 +4464,6 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   inline virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief Initialize the vertex traction containers at the vertices.
-   */
-  inline void InitVertexTractionContainer() {
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTraction = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTraction[iMarker] = new su2double* [nVertex[iMarker]];
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        VertexTraction[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
-
-  /*!
-   * \brief Initialize the adjoint vertex traction containers at the vertices.
-   */
-  inline void InitVertexTractionAdjointContainer() {
-
-    unsigned long iVertex;
-    unsigned short iMarker;
-
-    VertexTractionAdjoint = new su2double** [nMarker];
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      VertexTractionAdjoint[iMarker] = new su2double* [nVertex[iMarker]];
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        VertexTractionAdjoint[iMarker][iVertex] = new su2double [nDim]();
-      }
-    }
-  }
 
   /*!
    * \brief Compute the tractions at the vertices.

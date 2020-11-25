@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,6 +65,14 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   A_INDEX       = nSpecies+nDim+5;
   RHOCVTR_INDEX = nSpecies+nDim+6;
   RHOCVVE_INDEX = nSpecies+nDim+7;
+  LAM_VISC_INDEX  = nSpecies+nDim+8;
+  EDDY_VISC_INDEX = nSpecies+nDim+9;
+
+  /*--- Set monoatomic flag ---*/
+  if (config->GetMonoatomic()) {
+    monoatomic = true;
+    Tve_Freestream = config->GetTemperature_ve_FreeStream();
+  }
 
   /*--- Allocate & initialize residual vectors ---*/
 
@@ -250,8 +258,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Assign temperatures ---*/
-  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);//rhoE - rho*0.5*sqvel, rhoEve);
-  
+  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
+
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
   
@@ -267,25 +275,33 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   vector<su2double> eves_max = fluidmodel->GetSpeciesEve(Tvemax);
 
   // Check for non-physical solutions
-  rhoEve_min = 0.0;
-  rhoEve_max = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoEve_min += U[iSpecies] * eves_min[iSpecies];
-    rhoEve_max += U[iSpecies] * eves_max[iSpecies];
+  if (!monoatomic){
+    rhoEve_min = 0.0;
+    rhoEve_max = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      rhoEve_min += U[iSpecies] * eves_min[iSpecies];
+      rhoEve_max += U[iSpecies] * eves_max[iSpecies];
+    }
+
+    if (rhoEve < rhoEve_min) {
+      
+      nonPhys      = true;
+      V[TVE_INDEX] = Tvemin;
+      U[nSpecies+nDim+1] = rhoEve_min;
+    } else if (rhoEve > rhoEve_max) {
+      nonPhys      = true;
+      V[TVE_INDEX] = Tvemax;
+      U[nSpecies+nDim+1] = rhoEve_max;
+    } else {
+      V[TVE_INDEX]   = T[1];
+    }
   }
-  if (rhoEve < rhoEve_min) {
-    nonPhys      = true;
-    V[TVE_INDEX] = Tvemin;
-    U[nSpecies+nDim+1] = rhoEve_min;
-  } else if (rhoEve > rhoEve_max) {
-    nonPhys      = true;
-    V[TVE_INDEX] = Tvemax;
-    U[nSpecies+nDim+1] = rhoEve_max;
-  } else {
-    V[TVE_INDEX]   = T[1];
+  else {
+    V[TVE_INDEX] = Tve_Freestream;
   }
 
   // Determine other properties of the mixture at the current state  
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
   vector<su2double> cvves = fluidmodel->GetSpeciesCvVibEle(); 
   vector<su2double> eves = fluidmodel->GetSpeciesEve(V[TVE_INDEX]); 
 
@@ -301,7 +317,7 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[RHOCVVE_INDEX] = rhoCvve;
 
   /*--- Pressure ---*/
-  V[P_INDEX] = fluidmodel->GetPressure();
+  V[P_INDEX] = fluidmodel->ComputePressure();
 
   if (V[P_INDEX] < 0.0) {
     V[P_INDEX] = 1E-20;
@@ -309,13 +325,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Partial derivatives of pressure and temperature ---*/
-  fluidmodel->GetdPdU  (V, eves, val_dPdU  );
-  fluidmodel->GetdTdU  (V, val_dTdU );
-  fluidmodel->GetdTvedU(V, eves, val_dTvedU);
-
+  fluidmodel->ComputedPdU  (V, eves, val_dPdU  );
+  fluidmodel->ComputedTdU  (V, val_dTdU );
+  fluidmodel->ComputedTvedU(V, eves, val_dTvedU);
 
   /*--- Sound speed ---*/
-  V[A_INDEX] = fluidmodel->GetSoundSpeed();
+  V[A_INDEX] = fluidmodel->ComputeSoundSpeed();
 
   /*--- Enthalpy ---*/
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];

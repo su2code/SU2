@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,8 +43,8 @@
 #include <map>
 #include <assert.h>
 
-#include "./option_structure.hpp"
-#include "./toolboxes/C2DContainer.hpp"
+#include "option_structure.hpp"
+#include "containers/container_decorators.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -425,6 +425,7 @@ private:
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
+  bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -597,10 +598,10 @@ private:
   *Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint flow equations. */
   *Kappa_Heat;                     /*!< \brief Numerical dissipation coefficients for the (fvm) heat equation. */
   su2double* FFD_Axis;          /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
-  su2double Kappa_1st_AdjFlow,  /*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
+  su2double Kappa_1st_AdjFlow,  /*!< \brief Lax 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
   Kappa_2nd_AdjFlow,            /*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
   Kappa_4th_AdjFlow,            /*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
-  Kappa_1st_Flow,           /*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
+  Kappa_1st_Flow,           /*!< \brief Lax 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
   Kappa_2nd_Flow,           /*!< \brief JST 2nd order dissipation coefficient for flow equations. */
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
@@ -1083,6 +1084,8 @@ private:
   default_jst_adj_coeff[2],      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   default_ad_coeff_heat[2],      /*!< \brief Default artificial dissipation (heat) array for the COption class. */
   default_obj_coeff[5],          /*!< \brief Default objective array for the COption class. */
+  default_mesh_box_length[3],    /*!< \brief Default mesh box length for the COption class. */
+  default_mesh_box_offset[3],    /*!< \brief Default mesh box offset for the COption class. */
   default_geo_loc[2],            /*!< \brief Default SU2_GEO section locations array for the COption class. */
   default_distortion[2],         /*!< \brief Default SU2_GEO section locations array for the COption class. */
   default_ea_lim[3],             /*!< \brief Default equivalent area limit array for the COption class. */
@@ -1165,10 +1168,12 @@ private:
   su2double *Gas_Composition,               /*!< \brief Initial mass fractions of flow [dimensionless] */
   pnorm_heat;                               /*!< \brief pnorm for heat-flux. */
   bool frozen,                              /*!< \brief Flag for determining if mixture is frozen. */
-  ionization;                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  ionization,                               /*!< \brief Flag for determining if free electron gas is in the mixture. */
+  vt_transfer_res_limit,                    /*!< \brief Flag for determining if residual limiting for source term VT-transfer is used. */
+  monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
-  
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -4119,6 +4124,11 @@ public:
   unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
 
   /*!
+   * \brief Get whether to use vectorized numerics (if available).
+   */
+  bool GetUseVectorization(void) const { return UseVectorization; }
+
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -4513,7 +4523,7 @@ public:
    *       during the computation.
    * \return Kind of center convective numerical scheme for the flow equations.
    */
-  unsigned short GetKind_Centered_Flow(void) const { return Kind_Centered_Flow; }
+  ENUM_CENTERED GetKind_Centered_Flow(void) const { return static_cast<ENUM_CENTERED>(Kind_Centered_Flow); }
 
   /*!
    * \brief Get the kind of center convective numerical scheme for the plasma equations.
@@ -5267,6 +5277,16 @@ public:
    * \brief Indicates whether electron gas is present in the gas mixture.
    */
   bool GetIonization(void) const { return ionization; }
+
+  /*!
+   * \brief Indicates whether the VT source residual is limited.
+   */
+  bool GetVTTransferResidualLimiting(void) const { return vt_transfer_res_limit; }
+
+  /*!
+   * \brief Indicates if mixture is monoatomic.
+   */
+  bool GetMonoatomic(void) const { return monoatomic; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.

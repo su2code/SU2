@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -302,10 +302,7 @@ void CTurbSolver::SumEdgeFluxes(CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
@@ -472,7 +469,7 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
         /*--- Accumulate the residuals to compute the average ---*/
 
         for (auto iVar = 0u; iVar < nVar; iVar++) {
-          LinSysRes(iPoint,iVar) += weight*residual.residual[iVar];
+          LinSysRes(iPoint,iVar) += weight*residual[iVar];
           for (auto jVar = 0u; jVar < nVar; jVar++)
             Jacobian_i[iVar*nVar+jVar] += SU2_TYPE::GetValue(weight*residual.jacobian_i[iVar][jVar]);
         }
