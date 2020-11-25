@@ -65,7 +65,7 @@ public:
  */
 class CSourceAxisymmetric_Flow : public CSourceBase_Flow {
 protected:
-    bool implicit, viscous;
+    bool implicit, viscous, rans;
     su2double yinv{0.0};
     
   /*!

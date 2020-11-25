@@ -53,6 +53,7 @@ CSourceAxisymmetric_Flow::CSourceAxisymmetric_Flow(unsigned short val_nDim, unsi
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   viscous = config->GetViscous();
+  rans = (config->GetKind_Turb_Model() != NONE);
 
 }
 
@@ -132,6 +133,8 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
 }
 
 void CSourceAxisymmetric_Flow::ResidualDiffusion(){
+  
+  if (!rans){ turb_ke_i = 0.0; }
   
   su2double laminar_viscosity_i    = V_i[nDim+5];
   su2double eddy_viscosity_i       = V_i[nDim+6];
