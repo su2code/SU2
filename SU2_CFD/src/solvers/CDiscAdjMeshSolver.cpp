@@ -25,26 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
 #include "../../include/solvers/CDiscAdjMeshSolver.hpp"
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(void) : CSolver (){
 
-  KindDirect_Solver = 0;
+CDiscAdjMeshSolver::CDiscAdjMeshSolver() : CSolver () {}
 
-  direct_solver = nullptr;
+CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config) : CSolver() {}
 
-}
-
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config)  : CSolver(){
-
-  KindDirect_Solver = 0;
-
-}
-
-CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver)  : CSolver(){
+CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver) : CSolver() {
 
   unsigned short iVar, iDim;
 
@@ -64,11 +53,10 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 
   /*--- Define some structures for locating max residuals ---*/
 
-  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max = new unsigned long[nVar] ();
   Point_Max_Coord = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    Point_Max_Coord[iVar] = new su2double[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    Point_Max_Coord[iVar] = new su2double[nDim] ();
   }
 
   /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
@@ -80,11 +68,10 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 
     /*--- Define some structures for locating max residuals ---*/
 
-    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_BGS       = new unsigned long[nVar] ();
     Point_Max_Coord_BGS = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim] ();
     }
 
   }
@@ -121,18 +108,15 @@ CDiscAdjMeshSolver::~CDiscAdjMeshSolver(void){
 }
 
 
-void CDiscAdjMeshSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
-
-
+void CDiscAdjMeshSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container,
+                                       unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
 }
 
 void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-
-  unsigned long iPoint;
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     direct_solver->GetNodes()->SetBound_Disp(iPoint,nodes->GetBoundDisp_Direct(iPoint));
   }
 
@@ -160,11 +144,9 @@ void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config,
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint;
-
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution from the original mesh coordinates ---*/
 
@@ -180,11 +162,9 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint;
-
   /*--- Extract the sensitivities of the boundary displacements ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution of the boundary displacements ---*/
 
@@ -210,7 +190,7 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CS
   ExtractAdjoint_Variables(geometry, config);
 
   /*--- Store the sensitivities in the flow adjoint container ---*/
-  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
     /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
     su2double limiter = 1.0;

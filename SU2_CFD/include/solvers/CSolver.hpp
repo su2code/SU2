@@ -3806,7 +3806,7 @@ public:
    * \brief A virtual member. Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
+   * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
    */
   inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
 
