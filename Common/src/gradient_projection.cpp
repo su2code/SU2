@@ -34,8 +34,8 @@
  */
 void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
-  unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
+  unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
   su2double* VarCoord;
   su2double DV_Value;
   double my_Gradient, localGradient;
@@ -162,8 +162,8 @@ void GetParameterizationJacobianReverse(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
-  unsigned short iDV, iDV_Value, iDV_index, iPoint, iMarker, iVertex, iDim;
+  unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iPoint, iMarker, iVertex, iDim;
   su2double* VarCoord;
   su2double** DV_Value;
 
@@ -256,8 +256,8 @@ void GetParameterizationJacobianForward(CGeometry *geometry, CConfig *config, CS
  */
 void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double *Jacobian) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
-  unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
+  unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iPoint, iDim, total_index, iMarker, iVertex, subDim;
   su2double* VarCoord;
   su2double DV_Value;
   double my_Gradient, localGradient;
@@ -418,8 +418,8 @@ void GetParameterizationJacobianPreaccumulation(CGeometry *geometry, CConfig *co
  */
 void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
-  unsigned short iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
+  unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
+  unsigned int iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
   su2double* VarCoord;
   su2double** DV_Value;
 
@@ -486,8 +486,8 @@ void RecordParameterizationJacobian(CGeometry *geometry, CConfig *config, CSurfa
  */
 void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord) {
 
-  unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
-  unsigned short iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
+  unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
   su2double** DV_Value = config->GetDV_Pointer();
 
   /*--- get information from config ---*/
@@ -531,16 +531,10 @@ void ProjectDVtoMesh(CGeometry *geometry, CConfig *config, std::vector<su2double
  */
 void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord) {
 
-  /*--- Part 1: adjoint volumetric mesh deformation, if needed ---*/
-  if (true) {
-    // so far done in CGradientSmoothingSolver.cpp:ApplySmoothingDV
-    // change to here later?
-  }
+  /*--- adjoint surface deformation ---*/
 
-  /*--- Part 2: adjoint surface deformation ---*/
-
-  unsigned short nDim, nMarker, nDV, nDV_Value, nVertex;
-  unsigned short iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
+  unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
   su2double** DV_Value = config->GetDV_Pointer();
   su2double my_Gradient, localGradient;
 
@@ -583,6 +577,3 @@ void ProjectMeshToDV(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfl
   AD::ClearAdjoints();
 
 }
-
-
-

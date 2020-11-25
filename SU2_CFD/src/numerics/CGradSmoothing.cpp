@@ -49,7 +49,7 @@ CGradSmoothing::CGradSmoothing(void) : CNumerics () {
 CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
   : CNumerics(val_nDim, val_nDim, config) {
 
-  unsigned short iNode, iDim;
+  unsigned short iDim;
 
   /*--- 8 is the max number of nodes in 3D ---*/
   val_DHiDHj = new su2double* [nDim];
@@ -62,7 +62,7 @@ CGradSmoothing::CGradSmoothing(unsigned short val_nDim, CConfig *config)
 
 CGradSmoothing::~CGradSmoothing(void) {
 
-  unsigned short iDim, iNode;
+  unsigned short iDim;
 
   if (val_DHiDHj != NULL) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -77,11 +77,10 @@ CGradSmoothing::~CGradSmoothing(void) {
 
 void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
-  unsigned short iDim, jDim;
-  unsigned short iGauss, nGauss;
-  unsigned short iShape, jShape, nNode;
+  unsigned int iDim, jDim, iGauss, nGauss, iShape, jShape, nNode;
 
-  unsigned short nDimGlobal = nDim;   /*--- need a different number of dimensions if we are on a curved surface --*/
+  /*--- need a different number of dimensions if we are on a curved surface --*/
+  unsigned int nDimGlobal = nDim;
   if (config->GetSmoothOnSurface()) nDimGlobal=nDim+1;
 
   su2double Weight, Jac_X, val_HiHj, GradNiXGradNj = 0;
@@ -104,16 +103,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
 
     Weight = element->GetWeight(iGauss);
     Jac_X = element->GetJ_X(iGauss);
-
-    /*
-    for (iShape = 0; iShape < nNode; iShape++) {
-      std::cout << "Grad for " << iShape << " : ("
-                << GradNi_Ref_Mat[iShape][0] << ", "
-                << GradNi_Ref_Mat[iShape][1] << ", "
-                << GradNi_Ref_Mat[iShape][2] << ", "
-                << std::endl;
-    }
-    */
 
     for (iShape = 0; iShape < nNode; iShape++) {
 
@@ -141,8 +130,6 @@ void CGradSmoothing::Compute_Tangent_Matrix(CElement *element, const CConfig *co
         if (iShape != jShape) {
           element->Add_DHiDHj_T(val_DHiDHj, jShape, iShape);
         }
-
-        //std::cout << iShape << ", " << jShape << ", "<< val_DHiDHj[0][0] <<std::endl;
 
       }
 

@@ -47,7 +47,7 @@ public:
   su2double **mZeros_Aux  = nullptr;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
   su2double **mId_Aux = nullptr;             /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
 
-  unsigned short dir;                        /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
+  unsigned int dir;                          /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
   CSysVector<su2double> auxVecInp;           /*!< \brief Auxiliar vectors for output and debugging */
 
@@ -122,7 +122,7 @@ public:
                     CSolver **solver_container,
                     CNumerics **numerics,
                     CConfig *config,
-                    unsigned short val_marker);
+                    unsigned int val_marker);
 
   /*!
    * \brief Set Neumann boundary conditions
@@ -131,7 +131,7 @@ public:
                   CSolver **solver_container,
                   CNumerics **numerics,
                   CConfig *config,
-                  unsigned short val_marker);
+                  unsigned int val_marker);
 
   /*!
    * \brief Call the linear systems solver
@@ -153,9 +153,9 @@ public:
    * \param[in] indexNode - Index of the node.
    * \param[in] iDim - Dimension required.
    */
-  su2double Get_ValCoord(CGeometry *geometry,
+  inline su2double Get_ValCoord(CGeometry *geometry,
                          unsigned long indexNode,
-                         unsigned short iDim)  {
+                         unsigned int iDim)  {
     return geometry->nodes->GetCoord(indexNode, iDim);
   }
 
@@ -176,7 +176,7 @@ public:
                                    CNumerics **numerics,
                                    CConfig *config,
                                    unsigned long val_marker,
-                                   unsigned short nSurfDim=1);
+                                   unsigned int nSurfDim=1);
 
   /*!
    * \brief Compute the RHS of the PDE on the surface mesh
@@ -191,7 +191,7 @@ public:
    */
   void BC_Surface_Dirichlet(CGeometry *geometry,
                             CConfig *config,
-                            unsigned short val_marker);
+                            unsigned int val_marker);
 
   /*!
    * \brief Extract the Coordinates of the element from geometry

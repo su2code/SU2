@@ -811,6 +811,9 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
 
   nDV = config->GetnDV();
 
+  /*--- Increase precision ---*/
+  Gradient_file.precision(17);
+
   /*--- Loop through all design variables and their gradients ---*/
 
   for (iDV = 0; iDV  < nDV; iDV++){

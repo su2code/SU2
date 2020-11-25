@@ -42,8 +42,7 @@
 
 CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(false,true) {
 
-  unsigned short iDim, jDim;
-  unsigned int marker_count=0;
+  unsigned int iDim, jDim, marker_count=0;
   unsigned long iPoint;
 
   /*--- general geometric settings ---*/
@@ -56,11 +55,11 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
 
   /*--- First level: different possible terms of the equations  ---*/
   element_container = new CElement** [MAX_TERMS]();
-  for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+  for (unsigned int iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS]();
 
   /*--- Initialize all subsequent levels ---*/
-  for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+  for (unsigned int iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
     element_container[GRAD_TERM][iKind] = nullptr;
   }
 
@@ -146,7 +145,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
 
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
         if (iVertex >= 0) {
           marker_count++;
@@ -178,11 +177,11 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
 
 CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
 
-  unsigned short iDim;
+  unsigned int iDim;
 
   if (element_container != nullptr) {
-    for (unsigned short iVar = 0; iVar < MAX_TERMS; iVar++) {
-      for (unsigned short jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+    for (unsigned int iVar = 0; iVar < MAX_TERMS; iVar++) {
+      for (unsigned int jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
         delete element_container[iVar][jVar];
       }
       delete [] element_container[iVar];
@@ -281,16 +280,14 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
 
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config){
 
-  unsigned long iElem;
-  unsigned short iNode, iDim, nNodes = 0;
+  unsigned long iElem, iNode;
+  unsigned int iDim, nNodes = 0, NelNodes, jNode;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
   su2double val_Coord;
   int EL_KIND = 0;
 
   su2activematrix DHiDHj;
   su2double HiHj = 0.0;
-
-  unsigned short NelNodes, jNode;
 
   /*--- Loops over all the elements ---*/
 
@@ -355,10 +352,10 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry *geometry, CNumeric
 }
 
 
-void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker, unsigned short nSurfDim){
+void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, CNumerics **numerics, CConfig *config, unsigned long val_marker, unsigned int nSurfDim){
 
   unsigned long iElem, iPoint, iVertex, iSurfDim;
-  unsigned short iNode, jNode, nNodes = 0, NelNodes;
+  unsigned int iNode, jNode, nNodes = 0, NelNodes;
   std::vector<unsigned long> indexNode(8, 0.0);
   std::vector<unsigned long> indexVertex(8, 0.0);
   int EL_KIND = 0;
@@ -426,7 +423,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
 void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *solver, CConfig *config){
 
   unsigned long iElem;
-  unsigned short iDim, iNode, nNodes = 0;
+  unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
   std::vector<unsigned long> indexNode(8, 0.0);
   su2double Weight, Jac_X;
@@ -460,9 +457,9 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 
     element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear();
-    unsigned short nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
+    unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
-    for (unsigned short iGauss = 0; iGauss < nGauss; iGauss++) {
+    for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
 
       for (iNode = 0; iNode < nNodes; iNode++) {
         indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
@@ -471,7 +468,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
       Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
       Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
 
-      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+      for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
 
         if ( config->GetSepDim() ) {
 
@@ -510,7 +507,7 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry *geometry, CSolver *so
 void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
 
   unsigned long iElem, iPoint, iVertex;
-  unsigned short iDim, iNode, nNodes = 0;
+  unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
   std::vector<unsigned long> indexNode(8, 0.0);
   std::vector<unsigned long> indexVertex(8, 0.0);
@@ -546,14 +543,14 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 
     element_container[GRAD_TERM][EL_KIND]->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_Linear(Coord);
-    unsigned short nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
+    unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
-    for (unsigned short iGauss = 0; iGauss < nGauss; iGauss++) {
+    for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
 
       Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
       Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
 
-      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+      for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
 
         normal = geometry->vertex[val_marker][indexVertex[iNode]]->GetNormal();
         norm = 0.0;
@@ -588,7 +585,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 
 void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
-  unsigned short iMarker;
+  unsigned int iMarker;
 
   /*--- Get the boundary markers and iterate over them ---------------------------------*/
   /* Notice that for no marker we automatically impose Zero Neumann boundary conditions */
@@ -602,11 +599,11 @@ void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numeri
 }
 
 
-void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker) {
+void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned int val_marker) {
 
 
   unsigned long iPoint, iVertex;
-  unsigned long iVar, jVar;
+  unsigned int iVar, jVar;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -693,11 +690,11 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
 }
 
 
-void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig *config, unsigned short val_marker) {
+void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig *config, unsigned int val_marker) {
 
 
   unsigned long iPoint, iVertex;
-  unsigned long iVar, jVar;
+  unsigned int iVar, jVar;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -749,7 +746,7 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig
 
 
 // For now: left empty since there is no calculation necessary for zero Neumann boundaries.
-void CGradientSmoothingSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned short val_marker) {
+void CGradientSmoothingSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned int val_marker) {
 
 }
 
@@ -768,7 +765,7 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
 
   unsigned long iPoint, total_index;
-  unsigned short iDim;
+  unsigned int iDim;
   su2double* normal;
   su2double norm;
 
@@ -906,7 +903,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
 
 void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       nodes->SetSensitivity(iPoint,iDim, solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint,iDim));
@@ -917,7 +914,7 @@ void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **sol
 
 void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
@@ -928,7 +925,7 @@ void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **
 
 void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
@@ -939,7 +936,7 @@ void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *
 
 void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint,iDim));
@@ -949,7 +946,7 @@ void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *c
 
 void CGradientSmoothingSolver::WriteSens2Vector(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(nodes->GetSensitivity(iPoint,iDim));
@@ -959,7 +956,7 @@ void CGradientSmoothingSolver::WriteSens2Vector(CGeometry *geometry, CConfig *co
 
 void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       geometry->SetSensitivity(iPoint,iDim, vector[iPoint*nDim+iDim]);
@@ -969,7 +966,7 @@ void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig
 
 void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
   unsigned long iPoint;
-  unsigned short iDim;
+  unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
@@ -1108,7 +1105,7 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
   bool twoD = config->GetSmoothOnSurface();
 
-  unsigned short nDV_Total= config->GetnDV_Total(), nVertex, nDim = geometry->GetnDim();
+  unsigned int nDV_Total= config->GetnDV_Total(), nVertex, nDim = geometry->GetnDim();
   unsigned long nPoint  = geometry->GetnPoint();
 
   // SysMat can be sized here
@@ -1118,7 +1115,7 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
   if (twoD) {
 
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ( config->GetMarker_All_DV(iMarker) == YES ) {
 
         nVertex = geometry->nVertex[iMarker];
@@ -1238,7 +1235,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     if (config->GetSmoothOnSurface()) {
 
       /// for surface we need extra work
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if ( config->GetMarker_All_DV(iMarker) == YES ) {
           /// reduce the vector
           for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
@@ -1309,7 +1306,7 @@ CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMat
 
   bool surf = config->GetSmoothOnSurface();
   if (surf) {
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ( config->GetMarker_All_DV(iMarker) == YES ) {
 
         /*--- Initialize the sparse matrix ---*/

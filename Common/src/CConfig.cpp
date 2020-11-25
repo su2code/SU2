@@ -1901,6 +1901,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Automatically reorient elements that seem flipped */
   addBoolOption("REORIENT_ELEMENTS",ReorientElements, true);
 
+  /*!\par CONFIG_CATEGORY: Sobolev Gradient Solver Parameters \ingroup Config */
+  /*--- Options related to the Sobolev smoothing solver ---*/
+
   /* DESCRIPTION: Switch to activate gradient smoothing */
   addBoolOption("SMOOTH_GRADIENT",SmoothGradient, false);
   /* DESCRIPTION: Epsilon of the Laplace Beltrami Operator */
