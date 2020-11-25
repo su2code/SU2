@@ -56,86 +56,9 @@ using namespace std;
  */
 class COutputLegacy {
 
-  unsigned long nGlobal_Poin;   // Global number of nodes with halos
-  unsigned long nSurf_Poin;   // Global number of nodes of the surface
-  unsigned long nGlobal_Doma;   // Global number of nodes without halos
-  unsigned long nGlobal_Elem;  // Global number of elems without halos
-  unsigned long nSurf_Elem,  // Global number of surface elems without halos
-  nGlobal_Line,
-  nGlobal_BoundTria,
-  nGlobal_BoundQuad,
-  nGlobal_Tria,
-  nGlobal_Quad,
-  nGlobal_Tetr,
-  nGlobal_Hexa,
-  nGlobal_Pris,
-  nGlobal_Pyra;
-  su2double **Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
-  int *Conn_Line;
-  int *Conn_BoundTria;
-  int *Conn_BoundQuad;
-  int *Conn_Tria;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
-  int *Conn_Quad;
-  int *Conn_Tetr;
-  int *Conn_Hexa;
-  int *Conn_Pris;
-  int *Conn_Pyra;
-
-
-  unsigned long nGlobal_Poin_Par;   // Global number of nodes with halos
-  unsigned long nGlobal_Elem_Par;  // Global number of elems without halos
-  unsigned long nGlobal_Surf_Poin;
-  unsigned long nSurf_Elem_Par;
-  unsigned long nSurf_Poin_Par;
-  unsigned long nParallel_Poin;
-  unsigned long nParallel_Line,
-  nParallel_BoundTria,
-  nParallel_BoundQuad,
-  nParallel_Tria,
-  nParallel_Quad,
-  nParallel_Tetr,
-  nParallel_Hexa,
-  nParallel_Pris,
-  nParallel_Pyra;
-  int *Conn_BoundLine_Par;
-  int *Conn_BoundTria_Par;
-  int *Conn_BoundQuad_Par;
-  int *Conn_Tria_Par;  // triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
-  int *Conn_Quad_Par;
-  int *Conn_Tetr_Par;
-  int *Conn_Hexa_Par;
-  int *Conn_Pris_Par;
-  int *Conn_Pyra_Par;
-
-  unsigned long nGlobalPoint_Sort;
-  unsigned long nLocalPoint_Sort;
-  unsigned long nPoint_Restart;
-  int *Local_Halo_Sort;
-
-  unsigned long *beg_node;
-  unsigned long *end_node;
-
-  unsigned long *nPointLinear;
-  unsigned long *nPointCumulative;
-
-  unsigned short nVar_Par;
-  su2double **Local_Data;
-  su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
-  su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
-  su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
-  vector<string> Variable_Names;
-
-  su2double **Data;
-  unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
-  bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
-  unsigned short wrote_base_file;
-  su2double RhoRes_New, *RhoRes_Old;
-  int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
-
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
   bool turbo;
-  unsigned short   nSpanWiseSections,
-       nMarkerTurboPerf;
+  unsigned short nSpanWiseSections, nMarkerTurboPerf;
 
   su2double **TotalStaticEfficiency,
         **TotalTotalEfficiency,
@@ -205,18 +128,6 @@ public:
   ~COutputLegacy(void);
 
   /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                       unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
    * \brief Writes equivalent area.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -274,112 +185,6 @@ public:
    * \param[in] output - Create output files.
    */
   void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) const;
-
-  /*!
-   * \brief Create and write the file with the FSI convergence history.
-   * \param[in] iIter - Current iteration.
-   * \param[in] iFreq - Frequency of output printing.
-   */
-  bool PrintOutput(unsigned long iIter, unsigned long iFreq);
-
-  /*!
-   * \brief Create and write the file with the flow coefficient on the surface.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] AdjSolution - Adjoint solution.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Merge the geometry into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
-   * \brief Merge the node coordinates from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void MergeCoordinates(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Merge the solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Write a native SU2 restart file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing coordinates.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateCoordinates(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing connectivity.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing solution variables.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateSolution(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write the header of the history file.
@@ -479,51 +284,10 @@ public:
   void SetSpecial_Output(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
                          unsigned long iExtIter, unsigned short val_nZone);
 
-  /*!
-   * \brief Prepare the number of points and offsets for linear partitioning that are needed for output.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void PrepareOffsets(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
-   */
-  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
-   * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Sort the output data for each grid node into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SortOutputData(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Sort the surface output data for each grid node into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
-
 };
 
-#include "output_structure_legacy.inl"
+inline su2double COutputLegacy::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
+
+inline su2double COutputLegacy::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
+
+inline su2double COutputLegacy::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
