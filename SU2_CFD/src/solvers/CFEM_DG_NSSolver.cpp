@@ -386,11 +386,12 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
                 for(unsigned short k=0; k<nDim; ++k) dirTan[k] = vel[k]/velTan;
 
                 /* Compute the wall shear stress and heat flux vector using
-                   the wall model. */
+                   the wall model.
+                 Edwin will fix in a future PR.*/
                 su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-
-                boundaries[iMarker].wallModel->WallShearStressAndHeatFlux(Temperature, velTan,
-                                                                          LaminarViscosity, Pressure,
+                su2double dPds = 0., h_wm = 0.1;
+                boundaries[iMarker].wallModel->WallShearStressAndHeatFlux(h_wm,Temperature, velTan,
+                                                                          LaminarViscosity, Pressure, dPds,
                                                                           Wall_HeatFlux, HeatFlux_Prescribed,
                                                                           Wall_Temperature, Temperature_Prescribed,
                                                                           FluidModel, tauWall, qWall,
@@ -6364,10 +6365,11 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         for(unsigned short k=0; k<nDim; ++k) dirTan[k] = vel[k]/velTan;
 
         /* Compute the wall shear stress and heat flux vector using
-           the wall model. */
+           the wall model.
+         Edwin will fix in a future PR.*/
         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-
-        wallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
+        su2double dPds = 0., h_wm = 0.1;
+        wallModel->WallShearStressAndHeatFlux(h_wm, Temperature, velTan, LaminarViscosity, Pressure, dPds,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
                                               FluidModel, tauWall, qWall, ViscosityWall,

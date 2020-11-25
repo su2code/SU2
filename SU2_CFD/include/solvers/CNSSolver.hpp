@@ -43,6 +43,16 @@ private:
   **Buffet_Sensor = nullptr,        /*!< \brief Separation sensor for each boundary and vertex. */
   Total_Buffet_Metric = 0.0;        /*!< \brief Integrated separation sensor for all the boundaries. */
 
+  su2double
+  **TauWall_WMLES = nullptr,        /*!< \brief Wall shear stress for each boundary and vertex (WMLES). */
+  **HeatFlux_WMLES = nullptr,       /*!< \brief Heat transfer coefficient for each boundary and vertex (WMLES). */
+  ***FlowDirTan_WMLES = nullptr,    /*!< \brief Velocity unit tangent for each boundary and vertex (WMLES). */
+  ***VelTimeFilter_WMLES = nullptr; /*!< \brief Input time filter Velocity for each boundary and vertex (WMLES). */
+
+  CSGSModel *SGSModel;               /*!< \brief LES Subgrid Scale model. */
+  bool SGSModelUsed;                 /*!< \brief Whether or not an LES Subgrid Scale model is used. */
+  CWallModel *WallModel;             /*!< \brief Choice of the Wall Model LES. */
+    
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
@@ -227,6 +237,48 @@ public:
   }
 
   /*!
+   * \brief Get the shear stress from the wall model.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the shear stress from the wall model.
+   */
+  inline su2double GetTauWall_WMLES(unsigned short val_marker, unsigned long val_vertex) const override {
+    return TauWall_WMLES[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Get the heat flux from the wall model.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the heat flux from the wall model.
+   */
+  inline su2double GetHeatFlux_WMLES(unsigned short val_marker, unsigned long val_vertex) const override {
+    return HeatFlux_WMLES[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Get the velocity unit tangent vector of the wall model.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_idim   - Dimension
+   * \return Value of the unit tangent vector.
+   */
+  inline su2double GetFlowDirTan_WMLES(unsigned short val_marker, unsigned long val_vertex, unsigned long val_idim) const override {
+    return FlowDirTan_WMLES[val_marker][val_vertex][val_idim];
+  }
+
+  /*!
+   * \brief Get the time filtered input velocity vector of the wall model.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_idim   - Dimension
+   * \return Value of the time filtered velocity vector.
+   */
+  inline su2double GetVelTimeFilter_WMLES(unsigned short val_marker, unsigned long val_vertex, unsigned long val_idim) const override {
+    return VelTimeFilter_WMLES[val_marker][val_vertex][val_idim];
+  }
+
+  /*!
    * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -235,5 +287,38 @@ public:
   void SetTauWall_WF(CGeometry *geometry,
                      CSolver** solver_container,
                      CConfig* config) override;
+
+  /*!
+  * \brief Computes the eddy viscosity at the 1st point off wall for SA/SST model when wall functions is used.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void SetEddyViscFirstPoint(CGeometry *geometry,
+                    CSolver** solver_container,
+                    CConfig* config) override;
+
+  /*!
+   * \brief Computes eddy viscosity (SGS model) for LES problems.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Setmut_LES(CGeometry *geometry,
+                     CSolver** solver_container,
+                     CConfig* config) override;
+
+  /*!
+   * \brief Computes the shear stress and heat flux using the 1st node off the wall
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+
+  void SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry,
+                                        CSolver **solver_container,
+                                        CConfig *config,
+                                        unsigned short iRKStep) override;
 
 };

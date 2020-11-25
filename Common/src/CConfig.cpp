@@ -3249,17 +3249,35 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    definition for the wall founctions ---*/
 
   Wall_Functions = false;
+  Wall_Models    = false;
   if (nMarker_WallFunctions > 0) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
-      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
-        Wall_Functions = true;
-
-      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
-
-        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
-
+      if (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION){
+        Wall_Functions = true; break;
+      }
+      else if (Kind_WallFunctions[iMarker] == LOGARITHMIC_WALL_MODEL ||
+               Kind_WallFunctions[iMarker] == EQUILIBRIUM_WALL_MODEL ||
+               Kind_WallFunctions[iMarker] == ALGEBRAIC_WALL_MODEL   ||
+               Kind_WallFunctions[iMarker] == TEMPLATE_WALL_MODEL   ||
+               Kind_WallFunctions[iMarker] == APGLL_WALL_MODEL){
+        Wall_Models = true; break;
+      }
     }
+  }
+
+  if (Wall_Models && TimeMarching == NO){
+    SU2_MPI::Error("TIME_MARCHING must be different than NO with using WMLES", CURRENT_FUNCTION);
+  }
+
+  if (Wall_Models && Kind_Turb_Model != NONE){
+    SU2_MPI::Error("KIND_TURB_MODEL must be NONE if using WMLES", CURRENT_FUNCTION);
+  }
+
+  /* Check for the correct use of SGS Models */
+
+  if ((Kind_Turb_Model != NONE) && (Kind_SGS_Model != NO_SGS_MODEL) && (TimeMarching != NO)){
+    if (Kind_Solver!=NAVIER_STOKES)
+      SU2_MPI::Error("SGS models are only available in the NAVIER STOKES solver.", CURRENT_FUNCTION);
   }
 
   /*--- Fixed CM mode requires a static movement of the grid ---*/

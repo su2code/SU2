@@ -917,7 +917,8 @@ enum ENUM_SGS_MODEL {
   IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
   SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
   WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
-  VREMAN       = 4  /*!< \brief Vreman SGS model. */
+  VREMAN       = 4,  /*!< \brief Vreman SGS model. */
+  SIGMA       = 5  /*!< \brief Vreman SGS model. */
 };
 static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
   MakePair("NONE",         NO_SGS_MODEL)
@@ -925,6 +926,7 @@ static const MapType<string, ENUM_SGS_MODEL> SGS_Model_Map = {
   MakePair("SMAGORINSKY",  SMAGORINSKY)
   MakePair("WALE",         WALE)
   MakePair("VREMAN",       VREMAN)
+  MakePair("SIGMA",        SIGMA)
 };
 
 
@@ -986,20 +988,20 @@ static const MapType<string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
 enum ENUM_WALL_FUNCTIONS {
   NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
-  ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
-  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
-  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
-  NONEQUILIBRIUM_WALL_MODEL = 5,   /*!< \brief Non-equilibrium wall model for LES. */
-  LOGARITHMIC_WALL_MODEL    = 6    /*!< \brief Logarithmic law-of-the-wall model for LES. */
+  EQUILIBRIUM_WALL_MODEL    = 2,   /*!< \brief Equilibrium wall model for LES. */
+  LOGARITHMIC_WALL_MODEL    = 3,   /*!< \brief Reichardt's law-of-the-wall model for LES. */
+  ALGEBRAIC_WALL_MODEL      = 4,    /*!< \brief Algebraic wall model for LES. */
+  APGLL_WALL_MODEL          = 5,     /*!< \brief Adverse Pressure Gradient Wall Model for LES. */
+  TEMPLATE_WALL_MODEL       = 6     /*!< \brief Template Wall Model */
 };
 static const MapType<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = {
   MakePair("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
   MakePair("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
-  MakePair("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
-  MakePair("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
   MakePair("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
-  MakePair("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL)
-  MakePair("LOGARITHMIC_WALL_MODEL", LOGARITHMIC_WALL_MODEL)
+  MakePair("LOGARITHMIC_WALL_MODEL",    LOGARITHMIC_WALL_MODEL)
+  MakePair("ALGEBRAIC_WALL_MODEL",      ALGEBRAIC_WALL_MODEL)
+  MakePair("APGLL_WALL_MODEL",          APGLL_WALL_MODEL)
+  MakePair("TEMPLATE_WALL_MODEL",       TEMPLATE_WALL_MODEL)
 };
 
 /*!
