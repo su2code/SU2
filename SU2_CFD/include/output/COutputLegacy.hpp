@@ -217,26 +217,6 @@ public:
                        unsigned long iExtIter, unsigned short val_nZone);
 
   /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
-                               unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file);
-
-  /*!
    * \brief Writes equivalent area.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -364,15 +344,6 @@ public:
   void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
-   * \brief Merge the solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
-
-  /*!
    * \brief Write a native SU2 restart file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -382,231 +353,12 @@ public:
   void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
-   * \brief Write a native SU2 restart file (ASCII) in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Write a native SU2 restart file (binary) in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Write the x, y, & z coordinates to a CGNS output file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
-   * \brief Write the element connectivity to a CGNS output file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
-   * \brief Write solution data to a CGNS output file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-//  /*!
-//   * \brief Write a Paraview ASCII solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   */
-//  void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-
-//  /*!
-//   * \brief Write a Paraview ASCII solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   */
-//  void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file);
-
-//  /*!
-//   * \brief Write a Paraview ASCII solution file with parallel output.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-//   */
-//  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
-
-//  /*!
-//   * \brief Write a Paraview binary solution file with parallel output.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-//   */
-//  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-
-//  /*!
-//   * \brief Write a Tecplot ASCII solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   */
-//  void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   */
-//  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool surf_sol, bool new_file);
-
-//  /*!
-//   * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
-//   */
-//  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
-
-  /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
   string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar);
-
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream &output_file);
-
-  /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void SetSU2_MeshBinary(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Write the nodal coordinates to a binary file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-   */
-  void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-//  /*!
-//   * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-//  /*!
-//   * \brief Write solution data to a Tecplot binary volume solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-//  /*!
-//   * \brief Write solution data to a Tecplot binary surface solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-//  /*!
-//   * \brief Write a Tecplot ASCII solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - Current zone.
-//   * \param[in] val_nZone - Total number of zones.
-//   */
-//  void SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetFieldViewASCII_Mesh(CConfig *config, CGeometry *geometry);
-
-//  /*!
-//   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetFieldViewBinary_Mesh(CConfig *config, CGeometry *geometry);
-
-//  /*!
-//   * \brief Write solution data to a Tecplot binary volume solution file.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] val_iZone - iZone index.
-//   */
-//  void SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Deallocate temporary memory needed for merging and writing coordinates.
@@ -658,15 +410,6 @@ public:
    * \param[in] output - Create output files.
    */
   void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) const;
-
-  /*!
-   * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
-   *  on the surface and in the volume to a file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Number of Zones.
-   */
-  void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
 
   /*!
    * \brief Compute .
@@ -725,18 +468,6 @@ public:
   void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) const;
 
   /*!
-   * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
    * \brief Writes the special output files.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -747,60 +478,6 @@ public:
    */
   void SetSpecial_Output(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
                          unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for incmopressible flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for NEMO problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_NEMO(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for generic problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
    * \brief Prepare the number of points and offsets for linear partitioning that are needed for output.
@@ -846,38 +523,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateData_Parallel(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Create and write a CSV file with a slice of data.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   * \param[in] val_direction - Controls the slice direction (0 for constant x/vertical, 1 for constant y/horizontal.
-   */
-  void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
 
 };
 
