@@ -217,18 +217,6 @@ public:
                        unsigned long iExtIter, unsigned short val_nZone);
 
   /*!
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations with the FEM solver.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
-                       unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -239,18 +227,6 @@ public:
    */
   void SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
                                unsigned long iExtIter, unsigned short val_nZone);
-
-  /*!
-   * \brief Writes and organizes the all the output files, except the history one, for DG-FEM simulations (SU2_SOL).
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geometry, CConfig **config,
-                                   unsigned long iExtIter, unsigned short val_nZone);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
@@ -356,26 +332,11 @@ public:
   void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
-   * \brief Merge the FEM geometry into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
    * \brief Merge the node coordinates from all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void MergeCoordinates(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Merge the node coordinates from all processors for the FEM solver.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void MergeCoordinates_FEM(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Merge the connectivity for a single element type from all processors.
@@ -386,28 +347,12 @@ public:
   void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
-   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
    * \brief Merge the connectivity for a single element type from all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
    * \brief Merge the solution into a data structure used for output file writing.
@@ -419,15 +364,6 @@ public:
   void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
-   * \brief Merge the FEM solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
    * \brief Merge the solution into a data structure used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -435,15 +371,6 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Merge the solution into a data structure used for output file writing (DG-FEM).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
 
   /*!
    * \brief Write a native SU2 restart file.
@@ -876,15 +803,6 @@ public:
   void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for DG-FEM flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
    * \brief Prepare the number of points and offsets for linear partitioning that are needed for output.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -900,28 +818,12 @@ public:
   void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
-   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
-   */
-  void SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
-   * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors (DG-FEM solver).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
    * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
@@ -932,14 +834,6 @@ public:
   void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
-   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors (DG-FEM solver).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-
-  /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -947,25 +841,11 @@ public:
   void SortOutputData(CConfig *config, CGeometry *geometry);
 
   /*!
-   * \brief Sort the output data for each grid node into a linear partitioning across all processors (DG-FEM solver).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SortOutputData_FEM(CConfig *config, CGeometry *geometry);
-
-  /*!
    * \brief Sort the surface output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
-
-  /*!
-   * \brief Sort the surface output data for each grid node into a linear partitioning across all processors (DG-FEM solver).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
