@@ -41,17 +41,17 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
 
     hs.resize(nSpecies,0.0);
 
-    RHOS_INDEX    = 0; 
-    T_INDEX       = nSpecies;
-    TVE_INDEX     = nSpecies+1;
-    VEL_INDEX     = nSpecies+2;
-    P_INDEX       = nSpecies+nDim+2;
-    RHO_INDEX     = nSpecies+nDim+3;
-    H_INDEX       = nSpecies+nDim+4;
-    A_INDEX       = nSpecies+nDim+5;
-    RHOCVTR_INDEX = nSpecies+nDim+6;
-    RHOCVVE_INDEX = nSpecies+nDim+7;  
-    LAM_VISC_INDEX = nSpecies+nDim+8;
+    RHOS_INDEX      = 0;
+    T_INDEX         = nSpecies;
+    TVE_INDEX       = nSpecies+1;
+    VEL_INDEX       = nSpecies+2;
+    P_INDEX         = nSpecies+nDim+2;
+    RHO_INDEX       = nSpecies+nDim+3;
+    H_INDEX         = nSpecies+nDim+4;
+    A_INDEX         = nSpecies+nDim+5;
+    RHOCVTR_INDEX   = nSpecies+nDim+6;
+    RHOCVVE_INDEX   = nSpecies+nDim+7;
+    LAM_VISC_INDEX  = nSpecies+nDim+8;
     EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
@@ -78,7 +78,6 @@ CNEMONumerics::~CNEMONumerics(void) {
   delete fluidmodel;
 }
 
-
 void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
                                         const su2double *val_V,
                                         const su2double *val_normal,
@@ -99,7 +98,7 @@ void CNEMONumerics::GetInviscidProjFlux(const su2double *val_U,
   P      = val_V[P_INDEX];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  rhos = &val_V[RHOS_INDEX];
+  rhos   = &val_V[RHOS_INDEX];
 
   if (nDim == 2) {
 
@@ -255,7 +254,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
-  Tve  = val_primvar[TVE_INDEX];
+  Tve = val_primvar[TVE_INDEX];
   V   = val_primvar;
   GV  = val_gradprimvar;
   RuSI= UNIVERSAL_GAS_CONSTANT;
@@ -264,8 +263,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   hs = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_eve);
   
   /*--- Scale thermal conductivity with turb visc ---*/
-  //delete me todo
-  // Need to determine proper way to incorporate eddy viscosity
+  // TODO: Need to determine proper way to incorporate eddy viscosity
   // This is only scaling Kve by same factor as ktr
   su2double Mass = 0.0;
   su2double tmp1, scl, Cptr;
@@ -283,7 +281,6 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += GV[VEL_INDEX+iDim][iDim];
-
 
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -357,6 +354,8 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                        su2double **val_Jac_i, su2double **val_Jac_j,
                                        const CConfig *config) {
 
+
+  //TODO UPDATE WITH EDDY VISC
 //  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar;
 //  su2double rho, rho_i, rho_j, vel[3], T, Tve;
 //  su2double mu, ktr, kve, *Ds, dij, Ru, RuSI;
@@ -695,8 +694,8 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
-  }
-  else {
+
+  } else {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   = 1.0/a2;

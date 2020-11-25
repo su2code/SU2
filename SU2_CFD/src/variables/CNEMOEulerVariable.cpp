@@ -43,28 +43,28 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                                                     ndim,
                                                                     nvar,
                                                                     config   ),
-                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
  
   vector<su2double> energies; 
   unsigned short iDim, iSpecies;
   su2double soundspeed, sqvel, rho;
 
   /*--- Setting variable amounts ---*/
-  nDim         = ndim;
-  nPrimVar     = nvarprim;
-  nPrimVarGrad = nvarprimgrad;
+  nDim            = ndim;
+  nPrimVar        = nvarprim;
+  nPrimVarGrad    = nvarprimgrad;
 
-  nSpecies     = config->GetnSpecies();
-  RHOS_INDEX    = 0;
-  T_INDEX       = nSpecies;
-  TVE_INDEX     = nSpecies+1;
-  VEL_INDEX     = nSpecies+2;
-  P_INDEX       = nSpecies+nDim+2;
-  RHO_INDEX     = nSpecies+nDim+3;
-  H_INDEX       = nSpecies+nDim+4;
-  A_INDEX       = nSpecies+nDim+5;
-  RHOCVTR_INDEX = nSpecies+nDim+6;
-  RHOCVVE_INDEX = nSpecies+nDim+7;
+  nSpecies        = config->GetnSpecies();
+  RHOS_INDEX      = 0;
+  T_INDEX         = nSpecies;
+  TVE_INDEX       = nSpecies+1;
+  VEL_INDEX       = nSpecies+2;
+  P_INDEX         = nSpecies+nDim+2;
+  RHO_INDEX       = nSpecies+nDim+3;
+  H_INDEX         = nSpecies+nDim+4;
+  A_INDEX         = nSpecies+nDim+5;
+  RHOCVTR_INDEX   = nSpecies+nDim+6;
+  RHOCVVE_INDEX   = nSpecies+nDim+7;
   LAM_VISC_INDEX  = nSpecies+nDim+8;
   EDDY_VISC_INDEX = nSpecies+nDim+9;
 
@@ -131,7 +131,6 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
 
-  /* Under-relaxation parameter. */
   LocalCFL.resize(nPoint) = su2double(0.0);
 
   /*--- Loop over all points --*/
@@ -258,12 +257,13 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   }
 
   /*--- Assign temperatures ---*/
-  vector<su2double>  T  = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
+  vector<su2double>  T = fluidmodel->GetTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
 
   /*--- Translational-Rotational Temperature ---*/
   V[T_INDEX] = T[0];
   
   // Determine if the temperature lies within the acceptable range
+  //TODO: fIX THIS
   if (V[T_INDEX] == Tmin) {
     nonPhys = true;
   } else if (V[T_INDEX] == Tmax){
@@ -295,8 +295,8 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     } else {
       V[TVE_INDEX]   = T[1];
     }
-  }
-  else {
+  } else {
+    //TODO: can e-modes/vibe modes be active?
     V[TVE_INDEX] = Tve_Freestream;
   }
 

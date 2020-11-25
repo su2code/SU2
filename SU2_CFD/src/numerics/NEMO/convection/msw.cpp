@@ -151,7 +151,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   P_i = V_i[P_INDEX];
   P_j = V_j[P_INDEX];
 
-  /*--- Calculate supporting quantities ---*/
+  /*--- Calculate velocity quantities ---*/
   sqvel_i   = 0.0;  sqvel_j   = 0.0;
   ProjVel_i = 0.0;  ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -162,8 +162,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   /*--- Calculate the state weighting function ---*/
-  dp = fabs(P_j-P_i) / min(P_j,P_i);
-  w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
+  dp    = fabs(P_j-P_i) / min(P_j,P_i);
+  w     = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   onemw = 1.0 - w;
 
   /*--- Calculate weighted state vector (*) for i & j ---*/
@@ -185,23 +185,24 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
-  for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
-    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
-                                                      epsilon*epsilon));
-  Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
-                                   sqrt((ProjVelst_i + Vst_i[A_INDEX])*
-                                        (ProjVelst_i + Vst_i[A_INDEX])+
-                                        epsilon*epsilon)                );
-  Lambda_i[nSpecies+nDim]   = 0.5*(ProjVelst_i - Vst_i[A_INDEX] +
-                                   sqrt((ProjVelst_i - Vst_i[A_INDEX])*
-                                        (ProjVelst_i - Vst_i[A_INDEX]) +
-                                        epsilon*epsilon)                );
+  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+    Lambda_i[iVar]                      = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                             epsilon*epsilon));
+  Lambda_i[nSpecies+nDim-1]  = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
+                                                             sqrt((ProjVelst_i + Vst_i[A_INDEX])*
+                                                            (ProjVelst_i + Vst_i[A_INDEX])+
+                                                             epsilon*epsilon));
+  Lambda_i[nSpecies+nDim]     = 0.5*(ProjVelst_i - Vst_i[A_INDEX] +
+                                                             sqrt((ProjVelst_i - Vst_i[A_INDEX])*
+                                                            (ProjVelst_i - Vst_i[A_INDEX])+
+                                                             epsilon*epsilon));
   Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
-                                                      epsilon*epsilon));
+                                                             epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  GetPMatrix    (Ust_i, Vst_i, dPdU_i, UnitNormal, l, m, P_Tensor   );
-  GetPMatrix_inv(Ust_i, Vst_i, dPdU_i, UnitNormal, l, m, invP_Tensor);
+  CreateBasis(UnitNormal);
+  GetPMatrix    (Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, P_Tensor   );
+  GetPMatrix_inv(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, invP_Tensor);
 
   /*--- Projected flux (f+) at i ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -222,15 +223,15 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
     Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
                                                       epsilon*epsilon));
   Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -
-                                   sqrt((ProjVelst_j + Vst_j[A_INDEX])*
-                                        (ProjVelst_j + Vst_j[A_INDEX])+
-                                        epsilon*epsilon)                 );
+                                                            sqrt((ProjVelst_j + Vst_j[A_INDEX])*
+                                                           (ProjVelst_j + Vst_j[A_INDEX])+
+                                                            epsilon*epsilon)                 );
   Lambda_j[nSpecies+nDim]   = 0.5*(ProjVelst_j - Vst_j[A_INDEX] -
-                                   sqrt((ProjVelst_j - Vst_j[A_INDEX])*
-                                        (ProjVelst_j - Vst_j[A_INDEX])+
-                                        epsilon*epsilon)                 );
+                                                          sqrt((ProjVelst_j - Vst_j[A_INDEX])*
+                                                         (ProjVelst_j - Vst_j[A_INDEX])+
+                                                          epsilon*epsilon)                 );
   Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j+
-                                                      epsilon*epsilon));
+                                                             epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);

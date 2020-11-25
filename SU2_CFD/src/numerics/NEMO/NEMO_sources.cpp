@@ -298,7 +298,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   unsigned short iDim, iSpecies, iVar;
   su2double rho, rhov, vel2, H, yinv;
 
-    /*--- Initialize residual and Jacobian arrays ---*/
+  /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     residual[iVar] = 0.0;
   }

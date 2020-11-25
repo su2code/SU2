@@ -140,29 +140,26 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++) {
-    u_i[iDim] = 0.0; // V_i[VEL_INDEX+iDim];
-    u_j[iDim] = 0.0; // V_j[VEL_INDEX+iDim];
+    u_i[iDim] = V_i[VEL_INDEX+iDim];
+    u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-  P_i       = 0.0; // V_i[P_INDEX];
-  P_j       = 0.0; // V_j[P_INDEX];
-  h_i       = V_i[H_INDEX];
-  h_j       = V_j[H_INDEX];
-  rho_i     = V_i[RHO_INDEX];
-  rho_j     = V_j[RHO_INDEX];
-  rhoEve_i  = U_i[nSpecies+nDim+1];
-  rhoEve_j  = U_j[nSpecies+nDim+1];
-  rhoCvtr_i = V_i[RHOCVTR_INDEX];
-  rhoCvtr_j = V_j[RHOCVTR_INDEX];
-  rhoCvve_i = V_i[RHOCVVE_INDEX];
-  rhoCvve_j = V_j[RHOCVVE_INDEX];
+  P_i     = V_i[P_INDEX];      P_j   = V_j[P_INDEX];
+  h_i    = V_i[H_INDEX];       h_j    = V_j[H_INDEX];
+  rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
+  
+  rhoCvtr_i   = V_i[RHOCVTR_INDEX]; rhoCvtr_j  = V_j[RHOCVTR_INDEX];
+  rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    rhoEve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies]);
+    rhoEve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies]);
+  }
 
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
   
-  rhoRi = 0.0;
-  rhoRj = 0.0;
+  rhoRi = 0.0;  rhoRj = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoRi += V_i[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
-    rhoRj += V_j[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
+    rhoRi += rhos_i[iSpecies]*Ru/Ms[iSpecies];
+    rhoRj += rhos_j[iSpecies]*Ru/Ms[iSpecies];
   }
 
   /*--- Projected velocities ---*/
@@ -173,13 +170,13 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
   sqVi = 0.0;   sqVj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim])
-        * (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
-    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim])
-        * (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
+    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim]) *
+            (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
+    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim]) *
+            (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
   }
 
-  /*--- Calculate interface numerical speed of sound ---*/
+  /*--- Calculate interface numerical gammas and speed of sound ---*/
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
   gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
   gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
@@ -213,13 +210,16 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
 
   /*--- Calculate supporting w & f functions ---*/
-  w = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
+  w  = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
   ps = pLP + pRM;
-  // Modified f function:
-  if (fabs(mL) < 1.0) fL = P_i/ps - 1.0;
-  else fL = 0.0;
-  if (fabs(mR) < 1.0) fR = P_j/ps - 1.0;
-  else fR = 0.0;
+
+  // simplified f function (Literature requires information from cells
+  // above and below  (TODO)
+  fL = 0.0; fR = 0.0;
+  if (ps != 0.0){
+    fL = (P_i/ps-1.0);
+    fR = (P_j/ps-1.0);
+  }
 
   /*--- Calculate modified M functions ---*/
   mF = mLP + mRM;
