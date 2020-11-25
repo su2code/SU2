@@ -13243,7 +13243,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
                   node[iPoint]->SetWall_nNode(vtkID);
                   node[iPoint]->SetWall_Interpolation_Weights(weights);
                   
-                  maxWallDist = max(maxWallDist, 1.1*dist);
+                  maxWallDist = max(maxWallDist, dist);
                   break;
                 }// if jVertex
               }// iNode
@@ -13254,19 +13254,42 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
     }
   }
   
-  /*--- Now specify the exchange distance based on the maximum distance of nodes
-        that neighbor solid surfaces ---*/
   if (wfun) {
     su2double globalMaxDist = maxWallDist;
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&maxWallDist, &globalMaxDist, 1,
                        MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
+
+    /*--- Set all nodes at distance less than maxWallDist as wall neighbors ---*/
+    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
+      if (node[iPoint]->GetWall_Distance() < globalMaxDist && !node[iPoint]->GetBool_Wall_Neighbor()) {
+        unsigned short markerID;
+        unsigned long  elemID;
+        int            rankID;
+        unsigned short vtkID;
+        su2double      dist;
+        su2double      weights[4];
+
+        WallADT->DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
+                                         elemID, rankID, vtkID, weights);
+
+        node[iPoint]->SetBool_Wall_Neighbor(true);
+        node[iPoint]->SetWall_Rank(rankID);
+        node[iPoint]->SetWall_Marker(markerID);
+        node[iPoint]->SetWall_Element(elemID);
+        node[iPoint]->SetWall_nNode(vtkID);
+        node[iPoint]->SetWall_Interpolation_Weights(weights);
+      }
+    }
+
+    /*--- Specify the exchange distance based on the maximum distance of nodes
+          that neighbor solid surfaces ---*/
     for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
       if(config->GetViscous_Wall(iMarker)) {
         string markerTag = config->GetMarker_All_TagBound(iMarker);
         if (config->GetWallFunction_Treatment(markerTag) == STANDARD_WALL_FUNCTION) {
-          config->SetWallFunction_DoubleInfo(markerTag, 0, globalMaxDist);
+          config->SetWallFunction_DoubleInfo(markerTag, 0, 1.1*globalMaxDist);
         }// if wf wall
       }// if viscous wall
     }// iMarker
