@@ -45,6 +45,8 @@ private:
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
+  VectorType Tau_Wall_Flag;   /*!< \brief Boolean for the wall function calculation. */
+  MatrixType Tau_Wall_Dir;    /*!< \brief Wall shear stress from a wall function projected on the tangential flow direction.*/
 
 public:
   /*!
@@ -189,6 +191,28 @@ public:
    * \return Value of the wall shear stress computed by a wall function.
    */
   inline su2double GetTauWall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+
+  /*!
+   * \brief Set the projected value of the wall shear stress computed by a wall function/model to the flow direction.
+   */
+  inline void SetTauWallDir(unsigned long iPoint, unsigned long iDim, su2double val_tau_wall) override { Tau_Wall_Dir(iPoint, iDim) = val_tau_wall; }
+
+  /*!
+   * \brief Get the projected value of the wall shear stress computed by a wall function/model to the flow direction
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  inline su2double GetTauWallDir(unsigned long iPoint, unsigned long iDim) const override { return Tau_Wall_Dir(iPoint, iDim); }
+
+  /*!
+   * \brief Set the flag to use (or not) the wall shear stress computed by a wall function.
+   */
+  inline void SetTauWall_Flag(unsigned long iPoint,  bool val_tau_wall_flag) override { Tau_Wall_Flag(iPoint) = val_tau_wall_flag; }
+
+  /*!
+   * \brief Get the flag  to use (or not) the the wall shear stress computed by a wall function.
+   * \return Flag of the wall shear stress computed by a wall function.
+   */
+  inline bool GetTauWall_Flag(unsigned long iPoint) const override { return Tau_Wall_Flag(iPoint); }
 
   /*!
    * \brief Get the DES length scale

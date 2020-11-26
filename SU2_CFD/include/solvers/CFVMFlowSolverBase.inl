@@ -1032,6 +1032,9 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
+        /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
+        visc_numerics->SetTauWall_Flag(false, false);
+        
         /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
               following routine based upon the velocity-component gradients. ---*/
         auto residual = visc_numerics->ComputeResidual(config);
@@ -1197,10 +1200,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
-              /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-
-              visc_numerics->SetTauWall(-1.0, -1.0);
-
+              /*--- Set the wall shear stress values (wall functions) to false (no evaluation using wall functions) ---*/
+              
+              visc_numerics->SetTauWall_Flag(false, false);
+              
               /*--- Compute and update residual ---*/
 
               auto residual = visc_numerics->ComputeResidual(config);
