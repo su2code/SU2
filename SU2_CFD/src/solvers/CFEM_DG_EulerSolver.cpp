@@ -28,6 +28,12 @@
 
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include <numeric>
+#include <Eigen/Core>
+#include <Eigen/Cholesky>
+#include <Eigen/SparseCore>
+#include <Eigen/IterativeLinearSolvers>
+#include <unsupported/Eigen/SparseExtra>
 
 namespace SuperLU
 {
@@ -40,6 +46,20 @@ namespace SuperLU
   }
 #endif
 }
+
+typedef Eigen::MatrixXd Matrix;
+typedef Eigen::VectorXd Vector;
+typedef Eigen::SparseMatrix<double> SpMat;
+typedef Eigen::SparseMatrix<double, Eigen::RowMajor> SpMat_Row;
+
+#define MPI_CHECK( call ) do { \
+    int err = call; \
+    if (err != MPI_SUCCESS) { \
+    fprintf(stderr, "MPI error %d in file '%s' at line %i in function %s\n", \
+        err, __FILE__, __LINE__, __func__); \
+    MPI_Finalize(); \
+    exit(1); \
+    } } while(0)
 
 #define SIZE_ARR_NORM 8
 
@@ -7471,13 +7491,8 @@ unsigned long GMRES(const Eigen::SparseMatrix<double>& A, Eigen::VectorXd& b, Pr
 
   k = min(k, m - 1);
   Eigen::VectorXd y = LUSolve(H.block(0,0,k+1,k+1), beta.head(k+1), k);
-  Eigen::VectorXd xxx = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
-  Eigen::VectorXd b_copy = b;
   b = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
-  LinRes = VecNorm(b_copy - MatVec(A, b, m_loc))/VecNorm(b_copy);
-  // cout << "Linear solver residual = " << LinRes << endl;
-  // cout << "b_norm = " << b_norm << " and b_copy norm = " << VecNorm(b_copy) << endl;
-
+  LinRes = beta(k);
   delete m_loc;
   delete fst_col;
   return k;
@@ -7511,18 +7526,401 @@ void LocalILU_Preconditioner(SpMat& Jacobian_global, Eigen::IncompleteLUT<double
   return;
 }
 
+/** Taken from Leopold's SpaND repo
+ */
+template<typename T>
+void get_count_type(size_t* count, MPI_Datatype* type) {
+    *count = 1;
+    if (std::is_same<T, int>::value) {
+        *type = MPI_INT;
+    } else if (std::is_same<T, double>::value) {
+        *type = MPI_DOUBLE;
+    } else {
+        *count = sizeof(T);
+        *type = MPI_BYTE;
+    }
+}
+
+/** Taken from Leopold's SpaND repo
+ * Exchange data from send to recv
+ * data from send is sent to ranks `send_ranks` in chuncks defined by `send_displs`
+ * data is received in recv from ranks `recv_ranks` in chuncks defined by `recv_displs`
+ */
+template<typename T>
+void exchange(const T& send, T& recv, 
+              const std::vector<int>& send_ranks, const std::vector<int>& recv_ranks, 
+              const std::vector<int>& send_displs, const std::vector<int>& recv_displs) {
+
+    size_t count = 0;
+    MPI_Datatype type;
+    get_count_type<typename T::value_type>(&count, &type);
+
+  assert(send_ranks.size() + 1 == send_displs.size());
+  assert(recv_ranks.size() + 1 == recv_displs.size());
+  assert(send.size() == send_displs.back());
+    assert(recv.size() == recv_displs.back());
+
+    std::vector<MPI_Request> send_reqs(send_ranks.size());
+    std::vector<MPI_Request> recv_reqs(recv_ranks.size());
+
+    for(uint di = 0; di < send_ranks.size(); di++) {
+        int dest = send_ranks[di];
+        size_t off  = (send_displs[di]);
+        size_t size = (send_displs[di+1] - send_displs[di]);
+        assert(size * count <= std::numeric_limits<int>::max());
+        MPI_CHECK(MPI_Isend(send.data() + off, size * count, type, dest, 0, MPI_COMM_WORLD, &send_reqs.at(di)));
+    }
+
+    for(uint si = 0; si < recv_ranks.size(); si++) {
+        int source = recv_ranks[si];
+        size_t off    = (recv_displs[si]);
+        size_t size   = (recv_displs[si+1] - recv_displs[si]);
+        assert(size * count <= std::numeric_limits<int>::max());
+        MPI_CHECK(MPI_Irecv(recv.data() + off, size * count, type, source, 0, MPI_COMM_WORLD, &recv_reqs.at(si)));
+    }
+
+    MPI_CHECK(MPI_Waitall(send_reqs.size(), send_reqs.data(), MPI_STATUSES_IGNORE));
+    MPI_CHECK(MPI_Waitall(recv_reqs.size(), recv_reqs.data(), MPI_STATUSES_IGNORE));
+}
+
+void Partition(const SpMat& A_, vector<int>& send_ranks, vector<int>& recv_ranks, vector<int>& send_ind, 
+  vector<int>& recv_ind, vector<int>& send_displs, vector<int>& recv_displs, std::vector<int>& m_loc, 
+  std::vector<int> fst_col, int size, int rank) {
+
+  double start = MPI_Wtime();
+  send_ranks.clear();
+    recv_ranks.clear();
+    send_ind.clear();
+    recv_ind.clear();
+    send_displs.clear();
+    recv_displs.clear();
+
+  int col_start = fst_col.at(rank);
+  int col_end = fst_col.at(rank) + m_loc.at(rank);
+
+  // find the neighboring rows that needs to be communicated during SpMV
+  set<int> nbr_rows;
+  for (int k = 0; k < A_.outerSize(); ++k){
+    for (SpMat::InnerIterator it(A_,k); it; ++it)
+    {
+      if (it.row() < col_start || it.row() >= col_end) {
+        nbr_rows.insert(it.row());
+      }
+    }
+  }
+
+  vector<vector<int>> send_rows(size);
+  vector<vector<int>> recv_rows(size);
+
+  for (const int& row : nbr_rows){
+    assert(row < col_start || row >= col_end);
+    auto found = upper_bound(fst_col.begin(), fst_col.end(), row);
+    assert(found != fst_col.end());
+    const int index = std::distance(fst_col.begin(), found) - 1;
+    send_rows.at(index).push_back(row);
+  }
+
+  // start alltoall communication 
+  vector<int> send_counts(size);
+  vector<int> recv_counts(size);
+  send_displs.resize(size + 1);
+  recv_displs.resize(size + 1);
+
+  for (int i = 0; i < size; ++i){
+    send_counts[i] = send_rows[i].size();
+    send_ind.insert(send_ind.end(), send_rows[i].begin(), send_rows[i].end());
+  }
+
+  MPI_CHECK(MPI_Alltoall(send_counts.data(), 1, MPI_INT, recv_counts.data(), 1, MPI_INT, MPI_COMM_WORLD));
+
+  partial_sum(send_counts.begin(), send_counts.end(), send_displs.data()+1);
+  partial_sum(recv_counts.begin(), recv_counts.end(), recv_displs.data()+1);
+  recv_ind.resize(recv_displs.back());
+
+  MPI_CHECK(MPI_Alltoallv(send_ind.data(), send_counts.data(), send_displs.data(), MPI_INT, 
+              recv_ind.data(), recv_counts.data(), recv_displs.data(), MPI_INT, MPI_COMM_WORLD));
+
+  // post-processing for SpMV kernels later on
+  for (int i = 0; i < size; ++i){
+    if (send_counts[i] != 0){
+      send_ranks.push_back(i);
+      auto last = std::unique(send_displs.begin(), send_displs.end());
+      send_displs.erase(last, send_displs.end()); 
+    }
+    if (recv_counts[i] != 0){
+      recv_ranks.push_back(i);
+      auto last = std::unique(recv_displs.begin(), recv_displs.end());
+      recv_displs.erase(last, recv_displs.end()); 
+    }
+  }
+  return;
+}
+
+Vector SpMV(const SpMat& A, const Vector &x, vector<int>& send_ranks, vector<int>& recv_ranks, vector<int>& send_ind, 
+  vector<int>& recv_ind, vector<int>& send_displs, vector<int>& recv_displs, std::vector<int>& fst_col, int rank){
+
+
+  Vector b_global = A*x;
+
+  // communication
+  Vector b_send(send_ind.size());
+  for (int i = 0; i < send_ind.size(); ++i){
+    b_send[i] = b_global[send_ind[i]];
+  }
+
+  Vector b_recv(recv_ind.size());
+
+  exchange(b_send, b_recv, send_ranks, recv_ranks, send_displs, recv_displs);
+
+  // computation after communication
+
+  for (int i = 0; i < recv_ind.size(); ++i){
+    b_global[recv_ind[i]] += b_recv[i];
+  }
+
+  return b_global.segment(fst_col.at(rank), A.cols());
+}
+
+bool updateHessenberg(int j, int s_, double r_norm, int rank, Vector& cs, Vector& sn, Vector& beta, Vector& e1, Matrix& H_tri, int& k_conv) {
+  bool conv_break = false;
+  for (int k = j; k < j+s_; ++k) {
+    k_conv = k;
+    // Givens Rotation: apply previous givens rotation
+    for (int i = 0; i < k; ++i) {
+      double temp = cs(i) * H_tri(i, k) + sn(i) * H_tri(i + 1, k);
+      H_tri(i + 1, k) = -sn(i) * H_tri(i, k) + cs(i) * H_tri(i + 1, k);
+      H_tri(i, k) = temp;
+    }
+
+    // Givens Rotation: get new givens rotation
+    if (H_tri(k, k) == 0){
+      cs(k) = 0;
+      sn(k) = 1;
+    }
+    else {
+      double t = sqrt(H_tri(k, k) * H_tri(k, k) + H_tri(k + 1, k) * H_tri(k + 1, k));
+      cs(k) = abs(H_tri(k, k)) / t;
+      sn(k) = cs(k) * H_tri(k + 1, k) / H_tri(k, k);
+    }
+    H_tri(k, k) = cs(k) * H_tri(k, k) + sn(k) * H_tri(k + 1, k);
+    H_tri(k + 1, k) = 0.0;
+    beta(k+1) = -sn(k) * beta(k);
+    beta(k) = cs(k) * beta(k);
+    e1(k) = abs(beta(k+1)) / r_norm;
+    if (rank == 0)
+      printf("S_GMRES error at iteration %d is %e\n", k, e1(k));
+    if (e1(k) <= 1e-8) {
+      if (rank == 0)
+        printf("S_GMRES Converged error at iteration %d, is %e\n", k, e1(k));
+      conv_break = true;
+      break;
+    }
+  }
+
+  return conv_break;
+}
+
+void AssembleHessenberg(Matrix& H, Matrix& B, Matrix& R, Matrix& R01, int j, int s_){
+
+  Matrix Rinv = R.block(0,0,s_,s_).triangularView<Eigen::Upper>().solve(Matrix::Identity(s_, s_));
+
+  Matrix ZeroMat = Matrix::Zero(s_, s_);
+  Matrix Hscript = -H.block(0,0,j,j)*R01.block(0,0,j,s_)*Rinv + R01*B*Rinv;
+
+  Matrix H1 = R.block(0,0,s_,s_)*B.block(0,0,s_,s_)*Rinv;
+
+  ZeroMat = Matrix::Zero(s_, j);
+  ZeroMat(0,j-1) = H(j, j-1);
+
+  H1 -= ZeroMat*R01.block(0,0,j,s_)*Rinv;
+
+  H1.col(s_-1) += B(s_,s_-1)/R(s_-1,s_-1)*R.block(0,s_,s_,1);
+
+  double h1 = B(s_,s_-1)/R(s_-1,s_-1)*R(s_,s_);
+
+  // Assembling H metrix
+  H.block(0,j,j,s_) = Hscript;
+  H.block(j,j,s_,s_) = H1;
+  H(j+s_, j+s_-1) = h1;
+
+  return;
+}
+
+Matrix StableQR_MGS(Matrix& Q, int begin, int s_){
+
+  int n = s_ + 1;
+  Matrix R = Matrix::Zero(n, n);
+  // MGS orthogonalization
+  for (int i = 0; i < n; ++i){
+    for (int j = 0; j < i; ++j) {
+      R(j, i) = VecDot(Q.col(begin + j), Q.col(begin + i));
+      Q.col(begin + i) -= R(j,i)*Q.col(begin + j);
+    }
+    R(i,i) = VecDot(Q.col(begin + i), Q.col(begin + i));
+    Q.col(begin + i) /= R(i,i);
+  }
+
+  return R;
+}
+
+
+bool GMRES_Convergence(int j, int s_, int rank, double r_norm, Matrix& R, Matrix& B, Matrix& R01, Matrix& H, Matrix& H_tri,
+  Vector& cs, Vector& sn, Vector& beta, Vector& e1, int& k_conv){
+
+  // GMRES convergence check
+  if (j == 0){
+    // simple H construction for j = 0
+    H.block(0, 0, s_+1, s_) = R * R.block(0,0,s_,s_).triangularView<Eigen::Upper>().solve<Eigen::OnTheRight>(B);
+  }
+  else {
+    AssembleHessenberg(H, B, R, R01, j, s_);
+  }
+  
+  H_tri.block(0, j, j+s_+1, s_) = H.block(0, j, j+s_+1, s_);
+  return updateHessenberg(j, s_, r_norm, rank, cs, sn, beta, e1, H_tri, k_conv);
+}
+
+template <typename Precond>
+int SGMRES(const SpMat& A, Eigen::VectorXd& b, Precond& M, int s_, int restart, su2double& LinRes, unsigned long* m_loc_long, unsigned long* fst_col_long){
+  
+  int size = 1, rank = 0;
+  int m = restart;
+
+#ifdef HAVE_MPI
+  MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &size));
+  MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+#endif
+  // if (rank == 0) printf("Starting S_GMRES with s = %d\n", s_);
+  // quick fix for transporting into SU2. to be changed later on
+  vector<int> m_loc(size);
+  vector<int> fst_col(size+1);
+  for (int i = 0; i < size; ++i){
+    m_loc[i] = m_loc_long[i];
+    fst_col[i] = fst_col_long[i];
+  }
+  fst_col[size] = fst_col_long[size];
+
+  std::vector<int> send_ranks;
+  std::vector<int> recv_ranks;
+  std::vector<int> send_ind;
+  std::vector<int> recv_ind;
+  std::vector<int> send_displs;
+  std::vector<int> recv_displs;
+  Partition(A, send_ranks, recv_ranks, send_ind, recv_ind, send_displs, recv_displs, m_loc, fst_col, size, rank);
+
+  // use x as the initial vector
+  Vector r = b;
+  r = M.solve(r);
+
+  double r_norm = sqrt(VecDot(r, r));
+  assert(!std::isnan(r_norm));
+
+  // initialize the 1D vectors
+  Vector sn = Vector::Zero(m);
+  Vector cs = Vector::Zero(m);
+  Vector e1 = Vector::Zero(m);
+  e1(0) = 1;
+
+  Matrix Q = Matrix::Zero(m_loc[rank],m+s_+1);
+  Q.col(0) = r / r_norm;
+
+  Vector beta = Vector::Zero(m + 1);
+  beta.head(m) = r_norm * e1;
+  Matrix H = Matrix::Zero(m+1, m);
+  Matrix H_tri = Matrix::Zero(m+1, m);
+  Matrix B = Matrix::Zero(s_+1, s_);
+  B.bottomLeftCorner(s_, s_).setIdentity();
+  Matrix R(0,0), R01(0,0), R_local, G, G_global;
+  int k = 0;
+  int k_conv = 0;
+  for (int j = 0; j < m+s_; j += s_) {
+
+    if (j < m) {
+      for (int i = j; i < j+s_; ++i){
+        Q.col(i+1) = SpMV(A, Q.col(i), send_ranks, recv_ranks, send_ind, recv_ind, send_displs, recv_displs, fst_col, rank);
+        Q.col(i+1) = M.solve(Q.col(i+1)); // M\q
+      }
+    }
+    // reduction: this is the only reduction
+    int col_start, col_count;
+    if (j == 0) {
+      col_start = 0;
+      col_count = s_+1;
+    }
+    else if (j > 0 && j < m) {
+      col_start = j-s_;
+      col_count = s_+1+s_;
+    }
+    else {
+      col_start = j-s_;
+      col_count = s_+1;
+    }
+    Matrix G = Q.block(0, 0, m_loc[rank], j+s_+1).transpose()*Q.block(0, col_start, m_loc[rank], col_count);
+    Matrix G_global = Matrix::Zero(j+s_+1, col_count); 
+    MPI_CHECK(MPI_Allreduce(G.data(), G_global.data(), (j+s_+1)*(col_count), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));  
+
+    if (j < m){
+      R_local = G_global.block(j, j-col_start, s_+1, s_+1);
+    }
+    if (j > 0) {
+      // lagged re-orthorgonalization 
+      Matrix L01 = G_global.block(0, 0, j-s_, s_+1);
+      Matrix L = G_global.block(j-s_, 0, s_+1, s_+1);
+      Q.block(0,j-s_,m_loc[rank],s_+1) -= Q.block(0,0,m_loc[rank],j-s_)*L01;
+      L -= L01.transpose()*L01;
+      Eigen::LLT<Matrix> chol_L(L);
+      if (chol_L.info() == Eigen::Success) {
+        L = chol_L.matrixU();
+        Q.block(0,j-s_,m_loc[rank],s_+1) = L.triangularView<Eigen::Upper>().solve<Eigen::OnTheRight>(Q.block(0,j-s_,m_loc[rank],s_+1));
+      } else {
+        cout << "cholQR failed at iteration " << j << ", no fix at the moment." << endl;
+      }
+      if (j > s_) R01 += L01*R;   // avoid Eigen empty matrix error
+      R = L*R;
+      // end lagged re-orthorgonalization 
+
+      // GMRES convergence check
+      if (GMRES_Convergence(j-s_, s_, rank, r_norm,R, B, R01, H, H_tri, cs, sn, beta, e1, k_conv) || (j >= m)){
+        break;
+      }
+      // 1st ortho: Block CGS
+      R_local -= G_global.block(0, s_, j, s_+1).transpose() * G_global.block(0, s_, j, s_+1);
+      R01 = G_global.block(0,s_,j,s_+1);
+      Q.block(0,j,m_loc[rank],s_+1) -= Q.block(0,0,m_loc[rank],j)*R01;
+    }
+    // 1st ortho: CholQR
+    Eigen::LLT<Matrix> chol_R(R_local);
+    if (chol_R.info() == Eigen::Success) {
+      R_local = chol_R.matrixU(); 
+      Q.block(0,j,m_loc[rank],s_+1) = R_local.triangularView<Eigen::Upper>().solve<Eigen::OnTheRight>(Q.block(0,j,m_loc[rank],s_+1));
+    }
+    else {
+      // the cholQR is not stable, a new QR factorization is used instead.
+      cout << "cholQR failed at iteration " << j << ", switching to stable QR which introduces additional communication costs." << endl;
+      R_local = StableQR_MGS(Q, j, s_);
+    }
+    R = R_local;
+  }
+
+  k = min(k_conv, m - 1);
+  Vector y = LUSolve(H_tri.block(0,0,k+1,k+1), beta.head(k+1), k);
+  b = RowMatVec(Q.block(0, 0, m_loc[rank], k + 1), y);
+  LinRes = beta(k);
+  return k;
+}
+
 typedef Eigen::Triplet<double> T;
 void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config) {
 
 #ifdef CODI_FORWARD_TYPE
   /*--- Gathering information of local number of DOFs and offset of DOFs across all ranks. ---*/
-  unsigned long m_loc[size], fst_row[size] = {0};
+  unsigned long m_loc[size], fst_row[size+1] = {0};
   SU2_MPI::Allgather(&nDOFsLocOwned, 1, MPI_UNSIGNED_LONG, &m_loc, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   for (int i = 0; i < size; ++i) {
     m_loc[i] = m_loc[i] * nVar;
   }
-  for (int i = 0; i < size - 1; ++i) {
+  for (int i = 0; i < size; ++i) {
     fst_row[i+1] = fst_row[i] + m_loc[i];
   }
 
@@ -7587,21 +7985,15 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       nNonZeroEntries[i+1] = nNonZeroEntries[i] + nonZeroEntriesJacobian[i].size();
 
     for (int i = 0; i < nonZeroEntriesJacobian.size(); ++i){
-      // std::cout<< "[i] = " << i << ": ";
       for (int j = 0; j < nonZeroEntriesJacobian[i].size(); ++j) {
-        // std::cout << nonZeroEntriesJacobian[i][j] << " ";
-        // std::cout << "( ";
         int rank_dest = upper_bound(fst_row_vec.begin(), fst_row_vec.end(), nonZeroEntriesJacobian[i][j]*nVar) - fst_row_vec.begin() - 1;
         unsigned long block_i = fst_row[rank]/nVar + i;
         unsigned long block_j = nonZeroEntriesJacobian[i][j];
         unsigned long offset = nNonZeroEntries[i] + j;
         adj_list[block_j][block_i] = rank_offset[rank_dest];
         Jacobian_sendbuf[rank_dest].insert(Jacobian_sendbuf[rank_dest].end(), SpatialJacobian.data() + offset*nVar*nVar, SpatialJacobian.data() + (offset+1)*nVar*nVar);
-        // std::cout << rank_offset[rank_dest] << " ";
-        // std::cout << ") ";
         ++rank_offset[rank_dest];
       }
-      // std::cout << std::endl;
     }
 
     for (int i = 0; i < size; ++i) {
@@ -7745,7 +8137,8 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
   }
   unsigned long IterLinSol;
   su2double LinRes;
-  IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, LinRes, &m_loc[0], &fst_row[0]);
+  // IterLinSol = GMRES(Jacobian_global, mSol_delta, Jacobian_Precond, nDOFsGlobal*nVar, 1000, LinRes, &m_loc[0], &fst_row[0]);
+  IterLinSol = SGMRES(Jacobian_global, mSol_delta, Jacobian_Precond, 4, 1000, LinRes, &m_loc[0], &fst_row[0]);
   SetIterLinSolver(IterLinSol);
   if (rank == MASTER_NODE)
   {
@@ -7848,27 +8241,19 @@ void CFEM_DG_EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver *
       CFLFactor = CFLFactorIncrease;
     }
     
-    // cout << "CFLFactor = " << CFLFactor << " in rank " << rank << endl;
     su2double CFL = config->GetCFL(0);
-    // cout << "CFL before multiplying factor = " << CFL << " in rank " << rank << endl;
-    // cout << CFLFactorDecrease << endl;
-    // cout << CFLFactorIncrease << endl;
 
     if (CFL*CFLFactor <= CFLMin) {
       CFL       = CFLMin;
-      // CFLFactor = MGFactor[iMesh];
     } else if (CFL*CFLFactor >= CFLMax) {
       CFL       = CFLMax;
-      // CFLFactor = MGFactor[iMesh];
     }
 
     if (reduceCFL) {
       CFL       = CFLMin;
-      // CFLFactor = MGFactor[iMesh];
     }
 
     CFL *= CFLFactor;
-    // cout << "CFL after multiplying factor = " << CFL << " in rank " << rank << endl;
     config->SetCFL(0, CFL);
   }
 
