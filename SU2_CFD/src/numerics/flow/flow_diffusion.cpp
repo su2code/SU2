@@ -645,8 +645,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
       GetViscousProjJacs(Mean_PrimVar, Proj_Flux_Tensor);
     }
-    SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
-    SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+    // SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+    // SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
 
     AD::EndPassive(wasActive);
 
@@ -775,8 +775,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
 
   for (auto iDim = 0; iDim < nDim; iDim++) {
     for (auto jDim = 0; jDim < nDim; jDim++) {
-      Jacobian_i[iDim+1][jDim+1] += -factor_i*V_i[jDim+1]*proj_stress[iDim];
-      Jacobian_j[iDim+1][jDim+1] += -factor_j*V_j[jDim+1]*proj_stress[iDim];
+      Jacobian_i[iDim+1][jDim+1] -= factor_i*V_i[jDim+1]*proj_stress[iDim];
+      Jacobian_j[iDim+1][jDim+1] -= factor_j*V_j[jDim+1]*proj_stress[iDim];
     }
     Jacobian_i[iDim+1][0] += factor_i*(v2_i/2. - Cv*T_i)*proj_stress[iDim];
     Jacobian_j[iDim+1][0] += factor_j*(v2_j/2. - Cv*T_j)*proj_stress[iDim];
@@ -784,8 +784,8 @@ void CAvgGrad_Flow::SetLaminarViscosityJacobian(const su2double *val_Mean_PrimVa
     Jacobian_i[iDim+1][nDim+1] += factor_i*proj_stress[iDim];
     Jacobian_j[iDim+1][nDim+1] += factor_j*proj_stress[iDim];
 
-    Jacobian_i[nDim+1][iDim+1] += -factor_i*V_i[iDim+1]*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
-    Jacobian_j[nDim+1][iDim+1] += -factor_j*V_j[iDim+1]*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
+    Jacobian_i[nDim+1][iDim+1] -= factor_i*V_i[iDim+1]*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
+    Jacobian_j[nDim+1][iDim+1] -= factor_j*V_j[iDim+1]*(proj_stress_dot_v + proj_heat_flux + proj_tke_flux);
   }
 
   Jacobian_i[nDim+1][0] += factor_i*(v2_i/2. - Cv*T_i)*(proj_heat_flux + proj_tke_flux);
