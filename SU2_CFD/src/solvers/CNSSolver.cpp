@@ -311,7 +311,14 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if (wall_functions) {
     SetTauWall_WF(geometry, solver_container, config);
+    SetEddyViscFirstPoint(geometry, solver_container, config);
   }
+  
+  /*--- Compute the wall shear stress from the wall model ---*/
+
+   if (wall_models && (iRKStep==0)){
+     SetTauWallHeatFlux_WMLES1stPoint(geometry, solver_container, config, iRKStep);
+   }
 
 }
 
@@ -1431,13 +1438,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
 
 void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iDim;
-  unsigned long iPoint, iVertex, Point_Normal;
   su2double Lam_Visc_Normal, Vel[3] = {0.,0.,0.}, P_Normal, T_Normal;
   su2double VelTang[3] = {0.,0.,0.}, VelTangMod, VelNormal;
   su2double WallDist[3] = {0.,0.,0.}, WallDistMod;
-  su2double *Coord, *Coord_Normal, Tau_Wall;
-  su2double *Normal, Area, UnitNormal[3] = {0.,0.,0.};
+  su2double Tau_Wall;
   su2double T_Wall, P_Wall, Density_Wall, Lam_Visc_Wall;
   su2double dypw_dyp, Y_Plus_White, Eddy_Visc;
   su2double U_Plus, U_Tau, Gam, Beta, Q, Phi;
@@ -1456,7 +1460,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
   /* Loop over the markers and select the ones for which a wall model
     treatment is carried out. */
 
-  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
       case HEAT_FLUX:{
@@ -1466,23 +1470,22 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
 
         if ((config->GetWallFunction_Treatment(Marker_Tag) == STANDARD_WALL_FUNCTION)){
 
-          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-            iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
-            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            const auto iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
+            const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             const auto Coord = geometry->nodes->GetCoord(iPoint);
             const auto Coord_Normal = geometry->nodes->GetCoord(Point_Normal);
 
             /*--- Compute dual-grid area and boundary normal ---*/
 
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt (Area);
+            su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-            for (iDim = 0; iDim < nDim; iDim++)
+            su2double UnitNormal[MAXNDIM] = {0.0};
+            for (auto iDim = 0u; iDim < nDim; iDim++)
               UnitNormal[iDim] = -Normal[iDim]/Area;
 
             /*--- Check if the node belongs to the domain (i.e, not a halo node)
@@ -1500,7 +1503,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               /*--- Get the velocity, pressure, and temperature at the nearest
                (normal) interior point. ---*/
 
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 Vel[iDim]    = nodes->GetVelocity(Point_Normal,iDim);
               P_Normal       = nodes->GetPressure(Point_Normal);
               T_Normal       = nodes->GetTemperature(Point_Normal);
@@ -1508,23 +1511,23 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               /*--- Compute the wall-parallel velocity at first point off the wall ---*/
 
               VelNormal = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 VelNormal += Vel[iDim] * UnitNormal[iDim];
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
 
               VelTangMod = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 VelTangMod += VelTang[iDim]*VelTang[iDim];
               VelTangMod = sqrt(VelTangMod);
 
               /*--- Compute normal distance of the interior point from the wall ---*/
 
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
 
               WallDistMod = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
+              for (auto iDim = 0u; iDim < nDim; iDim++)
                 WallDistMod += WallDist[iDim]*WallDist[iDim];
               WallDistMod = sqrt(WallDistMod);
 
@@ -1561,8 +1564,8 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
               if (Y_Plus_White > 1e4){
                 cout << "WARNING: Y+ is too high (>1e4). The muT computation at the 1st point off the wall is disable." << endl;
                 cout << rank << " " << iPoint;
-                for (iDim = 0; iDim < nDim; iDim++)
-                  cout << " " << Coord[iDim];
+//                for (auto iDim = 0u; iDim < nDim; iDim++)
+//                  cout << " " << Coord[iDim];
                 cout << endl;
                 nodes->SetTauWall_Flag(iPoint,false);
                 continue;
@@ -1632,23 +1635,12 @@ void CNSSolver::Setmut_LES(CGeometry *geometry, CSolver **solver_container, CCon
 
 void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
 
-  /*---
-  List TODO here:
-   - For each vertex (point):
-   - Load the interpolation coefficients.
-   - Extract the LES quantities at the exchange points.
-   - Call the Wall Model: Calculate Tau_Wall and Heat_Flux.
-   - Set Tau_Wall and Heat_Flux in the node structure for future use.
-  ---*/
-
   unsigned short iDim, iMarker;
-  unsigned long iVertex, iPoint, Point_Normal;
   bool CalculateWallModel = false;
 
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
   su2double GradP[3], GradP_TangMod;
   su2double T_Normal, P_Normal, mu_Normal;
-  su2double *Coord, *Coord_Normal, UnitNormal[3], *Normal, Area;
   su2double TimeFilter = config->GetDelta_UnstTimeND()/ (config->GetTimeFilter_WMLES() / config->GetTime_Ref());
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1693,31 +1685,29 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
      }
 
      /*--- Loop over all of the vertices on this boundary marker ---*/
-     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-       Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+     SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+     for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    
+       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
        if (!geometry->nodes->GetDomain(iPoint)) continue;
 
        /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
-       Coord = geometry->nodes->GetCoord(iPoint);
-       Coord_Normal = geometry->nodes->GetCoord(Point_Normal);
+       const auto Coord = geometry->nodes->GetCoord(iPoint);
+       const auto Coord_Normal = geometry->nodes->GetCoord(Point_Normal);
 
        /*--- Compute dual-grid area and boundary normal ---*/
 
-       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+       const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-       Area = 0.0;
-       for (iDim = 0; iDim < nDim; iDim++)
-         Area += Normal[iDim]*Normal[iDim];
-       Area = sqrt (Area);
+       su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-       for (iDim = 0; iDim < nDim; iDim++)
+       su2double UnitNormal[MAXNDIM] = {0.0};
+       for (auto iDim = 0u; iDim < nDim; iDim++)
          UnitNormal[iDim] = -Normal[iDim]/Area;
-
 
        /*--- Compute normal distance of the interior point from the wall ---*/
 
