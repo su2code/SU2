@@ -2014,34 +2014,34 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
           if ((!DualTime_Iteration) && (output_files)) {
             if (!turbo) {
-              config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
-              if (buffet) config[val_iZone]->GetHistFile()[0] << buffet_coeff;
-              if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
-              if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
-              if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
+              ConvHist_file[0] << begin << direct_coeff;
+              if (buffet) ConvHist_file[0] << buffet_coeff;
+              if (thermal) ConvHist_file[0] << heat_coeff;
+              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
               if (inv_design) {
-                config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
-                if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
+                ConvHist_file[0] << Cp_inverse_design;
+                if (thermal) ConvHist_file[0] << Heat_inverse_design;
               }
-              if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
-              config[val_iZone]->GetHistFile()[0] << flow_resid;
-              if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
-              if (radiation) config[val_iZone]->GetHistFile()[0] << rad_resid;
+              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
+              ConvHist_file[0] << flow_resid;
+              if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+              if (radiation) ConvHist_file[0] << rad_resid;
             }
             else {
-              config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid;
+              ConvHist_file[0] << begin << turbo_coeff << flow_resid;
             }
 
-            if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
-            if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
-            if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_surface) ConvHist_file[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) {
-              config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
-              if (output_surface) config[val_iZone]->GetHistFile()[0] << d_surface_outputs;
+              ConvHist_file[0] << d_direct_coeff;
+              if (output_surface) ConvHist_file[0] << d_surface_outputs;
             }
-            if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
-            config[val_iZone]->GetHistFile()[0] << end;
-            config[val_iZone]->GetHistFile()[0].flush();
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
           }
 
           /*--- Write screen output ---*/
@@ -2111,33 +2111,33 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
           if ((!DualTime_Iteration) && (output_files)) {
 
             if (!turbo) {
-              config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
-              if (buffet) config[val_iZone]->GetHistFile()[0] << buffet_coeff;
-              if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
-              if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
-              if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
+              ConvHist_file[0] << begin << direct_coeff;
+              if (buffet) ConvHist_file[0] << buffet_coeff;
+              if (thermal) ConvHist_file[0] << heat_coeff;
+              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
               if (inv_design) {
-                config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
-                if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
+                ConvHist_file[0] << Cp_inverse_design;
+                if (thermal) ConvHist_file[0] << Heat_inverse_design;
               }
-              if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
-              config[val_iZone]->GetHistFile()[0] << flow_resid << turb_resid;
-              if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
+              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
+              ConvHist_file[0] << flow_resid << turb_resid;
+              if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
             }
             else {
-              config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid << turb_resid;
+              ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
             }
 
-            if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
-            if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
-            if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_surface) ConvHist_file[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) {
-              config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
-              if (output_surface) config[val_iZone]->GetHistFile()[0] << d_surface_outputs;
+              ConvHist_file[0] << d_direct_coeff;
+              if (output_surface) ConvHist_file[0] << d_surface_outputs;
             }
-            if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
-            config[val_iZone]->GetHistFile()[0] << end;
-            config[val_iZone]->GetHistFile()[0].flush();
+            if (output_comboObj) ConvHist_file[0] << combo_obj;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
           }
 
           /*--- Write screen output ---*/
@@ -2209,16 +2209,16 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         case HEAT_EQUATION:
 
           if (!DualTime_Iteration) {
-            config[val_iZone]->GetHistFile()[0] << begin << direct_coeff << heat_resid << end;
-            config[val_iZone]->GetHistFile()[0].flush();
+            ConvHist_file[0] << begin << direct_coeff << heat_resid << end;
+            ConvHist_file[0].flush();
           }
           break;
 
         case FEM_ELASTICITY:
 
           if (!DualTime_Iteration) {
-            config[val_iZone]->GetHistFile()[0] << begin << fem_coeff << fem_resid << end_fem;
-            config[val_iZone]->GetHistFile()[0].flush();
+            ConvHist_file[0] << begin << fem_coeff << fem_resid << end_fem;
+            ConvHist_file[0].flush();
 
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
@@ -2279,8 +2279,8 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         case DISC_ADJ_INC_EULER:      case DISC_ADJ_INC_NAVIER_STOKES:
 
           if (!DualTime_Iteration) {
-            config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid << end;
-            config[val_iZone]->GetHistFile()[0].flush();
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            ConvHist_file[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
@@ -2333,11 +2333,11 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
         case ADJ_RANS : case DISC_ADJ_RANS: case DISC_ADJ_INC_RANS:
 
           if (!DualTime_Iteration) {
-            config[val_iZone]->GetHistFile()[0] << begin << adjoint_coeff << adj_flow_resid;
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
             if (!frozen_visc)
-              config[val_iZone]->GetHistFile()[0] << adj_turb_resid;
-            config[val_iZone]->GetHistFile()[0] << end;
-            config[val_iZone]->GetHistFile()[0].flush();
+              ConvHist_file[0] << adj_turb_resid;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
           }
           if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
@@ -2491,11 +2491,6 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     *Surface_CEff_Mnt = nullptr, *Surface_CFx_Mnt = nullptr, *Surface_CFy_Mnt =
     nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
     *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
-
-    /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-     the two lines below that use the dt variable. ---*/
-    //time_t now = time(0);
-    //string dt = ctime(&now); dt[24] = '.';
 
     /*--- Allocate memory for the coefficients being monitored ---*/
 
@@ -2782,11 +2777,10 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 6.1.0  \"Falcon\"                           |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 7.0.7  \"Blackbird\"                        |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
-    //Breakdown_file << "|   Local date and time: " << dt << "                      |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "| The current SU2 release has been coordinated by the                   |" << "\n";
     Breakdown_file << "| SU2 International Developers Society <www.su2devsociety.org>          |" << "\n";
@@ -2802,7 +2796,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
     Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
     Breakdown_file << "| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
+    Breakdown_file << "| Copyright 2012-2020, Francisco D. Palacios, Thomas D. Economon,       |" << "\n";
     Breakdown_file << "|                      Tim Albring, and the SU2 contributors.           |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
