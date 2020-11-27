@@ -31,6 +31,7 @@
 
 import numpy as np
 import shutil
+import time as timer
 
 # ----------------------------------------------------------------------
 #  FSI Interface Class
@@ -849,8 +850,14 @@ class AdjointInterface:
         # --- Set some general variables for the steady computation --- #
         nFSIIter = FSIconfig['NB_FSI_ITER']  # maximum number of FSI iteration (for each time step)
 
+        if myid is 0:
+           # starting time counting
+           start = timer.time()
+           FSI_checkpoint = start
+           mesh_CFD_checkpoint = start
+
         self.MPIPrint('\n********************************')
-        self.MPIPrint('* Begin steady FSI computation *')
+        self.MPIPrint('* Begin steady FSI Adjoint computation *')
         self.MPIPrint('********************************\n')
 
         self.MPIPrint('\n*********** Enter Block Gauss Seidel (BGS) method for strong coupling adjoint FSI ************')
@@ -872,6 +879,10 @@ class AdjointInterface:
                 self.MPIBarrier()
                 self.transferFlowLoadAdjoint(FSIconfig, FluidSolver, SolidSolver, MLSSolver)
 
+            # mesh checkpoint
+            if myid is 0:
+                mesh_CFD_checkpoint = timer.time()
+
             # --- Fluid solver call for FSI subiteration --- #
             self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
             self.MPIBarrier()
@@ -882,6 +893,10 @@ class AdjointInterface:
             FluidSolver.Update()               # Update the solver for the next time iteration
             FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
             FluidSolver.Output(0)              # Output the solution to file
+
+            if myid is 0:
+                mesh_CFD_time = timer.time() - mesh_CFD_checkpoint
+                print('\nCFD elapsed time: ', mesh_CFD_time)
 
             # --- Surface fluid loads interpolation and communication ---#
             self.MPIPrint('\n##### Transferring fluid tractions to the beam solver\n')
@@ -905,6 +920,12 @@ class AdjointInterface:
                    SolidSolver.RunAdjoint()
 
             self.FSIIter += 1
+
+            # FSI time
+            if myid is 0:
+                FSI_time = timer.time() - FSI_checkpoint
+                FSI_checkpoint = timer.time()
+                print('\nFSI iter elapsed time: ', FSI_time)
 
         self.MPIBarrier()
 

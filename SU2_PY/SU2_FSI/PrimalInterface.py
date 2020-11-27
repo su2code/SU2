@@ -36,6 +36,7 @@ import os
 import scipy.io
 from SU2_FSI.FSI_tools import readConfig
 from os import path
+import time as timer
 
 # ----------------------------------------------------------------------
 #  FSI Interface Class
@@ -788,6 +789,11 @@ class Interface:
             hist_file = open("historyFSI.dat", "w")
             hist_file.write("FF(X) \t FF(Y) \t FF(Z) \t FS(X) \t FS(Y) \t FS(Z) \t CD \t CL \n")
             hist_file.close()
+            # starting time counting
+            start = timer.time()
+            FSI_checkpoint = start
+            mesh_checkpoint = start
+            CFD_checkpoint = start
 
 
         self.MPIPrint('\n********************************')
@@ -810,16 +816,30 @@ class Interface:
                 self.MPIBarrier()
                 self.transferStructuralDisplacements(FSIconfig, FluidSolver, SolidSolver, MLSSolver)
 
+            # mesh checkpoint
+            if myid is 0:
+                mesh_checkpoint = timer.time()
+
             # --- Fluid solver call for FSI subiteration --- #
             self.MPIPrint('\n##### Launching fluid solver for a steady computation\n')
             self.MPIBarrier()
             FluidSolver.ResetConvergence()     # Make sure the solver starts convergence from 0
             FluidSolver.Preprocess(0)          # Time iteration pre-processing
+            ## Mesh time
+            if myid is 0:
+                mesh_time = timer.time() - mesh_checkpoint
+                print('\nMesh deform elapsed time: ', mesh_time)
+                CFD_checkpoint = timer.time()
+
             FluidSolver.Run()                  # Run one time-step (static: one simulation)
             FluidSolver.Postprocess()          # Run one time-step (static: one simulation)
             FluidSolver.Update()               # Update the solver for the next time iteration
             FluidSolver.Monitor(0)             # Monitor the solver and output solution to file if required
             FluidSolver.Output(0)              # Output the solution to file
+            # CFD time
+            if myid is 0:
+                CFD_time = timer.time() - CFD_checkpoint
+                print('\nCFD elapsed time: ', CFD_time)
 
             # --- Surface fluid loads interpolation and communication ---#
             self.MPIPrint('\n##### Transferring fluid tractions to the beam solver\n')
@@ -860,6 +880,11 @@ class Interface:
 
             if pyBeam_success == False:
                 break
+            # FSI time
+            if myid is 0:
+                FSI_time = timer.time() - FSI_checkpoint
+                FSI_checkpoint = timer.time()
+                print('\nFSI iter elapsed time: ', FSI_time)
 
         self.MPIBarrier()
         
