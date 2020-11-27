@@ -46,7 +46,7 @@ CFEMStandardTet::CFEMStandardTet(const unsigned short val_nPoly,
 
   /*--- Determine the parametric locations of the grid DOFs of the tetrahedron. ---*/
   LocationTetGridDOFsEquidistant(rTetDOFsEqui, sTetDOFsEqui, tTetDOFsEqui);
-  LocationTetGridDOFsLGL();
+  LocationTetGridDOFsLGL(rTetDOFsLGL, sTetDOFsLGL, tTetDOFsLGL);
 
   /*--- Determine the parametric location and weights of the
         integration rule of the tetrahedron. ---*/
@@ -68,16 +68,17 @@ CFEMStandardTet::CFEMStandardTet(const unsigned short val_nPoly,
     wIntegration(i) = wTetInt[i];
 }
 
-void CFEMStandardTet::LocationTetGridDOFsEquidistant(vector<passivedouble> &r,
-                                                     vector<passivedouble> &s,
-                                                     vector<passivedouble> &t) {
+void CFEMStandardTet::LocationTetGridDOFsEquidistant(vector<passivedouble> &rDOFs,
+                                                     vector<passivedouble> &sDOFs,
+                                                     vector<passivedouble> &tDOFs) {
 
   /*--- For a tetrahedron it is not possible to apply
         a tensor product and therefore all DOFs are
         simply stored. Allocate the memory. ---*/
-  r.resize(nDOFs);
-  s.resize(nDOFs);
-  t.resize(nDOFs);
+  const unsigned short nD = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
+  rDOFs.resize(nD);
+  sDOFs.resize(nD);
+  tDOFs.resize(nD);
 
   /*--- Determine the equidistant spacing along an edge. ---*/
   const passivedouble dh = 2.0/nPoly;
@@ -89,15 +90,17 @@ void CFEMStandardTet::LocationTetGridDOFsEquidistant(vector<passivedouble> &r,
     for(unsigned short j=0; j<=uppBoundJ; ++j) {
       const unsigned short uppBoundI = nPoly - k - j;
       for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
-        r[ii] = -1.0 + i*dh;
-        s[ii] = -1.0 + j*dh;
-        t[ii] = -1.0 + k*dh;
+        rDOFs[ii] = -1.0 + i*dh;
+        sDOFs[ii] = -1.0 + j*dh;
+        tDOFs[ii] = -1.0 + k*dh;
       }
     }
   }
 }
 
-void CFEMStandardTet::LocationTetGridDOFsLGL() {
+void CFEMStandardTet::LocationTetGridDOFsLGL(vector<passivedouble> &rDOFs,
+                                             vector<passivedouble> &sDOFs,
+                                             vector<passivedouble> &tDOFs) {
 
   /*--- The code to determine the parametric coordinates of the DOFs of the
         tetrahedron is a translation of the Matlab code belonging to the book
@@ -112,14 +115,17 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
                                     1.5608, 1.3413, 1.2577, 1.1603, 1.10153,
                                     0.6080, 0.4523, 0.8856, 0.8717, 0.9655};
 
+  /*--- Determine the number of DOFs based on the current value of nPoly. ---*/
+  const unsigned short nD = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
+
   /*--- Create the equidistributed nodes. ---*/
   vector<passivedouble> r, s, t;
   LocationTetGridDOFsEquidistant(r, s, t);
 
   /*--- Create the barycentric coordinates. ---*/
-  vector<passivedouble> L1(nDOFs), L2(nDOFs), L3(nDOFs), L4(nDOFs);
+  vector<passivedouble> L1(nD), L2(nD), L3(nD), L4(nD);
 
-  for(unsigned short i=0; i<nDOFs; ++i) {
+  for(unsigned short i=0; i<nD; ++i) {
     L1[i] =  0.5*(1.0 + t[i]);
     L2[i] =  0.5*(1.0 + s[i]);
     L3[i] = -0.5*(1.0 + r[i] + s[i] + t[i]);
@@ -156,22 +162,22 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
   const passivedouble alp = (nPoly < 16) ? alphaOpt[nPoly] : 1.0;
 
   /*--- Allocate the memory for the parametric coordinates. ---*/
-  rTetDOFsLGL.resize(nDOFs);
-  sTetDOFsLGL.resize(nDOFs);
-  tTetDOFsLGL.resize(nDOFs);
+  rDOFs.resize(nD);
+  sDOFs.resize(nD);
+  tDOFs.resize(nD);
 
   /*--- Initialize the parametric coordinates to the uniform distribution
         on the equilateral tetrahedron. ---*/
-  for(unsigned short i=0; i<nDOFs; ++i) {
-    rTetDOFsLGL[i] = L3[i]*v1[0] + L4[i]*v2[0] + L2[i]*v3[0] + L1[i]*v4[0];
-    sTetDOFsLGL[i] = L3[i]*v1[1] + L4[i]*v2[1] + L2[i]*v3[1] + L1[i]*v4[1];
-    tTetDOFsLGL[i] = L3[i]*v1[2] + L4[i]*v2[2] + L2[i]*v3[2] + L1[i]*v4[2];
+  for(unsigned short i=0; i<nD; ++i) {
+    rDOFs[i] = L3[i]*v1[0] + L4[i]*v2[0] + L2[i]*v3[0] + L1[i]*v4[0];
+    sDOFs[i] = L3[i]*v1[1] + L4[i]*v2[1] + L2[i]*v3[1] + L1[i]*v4[1];
+    tDOFs[i] = L3[i]*v1[2] + L4[i]*v2[2] + L2[i]*v3[2] + L1[i]*v4[2];
   }
 
   /*--- Initialize the corrections, which are stored in r, s and t, to zero. ---*/
-  r.assign(nDOFs, 0.0);
-  s.assign(nDOFs, 0.0);
-  t.assign(nDOFs, 0.0);
+  r.assign(nD, 0.0);
+  s.assign(nD, 0.0);
+  t.assign(nD, 0.0);
 
   /*--- Loop over the four faces of the tetrahedron. ---*/
   for(unsigned short face=0; face<4; ++face) {
@@ -190,8 +196,8 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
     EvalShift(alp, Lb, Lc, Ld, warp1, warp2);
 
     /*--- Compute the volume blending. ---*/
-    vector<passivedouble> blend(nDOFs);
-    for(unsigned short i=0; i<nDOFs; ++i) {
+    vector<passivedouble> blend(nD);
+    for(unsigned short i=0; i<nD; ++i) {
       blend[i] = Lb[i]*Lc[i]*Ld[i];
 
       const passivedouble denom = (Lb[i]+0.5*La[i])*(Lc[i]+0.5*La[i])*(Lc[i]+0.5*La[i]);
@@ -200,7 +206,7 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
     }
 
     /*--- Update the corrections. ---*/
-    for(unsigned short i=0; i<nDOFs; ++i) {
+    for(unsigned short i=0; i<nD; ++i) {
       const passivedouble abv1 = blend[i]*warp1[i], abv2 = blend[i]*warp2[i];
       r[i] += abv1*t1[face][0] + abv2*t2[face][0];
       s[i] += abv1*t1[face][1] + abv2*t2[face][1];
@@ -208,7 +214,7 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
     }
 
     /*--- Fix the face warping. ---*/
-    for(unsigned short i=0; i<nDOFs; ++i) {
+    for(unsigned short i=0; i<nD; ++i) {
       unsigned short val = 0;
       if(Lb[i] > tol) ++val;
       if(Lc[i] > tol) ++val;
@@ -222,7 +228,7 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
   }
 
   /*--- Store the parametric coordinates of the equilateral tetrahedron in r,s,t. ---*/
-  for(unsigned short i=0; i<nDOFs; ++i) {
+  for(unsigned short i=0; i<nD; ++i) {
     r[i] += rTetDOFsLGL[i];
     s[i] += sTetDOFsLGL[i];
     t[i] += tTetDOFsLGL[i];
@@ -238,14 +244,14 @@ void CFEMStandardTet::LocationTetGridDOFsLGL() {
 
   /*--- Convert the parametric coordinates from the equilateral tetrahedron to the
         parametric coordinates of the standard tetrahedron. ---*/
-  for(unsigned short i=0; i<nDOFs; ++i) {
+  for(unsigned short i=0; i<nD; ++i) {
     const passivedouble rr = 2.0*r[i] + v1[0] - v2[0] - v3[0] - v4[0];
     const passivedouble ss = 2.0*s[i] + v1[1] - v2[1] - v3[1] - v4[1];
     const passivedouble tt = 2.0*t[i] + v1[2] - v2[2] - v3[2] - v4[2];
 
-    rTetDOFsLGL[i] = A(0,0)*rr + A(0,1)*ss + A(0,2)*tt;
-    sTetDOFsLGL[i] = A(1,0)*rr + A(1,1)*ss + A(1,2)*tt;
-    tTetDOFsLGL[i] = A(2,0)*rr + A(2,1)*ss + A(2,2)*tt;
+    rDOFs[i] = A(0,0)*rr + A(0,1)*ss + A(0,2)*tt;
+    sDOFs[i] = A(1,0)*rr + A(1,1)*ss + A(1,2)*tt;
+    tDOFs[i] = A(2,0)*rr + A(2,1)*ss + A(2,2)*tt;
   }
 }
 
@@ -260,10 +266,13 @@ void CFEMStandardTet::EvalShift(const passivedouble         alpha,
         the book Nodal Discontinuous Galerkin Methods, Algorithms, Analysis and
         Applications, written by Jan S. Hesthaven and Tim Warburton. ---*/
 
-  /*--- Compute for each edge the nodal blending functions. ---*/
-  vector<passivedouble> blend1(nDOFs), blend2(nDOFs), blend3(nDOFs);
+  /*--- Determine the number of DOFs based on the current value of nPoly. ---*/
+  const unsigned short nD = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
 
-  for(unsigned short i=0; i<nDOFs; ++i) {
+  /*--- Compute for each edge the nodal blending functions. ---*/
+  vector<passivedouble> blend1(nD), blend2(nD), blend3(nD);
+
+  for(unsigned short i=0; i<nD; ++i) {
     blend1[i] = L2[i]*L3[i];
     blend2[i] = L1[i]*L3[i];
     blend3[i] = L1[i]*L2[i];
@@ -271,19 +280,19 @@ void CFEMStandardTet::EvalShift(const passivedouble         alpha,
 
   /*--- Compute the warp factors for the 3 edges. ---*/
   vector<passivedouble> warp1, warp2, warp3;
-  vector<passivedouble> tmp(nDOFs);
+  vector<passivedouble> tmp(nD);
 
-  for(unsigned short i=0; i<nDOFs; ++i) tmp[i] = L3[i] - L2[i];
+  for(unsigned short i=0; i<nD; ++i) tmp[i] = L3[i] - L2[i];
   EvalWarp(tmp, warp1);
 
-  for(unsigned short i=0; i<nDOFs; ++i) tmp[i] = L1[i] - L3[i];
+  for(unsigned short i=0; i<nD; ++i) tmp[i] = L1[i] - L3[i];
   EvalWarp(tmp, warp2);
 
-  for(unsigned short i=0; i<nDOFs; ++i) tmp[i] = L2[i] - L1[i];
+  for(unsigned short i=0; i<nD; ++i) tmp[i] = L2[i] - L1[i];
   EvalWarp(tmp, warp3);
 
   /*--- Combine the blending and the warping. ---*/
-  for(unsigned short i=0; i<nDOFs; ++i) {
+  for(unsigned short i=0; i<nD; ++i) {
     warp1[i] *= blend1[i]*(1.0 + alpha*alpha*L1[i]*L1[i]);
     warp2[i] *= blend2[i]*(1.0 + alpha*alpha*L2[i]*L2[i]);
     warp3[i] *= blend3[i]*(1.0 + alpha*alpha*L3[i]*L3[i]);
@@ -291,15 +300,15 @@ void CFEMStandardTet::EvalShift(const passivedouble         alpha,
 
   /*--- Evaluate the shift in the equilateral triangle, which is the
         final result to be stored in dx and dy. ---*/
-  dx.resize(nDOFs);
-  dy.resize(nDOFs);
+  dx.resize(nD);
+  dy.resize(nD);
 
   const passivedouble cos1 = cos(SU2_TYPE::GetValue(TWO3*PI_NUMBER));
   const passivedouble cos2 = cos(SU2_TYPE::GetValue(FOUR3*PI_NUMBER));
   const passivedouble sin1 = sin(SU2_TYPE::GetValue(TWO3*PI_NUMBER));
   const passivedouble sin2 = sin(SU2_TYPE::GetValue(FOUR3*PI_NUMBER));
 
-  for(unsigned short i=0; i<nDOFs; ++i) {
+  for(unsigned short i=0; i<nD; ++i) {
     dx[i] = warp1[i] + cos1*warp2[i] + cos2*warp3[i];
     dy[i] =            sin1*warp2[i] + sin2*warp3[i];
   }
@@ -312,6 +321,9 @@ void CFEMStandardTet::EvalWarp(const vector<passivedouble> &xOut,
         the book Nodal Discontinuous Galerkin Methods, Algorithms, Analysis and
         Applications, written by Jan S. Hesthaven and Tim Warburton. ---*/
 
+  /*--- Determine the number of DOFs based on the current value of nPoly. ---*/
+  const unsigned short nD = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
+
   /*--- Determine the 1D equidistributed and LGL nodes. Note that
         in this function the reversed definition is used. ---*/
   vector<passivedouble> xEq, xLGL;
@@ -322,37 +334,37 @@ void CFEMStandardTet::EvalWarp(const vector<passivedouble> &xOut,
   reverse(xLGL.begin(), xLGL.end());
 
   /*--- Initialize the warping vector to zero. ---*/
-  warp.assign(nDOFs, 0.0);
+  warp.assign(nD, 0.0);
 
   /*--- Loop over the internal points of the edge. ---*/
   for(unsigned short i=1; i<nPoly; ++i) {
 
     /*--- Initialize the vector d to the distance between the
           equidistributed and LGL node i. ---*/
-    vector<passivedouble> d(nDOFs, xLGL[i]-xEq[i]);
+    vector<passivedouble> d(nD, xLGL[i]-xEq[i]);
 
     /*--- Loop over the other internal nodes of the edge to correct
           the entries of vector d. ---*/
     for(unsigned short j=1; j<nPoly; ++j) {
       if(j != i) {
         const passivedouble denom = 1.0/(xEq[i]-xEq[j]);
-        for(unsigned short k=0; k<nDOFs; ++k)
+        for(unsigned short k=0; k<nD; ++k)
           d[k] *= (xOut[k]-xEq[j])*denom; 
       }
     }
 
     /*--- Carry out the scaling relative to the end points of the edge. ---*/
     passivedouble denom = -1.0/(xEq[i]-xEq[0]);
-    for(unsigned short k=0; k<nDOFs; ++k)
+    for(unsigned short k=0; k<nD; ++k)
       d[k] *= denom;
 
     denom = 1.0/(xEq[i]-xEq[nPoly]);
-    for(unsigned short k=0; k<nDOFs; ++k)
+    for(unsigned short k=0; k<nD; ++k)
       d[k] *= denom;
 
     /*--- Add d to warp for the DOFs. Note that the factor 4 is included here instead
           of in EvalShift as in the Matlab code of Hesthaven and Warburton. ---*/
-    for(unsigned short k=0; k<nDOFs; ++k)
+    for(unsigned short k=0; k<nD; ++k)
       warp[k] += 4.0*d[k];
   }
 }

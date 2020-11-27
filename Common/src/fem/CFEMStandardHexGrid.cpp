@@ -53,11 +53,90 @@ CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPoly,
   SubConnLinearElements();
 }
 
+CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPolyGrid,
+                                         const unsigned short val_nPolySol,
+                                         const unsigned short val_orderExact,
+                                         const unsigned short val_locGridDOFs)
+
+  : CFEMStandardHex(val_nPolyGrid,val_orderExact) {
+
+  /*--- Determine the location of the grid DOFs and build the appropriate
+        Lagrangian basis functions. ---*/
+  if(val_locGridDOFs == LGL) {
+
+    /*--- LGL distribution. Compute the 1D Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsLine(rLineDOFsLGL, rLineInt, lagBasisLineIntLGL);
+    DerLagBasisIntPointsLine(rLineDOFsLGL, rLineInt, derLagBasisLineIntLGL);
+
+    /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
+          different from rLineDOFsLGL when a different polynomial degree is
+          used for the grid and solution. ---*/
+    nPoly = val_nPolySol;
+    Location1DGridDOFsLGL(rLineSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Call LagBasisIntPointsLine and DerLagBasisIntPointsLine with the
+          solution DOFs as argument to compute the Lagrangian basis functions
+          and its derivatives in the solution DOFs. ---*/
+    LagBasisIntPointsLine(rLineDOFsLGL, rLineSolDOFs, lagBasisLineSolDOFs);
+    DerLagBasisIntPointsLine(rLineDOFsLGL, rLineSolDOFs, derLagBasisLineSolDOFs);
+  }
+  else {
+
+    /*--- Equidistant distribution. Compute the 1D Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsLine(rLineDOFsEqui, rLineInt, lagBasisLineIntEqui);
+    DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, derLagBasisLineIntEqui);
+
+    /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
+          different from rLineDOFsEqui when a different polynomial degree is
+          used for the grid and solution. ---*/
+    nPoly = val_nPolySol;
+    Location1DGridDOFsEquidistant(rLineSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Call LagBasisIntPointsLine and DerLagBasisIntPointsLine with the
+          solution DOFs as argument to compute the Lagrangian basis functions
+          and its derivatives in the solution DOFs. ---*/
+    LagBasisIntPointsLine(rLineDOFsEqui, rLineSolDOFs, lagBasisLineSolDOFs);
+    DerLagBasisIntPointsLine(rLineDOFsEqui, rLineSolDOFs, derLagBasisLineSolDOFs);
+  }
+
+  /*--- Create the local grid connectivities of the faces of the volume element. ---*/
+  LocalGridConnFaces();
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
+  /*--- Create the map with the function pointers to carry out the tensor product
+        to compute the data in the 3D nodal solution DOFs of the hexahedron. ---*/
+  map<CUnsignedShort2T, TPI3D> mapFunctions;
+  CreateMapTensorProductVolumeIntPoints3D(mapFunctions);
+
+  /*--- Try to find the combination of the number of 1D DOFs and solution DOFs
+        in mapFunctions. If not found, write a clear error message that this
+        tensor product is not supported. ---*/
+  CUnsignedShort2T nDOFsAndSolDOFs(nDOFs1D, val_nPolySol+1);
+  auto MI = mapFunctions.find(nDOFsAndSolDOFs);
+  if(MI == mapFunctions.end()) {
+    std::ostringstream message;
+    message << "The tensor product TensorProductVolumeIntPoints3D_" << nDOFs1D
+            << "_" << val_nPolySol+1 << " not created by the automatic source code "
+            << "generator. Modify this automatic source code creator";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Set the function pointer to carry out tensor product. ---*/
+  TensorProductDataVolSolDOFs = MI->second;
+}
+
 void CFEMStandardHexGrid::CoorIntPoints(const bool                LGLDistribution,
                                         ColMajorMatrix<su2double> &matCoorDOF,
                                         ColMajorMatrix<su2double> &matCoorInt) {
 
-  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  /*--- Check for which point distribution the coordinates must be computed. ---*/
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function TensorProductIntegrationPoints to compute the
@@ -101,6 +180,19 @@ void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                   
     TensorProductIntegrationPoints(3, lagBasisLineIntEqui, lagBasisLineIntEqui, derLagBasisLineIntEqui,
                                    matCoor, matDerCoor[2], nullptr);
   }
+}
+
+void CFEMStandardHexGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+  /*--- Call the function TensorProductSolDOFs 3 times to compute the derivatives of
+        the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+  TensorProductSolDOFs(3, derLagBasisLineSolDOFs, lagBasisLineSolDOFs, lagBasisLineSolDOFs,
+                       matCoor, matDerCoor[0], nullptr);
+  TensorProductSolDOFs(3, lagBasisLineSolDOFs, derLagBasisLineSolDOFs, lagBasisLineSolDOFs,
+                       matCoor, matDerCoor[1], nullptr);
+  TensorProductSolDOFs(3, lagBasisLineSolDOFs, lagBasisLineSolDOFs, derLagBasisLineSolDOFs,
+                       matCoor, matDerCoor[2], nullptr);
 }
 
 passivedouble CFEMStandardHexGrid::WorkEstimateVolume(CConfig *config) {
@@ -205,4 +297,27 @@ void CFEMStandardHexGrid::SubConnLinearElements(void) {
       }
     }
   }
+}
+
+void CFEMStandardHexGrid::TensorProductSolDOFs(const int                           N,
+                                               const ColMajorMatrix<passivedouble> &Ai,
+                                               const ColMajorMatrix<passivedouble> &Aj,
+                                               const ColMajorMatrix<passivedouble> &Ak,
+                                               const ColMajorMatrix<su2double>     &B,
+                                               ColMajorMatrix<su2double>           &C,
+                                               const CConfig                       *config) {
+
+  /*--- Call the function to which TensorProductDataVolSolDOFs points to carry out
+        the actual tensor product. Perform the timing, if desired. ---*/
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->TensorProduct_Tick(&timeGemm);
+#endif
+
+  TensorProductDataVolSolDOFs(N, B.rows(), C.rows(), Ai.data(), Aj.data(), Ak.data(),
+                              B.data(), C.data());
+
+#ifdef PROFILE
+  if( config ) config->TensorProduct_Tock(timeGemm, 3, N, nDOFs1D, rLineSolDOFs.size());
+#endif
 }

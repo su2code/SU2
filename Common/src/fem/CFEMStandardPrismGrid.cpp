@@ -55,7 +55,76 @@ CFEMStandardPrismGrid::CFEMStandardPrismGrid(const unsigned short val_nPoly,
 
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivative of the coordinates are computed, which is 3. ---*/
-  SetUpJittedGEMM(nIntegrationPad, 3, nDOFs);
+  SetUpJittedGEMM(nIntegrationPad, 3, nDOFs, jitter, my_dgemm);
+}
+
+CFEMStandardPrismGrid::CFEMStandardPrismGrid(const unsigned short val_nPolyGrid,
+                                             const unsigned short val_nPolySol,
+                                             const unsigned short val_orderExact,
+                                             const unsigned short val_locGridDOFs)
+  : CFEMStandardPrism(val_nPolyGrid, val_orderExact) {
+
+  /*--- Determine the location of the grid DOFs and build the appropriate
+        Lagrangian basis functions. ---*/
+  if(val_locGridDOFs == LGL) {
+
+    /*--- LGL distribution. Compute the corresponding Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsPrism(rTriangleDOFsLGL, sTriangleDOFsLGL, rLineDOFsLGL, lagBasisIntLGL);
+    DerLagBasisIntPointsPrism(rTriangleDOFsLGL, sTriangleDOFsLGL, rLineDOFsLGL, derLagBasisIntLGL);
+
+    /*--- Determine the location of nodal solution DOFs. ---*/
+    nPoly = val_nPolySol;
+    Location1DGridDOFsLGL(rLineSolDOFs);
+    LocationTriangleGridDOFsLGL(rTriangleSolDOFs, sTriangleSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Compute the Lagrangian basis functions and its derivatives
+          in the nodal solution DOFs. ---*/
+    LagBasisAndDerSolDOFsPrism(rTriangleDOFsLGL, sTriangleDOFsLGL, rLineDOFsLGL);
+  }
+  else {
+
+    /*--- Equidistant distribution. Compute the corresponding Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui, lagBasisIntEqui);
+    DerLagBasisIntPointsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui, derLagBasisIntEqui);
+
+    /*--- Determine the location of nodal solution DOFs. ---*/
+    nPoly = val_nPolySol;
+    Location1DGridDOFsEquidistant(rLineSolDOFs);
+    LocationTriangleGridDOFsEquidistant(rTriangleSolDOFs, sTriangleSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Compute the Lagrangian basis functions and its derivatives
+          in the nodal solution DOFs. ---*/
+    LagBasisAndDerSolDOFsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui);
+  }
+
+  /*--- Create the local grid connectivities of the faces of the volume element. ---*/
+  LocalGridConnFaces();
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
+  /*--- Set up the jitted gemm call, if supported. For this particular standard
+        element the derivative of the coordinates are computed, which is 3. ---*/
+  SetUpJittedGEMM(nIntegrationPad, 3, nDOFs, jitter, my_dgemm);
+
+  /*--- Set up the jitted gemm call, if supported, to compute the data
+        in the nodal solution DOFs. ---*/
+  SetUpJittedGEMM(lagBasisSolDOFs.rows(), 3, nDOFs, jitterSolDOFs, dgemmSolDOFs);
+}
+
+CFEMStandardPrismGrid::~CFEMStandardPrismGrid() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  if( jitterSolDOFs ) {
+    mkl_jit_destroy(jitterSolDOFs);
+    jitterSolDOFs = nullptr;
+  }
+#endif
 }
 
 void CFEMStandardPrismGrid::CoorIntPoints(const bool                LGLDistribution,
@@ -67,13 +136,13 @@ void CFEMStandardPrismGrid::CoorIntPoints(const bool                LGLDistribut
 
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(nIntegrationPad, 3, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(nIntegrationPad, 3, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -86,18 +155,29 @@ void CFEMStandardPrismGrid::DerivativesCoorIntPoints(const bool                 
 
     /*--- LGL distribution. Call the function OwnGemm 3 times to compute the derivatives
           of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
-    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
-    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[2], matCoor, matDerCoor[2], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[2], matCoor, matDerCoor[2], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm 3 times to compute the derivatives
           of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
-    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
-    OwnGemm(nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[2], matCoor, matDerCoor[2], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[2], matCoor, matDerCoor[2], nullptr);
   }
+}
+
+void CFEMStandardPrismGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                                                   vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+  /*--- Call OwnGemm 3 times to compute the derivatives of the Cartesian
+        coordinates w.r.t. the three parametric coordinates. ---*/
+  const unsigned short nSolDOFs = lagBasisSolDOFs.rows();
+  OwnGemm(dgemmSolDOFs, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[0], matCoor, matDerCoor[0], nullptr);
+  OwnGemm(dgemmSolDOFs, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[1], matCoor, matDerCoor[1], nullptr);
+  OwnGemm(dgemmSolDOFs, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[2], matCoor, matDerCoor[2], nullptr);
 }
 
 passivedouble CFEMStandardPrismGrid::WorkEstimateVolume(CConfig *config) {
@@ -202,6 +282,67 @@ void CFEMStandardPrismGrid::LagBasisIntPointsPrism(const vector<passivedouble>  
     passivedouble rowSum = -1.0;
     for(unsigned short j=0; j<rDOFs.size(); ++j) rowSum += lag(i,j);
     assert(fabs(rowSum) < 1.e-6);
+  }
+}
+
+void CFEMStandardPrismGrid::LagBasisAndDerSolDOFsPrism(const vector<passivedouble> &rTriangleDOFs,
+                                                       const vector<passivedouble> &sTriangleDOFs,
+                                                       const vector<passivedouble> &rLineDOFs) {
+
+  /*--- Determine the parametric coordinates of all DOFs of the prism. ---*/
+  vector<passivedouble> rDOFs, sDOFs, tDOFs;
+  LocationAllDOFsPrism(rTriangleDOFs, sTriangleDOFs, rLineDOFs, rDOFs, sDOFs, tDOFs);
+
+  /*--- Determine the parametric coordinates of all solution DOFs of the prism. ---*/
+  const unsigned short nTri     = rTriangleSolDOFs.size();
+  const unsigned short nLine    = rLineSolDOFs.size();
+  const unsigned short nSolDOFs = nTri*nLine;
+  vector<passivedouble> rSol(nSolDOFs), sSol(nSolDOFs), tSol(nSolDOFs);
+
+  unsigned short ii = 0;
+  for(unsigned short k=0; k<nLine; ++k) {
+    for(unsigned short j=0; j<nTri; ++j, ++ii) {
+      rSol[ii] = rTriangleSolDOFs[j];
+      sSol[ii] = sTriangleSolDOFs[j];
+      tSol[ii] = rLineSolDOFs[k];
+    }
+  }
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondePrism(rDOFs, sDOFs, tDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Vandermonde matrix and its gradients of the solution DOFs. ---*/
+  ColMajorMatrix<passivedouble> V(nSolDOFs,rDOFs.size()),   VDr(nSolDOFs,rDOFs.size()),
+                                VDs(nSolDOFs,rDOFs.size()), VDt(nSolDOFs,rDOFs.size());
+
+  VandermondePrism(rSol, sSol, tSol, V);
+  GradVandermondePrism(rSol, sSol, tSol, VDr, VDs, VDt);
+
+  /*--- The Lagrangian basis functions and its gradients can be obtained by
+        multiplying V, VDr, VDs, VDt and VInv. ---*/
+  derLagBasisSolDOFs.resize(3);
+  VInv.MatMatMult('R', V,   lagBasisSolDOFs);
+  VInv.MatMatMult('R', VDr, derLagBasisSolDOFs[0]);
+  VInv.MatMatMult('R', VDs, derLagBasisSolDOFs[1]);
+  VInv.MatMatMult('R', VDt, derLagBasisSolDOFs[2]);
+
+  /*--- Check if the sum of the elements of the relevant rows of
+        lagBasisSolDOFs is 1 and of derLagBasisSolDOFs is 0. ---*/
+  for(unsigned short i=0; i<nSolDOFs; ++i) {
+    passivedouble rowSum = -1.0, rowSumDr = 0.0, rowSumDs = 0.0, rowSumDt = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSum   += lagBasisSolDOFs(i,j);
+      rowSumDr += derLagBasisSolDOFs[0](i,j);
+      rowSumDs += derLagBasisSolDOFs[1](i,j);
+      rowSumDt += derLagBasisSolDOFs[2](i,j);
+    }
+
+    assert(fabs(rowSum)   < 1.e-6);
+    assert(fabs(rowSumDr) < 1.e-6);
+    assert(fabs(rowSumDs) < 1.e-6);
+    assert(fabs(rowSumDt) < 1.e-6);
   }
 }
 

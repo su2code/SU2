@@ -37,7 +37,7 @@ CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPoly,
   : CFEMStandardQuad(val_nPoly, val_orderExact) {
 
   /*--- Determine the number of space dimensions, which is 3 if this standard
-        element is a surface element and 2 when it is a value element. ---*/
+        element is a surface element and 2 when it is a volume element. ---*/
   nDim = val_surfElement ? 3 : 2;
 
   /*--- Compute the values of the 1D Lagrangian basis functions in the integration
@@ -57,6 +57,88 @@ CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPoly,
   /*--- Determine the local subconnectivity of this standard element when split
         in several linear elements. Used for a.o. plotting and searcing. ---*/
   SubConnLinearElements();
+}
+
+CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPolyGrid,
+                                           const unsigned short val_nPolySol,
+                                           const unsigned short val_orderExact,
+                                           const unsigned short val_locGridDOFs)
+  : CFEMStandardQuad(val_nPolyGrid, val_orderExact) {
+
+  /*--- Set the number of space dimensions, which is always 2 when this
+        constructor is called for a quadrilateral standard element. ---*/
+  nDim = 2;
+
+  /*--- Determine the location of the grid DOFs and build the appropriate
+        Lagrangian basis functions. ---*/
+  if(val_locGridDOFs == LGL) {
+
+    /*--- LGL distribution. Compute the 1D Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsLine(rLineDOFsLGL, rLineInt, lagBasisLineIntLGL);
+    DerLagBasisIntPointsLine(rLineDOFsLGL, rLineInt, derLagBasisLineIntLGL);
+
+    /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
+          different from rLineDOFsLGL when a different polynomial degree is
+          used for the grid and solution. ---*/
+    nPoly = val_nPolySol;
+    Location1DGridDOFsLGL(rLineSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Call LagBasisIntPointsLine and DerLagBasisIntPointsLine with the
+          solution DOFs as argument to compute the Lagrangian basis functions
+          and its derivatives in the solution DOFs. ---*/
+    LagBasisIntPointsLine(rLineDOFsLGL, rLineSolDOFs, lagBasisLineSolDOFs);
+    DerLagBasisIntPointsLine(rLineDOFsLGL, rLineSolDOFs, derLagBasisLineSolDOFs);
+  }
+  else {
+
+    /*--- Equidistant distribution. Compute the 1D Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsLine(rLineDOFsEqui, rLineInt, lagBasisLineIntEqui);
+    DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, derLagBasisLineIntEqui);
+
+    /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
+          different from rLineDOFsEqui when a different polynomial degree is
+          used for the grid and solution. ---*/
+    nPoly = val_nPolySol;
+    Location1DGridDOFsEquidistant(rLineSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Call LagBasisIntPointsLine and DerLagBasisIntPointsLine with the
+          solution DOFs as argument to compute the Lagrangian basis functions
+          and its derivatives in the solution DOFs. ---*/
+    LagBasisIntPointsLine(rLineDOFsEqui, rLineSolDOFs, lagBasisLineSolDOFs);
+    DerLagBasisIntPointsLine(rLineDOFsEqui, rLineSolDOFs, derLagBasisLineSolDOFs);
+  }
+
+  /*--- Create the local grid connectivities of the faces of the volume element. ---*/
+  LocalGridConnFaces();
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
+  /*--- Create the map with the function pointers to carry out the tensor product
+        to compute the data in the 2D nodal solution DOFs of the quadrilateral. ---*/
+  map<CUnsignedShort2T, TPI2D> mapFunctions;
+  CreateMapTensorProductVolumeIntPoints2D(mapFunctions);
+
+  /*--- Try to find the combination of the number of 1D DOFs and solution DOFs
+        in mapFunctions. If not found, write a clear error message that this
+        tensor product is not supported. ---*/
+  CUnsignedShort2T nDOFsAndSolDOFs(nDOFs1D, val_nPolySol+1);
+  auto MI = mapFunctions.find(nDOFsAndSolDOFs);
+  if(MI == mapFunctions.end()) {
+    std::ostringstream message;
+    message << "The tensor product TensorProductVolumeIntPoints2D_" << nDOFs1D
+            << "_" << val_nPolySol+1 << " not created by the automatic source code "
+            << "generator. Modify this automatic source code creator";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Set the function pointer to carry out tensor product. ---*/
+  TensorProductDataVolSolDOFs = MI->second;
 }
 
 void CFEMStandardQuadGrid::CoorIntPoints(const bool                LGLDistribution,
@@ -102,8 +184,8 @@ void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                  
   }
   else {
 
-    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
-          derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. The first
+    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 2 times to compute the
+          derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. The first
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
     TensorProductIntegrationPoints(nDim, derLagBasisLineIntEqui, lagBasisLineIntEqui,
@@ -111,6 +193,19 @@ void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                  
     TensorProductIntegrationPoints(nDim, lagBasisLineIntEqui, derLagBasisLineIntEqui,
                                    matCoor, matDerCoor[1], nullptr);
   }
+}
+
+void CFEMStandardQuadGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                                                  vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+  /*--- Call the function TensorProductSolDOFs 2 times to compute the derivatives of
+        the Cartesian coordinates w.r.t. the two parametric coordinates. The first
+        argument in the function call is nDim, which corresponds to the number of Cartesian
+        coordinates (3 for a surface element and 2 for a volume element). ---*/
+  TensorProductSolDOFs(nDim, derLagBasisLineSolDOFs, lagBasisLineSolDOFs,
+                       matCoor, matDerCoor[0], nullptr);
+  TensorProductSolDOFs(nDim, lagBasisLineSolDOFs, derLagBasisLineSolDOFs,
+                       matCoor, matDerCoor[1], nullptr);
 }
 
 passivedouble CFEMStandardQuadGrid::WorkEstimateBoundaryFace(CConfig              *config,
@@ -205,4 +300,25 @@ void CFEMStandardQuadGrid::SubConnLinearElements(void) {
       subConn1ForPlotting.push_back(n3);
     }
   }
+}
+
+void CFEMStandardQuadGrid::TensorProductSolDOFs(const int                           N,
+                                                const ColMajorMatrix<passivedouble> &Ai,
+                                                const ColMajorMatrix<passivedouble> &Aj,
+                                                const ColMajorMatrix<su2double>     &B,
+                                                ColMajorMatrix<su2double>           &C,
+                                                const CConfig                       *config) {
+
+  /*--- Call the function to which TensorProductDataVolSolDOFs points to carry out
+        the actual tensor product. Perform the timing, if desired. ---*/
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->TensorProduct_Tick(&timeGemm);
+#endif
+
+  TensorProductDataVolSolDOFs(N, B.rows(), C.rows(), Ai.data(), Aj.data(), B.data(), C.data());
+
+#ifdef PROFILE
+  if( config ) config->TensorProduct_Tock(timeGemm, 2, N, nDOFs1D, rLineSolDOFs.size());
+#endif
 }

@@ -26,11 +26,18 @@
  */
 
 #include "../../../include/geometry/fem_grid/CVolumeElementFEM_Base.hpp"
+#include "../../../include/geometry/fem_grid/CPointFEM.hpp"
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 
 /*---------------------------------------------------------------------*/
 /*---      Public member functions of CVolumeElementFEM_Base.       ---*/
 /*---------------------------------------------------------------------*/
+
+void CVolumeElementFEM_Base::DerMetricTermsIntegrationPoints(const bool           LGLDistribution,
+                                                             const unsigned short nDim) {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
 
 void CVolumeElementFEM_Base::GetCornerPointsAllFaces(unsigned short &numFaces,
                                                      unsigned short nPointsPerFace[],
@@ -48,4 +55,87 @@ void CVolumeElementFEM_Base::GetCornerPointsAllFaces(unsigned short &numFaces,
       faceConn[i][j] = nodeIDsGrid[nn];
     }
   }
+}
+
+void CVolumeElementFEM_Base::InitGridVelocities(const unsigned short nDim) {
+
+  /*--- Determine the number of integration points and solution DOFs.
+        The first number is padded for performance reasons. ---*/
+  const unsigned short nIntPad  = standardElemGrid->GetNIntegrationPad();
+  const unsigned short nDOFsSol = standardElemGrid->GetNSolDOFs();
+
+  /*--- Allocate the memory for the grid velocities and initialize
+        them to zero. ---*/
+  gridVelocitiesInt.resize(nIntPad, nDim);
+  gridVelocitiesInt.setConstant(0.0);
+
+  gridVelocitiesSolDOFs.resize(nDOFsSol, nDim);
+  gridVelocitiesSolDOFs.setConstant(0.0);
+}
+
+bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           LGLDistribution,
+                                                          const unsigned short nDim) {
+
+  /*--- Allocate the memory for the metric terms. ---*/
+  const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+  JacobiansInt.resize(nIntPad);
+
+  metricTermsInt.resize(nDim);
+  for(unsigned short k=0; k<nDim; ++k)
+    metricTermsInt[k].resize(nIntPad, nDim);
+
+  /*--- Compute the metric terms in the volume integration points. ---*/
+  standardElemGrid->MetricTermsVolumeIntPoints(LGLDistribution, coorGridDOFs,
+                                               metricTermsInt, JacobiansInt);
+
+  /*--- Determine the volume of the element and check for negative Jacobians
+        in the integration points. ---*/
+  const unsigned short nInt = standardElemGrid->GetNIntegration();
+  const passivedouble *wInt = standardElemGrid->GetIntegrationWeights();
+  bool elemIsGood = true;
+  volume = 0.0;
+
+  for(unsigned short i=0; i<nInt; ++i) {
+    volume += wInt[i]*JacobiansInt(i);
+    if(JacobiansInt(i) <= 0.0) elemIsGood = false;
+  }
+
+  /*--- Return the value of elemIsGood. ---*/
+  return elemIsGood;
+}
+
+bool CVolumeElementFEM_Base::MetricTermsSolDOFs(const unsigned short nDim) {
+
+  /*--- Allocate the memory for the metric terms of the solution DOFs. ---*/
+  const unsigned short nDOFsSol = standardElemGrid->GetNSolDOFs();
+
+  JacobiansSolDOFs.resize(nDOFsSol);
+
+  metricTermsSolDOFs.resize(nDim);
+  for(unsigned short k=0; k<nDim; ++k)
+    metricTermsSolDOFs[k].resize(nDOFsSol, nDim);
+
+  /*--- Compute the metric terms in the solution DOFs. ---*/
+  standardElemGrid->MetricTermsSolDOFs(coorGridDOFs, metricTermsSolDOFs,
+                                       JacobiansSolDOFs);
+
+  /*--- Check for negative Jacobians in the solution DOFs. ---*/
+  bool elemIsGood = true;
+  for(unsigned short i=0; i<nDOFsSol; ++i)
+    if(JacobiansSolDOFs(i) <= 0.0) elemIsGood = false;
+
+  /*--- Return the value of elemIsGood. ---*/
+  return elemIsGood;
+}
+
+void CVolumeElementFEM_Base::SetCoorGridDOFs(const unsigned short    nDim,
+                                             const vector<CPointFEM> &meshPoints) {
+
+  /*--- Allocate the memory for the coordinates of the grid DOFs. ---*/
+  coorGridDOFs.resize(nodeIDsGrid.size(), nDim);
+
+  /*--- Loop over the dimensions and number of grid DOFs. ---*/
+  for(unsigned short k=0; k<nDim; ++k)
+    for(unsigned long i=0; i<nodeIDsGrid.size(); ++i)
+      coorGridDOFs(i,k) = meshPoints[nodeIDsGrid[i]].coor[k];
 }

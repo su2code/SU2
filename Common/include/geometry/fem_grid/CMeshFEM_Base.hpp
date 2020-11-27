@@ -80,7 +80,9 @@ protected:
 
   /*!
    * \brief Function, which creates the standard elements for the grid.
-   * \param[in] elemTypes - Information about the element types to be created.
+   * \param[in] elemTypes   - Information about the element types to be created.
+   * \param[in] locGridDOFs - Location of the grid DOFs, either LGL or equidistant.
    */
-  void CreateStandardVolumeElementsGrid(const vector<CUnsignedShort3T> &elemTypes);
+  void CreateStandardVolumeElementsGrid(const vector<CUnsignedShort4T> &elemTypes,
+                                        const unsigned short           locGridDOFs);
 };

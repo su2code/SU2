@@ -32,6 +32,9 @@
 
 using namespace std;
 
+/*--- Forward declaration. ---*/
+class CPointFEM;
+
 /*!
  * \class CVolumeElementFEM_Base
  * \brief Base class to store a volume element for the FEM solver.
@@ -71,23 +74,41 @@ public:
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 
   su2double lenScale;                /*!< \brief Length scale of the element. */
+  su2double volume;                  /*!< \brief Volume of the element. */
 
-  ColMajorMatrix<su2double> metricTerms;          /*!< \brief The metric terms in the integration
-                                                              points of this element. */
-  ColMajorMatrix<su2double> metricTermsSolDOFs;   /*!< \brief The metric terms in the nodal
-                                                              solution DOFs of this element. */
+  ColMajorMatrix<su2double> coorGridDOFs;         /*!< \brief Coordinates of the grid DOFs of this element. */
+
+  su2activevector JacobiansInt;      /*!< \brief The Jacobians in the integration points of this element. */ 
+  su2activevector JacobiansSolDOFs;  /*!< \brief The Jacobians in the nodal solution DOFs of this element. */
+
+  vector<ColMajorMatrix<su2double> > metricTermsInt;    /*!< \brief The metric terms in the integration
+                                                                    points of this element. */
+  vector<ColMajorMatrix<su2double> >metricTermsSolDOFs; /*!< \brief The metric terms in the nodal
+                                                                    solution DOFs of this element. */
 
   ColMajorMatrix<su2double> coorIntegrationPoints;  /*!< \brief Coordinates of the integration points of this element. */
-  ColMajorMatrix<su2double> gridVelocities;         /*!< \brief Grid velocities of the integration points of this element. */
-  ColMajorMatrix<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
+  ColMajorMatrix<su2double> gridVelocitiesInt;      /*!< \brief Grid velocities of the integration points of this element. */
+  ColMajorMatrix<su2double> wallDistanceInt;        /*!< \brief The wall distance to the viscous walls for
                                                                 the integration points of this element. */
 
-  ColMajorMatrix<su2double> coorSolDOFs;            /*!< \brief Coordinates of the nodal solution DOFs of this element. */
+  ColMajorMatrix<su2double> coorSolDOFs;            /*!< \brief Coordinates of the nodal solution DOFs of this element.
+                                                                It only differs from coorGridDOFs if the polynomial degree
+                                                                of the grid and solution differ. */
   ColMajorMatrix<su2double> gridVelocitiesSolDOFs;  /*!< \brief Grid velocities of the nodal solution DOFs of this element. */
   ColMajorMatrix<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
                                                                 the nodal solution DOFs of this element. */    
 
   CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
+
+  /*!
+   * \brief Function, which computes the derivatives of the metric terms
+   *         in the integration points.
+   * \param[in] LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in] nDim            - Number of spatial dimensions.
+   * \return  True of all Jacobians are positive and negative otherwise.
+   */
+  void DerMetricTermsIntegrationPoints(const bool           LGLDistribution,
+                                       const unsigned short nDim);
 
   /*!
    * \brief Get all the corner points of all the faces of this element. It must be made sure
@@ -100,4 +121,35 @@ public:
   void GetCornerPointsAllFaces(unsigned short &numFaces,
                                unsigned short nPointsPerFace[],
                                unsigned long  faceConn[6][4]) const;
+
+  /*!
+   * \brief Function, which initializes the grid velocities of this volume element.
+   * \param[in] nDim - Number of spatial dimensions.
+   */
+  void InitGridVelocities(const unsigned short nDim);
+
+  /*!
+   * \brief Function, which computes the metric terms in the integration points.
+   * \param[in] LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in] nDim            - Number of spatial dimensions.
+   * \return  True of all Jacobians are positive and negative otherwise.
+   */
+  bool MetricTermsIntegrationPoints(const bool           LGLDistribution,
+                                    const unsigned short nDim);
+
+  /*!
+   * \brief Function, which computes the metric terms in the nodal solution DOFs.
+   * \param[in] nDim - Number of spatial dimensions.
+   * \return  True of all Jacobians are positive and negative otherwise.
+   */
+  bool MetricTermsSolDOFs(const unsigned short nDim);
+
+  /*!
+   * \brief Function, which sets the coordinates of the grid DOFs.
+   * \param[in] nDim       - Number of spatial dimensions.
+   * \param[in] meshPoints - Vector, which contains the coordinates
+   *                         of all points in the current partition.
+   */
+  void SetCoorGridDOFs(const unsigned short    nDim,
+                       const vector<CPointFEM> &meshPoints);
 };

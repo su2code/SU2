@@ -105,6 +105,6 @@ protected:
                                       const CConfig                       *config);
 
 private:
-  TPI2D TensorProductDataVolIntPoints; /*!< \brief Function pointer to carry out the tensor product
-                                                   to compute the data in the volume integration points. */ 
+  TPI2D TensorProductDataVolIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume integration points. */ 
 };

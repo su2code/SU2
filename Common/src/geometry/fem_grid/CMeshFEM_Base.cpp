@@ -67,7 +67,8 @@ CMeshFEM_Base::~CMeshFEM_Base(void) {
 /*---        Protected member functions of CMeshFEM_Base.           ---*/
 /*---------------------------------------------------------------------*/
 
-void CMeshFEM_Base::CreateStandardVolumeElementsGrid(const vector<CUnsignedShort3T> &elemTypes) {
+void CMeshFEM_Base::CreateStandardVolumeElementsGrid(const vector<CUnsignedShort4T> &elemTypes,
+                                                     const unsigned short           locGridDOFs) {
 
   /*--- Allocate the memory for the pointers. ---*/
   standardVolumeElementsGrid.resize(elemTypes.size(), nullptr);
@@ -78,28 +79,35 @@ void CMeshFEM_Base::CreateStandardVolumeElementsGrid(const vector<CUnsignedShort
     /*--- Abbreviate the element type, polynomial degree and polynomial order that
           must be integrated exactly for readability. ---*/
     const unsigned short VTK_Type   = elemTypes[i].short0;
-    const unsigned short nPoly      = elemTypes[i].short1;
-    const unsigned short orderExact = elemTypes[i].short2;
+    const unsigned short nPolyGrid  = elemTypes[i].short1;
+    const unsigned short nPolySol   = elemTypes[i].short2;
+    const unsigned short orderExact = elemTypes[i].short3;
 
     /*--- Determine the element type and allocate the appropriate object. ---*/
     switch( VTK_Type ) {
       case TRIANGLE:
-        standardVolumeElementsGrid[i] = new CFEMStandardTriGrid(nPoly, orderExact, false);
+        standardVolumeElementsGrid[i] = new CFEMStandardTriGrid(nPolyGrid,  nPolySol,
+                                                                orderExact, locGridDOFs);
         break;
       case QUADRILATERAL:
-        standardVolumeElementsGrid[i] = new CFEMStandardQuadGrid(nPoly, orderExact, false);
+        standardVolumeElementsGrid[i] = new CFEMStandardQuadGrid(nPolyGrid,  nPolySol,
+                                                                 orderExact, locGridDOFs);
         break;
       case TETRAHEDRON:
-        standardVolumeElementsGrid[i] = new CFEMStandardTetGrid(nPoly, orderExact);
+        standardVolumeElementsGrid[i] = new CFEMStandardTetGrid(nPolyGrid,  nPolySol,
+                                                                orderExact, locGridDOFs); 
         break;
       case PYRAMID:
-        standardVolumeElementsGrid[i] = new CFEMStandardPyraGrid(nPoly, orderExact);
+        standardVolumeElementsGrid[i] = new CFEMStandardPyraGrid(nPolyGrid,  nPolySol,
+                                                                 orderExact, locGridDOFs); 
         break;
       case PRISM:
-        standardVolumeElementsGrid[i] = new CFEMStandardPrismGrid(nPoly, orderExact);
+        standardVolumeElementsGrid[i] = new CFEMStandardPrismGrid(nPolyGrid,  nPolySol,
+                                                                  orderExact, locGridDOFs); 
         break;
       case HEXAHEDRON:
-        standardVolumeElementsGrid[i] = new CFEMStandardHexGrid(nPoly, orderExact);
+        standardVolumeElementsGrid[i] = new CFEMStandardHexGrid(nPolyGrid,  nPolySol,
+                                                                orderExact, locGridDOFs); 
         break;
       default:  /*--- To avoid a compiler warning. ---*/
         SU2_MPI::Error(string("Unknown volume element. This should not happen"),

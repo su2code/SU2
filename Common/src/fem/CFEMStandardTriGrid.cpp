@@ -61,7 +61,78 @@ CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPoly,
 
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivatives of the coordinates are computed, which is nDim. ---*/
-  SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs);
+  SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs, jitter, my_dgemm);
+}
+
+CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPolyGrid,
+                                         const unsigned short val_nPolySol,
+                                         const unsigned short val_orderExact,
+                                         const unsigned short val_locGridDOFs)
+  : CFEMStandardTri(val_nPolyGrid, val_orderExact) {
+
+  /*--- Determine the number of space dimensions, which is 2 when this
+        constructor is called. ---*/
+  nDim = 2;
+
+  /*--- Determine the location of the grid DOFs and build the appropriate
+        Lagrangian basis functions. ---*/
+  if(val_locGridDOFs == LGL) {
+
+    /*--- LGL distribution. Compute the corresponding Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsTriangle(rTriangleDOFsLGL, sTriangleDOFsLGL, lagBasisIntLGL);
+    DerLagBasisIntPointsTriangle(rTriangleDOFsLGL, sTriangleDOFsLGL, derLagBasisIntLGL);
+
+    /*--- Determine the location of nodal solution DOFs. ---*/
+    nPoly = val_nPolySol;
+    LocationTriangleGridDOFsLGL(rTriangleSolDOFs, sTriangleSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Compute the Lagrangian basis functions and its derivatives
+          in the nodal solution DOFs. ---*/
+    LagBasisAndDerSolDOFsTriangle(rTriangleDOFsLGL, sTriangleDOFsLGL);
+  }
+  else {
+
+    /*--- Equidistant distribution. Compute the corresponding Lagrangian basis functions and
+          its derivatives in the integration points. ---*/
+    LagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, lagBasisIntEqui);
+    DerLagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, derLagBasisIntEqui);
+
+    /*--- Determine the location of nodal solution DOFs. ---*/
+    nPoly = val_nPolySol;
+    LocationTriangleGridDOFsEquidistant(rTriangleSolDOFs, sTriangleSolDOFs);
+    nPoly = val_nPolyGrid;
+
+    /*--- Compute the Lagrangian basis functions and its derivatives
+          in the nodal solution DOFs. ---*/
+    LagBasisAndDerSolDOFsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui);
+  }
+
+  /*--- Create the local grid connectivities of the faces of the volume element. ---*/
+  LocalGridConnFaces();
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searcing. ---*/
+  SubConnLinearElements();
+
+  /*--- Set up the jitted gemm call, if supported. For this particular standard
+        element the derivatives of the coordinates are computed, which is nDim. ---*/
+  SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs, jitter, my_dgemm);
+
+  /*--- Set up the jitted gemm call, if supported, to compute the data
+        in the nodal solution DOFs. ---*/
+  SetUpJittedGEMM(lagBasisSolDOFs.rows(), nDim, nDOFs, jitterSolDOFs, dgemmSolDOFs);
+}
+
+CFEMStandardTriGrid::~CFEMStandardTriGrid() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  if( jitterSolDOFs ) {
+    mkl_jit_destroy(jitterSolDOFs);
+    jitterSolDOFs = nullptr;
+  }
+#endif
 }
 
 void CFEMStandardTriGrid::CoorIntPoints(const bool                LGLDistribution,
@@ -75,7 +146,7 @@ void CFEMStandardTriGrid::CoorIntPoints(const bool                LGLDistributio
           coordinates in the integration points. The second argument in the
           function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(nIntegrationPad, nDim, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, nDim, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
@@ -83,7 +154,7 @@ void CFEMStandardTriGrid::CoorIntPoints(const bool                LGLDistributio
           coordinates in the integration points. The second argument in the
           function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(nIntegrationPad, nDim, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, nDim, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -98,18 +169,30 @@ void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                   
           of the Cartesian coordinates w.r.t. the two parametric coordinates. The second
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm 2 times to compute the derivatives
-          of the Cartesian coordinates w.r.t. the two parametric coordinates. The second
+          of the Cartesian coordinates w.r.t. the two parametric coordinates. The third
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
   }
+}
+
+void CFEMStandardTriGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                                                 vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+  /*--- Call OwnGemm 2 times to compute the derivatives of the Cartesian
+        coordinates w.r.t. the two parametric coordinates. The third
+        argument in the function call is nDim, which corresponds to the number of Cartesian
+        coordinates (3 for a surface element and 2 for a volume element). ---*/
+  const unsigned short nSolDOFs = lagBasisSolDOFs.rows();
+  OwnGemm(dgemmSolDOFs, nSolDOFs, nDim, nDOFs, derLagBasisSolDOFs[0], matCoor, matDerCoor[0], nullptr);
+  OwnGemm(dgemmSolDOFs, nSolDOFs, nDim, nDOFs, derLagBasisSolDOFs[1], matCoor, matDerCoor[1], nullptr);
 }
 
 passivedouble CFEMStandardTriGrid::WorkEstimateBoundaryFace(CConfig              *config,
@@ -223,6 +306,45 @@ void CFEMStandardTriGrid::LagBasisIntPointsTriangle(const vector<passivedouble> 
     passivedouble rowSum = -1.0;
     for(unsigned short j=0; j<rDOFs.size(); ++j) rowSum += lag(i,j);
     assert(fabs(rowSum) < 1.e-6);
+  }
+}
+
+void CFEMStandardTriGrid::LagBasisAndDerSolDOFsTriangle(const vector<passivedouble> &rDOFs,
+                                                        const vector<passivedouble> &sDOFs) {
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Vandermonde matrix and its gradients of the solution DOFs. ---*/
+  ColMajorMatrix<passivedouble> V(rTriangleSolDOFs.size(),rDOFs.size()),
+                                VDr(rTriangleSolDOFs.size(),rDOFs.size()),
+                                VDs(rTriangleSolDOFs.size(),rDOFs.size());
+
+  VandermondeTriangle(rTriangleSolDOFs, sTriangleSolDOFs, V);
+  GradVandermondeTriangle(rTriangleSolDOFs, sTriangleSolDOFs, VDr, VDs);
+
+  /*--- The Lagrangian basis functions and its gradients can be obtained by
+        multiplying V, VDr, VDs and VInv. ---*/
+  derLagBasisSolDOFs.resize(2);
+  VInv.MatMatMult('R', V,   lagBasisSolDOFs);
+  VInv.MatMatMult('R', VDr, derLagBasisSolDOFs[0]);
+  VInv.MatMatMult('R', VDs, derLagBasisSolDOFs[1]);
+
+  /*--- Check if the sum of the elements of the relevant rows of
+        lagBasisSolDOFs is 1 and of derLagBasisSolDOFs is 0. ---*/
+  for(unsigned short i=0; i<rTriangleSolDOFs.size(); ++i) {
+    passivedouble rowSum = -1.0, rowSumDr = 0.0, rowSumDs = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSum   += lagBasisSolDOFs(i,j);
+      rowSumDr += derLagBasisSolDOFs[0](i,j);
+      rowSumDs += derLagBasisSolDOFs[1](i,j);
+    }
+
+    assert(fabs(rowSum)   < 1.e-6);
+    assert(fabs(rowSumDr) < 1.e-6);
+    assert(fabs(rowSumDs) < 1.e-6);
   }
 }
 

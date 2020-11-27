@@ -98,6 +98,27 @@ protected:
   vector<passivedouble> wTetInt;      /*!< \brief Weights of the integration points of the
                                                   tetrahedron. */
 
+  /*!
+   * \brief Function, which determines the location of the grid DOFs of a tetrahedron
+   *        for polynomial degree nPoly when an equidistant spacing is used.
+   * \param[out] rDOFs - Parametric r-coordinates of the DOFs.
+   * \param[out] sDOFs - Parametric s-coordinates of the DOFs.
+   * \param[out] tDOFs - Parametric t-coordinates of the DOFs.
+   */
+  void LocationTetGridDOFsEquidistant(vector<passivedouble> &rDOFs,
+                                      vector<passivedouble> &sDOFs,
+                                      vector<passivedouble> &tDOFs);
+
+  /*!
+   * \brief Function, which determines the location of the grid DOFs of a tetrahedron
+   *        for polynomial degree nPoly when the LGL distribution is used.
+   * \param[out] rDOFs - Parametric r-coordinates of the DOFs.
+   * \param[out] sDOFs - Parametric s-coordinates of the DOFs.
+   * \param[out] tDOFs - Parametric t-coordinates of the DOFs.
+   */
+  void LocationTetGridDOFsLGL(vector<passivedouble> &rDOFs,
+                              vector<passivedouble> &sDOFs,
+                              vector<passivedouble> &tDOFs);
 private:
 
   /*!
@@ -124,21 +145,4 @@ private:
    */
   void EvalWarp(const vector<passivedouble> &xOut,
                 vector<passivedouble>       &warp);
-
-  /*!
-   * \brief Function, which determines the location of the grid DOFs of a tetrahedron
-   *        for polynomial degree nPoly when an equidistant spacing is used.
-   * \param[out] r - Parametric r-coordinates of the DOFs.
-   * \param[out] s - Parametric s-coordinates of the DOFs.
-   * \param[out] t - Parametric t-coordinates of the DOFs.
-   */
-  void LocationTetGridDOFsEquidistant(vector<passivedouble> &r,
-                                      vector<passivedouble> &s,
-                                      vector<passivedouble> &t);
-
-  /*!
-   * \brief Function, which determines the location of the grid DOFs of a tetrahedron
-   *        for polynomial degree nPoly when the LGL distribution is used.
-   */
-  void LocationTetGridDOFsLGL();
 };

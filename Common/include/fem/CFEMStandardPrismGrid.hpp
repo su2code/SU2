@@ -56,9 +56,22 @@ public:
                         const unsigned short val_orderExact);
 
   /*!
-   * \brief Destructor. Nothing to be done.
+   * \overload
+   * \param[in] val_nPolyGrid   - Polynomial degree of the grid for this element.
+   * \param[in] val_nPolyGrid   - Polynomial degree of the solution for this element.
+   * \param[in] val_orderExact  - Polynomial order that must be integrated exactly
+   *                              by the integration rule.
+   * \param[in] val_locGridDOFs - Location of the grid DOFS, either LGL or equidistant.
    */
-  ~CFEMStandardPrismGrid() = default;
+  CFEMStandardPrismGrid(const unsigned short val_nPolyGrid,
+                        const unsigned short val_nPolySol,
+                        const unsigned short val_orderExact,
+                        const unsigned short val_locGridDOFs);
+
+  /*!
+   * \brief Destructor.
+   */
+  ~CFEMStandardPrismGrid();
 
   /*!
    * \brief Function, which computes the coordinates in the integration points.
@@ -83,11 +96,26 @@ public:
                                 vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
+   * \brief Function, which computes the derivatives of the coordinates in the
+   *        solution DOFs.
+   * \param[in]  matCoor    - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDerCoor - Vector of matrices to store the derivatives of the coordinates.
+   */
+  void DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                              vector<ColMajorMatrix<su2double> > &matDerCoor) override;
+
+  /*!
    * \brief Function, that returns the number of different face types
    *        occuring in this volume element.
    * \return The number of different face types of the volume element.
    */
   unsigned short GetnFaceTypes(void) const override {return 2;}
+
+  /*!
+   * \brief Function, that returns the number of solution DOFs.
+   * \return The number of solution DOFs of the volume element.
+   */
+  unsigned short GetNSolDOFs(void) const override {return rLineSolDOFs.size()*rTriangleSolDOFs.size();}
 
   /*!
    * \brief Function that returns the VTK type for the given face type index.
@@ -110,6 +138,13 @@ public:
 
 private:
 
+  vector<passivedouble> rLineSolDOFs;     /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
+  vector<passivedouble> rTriangleSolDOFs; /*!< \brief Parametric r-coordinates of the triangle nodal
+                                                      solution DOFs. */
+  vector<passivedouble> sTriangleSolDOFs; /*!< \brief Parametric s-coordinates of the triangle nodal
+                                                      solution DOFs. */
+
+
   ColMajorMatrix<passivedouble> lagBasisIntEqui; /*!< \brief The values of the Lagrangian basis functions
                                                              in the integration points for the equidistant
                                                              point distribution. */
@@ -125,6 +160,16 @@ private:
                                                                          basis functions in the integration points for the
                                                                          LGL point distribution. It is a vector, because
                                                                          there are derivatives in three directions. */
+
+  ColMajorMatrix<passivedouble> lagBasisSolDOFs;             /*!< \brief The values of the Lagrangian basis functions
+                                                                         in the nodal solution DOFs. */
+  vector<ColMajorMatrix<passivedouble> > derLagBasisSolDOFs; /*!< \brief The values of the derivatives of the Lagrangian
+                                                                         basis functions in the nodal solution DOFs.
+                                                                         It is a vector, because there are derivatives
+                                                                         in three directions. */
+
+  void *jitterSolDOFs = nullptr;     /*!< \brief Pointer to the data for the jitted gemm function. */
+  dgemm_jit_kernel_t dgemmSolDOFs;   /*!< \brief Pointer to the function to carry out the jitted gemm call. */
 
   /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian
@@ -160,6 +205,21 @@ private:
                               const vector<passivedouble>   &sTriangleDOFs,
                               const vector<passivedouble>   &rLineDOFs,
                               ColMajorMatrix<passivedouble> &lag);
+
+  /*!
+   * \brief Function, which computes the values of the Lagrangian basis functions
+   *        of a prism and its derivatives in the nodal solution DOFs for the
+   *        given location of the grid DOFs.
+   * \param[in]  rTriangleDOFs - Vector, which contains the parametric r-locations of the DOFs
+   *                             of the base triangle.
+   * \param[in]  sTriangleDOFs - Vector, which contains the parametric s-locations of the DOFs
+   *                             of the base triangle.
+   * \param[in]  rLineDOFs     - Vector, which contains the parametric r-locations of the DOFs
+   *                             of the line normal to the triangles.
+   */
+  void LagBasisAndDerSolDOFsPrism(const vector<passivedouble> &rTriangleDOFs,
+                                  const vector<passivedouble> &sTriangleDOFs,
+                                  const vector<passivedouble> &rLineDOFs);
 
   /*!
    * \brief Function, which computes the location of all the DOFs of the prim

@@ -3478,7 +3478,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_Regime = COMPRESSIBLE;
   } else if (Kind_Solver == INC_EULER ||
              Kind_Solver == INC_NAVIER_STOKES ||
-             Kind_Solver == INC_RANS){
+             Kind_Solver == INC_RANS ||
+             Kind_Solver == FEM_INC_EULER ||
+             Kind_Solver == FEM_INC_NAVIER_STOKES ||
+             Kind_Solver == FEM_INC_RANS ||
+             Kind_Solver == FEM_INC_LES){
     Kind_Regime = INCOMPRESSIBLE;
   }  else {
     Kind_Regime = NO_FLOW;
@@ -4341,7 +4345,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == FEM_RANS               ) ||
              ( Kind_Solver == FEM_LES                ) ||
              ( Kind_Solver == INC_NAVIER_STOKES      ) ||
-             ( Kind_Solver == INC_RANS               ) );
+             ( Kind_Solver == INC_RANS               ) ||
+             ( Kind_Solver == FEM_INC_NAVIER_STOKES  ) ||
+             ( Kind_Solver == FEM_INC_RANS           ) ||
+             ( Kind_Solver == FEM_INC_LES            ) );
 
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
@@ -5561,15 +5568,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
-      case NAVIER_STOKES:     case DISC_ADJ_NAVIER_STOKES:
-      case INC_NAVIER_STOKES: case DISC_ADJ_INC_NAVIER_STOKES:
-      case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS:
+      case NAVIER_STOKES:         case DISC_ADJ_NAVIER_STOKES:
+      case INC_NAVIER_STOKES:     case DISC_ADJ_INC_NAVIER_STOKES:
+      case FEM_NAVIER_STOKES:     case DISC_ADJ_FEM_NS:
+      case FEM_INC_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
-      case RANS:     case DISC_ADJ_RANS:
-      case INC_RANS: case DISC_ADJ_INC_RANS:
-      case FEM_RANS: case DISC_ADJ_FEM_RANS:
+      case RANS:         case DISC_ADJ_RANS:
+      case INC_RANS:     case DISC_ADJ_INC_RANS:
+      case FEM_RANS:     case DISC_ADJ_FEM_RANS:
+      case FEM_INC_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
@@ -5611,6 +5620,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         break;
       case FEM_LES:
+      case FEM_INC_LES:
         if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible LES equations." << endl;
         cout << "Subgrid Scale model: ";
@@ -6318,8 +6328,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
 
-    if(Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES &&
-       Kind_Solver != FEM_RANS  && Kind_Solver != FEM_LES &&
+    if(Kind_Solver != FEM_EULER          && Kind_Solver != FEM_NAVIER_STOKES &&
+       Kind_Solver != FEM_RANS           && Kind_Solver != FEM_LES &&
+       Kind_Solver != FEM_INC_EULER      && Kind_Solver != FEM_INC_NAVIER_STOKES &&
+       Kind_Solver != FEM_INC_RANS       && Kind_Solver != FEM_INC_LES &&
        Kind_Solver != DISC_ADJ_FEM_EULER && Kind_Solver != DISC_ADJ_FEM_NS &&
        Kind_Solver != DISC_ADJ_FEM_RANS) {
       if (!fea){
@@ -6339,8 +6351,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if(Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES ||
-       Kind_Solver == FEM_RANS  || Kind_Solver == FEM_LES ||
+    if(Kind_Solver == FEM_EULER          || Kind_Solver == FEM_NAVIER_STOKES ||
+       Kind_Solver == FEM_RANS           || Kind_Solver == FEM_LES ||
+       Kind_Solver == FEM_INC_EULER      || Kind_Solver == FEM_INC_NAVIER_STOKES ||
+       Kind_Solver == FEM_INC_RANS       || Kind_Solver == FEM_INC_LES ||
        Kind_Solver == DISC_ADJ_FEM_EULER || Kind_Solver == DISC_ADJ_FEM_NS ||
        Kind_Solver == DISC_ADJ_FEM_RANS) {
       if(Kind_FEM_Flow == DG) {
@@ -8128,7 +8142,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case FEM_EULER:
+    case FEM_EULER: case FEM_INC_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8136,7 +8150,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
       }
       break;
-    case FEM_NAVIER_STOKES:
+    case FEM_NAVIER_STOKES: case FEM_INC_NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
@@ -8144,7 +8158,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
       }
       break;
-    case FEM_LES:
+    case FEM_LES: case FEM_INC_LES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,

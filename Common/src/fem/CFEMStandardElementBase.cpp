@@ -33,13 +33,6 @@
 /*          Constructor and destructor of CFEMStandardElementBase.                  */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardElementBase::CFEMStandardElementBase() {
-
-#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
-  jitter = nullptr;
-#endif
-}
-
 CFEMStandardElementBase::~CFEMStandardElementBase() {
 
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
@@ -162,14 +155,12 @@ unsigned short CFEMStandardElementBase::GetNDOFsPerSubElem(unsigned short val_VT
   return nDOFsSubElem;
 }
 
-void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool                         LGLDistribution,
-                                                         ColMajorMatrix<su2double>          &matCoor,
-                                                         vector<ColMajorMatrix<su2double> > &matMetricTerms,
-                                                         su2activevector                    &Jacobians) {
+void CFEMStandardElementBase::MetricTermsVolume(vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                                su2activevector                    &Jacobians) {
 
-  /*--- Compute the derivatives of the coordinates in the volume integration points.
-        The matrix matMetricTerms is used as storage for this data. ---*/
-  DerivativesCoorIntPoints(LGLDistribution, matCoor, matMetricTerms);
+  /*--- Determine the number of items for which the metric terms
+        must be computed. ---*/
+  const unsigned short nItems = Jacobians.rows();
 
   /*--- Check the dimension of the problem. ---*/
   if(matMetricTerms.size() == 2) {
@@ -188,7 +179,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
     /*--- Loop over the padded number of integration points
           to compute the 2D metric terms. ---*/
     SU2_OMP_SIMD_IF_NOT_AD
-    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+    for(unsigned short i=0; i<nItems; ++i) {
 
       /*--- Easier storage of the derivatives of the Cartesian coordinates
             w.r.t. the parametric coordinates. ---*/
@@ -229,7 +220,7 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
     /*--- Loop over the padded number of integration points
           to compute the 3D metric terms. ---*/
     SU2_OMP_SIMD_IF_NOT_AD
-    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+    for(unsigned short i=0; i<nItems; ++i) {
 
       /*--- Easier storage of the derivatives of the Cartesian coordinates
             w.r.t. the parametric coordinates. ---*/
@@ -266,6 +257,31 @@ void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool             
       dParDz(i,2) = dxdr*dyds - dydr*dxds;  // J dtdz
     }
   }
+}
+
+void CFEMStandardElementBase::MetricTermsVolumeIntPoints(const bool                         LGLDistribution,
+                                                         ColMajorMatrix<su2double>          &matCoor,
+                                                         vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                                         su2activevector                    &Jacobians) {
+
+  /*--- Compute the derivatives of the coordinates in the volume integration points.
+        The matrix matMetricTerms is used as storage for this data. ---*/
+  DerivativesCoorIntPoints(LGLDistribution, matCoor, matMetricTerms);
+
+  /*--- Compute the actual metric terms. ---*/
+  MetricTermsVolume(matMetricTerms, Jacobians);
+}
+
+void CFEMStandardElementBase::MetricTermsSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                                                 vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                                 su2activevector                    &Jacobians) {
+
+  /*--- Compute the derivatives of the coordinates in the solution DOFs.
+        The matrix matMetricTerms is used as storage for this data. ---*/
+  DerivativesCoorSolDOFs(matCoor, matMetricTerms);
+
+  /*--- Compute the actual metric terms. ---*/
+  MetricTermsVolume(matMetricTerms, Jacobians);
 }
 
 void CFEMStandardElementBase::MinMaxFaceJacobians(const bool                         LGLDistribution,
@@ -1025,7 +1041,8 @@ passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
   return Pn;
 }
 
-void CFEMStandardElementBase::OwnGemm(const int                     M,
+void CFEMStandardElementBase::OwnGemm(dgemm_jit_kernel_t            &gemm,
+                                      const int                     M,
                                       const int                     N,
                                       const int                     K,
                                       ColMajorMatrix<passivedouble> &A,
@@ -1042,7 +1059,7 @@ void CFEMStandardElementBase::OwnGemm(const int                     M,
   if( config ) config->GEMM_Tick(&timeGemm);
 #endif
 
-  my_dgemm(jitter, A.data(), B.data(), C.data());
+  gemm(jitter, A.data(), B.data(), C.data());
 
 #ifdef PROFILE
   if( config ) config->GEMM_Tock(timeGemm, M, N, K);
@@ -1056,9 +1073,11 @@ void CFEMStandardElementBase::OwnGemm(const int                     M,
 #endif
 }
 
-void CFEMStandardElementBase::SetUpJittedGEMM(const int M,
-                                              const int N,
-                                              const int K) {
+void CFEMStandardElementBase::SetUpJittedGEMM(const int          M,
+                                              const int          N,
+                                              const int          K,
+                                              void               *&val_jitter,
+                                              dgemm_jit_kernel_t &val_gemm) {
 
   /*--- Check if the jitted GEMM call can be created. ---*/
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
@@ -1066,15 +1085,15 @@ void CFEMStandardElementBase::SetUpJittedGEMM(const int M,
   /*--- Create the GEMM Kernel and check if it went okay. ---*/
   passivedouble alpha = 1.0;
   passivedouble beta  = 0.0;
-  mkl_jit_status_t status = mkl_jit_create_dgemm(&jitter, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS,
-                                                 M, N, K, alpha, M, K, beta, M);
+  mkl_jit_status_t status = mkl_jit_create_dgemm(&val_jitter, MKL_COL_MAJOR, MKL_NOTRANS,
+                                                 MKL_NOTRANS, M, N, K, alpha, M, K, beta, M);
 
   if(status == MKL_JIT_ERROR)
     SU2_MPI::Error(string("Jitted gemm kernel could not be created"), CURRENT_FUNCTION);
 
   /*--- Retrieve the function pointer to the DGEMM kernel
-        void my_dgemm(void*, double*, double*, double*). ---*/
-  my_dgemm = mkl_jit_get_dgemm_ptr(jitter);
+        void val_gemm(void*, double*, double*, double*). ---*/
+  val_gemm = mkl_jit_get_dgemm_ptr(val_jitter);
 
 #endif
 }

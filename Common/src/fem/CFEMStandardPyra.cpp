@@ -47,8 +47,8 @@ CFEMStandardPyra::CFEMStandardPyra(const unsigned short val_nPoly,
   nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the parametric locations of the grid DOFs of the pyramid. ---*/
-  LocationPyramidGridDOFsEquidistant();
-  LocationPyramidGridDOFsLGL();
+  LocationPyramidGridDOFsEquidistant(rPyraDOFsEqui, sPyraDOFsEqui, tPyraDOFsEqui);
+  LocationPyramidGridDOFsLGL(rPyraDOFsLGL, sPyraDOFsLGL, tPyraDOFsLGL);
 
   /*--- The 3D quadrature rule for a pyramid is obtained by transforming the
         standard pyramid into a standard hexahedron by means of the Duffy
@@ -124,7 +124,15 @@ void CFEMStandardPyra::LocationAllIntegrationPoints(vector<passivedouble> &rInt,
   }
 }
 
-void CFEMStandardPyra::LocationPyramidGridDOFsEquidistant() {
+void CFEMStandardPyra::LocationPyramidGridDOFsEquidistant(vector<passivedouble> &rDOFs,
+                                                          vector<passivedouble> &sDOFs,
+                                                          vector<passivedouble> &tDOFs) {
+
+  /*--- Determine the number of DOFs based on the polynomial degree.
+        This is done, because this function can be called for different
+        values of nPoly. ---*/
+  const unsigned short nD1D  = nPoly + 1;
+  const unsigned short nD    = nD1D*(nD1D+1)*(2*nD1D+1)/6;
 
   /*--- As the number of grid DOFs near the bottom is bigger
         than near the top of the pyramid, it is not possible
@@ -133,9 +141,9 @@ void CFEMStandardPyra::LocationPyramidGridDOFsEquidistant() {
         This is not a big issue, because the grid DOFs are
         only used in the pre- and post-processing steps.
         Allocate the memory for the parametric coordinates. ---*/
-  rPyraDOFsEqui.resize(nDOFs);
-  sPyraDOFsEqui.resize(nDOFs);
-  tPyraDOFsEqui.resize(nDOFs);
+  rDOFs.resize(nD);
+  sDOFs.resize(nD);
+  tDOFs.resize(nD);
 
   /*--- Determine the spacing in t-direction, which is from the base quad
         to the top, and initialize the local counters mPoly and ii. ---*/
@@ -162,15 +170,23 @@ void CFEMStandardPyra::LocationPyramidGridDOFsEquidistant() {
 
       for(unsigned short i=0; i<=mPoly; ++i, ++ii) {
         const double r = rsMin + i*dh;
-        rPyraDOFsEqui[ii] = r;
-        sPyraDOFsEqui[ii] = s;
-        tPyraDOFsEqui[ii] = t;
+        rDOFs[ii] = r;
+        sDOFs[ii] = s;
+        tDOFs[ii] = t;
       }
     }
   }
 }
 
-void CFEMStandardPyra::LocationPyramidGridDOFsLGL() {
+void CFEMStandardPyra::LocationPyramidGridDOFsLGL(vector<passivedouble> &rDOFs,
+                                                  vector<passivedouble> &sDOFs,
+                                                  vector<passivedouble> &tDOFs) {
+
+  /*--- Determine the number of DOFs based on the polynomial degree.
+        This is done, because this function can be called for different
+        values of nPoly. ---*/
+  const unsigned short nD1D  = nPoly + 1;
+  const unsigned short nD    = nD1D*(nD1D+1)*(2*nD1D+1)/6;
 
   /*--- As the number of grid DOFs near the bottom is bigger
         than near the top of the pyramid, it is not possible
@@ -179,9 +195,9 @@ void CFEMStandardPyra::LocationPyramidGridDOFsLGL() {
         This is not a big issue, because the grid DOFs are
         only used in the pre- and post-processing steps.
         Allocate the memory for the parametric coordinates. ---*/
-  rPyraDOFsLGL.resize(nDOFs);
-  sPyraDOFsLGL.resize(nDOFs);
-  tPyraDOFsLGL.resize(nDOFs);
+  rDOFs.resize(nD);
+  sDOFs.resize(nD);
+  tDOFs.resize(nD);
 
   /*--- Determine the location of the 1D LGL points along the standard line. ---*/
   vector<passivedouble> LGLPoints;
@@ -279,18 +295,18 @@ void CFEMStandardPyra::LocationPyramidGridDOFsLGL() {
         const passivedouble t_c1 = tDOFs_Face014[k][i];
 
         /*--- Interpolate the coordinate inside the pyramid. ---*/
-        rPyraDOFsLGL[ii] = r_c1*(omv + v) + r_c2*(omu - u)
-                         - rLowerLeft*(omu*omv - u*v - u*omv + omu*v);
-        sPyraDOFsLGL[ii] = s_c1*(omv - v) + s_c2*(omu + u)
-                         - sLowerLeft*(omu*omv - u*v + u*omv - omu*v);
-        tPyraDOFsLGL[ii] = t_c1*(omv + v) + t_c2*(omu + u)
-                         - tLowerLeft*(omu*omv + u*v + u*omv + omu*v);
+        rDOFs[ii] = r_c1*(omv + v) + r_c2*(omu - u)
+                  - rLowerLeft*(omu*omv - u*v - u*omv + omu*v);
+        sDOFs[ii] = s_c1*(omv - v) + s_c2*(omu + u)
+                  - sLowerLeft*(omu*omv - u*v + u*omv - omu*v);
+        tDOFs[ii] = t_c1*(omv + v) + t_c2*(omu + u)
+                  - tLowerLeft*(omu*omv + u*v + u*omv + omu*v);
       }
     }
   }
 
   /*--- Set the last coordinate to the top of the pyramid. ---*/
-  rPyraDOFsLGL[ii] = 0.0;
-  sPyraDOFsLGL[ii] = 0.0;
-  tPyraDOFsLGL[ii] = 1.0;  
+  rDOFs[ii] = 0.0;
+  sDOFs[ii] = 0.0;
+  tDOFs[ii] = 1.0;  
 }

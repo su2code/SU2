@@ -73,7 +73,8 @@ COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
     case DISC_ADJ_HEAT:
       output = new CAdjHeatOutput(config, nDim);
       break;
-    case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
+    case FEM_EULER:     case FEM_LES:     case FEM_RANS:     case FEM_NAVIER_STOKES:
+    case FEM_INC_EULER: case FEM_INC_LES: case FEM_INC_RANS: case FEM_INC_NAVIER_STOKES:
       output = new CFlowCompFEMOutput(config, nDim);
       break;
     default:

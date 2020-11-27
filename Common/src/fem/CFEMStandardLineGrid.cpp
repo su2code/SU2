@@ -53,7 +53,7 @@ CFEMStandardLineGrid::CFEMStandardLineGrid(const unsigned short val_nPoly,
         element the derivatives of the coordinates are computed, which is 2,
         because the line element is only present as a surface element in a
         2D simulation. ---*/
-  SetUpJittedGEMM(nIntegrationPad, 2, nDOFs);
+  SetUpJittedGEMM(nIntegrationPad, 2, nDOFs, jitter, my_dgemm);
 }
 
 void CFEMStandardLineGrid::CoorIntPoints(const bool                LGLDistribution,
@@ -65,13 +65,15 @@ void CFEMStandardLineGrid::CoorIntPoints(const bool                LGLDistributi
 
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(nIntegrationPad, 2, nDOFs, lagBasisLineIntLGL, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, lagBasisLineIntLGL,
+            matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(nIntegrationPad, 2, nDOFs, lagBasisLineIntEqui, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, lagBasisLineIntEqui,
+            matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -84,13 +86,15 @@ void CFEMStandardLineGrid::DerivativesCoorIntPoints(const bool                  
 
     /*--- LGL distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    OwnGemm(nIntegrationPad, 2, nDOFs, derLagBasisLineIntLGL, matCoor, matDerCoor[0], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, derLagBasisLineIntLGL,
+            matCoor, matDerCoor[0], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    OwnGemm(nIntegrationPad, 2, nDOFs, derLagBasisLineIntEqui, matCoor, matDerCoor[0], nullptr);
+    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, derLagBasisLineIntEqui,
+            matCoor, matDerCoor[0], nullptr);
   }
 }
 

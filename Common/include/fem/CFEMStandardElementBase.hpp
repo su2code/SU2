@@ -36,9 +36,13 @@
 #include "../containers/C2DContainer.hpp"
 #include "../parallelization/vectorization.hpp"
 
-#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+#if defined(HAVE_MKL)
 #include "mkl.h"
 #else
+#define dgemm_jit_kernel_t int
+#endif
+
+#if !(defined(PRIMAL_SOLVER) && defined(HAVE_MKL))
 #include "../blas_structure.hpp"
 #endif
 
@@ -77,10 +81,10 @@ protected:
                                                              The numbering of the DOFs is such that the element
                                                              is to the left of the face. */
 
-#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
-  void *jitter;                 /*!< \brief Pointer to the data for the jitted gemm function. */
+  void *jitter = nullptr;       /*!< \brief Pointer to the data for the jitted gemm function. */
   dgemm_jit_kernel_t my_dgemm;  /*!< \brief Pointer to the function to carry out the jitted gemm call. */
-#else
+
+#if !(defined(PRIMAL_SOLVER) && defined(HAVE_MKL))
   CBlasStructure blasFunctions; /*!< \brief  The object to carry out the BLAS functionalities. */
 #endif
 
@@ -88,7 +92,7 @@ public:
   /*!
   * \brief Constructor.
   */
-  CFEMStandardElementBase();
+  CFEMStandardElementBase() = default;
 
   /*!
   * \brief Destructor.
@@ -144,6 +148,18 @@ public:
   }
 
   /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matCoor    - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDerCoor - Vector of matrices to store the derivatives of the coordinates.
+   */
+  virtual void DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                                      vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
    * \brief Function, which returns the const pointer to the grid connectivity
    *        of the requested face of the volume element.
    * \param[in] ind - Index of the face for which the connectivity is requested.
@@ -158,6 +174,16 @@ public:
    * \return The number of faces of the volume element.
    */
   virtual unsigned short GetNFaces(void) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return The number of solution DOFs of the volume element.
+   */
+  virtual unsigned short GetNSolDOFs(void) const {
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
     return 0;
@@ -269,16 +295,31 @@ public:
   inline const unsigned short *GetSubConnType1(void) const {return subConn1ForPlotting.data();}
 
   /*!
-   * \brief Function, which makes available the the connectivity of the linear elements of type 2 as a const pointer.
+   * \brief Function, which makes available the connectivity of the linear elements of type 2 as a const pointer.
    * \return  The pointer to the local connectivity of the linear elements of type 2.
    */
   inline const unsigned short *GetSubConnType2(void) const {return subConn2ForPlotting.data();}
+
+  /*!
+   * \brief Function, which makes available the integration weights as a const pointer.
+   * \return  The pointer to the integration weights.
+   */
+  inline const passivedouble *GetIntegrationWeights(void) const {return wIntegration.data();}
 
   /*!
    * \brief Function, which makes available the number of DOFs of a linear element, used for plotting.
    * \return  The number of DOFs of the linear element.
    */
   unsigned short GetNDOFsPerSubElem(unsigned short val_VTK_Type) const;
+
+  /*!
+   * \brief Function, which computes the actual volume metric points.
+   * \param[in,out] matMetricTerms - On input the derivatives of the coordinates w.r.t.
+   *                                 the parametric coordinates. On output the metric terms.
+   * \param[out] Jacobians         - Vector to store the Jacobians of the transformation.
+   */
+  void MetricTermsVolume(vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                         su2activevector                    &Jacobians);
 
   /*!
    * \brief Function, which computes the metric terms in the volume integration points.
@@ -291,6 +332,16 @@ public:
                                   ColMajorMatrix<su2double>          &matCoor,
                                   vector<ColMajorMatrix<su2double> > &matMetricTerms,
                                   su2activevector                    &Jacobians);
+
+  /*!
+   * \brief Function, which computes the metric terms in the nodal solution DOFs.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matMetricTerms  - Vector of matrices to store the metric terms.
+   * \param[out] Jacobians       - Vector to store the Jacobians of the transformation.
+   */
+  void MetricTermsSolDOFs(ColMajorMatrix<su2double>          &matCoor,
+                          vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                          su2activevector                    &Jacobians);
 
   /*!
    * \brief Function, which computes the mininum and maximum value of the face Jacobians
@@ -595,6 +646,7 @@ protected:
 
   /*!
    * \brief Function, which is an interface to the actual gemm functionality.
+   * \param[in]  gemm   - MKL jitted gemm kernel, if used.
    * \param[in]  M      - First matrix dimension of A and C in the gemm call.
    * \param[in]  N      - Second matrix dimension of B and C in the gemm call.
    * \param[in]  K      - First matrix dimension of B and second matrix dimension
@@ -604,7 +656,8 @@ protected:
    * \param[out] C      - Matrix C in the gemm call.
    * \param[out] config - Object used for the timing of the gemm call.
    */
-  void OwnGemm(const int                     M,
+  void OwnGemm(dgemm_jit_kernel_t            &gemm,
+               const int                     M,
                const int                     N,
                const int                     K,
                ColMajorMatrix<passivedouble> &A,
@@ -619,9 +672,11 @@ protected:
    * \param[in] K - First matrix dimension of B and second matrix dimension
    *                of A in the gemm call.
    */
-  void SetUpJittedGEMM(const int M,
-                       const int N,
-                       const int K);
+  void SetUpJittedGEMM(const int          M,
+                       const int          N,
+                       const int          K,
+                       void               *&val_jitter,
+                       dgemm_jit_kernel_t &val_gemm);
 
 private:
   /*!

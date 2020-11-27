@@ -172,7 +172,8 @@ private:
 
   /*!
    * \brief Function, which creates the standard elements for the solution.
-   * \param[in] elemTypes - Information about the element types to be created.
+   * \param[in] elemTypes   - Information about the element types to be created.
+   * \param[in] locGridDOFs - Location of the grid DOFs, either LGL or equidistant.
    */
   void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort3T> &elemTypes,
                                             const unsigned short           locGridDOFs);

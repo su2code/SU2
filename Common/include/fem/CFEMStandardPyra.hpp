@@ -115,17 +115,25 @@ protected:
   void LocationAllIntegrationPoints(vector<passivedouble> &rInt,
                                     vector<passivedouble> &sInt,
                                     vector<passivedouble> &tInt);
-private:
-
   /*!
    * \brief Function, which determines the location of the grid DOFs of a pyramid for
    *        polynomial degree nPoly when an equidistant spacing is used.
+   * \param[out] rDOFs - Parametric r-coordinates of the nodal DOFs.
+   * \param[out] sDOFs - Parametric s-coordinates of the nodal DOFs.
+   * \param[out] tDOFs - Parametric t-coordinates of the nodal DOFs.
    */
-  void LocationPyramidGridDOFsEquidistant();
+  void LocationPyramidGridDOFsEquidistant(vector<passivedouble> &rDOFs,
+                                          vector<passivedouble> &sDOFs,
+                                          vector<passivedouble> &tDOFs);
 
   /*!
    * \brief Function, which determines the location of the grid DOFs of a pyramid for
    *        polynomial degree nPoly when the LGL distribution is used.
+   * \param[out] rDOFs - Parametric r-coordinates of the nodal DOFs.
+   * \param[out] sDOFs - Parametric s-coordinates of the nodal DOFs.
+   * \param[out] tDOFs - Parametric t-coordinates of the nodal DOFs.
    */
-  void LocationPyramidGridDOFsLGL();
+  void LocationPyramidGridDOFsLGL(vector<passivedouble> &rDOFs,
+                                  vector<passivedouble> &sDOFs,
+                                  vector<passivedouble> &tDOFs);
 };

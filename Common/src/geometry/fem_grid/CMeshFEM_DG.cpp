@@ -2173,9 +2173,10 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
                               (Kind_Solver == FEM_INC_RANS) ||
                               (Kind_Solver == FEM_INC_LES);
 
-  /*--- Vector of three unsigned shorts per entity to determine the different
-        element types in the locally stored volume elements. ---*/
-  vector<CUnsignedShort3T> elemTypesGrid, elemTypesSol;
+  /*--- Vector of three or four unsigned shorts per entity to determine the
+        different element types in the locally stored volume elements. ---*/
+  vector<CUnsignedShort4T> elemTypesGrid;
+  vector<CUnsignedShort3T> elemTypesSol;
   elemTypesGrid.reserve(nVolElemTot);
   if( incompressible ) elemTypesSol.reserve(2*nVolElemTot);
   else                 elemTypesSol.reserve(nVolElemTot);
@@ -2188,7 +2189,8 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
                                                                           volElem[i].JacIsConsideredConstant);
 
     /*--- Store the required information in elemTypesGrid and elemTypesSol. ---*/
-    elemTypesGrid.push_back(CUnsignedShort3T(volElem[i].VTK_Type, volElem[i].nPolyGrid, orderExact));
+    elemTypesGrid.push_back(CUnsignedShort4T(volElem[i].VTK_Type, volElem[i].nPolyGrid,
+                                             volElem[i].nPolySol, orderExact));
 
     elemTypesSol.push_back(CUnsignedShort3T(volElem[i].VTK_Type, volElem[i].nPolySol, orderExact));
     if( incompressible )
@@ -2197,17 +2199,18 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
   /*--- Sort elemTypesGrid and elemTypesSol in increasing order
         and remove the multiple entities. ---*/
-  vector<CUnsignedShort3T>::iterator lastEntry;
+  vector<CUnsignedShort4T>::iterator lastEntry4T;
   sort(elemTypesGrid.begin(), elemTypesGrid.end());
-  lastEntry = unique(elemTypesGrid.begin(), elemTypesGrid.end());
-  elemTypesGrid.erase(lastEntry, elemTypesGrid.end());
+  lastEntry4T = unique(elemTypesGrid.begin(), elemTypesGrid.end());
+  elemTypesGrid.erase(lastEntry4T, elemTypesGrid.end());
 
+  vector<CUnsignedShort3T>::iterator lastEntry3T;
   sort(elemTypesSol.begin(), elemTypesSol.end());
-  lastEntry = unique(elemTypesSol.begin(), elemTypesSol.end());
-  elemTypesSol.erase(lastEntry, elemTypesSol.end());
+  lastEntry3T = unique(elemTypesSol.begin(), elemTypesSol.end());
+  elemTypesSol.erase(lastEntry3T, elemTypesSol.end());
 
   /*--- Call the functions to actually create the standard elements. ---*/
-  CreateStandardVolumeElementsGrid(elemTypesGrid);
+  CreateStandardVolumeElementsGrid(elemTypesGrid, config->GetKind_FEM_GridDOFsLocation());
   CreateStandardVolumeElementsSolution(elemTypesSol, config->GetKind_FEM_GridDOFsLocation());
 
   /*--- Loop again over the volume elements to set the pointers to the appropriate
@@ -2217,8 +2220,10 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
     const unsigned short orderExact = config->GetOrderExactIntegrationFEM(volElem[i].nPolySol,
                                                                           volElem[i].JacIsConsideredConstant);
 
-    /*--- Create the CUnsignedShort3T types to search the grid and solution elements. ---*/
-    const CUnsignedShort3T gridType(volElem[i].VTK_Type, volElem[i].nPolyGrid,  orderExact);
+    /*--- Create the CCUnsignedShort4T and UnsignedShort3T types to search
+          the grid and solution elements. ---*/
+    const CUnsignedShort4T gridType(volElem[i].VTK_Type, volElem[i].nPolyGrid,
+                                    volElem[i].nPolySol, orderExact);
     const CUnsignedShort3T solType( volElem[i].VTK_Type, volElem[i].nPolySol,   orderExact);
     const CUnsignedShort3T pType(   volElem[i].VTK_Type, volElem[i].nPolySol-1, orderExact);
 
@@ -2261,7 +2266,76 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Determine whether or not the LGL node distribution is used. ---*/
+  const bool useLGL = config->GetKind_FEM_GridDOFsLocation() == LGL;
+
+  /*--- Initialize the boolean DerMetricTerms to false to indicate that
+        the derivatives of the metric terms are not needed. ---*/
+  bool DerMetricTerms = false;
+
+  /*--- Check if ADER-DG is used as explicit time integration scheme for
+        the unsteady simulation. ---*/
+  if((config->GetTime_Marching()           == TIME_STEPPING) &&
+     (config->GetKind_TimeIntScheme_Flow() == ADER_DG)) {
+
+    /*--- Check for a compressible Navier-Stokes simulation. ---*/
+    const unsigned short solver = config->GetKind_Solver();
+    if(solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
+
+      /*--- The derivatives of the metric terms are needed when a non-aliased
+            predictor is used for ADER. ---*/
+      if(config->GetKind_ADER_Predictor() == ADER_NON_ALIASED_PREDICTOR)
+        DerMetricTerms = true;
+    }
+  }
+
+  /*--- Determine the chunk size for the OMP loop below. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+
+  /*--- Initialize the number of elements with negative Jacobians. ---*/
+  unsigned long nElemNegJac = 0;
+
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Loop over the owned volume elements. ---*/
+    SU2_OMP_FOR_STAT_(omp_chunk_size, reduction(+: nElemNegJac))
+    for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+      /*--- Set the coordinates of the grid DOFs and initialize
+            the grid velocities. ---*/
+      volElem[i].SetCoorGridDOFs(nDim, meshPoints);
+      volElem[i].InitGridVelocities(nDim);
+
+      /*--- Compute the metric terms in the integration points and
+            in the solution DOFs. Update the number of bad elements
+            if negative Jacobians are present. ---*/
+      if( !(volElem[i].MetricTermsIntegrationPoints(useLGL, nDim)) ||
+          !(volElem[i].MetricTermsSolDOFs(nDim)) ) ++nElemNegJac;
+
+      /*--- Compute the derivatives of the metric terms in the
+            integration points, if needed. ---*/
+      if( DerMetricTerms )
+        volElem[i].DerMetricTermsIntegrationPoints(useLGL, nDim);
+    }
+  } /*--- end SU2_OMP_PARALLEL ---*/
+
+  /*--- Determine the global number of elements with negative Jacobians. ---*/
+#ifdef HAVE_MPI
+  unsigned long nElemNegJacLoc = nElemNegJac;
+
+  SU2_MPI::Allreduce(&nElemNegJacLoc, &nElemNegJac, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  /*--- Terminate if there are elements with negative Jacobians. ---*/
+  if(nElemNegJac > 0) {
+    ostringstream message;
+    message << "Found " <<  nElemNegJac << " elements with negative Jacobians.";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
 }
 
 void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
