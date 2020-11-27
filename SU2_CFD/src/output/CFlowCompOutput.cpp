@@ -339,6 +339,16 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  if (config->GetKind_Solver() == NAVIER_STOKES){
+    switch (config->GetKind_SGS_Model()) {
+      case VREMAN: case WALE: case SMAGORINSKY: case SIGMA:
+        AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+        break;
+      case NONE: case IMPLICIT_LES:
+        break;
+    }
+  }
+
   if (config->GetKind_Solver() == RANS) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
@@ -414,13 +424,23 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
-  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
-  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
-  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
-  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
+  // Wall functions
+  if(config->GetWall_Functions()||config->GetWall_Models()){
+    AddVolumeOutput("TAU_WALL-X", "Tau_Wall_x", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+    AddVolumeOutput("TAU_WALL-Y", "Tau_Wall_y", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+    if (nDim == 3)
+      AddVolumeOutput("TAU_WALL-Z", "Tau_Wall_z", "WALL_FUNCTION", "Shear stress at the wall as predicted by the wall function");
+  }
+
+  // Mesh Quality
+  if (config->GetWrt_MeshQuality()) {
+    AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality value");
+    AddVolumeOutput("ASPECT_RATIO", "Aspect_Ratio", "MESH_QUALITY", "Aspect Ratio value");
+    AddVolumeOutput("VOLUME_RATIO", "Volume_Ratio", "MESH_QUALITY", "Volume Ratio value");
+  }
 
   if (config->GetTime_Domain()){
-    SetTimeAveragedFields();
+    SetTimeAveragedFields(config);
   }
 }
 
@@ -484,6 +504,16 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+  }
+
+  if (config->GetKind_Solver() == NAVIER_STOKES){
+    switch (config->GetKind_SGS_Model()) {
+      case VREMAN: case WALE: case SMAGORINSKY: case SIGMA:
+        SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
+        break;
+      case NONE: case IMPLICIT_LES:
+        break;
+    }
   }
 
   if (config->GetKind_Solver() == RANS) {
@@ -559,15 +589,21 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
   }
 
-  // Mesh quality metrics
-  if (config->GetWrt_MeshQuality()) {
+  if(config->GetWall_Functions() || config->GetWall_Models()){
+    SetVolumeOutputValue("TAU_WALL-X", iPoint, Node_Flow->GetTauWallDir(iPoint,0));
+    SetVolumeOutputValue("TAU_WALL-Y", iPoint, Node_Flow->GetTauWallDir(iPoint,1));
+    if (nDim == 3)
+      SetVolumeOutputValue("TAU_WALL-Z", iPoint, Node_Flow->GetTauWallDir(iPoint,2));
+  }
+
+  if (config->GetWrt_MeshQuality()){
     SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
-    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
-    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
+    SetVolumeOutputValue("ASPECT_RATIO", iPoint, geometry->Aspect_Ratio[iPoint]);
+    SetVolumeOutputValue("VOLUME_RATIO", iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
   if (config->GetTime_Domain()){
-    LoadTimeAveragedData(iPoint, Node_Flow);
+    LoadTimeAveragedData(iPoint, Node_Flow, config);
   }
 }
 

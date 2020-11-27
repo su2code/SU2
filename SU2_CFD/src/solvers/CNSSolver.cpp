@@ -1166,6 +1166,8 @@ void CNSSolver::BC_WallModel(CGeometry      *geometry,
       /*-------------------------------------------------------*/
       /*-------------------------------------------------------*/
 
+      su2double Res_Viscous[5]={0.0,0.0,0.0,0.0,0.0};
+      
       if (config->GetWall_Models() && nodes->GetTauWall_Flag(iPoint)){
 
         /*--- Weakly enforce the WM heat flux for the energy equation---*/
@@ -1181,15 +1183,15 @@ void CNSSolver::BC_WallModel(CGeometry      *geometry,
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           velWall_tan +=  nodes->GetVelocity(iPoint,iDim) * DirTanWM[iDim];
 
-        Res_Visc[0] = 0.0;
-        Res_Visc[nDim+1] = 0.0;
+        Res_Viscous[0] = 0.0;
+        Res_Viscous[nDim+1] = 0.0;
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          Res_Visc[iDim+1] = 0.0;
+          Res_Viscous[iDim+1] = 0.0;
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          Res_Visc[iDim+1] = - TauWall * DirTanWM[iDim] * Area;
+          Res_Viscous[iDim+1] = - TauWall * DirTanWM[iDim] * Area;
 
-        Res_Visc[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
+        Res_Viscous[nDim+1] = (Wall_HeatFlux - TauWall * velWall_tan) * Area;
       }
       else{
 
@@ -1230,14 +1232,14 @@ void CNSSolver::BC_WallModel(CGeometry      *geometry,
 
           Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) /config->GetHeat_Flux_Ref();
         }
-        for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar] = 0.0;
+        for (iVar = 0; iVar < nVar; iVar++) Res_Viscous[iVar] = 0.0;
 
         /*--- Weakly impose the WM heat flux for the energy equation---*/
-        Res_Visc[nDim+1] = Wall_HeatFlux * Area;
+        Res_Viscous[nDim+1] = Wall_HeatFlux * Area;
 
       }
 
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      LinSysRes.SubtractBlock(iPoint, Res_Viscous);
 
     }
   }
