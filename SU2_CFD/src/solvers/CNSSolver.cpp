@@ -409,6 +409,9 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
   numerics->SetTauWall(nodes->GetTauWall(iPoint),
                        nodes->GetTauWall(jPoint));
 
+  numerics->SetTauWall_Flag(nodes->GetTauWall_Flag(iPoint),
+                            nodes->GetTauWall_Flag(jPoint));
+
   /*--- Compute and update residual ---*/
 
   auto residual = numerics->ComputeResidual(config);
