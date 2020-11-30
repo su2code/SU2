@@ -504,6 +504,25 @@ void CNumerics::ComputeMeanRateOfStrainMatrix(su2double **primvargrad){
   }
 }
 
+void CNumerics::ComputeReynoldsStressMatrix(su2double turb_ke, su2double eddy_visc, su2double density){
+  su2double divVel = 0;
+  su2double TWO3 = 2.0/3.0;
+
+ /* --- Using the rate of strain matrix already set, calculate Reynolds stress tensor --- */
+
+  for (unsigned short iDim = 0; iDim < 3; iDim++){
+    divVel += MeanRateOfStrain[iDim][iDim];
+  }
+
+  for (unsigned short iDim = 0; iDim < 3; iDim++){
+    for (unsigned short jDim = 0; jDim < 3; jDim++){
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
+      - eddy_visc / density * (2 * MeanRateOfStrain[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+    }
+  }
+
+}
+
 void CNumerics::GetPreconditioner(const su2double *val_density, const su2double *val_velocity,
                                   const su2double *val_betainc2, const su2double *val_cp,
                                   const su2double *val_temperature, const su2double *val_drhodt,

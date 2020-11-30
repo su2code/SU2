@@ -218,29 +218,8 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 }
 
 void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
-
-  unsigned short iDim, jDim;
-  su2double muT = Mean_Eddy_Viscosity;
-  su2double divVel = 0;
-  su2double density;
-  su2double TWO3 = 2.0/3.0;
-  density = Mean_PrimVar[nDim+2];
-
   ComputeMeanRateOfStrainMatrix(Mean_GradPrimVar);
-
-  /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
-
-  for (iDim = 0; iDim < 3; iDim++){
-    divVel += MeanRateOfStrain[iDim][iDim];
-  }
-
-  for (iDim = 0; iDim < 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - muT / density * (2 * MeanRateOfStrain[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
-    }
-  }
-
+  ComputeReynoldsStressMatrix(turb_ke, Mean_Eddy_Viscosity, Mean_PrimVar[nDim+2]);
 }
 
 void CAvgGrad_Base::SetPerturbedRSM(su2double turb_ke, const CConfig* config){

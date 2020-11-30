@@ -468,6 +468,15 @@ public:
   void ComputeMeanRateOfStrainMatrix(su2double** primvargrad);
 
   /*!
+   * \brief Set the mean Reynolds stress matrix +(u_i' u_j')~.
+   * \details The mean rate of strain matrix must be already set.
+   * \param[in] turb_ke - Turbulent kinetic energy
+   * \param[in] eddy_visc - Eddy viscosity
+   * \param[in] density - Density
+   */
+  void ComputeReynoldsStressMatrix(su2double turb_ke, su2double eddy_visc, su2double density);
+
+  /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first Menter blending function at point i.
    * \param[in] val_F1_j - Value of the first Menter blending function at point j.
