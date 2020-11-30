@@ -936,7 +936,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
       }
     }
     for (iPoint = 0; iPoint < Point_Map.size(); iPoint++)
-      Neighbors[iPoint].push_back(SecondNeighbors[iPoint]);
+      for (iNode = 0; iNode < SecondNeighbors[iPoint].size(); iNode++)
+        Neighbors[iPoint].push_back(SecondNeighbors[iPoint][iNode]);
 
     vector<vector<unsigned long> >().swap(SecondNeighbors);
   }
