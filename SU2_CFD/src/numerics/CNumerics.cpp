@@ -547,7 +547,7 @@ void CNumerics::GetPMatrix(const su2double *val_density, const su2double *val_ve
 
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 
-    val_p_tensor[0][0] = 1.0;
+    val_p_tensor[0][0]=1.0;
     val_p_tensor[0][1]=0.0;
     val_p_tensor[0][2]=0.5*rhooc;
     val_p_tensor[0][3]=0.5*rhooc;
@@ -1757,6 +1757,7 @@ void CNumerics::GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
 }
 
 void CNumerics::CreateBasis(const su2double *val_Normal) {
+  
   unsigned short iDim;
   su2double modm, modl;
 

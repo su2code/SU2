@@ -1106,6 +1106,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
       /*--- Calculate specific gas constant --- */
+      //TODO: Move to fluidmodel?
       GasConstant = 0.0;
       for(iSpecies = 0; iSpecies<nSpecies; iSpecies++)
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
@@ -1115,7 +1116,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       su2double rhoR = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      Gamma = rhoR/(rhoCvtr + rhoCvve)+1.0;
+      Gamma = rhoR/(rhoCvtr + rhoCvve) + 1.0;
       
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
@@ -1125,7 +1126,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       }
 
       /*--- Calculate molecular mean free path ---*/
-      Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2*GasConstant*Ti));
+      Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
 
       /*--- Calculate Temperature Slip ---*/
       Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;

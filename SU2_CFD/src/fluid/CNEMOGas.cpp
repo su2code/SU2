@@ -153,6 +153,23 @@ su2double CNEMOGas::ComputeGamma(su2double *V){
 
 }
 
+su2double CNEMOGas::ComputeGamma(){
+
+  /*--- Extract Values ---*/
+  rhoCvtr = ComputerhoCvtr();
+  rhoCvve = ComputerhoCvve();
+
+  /*--- Gamma Computation ---*/
+  su2double rhoR = 0.0;
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhoR += rhos[iSpecies]*Ru/MolarMass[iSpecies];
+
+  gamma = rhoR/(rhoCvtr+rhoCvve)+1;
+
+  return gamma;
+
+}
+
 su2double CNEMOGas::ComputerhoCvve() {
 
     Cvves = ComputeSpeciesCvVibEle();

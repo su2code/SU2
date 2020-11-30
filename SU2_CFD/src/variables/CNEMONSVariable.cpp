@@ -109,12 +109,17 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
 
   fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
+  /*--- Convert conserved to primitive variables ---*/
   nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
+  /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
   }
+
+  /*--- Set additional point quantaties ---*/
+  Gamma(iPoint) = fluidmodel->ComputeGamma();  
 
   SetVelocity2(iPoint);
 

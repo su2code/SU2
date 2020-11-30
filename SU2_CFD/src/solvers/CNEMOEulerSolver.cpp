@@ -90,10 +90,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   }
 
-  /*--- Set the gamma value ---*/
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   /*--- Define geometric constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
   nMarker      = config->GetnMarker_All();
@@ -230,8 +226,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
 
     /*--- Compute other freestream quantities ---*/
-    Density_Inf    = FluidModel->GetDensity();
-    Soundspeed_Inf = FluidModel->GetSoundSpeed();
+    Density_Inf     = FluidModel->GetDensity();
+    Soundspeed_Inf  = FluidModel->GetSoundSpeed();
+    Gamma           = FluidModel->ComputeGamma();
+    Gamma_Minus_One = Gamma - 1.0; 
 
     sqvel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
@@ -246,8 +244,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
     }
-    Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
-    Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
+    Solution[nSpecies+nDim]   = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
+    Solution[nSpecies+nDim+1] = Density_Inf*Energies_Inf[1];
     nodes->SetSolution(iPoint,Solution);
     nodes->SetSolution_Old(iPoint,Solution);
 
@@ -1329,7 +1327,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
   /*--- Compute the freestream density, soundspeed ---*/
   Density_FreeStream = FluidModel->GetDensity();
-  soundspeed = FluidModel->ComputeSoundSpeed();
+  soundspeed         = FluidModel->ComputeSoundSpeed();
+  Gamma              = FluidModel->ComputeGamma();
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
   if (nDim == 2) {
@@ -1534,8 +1533,8 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     ModelTableOut <<"-- Models:"<< endl;
 
     ModelTable.AddColumn("Mixture", 25);
-    ModelTable.AddColumn("Fluid Model", 25);
     ModelTable.AddColumn("Transport Model", 25);
+    ModelTable.AddColumn("Fluid Model", 25);
     ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
     ModelTable.PrintHeader();
 
@@ -1584,7 +1583,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     switch(config->GetKind_FluidModel()){
     case USER_DEFINED_NONEQ:
-      ModelTable << "User defined";
+      ModelTable << "SU2 Two-Temp";
       break;
     case MUTATIONPP:
       ModelTable << "Mutation++ Library";

@@ -71,7 +71,8 @@ protected:
   MatrixType dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
-
+  VectorType Gamma;  /*!< \brief Ratio of specific heats. */
+  
   CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */

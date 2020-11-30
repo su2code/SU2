@@ -673,8 +673,8 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
 
       val_p_tensor[nSpecies][iSpecies]   += V[VEL_INDEX]   / a2;
       val_p_tensor[nSpecies+1][iSpecies] += V[VEL_INDEX+1] / a2;
-      val_p_tensor[nSpecies+2][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies])
-          / (val_dPdU[nSpecies+nDim]*a2);
+      val_p_tensor[nSpecies+2][iSpecies] += (val_dPdU[nSpecies+nDim]*sqvel-val_dPdU[iSpecies]) /
+                                            (val_dPdU[nSpecies+nDim]*a2);
       val_p_tensor[nSpecies+3][iSpecies] += 0.0;
     }
 

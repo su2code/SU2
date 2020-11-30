@@ -109,6 +109,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   dTvedU.resize(nPoint, nVar)    = su2double(0.0);
   Cvves.resize(nPoint, nSpecies) = su2double(0.0);
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
+  Gamma.resize(nPoint)           = su2double(0.0);
   
   /*--- Compressible flow, gradients primitive variables ---*/
   Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
@@ -191,11 +192,15 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
   nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
                          dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
+  /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
   }
 
+  /*--- Set additional point quantaties ---*/
+  Gamma(iPoint) = fluidmodel->ComputeGamma();  
+  
   SetVelocity2(iPoint);
 
   return nonPhys;
@@ -273,6 +278,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Vibrational-Electronic Temperature ---*/
   vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);
   vector<su2double> eves_max = fluidmodel->ComputeSpeciesEve(Tvemax);
+  
+  /*--- Ratio of specific heats ---*/
+  Gamma[iPoint] = fluidmodel->ComputeGamma();
 
   // Check for non-physical solutions
   if (!monoatomic){
