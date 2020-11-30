@@ -217,67 +217,30 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
 }
 
-void CAvgGrad_Base::GetMeanRateOfStrainMatrix(su2double **S_ij) const
-{
-  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
-
-  if (nDim == 3){
-    S_ij[0][0] = Mean_GradPrimVar[1][0];
-    S_ij[1][1] = Mean_GradPrimVar[2][1];
-    S_ij[2][2] = Mean_GradPrimVar[3][2];
-    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
-    S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
-    S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-  }
-  else {
-    S_ij[0][0] = Mean_GradPrimVar[1][0];
-    S_ij[1][1] = Mean_GradPrimVar[2][1];
-    S_ij[2][2] = 0.0;
-    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
-    S_ij[0][2] = 0.0;
-    S_ij[1][2] = 0.0;
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-
-  }
-}
-
 void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
 
   unsigned short iDim, jDim;
-  su2double **S_ij = new su2double* [3];
   su2double muT = Mean_Eddy_Viscosity;
   su2double divVel = 0;
   su2double density;
   su2double TWO3 = 2.0/3.0;
   density = Mean_PrimVar[nDim+2];
 
-  for (iDim = 0; iDim < 3; iDim++){
-    S_ij[iDim] = new su2double [3];
-  }
-
-  GetMeanRateOfStrainMatrix(S_ij);
+  ComputeMeanRateOfStrainMatrix(Mean_GradPrimVar);
 
   /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
 
   for (iDim = 0; iDim < 3; iDim++){
-    divVel += S_ij[iDim][iDim];
+    divVel += MeanRateOfStrain[iDim][iDim];
   }
 
   for (iDim = 0; iDim < 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
       MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+      - muT / density * (2 * MeanRateOfStrain[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
     }
   }
 
-  for (iDim = 0; iDim < 3; iDim++)
-    delete [] S_ij[iDim];
-  delete [] S_ij;
 }
 
 void CAvgGrad_Base::SetPerturbedRSM(su2double turb_ke, const CConfig* config){

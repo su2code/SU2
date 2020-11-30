@@ -339,12 +339,6 @@ private:
      */
   void SetPerturbedStrainMag(su2double turb_ke);
 
-  /*!
-   * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param[in] S_ij
-   */
-  void GetMeanRateOfStrainMatrix(su2double **S_ij);
-
 public:
   /*!
    * \brief Constructor of the class.

@@ -215,6 +215,7 @@ protected:
 
   su2double *l, *m;
 
+  su2double **MeanRateOfStrain; /*!< Mean rate of strain tensor. */
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq,                  /*!< \brief Flag for UQ methodology  */
@@ -458,6 +459,13 @@ public:
     TurbPsi_Grad_i = val_turbpsivar_grad_i;
     TurbPsi_Grad_j = val_turbpsivar_grad_j;
   }
+
+  /*!
+   * \brief Set the mean rate of strain matrix.
+   * \details The parameter primvargrad can be either PrimVar_Grad_i or Mean_GradPrimVar.
+   * \param[in] primvargrad - A primitive variable gradient matrix.
+   */
+  void ComputeMeanRateOfStrainMatrix(su2double** primvargrad);
 
   /*!
    * \brief Set the value of the first blending function.

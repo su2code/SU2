@@ -190,12 +190,6 @@ protected:
    */
   void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
 
-  /*!
-   * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param[in] S_ij
-   */
-  void GetMeanRateOfStrainMatrix(su2double **S_ij) const;
-
 public:
 
   /*!

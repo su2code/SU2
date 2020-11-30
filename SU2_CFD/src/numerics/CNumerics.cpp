@@ -109,6 +109,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   /* --- Initializing variables for the UQ methodology --- */
   using_uq = config->GetUsing_UQ();
   if (using_uq){
+    MeanRateOfStrain    = new su2double* [3];
     MeanReynoldsStress  = new su2double* [3];
     MeanPerturbedRSM    = new su2double* [3];
     A_ij                = new su2double* [3];
@@ -120,6 +121,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Barycentric_Coord   = new su2double [2];
     New_Coord           = new su2double [2];
     for (iDim = 0; iDim < 3; iDim++){
+      MeanRateOfStrain[iDim]    = new su2double [3];
       MeanReynoldsStress[iDim]  = new su2double [3];
       MeanPerturbedRSM[iDim]    = new su2double [3];
       A_ij[iDim]                = new su2double [3];
@@ -184,6 +186,7 @@ CNumerics::~CNumerics(void) {
 
   if (using_uq) {
     for (unsigned short iDim = 0; iDim < 3; iDim++){
+      delete [] MeanRateOfStrain[iDim];
       delete [] MeanReynoldsStress[iDim];
       delete [] MeanPerturbedRSM[iDim];
       delete [] A_ij[iDim];
@@ -192,6 +195,7 @@ CNumerics::~CNumerics(void) {
       delete [] New_Eig_Vec[iDim];
       delete [] Corners[iDim];
     }
+    delete [] MeanRateOfStrain;
     delete [] MeanReynoldsStress;
     delete [] MeanPerturbedRSM;
     delete [] A_ij;
@@ -470,6 +474,34 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
 
   }
   AD::EndPassive(wasActive);
+}
+
+void CNumerics::ComputeMeanRateOfStrainMatrix(su2double **primvargrad){
+
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3){
+    MeanRateOfStrain[0][0] = primvargrad[1][0];
+    MeanRateOfStrain[1][1] = primvargrad[2][1];
+    MeanRateOfStrain[2][2] = primvargrad[3][2];
+    MeanRateOfStrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
+    MeanRateOfStrain[0][2] = 0.5 * (primvargrad[1][2] + primvargrad[3][0]);
+    MeanRateOfStrain[1][2] = 0.5 * (primvargrad[2][2] + primvargrad[3][1]);
+    MeanRateOfStrain[1][0] = MeanRateOfStrain[0][1];
+    MeanRateOfStrain[2][1] = MeanRateOfStrain[1][2];
+    MeanRateOfStrain[2][0] = MeanRateOfStrain[0][2];
+  }
+  else { // nDim==2
+    MeanRateOfStrain[0][0] = primvargrad[1][0];
+    MeanRateOfStrain[1][1] = primvargrad[2][1];
+    MeanRateOfStrain[2][2] = 0.0;
+    MeanRateOfStrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
+    MeanRateOfStrain[0][2] = 0.0;
+    MeanRateOfStrain[1][2] = 0.0;
+    MeanRateOfStrain[1][0] = MeanRateOfStrain[0][1];
+    MeanRateOfStrain[2][1] = MeanRateOfStrain[1][2];
+    MeanRateOfStrain[2][0] = MeanRateOfStrain[0][2];
+  }
 }
 
 void CNumerics::GetPreconditioner(const su2double *val_density, const su2double *val_velocity,
