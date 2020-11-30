@@ -71,14 +71,14 @@ public:
   vector<su2double>& GetSpeciesCvTraRot() final;
 
   /*!
-   * \brief Get species V-E specific heats at constant volume.
+   * \brief Compute species V-E specific heats at constant volume.
    */
   vector<su2double>& ComputeSpeciesCvVibEle() final;
     
   /*!
-   * \brief Get mixture energies (total internal energy and vibrational energy).
+   * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
-  vector<su2double>& GetMixtureEnergies() final;
+  vector<su2double>& ComputeMixtureEnergies() final;
 
   /*!
    * \brief Get vector of species V-E energy.

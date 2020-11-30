@@ -49,7 +49,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){return MassFrac;}
 

@@ -237,7 +237,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     for (iDim = 0; iDim < nDim; iDim++){
       sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
     }
-    Energies_Inf = FluidModel->GetMixtureEnergies();
+    Energies_Inf = FluidModel->ComputeMixtureEnergies();
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1351,7 +1351,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
   /*--- Calculate energies ---*/
-  energies = FluidModel->GetMixtureEnergies();
+  energies = FluidModel->ComputeMixtureEnergies();
 
   /*--- Viscous initialization ---*/
   if (viscous) {
@@ -2330,7 +2330,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         V_outlet[RHOCVTR_INDEX] = FluidModel->GetrhoCvtr();
         V_outlet[RHOCVVE_INDEX] = FluidModel->GetrhoCvve();
 
-        energies = FluidModel->GetMixtureEnergies();
+        energies = FluidModel->ComputeMixtureEnergies();
 
         /*--- Conservative variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){

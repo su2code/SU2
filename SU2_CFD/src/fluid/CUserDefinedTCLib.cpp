@@ -688,7 +688,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesCvVibEle(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
+vector<su2double>& CUserDefinedTCLib::ComputeMixtureEnergies(){
 
   su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
 

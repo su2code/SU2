@@ -118,9 +118,9 @@ public:
   virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
   
   /*!
-   * \brief Get mixture energies (total internal energy and vibrational energy).
+   * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
-  virtual vector<su2double>& GetMixtureEnergies() = 0;
+  virtual vector<su2double>& ComputeMixtureEnergies() = 0;
   
   /*!
    * \brief Get species net production rates.

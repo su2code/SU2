@@ -148,7 +148,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     for (iDim = 0; iDim < nDim; iDim++){
       sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
     }
-    energies = fluidmodel->GetMixtureEnergies();      
+    energies = fluidmodel->ComputeMixtureEnergies();      
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
