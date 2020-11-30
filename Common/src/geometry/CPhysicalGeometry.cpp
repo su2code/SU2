@@ -926,7 +926,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   if (GetSecondNeighbors) {
     vector<vector<unsigned long> > SecondNeighbors;
-    SecondNeighbors.resize(Point_Map.size())
+    SecondNeighbors.resize(Point_Map.size());
     for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
       for (iNode = 0; iNode < Neighbors[iPoint].size(); iNode++) {
         jPoint = Global2Local[Neighbors[iPoint][iNode]];
