@@ -272,7 +272,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //  if (implicit) {
 //
 //    fluidmodel->SetTve(T);
-//    Cvvsst = fluidmodel->GetSpeciesCvVibEle();
+//    Cvvsst = fluidmodel->ComputeSpeciesCvVibEle();
 //
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 //

@@ -1079,12 +1079,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         dij += (Coord_j[iDim] - Coord_i[iDim])*(Coord_j[iDim] - Coord_i[iDim]);
       dij = sqrt(dij);
 
-      /*--- Calculate geometrical parameters ---*/
-      /*theta = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        theta += UnitNormal[iDim]*UnitNormal[iDim];
-      }*/
-
       /*--- Calculate Pressure ---*/
       Pi   = nodes->GetPressure(iPoint);
 
@@ -1118,12 +1112,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       
       /*--- Compute Gamma ---*/
       //TODO: Move to fluidmodel?
-      rhoR = 0.0;
+      su2double rhoR = 0.0;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      Gamma = rhoR/(rhoCvtr + rhoCvve)+1;
-      Gamma= config->GetGamma(); // overwriting gamma computation since it has not been tested yet
-
+      Gamma = rhoR/(rhoCvtr + rhoCvve)+1.0;
+      
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {

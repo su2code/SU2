@@ -60,7 +60,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   string filename_ = "flow";
 
   bool nonPhys;
-  su2double Soundspeed_Inf, sqvel;
   vector<su2double> Energies_Inf;
 
   /*--- Store the multigrid level. ---*/

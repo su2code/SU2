@@ -47,7 +47,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
 

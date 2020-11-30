@@ -157,8 +157,8 @@ rhoCvtr_i     = V_i[RHOCVTR_INDEX]; rhoCvtr_j  = V_j[RHOCVTR_INDEX];
   }
 
   /*--- Compute Gamma ---*/
-  Gamma_i = fluidmodel->GetGamma(V_i);
-  Gamma_j = fluidmodel->GetGamma(V_j);
+  Gamma_i = fluidmodel->ComputeGamma(V_i);
+  Gamma_j = fluidmodel->ComputeGamma(V_j);
 
   /*--- Compute C*  ---*/
   CstarL = sqrt(2.0*(Gamma_i-1.0)/(Gamma_i+1.0)*h_i);

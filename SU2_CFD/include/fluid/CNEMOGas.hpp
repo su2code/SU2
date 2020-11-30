@@ -113,9 +113,9 @@ public:
   virtual const vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
-   * \brief Get species V-E specific heats at constant volume.
+   * \brief Compute species V-E specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvVibEle() = 0;
+  virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
   
   /*!
    * \brief Get mixture energies (total internal energy and vibrational energy).
