@@ -290,45 +290,45 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   
   /*--- Jacobian wrt eddy viscosity ---*/
   
-  // const su2double zeta_i = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
-  // const su2double zeta_j = max(TurbVar_j[1], VorticityMag_j*F2_j/a1);
+  const su2double zeta_i = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
+  const su2double zeta_j = max(TurbVar_j[1], VorticityMag_j*F2_j/a1);
 
-  // Jacobian_i[0][0] += 0.5/zeta_i*Proj_Mean_GradTurbVar[0]*sigma_kine_i;
-  // Jacobian_i[1][0] += 0.5/zeta_i*Proj_Mean_GradTurbVar[1]*sigma_omega_i;
-  // if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
-  //   Jacobian_i[0][1] -= 0.5*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[0]*sigma_kine_i;
-  //   Jacobian_i[1][1] -= 0.5*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[1]*sigma_omega_i;
-  // }
+  Jacobian_i[0][0] += 0.5/zeta_i*Proj_Mean_GradTurbVar[0]*sigma_kine_i;
+  Jacobian_i[1][0] += 0.5/zeta_i*Proj_Mean_GradTurbVar[1]*sigma_omega_i;
+  if (TurbVar_i[1] > VorticityMag_i*F2_i/a1) {
+    Jacobian_i[0][1] -= 0.5*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[0]*sigma_kine_i;
+    Jacobian_i[1][1] -= 0.5*TurbVar_i[0]/pow(TurbVar_i[1],2.0)*Proj_Mean_GradTurbVar[1]*sigma_omega_i;
+  }
 
-  // Jacobian_j[0][0] += 0.5/zeta_j*Proj_Mean_GradTurbVar[0]*sigma_kine_j;
-  // Jacobian_j[1][0] += 0.5/zeta_j*Proj_Mean_GradTurbVar[1]*sigma_omega_j;
-  // if (TurbVar_j[1] > VorticityMag_j*F2_j/a1) {
-  //   Jacobian_j[0][1] -= 0.5*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0]*sigma_kine_j;
-  //   Jacobian_j[1][1] -= 0.5*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1]*sigma_omega_j;
-  // }
+  Jacobian_j[0][0] += 0.5/zeta_j*Proj_Mean_GradTurbVar[0]*sigma_kine_j;
+  Jacobian_j[1][0] += 0.5/zeta_j*Proj_Mean_GradTurbVar[1]*sigma_omega_j;
+  if (TurbVar_j[1] > VorticityMag_j*F2_j/a1) {
+    Jacobian_j[0][1] -= 0.5*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[0]*sigma_kine_j;
+    Jacobian_j[1][1] -= 0.5*TurbVar_j[0]/pow(TurbVar_j[1],2.0)*Proj_Mean_GradTurbVar[1]*sigma_omega_j;
+  }
   
   /*--- Jacobian wrt laminar viscosity ---*/
 
-  // const su2double Cv    = Gas_Constant/Gamma_Minus_One;
-  // const su2double muref = config->GetMu_RefND();
-  // const su2double Tref  = config->GetMu_Temperature_RefND();
-  // const su2double Sref  = config->GetMu_SND();
+  const su2double Cv    = Gas_Constant/Gamma_Minus_One;
+  const su2double muref = config->GetMu_RefND();
+  const su2double Tref  = config->GetMu_Temperature_RefND();
+  const su2double Sref  = config->GetMu_SND();
   
-  // const su2double T_i      = V_i[0];
-  // const su2double T_j      = V_j[0];
-  // const su2double dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
-  //                          * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))
-  //                          / (2.*pow((T_i+Sref),2.));
-  // const su2double dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
-  //                          * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))
-  //                          / (2.*pow((T_j+Sref),2.));
-  // const su2double factor_i = dmudT_i/(Density_i*Cv);
-  // const su2double factor_j = dmudT_j/(Density_j*Cv);
+  const su2double T_i      = V_i[0];
+  const su2double T_j      = V_j[0];
+  const su2double dmudT_i  = muref*(Tref+Sref)/pow(Tref,1.5) 
+                           * (3.*Sref*sqrt(T_i) + pow(T_i,1.5))
+                           / (2.*pow((T_i+Sref),2.));
+  const su2double dmudT_j  = muref*(Tref+Sref)/pow(Tref,1.5) 
+                           * (3.*Sref*sqrt(T_j) + pow(T_j,1.5))
+                           / (2.*pow((T_j+Sref),2.));
+  const su2double factor_i = dmudT_i/(Density_i*Cv);
+  const su2double factor_j = dmudT_j/(Density_j*Cv);
   
-  // for (auto iVar = 0; iVar < nVar; iVar++) {
-  //   Jacobian_i[iVar][0] -= 0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
-  //   Jacobian_j[iVar][0] -= 0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
-  // }
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar][0] -= 0.5*factor_i*Proj_Mean_GradTurbVar[iVar];
+    Jacobian_j[iVar][0] -= 0.5*factor_j*Proj_Mean_GradTurbVar[iVar];
+  }
 
   AD::EndPassive(wasActive);
 
