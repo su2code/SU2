@@ -860,6 +860,10 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
   int iProc, iSend, iRecv, myStart, myFinal;
 
+  const bool GetSecondNeighbors = (config->GetUse_Accurate_Visc_Jacobians() || 
+                                   config->GetUse_Accurate_Turb_Jacobians() ||
+                                   config->GetUse_Accurate_Kappa_Jacobians());
+
   /*--- Get a linear partitioner to track the partition counts. ---*/
 
   CLinearPartitioner pointPartitioner(geometry->GetGlobal_nPoint(),0);
@@ -916,6 +920,25 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
         Neighbors[iPoint].push_back(jPoint);
       }
     }
+  }
+
+  /*--- Add secondary neighbors if we need them for exact Jacobians. ---*/
+
+  if (GetSecondNeighbors) {
+    vector<vector<unsigned long> > SecondNeighbors;
+    SecondNeighbors.resize(Point_Map.size())
+    for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
+      for (iNode = 0; iNode < Neighbors[iPoint].size(); iNode++) {
+        jPoint = Global2Local[Neighbors[iPoint][iNode]];
+        for (jNode = 0; jNode < Neighbors[jPoint].size(); jNode++) {
+          SecondNeighbors[iPoint].push_back(Neighbors[jPoint][jNode]);
+        }
+      }
+    }
+    for (iPoint = 0; iPoint < Point_Map.size(); iPoint++)
+      Neighbors[iPoint].push_back(SecondNeighbors[iPoint]);
+
+    vector<vector<unsigned long> >().swap(SecondNeighbors);
   }
 
   /*--- Post-process the neighbor lists. ---*/
