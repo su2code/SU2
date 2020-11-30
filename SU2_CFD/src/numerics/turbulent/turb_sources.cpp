@@ -919,13 +919,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
   /*--- Cross diffusion ---*/
 
-  su2double CrossDiff = 0.0;
-  for (unsigned long iDim = 0; iDim < nDim; iDim++)
-    CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-  CrossDiff *= 2.0*Density_i*sigma_omega_2/zeta;
+  // su2double CrossDiff = 0.0;
+  // for (unsigned long iDim = 0; iDim < nDim; iDim++)
+  //   CrossDiff += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+  // CrossDiff *= 2.0*Density_i*sigma_omega_2/zeta;
 
-  // Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-  Residual[1] += (1.0 - F1_i)*CrossDiff*Volume;
+  Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+  // Residual[1] += (1.0 - F1_i)*CrossDiff*Volume;
 
   /*--- Implicit part ---*/
 
@@ -933,8 +933,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
-  Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited);
+  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+  // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited);
   // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
 
   if (Residual[1] > 1e10) {
