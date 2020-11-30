@@ -153,7 +153,7 @@ su2double CNEMOGas::ComputeGamma(su2double *V){
 
 }
 
-su2double CNEMOGas::GetrhoCvve() {
+su2double CNEMOGas::ComputerhoCvve() {
 
     Cvves = ComputeSpeciesCvVibEle();
 

@@ -88,7 +88,7 @@ void CCentLax_NEMO::ComputeResidual(su2double *val_resconv,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
 
-  vector<su2double> mean_eves = fluidmodel->GetSpeciesEve(MeanV[TVE_INDEX]); 
+  vector<su2double> mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]); 
   
   fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 

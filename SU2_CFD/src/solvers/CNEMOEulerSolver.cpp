@@ -2327,8 +2327,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
         /*--- Set mixture state and compute quantities ---*/
         FluidModel->SetTDStateRhosTTv(rhos, Temperature, Tve);
-        V_outlet[RHOCVTR_INDEX] = FluidModel->GetrhoCvtr();
-        V_outlet[RHOCVVE_INDEX] = FluidModel->GetrhoCvve();
+        V_outlet[RHOCVTR_INDEX] = FluidModel->ComputerhoCvtr();
+        V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
 
         energies = FluidModel->ComputeMixtureEnergies();
 

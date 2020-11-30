@@ -100,7 +100,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  ws = fluidmodel->GetNetProductionRates();
+  ws = fluidmodel->ComputeNetProductionRates();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;
@@ -261,7 +261,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  residual[nSpecies+nDim+1] = fluidmodel->GetEveSourceTerm() * Volume;
+  residual[nSpecies+nDim+1] = fluidmodel->ComputeEveSourceTerm() * Volume;
 
   //  if (implicit) {
 //    for (iVar = 0; iVar < nVar; iVar++)

@@ -260,7 +260,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
 
-  hs = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_eve);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
   
   /*--- Scale thermal conductivity with turb visc ---*/
   // TODO: Need to determine proper way to incorporate eddy viscosity
@@ -416,7 +416,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 //  RuSI= UNIVERSAL_GAS_CONSTANT;
 //  Ru  = 1000.0*RuSI;
 //
-//  hs = fluidmodel->GetSpeciesEnthalpy(T, val_Mean_Eve);
+//  hs = fluidmodel->ComputeSpeciesEnthalpy(T, val_Mean_Eve);
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 //    Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
 //    Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];

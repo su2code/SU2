@@ -81,24 +81,24 @@ public:
   vector<su2double>& ComputeMixtureEnergies() final;
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute vector of species V-E energy.
    */
-  vector<su2double>& GetSpeciesEve(su2double val_T) final;
+  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
   
   /*!
-   * \brief Get species net production rates.
+   * \brief Compute species net production rates.
    */
-  vector<su2double>& GetNetProductionRates() final;
+  vector<su2double>& ComputeNetProductionRates() final;
 
   /*!
-   * \brief Get vibrational energy source term.
+   * \brief Compute vibrational energy source term.
    */
-  su2double GetEveSourceTerm() final;
+  su2double ComputeEveSourceTerm() final;
   
   /*!
-   * \brief Get species enthalpies.
+   * \brief Compute species enthalpies.
    */
-  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
+  vector<su2double>& ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
 
   /*!
    * \brief Get species diffusion coefficients.
@@ -116,9 +116,9 @@ public:
   vector<su2double>& GetThermalConductivities() final;
   
   /*!
-   * \brief Get translational and vibrational temperatures vector.
+   * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel) final;
    
   /*!
    * \brief Get species molar mass.
