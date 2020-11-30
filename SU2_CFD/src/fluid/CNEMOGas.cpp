@@ -133,7 +133,6 @@ su2double CNEMOGas::ComputeGasConstant(){
 
 su2double CNEMOGas::ComputeGamma(su2double *V){
 
-  
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long RHOS_INDEX    = 0;
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;

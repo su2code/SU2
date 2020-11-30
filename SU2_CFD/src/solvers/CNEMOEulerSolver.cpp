@@ -811,7 +811,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  /*--- Set booleans based on config settings ---*/
    /*--- Set booleans based on config settings ---*/
   bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   bool disc_adjoint = config->GetDiscrete_Adjoint();

@@ -28,7 +28,7 @@
 #include "../../include/fluid/CMutationTCLib.hpp"
 
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
-  
+
   //CGarbacz: if wilke - transportmodel = 'wilke' and so on;
 
   //CGarbacz: nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;

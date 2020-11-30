@@ -177,6 +177,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
+  //TODO move Gamma to fluidmodel
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
   gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
   gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;

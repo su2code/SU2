@@ -163,19 +163,24 @@ public:
   virtual vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
   
   /*!
-   * \brief Get speed of sound.
+   * \brief Compute speed of sound.
    */
   su2double ComputeSoundSpeed();
 
   /*!
-   * \brief Get pressure.
+   * \brief Compute pressure.
    */
   su2double ComputePressure();
 
   /*!
-   * \brief Get gas constant.
+   * \brief Compute gas constant.
    */
   su2double ComputeGasConstant();
+
+  /*!
+   * \brief Compute ratio of specific heats (Gamma).
+   */
+  su2double ComputeGamma(su2double *V);
 
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
