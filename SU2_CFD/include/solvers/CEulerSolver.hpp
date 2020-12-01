@@ -324,6 +324,8 @@ protected:
                         su2double           *primvar_j,
                         su2double           *turbvar_i, 
                         su2double           *turbvar_j,
+                        bool                &good_i,
+                        bool                &good_j,
                         const unsigned long nFlowVarGrad,
                         const unsigned long nTurbVarGrad) override;
 
