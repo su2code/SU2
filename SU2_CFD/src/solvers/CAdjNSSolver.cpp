@@ -783,17 +783,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             else
               val_turb_ke = 0.0;
 
-            div_vel = 0.0;
-            for (iDim = 0 ; iDim < nDim; iDim++) {
-              Velocity[iDim] = U[iDim+1]/Density;
-              div_vel += PrimVar_Grad[iDim+1][iDim];
-            }
-
-            for (iDim = 0 ; iDim < nDim; iDim++)
-              for (jDim = 0 ; jDim < nDim; jDim++)
-                tau[iDim][jDim] = Laminar_Viscosity*(PrimVar_Grad[jDim+1][iDim] + PrimVar_Grad[iDim+1][jDim])
-                - TWO3*Laminar_Viscosity*div_vel*delta[iDim][jDim]
-                - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+            CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
 
@@ -810,6 +800,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               normal_grad_v_ux[iDim] = normal_grad_vel[iDim] - normal_grad_gridvel[iDim];
 
             /*--- Form Sigma_Psi5v ---*/
+
+            div_vel = 0.0;
+            for (iDim = 0 ; iDim < nDim; iDim++) {
+              Velocity[iDim] = U[iDim+1]/Density;
+              div_vel += PrimVar_Grad[iDim+1][iDim];
+            }
 
             gradPsi5_v = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {

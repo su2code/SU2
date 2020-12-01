@@ -130,7 +130,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
    * parts of tau can be computed with the total viscosity. --- */
 
   if (using_uq){
-    ComputeStressTensor(nDim, tau, val_gradprimvar, val_laminar_viscosity, Density, 0.0);  // laminar part
+    ComputeStressTensor(nDim, tau, val_gradprimvar, val_laminar_viscosity);  // laminar part
     // add turbulent part which was perturbed
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
       for (unsigned short jDim = 0 ; jDim < nDim; jDim++)

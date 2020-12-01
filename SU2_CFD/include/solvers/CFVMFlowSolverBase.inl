@@ -2030,12 +2030,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve = 0.0,
-            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor,
-            delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   su2double **Grad_PrimVar = nullptr, dTn, dTven;
 
@@ -2190,16 +2189,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       /*--- Evaluate Tau ---*/
-
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0; jDim < nDim; jDim++) {
-          Tau[iDim][jDim] = Viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) -
-                            TWO3 * Viscosity * div_vel * delta[iDim][jDim];
-        }
-      }
+      su2double *Tau_pointer[3] = {&(Tau[0][0]), &(Tau[1][0]), &(Tau[2][0])};
+      su2double *Grad_Vel_pointer[4] = {nullptr, &(Grad_Vel[0][0]), &(Grad_Vel[1][0]), &(Grad_Vel[2][0])};
+      CNumerics::ComputeStressTensor(nDim, Tau_pointer, Grad_Vel_pointer, Viscosity);
+      // Grad_Vel is not a primitive variable gradient, so we have to shift the index.
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 

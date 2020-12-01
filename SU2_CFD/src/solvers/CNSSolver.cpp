@@ -471,23 +471,13 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
   su2double total_viscosity = laminar_viscosity + eddy_viscosity;
 
-  const auto Grad_Vel = &nodes->GetGradient_Primitive(iPoint)[1];
-
-  /*--- Divergence of the velocity ---*/
-
-  su2double div_vel = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++)
-    div_vel += Grad_Vel[iDim][iDim];
-
   /*--- Compute the viscous stress tensor ---*/
 
   su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    for (auto jDim = 0u; jDim < nDim; jDim++) {
-      tau[iDim][jDim] = total_viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]);
-    }
-    tau[iDim][iDim] -= TWO3*total_viscosity*div_vel;
-  }
+  su2double *tau_pointer[MAXNDIM]; // avoid dynamic allocation
+  for(unsigned short iDim=0; iDim<MAXNDIM; iDim++)
+    tau_pointer[iDim] = &(tau[iDim][0]);
+  CNumerics::ComputeStressTensor(nDim, tau_pointer, nodes->GetGradient_Primitive(iPoint), total_viscosity);
 
   /*--- Dot product of the stress tensor with the grid velocity ---*/
 
@@ -988,21 +978,15 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute the shear stress at the wall in the regular fashion
        by using the stress tensor on the surface ---*/
 
-      su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
-
-      const auto GradVel = &nodes->GetGradient_Primitive(iPoint)[1];
-
-      su2double div_vel = 0.0;
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        div_vel += GradVel[iDim][iDim];
-
       su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        for (auto jDim = 0u; jDim < nDim; jDim++) {
-          tau[iDim][jDim] = Lam_Visc_Wall * (GradVel[jDim][iDim] + GradVel[iDim][jDim]);
-        }
-        tau[iDim][iDim] -= TWO3*Lam_Visc_Wall*div_vel;
+      su2double *tau_pointer[MAXNDIM]; // avoid dynamic allocation
+      for(unsigned short iDim=0; iDim<MAXNDIM; iDim++)
+        tau_pointer[iDim] = &(tau[iDim][0]);
 
+      su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
+      CNumerics::ComputeStressTensor(nDim, tau_pointer, nodes->GetGradient_Primitive(iPoint), Lam_Visc_Wall);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
       }
 

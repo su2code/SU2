@@ -136,7 +136,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
 
   su2double yinv, Velocity_i[3];
-  unsigned short iDim, jDim, iVar, jVar;
+  unsigned short iDim, iVar, jVar;
 
   if (Coord_i[1] > EPS) {
 
@@ -197,12 +197,12 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       Eddy_Viscosity_i       = V_i[nDim+5];
       Thermal_Conductivity_i = V_i[nDim+6];
 
-      su2double total_viscosity, div_vel;
+      su2double total_viscosity;
 
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
 
       /*--- The full stress tensor is needed for variable density ---*/
-      ComputeStressTensor(nDim, tau, PrimVar_Grad_i, total_viscosity, 0.0, 0.0);
+      ComputeStressTensor(nDim, tau, PrimVar_Grad_i, total_viscosity);
 
       /*--- Viscous terms. ---*/
 
