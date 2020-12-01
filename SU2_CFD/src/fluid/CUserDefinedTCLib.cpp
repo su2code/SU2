@@ -630,7 +630,7 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
 
-  //TODO: Set this in constructor.
+  // NOTE: This will be non-const with future models.
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
 

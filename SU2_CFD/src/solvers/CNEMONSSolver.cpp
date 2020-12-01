@@ -1101,7 +1101,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Density   = nodes->GetDensity(iPoint);
 
       /*--- Incorporate turbulence effects ---*/
-      auto&      M  = FluidModel->GetSpeciesMolarMass();
+      auto&      Ms = FluidModel->GetSpeciesMolarMass();
       su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double  tmp1, scl, Cptr;
       su2double *Vi = nodes->GetPrimitive(iPoint);

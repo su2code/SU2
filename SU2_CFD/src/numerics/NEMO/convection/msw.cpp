@@ -234,7 +234,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
                                                       epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  CreateBasis();
+  CreateBasis(UnitNormal);
   GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, invP_Tensor);
 

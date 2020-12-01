@@ -1583,10 +1583,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     switch(config->GetKind_FluidModel()){
     case USER_DEFINED_NONEQ:
-      ModelTable << "SU2 Two-Temp";
+      ModelTable << "SU2 NonEq";
       break;
     case MUTATIONPP:
-      ModelTable << "Mutation++ Library";
+      ModelTable << "Mutation++ NonEq";
       break;
     }
 
@@ -2245,7 +2245,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Compute Gamma using domain state ---*/
-      Gamma = Fluidmodel->ComputeGamma(V_domain);
+      Gamma = FluidModel->ComputeGamma(V_domain);
       Gamma_Minus_One = Gamma - 1.0; 
       
       /*--- Retrieve the specified back pressure for this outlet. ---*/

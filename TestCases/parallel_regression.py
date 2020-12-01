@@ -86,7 +86,7 @@ def main():
     viscwedge.test_vals = [-5.204061,   -5.728824,  -20.259919,  -20.213137,  -20.252642,   -1.781679,   -2.150885,    1.724447,   -2.861733]
     viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     viscwedge.timeout   = 1600
-    viscwedge.new_output = False
+    viscwedge.new_output = True
     viscwedge.tol       = 0.00001
     test_list.append(viscwedge)
 
