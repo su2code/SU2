@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,7 +90,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
@@ -108,7 +108,8 @@ private:
   Mean_Laminar_Viscosity,       /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,          /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,    /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */ 
+  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  
   *ProjFlux,                    /*!< \brief Projection of the viscous fluxes. */
   dist_ij;                      /*!< \brief Length of the edge and face. */
   bool implicit;                /*!< \brief Implicit calculus. */
@@ -126,10 +127,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradCorrected_NEMO(unsigned short val_nDim,
-                         unsigned short val_nVar,
-                         unsigned short val_nPrimVar,
-                         unsigned short val_nPrimVarGrad,
-                         CConfig *config);
+                unsigned short val_nVar,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
+                CConfig *config);
 
   /*!
    * \brief Destructor of the class.

@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file CNEMONSSolver.hpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -207,7 +207,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
   */
-  void BC_Smoluchowski_Maxwell(CGeometry *geometry, CSolver **solver_container,
+  void BC_Smoluchowski_Maxwell(CGeometry *geometry,
+                               CSolver **solver_container,
                                CNumerics *conv_numerics,
                                CNumerics *visc_numerics,
                                CConfig *config,
@@ -224,4 +225,5 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
+
 };

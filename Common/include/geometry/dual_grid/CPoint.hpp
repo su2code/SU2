@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,8 @@
 
 #pragma once
 
-#include "../../toolboxes/C2DContainer.hpp"
+#include "../../containers/C2DContainer.hpp"
+#include "../../containers/container_decorators.hpp"
 #include "../../toolboxes/graph_toolbox.hpp"
 #include <vector>
 
@@ -138,6 +139,11 @@ public:
   inline su2double *GetCoord(unsigned long iPoint) { return Coord[iPoint]; }
 
   /*!
+   * \brief Get the entire matrix of coordinates of the control volumes.
+   */
+  inline const su2activematrix& GetCoord() const { return Coord; }
+
+  /*!
    * \brief Set the coordinates for the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] iDim - Position to store the coordinate.
@@ -190,6 +196,11 @@ public:
   inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const { return Elem.getInnerIdx(iPoint,nelem); }
 
   /*!
+   * \brief Get inner iterator to loop over neighbor elements.
+   */
+  inline CCompressedSparsePatternL::CInnerIter GetElems(unsigned long iPoint) const { return Elem.getInnerIter(iPoint); }
+
+  /*!
    * \brief Set the points that compose the control volume.
    * \param[in] pointsMatrix - List of lists with the neighbor points connected to each point.
    */
@@ -221,6 +232,11 @@ public:
   inline unsigned long GetPoint(unsigned long iPoint, unsigned long npoint) const { return Point.getInnerIdx(iPoint,npoint); }
 
   /*!
+   * \brief Get inner iterator to loop over neighbor points.
+   */
+  inline CCompressedSparsePatternUL::CInnerIter GetPoints(unsigned long iPoint) const { return Point.getInnerIter(iPoint); }
+
+  /*!
    * \brief Set the edges that compose the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] iedge - Edge to be added.
@@ -235,6 +251,11 @@ public:
    * \return Index of the edge.
    */
   inline long GetEdge(unsigned long iPoint, unsigned long nedge) const { return Edge.getInnerIdx(iPoint,nedge); }
+
+  /*!
+   * \brief Get inner iterator to loop over neighbor edges.
+   */
+  inline CCompressedSparsePatternL::CInnerIter GetEdges(unsigned long iPoint) const { return Edge.getInnerIter(iPoint); }
 
   /*!
    * \brief Set the boundary vertex that compose the control volume.

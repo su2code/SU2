@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@
  */
 class CNEMOEulerVariable : public CVariable {
 public:
-  static constexpr size_t MAXNVAR = 20;
+  static constexpr size_t MAXNVAR = 25;
 
 protected:
 
@@ -56,6 +56,7 @@ protected:
   MatrixType Primitive;                /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
   MatrixType Primitive_Aux;            /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
   CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (rhos_s, T, Tve, ...). */
+  MatrixType Limiter_Primitive;        /*!< \brief Limiter of the primitive variables  (rhos_s, T, Tve, ...). */
   
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;                /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
@@ -70,7 +71,8 @@ protected:
   MatrixType dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
-
+  VectorType Gamma;  /*!< \brief Ratio of specific heats. */
+  
   CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
@@ -153,7 +155,7 @@ public:
 
   /*!
    * \brief Get the primitive variables limiter.
-   * \return Primitive variables as dummy return.
+   * \return Primitive variables limiter for the entire domain.
    */
   inline MatrixType& GetLimiter_Primitive(void) {
 
@@ -337,6 +339,14 @@ public:
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
                     su2double *val_Cvves);
 
+ /*!
+  * \brief Check for unphysical points.
+  * \return Boolean value of physical point 
+  */
+  bool CheckNonPhys(su2double *U, su2double *V, su2double *dPdU,
+                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
+                    su2double *val_Cvves);
+
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/
   /*---------------------------------------*/
@@ -433,6 +443,16 @@ public:
   inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++){
       Solution_Old(iPoint,nSpecies+iDim) = val_velocity[iDim]*Primitive(iPoint,RHO_INDEX);
+     }
+  }
+
+  /*!
+   * \brief Set the Energy vector from the old solution.
+   * \param[in] val_energy - Pointer to energy.
+   */
+  inline void SetEnergy_Old(unsigned long iPoint, const vector<su2double>& val_energy)  {
+    for (unsigned long i = 0; i < 2; i++){
+      Solution_Old(iPoint,nSpecies+nDim+i) = val_energy[i]*Primitive(iPoint,RHO_INDEX);
      }
   }
 

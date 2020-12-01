@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
- * \author F. Palacios, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \author F. Palacios, W.Maier, C. Garbacz
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -109,7 +109,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double gam;
@@ -117,7 +116,8 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   alpha = 3.0/16.0;
 
   /*---- Initialize the residual vector ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {Flux[iVar] = 0.0;}
+  for (iVar = 0; iVar < nVar; iVar++)
+    Flux[iVar] = 0.0;
 
   /*--- Calculate geometric quantities ---*/
   Area = 0;
@@ -127,10 +127,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
-
-  /*--- Read from config ---*/
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
 
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
@@ -142,22 +138,21 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     u_i[iDim] = V_i[VEL_INDEX+iDim];
     u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-
-  P_i       = V_i[P_INDEX];         P_j       = V_j[P_INDEX];
-  h_i       = V_i[H_INDEX];         h_j       = V_j[H_INDEX];
-  rho_i     = V_i[RHO_INDEX];       rho_j     = V_j[RHO_INDEX];
-  rhoEve_i  = U_i[nSpecies+nDim+1]; rhoEve_j  = U_j[nSpecies+nDim+1];
-  rhoCvtr_i = V_i[RHOCVTR_INDEX];   rhoCvtr_j = V_j[RHOCVTR_INDEX];
-  rhoCvve_i = V_i[RHOCVVE_INDEX];   rhoCvve_j = V_j[RHOCVVE_INDEX];
-
-  vector<su2double> Ms = fluidmodel->GetMolarMass();
+  P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
+  h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
+  rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
   
-  rhoRi = 0.0;  rhoRj = 0.0;
+  rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
+  rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
+  
+  rhoEve_i = 0.0; rhoEve_j = 0.0; 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoRi += rhos_i[iSpecies]*Ru/Ms[iSpecies];
-    rhoRj += rhos_j[iSpecies]*Ru/Ms[iSpecies];
+    rhoEve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies]);
+    rhoEve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies]);
   }
 
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
+  
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -173,11 +168,10 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
-  //TODO move Gamma to fluidmodel
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
-  gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
-  gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
-  gam = 0.5*(gtl_i+gtl_j);
+  gtl_i = fluidmodel->ComputeGamma(V_i);
+  gtl_j = fluidmodel->ComputeGamma(V_j);
+  gam   = 0.5*(gtl_i+gtl_j);
   if (fabs(rho_i-rho_j)/(0.5*(rho_i+rho_j)) < 1E-3)
     atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
   else {
@@ -192,7 +186,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   mL  = ProjVel_i/aij;
   mR  = ProjVel_j/aij;
   if (fabs(mL) <= 1.0) {
-    mLP = 0.25*(mL+1.0)*(mL+1.0);  
+    mLP = 0.25*(mL+1.0)*(mL+1.0);
     pLP = P_i*(0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
   } else {
     mLP = 0.5*(mL+fabs(mL));
@@ -210,7 +204,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   w  = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
   ps = pLP + pRM;
 
-  // simplified f function (Literature requires information from cells from
+  // simplified f function (Literature requires information from cells
   // above and below  (TODO)
   fL = 0.0; fR = 0.0;
   if (ps != 0.0){

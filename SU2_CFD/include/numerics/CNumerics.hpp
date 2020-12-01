@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -227,7 +227,7 @@ protected:
 
   /* Supporting data structures for the eigenspace perturbation for UQ methodology */
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
-  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;  
+  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
 public:
   /*!
@@ -253,6 +253,8 @@ public:
      * allows discarding the Jacobians when they are not needed.
      */
     operator Vector_t() { return residual; }
+
+    su2double operator[] (unsigned long idx) const { return residual[idx]; }
   };
 
   /*!
@@ -775,7 +777,7 @@ public:
   void GetInviscidProjFlux(const su2double *val_density, const su2double *val_velocity,
                            const su2double *val_pressure, const su2double *val_enthalpy,
                            const su2double *val_normal, su2double *val_Proj_Flux) const;
-  
+
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
@@ -1166,7 +1168,7 @@ public:
    * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
    */
   inline virtual ResidualType<> ComputeVibRelaxation(const CConfig* config) { return ResidualType<>(nullptr,nullptr,nullptr); }
-  
+
   /*!
    * \brief Calculation of the chemistry source term
    * \param[in] config - Definition of the particular problem.
@@ -1379,15 +1381,40 @@ public:
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
 
-  virtual inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       { } 
-        
-  virtual inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       { }   
-  
-  virtual inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { }  
-  
-  virtual inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          { }  
-  
-  virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }  
+  /*!
+   * \brief Set the pressure derivatives.
+   * \param[in] val_dPdU_i - pressure derivatives at i. 
+   * \param[in] val_dPdU_j - pressure derivatives at j.
+   */
+  virtual inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       { }
+
+  /*!
+   * \brief Set the temperature derivatives.
+   * \param[in] val_dTdU_i - temperature derivatives at i. 
+   * \param[in] val_dTdU_j - temperature derivatives at j.
+   */
+  virtual inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       { }
+
+  /*!
+   * \brief Set the vib-el temperture derivatives.
+   * \param[in] val_dTvedU_i - t_ve derivatives at i. 
+   * \param[in] val_dTvedU_j - t_ve derivatives at j.
+   */
+  virtual inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { }
+
+  /*!
+   * \brief Set the vib-elec energy.
+   * \param[in] val_Eve_i - vib-el energy at i. 
+   * \param[in] val_Eve_j - vib-el energy at j.
+   */
+  virtual inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          { }
+
+  /*!
+   * \brief Set the vib-elec specific heat.
+   * \param[in] val_Cvve_i - Cvve at i. 
+   * \param[in] val_Cvve_j - Cvve at j.
+   */
+  virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }
 
 };
 

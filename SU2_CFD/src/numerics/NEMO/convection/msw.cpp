@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -139,7 +139,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 //    }
 //  }
 
-  /*--- Rename/load primitive variables ---*/
+  /*--- Load variables from nodes i & j ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
@@ -151,7 +151,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   P_i = V_i[P_INDEX];
   P_j = V_j[P_INDEX];
 
-  /*--- Calculate velocity  quantities ---*/
+  /*--- Calculate velocity quantities ---*/
   sqvel_i   = 0.0;  sqvel_j   = 0.0;
   ProjVel_i = 0.0;  ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -166,7 +166,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   w     = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   onemw = 1.0 - w;
 
-  /*--- Calculate weighted state vector(*) ---*/
+  /*--- Calculate weighted state vector (*) for i & j ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Ust_i[iVar] = onemw*U_i[iVar] + w*U_j[iVar];
     Ust_j[iVar] = onemw*U_j[iVar] + w*U_i[iVar];
@@ -178,11 +178,11 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   ProjVelst_i = onemw*ProjVel_i + w*ProjVel_j;
   ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
 
-  vector<su2double> eves_st_i = fluidmodel->GetSpeciesEve(Vst_i[TVE_INDEX]);
-  vector<su2double> eves_st_j = fluidmodel->GetSpeciesEve(Vst_j[TVE_INDEX]);
+  vector<su2double> eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
+  vector<su2double> eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);
 
-  fluidmodel->GetdPdU(Vst_i, eves_st_i, dPdUst_i);
-  fluidmodel->GetdPdU(Vst_j, eves_st_j, dPdUst_j);
+  fluidmodel->ComputedPdU(Vst_i, eves_st_i, dPdUst_i);
+  fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
@@ -191,11 +191,11 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
                              sqrt((ProjVelst_i + Vst_i[A_INDEX])*
                                   (ProjVelst_i + Vst_i[A_INDEX])+
-                                                epsilon*epsilon));
+                                               epsilon*epsilon));
   Lambda_i[nSpecies+nDim]   = 0.5*(ProjVelst_i - Vst_i[A_INDEX] +
                              sqrt((ProjVelst_i - Vst_i[A_INDEX])*
                                   (ProjVelst_i - Vst_i[A_INDEX])+
-                                                epsilon*epsilon));
+                                               epsilon*epsilon));
   Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
                                                       epsilon*epsilon));
 
@@ -213,7 +213,6 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
       Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
-
      // if (implicit)
      //   val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
     }
@@ -226,11 +225,11 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -
                              sqrt((ProjVelst_j + Vst_j[A_INDEX])*
                                   (ProjVelst_j + Vst_j[A_INDEX])+
-                                                 epsilon*epsilon));
+                                               epsilon*epsilon));
   Lambda_j[nSpecies+nDim]   = 0.5*(ProjVelst_j - Vst_j[A_INDEX] -
                              sqrt((ProjVelst_j - Vst_j[A_INDEX])*
                                   (ProjVelst_j - Vst_j[A_INDEX])+
-                                                 epsilon*epsilon));
+                                                epsilon*epsilon)                 );
   Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j+
                                                       epsilon*epsilon));
 

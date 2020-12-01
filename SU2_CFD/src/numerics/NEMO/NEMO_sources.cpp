@@ -1,9 +1,9 @@
-﻿/*!
+/*!
  * \file NEMO_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -100,7 +100,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  ws = fluidmodel->GetNetProductionRates();
+  ws = fluidmodel->ComputeNetProductionRates();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;
@@ -261,7 +261,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  residual[nSpecies+nDim+1] = fluidmodel->GetEveSourceTerm() * Volume;
+  residual[nSpecies+nDim+1] = fluidmodel->ComputeEveSourceTerm() * Volume;
 
   //  if (implicit) {
 //    for (iVar = 0; iVar < nVar; iVar++)
@@ -272,7 +272,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //  if (implicit) {
 //
 //    fluidmodel->SetTve(T);
-//    Cvvsst = fluidmodel->GetSpeciesCvVibEle();
+//    Cvvsst = fluidmodel->ComputeSpeciesCvVibEle();
 //
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 //
@@ -284,10 +284,11 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
 //  }
-//  if(config->GetVTTransferResidualLimiting()){
-    //if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
-    //if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
-//  }
+
+  if(config->GetVTTransferResidualLimiting()){
+    if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
+    if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
+  } 
 
   return ResidualType<>(residual, nullptr, nullptr);
 }
