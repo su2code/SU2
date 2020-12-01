@@ -90,7 +90,7 @@ void CCentLax_NEMO::ComputeResidual(su2double *val_resconv,
 
   vector<su2double> mean_eves = fluidmodel->GetSpeciesEve(MeanV[TVE_INDEX]); 
   
-  fluidmodel->GetdPdU(MeanV, mean_eves, MeandPdU);
+  fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);

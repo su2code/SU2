@@ -305,9 +305,14 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   if (multizone && steady) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
 
-    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+    /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
 
-    integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    if (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) {
+      integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
+    }
+    else {
+      integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    }
   }
 }
 
