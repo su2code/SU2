@@ -317,7 +317,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.381658, -3.099871, -3.099842, -3.099838]
+    discadj_cht.test_vals = [-2.364405, -3.085549, -3.085516, -3.085511]
     discadj_cht.su2_exec  = "mpirun -n 2 SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001

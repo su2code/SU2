@@ -1063,7 +1063,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver, geometry, config); 
+  Inlet_Preprocessing(solver, geometry, config);
 
 }
 
@@ -1196,7 +1196,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
   bool euler, ns, turbulent,
-  NEMO_euler, NEMO_ns, 
+  NEMO_euler, NEMO_ns,
   adj_euler, adj_ns, adj_turb,
   heat, fem, fem_euler, fem_ns, fem_dg_flow,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
@@ -1447,7 +1447,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       NEMO_euler = compressible = true; break;
 
     case NEMO_NAVIER_STOKES:
-      NEMO_ns = compressible = true; break;  
+      NEMO_ns = compressible = true; break;
 
     case RANS:
     case DISC_ADJ_RANS:
