@@ -9303,6 +9303,13 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
   return -1;
 }
 
+string CConfig::GetName_ObjFunc(unsigned short val_obj) const {
+  for (auto item : Objective_Map)
+    if (item.second == static_cast<ENUM_OBJECTIVE>(Kind_ObjFunc[val_obj]))
+      return item.first;
+  return string();
+}
+
 void CConfig::Tick(double *val_start_time) {
 
 #ifdef PROFILE

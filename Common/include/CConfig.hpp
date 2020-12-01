@@ -5136,21 +5136,19 @@ public:
   bool GetHold_GridFixed(void) const { return Hold_GridFixed; }
 
   /*!
-   * \brief Get the kind of objective function. There are several options: Drag coefficient,
-   *        Lift coefficient, efficiency, etc.
-   * \note The objective function will determine the boundary condition of the adjoint problem.
-   * \return Kind of objective function.
-   */
-  unsigned short GetKind_ObjFunc(void) const { return Kind_ObjFunc[0]; }
-
-  /*!
    * \author H. Kline
    * \brief Get the kind of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
    * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \param[in] val_obj
    * \return Kind of objective function.
    */
-  unsigned short GetKind_ObjFunc(unsigned short val_obj) const { return Kind_ObjFunc[val_obj]; }
+  unsigned short GetKind_ObjFunc(unsigned short val_obj = 0) const { return Kind_ObjFunc[val_obj]; }
+
+  /*!
+   * \brief Similar to GetKind_ObjFunc but returns the corresponding string.
+   */
+  string GetName_ObjFunc(unsigned short val_obj = 0) const;
 
   /*!
    * \author H. Kline
@@ -5178,12 +5176,6 @@ public:
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
-
-  /*!
-   * \author H. Kline
-   * \brief Get the flag indicating whether to comput a combined objective.
-   */
-  bool GetComboObj(void);
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.
