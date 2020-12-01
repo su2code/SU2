@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -583,7 +583,7 @@ public:
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
     for (size_t i=0; i<blkSz; ++i) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k=0; k<N; ++k) {
         blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
@@ -675,7 +675,7 @@ public:
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
     for (size_t i=0; i<blkSz; ++i) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k=0; k<N; ++k) {
         blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);

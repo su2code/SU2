@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -739,7 +739,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
 }
 
-void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
   unsigned long iPoint;
   unsigned short iDim;

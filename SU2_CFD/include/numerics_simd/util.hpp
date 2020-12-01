@@ -2,7 +2,7 @@
  * \file util.hpp
  * \brief Generic auxiliary functions.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -143,6 +143,15 @@ FORCEINLINE MatrixDbl<nRows,nCols> gatherVariables(Int iPoint, const Container& 
   auto x = vars.template get<MatrixDbl<nRows,nCols> >(iPoint);
   AD::SetPreaccIn(x, nRows, nCols, Double::Size);
   return x;
+}
+
+/*!
+ * \brief Stop the AD preaccumulation.
+ */
+template<size_t nVar>
+FORCEINLINE void stopPreacc(VectorDbl<nVar>& x) {
+  AD::SetPreaccOut(x, nVar, Double::Size);
+  AD::EndPreacc();
 }
 
 /*!

@@ -2,7 +2,7 @@
  * \file CHeatSolver.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1075,8 +1075,8 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iVertex, iPoint, total_index;
-  unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint;
+  unsigned short iDim;
 
   su2double thermal_diffusivity, rho_cp_solid, Temperature_Ref, T_Conjugate, Tinterface,
       Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
@@ -1111,12 +1111,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         LinSysRes(iPoint, 0) = 0.0;
         nodes->SetRes_TruncErrorZero(iPoint);
 
-        if (implicit) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint*nVar+iVar;
-            Jacobian.DeleteValsRowi(total_index);
-          }
-        }
+        if (implicit) Jacobian.DeleteValsRowi(iPoint);
       }
     }
   }
@@ -1143,6 +1138,12 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
           HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
           HeatFlux          = HeatFluxDensity * Area;
+
+          if (implicit) {
+
+            Jacobian_i[0][0] = -thermal_diffusivity*Area;
+            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          }
         }
         else {
 
@@ -1152,12 +1153,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
         Res_Visc[0] = -HeatFlux;
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-        if (implicit) {
-
-          Jacobian_i[0][0] = thermal_diffusivity*Area;
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-        }
       }
     }
   }
@@ -1642,7 +1637,9 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system ---*/
 
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SetIterLinSolver(iter);
+  SetResLinSolver(System.GetResidual());
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {

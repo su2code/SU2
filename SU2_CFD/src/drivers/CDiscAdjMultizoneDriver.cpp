@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -404,20 +404,24 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
         if(Has_Deformation(iZone)) {
-          solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJFLOW_SOL]);
         } else {
-          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, solvers, config);
+          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, config);
         }
         break;
 
       case DISC_ADJ_HEAT:
 
-        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, solvers, config);
+        if(Has_Deformation(iZone)) {
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJHEAT_SOL]);
+        } else {
+          solvers[ADJHEAT_SOL]->SetSensitivity(geometry, config);
+        }
         break;
 
       case DISC_ADJ_FEM:
 
-        solvers[ADJFEA_SOL]->SetSensitivity(geometry, solvers, config);
+        solvers[ADJFEA_SOL]->SetSensitivity(geometry, config);
         break;
 
       default:
@@ -699,18 +703,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
           // Aerodynamic coefficients
 
-          case DRAG_COEFFICIENT:      FieldName = "DRAG";       break;
-          case LIFT_COEFFICIENT:      FieldName = "LIFT";       break;
-          case SIDEFORCE_COEFFICIENT: FieldName = "SIDEFORCE";  break;
-          case EFFICIENCY:            FieldName = "EFFICIENCY"; break;
-          case MOMENT_X_COEFFICIENT:  FieldName = "MOMENT-X";   break;
-          case MOMENT_Y_COEFFICIENT:  FieldName = "MOMENT-Y";   break;
-          case MOMENT_Z_COEFFICIENT:  FieldName = "MOMENT-Z";   break;
-          case FORCE_X_COEFFICIENT:   FieldName = "FORCE-X";    break;
-          case FORCE_Y_COEFFICIENT:   FieldName = "FORCE-Y";    break;
-          case FORCE_Z_COEFFICIENT:   FieldName = "FORCE-Z";    break;
+          case DRAG_COEFFICIENT:
+          case LIFT_COEFFICIENT:
+          case SIDEFORCE_COEFFICIENT:
+          case EFFICIENCY:
+          case MOMENT_X_COEFFICIENT:
+          case MOMENT_Y_COEFFICIENT:
+          case MOMENT_Z_COEFFICIENT:
+          case FORCE_X_COEFFICIENT:
+          case FORCE_Y_COEFFICIENT:
+          case FORCE_Z_COEFFICIENT:
+            FieldName = config->GetName_ObjFunc();
+            break;
 
           // Other surface-related output values
+          // The names are different than in CConfig...
 
           case SURFACE_MASSFLOW:            FieldName = "AVG_MASSFLOW";              break;
           case SURFACE_MACH:                FieldName = "AVG_MACH";                  break;

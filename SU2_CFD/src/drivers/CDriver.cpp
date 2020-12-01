@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.7 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1063,7 +1063,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver, geometry, config); 
+  Inlet_Preprocessing(solver, geometry, config);
 
 }
 
@@ -1196,7 +1196,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
                              CConfig *config, bool update_geo) {
 
   bool euler, ns, turbulent,
-  NEMO_euler, NEMO_ns, 
+  NEMO_euler, NEMO_ns,
   adj_euler, adj_ns, adj_turb,
   heat, fem, fem_euler, fem_ns, fem_dg_flow,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
@@ -1447,7 +1447,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       NEMO_euler = compressible = true; break;
 
     case NEMO_NAVIER_STOKES:
-      NEMO_ns = compressible = true; break;  
+      NEMO_ns = compressible = true; break;
 
     case RANS:
     case DISC_ADJ_RANS:
@@ -3409,7 +3409,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case NEMO_EULER: case NEMO_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;  
+      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
