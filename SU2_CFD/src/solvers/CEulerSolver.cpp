@@ -3047,7 +3047,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
 
-  const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+  // const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+  const auto nTurbVarGrad = solver[FLOW_SOL]->GetnVar();
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
@@ -3064,6 +3065,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
 
+  su2double Turbulent_i[MAXNVAR] = {0.0}, Turbulent_j[MAXNVAR] = {0.0};
   su2double tke_i = 0.0, tke_j = 0.0;
 
     /*--- Loop over edge colors. ---*/
@@ -3111,13 +3113,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Reconstruction ---*/
 
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                       &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
+                       Turbulent_i, Turbulent_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
 
-      CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
+      CheckExtrapolatedState(config, Primitive_i, Primitive_j, Turbulent_i, Turbulent_j, nTurbVarGrad, good_i, good_j);
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
@@ -3144,8 +3146,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = good_i? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = good_j? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        tke_i = good_i? Turbulent_i[0] : turbNodes->GetPrimitive(iPoint,0);
+        tke_j = good_j? Turbulent_j[0] : turbNodes->GetPrimitive(jPoint,0);
         numerics->SetTurbKineticEnergy(tke_i, tke_j);
       }
     }
@@ -3444,17 +3446,17 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
   const su2double tke_i = tkeNeeded? turbvar_i[0] : 0.0;
   const su2double tke_j = tkeNeeded? turbvar_j[0] : 0.0;
 
-  if (tkeNeeded) {
-    good_i = good_i && (tke_i >= 0.0);
-    good_j = good_j && (tke_j >= 0.0);
-  }
-
-  // if (turb) {
-  //   for (auto iVar = 0; iVar < nTurbVar; iVar++) {
-  //     good_i = good_i && (turbvar_i[iVar] >= 0.0);
-  //     good_j = good_j && (turbvar_j[iVar] >= 0.0);
-  //   }
+  // if (tkeNeeded) {
+  //   good_i = good_i && (tke_i >= 0.0);
+  //   good_j = good_j && (tke_j >= 0.0);
   // }
+
+  if (turb) {
+    for (auto iVar = 0; iVar < nTurbVar; iVar++) {
+      good_i = good_i && (turbvar_i[iVar] >= 0.0);
+      good_j = good_j && (turbvar_j[iVar] >= 0.0);
+    }
+  }
 
   /*--- Positive Roe sound speed ---*/
 
