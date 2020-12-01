@@ -489,48 +489,49 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
   AD::EndPassive(wasActive);
 }
 
-void CNumerics::ComputeMeanRateOfStrainMatrix(su2double **primvargrad){
+void CNumerics::ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double * const* primvargrad){
 
   /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
 
   if (nDim == 3){
-    MeanRateOfStrain[0][0] = primvargrad[1][0];
-    MeanRateOfStrain[1][1] = primvargrad[2][1];
-    MeanRateOfStrain[2][2] = primvargrad[3][2];
-    MeanRateOfStrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
-    MeanRateOfStrain[0][2] = 0.5 * (primvargrad[1][2] + primvargrad[3][0]);
-    MeanRateOfStrain[1][2] = 0.5 * (primvargrad[2][2] + primvargrad[3][1]);
-    MeanRateOfStrain[1][0] = MeanRateOfStrain[0][1];
-    MeanRateOfStrain[2][1] = MeanRateOfStrain[1][2];
-    MeanRateOfStrain[2][0] = MeanRateOfStrain[0][2];
+    rateofstrain[0][0] = primvargrad[1][0];
+    rateofstrain[1][1] = primvargrad[2][1];
+    rateofstrain[2][2] = primvargrad[3][2];
+    rateofstrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
+    rateofstrain[0][2] = 0.5 * (primvargrad[1][2] + primvargrad[3][0]);
+    rateofstrain[1][2] = 0.5 * (primvargrad[2][2] + primvargrad[3][1]);
+    rateofstrain[1][0] = rateofstrain[0][1];
+    rateofstrain[2][1] = rateofstrain[1][2];
+    rateofstrain[2][0] = rateofstrain[0][2];
   }
   else { // nDim==2
-    MeanRateOfStrain[0][0] = primvargrad[1][0];
-    MeanRateOfStrain[1][1] = primvargrad[2][1];
-    MeanRateOfStrain[2][2] = 0.0;
-    MeanRateOfStrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
-    MeanRateOfStrain[0][2] = 0.0;
-    MeanRateOfStrain[1][2] = 0.0;
-    MeanRateOfStrain[1][0] = MeanRateOfStrain[0][1];
-    MeanRateOfStrain[2][1] = MeanRateOfStrain[1][2];
-    MeanRateOfStrain[2][0] = MeanRateOfStrain[0][2];
+    rateofstrain[0][0] = primvargrad[1][0];
+    rateofstrain[1][1] = primvargrad[2][1];
+    rateofstrain[2][2] = 0.0;
+    rateofstrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
+    rateofstrain[0][2] = 0.0;
+    rateofstrain[1][2] = 0.0;
+    rateofstrain[1][0] = rateofstrain[0][1];
+    rateofstrain[2][1] = rateofstrain[1][2];
+    rateofstrain[2][0] = rateofstrain[0][2];
   }
 }
 
-void CNumerics::ComputeReynoldsStressMatrix(su2double turb_ke, su2double eddy_visc, su2double density){
-  su2double divVel = 0;
+void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* rateofstrain,
+                                    su2double viscosity, su2double density, su2double turb_ke){
   su2double TWO3 = 2.0/3.0;
 
- /* --- Using the rate of strain matrix already set, calculate Reynolds stress tensor --- */
-
-  for (unsigned short iDim = 0; iDim < 3; iDim++){
-    divVel += MeanRateOfStrain[iDim][iDim];
+  su2double divVel = 0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    divVel += rateofstrain[iDim][iDim];
   }
 
-  for (unsigned short iDim = 0; iDim < 3; iDim++){
-    for (unsigned short jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - eddy_visc / density * (2 * MeanRateOfStrain[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short jDim = 0; jDim < nDim; jDim++){
+      stress[iDim][jDim] =
+        viscosity * 2 * rateofstrain[iDim][jDim]
+        - TWO3 * viscosity * divVel * (iDim==jDim)
+        - TWO3 * density * turb_ke * (iDim==jDim);
     }
   }
 

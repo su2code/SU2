@@ -920,8 +920,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 }
 
 void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
-  ComputeMeanRateOfStrainMatrix(PrimVar_Grad_i);
-  ComputeReynoldsStressMatrix(turb_ke, Eddy_Viscosity_i, Density_i);
+  ComputeMeanRateOfStrainMatrix(nDim, MeanRateOfStrain, PrimVar_Grad_i);
+  ComputeStressTensor(nDim, MeanReynoldsStress, MeanRateOfStrain, Eddy_Viscosity_i, Density_i, turb_ke);
+  for(unsigned short iDim=0; iDim<nDim; iDim++){
+    for(unsigned short jDim=0; jDim<nDim; jDim++){
+      MeanReynoldsStress[iDim][jDim] /= (-Density_i);
+    }
+  }
 }
 
 void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){

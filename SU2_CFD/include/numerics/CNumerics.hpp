@@ -462,20 +462,27 @@ public:
   }
 
   /*!
-   * \brief Set the mean rate of strain matrix.
-   * \details The parameter primvargrad can be either PrimVar_Grad_i or Mean_GradPrimVar.
+   * \brief Compute the mean rate of strain matrix.
+   * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
+   * \param[in] nDim - 2 or 3
+   * \param[out] rateofstrain - Rate of strain matrix
    * \param[in] primvargrad - A primitive variable gradient matrix.
    */
-  void ComputeMeanRateOfStrainMatrix(su2double** primvargrad);
+  static void ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double* const* primvargrad);
 
   /*!
-   * \brief Set the mean Reynolds stress matrix +(u_i' u_j')~.
-   * \details The mean rate of strain matrix must be already set.
-   * \param[in] turb_ke - Turbulent kinetic energy
-   * \param[in] eddy_visc - Eddy viscosity
+   * \brief Compute the stress tensor from the rate of strain tensor.
+   * \details If the Reynolds stress tensor is defined as +(u_i' u_j')~, divide the result
+   * of this function by (-rho).
+   * \param[in] nDim - 2 or 3
+   * \param[out] stress - Stress tensor
+   * \param[in] rateofstrain - Rate of strain tensor
+   * \param[in] viscosity - Viscosity
    * \param[in] density - Density
+   * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
    */
-  void ComputeReynoldsStressMatrix(su2double turb_ke, su2double eddy_visc, su2double density);
+  static void ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* rateofstrain,
+                           su2double viscosity, su2double density, su2double turb_ke=0.0);
 
   /*!
    * \brief Set the value of the first blending function.
