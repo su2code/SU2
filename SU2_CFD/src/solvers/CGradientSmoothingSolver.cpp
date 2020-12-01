@@ -38,7 +38,8 @@
 #include "../../include/solvers/CGradientSmoothingSolver.hpp"
 #include "../../include/variables/CSobolevSmoothingVariable.hpp"
 #include <algorithm>
-
+#include <unordered_set>
+#include <unordered_map>
 
 CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CSolver(false,true) {
 
@@ -143,12 +144,12 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
 
     /*--- check which points are in more than one physical boundary ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-
       for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
-        if (iVertex >= 0) {
-          marker_count++;
+        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
+          long iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+          if (iVertex >= 0) {
+            marker_count++;
+          }
         }
       }
       if (marker_count>=2) {
@@ -172,6 +173,8 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     deltaP.push_back(0.0);
   }
 
+  /*--- set the solver name for output purposes ---*/
+  SolverName = "SOBOLEV";
 }
 
 
@@ -274,7 +277,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
 
   }
 
-
 }
 
 
@@ -360,6 +362,11 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
   std::vector<unsigned long> indexVertex(8, 0.0);
   int EL_KIND = 0;
 
+  bool* visited = new bool[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    visited[iPoint] = false;
+  }
+
   su2activematrix DHiDHj;
   su2double HiHj = 0.0;
 
@@ -412,9 +419,20 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
         for (iSurfDim=0; iSurfDim<nSurfDim; iSurfDim++) {
           Jacobian_block[iSurfDim][iSurfDim] = DHiDHj[0][0] + HiHj;
         }
-        Jacobian.AddBlock(indexVertex[iNode], indexVertex[jNode], Jacobian_block);
+        Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
+
+        // store if we set something for a node
+        if (visited[indexNode[iNode]]==false) { visited[indexNode[iNode]]==true; }
+        if (visited[indexNode[jNode]]==false) { visited[indexNode[jNode]]==true; }
 
       }
+    }
+  }
+
+  // set the matrix to identity for non involved nodes
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+    if (visited[iPoint]==false) {
+      Jacobian.AddBlock(iPoint, iPoint, mId_Aux);
     }
   }
 }
@@ -564,14 +582,14 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 
         for (iDim = 0; iDim < nDim; iDim++) {
           if (config->GetSobMode()==DEBUG) {
-            normalSens += normal[iDim] * (auxVecInp.GetBlock(indexVertex[iNode]))[iDim];
+            normalSens += normal[iDim] * (auxVecInp.GetBlock(indexNode[iNode]))[iDim];
           } else {
             normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
           }
         }      
 
         Residual[0] += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode,iGauss) * normalSens;
-        LinSysRes.AddBlock(indexVertex[iNode], Residual);
+        LinSysRes.AddBlock(indexNode[iNode], Residual);
 
         Residual[0] = 0;
         normalSens = 0;
@@ -601,89 +619,18 @@ void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numeri
 
 void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned int val_marker) {
 
-
   unsigned long iPoint, iVertex;
-  unsigned int iVar, jVar;
+  const su2double zeros[nDim] = {0.0};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
-
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if ( config->GetSepDim() ) {
-
-      su2double one = 1.0;
-      su2double zero = 0.0;
-
-      if (geometry->nodes->GetDomain(iPoint)) {
-
-        LinSysRes.SetBlock(iPoint, &zero);
-        LinSysSol.SetBlock(iPoint, &zero);
-
-        for (iVar = 0; iVar < nPoint; iVar++) {
-          if (iVar==iPoint) {
-            Jacobian.SetBlock(iVar,iPoint, &one);
-          }
-          else {
-            Jacobian.SetBlock(iVar,iPoint, &zero);
-          }
-        }
-        /*--- Delete the rows for a particular node ---*/
-        for (jVar = 0; jVar < nPoint; jVar++) {
-          if (iPoint!=jVar) {
-            Jacobian.SetBlock(iPoint,jVar, &zero);
-          }
-        }
-
-      } else {
-        /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
-        for (iVar = 0; iVar < nPoint; iVar++) {
-          Jacobian.SetBlock(iVar,iPoint, &zero);
-        }
-      }
-
-    } else {
-
-      if (geometry->nodes->GetDomain(iPoint)) {
-
-       if (nDim == 2) {
-          Solution[0] = 0.0;  Solution[1] = 0.0;
-          Residual[0] = 0.0;  Residual[1] = 0.0;
-        }
-        else {
-          Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-          Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-        }
-
-        LinSysRes.SetBlock(iPoint, Residual);
-        LinSysSol.SetBlock(iPoint, Solution);
-
-        /*--- STRONG ENFORCEMENT OF THE DIRICHLET BOUNDARY CONDITION ---*/
-        /*--- Delete the columns for a particular node ---*/
-
-        for (iVar = 0; iVar < nPoint; iVar++) {
-          if (iVar==iPoint) {
-            Jacobian.SetBlock(iVar,iPoint,mId_Aux);
-          }
-          else {
-            Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
-          }
-        }
-
-        /*--- Delete the rows for a particular node ---*/
-        for (jVar = 0; jVar < nPoint; jVar++) {
-          if (iPoint!=jVar) {
-            Jacobian.SetBlock(iPoint,jVar,mZeros_Aux);
-          }
-        }
-
-      } else {
-        /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
-        for (iVar = 0; iVar < nPoint; iVar++) Jacobian.SetBlock(iVar,iPoint,mZeros_Aux);
-      }
-
-    }
+    /*--- Enforce solution, independed from dimension since zeros vector is long enough. ---*/
+    LinSysSol.SetBlock(iPoint, zeros);
+    LinSysRes.SetBlock(iPoint, zeros);
+    Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
 
   }
 
@@ -692,56 +639,22 @@ void CGradientSmoothingSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solve
 
 void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig *config, unsigned int val_marker) {
 
-
   unsigned long iPoint, iVertex;
-  unsigned int iVar, jVar;
+  const su2double zeros[nDim] = {0.0};
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     /*--- Get node index ---*/
-
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     if ( nodes->IsBoundaryPoint(iPoint) ) {
 
-      //std::cout << "Node " << iPoint << " at ("<< geometry->node[iPoint]->GetCoord(0) << ", " << geometry->node[iPoint]->GetCoord(1) << ") is a bound of a bound." << std::endl;
+      LinSysSol.SetBlock(iPoint, zeros);
+      LinSysRes.SetBlock(iPoint, zeros);
+      Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
 
-      su2double one = 1.0;
-      su2double zero = 0.0;
-
-      if (geometry->nodes->GetDomain(iPoint)) {
-
-        LinSysRes.SetBlock(iVertex, &zero);
-        LinSysSol.SetBlock(iVertex, &zero);
-
-        for (iVar = 0; iVar < geometry->nVertex[val_marker]; iVar++) {
-          if (iVar==iVertex) {
-            //std::cout << "Setting block " << iVar << ", " << iVertex << std::endl;
-            Jacobian.SetBlock(iVar,iVertex, &one);
-          }
-          else {
-            //std::cout << "Setting block " << iVar << ", " << iVertex << std::endl;
-            Jacobian.SetBlock(iVar,iVertex, &zero);
-          }
-        }
-        /*--- Delete the rows for a particular node ---*/
-        for (jVar = 0; jVar < geometry->nVertex[val_marker]; jVar++) {
-          if (iVertex!=jVar) {
-            //std::cout << "Setting block " << iVertex << ", " << jVar << std::endl;
-            Jacobian.SetBlock(iVertex,jVar, &zero);
-          }
-        }
-
-      } else {
-        /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
-        for (iVar = 0; iVar < geometry->nVertex[val_marker]; iVar++) {
-          //std::cout << "Setting block " << iVar<< ", " << iVertex << std::endl;
-          Jacobian.SetBlock(iVar,iVertex, &zero);
-        }
-      }
     }
   }
-
 }
 
 
@@ -755,9 +668,22 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 
   unsigned long IterLinSol = 0;
 
+  /*--- For MPI prescribe vector entries across the ranks before solving the system. ---*/
+  Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  Jacobian.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+  Jacobian.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+
+  // elimination shedule
+  Set_VertexEliminationSchedule(geometry, config);
+
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-  SetIterLinSolver(IterLinSol);
+  SU2_OMP_MASTER
+  {
+    SetIterLinSolver(IterLinSol);
+    SetResLinSolver(System.GetResidual());
+  }
 
 }
 
@@ -785,7 +711,7 @@ void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *
       }
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        this->GetNodes()->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iVertex]);
+        this->GetNodes()->SetSensitivity(iPoint, iDim, normal[iDim]*LinSysSol[iPoint]);
       }
     }
 
@@ -867,20 +793,19 @@ su2activematrix CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geome
 void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
 
   /*--- Initialize vector and sparse matrix ---*/
-  LinSysSol.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
-  LinSysRes.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], 1, 0.0);
-  Jacobian.InitOwnConnectivity(geometry->nVertex[val_marker], 1, 1, val_marker, geometry, config);
-  //LinSysSol.SetValZero();
-  //LinSysRes.SetValZero();
+  LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
+  Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, true);
+  // LinSysSol.SetValZero();
+  // LinSysRes.SetValZero();
+  Jacobian.SetValZero();
 
-  auxVecInp.Initialize(geometry->nVertex[val_marker], geometry->nVertex[val_marker], nDim, 1.0);
-  //auxVecInp.SetValZero();
+  auxVecInp.Initialize(nPoint, nPointDomain, nDim, 1.0);
 
 
-  ofstream input ("input.txt");
+  ofstream input ("input" + std::to_string(rank) + ".txt");
   auxVecInp.printVec(input);
   input.close();
-
 
   Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
 
@@ -890,9 +815,17 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
     BC_Surface_Dirichlet(geometry, config, val_marker);
   }
 
+  ofstream residual ("residual" + std::to_string(rank) + ".txt");
+  LinSysRes.printVec(residual);
+  residual.close();
+
   Solve_Linear_System(geometry, config);
 
-  ofstream result ("result.txt");
+  ofstream stiffness("jacobian" + std::to_string(rank) + ".dat");
+  Jacobian.printMat(stiffness);
+  stiffness.close();
+
+  ofstream result ("result" + std::to_string(rank) + ".txt");
   LinSysSol.printVec(result);
   result.close();
 
@@ -1330,4 +1263,90 @@ CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMat
   */
 
   return CSysMatrixVectorProduct<su2mixedfloat>(Jacobian, geometry, config);
+}
+
+
+void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry, CConfig *config) {
+
+  /*--- Store global point indices of essential BC markers. ---*/
+  vector<unsigned long> myPoints;
+  unsigned long iPoint;
+
+  /*--- get global indexes of Dirichlet boundaries ---*/
+
+  if (config->GetSmoothOnSurface()) {
+
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        for (auto iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          /*--- Get node index ---*/
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if ( nodes->IsBoundaryPoint(iPoint) ) {
+            myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+          }
+        }
+      }
+    }
+
+  } else {
+
+    vector<unsigned short> markers;
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_SobolevBC(iMarker) == YES) {
+        markers.push_back(iMarker);
+      }
+    }
+    for (auto iMarker : markers) {
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        myPoints.push_back(geometry->nodes->GetGlobalIndex(iPoint));
+      }
+    }
+  }
+
+  /*--- communicate the boundary points ---*/
+
+  const unordered_set<unsigned long> markerPoints(myPoints.begin(), myPoints.end());
+
+  vector<unsigned long> numPoints(size);
+  unsigned long num = myPoints.size();
+  SU2_MPI::Allgather(&num, 1, MPI_UNSIGNED_LONG, numPoints.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  /*--- Global to local map for the halo points of the rank (not covered by the CGeometry map). ---*/
+  unordered_map<unsigned long, unsigned long> Global2Local;
+  for (auto iPoint = nPointDomain; iPoint < nPoint; ++iPoint) {
+    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
+  }
+
+  /*--- Populate elimination list. ---*/
+  ExtraVerticesToEliminate.clear();
+
+  for (int i = 0; i < size; ++i) {
+    /*--- Send our point list. ---*/
+    if (rank == i) {
+      SU2_MPI::Bcast(myPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, rank, MPI_COMM_WORLD);
+      continue;
+    }
+
+    /*--- Receive point list. ---*/
+    vector<unsigned long> theirPoints(numPoints[i]);
+    SU2_MPI::Bcast(theirPoints.data(), numPoints[i], MPI_UNSIGNED_LONG, i, MPI_COMM_WORLD);
+
+    for (auto iPointGlobal : theirPoints) {
+      /*--- Check if the rank has the point. ---*/
+      auto it = Global2Local.find(iPointGlobal);
+      if (it == Global2Local.end()) continue;
+
+      /*--- If the point is not covered by this rank's markers, mark it for elimination. ---*/
+      if (markerPoints.count(iPointGlobal) == 0)
+        ExtraVerticesToEliminate.push_back(it->second);
+    }
+  }
+
+  /*--- eliminate the extra vertices ---*/
+
+  for (auto iPoint : ExtraVerticesToEliminate) {
+    Jacobian.EnforceSolutionAtNode(iPoint, LinSysSol.GetBlock(iPoint), LinSysRes);
+  }
+
 }

@@ -69,6 +69,8 @@ public:
 
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
+  /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
+  vector<unsigned long> ExtraVerticesToEliminate;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -315,5 +317,10 @@ public:
    * \brief Copy sensitivities from the geometry into a vector
    */
   void ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
+
+  /*!
+   * \brief Extra entries to eliminate in the linear system
+   */
+  void Set_VertexEliminationSchedule(CGeometry *geometry, CConfig *config);
 
 };

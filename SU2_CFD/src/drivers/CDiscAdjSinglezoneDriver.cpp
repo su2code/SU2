@@ -646,4 +646,7 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
     if (rank == MASTER_NODE)  cout << "Unsupported operation modus for the Sobolev Smoothing Solver." << endl;
   }
 
+  cout << "Process " << rank << " leaving gradient treatment." << endl;
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
 }
