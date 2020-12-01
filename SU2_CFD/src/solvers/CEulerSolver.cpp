@@ -3048,7 +3048,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
 
   // const auto nTurbVarGrad = tkeNeeded? 1 : 0;
-  const auto nTurbVarGrad = solver[FLOW_SOL]->GetnVar();
+  const auto nTurbVarGrad = tkeNeeded? solver[TURB_SOL]->GetnVar() : 0;
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
