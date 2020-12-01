@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
-    
+
   }
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
@@ -190,7 +190,8 @@ int main(int argc, char *argv[]) {
     /*--- Create the edge structure ---*/
 
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-    geometry_container[iZone]->SetEdges(); geometry_container[iZone]->SetVertex(config_container[iZone]);
+    geometry_container[iZone]->SetEdges();
+    geometry_container[iZone]->SetVertex(config_container[iZone]);
 
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
       
@@ -202,6 +203,7 @@ int main(int argc, char *argv[]) {
       /*--- Create the dual control volume structures ---*/
       
       if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+      geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
       
     }
@@ -454,6 +456,24 @@ int main(int argc, char *argv[]) {
 
   for (iZone = 0; iZone < nZone; iZone++){
     
+    /*--- Compute Mesh Quality if requested. Necessary geometry preprocessing re-done beforehand. ---*/
+
+    if (config_container[iZone]->GetWrt_MeshQuality() && !config->GetStructuralProblem()) {
+
+      if (rank == MASTER_NODE) cout << "Recompute geometry properties necessary to evaluate mesh quality statistics.\n";
+
+      geometry_container[iZone]->SetPoint_Connectivity();
+      geometry_container[iZone]->SetBoundVolume();
+      geometry_container[iZone]->SetEdges();
+      geometry_container[iZone]->SetVertex(config_container[iZone]);
+      geometry_container[iZone]->SetCoord_CG();
+      geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
+      geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
+      if (rank == MASTER_NODE) cout << "Computing mesh quality statistics for the dual control volumes.\n";
+      geometry_container[iZone]->ComputeMeshQualityStatistics(config_container[iZone]);
+    }// Mesh Quality Output
+
     /*--- Load the data --- */
     
     output[iZone]->Load_Data(geometry_container[iZone], config_container[iZone], nullptr);
