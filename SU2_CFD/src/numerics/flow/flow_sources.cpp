@@ -202,16 +202,8 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
 
       /*--- The full stress tensor is needed for variable density ---*/
-
-      div_vel = 0.0;
-      for (iDim = 0 ; iDim < nDim; iDim++)
-        div_vel += PrimVar_Grad_i[iDim+1][iDim];
-
-      for (iDim = 0 ; iDim < nDim; iDim++)
-        for (jDim = 0 ; jDim < nDim; jDim++)
-          tau[iDim][jDim] = (total_viscosity*(PrimVar_Grad_i[jDim+1][iDim] +
-                                              PrimVar_Grad_i[iDim+1][jDim] )
-                             -TWO3*total_viscosity*div_vel*delta[iDim][jDim]);
+      ComputeMeanRateOfStrainMatrix(nDim, MeanRateOfStrain,PrimVar_Grad_i);
+      ComputeStressTensor(nDim, tau, MeanRateOfStrain, total_viscosity, 0.0, 0.0);
 
       /*--- Viscous terms. ---*/
 
