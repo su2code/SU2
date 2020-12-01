@@ -805,7 +805,7 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
 }
 
-void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){
+void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*){
 
   unsigned short iVar;
 

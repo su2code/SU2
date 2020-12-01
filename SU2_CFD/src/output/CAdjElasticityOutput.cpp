@@ -111,6 +111,10 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
+  AddHistoryOutput("BGS_ADJ_DISP_X", "bgs[A_Ux]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint X displacement.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_ADJ_DISP_Y", "bgs[A_Uy]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Y displacement.", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("BGS_ADJ_DISP_Z", "bgs[A_Uz]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Z displacement.", HistoryFieldType::RESIDUAL);
+
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -142,6 +146,13 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
   SetHistoryOutputValue("LINSOL_ITER", solver[ADJFEA_SOL]->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(solver[ADJFEA_SOL]->GetResLinSolver()));
 
+  if (multiZone) {
+    SetHistoryOutputValue("BGS_ADJ_DISP_X", log10(solver[ADJFEA_SOL]->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_ADJ_DISP_Y", log10(solver[ADJFEA_SOL]->GetRes_BGS(1)));
+    if (nVar_FEM == 3){
+      SetHistoryOutputValue("BGS_ADJ_DISP_Z", log10(solver[ADJFEA_SOL]->GetRes_BGS(2)));
+    }
+  }
 }
 
 void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
