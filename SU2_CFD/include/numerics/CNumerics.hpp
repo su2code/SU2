@@ -215,8 +215,7 @@ protected:
 
   su2double *l, *m;
 
-  bool using_reynoldsstress;      /*!< \brief Flag for usage of mean Reynolds stress and strain rate matrices */
-  su2double **MeanRateOfStrain;   /*!< \brief Mean rate of strain tensor. */
+  bool using_reynoldsstress;      /*!< \brief Flag for usage of mean Reynolds stress matrix */
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq,                  /*!< \brief Flag for UQ methodology  */
@@ -471,17 +470,17 @@ public:
   static void ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double* const* primvargrad);
 
   /*!
-   * \brief Compute the stress tensor from the rate of strain tensor.
-   * \details If the Reynolds stress tensor is defined as +(u_i' u_j')~, divide the result
+   * \brief Compute the stress tensor from the velocity gradients.
+   * \details To obtain the Reynolds stress tensor +(u_i' u_j')~, divide the result
    * of this function by (-rho).
    * \param[in] nDim - 2 or 3
    * \param[out] stress - Stress tensor
-   * \param[in] rateofstrain - Rate of strain tensor
+   * \param[in] primvargrad - A primitive variable gradient matrix.
    * \param[in] viscosity - Viscosity
    * \param[in] density - Density
    * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
    */
-  static void ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* rateofstrain,
+  static void ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* primvargrad,
                            su2double viscosity, su2double density, su2double turb_ke=0.0);
 
   /*!

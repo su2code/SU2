@@ -129,9 +129,8 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
    * for the turbulent part of tau. Otherwise both the laminar and turbulent
    * parts of tau can be computed with the total viscosity. --- */
 
-  ComputeMeanRateOfStrainMatrix(nDim,MeanRateOfStrain,val_gradprimvar);
   if (using_uq){
-    ComputeStressTensor(nDim, tau, MeanRateOfStrain, val_laminar_viscosity, Density, 0.0);  // laminar part
+    ComputeStressTensor(nDim, tau, val_gradprimvar, val_laminar_viscosity, Density, 0.0);  // laminar part
     // add turbulent part which was perturbed
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
       for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
@@ -139,7 +138,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   } else {
     // compute both parts in one step
     const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-    ComputeStressTensor(nDim, tau, MeanRateOfStrain, total_viscosity, Density, 0.0); // TODO why ignore turb_ke?
+    ComputeStressTensor(nDim, tau, val_gradprimvar, total_viscosity, Density, 0.0); // TODO why ignore turb_ke?
   }
 }
 
@@ -213,9 +212,8 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 }
 
 void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
-  ComputeMeanRateOfStrainMatrix(nDim, MeanRateOfStrain, Mean_GradPrimVar);
   su2double meandensity = Mean_PrimVar[nDim+2];
-  ComputeStressTensor(nDim, MeanReynoldsStress, MeanRateOfStrain, Mean_Eddy_Viscosity, meandensity, turb_ke);
+  ComputeStressTensor(nDim, MeanReynoldsStress, Mean_GradPrimVar, Mean_Eddy_Viscosity, meandensity, turb_ke);
   for(unsigned short iDim=0; iDim<nDim; iDim++){
     for(unsigned short jDim=0; jDim<nDim; jDim++){
       MeanReynoldsStress[iDim][jDim] /= (-meandensity);

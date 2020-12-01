@@ -107,13 +107,11 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Dissipation_ij = 1.0;
 
-  /* --- Initializing Reynolds stress matrix and strain rate matrix --- */
+  /* --- Initializing Reynolds stress matrix --- */
   using_reynoldsstress= config->GetUsing_ReynoldsStress();
   if (using_reynoldsstress){
-    MeanRateOfStrain    = new su2double* [3];
     MeanReynoldsStress  = new su2double* [3];
     for (iDim = 0; iDim < 3; iDim++){
-      MeanRateOfStrain[iDim]    = new su2double [3];
       MeanReynoldsStress[iDim]  = new su2double [3];
     }
   }
@@ -194,10 +192,8 @@ CNumerics::~CNumerics(void) {
 
   if (using_reynoldsstress){
     for (unsigned short iDim = 0; iDim < 3; iDim++){
-      delete [] MeanRateOfStrain[iDim];
       delete [] MeanReynoldsStress[iDim];
     }
-    delete [] MeanRateOfStrain;
     delete [] MeanReynoldsStress;
   }
 
@@ -517,19 +513,19 @@ void CNumerics::ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** r
   }
 }
 
-void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* rateofstrain,
+void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* primvargrad,
                                     su2double viscosity, su2double density, su2double turb_ke){
   su2double TWO3 = 2.0/3.0;
 
   su2double divVel = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    divVel += rateofstrain[iDim][iDim];
+    divVel += primvargrad[iDim+1][iDim];
   }
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     for (unsigned short jDim = 0; jDim < nDim; jDim++){
       stress[iDim][jDim] =
-        viscosity * 2 * rateofstrain[iDim][jDim]
+        viscosity * (primvargrad[iDim+1][jDim]+primvargrad[jDim+1][iDim])
         - TWO3 * viscosity * divVel * (iDim==jDim)
         - TWO3 * density * turb_ke * (iDim==jDim);
     }
