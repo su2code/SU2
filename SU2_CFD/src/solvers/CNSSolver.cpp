@@ -349,11 +349,6 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
   }
 
-  /*--- Gradients. ---*/
-
-  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                               nodes->GetGradient_Primitive(jPoint));
-
   /*--- Wall shear stress values (wall functions) ---*/
 
   numerics->SetTauWall(nodes->GetTauWall(iPoint),
