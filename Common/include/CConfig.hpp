@@ -535,6 +535,8 @@ private:
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  unsigned long 
+  MUSCL_Start_Iter;        /*!< \brief Iteration to start using MUSCL extrapolation. */
   su2double 
   MUSCL_Kappa_Flow,        /*!< \brief MUSCL parameter for flow. */
   MUSCL_Kappa_Turb;        /*!< \brief MUSCL parameter for turbulence. */
