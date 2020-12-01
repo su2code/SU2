@@ -3047,6 +3047,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
   const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
   const bool kappa       = config->GetUse_Accurate_Kappa_Jacobians();
 
+  const bool muscl_start = ((config->GetInnerIter() >= config->GetMUSCL_Start_Iter()) || 
+                            config->GetDiscrete_Adjoint() || 
+                            config->GetRestart());
+
   const auto nTurbVarGrad = tkeNeeded? 1 : 0;
 
   CVariable* turbNodes = nullptr;
@@ -3106,7 +3110,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
     bool good_i = true, good_j = true;
-    bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
+    // bool muscl  = (config->GetMUSCL_Flow()) && (iMesh == MESH_0) && (good_i || good_j);
+    bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start);
     if (muscl) {
       /*--- Reconstruction ---*/
 

@@ -4387,6 +4387,12 @@ public:
   su2double GetWeighted_Least_Squares_Coeff(void) const { return Weighted_Least_SquaresCoeff; }
 
   /*!
+   * \brief Get the first iteration for MUSCL extrapolation.
+   * \return MUSCL start iteration.
+   */
+  unsigned long GetMUSCL_Start_Iter(void) const { return MUSCL_Start_Iter; }
+
+  /*!
    * \brief Get the MUSCL parameter for the flow problem.
    * \return MUSCL parameter.
    */

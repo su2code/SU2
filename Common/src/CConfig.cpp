@@ -1785,6 +1785,9 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Numerical method \n OPTIONS: See \link FEM_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
   addConvectFEMOption("NUM_METHOD_FEM_FLOW", Kind_ConvNumScheme_FEM_Flow, Kind_FEM_Flow);
 
+  /*!\brief WRT_SOL_FREQ
+   *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
+  addUnsignedLongOption("MUSCL_STARTITER", MUSCL_Start_Iter, 0);
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief MUSCL_KAPPA \n DESCRIPTION: MUSCL parameter \ingroup Config*/
