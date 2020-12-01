@@ -215,7 +215,8 @@ protected:
 
   su2double *l, *m;
 
-  su2double **MeanRateOfStrain; /*!< Mean rate of strain tensor. */
+  bool using_reynoldsstress;      /*!< \brief Flag for usage of mean Reynolds stress and strain rate matrices */
+  su2double **MeanRateOfStrain;   /*!< \brief Mean rate of strain tensor. */
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq,                  /*!< \brief Flag for UQ methodology  */

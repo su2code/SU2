@@ -131,7 +131,9 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += val_gradprimvar[iDim+1][iDim];
 
-  /* --- If UQ methodology is used, calculate tau using the perturbed reynolds stress tensor --- */
+  /* --- If UQ methodology is used, use the perturbed Reynolds stress tensor
+   * for the turbulent part of tau. Otherwise both the laminar and turbulent
+   * parts of tau can be computed with the total viscosity. --- */
 
   if (using_uq){
     for (iDim = 0 ; iDim < nDim; iDim++)

@@ -49,6 +49,7 @@ CNumerics::CNumerics(void) {
   l = nullptr;
   m = nullptr;
 
+  using_reynoldsstress = false;
   using_uq = false;
 
   nemo = false;
@@ -106,11 +107,20 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Dissipation_ij = 1.0;
 
-  /* --- Initializing variables for the UQ methodology --- */
-  using_uq = config->GetUsing_UQ();
-  if (using_uq){
+  /* --- Initializing Reynolds stress matrix and strain rate matrix --- */
+  using_reynoldsstress= config->GetUsing_ReynoldsStress();
+  if (using_reynoldsstress){
     MeanRateOfStrain    = new su2double* [3];
     MeanReynoldsStress  = new su2double* [3];
+    for (iDim = 0; iDim < 3; iDim++){
+      MeanRateOfStrain[iDim]    = new su2double [3];
+      MeanReynoldsStress[iDim]  = new su2double [3];
+    }
+  }
+
+  /* --- Initializing additional variables for the UQ methodology --- */
+  using_uq = config->GetUsing_UQ();
+  if (using_uq){
     MeanPerturbedRSM    = new su2double* [3];
     A_ij                = new su2double* [3];
     newA_ij             = new su2double* [3];
@@ -121,8 +131,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Barycentric_Coord   = new su2double [2];
     New_Coord           = new su2double [2];
     for (iDim = 0; iDim < 3; iDim++){
-      MeanRateOfStrain[iDim]    = new su2double [3];
-      MeanReynoldsStress[iDim]  = new su2double [3];
       MeanPerturbedRSM[iDim]    = new su2double [3];
       A_ij[iDim]                = new su2double [3];
       newA_ij[iDim]             = new su2double [3];
@@ -184,10 +192,17 @@ CNumerics::~CNumerics(void) {
   delete [] l;
   delete [] m;
 
-  if (using_uq) {
+  if (using_reynoldsstress){
     for (unsigned short iDim = 0; iDim < 3; iDim++){
       delete [] MeanRateOfStrain[iDim];
       delete [] MeanReynoldsStress[iDim];
+    }
+    delete [] MeanRateOfStrain;
+    delete [] MeanReynoldsStress;
+  }
+
+  if (using_uq) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++){
       delete [] MeanPerturbedRSM[iDim];
       delete [] A_ij[iDim];
       delete [] newA_ij[iDim];
@@ -195,8 +210,6 @@ CNumerics::~CNumerics(void) {
       delete [] New_Eig_Vec[iDim];
       delete [] Corners[iDim];
     }
-    delete [] MeanRateOfStrain;
-    delete [] MeanReynoldsStress;
     delete [] MeanPerturbedRSM;
     delete [] A_ij;
     delete [] newA_ij;
