@@ -1556,7 +1556,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << "-";
+    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
     Unit.str("");
 
     ModelTable << config->GetGasModel();

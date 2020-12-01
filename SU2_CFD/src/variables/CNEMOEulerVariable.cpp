@@ -200,7 +200,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMode
 
   /*--- Set additional point quantaties ---*/
   Gamma(iPoint) = fluidmodel->ComputeGamma();  
-  
+
   SetVelocity2(iPoint);
 
   return nonPhys;
@@ -278,9 +278,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Vibrational-Electronic Temperature ---*/
   vector<su2double> eves_min = fluidmodel->ComputeSpeciesEve(Tvemin);
   vector<su2double> eves_max = fluidmodel->ComputeSpeciesEve(Tvemax);
-  
-  /*--- Ratio of specific heats ---*/
-  Gamma[iPoint] = fluidmodel->ComputeGamma();
 
   // Check for non-physical solutions
   if (!monoatomic){

@@ -109,7 +109,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, RuSI, Ru;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double gam;
@@ -129,10 +128,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  /*--- Read from config ---*/
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
-
   /*--- Pull stored primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -143,12 +138,14 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
     u_i[iDim] = V_i[VEL_INDEX+iDim];
     u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
-  P_i     = V_i[P_INDEX];      P_j   = V_j[P_INDEX];
-  h_i    = V_i[H_INDEX];       h_j    = V_j[H_INDEX];
+  P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
+  h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
   rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
   
-  rhoCvtr_i   = V_i[RHOCVTR_INDEX]; rhoCvtr_j  = V_j[RHOCVTR_INDEX];
+  rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
+  
+  rhoEve_i = 0.0; rhoEve_j = 0.0; 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhoEve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies]);
     rhoEve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies]);
@@ -156,12 +153,6 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
 
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
   
-  rhoRi = 0.0;  rhoRj = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    rhoRi += rhos_i[iSpecies]*Ru/Ms[iSpecies];
-    rhoRj += rhos_j[iSpecies]*Ru/Ms[iSpecies];
-  }
-
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -177,11 +168,10 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   }
 
   /*--- Calculate interface numerical gammas and speed of sound ---*/
-  //TODO move Gamma to fluidmodel
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
-  gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
-  gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
-  gam = 0.5*(gtl_i+gtl_j);
+  gtl_i = fluidmodel->ComputeGamma(V_i);
+  gtl_j = fluidmodel->ComputeGamma(V_j);
+  gam   = 0.5*(gtl_i+gtl_j);
   if (fabs(rho_i-rho_j)/(0.5*(rho_i+rho_j)) < 1E-3)
     atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
   else {

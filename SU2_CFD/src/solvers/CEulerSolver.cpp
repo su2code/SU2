@@ -5266,7 +5266,7 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
           row_value >> nRow;
 
           /*--- Assign the vectors dimension. ---*/
-          S.resize(nRow);
+          rad_v.resize(nRow);
           dCt_v.resize(nRow);
           dCp_v.resize(nRow);
           dCr_v.resize(nRow);

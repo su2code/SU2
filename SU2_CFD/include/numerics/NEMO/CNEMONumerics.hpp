@@ -185,8 +185,8 @@ public:
    * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
    */
   void GetPMatrix_inv(const su2double *U, const su2double *V, const su2double *val_dPdU,
-                     const su2double *val_normal, const su2double *l, const su2double *m,
-                     su2double **val_invp_tensor) const;
+                      const su2double *val_normal, const su2double *l, const su2double *m,
+                      su2double **val_invp_tensor) const;
 
   inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       final { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
         
