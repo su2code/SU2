@@ -188,14 +188,40 @@ public:
                       const su2double *val_normal, const su2double *l, const su2double *m,
                       su2double **val_invp_tensor) const;
 
+  
+  /*!
+   * \brief Set the pressure derivatives.
+   * \param[in] val_dPdU_i - pressure derivatives at i. 
+   * \param[in] val_dPdU_j - pressure derivatives at j.
+   */
   inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       final { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
-        
+   
+  /*!
+   * \brief Set the temperature derivatives.
+   * \param[in] val_dTdU_i - temperature derivatives at i. 
+   * \param[in] val_dTdU_j - temperature derivatives at j.
+   */      
   inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       final { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
   
+  /*!
+   * \brief Set the vib-el temperature derivatives.
+   * \param[in] val_dTvedU_i - t_ve derivatives at i. 
+   * \param[in] val_dTvedU_j - t_ve derivatives at j.
+   */
   inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) final { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
   
+  /*!
+   * \brief Set the vib-el energy.
+   * \param[in] val_Eve_i - vib-el energy at i. 
+   * \param[in] val_Eve_j - vib-el energy at j.
+   */
   inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          final {eve_i = val_Eve_i; eve_j = val_Eve_j; }
   
+  /*!
+   * \brief Set the Cvve.
+   * \param[in] val_Cvve_i - cvve at i. 
+   * \param[in] val_Cvve_j - cvve at j.
+   */
   inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       final {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
 
 };

@@ -379,7 +379,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       /*--- Scale thermal conductivity with turb ---*/
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
-      // Could add to fluid model?
       su2double Mass = 0.0;
       auto&     Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
@@ -835,15 +834,15 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   Yst = config->GetWall_Catalycity();
 
   /*--- Get universal information ---*/
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
-  auto& Ms   = FluidModel->GetSpeciesMolarMass();
+  RuSI     = UNIVERSAL_GAS_CONSTANT;
+  Ru       = 1000.0*RuSI;
+  auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Get the locations of the primitive variables ---*/
-  RHOS_INDEX    = nodes->GetRhosIndex();
-  RHO_INDEX     = nodes->GetRhoIndex();
-  T_INDEX       = nodes ->GetTIndex();
-  TVE_INDEX     = nodes ->GetTveIndex();
+  RHOS_INDEX  = nodes->GetRhosIndex();
+  RHO_INDEX   = nodes->GetRhoIndex();
+  T_INDEX     = nodes->GetTIndex();
+  TVE_INDEX   = nodes->GetTveIndex();
 
   /*--- Allocate arrays ---*/
   Yj    = new su2double[nSpecies];
@@ -1002,7 +1001,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   unsigned short T_INDEX, TVE_INDEX, VEL_INDEX,
       RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double ktr, kve;
+  su2double ktr, kve, Mass = 0.0;
   su2double Ti, Tvei, Tj, Tvej;
   su2double Twall, Tslip, Tslip_ve, dij;
   su2double Pi;
@@ -1011,7 +1010,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double C, alpha_V, alpha_T;
 
   su2double TMAC, TAC;
-  su2double Viscosity, Lambda;
+  su2double Viscosity, Eddy_Visc, Lambda;
   su2double Density, GasConstant;
 
   su2double **Grad_PrimVar;
@@ -1098,9 +1097,22 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Retrieve Flow Data ---*/
       Viscosity = nodes->GetLaminarViscosity(iPoint);
+      Eddy_Visc = nodes->GetEddyViscosity(iPoint);
       Density   = nodes->GetDensity(iPoint);
 
-      auto& Ms = FluidModel->GetSpeciesMolarMass();
+      /*--- Incorporate turbulence effects ---*/
+      auto&      M  = FluidModel->GetSpeciesMolarMass();
+      su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+      su2double  tmp1, scl, Cptr;
+      su2double *Vi = nodes->GetPrimitive(iPoint);
+
+      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+        Mass += Vi[iSpecies]*Ms[iSpecies];
+      Cptr = Vi[RHOCVTR_INDEX]+Ru/Mass;
+      tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
+      scl  = tmp1/ktr;
+      ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
+      kve  = kve*(1.0+scl);
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
@@ -1113,11 +1125,12 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       
       /*--- Compute Gamma ---*/
       //TODO: Move to fluidmodel?
-      su2double rhoR = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      Gamma = rhoR/(rhoCvtr + rhoCvve) + 1.0;
-      
+      //su2double rhoR = 0.0;
+      //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      //  rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
+      //Gamma = rhoR/(rhoCvtr + rhoCvve) + 1.0;
+      Gamma = FluidModel->ComputeGamma(Vi);
+
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
