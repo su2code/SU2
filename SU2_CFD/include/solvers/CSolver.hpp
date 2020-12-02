@@ -58,9 +58,8 @@
 #include "../variables/CVariable.hpp"
 
 #ifdef HAVE_LIBROM
-#include "StaticSVDBasisGenerator.h"
-#include "IncrementalSVDBasisGenerator.h"
-#include "scalapack_wrapper.h"
+#include "BasisGenerator.h"
+
 #endif
 
 using namespace std;
@@ -196,7 +195,7 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
   
   #ifdef HAVE_LIBROM
-    std::unique_ptr<CAROM::SVDBasisGenerator> u_basis_generator;
+    std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
   #endif
 
   vector<string> fields;

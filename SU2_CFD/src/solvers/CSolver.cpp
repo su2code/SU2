@@ -4390,31 +4390,30 @@ void CSolver::SavelibROM(CSolver** solver, CGeometry *geometry, CConfig *config,
   unsigned long TimeIter = config->GetTimeIter();
   unsigned long nTimeIter = config->GetnTime_Iter();
   int dim = int(nPointDomain * nVar);
+  bool incremental = false;
   //bool StopCalc = ((TimeIter+1) == nTimeIter);
 
-  /*--- Get solver nodes ---*/
+  // Get solver nodes
   CVariable* nodes = GetNodes();
+  
+  /*--- Define SVD basis generator ---*/
+  
+  CAROM::Options svd_options = CAROM::Options(dim, 2).setMaxBasisDimension(int(0.1*dim));
  
   if (!u_basis_generator) {
     if (pod_basis == STATIC_POD) {
-        std::cout << "Creating static basis generator." << std::endl;
-        CAROM::StaticSVDOptions static_svd_options(dim, 2);
-        static_svd_options.max_basis_dimension = 2;
-      
-        u_basis_generator.reset(new CAROM::StaticSVDBasisGenerator(
-          static_svd_options,
-          filename));
+      std::cout << "Creating static basis generator." << std::endl;
     }
     else {
-        std::cout << "Creating incremental basis generator." << std::endl;
-        CAROM::IncrementalSVDOptions incremental_svd_options(dim, 2, 1.0e-2, dim,
-                                                             config->GetDelta_UnstTimeND(),
-                                                             1.0e-2,
-                                                             config->GetDelta_UnstTimeND()*100);
-        incremental_svd_options.fast_update = true;
-        u_basis_generator.reset(new CAROM::IncrementalSVDBasisGenerator(incremental_svd_options,
-                                                                        filename));
+      std::cout << "Creating incremental basis generator." << std::endl;
+      svd_options.setIncrementalSVD(1.0e-2, config->GetDelta_UnstTimeND(),
+                                    1.0e-2, config->GetDelta_UnstTimeND()*100, true).setDebugMode(false);
+      incremental = true;
     }
+    
+    u_basis_generator.reset(new CAROM::BasisGenerator(
+      svd_options, incremental,
+      filename));
     
     // Print nodes for each rank for now
     std::cout << "nPointDomain: " << nPointDomain << " and nPoint: " << nPoint << std::endl;
