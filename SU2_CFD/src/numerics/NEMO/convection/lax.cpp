@@ -45,7 +45,8 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   MeanU    = new su2double[nVar];
   MeanV    = new su2double[nPrimVar];
   MeandPdU = new su2double[nVar];
-  ProjFlux = new su2double [nVar];
+  ProjFlux = new su2double[nVar];
+  Flux     = new su2double[nVar]; 
 
   mean_eves.resize(nSpecies,0.0);
 
@@ -58,9 +59,10 @@ CCentLax_NEMO::~CCentLax_NEMO(void) {
   delete [] MeanV;
   delete [] MeandPdU;
   delete [] ProjFlux;
+  delete [] Flux;
 }
 
-void CCentLax_NEMO::ComputeResidual(const CConfig *config) {
+CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim, iSpecies, iVar;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
@@ -93,20 +95,12 @@ void CCentLax_NEMO::ComputeResidual(const CConfig *config) {
   /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
 
-  /*--- Jacobians of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-  if (implicit) {
-    GetInviscidProjJac(MeanU, MeanV, MeandPdU, Normal, 0.5, val_Jacobian_i);
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
-  }
-
   /*--- Compute the local spectral radius and the stretching factor ---*/
   ProjVel_i = 0; ProjVel_j = 0; Area = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVel_i += V_i[VEL_INDEX+iDim]*Normal[iDim];
     ProjVel_j += V_j[VEL_INDEX+iDim]*Normal[iDim];
+    Area += Normal[iDim]*Normal[iDim];
   }
   Area = sqrt(Area);
 
@@ -118,7 +112,7 @@ void CCentLax_NEMO::ComputeResidual(const CConfig *config) {
   Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
   Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
-
+  
   /*--- Computes differences btw. conservative variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = U_i[iVar] - U_j[iVar];
@@ -130,9 +124,9 @@ void CCentLax_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Compute viscous part of the residual ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = ProjFlux[iVar]+Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
+    Flux[iVar] = ProjFlux[iVar]+Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
   }
 
-  return ResidualType<>(ProjFlux, Jacobian_i, Jacobian_j);
+  return ResidualType<>(Flux, nullptr, nullptr);
 
 }
