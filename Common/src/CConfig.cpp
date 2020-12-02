@@ -1008,8 +1008,6 @@ void CConfig::SetPointersNull(void) {
   nBlades                      = nullptr;
   FreeStreamTurboNormal        = nullptr;
 
-  ConvHistFile                 = nullptr;
-
   top_optim_kernels       = nullptr;
   top_optim_kernel_params = nullptr;
   top_optim_filter_radius = nullptr;
@@ -3066,10 +3064,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 }
 
 void CConfig::SetHeader(unsigned short val_software) const{
-  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-   the two lines below that use the dt variable. ---*/
-  //time_t now = time(0);
-  //string dt = ctime(&now); dt[24] = '.';
+
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
@@ -3085,7 +3080,6 @@ void CConfig::SetHeader(unsigned short val_software) const{
     }
 
     cout << "|                                                                       |" << endl;
-    //cout << "|   Local date and time: " << dt << "                      |" << endl;
     cout <<"-------------------------------------------------------------------------" << endl;
     cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
     cout << "|                                                                       |" << endl;
