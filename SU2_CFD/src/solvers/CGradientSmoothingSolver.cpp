@@ -1276,8 +1276,9 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry
 
   if (config->GetSmoothOnSurface()) {
 
+    /*--- surface case: design boundary border if Dirichlet condition is set. ---*/
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_DV(iMarker) == YES) {
+      if (config->GetMarker_All_DV(iMarker) == YES && config->GetDirichletSurfaceBound()) {
         for (auto iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           /*--- Get node index ---*/
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1287,9 +1288,9 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry
         }
       }
     }
-
   } else {
 
+    /*--- volume case: all boundaries where Dirichlet condition is set. ---*/
     vector<unsigned short> markers;
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_SobolevBC(iMarker) == YES) {
