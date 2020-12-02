@@ -4521,6 +4521,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       s++;
     }
   }
+  else std::cout << "ERROR: Did not read file for POD matrix (ROM)." << std::endl;
   
   unsigned long nsnaps = TrialBasis[0].size();
   unsigned long iPoint, i;
@@ -4544,6 +4545,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       }
     }
   }
+  else std::cout << "ERROR: Did not read file for reference solution (ROM)." << std::endl;
   
   /*--- Initial Solution (read from file) ---*/
   
@@ -4604,7 +4606,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
-  bool read_mask_from_file = true;
+  bool read_mask_from_file = false;
   
   /*--- Get solver nodes ---*/
   //CVariable* nodes = GetNodes();
@@ -4612,7 +4614,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
   
   string phi_filename  = config->GetRom_FileName(); //TODO: better file names
-  int desired_nodes = 200; //TODO: create config file option
+  int desired_nodes = 500; //TODO: create config file option
   ifstream in_phi(phi_filename);
   std::vector<std::vector<double>> Phi;
   int firstrun = 0;
@@ -4634,7 +4636,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     }
   }
   unsigned long nsnaps = Phi.size();
-  unsigned long i, j, k, ii, imask, iVar, inode, ivec;
+  unsigned long i, j, k, ii, imask, iVar, inode, ivec, nodewithMax;
   
   std::vector<double> PhiNodes;
   for (i = 0; i < nPointDomain; i++) {
@@ -4647,11 +4649,18 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     PhiNodes.push_back( sqrt(norm_phi) );
   }
   
-  
-  unsigned long nodewithMax = std::distance(PhiNodes.begin(), std::max_element(PhiNodes.begin(), PhiNodes.end()) );
-  Mask.push_back( nodewithMax);
+  unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
+    
+  for (i = 0; i < nodestoAdd; i++) {
+    nodewithMax = std::distance(PhiNodes.begin(),
+                                              std::max_element(PhiNodes.begin(), PhiNodes.end()) );
+    Mask.push_back(nodewithMax);
+    PhiNodes[nodewithMax] = -100000.0;
+  }
+    
   std::vector<double> masked_Phi, gappy_Phi, ubar_phibar;
   std::vector<std::vector<double>> U, masked_U;
+
   
   
 
@@ -4709,16 +4718,8 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
       PhiNodes.push_back( sqrt(norm_phi) );
     }
     
-    ///*--- Devalue already chosen nodes ---*/
-    //
-    //for (int node_mask = 0; node_mask < (int)Mask.size(); node_mask++){
-    //  int node = Mask[node_mask];
-    //  PhiNodes[node] = -100000.0;
-    //}
     
     /*--- Add nodes corresponding to a single Phi vector ---*/
-    
-    unsigned long nodestoAdd = (desired_nodes+nsnaps-1) / nsnaps; // ceil (nodes to add per loop)
     
     for (inode = 0; inode < nodestoAdd; inode++) {
         
@@ -4759,7 +4760,7 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   sort(Mask.begin(),Mask.end());
   
   ofstream fs;
-  std::string fname = "masked_nodes_lamcyl_2000.csv";
+  std::string fname = "masked_nodes_flatplate_100.csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
@@ -4791,7 +4792,7 @@ bool CSolver::MaskedNode(unsigned long iPoint) {
 void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   // output: Masked Edges
   
-  unsigned long iEdge, iPoint, jPoint;
+  unsigned long iEdge, iPoint, jPoint, kNeigh;
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edges->GetNode(iEdge, 0); jPoint = geometry->edges->GetNode(iEdge, 1);
@@ -4807,20 +4808,29 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
     
   }
   
+  /*--- Include neighbors of neighbors for viscous part of residual ---*/
+  
   switch( config->GetKind_Solver() ) {
 
     case NAVIER_STOKES: case INC_NAVIER_STOKES: {
       // Get neighbor of neighbor
-      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-        iPoint = geometry->edges->GetNode(iEdge, 0); jPoint = geometry->edges->GetNode(iEdge, 1);
+      
+      std::vector<unsigned long> temp_neighs;
+      
+      // locate all neighbors of neighbors but dont pull any Masked/Selected nodes
+      for (unsigned long i : MaskNeighbors) {
         
-        if (MaskNeighbors.find(iPoint) != MaskNeighbors.end()) {
-          if (std::find(Edge_masked.begin(), Edge_masked.end(), iEdge) != Edge_masked.end()) Edge_masked.push_back(iEdge);
+        for (kNeigh = 0; kNeigh < geometry->nodes->GetnPoint(i); kNeigh++) {
+          jPoint = geometry->nodes->GetPoint(i,kNeigh);
+          
+          if (!MaskedNode(jPoint)) {
+            temp_neighs.push_back(jPoint);
+          }
         }
-        
-        else if (MaskNeighbors.find(jPoint) != MaskNeighbors.end()) {
-          if (std::find(Edge_masked.begin(), Edge_masked.end(), iEdge) != Edge_masked.end()) Edge_masked.push_back(iEdge);
-        }
+      }
+      
+      for (unsigned long i : temp_neighs) {
+        MaskNeighbors.insert(i);
       }
       
     }
@@ -4830,7 +4840,7 @@ void CSolver::FindMaskedEdges(CGeometry *geometry, CConfig *config) {
   ofstream fs;
   std::string fname = "masked_nodes_neighs.csv";
   fs.open(fname);
-  set <double> :: iterator itr;
+  set <unsigned long> :: iterator itr;
   for (itr = MaskNeighbors.begin(); itr != MaskNeighbors.end(); ++itr){
     fs << *itr << "," ;
   }
@@ -4846,7 +4856,6 @@ bool CSolver::GetROMConvergence() {
 void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
 
   unsigned long InnerIter = config->GetInnerIter();
-  SetRes_ROM(ReducedRes);
 
   if (InnerIter == 0) {
     RomConverged = false;
@@ -4854,7 +4863,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   }
   
   else {
-    if (1.0 / ReducedRes >= 1e8) {
+    if (1.0 / ReducedRes >= 1e16) {
       RomConverged = true;
       return;
     }
@@ -4873,4 +4882,5 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
       RomConverged = false;
     }
   }
+  SetRes_ROM(ReducedRes);
 }
