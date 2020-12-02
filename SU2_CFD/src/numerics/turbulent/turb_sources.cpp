@@ -822,8 +822,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   for (auto iDim = 0; iDim < nDim; iDim++)
     diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-  const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
-  const bool stress_limited = (TurbVar_i[1] < VorticityMag_i*F2_i/a1);
+  const su2double zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
+  const bool stress_limited = (TurbVar_i[1] < StrainMag_i*F2_i/a1);
 
   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 

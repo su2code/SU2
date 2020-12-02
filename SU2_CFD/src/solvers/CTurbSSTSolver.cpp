@@ -382,11 +382,11 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
     /*--- Compute the eddy viscosity ---*/
 
     const su2double F2 = nodes->GetF2blending(iPoint);
-    const su2double VorticityMag = flowNodes->GetVorticityMag(iPoint);
+    const su2double StrainMag = flowNodes->GetStrainMag(iPoint);
 
     const su2double kine  = nodes->GetPrimitive(iPoint,0);
     const su2double omega = nodes->GetPrimitive(iPoint,1);
-    const su2double zeta  = max(omega, VorticityMag*F2/a1);
+    const su2double zeta  = max(omega, StrainMag*F2/a1);
     const su2double muT   = rho*kine/zeta;
 
     nodes->SetmuT(iPoint,muT);
@@ -533,7 +533,7 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
 
   const su2double r_i  = flowNodes->GetDensity(iPoint);
   const su2double om_i = nodes->GetPrimitive(iPoint,1);
-  const su2double z_i  = max(om_i, flowNodes->GetVorticityMag(iPoint)*F2/a1);
+  const su2double z_i  = max(om_i, flowNodes->GetStrainMag(iPoint)*F2/a1);
 
   const su2double sigma_om2 = constants[3];
   const su2double Vol       = node_i->GetVolume();
