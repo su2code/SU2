@@ -476,7 +476,7 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
   su2double *tau_pointer[MAXNDIM]; // avoid dynamic allocation
   for(unsigned short iDim=0; iDim<MAXNDIM; iDim++)
-    tau_pointer[iDim] = &(tau[iDim][0]);
+    tau_pointer[iDim] = tau[iDim];
   CNumerics::ComputeStressTensor(nDim, tau_pointer, nodes->GetGradient_Primitive(iPoint), total_viscosity);
 
   /*--- Dot product of the stress tensor with the grid velocity ---*/
@@ -981,7 +981,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
       su2double *tau_pointer[MAXNDIM]; // avoid dynamic allocation
       for(unsigned short iDim=0; iDim<MAXNDIM; iDim++)
-        tau_pointer[iDim] = &(tau[iDim][0]);
+        tau_pointer[iDim] = tau[iDim];
 
       su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       CNumerics::ComputeStressTensor(nDim, tau_pointer, nodes->GetGradient_Primitive(iPoint), Lam_Visc_Wall);

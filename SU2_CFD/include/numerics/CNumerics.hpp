@@ -473,15 +473,16 @@ public:
    * \brief Compute the stress tensor from the velocity gradients.
    * \details To obtain the Reynolds stress tensor +(u_i' u_j')~, divide the result
    * of this function by (-rho). The argument density is only used if turb_ke is not 0.
-   * \param[in] nDim - 2 or 3
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3
    * \param[out] stress - Stress tensor
    * \param[in] primvargrad - A primitive variable gradient matrix.
    * \param[in] viscosity - Viscosity
    * \param[in] density - Density
    * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
+   * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
    */
   static void ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* primvargrad,
-                           su2double viscosity, su2double density=0.0, su2double turb_ke=0.0);
+                           su2double viscosity, su2double density=0.0, su2double turb_ke=0.0, bool reynolds3x3=false);
 
   /*!
    * \brief Set the value of the first blending function.

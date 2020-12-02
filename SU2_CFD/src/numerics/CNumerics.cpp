@@ -514,7 +514,7 @@ void CNumerics::ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** r
 }
 
 void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* primvargrad,
-                                    su2double viscosity, su2double density, su2double turb_ke){
+                                    su2double viscosity, su2double density, su2double turb_ke, bool reynolds3x3){
   su2double TWO3 = 2.0/3.0;
 
   su2double divVel = 0;
@@ -529,6 +529,11 @@ void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, con
         - TWO3 * viscosity * divVel * (iDim==jDim)
         - TWO3 * density * turb_ke * (iDim==jDim);
     }
+  }
+
+  if(reynolds3x3 && nDim==2){ // fill the third row and column of Reynolds stress matrix
+    stress[0][2] = stress[1][2] = stress[2][0] = stress[2][1] = 0.0;
+    stress[2][2] = -TWO3 * ( viscosity * divVel + density * turb_ke );
   }
 
 }

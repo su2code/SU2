@@ -213,9 +213,9 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
 
 void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
   su2double meandensity = Mean_PrimVar[nDim+2];
-  ComputeStressTensor(nDim, MeanReynoldsStress, Mean_GradPrimVar, Mean_Eddy_Viscosity, meandensity, turb_ke);
-  for(unsigned short iDim=0; iDim<nDim; iDim++){
-    for(unsigned short jDim=0; jDim<nDim; jDim++){
+  ComputeStressTensor(nDim, MeanReynoldsStress, Mean_GradPrimVar, Mean_Eddy_Viscosity, meandensity, turb_ke, true);
+  for(unsigned short iDim=0; iDim<3; iDim++){
+    for(unsigned short jDim=0; jDim<3; jDim++){
       MeanReynoldsStress[iDim][jDim] /= (-meandensity);
     }
   }
