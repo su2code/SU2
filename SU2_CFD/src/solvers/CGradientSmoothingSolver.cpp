@@ -422,8 +422,8 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_block);
 
         // store if we set something for a node
-        if (visited[indexNode[iNode]]==false) { visited[indexNode[iNode]]==true; }
-        if (visited[indexNode[jNode]]==false) { visited[indexNode[jNode]]==true; }
+        if (visited[indexNode[iNode]]==false) { visited[indexNode[iNode]]=true; }
+        if (visited[indexNode[jNode]]==false) { visited[indexNode[jNode]]=true; }
 
       }
     }
