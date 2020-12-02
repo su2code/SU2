@@ -3,7 +3,7 @@
  * \brief Generic implementation of Least-Squares gradient computation.
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,35 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 namespace detail {
+
+/*!
+ * \brief Prepare Smatrix for 2D or 3D
+ */
+FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
+                                su2double r22, su2double r23, su2double r33,
+                                su2double detR2, su2double Smatrix[][2]) {
+  Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+  Smatrix[0][1] = -r11*r12/detR2;
+  Smatrix[1][1] = r11*r11/detR2;
+}
+
+FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
+                                su2double r22, su2double r23, su2double r33,
+                                su2double detR2, su2double Smatrix[][3]) {
+  su2double z11 = r22*r33;
+  su2double z12 =-r12*r33;
+  su2double z13 = r12*r23-r13*r22;
+  su2double z22 = r11*r33;
+  su2double z23 =-r11*r23;
+  su2double z33 = r11*r22;
+
+  Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+  Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+  Smatrix[0][2] = (z13*z33)/detR2;
+  Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+  Smatrix[1][2] = (z23*z33)/detR2;
+  Smatrix[2][2] = (z33*z33)/detR2;
+}
 
 /*!
  * \brief Solve the least-squares problem for one point.
@@ -92,26 +121,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   /*--- Detect singular matrix ---*/
 
   if (detR2 > eps) {
-    if (nDim == 2) {
-      Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-      Smatrix[0][1] = -r11*r12/detR2;
-      Smatrix[1][1] = r11*r11/detR2;
-    }
-    else {
-      su2double z11 = r22*r33;
-      su2double z12 =-r12*r33;
-      su2double z13 = r12*r23-r13*r22;
-      su2double z22 = r11*r33;
-      su2double z23 =-r11*r23;
-      su2double z33 = r11*r22;
-
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-      Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-      Smatrix[0][2] = (z13*z33)/detR2;
-      Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-      Smatrix[1][2] = (z23*z33)/detR2;
-      Smatrix[2][2] = (z33*z33)/detR2;
-    }
+    computeSmatrix(r11, r12, r13, r22, r23, r33, detR2, Smatrix);
   }
 
   if (periodic) {
@@ -238,7 +248,7 @@ void computeGradientsLeastSquares(CSolver* solver,
             Rmatrix(iPoint,iDim,jDim) += dist_ij[iDim]*dist_ij[jDim]*weight;
 
         if (nDim == 3)
-          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[2]*weight;
+          Rmatrix(iPoint,2,1) += dist_ij[0]*dist_ij[nDim-1]*weight;
 
         /*--- Entries of c:= transpose(A)*b ---*/
 

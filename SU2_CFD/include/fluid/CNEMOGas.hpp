@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,8 +39,10 @@ class CNEMOGas : public CFluidModel {
 
 protected:
   
-  bool frozen;                           /*!< \brief Indicates if mixture is frozen. */
-  
+  bool frozen,                           /*!< \brief Indicates if mixture is frozen. */
+  ionization;                            /*!< \brief Presence of charged species in gas mixture. */
+
+  string Kind_GasModel;                  /*!< \brief String gas model. */
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
@@ -77,14 +79,16 @@ protected:
   hs,                                    /*!< \brief Species enthalpies */
   MolarFractions,                        /*!< \brief Species molar fractions */
   ws,                                    /*!< \brief Species net production rates */
-  DiffusionCoeff;                        /*!< \brief Species diffusion coefficients*/
+  DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
+  Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
+  Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
 
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CNEMOGas(const CConfig* config);
+  CNEMOGas(const CConfig* config, unsigned short val_nDim);
 
   /*!
    * \brief Set mixture thermodynamic state.
@@ -97,16 +101,16 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
+   * \param[in] Ms   - Mass fraction of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
   void SetTDStatePTTv(su2double P, const su2double *val_massfrac, su2double val_temperature, su2double val_temperature_ve);
   
-  
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvTraRot() = 0;
+  virtual const vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
    * \brief Get species V-E specific heats at constant volume.
@@ -136,7 +140,7 @@ public:
   /*!
    * \brief Get species enthalpies.
    */
-  virtual vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double *val_eves) = 0;
+  virtual vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) = 0;
   
   /*!
    * \brief Get species diffusion coefficients.
@@ -156,32 +160,37 @@ public:
   /*!
    * \brief Get translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
+  virtual vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
   
   /*!
    * \brief Get speed of sound.
    */
-  su2double GetSoundSpeed();
+  su2double ComputeSoundSpeed();
 
   /*!
    * \brief Get pressure.
    */
-  su2double GetPressure();
+  su2double ComputePressure();
+
+  /*!
+   * \brief Get gas constant.
+   */
+  su2double ComputeGasConstant();
 
   /*!
    * \brief Get derivative of pressure w.r.t. conservative variables.
    */
-  virtual void GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
+  void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
   
   /*!
    * \brief Get derivative of temperature w.r.t. conservative variables.
    */
-  virtual void GetdTdU(su2double *V, su2double *val_dTdU){}
+  void ComputedTdU(su2double *V, su2double *val_dTdU);
   
   /*!
    * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
    */
-  virtual void GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
+  void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 
   /*!
    * \brief Set the translational temperature.
@@ -197,11 +206,6 @@ public:
    * \brief Set species vibrational energies.
    */
   inline void SetEves(vector<su2double>& val_eves) { eves = val_eves; }
-
-  /*!
-   * \brief Get gas constant.
-   */
-  su2double GetGasConstant();
 
   /*!
    * \brief Get rhoCvtr.
@@ -221,7 +225,15 @@ public:
   /*!
    * \brief Get species molar mass.
    */
-  inline vector<su2double>& GetMolarMass() { return MolarMass; }
+  virtual const vector<su2double>& GetSpeciesMolarMass() = 0;
 
+  /*!
+   * \brief Get reference temperature.
+   */
+  virtual const vector<su2double>& GetRefTemperature() = 0;
 
+  /*!
+   * \brief Get species formation enthalpy.
+   */
+  virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
 };

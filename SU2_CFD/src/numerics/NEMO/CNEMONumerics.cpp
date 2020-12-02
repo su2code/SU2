@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,6 +51,8 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     A_INDEX       = nSpecies+nDim+5;
     RHOCVTR_INDEX = nSpecies+nDim+6;
     RHOCVVE_INDEX = nSpecies+nDim+7;  
+    LAM_VISC_INDEX = nSpecies+nDim+8;
+    EDDY_VISC_INDEX = nSpecies+nDim+9;
 
     /*--- Read from CConfig ---*/
     implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
@@ -62,8 +64,8 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-      cout << "Delete Me, Calling Mutation" << endl;
+      //fluidmodel = new CMutationTCLib(config, nDim);
+      cout << "TODO: Mutation coming soon" << endl;
       break;
       case USER_DEFINED_NONEQ:
       fluidmodel = new CUserDefinedTCLib(config, nDim, false);
@@ -223,7 +225,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
                                        su2double *val_eve,
                                        const su2double *val_normal,
                                        su2double *val_diffusioncoeff,
-                                       su2double val_viscosity,
+                                       su2double val_lam_viscosity,
+                                       su2double val_eddy_viscosity,
                                        su2double val_therm_conductivity,
                                        su2double val_therm_conductivity_ve,
                                        const CConfig *config) {
@@ -235,7 +238,8 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   unsigned short iSpecies, iVar, iDim, jDim;
   su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
-  su2double rho, T;
+  su2double rho, T, Tve, RuSI, Ru;
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -246,16 +250,35 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
 
   /*--- Rename for convenience ---*/
   Ds  = val_diffusioncoeff;
-  mu  = val_viscosity;
+  mu  = val_lam_viscosity+val_eddy_viscosity;
   ktr = val_therm_conductivity;
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
+  Tve  = val_primvar[TVE_INDEX];
   V   = val_primvar;
   GV  = val_gradprimvar;
+  RuSI= UNIVERSAL_GAS_CONSTANT;
+  Ru  = 1000.0*RuSI;
 
-  hs = fluidmodel->GetSpeciesEnthalpy(T, val_eve);
+  hs = fluidmodel->GetSpeciesEnthalpy(T, Tve, val_eve);
   
+  /*--- Scale thermal conductivity with turb visc ---*/
+  //delete me todo
+  // Need to determine proper way to incorporate eddy viscosity
+  // This is only scaling Kve by same factor as ktr
+  su2double Mass = 0.0;
+  su2double tmp1, scl, Cptr;
+  for (iSpecies=0;iSpecies<nSpecies;iSpecies++)
+    Mass += V[iSpecies]*Ms[iSpecies];
+  Cptr = V[RHOCVTR_INDEX]+Ru/Mass;
+  tmp1 = Cptr*(val_eddy_viscosity/Prandtl_Turb);
+  scl  = tmp1/ktr;
+  ktr += Cptr*(val_eddy_viscosity/Prandtl_Turb);
+  kve  = kve*(1.0+scl);
+  //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
+  //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
+
   /*--- Calculate the velocity divergence ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
@@ -326,6 +349,7 @@ void CNEMONumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
                                        su2double *val_Mean_Cvve,
                                        su2double *val_diffusion_coeff,
                                        su2double val_laminar_viscosity,
+                                       su2double val_eddy_viscosity,
                                        su2double val_thermal_conductivity,
                                        su2double val_thermal_conductivity_ve,
                                        su2double val_dist_ij, su2double *val_normal,
@@ -641,7 +665,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
   a2 = V[A_INDEX]*V[A_INDEX];
 
   if(nDim == 2) {
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       val_p_tensor[iSpecies][iSpecies]   += 1.0/a2;
       val_p_tensor[iSpecies][nSpecies]   += 0.0;
       val_p_tensor[iSpecies][nSpecies+1] += V[RHOS_INDEX+iSpecies] / (2.0*rho*a2);
@@ -655,15 +679,12 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+3][iSpecies] += 0.0;
     }
 
-    val_p_tensor[nSpecies][nSpecies]     += l[0];
-    val_p_tensor[nSpecies][nSpecies+1]   += (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+2]   += (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+3]   += 0.0;
-
-    val_p_tensor[nSpecies+1][nSpecies]   += l[1];
-    val_p_tensor[nSpecies+1][nSpecies+1] += (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+2] += (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+3] += 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      val_p_tensor[nSpecies+iDim][nSpecies]     += l[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+1]   += (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+2]   += (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+3]   += 0.0;
+    }
 
     val_p_tensor[nSpecies+2][nSpecies]   += vV;
     val_p_tensor[nSpecies+2][nSpecies+1] += ((V[H_INDEX])+a*vU) / (2.0*a2);
@@ -674,7 +695,7 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
     val_p_tensor[nSpecies+3][nSpecies+1] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+2] += eve / (2.0*a2);
     val_p_tensor[nSpecies+3][nSpecies+3] += 1.0 / a2;
-    }
+  }
   else {
 
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -691,25 +712,15 @@ void CNEMONumerics::GetPMatrix(const su2double *U, const su2double *V, const su2
       val_p_tensor[nSpecies+3][iSpecies] = (val_dPdU[nSpecies+3]*sqvel-val_dPdU[iSpecies])
           / (val_dPdU[nSpecies+3]*a2);
       val_p_tensor[nSpecies+4][iSpecies] = 0.0;
-  }
+    }
 
-    val_p_tensor[nSpecies][nSpecies]     = l[0]; //cat next 3 blocks correspond to 3dim - make it a loop
-    val_p_tensor[nSpecies][nSpecies+1]   = m[0];
-    val_p_tensor[nSpecies][nSpecies+2]   = (V[VEL_INDEX]+a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+3]   = (V[VEL_INDEX]-a*val_normal[0]) / (2.0*a2);
-    val_p_tensor[nSpecies][nSpecies+4]   = 0.0;
-
-    val_p_tensor[nSpecies+1][nSpecies]   = l[1];
-    val_p_tensor[nSpecies+1][nSpecies+1] = m[1];
-    val_p_tensor[nSpecies+1][nSpecies+2] = (V[VEL_INDEX+1]+a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+3] = (V[VEL_INDEX+1]-a*val_normal[1]) / (2.0*a2);
-    val_p_tensor[nSpecies+1][nSpecies+4] = 0.0;
-
-    val_p_tensor[nSpecies+2][nSpecies]   = l[2];
-    val_p_tensor[nSpecies+2][nSpecies+1] = m[2];
-    val_p_tensor[nSpecies+2][nSpecies+2] = (V[VEL_INDEX+2]+a*val_normal[2]) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+3] = (V[VEL_INDEX+2]-a*val_normal[2]) / (2.0*a2);
-    val_p_tensor[nSpecies+2][nSpecies+4] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      val_p_tensor[nSpecies+iDim][nSpecies]     = l[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+1]   = m[iDim];
+      val_p_tensor[nSpecies+iDim][nSpecies+2]   = (V[VEL_INDEX+iDim]+a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+3]   = (V[VEL_INDEX+iDim]-a*val_normal[iDim]) / (2.0*a2);
+      val_p_tensor[nSpecies+iDim][nSpecies+4]   = 0.0;  
+    }
 
     val_p_tensor[nSpecies+3][nSpecies]   = vV;
     val_p_tensor[nSpecies+3][nSpecies+1] = vW;

@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,15 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
   ThermalCond_ve.resize(nPoint)  = su2double(0.0);
 
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0); //Cat this should only exist in NSNEMO variable
-    
+  inv_TimeScale = config->GetModVel_FreeStream() / config->GetRefLength();
+
+  Vorticity.resize(nPoint,3) = su2double(0.0);
+  StrainMag.resize(nPoint) = su2double(0.0);
+  Tau_Wall.resize(nPoint) = su2double(-1.0);
+  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  Roe_Dissipation.resize(nPoint) = su2double(0.0);
+  Vortex_Tilting.resize(nPoint) = su2double(0.0);
+  Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
 }
 
 bool CNEMONSVariable::SetVorticity(void) {
@@ -111,7 +119,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   SetVelocity2(iPoint);
 
   Ds                       = fluidmodel->GetDiffusionCoeff();
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
   
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
@@ -119,6 +127,8 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   thermalconductivities    = fluidmodel->GetThermalConductivities();
   ThermalCond(iPoint)      = thermalconductivities[0];
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
+
+  Primitive(iPoint, LAM_VISC_INDEX) = LaminarViscosity(iPoint);
 
   return nonPhys;
 }

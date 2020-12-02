@@ -2,7 +2,7 @@
  * \file datatype_structure.hpp
  * \brief Headers for generalized datatypes, defines an interface for AD types.
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,10 +40,22 @@
 #define FORCEINLINE inline
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #define NEVERINLINE inline __attribute__((noinline))
 #else
 #define NEVERINLINE inline
+#endif
+
+#if defined(__INTEL_COMPILER)
+/*--- Disable warnings related to inline attributes. ---*/
+#pragma warning disable 2196
+#pragma warning disable 3415
+/*--- Disable warnings related to overloaded virtual. ---*/
+#pragma warning disable 654
+#pragma warning disable 1125
+#if defined(CODI_FORWARD_TYPE) || defined(CODI_REVERSE_TYPE)
+#pragma warning disable 1875
+#endif
 #endif
 
 /*--- Convenience SFINAE typedef to conditionally

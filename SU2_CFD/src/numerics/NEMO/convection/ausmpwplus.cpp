@@ -2,7 +2,7 @@
  * \file ausmpwplus.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSMPWPLUS.
  * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -156,7 +156,7 @@ CNumerics::ResidualType<> CUpwAUSMPWplus_NEMO::ComputeResidual(const CConfig *co
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-  vector<su2double> Ms = fluidmodel->GetMolarMass();
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
   
   rhoRi = 0.0;
   rhoRj = 0.0;

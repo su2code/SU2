@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3117,6 +3117,15 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the wall shear stress is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the wall shear stress is evaluated.
+   * \return Value of the wall shear stress.
+   */
+  inline virtual su2double GetWallShearStress(unsigned short val_marker,
+                                              unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat transfer coefficient.
@@ -3796,10 +3805,10 @@ public:
   /*!
    * \brief A virtual member. Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
    */
-  inline virtual void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config){ }
+  inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
 
   /*!
    * \brief A virtual member. Extract and set the derivative of objective function.

@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -601,7 +601,7 @@ public:
     assert(Size <= cols()-start);
     StaticContainer ret;
     for (size_t k=0; k<N; ++k) {
-      SU2_OMP_SIMD
+      SU2_OMP_SIMD_IF_NOT_AD
       for (size_t i=0; i<Size; ++i)
         ret.data()[i][k] = m_data[IsRowMajor? row[k]*cols()+i+start : row[k]+(i+start)*rows()];
     }

@@ -125,7 +125,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const su2double *A,
 
   /* Native implementation of the matix vector product.
      Initialize the elements of y to zero. */
-  memset(y, 0, M*sizeof(su2double));
+  for(int i=0; i<M; ++i) y[i] = 0.0;
 
   /* Carry out the matrix vector product. */
   for(int k=0; k<M; ++k) {
@@ -149,7 +149,7 @@ void CBlasStructure::gemm_imp(const int m,        const int n,        const int 
                               const su2double *a, const su2double *b, su2double *c) {
 
   /* Initialize the elements of c to zero. */
-  memset(c, 0, m*n*sizeof(su2double));
+  for(int i=0; i<(m*n); ++i) c[i] = 0.0;
 
   /* Set the leading dimensions of the three matrices. */
   const int lda = m;

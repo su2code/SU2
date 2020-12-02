@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,7 +142,7 @@ const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallb
    assume a quartic form (5 coefficients). For example,
    Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
    are set to zero and will be properly non-dim. in the solver. ---*/
-constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */;
+constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
 
 /*!
  * \brief Boolean answers
@@ -200,7 +200,7 @@ enum ENUM_MAIN_SOLVER {
   FEM_LES = 29,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS = 30,
   NEMO_EULER = 41,                  /*!< \brief Definition of the NEMO Euler solver. */
-  NEMO_NAVIER_STOKES = 42          /*!< \brief Definition of the NEMO NS solver. */
+  NEMO_NAVIER_STOKES = 42           /*!< \brief Definition of the NEMO NS solver. */
 };
 static const MapType<string, ENUM_MAIN_SOLVER> Solver_Map = {
   MakePair("NONE", NO_SOLVER)

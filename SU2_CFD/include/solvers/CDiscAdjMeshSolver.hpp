@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,8 +39,8 @@
  */
 class CDiscAdjMeshSolver final : public CSolver {
 private:
-  unsigned short KindDirect_Solver;
-  CSolver *direct_solver;
+  unsigned short KindDirect_Solver = 0;
+  CSolver *direct_solver = nullptr;
 
   CDiscAdjMeshBoundVariable* nodes = nullptr;   /*!< \brief Variables of the discrete adjoint mesh solver. */
 
@@ -97,10 +97,10 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] target_solver - The target solver to store the sensitivities.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) override;
+  void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver* target_solver) override;
 
   /*!
    * \brief Prepare the solver for a new recording.

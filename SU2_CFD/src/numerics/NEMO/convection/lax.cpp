@@ -2,7 +2,7 @@
  * \file lax.cpp
  * \brief Implementations of Lax centered scheme.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,7 +90,7 @@ void CCentLax_NEMO::ComputeResidual(su2double *val_resconv,
 
   vector<su2double> mean_eves = fluidmodel->GetSpeciesEve(MeanV[TVE_INDEX]); 
   
-  fluidmodel->GetdPdU(MeanV, mean_eves, MeandPdU);
+  fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
