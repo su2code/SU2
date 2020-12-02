@@ -382,7 +382,6 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long InnerIter = config->GetInnerIter();
-  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool muscl              = config->GetMUSCL_Flow();
   bool limiter            = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(config->GetFrozen_Limiter_Disc()));
   bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
@@ -1037,7 +1036,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       else
         eAxi_local++;
     }
-    
+
     if(!monoatomic){
       if(!frozen){
         /*--- Compute the non-equilibrium chemistry ---*/
@@ -1051,7 +1050,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           for (iVar = 0; iVar < nVar; iVar++)
             for (jVar = 0; jVar < nVar; jVar++)
               if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-        
+
         /*--- Apply the chemical sources to the linear system ---*/
         if (!err) {
           LinSysRes.SubtractBlock(iPoint, residual);
@@ -1086,7 +1085,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         eVib_local++;
     }
   }
-  
+
   /*--- Checking for NaN ---*/
   eAxi_global = eAxi_local;
   eChm_global = eChm_local;
@@ -1374,7 +1373,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       /*--- Thermodynamics quantities based initialization ---*/
       Viscosity_FreeStream = FluidModel->GetViscosity();
       Energy_FreeStream    = energies[0] + 0.5*sqvel;
-   
+
     } else {
 
       /*--- Reynolds based initialization not present in NEMO ---*/
