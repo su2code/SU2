@@ -301,6 +301,14 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   //     const su2double sol = min(upperlimit[iVar],max(lowerlimit[iVar], nodes->GetSolution(iPoint,iVar)));
   //     nodes->SetSolution(iPoint, iVar, sol);
   //   }
+  const auto flowNodes = solver[FLOW_SOL]->GetNodes();
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+    const su2double StaticEnergy = flowNodes->GetEnergy(iPoint)-0.5*flowNodes->Velocity2(iPoint)-nodes->GetSolution(iPoint,0)/flowNodes->GetDensity(iPoint);
+    if (StaticEnergy < 0) {
+      for (auto iVar = 0; iVar < nVar; iVar++)
+        nodes->SetSolution(iPoint,iVar,nodes->GetSolution(iPoint,iVar));
+    }
+  }
 
   for (auto iPoint = 0; iPoint < nPoint; iPoint++)
     nodes->SetNon_Physical(iPoint, false);
