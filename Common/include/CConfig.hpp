@@ -600,8 +600,9 @@ private:
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
-  Cent_Jac_Fix_Factor;              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
+  Cent_Jac_Fix_Factor,              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
+  Cent_Inc_Jac_Fix_Factor;          /*!< \brief Multiply the dissipation contribution to the Jacobian of incompressible central schemes */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
 
   su2double Min_Beta_RoeTurkel,     /*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -4624,6 +4625,12 @@ public:
    * \return The factor.
    */
   su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
+
+  /*!
+   * \brief Factor by which to multiply the dissipation contribution to Jacobians of incompressible central schemes.
+   * \return The factor.
+   */
+  su2double GetCent_Inc_Jac_Fix_Factor(void) const { return Cent_Inc_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
