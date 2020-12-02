@@ -845,6 +845,14 @@ def findiff( config, state=None ):
         name = su2io.expand_time(name,config)
         link.extend(name)
 
+    # files: restart solution for dual-time stepping first and second order
+    if 'RESTART_FILE_1' in files:
+        name = files['RESTART_FILE_1']
+        pull.append(name)
+    if 'RESTART_FILE_2' in files:
+        name = files['RESTART_FILE_2']
+        pull.append(name)
+
     # files: target equivarea distribution
     if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
         pull.append(files['TARGET_EA'])

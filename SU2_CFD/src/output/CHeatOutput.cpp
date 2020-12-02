@@ -111,10 +111,6 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 
-  // Linear solver iterations
-  AddHistoryOutput("LINSOL_ITER",     "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
-  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes",  ScreenOutputFormat::FIXED,   "LINSOL", "Residual of the linear solver.");
-
 }
 
 

@@ -8431,7 +8431,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     const unsigned long jPoint = edges->GetNode(iEdge,1);
 
     const unsigned long GlobalIndex_i = nodes->GetGlobalIndex(iPoint);
-    const unsigned long GlobalIndex_j = nodes->GetGlobalIndex(iPoint);
+    const unsigned long GlobalIndex_j = nodes->GetGlobalIndex(jPoint);
 
     /*-- Area normal for the current edge. Recall that this normal
      is computed by summing the normals of adjacent faces along
