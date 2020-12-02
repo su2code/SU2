@@ -1527,9 +1527,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Load the conservative variables ---*/
+      /*--- Load the primitive variables ---*/
 
-      numerics->SetConservative(nodes->GetSolution(iPoint), nullptr);
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
       /*--- Set incompressible density ---*/
 
@@ -3051,33 +3051,19 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       LinSysRes.AddBlock(iPoint, Residual);
 
       if (implicit) {
-
-        SetPreconditioner(config, iPoint);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] = Preconditioner[iVar][jVar];
-          }
+        for (iVar = 1; iVar < nVar; iVar++) {
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (config->GetTime_Marching() == DT_STEPPING_1ST)
-              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
-            if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
-          }
-        }
-
-        if (!energy) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Jacobian_i[iVar][nDim+1] = 0.0;
-              Jacobian_i[nDim+1][iVar] = 0.0;
-            }
-        }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
 
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-
       }
+
     }
 
   }
@@ -3276,31 +3262,21 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        to the dual time source term. ---*/
       if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.AddBlock(iPoint, Residual);
+
       if (implicit) {
-        SetPreconditioner(config, iPoint);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] = Preconditioner[iVar][jVar];
-          }
+        for (iVar = 1; iVar < nVar; iVar++) {
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
 
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (config->GetTime_Marching() == DT_STEPPING_1ST)
-              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
-            if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
-          }
-        }
-
-        if (!energy) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Jacobian_i[iVar][nDim+1] = 0.0;
-            Jacobian_i[nDim+1][iVar] = 0.0;
-          }
-        }
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
+
     }
   }
 
