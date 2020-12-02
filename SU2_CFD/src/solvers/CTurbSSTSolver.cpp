@@ -330,11 +330,11 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-    const su2double StaticEnergy = flowNodes->GetEnergy(iPoint)-0.5*flowNodes->GetVelocity2(iPoint)-nodes->GetSolution(iPoint,0)/flowNodes->GetDensity(iPoint);
-    if (StaticEnergy < 0) {
-      for (auto iVar = 0; iVar < nVar; iVar++)
-        nodes->SetSolution(iPoint,iVar,nodes->GetSolution_Old(iPoint,iVar));
-    }
+    // const su2double StaticEnergy = flowNodes->GetEnergy(iPoint)-0.5*flowNodes->GetVelocity2(iPoint)-nodes->GetSolution(iPoint,0)/flowNodes->GetDensity(iPoint);
+    // if (StaticEnergy < 0) {
+    //   for (auto iVar = 0; iVar < nVar; iVar++)
+    //     nodes->SetSolution(iPoint,iVar,nodes->GetSolution_Old(iPoint,iVar));
+    // }
     
     for (auto iVar = 0; iVar < nVar; iVar++)
       nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
