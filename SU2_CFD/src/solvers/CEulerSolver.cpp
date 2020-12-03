@@ -2584,7 +2584,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     SU2_OMP_MASTER
     {
       if (config->GetUnst_CFL() == 0.0) {
-        Global_Delta_Time = config->GetDelta_UnstTime();
+        Global_Delta_Time = config->GetDelta_UnstTimeND();
       }
       else {
         Global_Delta_Time = Min_Delta_Time;
