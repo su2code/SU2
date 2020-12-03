@@ -18,11 +18,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - molinaedu85@gmail.com
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_WMLES-Dev
+        - develop
 
 virtualenv:
   system_site_packages: true
@@ -30,11 +30,11 @@ virtualenv:
 env:
     matrix:
         # Serial build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tecio=false"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled"
           TEST_SCRIPT=serial_regression.py
 
         # Parallel build and test
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-tecio=false"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true"
           TEST_SCRIPT=parallel_regression.py
 
         # Hybrid-parallel build and test
@@ -42,11 +42,11 @@ env:
           TEST_SCRIPT=hybrid_regression.py
 
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true -Denable-tecio=false"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Dwith-mpi=disabled -Denable-autodiff=true -Denable-directdiff=true"
           TEST_SCRIPT=serial_regression_AD.py
 
         # Parallel build and test for AD
-        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true -Denable-tecio=false"
+        - CONFIGURE_COMMAND="./meson.py build --prefix=$TRAVIS_BUILD_DIR -Denable-pywrapper=true -Denable-autodiff=true"
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
