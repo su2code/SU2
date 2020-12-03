@@ -1416,6 +1416,13 @@ public:
    */
   virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }
 
+  /*!
+   * \brief Set the ratio of specific heats.
+   * \param[in] val_Gamma_i - Gamma at i.
+   * \param[in] val_Gamma_j - Gamma at j.
+   */
+  virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
+
 };
 
 /*!

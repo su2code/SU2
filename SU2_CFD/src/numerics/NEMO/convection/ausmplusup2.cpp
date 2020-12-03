@@ -156,10 +156,6 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
     ProjVel_j += u_j[iDim]*UnitNormal[iDim];
   }
 
-  /*--- Compute Gamma ---*/
-  Gamma_i = fluidmodel->ComputeGamma(V_i);
-  Gamma_j = fluidmodel->ComputeGamma(V_j);
-
   /*--- Compute C*  ---*/
   CstarL = sqrt(2.0*(Gamma_i-1.0)/(Gamma_i+1.0)*h_i);
   CstarR = sqrt(2.0*(Gamma_j-1.0)/(Gamma_j+1.0)*h_j);

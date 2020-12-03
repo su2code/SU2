@@ -261,6 +261,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
     numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
     numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+    numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
 
     /*--- Species diffusion coefficients ---*/
     numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -1099,6 +1100,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Eddy_Visc = nodes->GetEddyViscosity(iPoint);
       Density   = nodes->GetDensity(iPoint);
+      Gamma     = nodes->GetGamma(iPoint);
 
       /*--- Incorporate turbulence effects ---*/
       auto&      Ms = FluidModel->GetSpeciesMolarMass();
@@ -1122,14 +1124,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       GasConstant = 0.0;
       for(iSpecies = 0; iSpecies<nSpecies; iSpecies++)
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
-      
-      /*--- Compute Gamma ---*/
-      //TODO: Move to fluidmodel?
-      //su2double rhoR = 0.0;
-      //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      //  rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      //Gamma = rhoR/(rhoCvtr + rhoCvve) + 1.0;
-      Gamma = FluidModel->ComputeGamma(Vi);
 
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;

@@ -289,11 +289,11 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   unsigned long iPoint;
-  unsigned short iMesh;
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool rans = false;
-  bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
+  unsigned short iMesh, iDim;
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool rans = false;
+  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == DT_STEPPING_2ND));
 
 
   /*--- Make sure that the solution is well initialized for unsteady
@@ -664,55 +664,59 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
 void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
-  su2double Area, Mean_SoundSpeed, Mean_ProjVel, Lambda;
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
+  /*--- Loop domain points. ---*/
+  for ( unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
 
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    /*--- Set inviscid eigenvalues to zero. ---*/
     nodes->SetLambda(iPoint, 0.0);
 
-  /*--- Loop interior edges ---*/
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    /*--- Loop over the neighbors of point i. ---*/
+    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+    {
+      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
-    /*--- Point identification, Normal vector and area ---*/
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
+      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+      auto Normal = geometry->edges->GetNormal(iEdge);
+      su2double Area = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
+      Area = sqrt(Area);
 
-    const auto* Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      /*--- Mean Values ---*/
+      su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+      su2double Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
 
-    /*--- Mean Values ---*/
-    Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-
-    /*--- Inviscid contribution ---*/
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddLambda(iPoint,Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddLambda(jPoint,Lambda);
-
+      /*--- Inviscid contribution ---*/
+      su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+      nodes->AddLambda(iPoint,Lambda);
+    }
   }
 
   /*--- Loop boundary edges ---*/
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))  {
 
-        /*--- Point identification, Normal vector and area ---*/
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        /*--- Mean Values ---*/
-        Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
-        Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
+      /*--- Point identification, Normal vector and area ---*/
+      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      su2double Area = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Area += pow(Normal[iDim],2);
+      Area = sqrt(Area);
 
-        /*--- Inviscid contribution ---*/
-        Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        if (geometry->nodes->GetDomain(iPoint)) {
-          nodes->AddLambda(iPoint,Lambda);
-        }
+      /*--- Mean Values ---*/
+      su2double Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
+      su2double Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
+
+      /*--- Inviscid contribution ---*/
+      su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+      if (geometry->nodes->GetDomain(iPoint)) {
+        nodes->AddLambda(iPoint,Lambda);
       }
+    }
+    }
   }
 
   /*--- Call the MPI routine ---*/
@@ -727,13 +731,10 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
   unsigned short iVar, jVar;
   bool err;
 
-  auto numerics = numerics_container[CONV_TERM];
+  CNumerics* numerics = numerics_container[CONV_TERM];
 
   /*--- Set booleans based on config settings ---*/
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  //Unused at the moment
-  //bool centered = ((config->GetKind_Centered_NEMO() == JST) && (iMesh == MESH_0));
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -745,15 +746,16 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
                           geometry->nodes->GetnNeighbor(jPoint));
 
     /*--- Pass conservative & primitive variables w/o reconstruction to CNumerics ---*/
-    numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-    numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
+    numerics->SetConservative(nodes->GetSolution(iPoint),  nodes->GetSolution(jPoint));
+    numerics->SetPrimitive   (nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
 
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU(   nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-    numerics->SetdTdU(   nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
+    numerics->SetdPdU  ( nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
+    numerics->SetdTdU  ( nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
     numerics->SetdTvedU( nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-    numerics->SetEve( nodes->GetEve(iPoint), nodes->GetEve(jPoint));
-    numerics->SetCvve( nodes->GetCvve(iPoint), nodes->GetCvve(jPoint));
+    numerics->SetEve   ( nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
+    numerics->SetCvve  ( nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+    numerics->SetGamma ( nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
 
     /*--- Set the largest convective eigenvalue ---*/
     numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
@@ -797,7 +799,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
-
+  su2double Gamma_i, Gamma_j;
   su2double lim_i, lim_j, lim_ij = 0.0;
 
   unsigned long InnerIter = config->GetInnerIter();
@@ -840,6 +842,11 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     /*--- Get conserved & primitive variables from CVariable ---*/
     U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
     V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
+
+    /*--- Extract Gamma from CVariable ---*/
+    // Note: this will outdated with new reconstruction.
+    Gamma_i = nodes->GetGamma(iPoint);
+    Gamma_j = nodes->GetGamma(jPoint);
 
     /*--- High order reconstruction using MUSCL strategy ---*/
     if (muscl) {
@@ -890,11 +897,11 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       }
 
       chk_err_i = nodes->Cons2PrimVar(Conserved_i, Primitive_i,
-                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
+                                      dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
       chk_err_j = nodes->Cons2PrimVar(Conserved_j, Primitive_j,
-                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
+                                      dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
 
-       /*--- Check for physical solutions in the reconstructed values ---*/
+      /*--- Check for physical solutions in the reconstructed values ---*/
       // Note: If non-physical, revert to first order
       if ( chk_err_i || chk_err_j) {
         numerics->SetPrimitive   (V_i, V_j);
@@ -904,6 +911,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
         numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
         numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+        numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
       } else {
         numerics->SetConservative(Conserved_i, Conserved_j);
         numerics->SetPrimitive   (Primitive_i, Primitive_j);
@@ -912,6 +920,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         numerics->SetdTvedU(dTvedU_i, dTvedU_j);
         numerics->SetEve   (Eve_i,    Eve_j   );
         numerics->SetCvve  (Cvve_i,   Cvve_j  );
+        numerics->SetGamma (Gamma_i,  Gamma_i );
       }
     } else {
       /*--- Set variables without reconstruction ---*/
@@ -922,6 +931,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
       numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
       numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
+      numerics->SetGamma (nodes->GetGamma(iPoint),   nodes->GetGamma(jPoint));
     }
 
     /*--- Compute the residual ---*/
@@ -1000,11 +1010,12 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
 
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU(nodes->GetdPdU(iPoint), nodes->GetdPdU(iPoint));
-    numerics->SetdTdU(nodes->GetdTdU(iPoint), nodes->GetdTdU(iPoint));
+    numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
+    numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
     numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
-    numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
-    numerics->SetCvve(nodes->GetCvve(iPoint), nodes->GetCvve(iPoint));
+    numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
+    numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
+    numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
 
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
@@ -1834,11 +1845,12 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
+      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
+      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve(nodes->GetEve(iPoint),       node_infty->GetEve(0));
-      conv_numerics->SetCvve(nodes->GetCvve(iPoint),     node_infty->GetCvve(0));
+      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
+      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
+      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
 
       /*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in driver_structure.cpp
@@ -1867,11 +1879,12 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
                                           node_infty->GetGradient_Primitive(0) );
 
         /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU(nodes->GetdPdU(iPoint),     node_infty->GetdPdU(0));
-        visc_numerics->SetdTdU(nodes->GetdTdU(iPoint),     node_infty->GetdTdU(0));
+        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
+        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
         visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-        visc_numerics->SetEve(nodes->GetEve(iPoint),       node_infty->GetEve(0));
-        visc_numerics->SetCvve(nodes->GetCvve(iPoint),     node_infty->GetCvve(0));
+        visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
+        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
+        visc_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
@@ -2241,7 +2254,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Compute Gamma using domain state ---*/
-      Gamma = FluidModel->ComputeGamma(V_domain);
+      Gamma = nodes->GetGamma(iPoint);
       Gamma_Minus_One = Gamma - 1.0; 
       
       /*--- Retrieve the specified back pressure for this outlet. ---*/
@@ -2354,11 +2367,12 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
       /*--- Passing supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(nodes->GetdPdU(iPoint), node_infty->GetdPdU(0));
-      conv_numerics->SetdTdU(nodes->GetdTdU(iPoint), node_infty->GetdTdU(0));
+      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   node_infty->GetdPdU(0));
+      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   node_infty->GetdTdU(0));
       conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
-      conv_numerics->SetEve(nodes->GetEve(iPoint), node_infty->GetEve(0));
-      conv_numerics->SetCvve(nodes->GetCvve(iPoint), node_infty->GetCvve(0));
+      conv_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
+      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
+      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
 
       /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
@@ -2678,11 +2692,12 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
       conv_numerics->SetConservative(U_domain, U_outlet);
 
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(   nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
-      conv_numerics->SetdTdU(   nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
-      conv_numerics->SetdTvedU( nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
-      conv_numerics->SetEve( nodes->GetEve(iPoint),       nodes->GetEve(iPoint));
-      conv_numerics->SetCvve( nodes->GetCvve(iPoint),       nodes->GetCvve(iPoint));
+      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
+      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+      conv_numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
+      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
+      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),

@@ -180,7 +180,6 @@ public:
   /*!
    * \brief Compute ratio of specific heats (Gamma).
    */
-  su2double ComputeGamma(su2double *V);
   su2double ComputeGamma();
 
   /*!

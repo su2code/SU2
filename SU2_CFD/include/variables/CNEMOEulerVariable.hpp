@@ -518,6 +518,11 @@ public:
     return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
   }
 
+  /*!
+   * \brief Returns the stored value of Gamma at the specified node
+   */
+  inline su2double GetGamma(unsigned long iPoint) { return Gamma(iPoint); }
+
   /*---------------------------------------*/
   /*---           NEMO indices          ---*/
   /*---------------------------------------*/
