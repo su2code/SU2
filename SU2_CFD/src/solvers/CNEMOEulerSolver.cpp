@@ -844,8 +844,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   Eve_j       = new su2double[nSpecies];
   Cvve_i      = new su2double[nSpecies];
   Cvve_j      = new su2double[nSpecies];
-  ProjGradV_i = new su2double[nSpecies];
-  ProjGradV_j = new su2double[nSpecies];
+  ProjGradV_i = new su2double[nPrimVarGrad];
+  ProjGradV_j = new su2double[nPrimVarGrad];
 
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -871,7 +871,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) -
                               geometry->nodes->GetCoord(jPoint, iDim)   );
       }
-
 
       /*---+++ Primitive variable reconstruction & limiting +++---*/
 
@@ -994,7 +993,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   delete [] Cvve_j;
   delete [] ProjGradV_i;
   delete [] ProjGradV_j;
-
 }
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
