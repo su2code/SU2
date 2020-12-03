@@ -124,16 +124,25 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
       Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config, false, true);
     }
 
-    // initialize auxiliar helper vectors
-    auxVecInp.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  } else {
+    if (config->GetSobMode() == PARAM_LEVEL_COMPLETE) {
+      Jacobian.Initialize(nPoint, nPointDomain, nDim, nDim, false, geometry, config, false , true);
+    } else {
+      LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
+      LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
+      Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, true);
+    }
   }
 
+  auxVecInp.Initialize(nPoint, nPointDomain, nDim, 1.0);
   activeCoord.Initialize(nPoint, nPointDomain, nDim, 0.0);
 
   /*--- passive vectors needed for projections ---*/
   /*--- they always need full size ---*/
   helperVecIn.Initialize(nPoint, nPointDomain, nDim, 0.0);
   helperVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  matVecIn.Initialize(nPoint, nPointDomain, nDim, 0.0);
+  matVecOut.Initialize(nPoint, nPointDomain, nDim, 0.0);
 
   /*--- Initialize the CVariable structure holding solution data ---*/
   nodes = new CSobolevSmoothingVariable(nPoint, nDim,  config);
@@ -216,7 +225,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
   /*--- current dimension if we run consecutive on each dimension ---*/
   dir = 0;
 
-  /*--- Initialize vector and sparse matrix ---*/
+  /*--- Set vector and sparse matrix to 0 ---*/
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
   Jacobian.SetValZero();
@@ -226,10 +235,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
   if ( config->GetSepDim() ) {
 
     for (dir = 0; dir < nDim ; dir++) {
-
-      for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-        auxVecInp.SetBlock(iPoint, dir, 1.0);
-      }
 
       ofstream input ("input.txt");
       auxVecInp.printVec(input);
@@ -252,12 +257,6 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
     }
 
   } else {
-
-    for (unsigned long iPoint =0; iPoint<geometry->GetnPoint(); iPoint++)  {
-      for (auto iDim = 0; iDim < nDim ; iDim++) {
-        auxVecInp.SetBlock(iPoint, iDim, 1.0);
-      }
-    }
 
     ofstream input ("input.txt");
     auxVecInp.printVec(input);
@@ -430,7 +429,8 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
   }
 
   // set the matrix to identity for non involved nodes
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  // only do this for nodes in the domain
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++){
     if (visited[iPoint]==false) {
       Jacobian.AddBlock(iPoint, iPoint, mId_Aux);
     }
@@ -792,16 +792,10 @@ su2activematrix CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geome
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
 
-  /*--- Initialize vector and sparse matrix ---*/
-  LinSysSol.Initialize(nPoint, nPointDomain, 1, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, 1, 0.0);
-  Jacobian.Initialize(nPoint, nPointDomain, 1, 1, false, geometry, config, false, true);
-  // LinSysSol.SetValZero();
-  // LinSysRes.SetValZero();
+  /*--- Set vector and sparse matrix to 0 ---*/
+  LinSysSol.SetValZero();
+  LinSysRes.SetValZero();
   Jacobian.SetValZero();
-
-  auxVecInp.Initialize(nPoint, nPointDomain, nDim, 1.0);
-
 
   ofstream input ("input" + std::to_string(rank) + ".txt");
   auxVecInp.printVec(input);
@@ -830,6 +824,12 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry
   result.close();
 
   WriteSensitivities(geometry, solver, config, val_marker);
+
+  cout << "rank " << rank << " is at end of smoothing" << endl;
+#ifdef HAVE_MPI
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+#endif
+
 
 }
 
@@ -1130,6 +1130,9 @@ void CGradientSmoothingSolver::SmoothCompleteSystem(CGeometry *geometry, CSolver
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement) {
 
+  /// Set to 0
+  Jacobian.SetValZero();
+
   /// record the parameterization
   if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
   RecordParameterizationJacobian(geometry, config, surface_movement, activeCoord);
@@ -1174,17 +1177,23 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
           for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
             auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             for (auto iDim = 0; iDim < nDim; iDim++){
-              matVecIn(iVertex,iDim) = helperVecIn(iPoint,iDim);
+              matVecIn(iPoint,iDim) = helperVecIn(iPoint,iDim);
             }
           }
 
+          /// perform MPI communication
+          //Jacobian.InitiateComms(matVecIn, geometry, config, SOLUTION_MATRIX);
+          //Jacobian.CompleteComms(matVecIn, geometry, config, SOLUTION_MATRIX);
+
+          /// compute the matrix vector product
+          /// MatrixVector product operator does mpi comm at the end
           mat_vec(matVecIn, matVecOut);
 
           /// get full vector back
           for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
             auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             for (auto iDim = 0; iDim < nDim; iDim++){
-              helperVecOut(iPoint,iDim) = matVecOut(iVertex,iDim);
+              helperVecOut(iPoint,iDim) = matVecOut(iPoint,iDim);
             }
           }
         }
@@ -1196,7 +1205,12 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
       ReadVector2Geometry(geometry,config, helperVecIn);
 
-      ///straight forward for volume case.
+      /// perform MPI communication
+      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+
+      /// compute the matrix vector product
+      /// MatrixVector product operator does mpi comm at the end
       mat_vec(helperVecIn, helperVecOut);
 
       /// mesh deformation backward
@@ -1238,17 +1252,12 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
 CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   bool surf = config->GetSmoothOnSurface();
+
+  /*--- Compute the sparse stiffness matrix ---*/
   if (surf) {
     for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ( config->GetMarker_All_DV(iMarker) == YES ) {
-
-        /*--- Initialize the sparse matrix ---*/
-        Jacobian.InitOwnConnectivity(geometry->nVertex[iMarker], nDim, nDim, iMarker, geometry, config);
         Compute_Surface_StiffMatrix(geometry, numerics, config, iMarker, nDim);
-
-        // don't forget to initialize the vectors to the correct size.
-        matVecIn.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim, 0.0);
-        matVecOut.Initialize(geometry->nVertex[iMarker], geometry->nVertex[iMarker], nDim, 0.0);
       }
     }
   } else {
