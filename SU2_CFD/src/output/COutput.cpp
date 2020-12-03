@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -840,7 +840,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
       su2double monitor = historyOutput_Map.at(convField).value;
 
       /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-      if (isnan(SU2_TYPE::GetValue(monitor))) {
+      if (std::isnan(SU2_TYPE::GetValue(monitor))) {
         SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
       }
 
@@ -968,7 +968,7 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
         su2double monitor = historyOutput_Map[WndConv_Field].value;
 
         /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-        if (isnan(SU2_TYPE::GetValue(monitor))) {
+        if (std::isnan(SU2_TYPE::GetValue(monitor))) {
           SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
         }
 

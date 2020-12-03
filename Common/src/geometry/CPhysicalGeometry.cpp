@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -8425,7 +8425,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
     const unsigned long jPoint = edges->GetNode(iEdge,1);
 
     const unsigned long GlobalIndex_i = nodes->GetGlobalIndex(iPoint);
-    const unsigned long GlobalIndex_j = nodes->GetGlobalIndex(iPoint);
+    const unsigned long GlobalIndex_j = nodes->GetGlobalIndex(jPoint);
 
     /*-- Area normal for the current edge. Recall that this normal
      is computed by summing the normals of adjacent faces along
