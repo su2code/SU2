@@ -36,70 +36,72 @@ def SQPconstrained(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_
     err = 2*acc+1
     step = 1
 
-    # prepare output
-    outfile = open("optimizer_history.csv", "w")
-    csv_writer = csv.writer(outfile, delimiter=',')
-    header = ['iter', 'objective function', 'equal constraint', 'inequal constraint', 'error', 'parameter']
-    csv_writer.writerow(header)
+    # prepare output, using 'with' command to automatically close the file in case of exceptions
+    with open("optimizer_history.csv", "w") as outfile:
+        csv_writer = csv.writer(outfile, delimiter=',')
+        header = ['iter', 'objective function', 'equal constraint', 'inequal constraint', 'parameter', 'norm(gradient)', 'norm(delta_p)']
+        csv_writer.writerow(header)
 
-    # main optimizer loop
-    while (err > acc and step <= iter):
+        # main optimizer loop
+        while (err > acc and step <= iter):
 
-        sys.stdout.write('Optimizer iteration: ' + str(step) + '\n')
+            sys.stdout.write('Optimizer iteration: ' + str(step) + '\n')
 
-        if step > 1:
-            # reevaluate the functions
-            F = func(p, parameter)
-            E = f_eqcons(p, parameter)
-            C = f_ieqcons(p, parameter)
-            D_F = fprime(p, parameter)
-            D_E = fprime_eqcons(p, parameter)
-            D_C = fprime_ieqcons(p, parameter)
-            H_F = fdotdot(p, parameter)
+            if step > 1:
+                # reevaluate the functions
+                F = func(p, parameter)
+                E = f_eqcons(p, parameter)
+                C = f_ieqcons(p, parameter)
+                D_F = fprime(p, parameter)
+                D_E = fprime_eqcons(p, parameter)
+                D_C = fprime_ieqcons(p, parameter)
+                H_F = fdotdot(p, parameter)
 
-        # assemble equality constraints
-        if np.size(E) > 0:
-            A = cvxopt.matrix(D_E)
-            b = cvxopt.matrix(-E)
+            # assemble equality constraints
+            if np.size(E) > 0:
+                A = cvxopt.matrix(D_E)
+                b = cvxopt.matrix(-E)
 
-        # expand inequality constraints by bounds
-        if xb is None:
-            xb = [-1e-1, 1e-1]
-        Id = np.identity(len(p))
-        if np.size(C) > 0:
-            G = cvxopt.matrix(np.block([[-D_C], [-Id], [Id]]))
-            h = cvxopt.matrix(np.append(C, np.append([-xb[0]]*len(p), [xb[1]]*len(p))))
-        else:
-            G = cvxopt.matrix(np.block([[-Id], [Id]]))
-            h = cvxopt.matrix(np.append([-xb[0]]*len(p), [xb[1]]*len(p)))
+            # expand inequality constraints by bounds
+            if xb is None:
+                xb = [-1e-1, 1e-1]
+            Id = np.identity(len(p))
+            if np.size(C) > 0:
+                G = cvxopt.matrix(np.block([[-D_C], [-Id], [Id]]))
+                h = cvxopt.matrix(np.append(C, np.append([-xb[0]]*len(p), [xb[1]]*len(p))))
+            else:
+                G = cvxopt.matrix(np.block([[-Id], [Id]]))
+                h = cvxopt.matrix(np.append([-xb[0]]*len(p), [xb[1]]*len(p)))
 
-        # pack objective function
-        P = cvxopt.matrix(H_F)
-        q = cvxopt.matrix(D_F)
+            # pack objective function
+            P = cvxopt.matrix(H_F)
+            q = cvxopt.matrix(D_F)
 
-        # solve the interior quadratic problem
-        if np.size(E) > 0:
-            sol = cvxopt.solvers.qp(P, q, G, h, A, b)
-        else:
-            sol = cvxopt.solvers.qp(P, q, G, h)
+            # solve the interior quadratic problem
+            if np.size(E) > 0:
+                sol = cvxopt.solvers.qp(P, q, G, h, A, b)
+            else:
+                sol = cvxopt.solvers.qp(P, q, G, h)
 
-        # line search
-        delta_p = np.array([i for i in sol['x']])
-        delta_p = linesearch(p, delta_p, F, func, E, f_eqcons, 0, 0, parameter, acc)
+            # line search
+            delta_p = np.array([i for i in sol['x']])
+            delta_p = linesearch(p, delta_p, F, func, E, f_eqcons, 0, 0, parameter, acc)
 
-        # update the design
-        p = p + delta_p
-        err = np.linalg.norm(delta_p, 2)
-        step += 1
+            # update the design
+            p = p + delta_p
+            err = np.linalg.norm(delta_p, 2)
 
-        sys.stdout.write('New design: ' + str(p) + '\n')
+            sys.stdout.write('New design: ' + str(p) + '\n')
 
-        # write to the history file
-        line = [step, F, E, C, err, p]
-        csv_writer.writerow(line)
+            # write to the history file
+            line = [step, F, E, C, p, np.linalg.norm(D_F, 2), err]
+            csv_writer.writerow(line)
+            outfile.flush()
 
-    # end output
-    outfile.close()
+            # increase counter at the end of the loop
+            step += 1
+
+    # end output automatically
 
     return 0
 
@@ -133,49 +135,64 @@ def SQPequalconstrained(x0, func, f_eqcons, fprime, fprime_eqcons, fdotdot, para
     # compute the Lagrangian
     L = F + np.dot(nu, E)
 
-    # main optimizer loop
-    while (err > acc and step <= iter):
+    # prepare output, using 'with' command to automatically close the file in case of exceptions
+    with open("optimizer_history.csv", "w") as outfile:
+        csv_writer = csv.writer(outfile, delimiter=',')
+        header = ['iter', 'objective function', 'equal constraint', 'Lagrange multiplier', 'parameter', 'norm(gradient)', 'norm(delta_p)']
+        csv_writer.writerow(header)
 
-        sys.stdout.write('Optimizer iteration: ' + str(step) + '\n')
+        # main optimizer loop
+        while (err > acc and step <= iter):
 
-        if step > 1:
-            # reevaluate the functions
-            F = func(p, parameter)
-            E = f_eqcons(p, parameter)
-            D_F = fprime(p, parameter)
-            D_E = fprime_eqcons(p, parameter)
-            H_F = fdotdot(p, parameter)
-            L = F + np.dot(nu, E)
+            sys.stdout.write('Optimizer iteration: ' + str(step) + '\n')
 
-        sys.stdout.write('objective function: ' + str(F) +
-                         ' , equality constrain: ' + str(E) +
-                         ' , Lagrangian: ' + str(L) + '\n')
+            if step > 1:
+                # reevaluate the functions
+                F = func(p, parameter)
+                E = f_eqcons(p, parameter)
+                D_F = fprime(p, parameter)
+                D_E = fprime_eqcons(p, parameter)
+                H_F = fdotdot(p, parameter)
+                L = F + np.dot(nu, E)
 
-        # assemble linear equation system
-        rhs = np.append([-D_F], [-E])
-        mat = np.block([[H_F, D_E.T], [D_E, 0]])
+            sys.stdout.write('objective function: ' + str(F) +
+                             ' , equality constrain: ' + str(E) +
+                             ' , Lagrangian: ' + str(L) + '\n')
 
-        # solve the LES
-        sol = np.linalg.solve(mat, rhs)
+            # assemble linear equation system
+            rhs = np.append([-D_F], [-E])
+            mat = np.block([[H_F, D_E.T], [D_E, 0]])
 
-        # FIND way to incorporate boundary
-        # G = cvxopt.matrix(np.block([[-Id], [Id]]))
-        # h = cvxopt.matrix(np.append([-xb[0]]*len(p), [xb[1]]*len(p)))
+            # solve the LES
+            sol = np.linalg.solve(mat, rhs)
 
-        # get the solution
-        delta_p = sol[0:len(p)]
-        nu_temp = sol[-np.size(nu):]
+            # FIND way to incorporate boundary
+            # G = cvxopt.matrix(np.block([[-Id], [Id]]))
+            # h = cvxopt.matrix(np.append([-xb[0]]*len(p), [xb[1]]*len(p)))
 
-        # line search
-        delta_p = linesearch(p, delta_p, F, func, E, f_eqcons, nu, nu_temp, parameter, acc)
+            # get the solution
+            delta_p = sol[0:len(p)]
+            nu_temp = sol[-np.size(nu):]
 
-        # update the design
-        p = p + delta_p
-        nu = nu_temp
-        err = np.linalg.norm(delta_p, 2)
-        step += 1
+            # line search
+            delta_p = linesearch(p, delta_p, F, func, E, f_eqcons, nu, nu_temp, parameter, acc)
 
-        sys.stdout.write('Current design: ' + str(p) + ' , Lagrangian multiplier: ' + str(nu) + '\n')
+            # update the design
+            p = p + delta_p
+            nu = nu_temp
+            err = np.linalg.norm(delta_p, 2)
+
+            sys.stdout.write('Current design: ' + str(p) + ' , Lagrangian multiplier: ' + str(nu) + '\n')
+
+            # write to the history file
+            line = [step, F, E, nu, p, np.linalg.norm(D_F, 2), err]
+            csv_writer.writerow(line)
+            outfile.flush()
+
+            # increase counter at the end of the loop
+            step += 1
+
+    # end output automatically
 
     return 0
 
