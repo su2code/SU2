@@ -2,7 +2,7 @@
  * \file output_elasticity.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,6 +72,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
+    if (config->GetTopology_Optimization()) requestedVolumeFields.emplace_back("TOPOLOGY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -198,6 +199,9 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   }
   SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress(iPoint));
 
+  if (config->GetTopology_Optimization()) {
+    SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
+  }
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -234,7 +238,11 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
 
+  if (config->GetTopology_Optimization()) {
+    AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
+  }
 }
+
 bool CElasticityOutput::SetInit_Residuals(CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));

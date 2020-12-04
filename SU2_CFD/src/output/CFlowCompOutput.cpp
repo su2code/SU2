@@ -2,7 +2,7 @@
  * \file output_flow_comp.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -414,6 +414,11 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
   }
 
+  // Mesh quality metrics, computed in CPhysicalGeometry::ComputeMeshQualityStatistics.
+  AddVolumeOutput("ORTHOGONALITY", "Orthogonality", "MESH_QUALITY", "Orthogonality Angle (deg.)");
+  AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
+  AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
+
   if (config->GetTime_Domain()){
     SetTimeAveragedFields();
   }
@@ -552,6 +557,13 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(&(Node_Flow->GetGradient_Primitive(iPoint)[1])));
+  }
+
+  // Mesh quality metrics
+  if (config->GetWrt_MeshQuality()) {
+    SetVolumeOutputValue("ORTHOGONALITY", iPoint, geometry->Orthogonality[iPoint]);
+    SetVolumeOutputValue("ASPECT_RATIO",  iPoint, geometry->Aspect_Ratio[iPoint]);
+    SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
   if (config->GetTime_Domain()){

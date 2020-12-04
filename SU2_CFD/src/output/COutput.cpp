@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -839,6 +839,11 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     if (historyOutput_Map.count(convField) > 0){
       su2double monitor = historyOutput_Map.at(convField).value;
 
+      /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+      if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+        SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+      }
+
       /*--- Cauchy based convergence criteria ---*/
 
       if (historyOutput_Map.at(convField).fieldType == HistoryFieldType::COEFFICIENT) {
@@ -962,6 +967,11 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
       if (historyOutput_Map.count(WndConv_Field) > 0){
         su2double monitor = historyOutput_Map[WndConv_Field].value;
 
+        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+        if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+        }
+
         /*--- Cauchy based convergence criteria ---*/
 
         if (historyOutput_Map[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
@@ -996,11 +1006,6 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
           SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
         }
         TimeConvergence = fieldConverged && TimeConvergence;
-
-        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-
-        if (monitor != monitor){
-          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
       }
     }
 
@@ -2014,6 +2019,7 @@ void COutput::SetCommonHistoryFields(CConfig *config){
   AddHistoryOutput("WALL_TIME",   "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time");
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
+
 }
 
 void COutput::LoadCommonHistoryData(CConfig *config){

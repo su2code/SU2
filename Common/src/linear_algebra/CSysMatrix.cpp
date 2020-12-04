@@ -1,8 +1,8 @@
 /*!
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
- * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -112,7 +112,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Type of preconditioner the matrix will be asked to build. ---*/
   auto prec = config->GetKind_Linear_Solver_Prec();
 
-  if (!EdgeConnect && !config->GetStructuralProblem()) {
+  if ((!EdgeConnect && !config->GetStructuralProblem()) ||
+      (config->GetKind_SU2() == SU2_DEF) || (config->GetKind_SU2() == SU2_DOT)) {
     /*--- FEM-type connectivity in non-structural context implies mesh deformation. ---*/
     prec = config->GetKind_Deform_Linear_Solver_Prec();
   }
@@ -201,34 +202,26 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Generate MKL Kernels ---*/
 
 #ifdef USE_MKL
-#ifndef USE_MIXED_PRECISION
-  /*--- Double precision kernels. ---*/
-  #define CREATE_GEMM mkl_jit_create_dgemm
-  #define GET_GEMM_PTR mkl_jit_get_dgemm_ptr
-#else
-  /*--- Single precision kernels. ---*/
-  #define CREATE_GEMM mkl_jit_create_sgemm
-  #define GET_GEMM_PTR mkl_jit_get_sgemm_ptr
-#endif
-  CREATE_GEMM(&MatrixMatrixProductJitter, MKL_ROW_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
-  MatrixMatrixProductKernel = GET_GEMM_PTR(MatrixMatrixProductJitter);
+  using mkl = mkl_jit_wrapper<ScalarType>;
+  mkl::create_gemm(&MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS,
+                   MKL_NOTRANS, nVar, nVar, nVar, 1.0, nVar, nVar, 0.0, nVar);
+  MatrixMatrixProductKernel = mkl::get_gemm(MatrixMatrixProductJitter);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
-  MatrixVectorProductKernelBetaZero = GET_GEMM_PTR(MatrixVectorProductJitterBetaZero);
+  mkl::create_gemm(&MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 0.0, 1);
+  MatrixVectorProductKernelBetaZero = mkl::get_gemm(MatrixVectorProductJitterBetaZero);
 
-  CREATE_GEMM(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
-  MatrixVectorProductKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductJitterBetaOne);
+  mkl::create_gemm(&MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, 1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelBetaOne = mkl::get_gemm(MatrixVectorProductJitterBetaOne);
 
-  CREATE_GEMM(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
-  MatrixVectorProductKernelAlphaMinusOne = GET_GEMM_PTR(MatrixVectorProductJitterAlphaMinusOne);
+  mkl::create_gemm(&MatrixVectorProductJitterAlphaMinusOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nEqn, -1.0, 1, nEqn, 1.0, 1);
+  MatrixVectorProductKernelAlphaMinusOne = mkl::get_gemm(MatrixVectorProductJitterAlphaMinusOne);
 
-  CREATE_GEMM(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
-              MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
-  MatrixVectorProductTranspKernelBetaOne = GET_GEMM_PTR(MatrixVectorProductTranspJitterBetaOne);
+  mkl::create_gemm(&MatrixVectorProductTranspJitterBetaOne, MKL_COL_MAJOR,
+                   MKL_NOTRANS, MKL_NOTRANS, nEqn, 1, nVar, 1.0, nEqn, nVar, 1.0, nEqn);
+  MatrixVectorProductTranspKernelBetaOne = mkl::get_gemm(MatrixVectorProductTranspJitterBetaOne);
 #endif
 
 }
@@ -514,9 +507,12 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
-  SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto index = 0ul; index < nnz*nVar*nEqn; index++)
-    matrix[index] = 0.0;
+  const auto size = nnz*nVar*nEqn;
+  const auto chunk = roundUpDiv(size,omp_get_max_threads());
+  const auto begin = chunk * omp_get_thread_num();
+  const auto mySize = min(chunk, size-begin) * sizeof(ScalarType);
+  memset(&matrix[begin], 0, mySize);
+  SU2_OMP_BARRIER
 }
 
 template<class ScalarType>
@@ -618,31 +614,15 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType *matrix, ScalarType *inver
 template<class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 
-  unsigned long block_i = i/nVar;
-  unsigned long row = i - block_i*nVar;
-  unsigned long index, iVar;
+  const auto block_i = i/nVar;
+  const auto row = i%nVar;
 
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    for (iVar = 0; iVar < nVar; iVar++)
+  for (auto index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index*nVar*nVar+row*nVar+iVar] = 0.0; // Delete row values in the block
     if (col_ind[index] == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
   }
-
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType> & vec,
-                                        unsigned long row_i, ScalarType *prod) const {
-  unsigned long iVar, index, col_j;
-
-  for (iVar = 0; iVar < nVar; iVar++) prod[iVar] = 0.0;
-
-  for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-    col_j = col_ind[index];
-    MatrixVectorProductAdd(&matrix[index*nVar*nVar], &vec[col_j*nVar], prod);
-  }
-
 }
 
 template<class ScalarType>
@@ -669,14 +649,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType> & 
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-    auto prod_begin = row_i*nVar; // offset to beginning of block row_i
-    for(auto iVar = 0ul; iVar < nVar; iVar++)
-      prod[prod_begin+iVar] = 0.0;
-    for (auto index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      auto vec_begin = col_ind[index]*nEqn; // offset to beginning of block col_ind[index]
-      auto mat_begin = index*nVar*nEqn; // offset to beginning of matrix block[row_i][col_ind[indx]]
-      MatrixVectorProductAdd(&matrix[mat_begin], &vec[vec_begin], &prod[prod_begin]);
-    }
+    RowProduct(vec, row_i, &prod[row_i*nVar]);
   }
 
   /*--- MPI Parallelization. ---*/
@@ -1008,9 +981,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
 
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+    if (config->GetSolid_Wall(iMarker) ||
         (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
@@ -1029,9 +1000,7 @@ unsigned long CSysMatrix<ScalarType>::BuildLineletPreconditioner(CGeometry *geom
     iLinelet = 0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+      if (config->GetSolid_Wall(iMarker) ||
           (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY))
       {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {

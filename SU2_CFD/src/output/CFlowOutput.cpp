@@ -2,7 +2,7 @@
  * \file output_flow.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -448,10 +448,10 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
     /*--- Compute flow uniformity parameters separately (always area for now). ---*/
 
     Area = fabs(Surface_Area_Total[iMarker_Analyze]);
-    
+
     /*--- The definitions for Distortion and Uniformity Parameters are taken as defined by Banko, Andrew J., et al. in section 3.2 of
     https://www.sciencedirect.com/science/article/pii/S0142727X16301412 ------*/
-    
+
     if (Area != 0.0) {
       Surface_MomentumDistortion_Total[iMarker_Analyze] = Surface_StreamVelocity2_Total[iMarker_Analyze]/(Surface_NormalVelocity_Total[iMarker_Analyze]*Surface_NormalVelocity_Total[iMarker_Analyze]*Area) - 1.0;
       Surface_StreamVelocity2_Total[iMarker_Analyze] /= Area;
@@ -1091,11 +1091,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     nullptr, *Surface_CFz_Mnt = nullptr, *Surface_CMx_Mnt = nullptr,
     *Surface_CMy_Mnt = nullptr, *Surface_CMz_Mnt = nullptr;
 
-    /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
-     the two lines below that use the dt variable. ---*/
-    //time_t now = time(0);
-    //string dt = ctime(&now); dt[24] = '.';
-
     /*--- Allocate memory for the coefficients being monitored ---*/
 
     Surface_CL      = new su2double[config->GetnMarker_Monitoring()];
@@ -1381,7 +1376,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file << "|   / __| | | |_  )   Release 7.0.5 \"Blackbird\"                       |" << "\n";
+    Breakdown_file << "|   / __| | | |_  )   Release 7.0.8 \"Blackbird\"                       |" << "\n";
     Breakdown_file << "|   \\__ \\ |_| |/ /                                                    |" << "\n";
     Breakdown_file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)        |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";

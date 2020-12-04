@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,6 @@
 #include "../interfaces/CInterface.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
 
@@ -95,7 +94,8 @@ protected:
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
-  CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
+  vector<vector<unique_ptr<CInterpolator> > >
+  interpolator_container;                       /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CInterface ***interface_container;            /*!< \brief Definition of the interface of information and physics. */
   su2double PyWrapVarCoord[3],                  /*!< \brief This is used to store the VarCoord of each vertex. */
             PyWrapNodalForce[3],                /*!< \brief This is used to store the force at each vertex. */
@@ -206,7 +206,7 @@ protected:
    */
   void Interface_Preprocessing(CConfig **config, CSolver *****solver, CGeometry ****geometry,
                                unsigned short **interface_types, CInterface ***interface,
-                               CInterpolator ***interpolation);
+                               vector<vector<unique_ptr<CInterpolator> > > &interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.

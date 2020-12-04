@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -769,10 +769,8 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
                                unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
   const bool dynamic = config->GetTime_Domain();
-  const bool first_iter = (config->GetInnerIter() == 0);
   const bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   const bool body_forces = config->GetDeadLoad();
-  const bool fsi = config->GetFSI_Simulation();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*
@@ -817,11 +815,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
   /*--- Clear external forces. ---*/
   nodes->Clear_SurfaceLoad_Res();
-
-  /*
-   * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
-   */
-  if (fsi && first_iter && (idxIncrement==0)) Integrate_FSI_Loads(geometry, config);
 
   /*--- Next call to Preprocessing will not be "initial_calc" and linear operations will not be repeated. ---*/
   initial_calc = false;
@@ -1891,6 +1884,34 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
+template<class T, class U, su2enable_if<is_same<T,U>::value> = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  CSysVector<T> r(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+  SU2_OMP_PARALLEL { A.ComputeResidual(x, b, r); }
+  return r;
+}
+
+template<class T, class U, su2enable_if<!is_same<T,U>::value> = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  /*--- Different types of A and x/b, use temporaries to interface with A. ---*/
+  const auto nVar = x.GetNVar();
+  const auto nBlk = x.GetNBlk();
+  const auto nBlkDom = x.GetNBlkDomain();
+  CSysVector<T> r(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> xtmp(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> btmp(nBlk, nBlkDom, nVar, nullptr);
+  SU2_OMP_PARALLEL {
+    xtmp.PassiveCopy(x);
+    btmp.PassiveCopy(b);
+    A.ComputeResidual(xtmp, btmp, r);
+  }
+  return r;
+}
+
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
@@ -1929,7 +1950,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     {
     su2double utol = LinSysSol.norm();
     su2double rtol = LinSysRes.norm();
-    su2double etol = LinSysSol.dot(LinSysRes);
+    su2double etol = fabs(LinSysSol.dot(LinSysRes));
 
     SU2_OMP_MASTER
     {
@@ -1944,34 +1965,16 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
 
-#ifndef CODI_FORWARD_TYPE
-    CSysVector<su2mixedfloat> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#else
-    CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#endif
-
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<su2mixedfloat> sol, res;
-#endif
-
-    SU2_OMP_PARALLEL
-    {
-#if !(defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)) || defined(CODI_FORWARD_TYPE)
-    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-#else
-    sol.PassiveCopy(LinSysSol);
-    res.PassiveCopy(LinSysRes);
-    Jacobian.ComputeResidual(sol, res, LinSysAux);
-#endif
+    const auto ResidualAux = computeLinearResidual(Jacobian, LinSysSol, LinSysRes);
 
     /*--- Set maximum residual to zero. ---*/
 
-    SU2_OMP_MASTER
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
+
+    SU2_OMP_PARALLEL {
 
     /*--- Compute the residual. ---*/
 
@@ -1982,7 +1985,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        su2double Res = fabs(LinSysAux(iPoint, iVar));
+        su2double Res = fabs(ResidualAux(iPoint, iVar));
         resRMS[iVar] += Res*Res;
         if (Res > resMax[iVar]) {
           resMax[iVar] = Res;
@@ -2236,72 +2239,6 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
     LinSysSol.SetBlock(iNode, Disp);
     Jacobian.EnforceSolutionAtNode(iNode, Disp, LinSysRes);
 
-  }
-
-}
-
-void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config) {
-
-  /*--- The conservative approach transfers forces directly, no integration needed. ---*/
-  if (config->GetConservativeInterpolation()) return;
-
-  unordered_map<unsigned long, su2double> vertexArea;
-  unordered_set<short> processedMarkers({-1});
-
-  /*--- Compute current area associated with each vertex. ---*/
-
-  for (auto iMarkerInt = 0; iMarkerInt < config->GetMarker_n_ZoneInterface()/2; ++iMarkerInt) {
-    /*--- Find the marker index associated with the pair. ---*/
-    const auto iMarker = config->FindInterfaceMarker(iMarkerInt);
-    /*--- The current mpi rank may not have this marker, or it may have been processed already. ---*/
-    if (processedMarkers.count(iMarker) > 0) continue;
-    processedMarkers.insert(iMarker);
-
-    for (auto iElem = 0u; iElem < geometry->GetnElem_Bound(iMarker); ++iElem) {
-      /*--- Define the boundary element. ---*/
-      unsigned long nodeList[MAXNNODE_2D] = {0};
-      su2double coords[MAXNNODE_2D][MAXNDIM] = {{0.0}};
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      auto nNode = quad? 4u : nDim;
-
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        nodeList[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (auto iDim = 0u; iDim < nDim; ++iDim)
-          coords[iNode][iDim] = geometry->nodes->GetCoord(nodeList[iNode], iDim)+
-                                nodes->GetSolution(nodeList[iNode],iDim);
-      }
-
-      /*--- Compute the area contribution to each node. ---*/
-      su2double normal[MAXNDIM] = {0.0};
-
-      switch (nNode) {
-        case 2: LineNormal(coords, normal); break;
-        case 3: TriangleNormal(coords, normal); break;
-        case 4: QuadrilateralNormal(coords, normal); break;
-      }
-
-      su2double area = Norm(int(MAXNDIM),normal) / nNode;
-
-      /*--- Update area of nodes. ---*/
-      for (auto iNode = 0u; iNode < nNode; ++iNode) {
-        auto iPoint = nodeList[iNode];
-        if (vertexArea.count(iPoint) == 0)
-          vertexArea[iPoint] = area;
-        else
-          vertexArea[iPoint] += area;
-      }
-    }
-  }
-
-  /*--- Integrate tractions. ---*/
-
-  for (auto it = vertexArea.begin(); it != vertexArea.end(); ++it) {
-    auto iPoint = it->first;
-    su2double area = it->second;
-    su2double force[MAXNDIM] = {0.0};
-    for (auto iDim = 0u; iDim < nDim; ++iDim)
-      force[iDim] = nodes->Get_FlowTraction(iPoint,iDim)*area;
-    nodes->Set_FlowTraction(iPoint, force);
   }
 
 }
@@ -3530,6 +3467,18 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
       if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
       else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
       else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+    }
+
+    /*--- Compute nodal averages for output. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint=0ul; iPoint<nPoint; ++iPoint) {
+      su2double sum = 0, vol = 0;
+      for (auto iElem : geometry->nodes->GetElems(iPoint)) {
+        su2double w = geometry->nodes->GetVolume(iPoint);
+        sum += w * element_properties[iElem]->GetPhysicalDensity();
+        vol += w;
+      }
+      nodes->SetAuxVar(iPoint, sum/vol);
     }
   }
 

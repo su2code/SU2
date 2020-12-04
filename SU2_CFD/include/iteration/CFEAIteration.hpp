@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEAIteration : public CIteration {
  public:
@@ -131,15 +131,4 @@ class CFEAIteration : public CIteration {
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                unsigned short val_iInst) override;
-
-  /*!
-   * \brief Postprocess ???.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-                   CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-                   CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                   unsigned short val_iInst) override;
 };

@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,77 +24,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "mpi_structure.hpp"
+
 #pragma once
 
+#include "mpi_structure.hpp"
+#include "omp_structure.hpp"
+
 #ifdef HAVE_MPI
-
-inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
-
-  /* Set MinRankError to Rank, as the error message is called on this rank. */
-  MinRankError = Rank;
-  int flag = 0;
-
-#if MPI_VERSION >= 3
-  /* Find out whether the error call is collective via MPI_Ibarrier. */
-  Request barrierRequest;
-  MPI_Ibarrier(currentComm, &barrierRequest);
-
-  /* Try to complete the non-blocking barrier call for a second. */
-  double startTime = SU2_MPI::Wtime();
-  while( true ) {
-
-    MPI_Test(&barrierRequest, &flag, MPI_STATUS_IGNORE);
-    if( flag ) break;
-
-    double currentTime = SU2_MPI::Wtime();
-    if(currentTime > startTime + 1.0) break;
-  }
-#else
-  /* MPI_Ibarrier function is not supported. Simply wait for one
-     second to give other ranks the opportunity to reach this point. */
-#ifdef _MSC_VER
-  _sleep(1);
-#else
-  sleep(1);
-#endif
-#endif
-
-  if( flag ) {
-    /* The barrier is completed and hence the error call is collective.
-       Set MinRankError to 0. */
-    MinRankError = 0;
-  }
-  else {
-    /* The error call is not collective and the minimum rank must be
-       determined by one sided communication. Loop over the lower numbered
-       ranks to check if they participate in the error message. */
-    for(int i=0; i<Rank; ++i) {
-
-      int MinRankErrorOther;
-      MPI_Win_lock(MPI_LOCK_SHARED, i, 0, winMinRankError);
-      MPI_Get(&MinRankErrorOther, 1, MPI_INT, i, 0, 1, MPI_INT, winMinRankError);
-      MPI_Win_unlock(i, winMinRankError);
-
-      if(MinRankErrorOther < MinRankError) {
-        MinRankError = MinRankErrorOther;
-        break;
-      }
-    }
-  }
-
-  /* Check if this rank must write the error message and do so. */
-  if (Rank == MinRankError){
-    std::cout << std::endl << std::endl;
-    std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
-    std::cout <<  "-------------------------------------------------------------------------" << std::endl;
-    std::cout << ErrorMsg << std::endl;
-    std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;
-  }
-  Abort(currentComm, EXIT_FAILURE);
-}
-
 
 inline int CBaseMPIWrapper::GetRank(){
   return Rank;
@@ -286,7 +222,7 @@ inline passivedouble CBaseMPIWrapper::Wtime(void) {
 
 inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
-  MediTool::init();
+  mediTypes = new MediTypes();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
@@ -298,7 +234,7 @@ inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
 
 inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, int* provided) {
   AMPI_Init_thread(argc,argv,required,provided);
-  MediTool::init();
+  mediTypes = new MediTypes();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);
   AMPI_Comm_size(convertComm(currentComm), &Size);
 
@@ -310,7 +246,7 @@ inline void CMediMPIWrapper::Init_thread(int *argc, char ***argv, int required, 
 
 inline void CMediMPIWrapper::Init_AMPI(void) {
   AMPI_Init_common();
-  MediTool::init();
+  mediTypes = new MediTypes();
 }
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
@@ -391,6 +327,8 @@ inline void CMediMPIWrapper::Comm_size(Comm comm, int *size){
 
 inline void CMediMPIWrapper::Finalize(){
   if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
+
+  delete mediTypes;
   AMPI_Finalize();
 }
 
@@ -510,25 +448,9 @@ inline void CMediMPIWrapper::Waitany(int nrequests, Request *request,
                                  int *index, Status *status) {
   AMPI_Waitany(nrequests, request, index, status);
 }
-#endif
-#else // HAVE_MPI
-#ifdef _OPENMP
-#include <omp.h>
-#else
-#include <ctime>
-#endif
+#endif // CODI
 
-inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
-  if (Rank == 0){
-    std::cout << std::endl << std::endl;
-    std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
-    std::cout <<  "-------------------------------------------------------------------------" << std::endl;
-    std::cout << ErrorMsg << std::endl;
-    std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
-    std::cout << std::endl << std::endl;
-  }
-  Abort(currentComm, 0);
-}
+#else // HAVE_MPI
 
 inline int CBaseMPIWrapper::GetRank(){
   return Rank;
@@ -612,7 +534,7 @@ inline void CBaseMPIWrapper::Scatter(void *sendbuf, int sendcnt, Datatype sendty
 }
 
 inline void CBaseMPIWrapper::Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                                   void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm){
+                                   void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm){
   CopyData(sendbuf, recvbuf, sendcnt, sendtype);
 }
 
@@ -691,11 +613,6 @@ inline void CBaseMPIWrapper::CopyData(void *sendbuf, void *recvbuf, int size, Da
   }
 }
 
-inline passivedouble CBaseMPIWrapper::Wtime(void) {
-#ifdef _OPENMP
-  return omp_get_wtime();
-#else
-  return passivedouble(clock()) / CLOCKS_PER_SEC;
-#endif
-}
+inline passivedouble CBaseMPIWrapper::Wtime(void) { return omp_get_wtime(); }
+
 #endif

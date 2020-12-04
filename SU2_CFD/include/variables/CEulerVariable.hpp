@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,9 @@
  * \author F. Palacios, T. Economon
  */
 class CEulerVariable : public CVariable {
+public:
+  static constexpr size_t MAXNVAR = 12;
+
 protected:
   VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType HB_Source;     /*!< \brief harmonic balance source term. */
@@ -119,6 +122,7 @@ public:
    * \return Primitive variables limiter for the entire domain.
    */
   inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+  inline const MatrixType& GetLimiter_Primitive(void) const {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -151,12 +155,14 @@ public:
    * \return Reference to primitive variable gradient.
    */
   inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+  inline const CVectorOfMatrix& GetGradient_Primitive(void) const { return Gradient_Primitive; }
 
   /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
   inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+  inline const CVectorOfMatrix& GetGradient_Reconstruction(void) const { return Gradient_Reconstruction; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.

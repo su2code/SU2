@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone in a discrete adjoint simulation.
  * \author Ruben Sanchez
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                CConfig *config, bool integrate_tractions_);
+                                const CConfig *config, bool conservative_);
 
   /*!
    * \brief Retrieve some constants needed for the calculations.
@@ -51,6 +51,6 @@ public:
    */
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                              CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config) override;
+                             const CConfig *donor_config, const CConfig *target_config) override;
 
 };

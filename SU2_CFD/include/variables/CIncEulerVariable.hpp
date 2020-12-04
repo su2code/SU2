@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,9 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncEulerVariable : public CVariable {
+public:
+  static constexpr size_t MAXNVAR = 12;
+
 protected:
   VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
   MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */

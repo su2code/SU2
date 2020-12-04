@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.5 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -837,6 +837,14 @@ def findiff( config, state=None ):
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend(name)
+
+    # files: restart solution for dual-time stepping first and second order
+    if 'RESTART_FILE_1' in files:
+        name = files['RESTART_FILE_1']
+        pull.append(name)
+    if 'RESTART_FILE_2' in files:
+        name = files['RESTART_FILE_2']
+        pull.append(name)
 
     # files: target equivarea distribution
     if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:

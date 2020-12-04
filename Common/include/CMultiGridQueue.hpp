@@ -3,7 +3,7 @@
  * \brief Header of the multigrid queue class for the FVM solver.
  *        The subroutines and functions are in the <i>CMultiGridQueue.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #pragma once
 
 #include <vector>
-#include "toolboxes/CFastFindAndEraseQueue.hpp"
+#include "containers/CFastFindAndEraseQueue.hpp"
 #include "geometry/CGeometry.hpp"
 
 using namespace std;

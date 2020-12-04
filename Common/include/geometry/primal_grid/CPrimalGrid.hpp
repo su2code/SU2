@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -240,7 +240,7 @@ public:
   * \brief A virtual member.
   * \return The color of the element in the partitioning.
   */
-  inline virtual unsigned long GetColor(void) { return -1; }
+  inline virtual unsigned long GetColor(void) { return std::numeric_limits<unsigned long>::max(); }
 
   /*!
    * \brief Get the element global index in a parallel computation.

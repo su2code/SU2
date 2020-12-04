@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.5 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -739,7 +739,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 
 }
 
-void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -796,10 +796,7 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
 
-    if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
-       || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
-       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL
-       || config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+    if(config->GetSolid_Wall(iMarker)) {
 
       Sens = 0.0;
 
