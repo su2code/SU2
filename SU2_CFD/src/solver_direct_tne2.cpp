@@ -2737,8 +2737,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
        for (jVar = 0; jVar < nVar; jVar++)
          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
-   if(Residual[nVar-1]>1e5)  Residual[nVar-1]=1e5;
-   if(Residual[nVar-1]<-1e5) Residual[nVar-1]=-1e5;
+   //if(Residual[nVar-1]>1e5)  Residual[nVar-1]=1e5;
+   //if(Residual[nVar-1]<-1e5) Residual[nVar-1]=-1e5;
 
  
    /*--- Apply the chemical sources to the linear system ---*/
@@ -2764,8 +2764,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
           if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 //
 
-   if(Residual[nVar-1]>1e5)  Residual[nVar-1]=1e5;
-   if(Residual[nVar-1]<-1e5) Residual[nVar-1]=-1e5;
+   //if(Residual[nVar-1]>1e5)  Residual[nVar-1]=1e5;
+   //if(Residual[nVar-1]<-1e5) Residual[nVar-1]=-1e5;
 
 
     /*--- Apply the vibrational relaxation terms to the linear system ---*/
