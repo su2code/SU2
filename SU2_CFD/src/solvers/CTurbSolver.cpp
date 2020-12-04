@@ -358,6 +358,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
                                                 : config->GetKind_Gradient_Method();
 
   const bool gg = (kindRecon == GREEN_GAUSS);
+
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const su2double Kappa = config->GetMUSCL_Kappa_Turb();
   
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
@@ -372,20 +375,18 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*---         term and the difference (0.5*Psi_i*(V_i-V_j)).             ---*/
   /*--------------------------------------------------------------------------*/
 
-  /*--- Store limiters ---*/
-
-  su2double lim_i[MAXNVAR] = {0.0}, lim_j[MAXNVAR] = {0.0};
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    lim_i[iVar] = nodes->GetLimiter(iPoint,iVar);
-    lim_j[iVar] = nodes->GetLimiter(jPoint,iVar);
-  }
-
   /*--- Store reconstruction weights ---*/
 
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    dVl_dVi[iVar] = sign*(1.0 + 0.5*lim_i[iVar]*good_i);
-    dVr_dVi[iVar] = sign*(    - 0.5*lim_j[iVar]*good_j);
+    if (limiter) {
+      dVl_dVi[iVar] = sign*(1.0 + 0.5*nodes->GetLimiter(iPoint,iVar)*good_i);
+      dVr_dVi[iVar] = sign*(    - 0.5*nodes->GetLimiter(jPoint,iVar)*good_j);
+    }
+    else {
+      dVl_dVi[iVar] = sign*(1.0 - 0.5*Kappa*good_i);
+      dVr_dVi[iVar] = sign*(      0.5*Kappa*good_j);
+    }
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -406,6 +407,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
+   /*--- Store Psi_i since it's the same for the Jacobian  of all neighbors ---*/
+
+  su2double Psi_i[MAXNVAR] = {0.0};
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    if (limiter)
+      Psi_i[iVar] = nodes->GetLimiter(iPoint,iVar);
+    else
+      Psi_i[iVar] = 0.5*(1.0-Kappa);
+  }
+
   /*--- Green-Gauss surface terms ---*/
 
   if (gg && node_i->GetPhysicalBoundary()) {
@@ -418,7 +429,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
-      dVl_dVi[iVar] = factor*lim_i[iVar];
+      dVl_dVi[iVar] = factor*Psi_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -439,7 +450,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
-      dVl_dVi[iVar] = factor*lim_i[iVar];
+      dVl_dVi[iVar] = factor*Psi_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {

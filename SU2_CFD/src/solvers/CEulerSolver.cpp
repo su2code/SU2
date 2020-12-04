@@ -3509,7 +3509,12 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool gg = (kindRecon == GREEN_GAUSS);
 
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool tkeNeeded   = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+
+  const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
+  const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver[TURB_SOL]->GetNodes();
@@ -3544,22 +3549,26 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
 
-  su2double lim_i[MAXNVARTOT] = {0.0}, lim_j[MAXNVARTOT] = {0.0};
+  su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
   for (auto iVar = 1; iVar < nDim+3; iVar++) {
-    lim_i[iVar%(nDim+2)] = nodes->GetLimiter_Primitive(iPoint,iVar);
-    lim_j[iVar%(nDim+2)] = nodes->GetLimiter_Primitive(jPoint,iVar);
+    if (limiter) {  
+      dVl_dVi[iVar%(nDim+2)] = sign*(1.0 + 0.5*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
+      dVr_dVi[iVar%(nDim+2)] = sign*(    - 0.5*nodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
+    }
+    else {
+      dVl_dVi[iVar%(nDim+2)] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
+      dVr_dVi[iVar%(nDim+2)] = sign*(      0.5*Kappa_Flow*good_j);
+    }
   }
   if (tkeNeeded) {
-    lim_i[nDim+2] = turbNodes->GetLimiter(iPoint,0);
-    lim_j[nDim+2] = turbNodes->GetLimiter(jPoint,0);
-  }
-
-  /*--- Store reconstruction weights ---*/
-
-  su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
-  for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
-    dVl_dVi[iVar] = sign*(1.0 + 0.5*lim_i[iVar]*good_i);
-    dVr_dVi[iVar] = sign*(    - 0.5*lim_j[iVar]*good_j);
+    if (limiterTurb) {
+      dVl_dVi[nDim+2] = sign*(1.0 + 0.5*turbNodes->GetLimiter(iPoint,0)*good_i);
+      dVr_dVi[nDim+2] = sign*(    - 0.5*turbNodes->GetLimiter(jPoint,0)*good_j);
+    }
+    else {
+      dVl_dVi[nDim+2] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
+      dVr_dVi[nDim+2] = sign*(      0.5*Kappa_Turb*good_j);
+    }
   }
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
@@ -3642,6 +3651,22 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
+  /*--- Store Psi_i since it's the same for the Jacobian  of all neighbors ---*/
+
+  su2double Psi_i[MAXNVARTOT] = {0.0};
+  for (auto iVar = 1; iVar < nDim+3; iVar++) {
+    if (limiter)
+      Psi_i[iVar%(nDim+2)] = nodes->GetLimiter_Primitive(iPoint,iVar);
+    else
+      Psi_i[iVar%(nDim+2)] = 0.5*(1.0-Kappa_Flow);
+  }
+  if (tkeNeeded) {
+    if (limiterTurb)
+      Psi_i[nDim+2] = turbNodes->GetLimiter(iPoint,0);
+    else
+      Psi_i[nDim+2] = 0.5*(1.0-Kappa_Turb);
+  }
+
   /*--- Green-Gauss surface terms ---*/
   
   if (gg && node_i->GetPhysicalBoundary()) {
@@ -3653,8 +3678,9 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
     const su2double factor = sign*gradWeightDotDist*good_i;
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      dVl_dVi[iVar] = factor*lim_i[iVar];
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
+      dVl_dVi[iVar] = factor*Psi_i[iVar];
+    } 
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -3699,7 +3725,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-      dVl_dVi[iVar] = factor*lim_i[iVar];
+      dVl_dVi[iVar] = factor*Psi_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {

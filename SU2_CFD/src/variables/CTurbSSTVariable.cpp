@@ -83,7 +83,8 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val
   su2double arg2, arg2A, arg2B, arg1;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(val_viscosity);  AD::SetPreaccIn(val_dist);
+  AD::SetPreaccIn(val_viscosity);  
+  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
   AD::SetPreaccIn(Primitive[iPoint], nVar);
   AD::SetPreaccIn(cdkw_max);

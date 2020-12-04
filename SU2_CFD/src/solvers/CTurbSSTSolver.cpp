@@ -335,7 +335,7 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
     //   for (auto iVar = 0; iVar < nVar; iVar++)
     //     nodes->SetSolution(iPoint,iVar,nodes->GetSolution_Old(iPoint,iVar));
     // }
-    
+
     for (auto iVar = 0; iVar < nVar; iVar++)
       nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
   }
@@ -573,7 +573,6 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const unsigned long jPoint = node_i->GetPoint(iNeigh);
-    const unsigned long iEdge = node_i->GetEdge(iNeigh);
     const su2double r_j  = flowNodes->GetDensity(jPoint);
     
     Jacobian_j[1][0] = 0.; Jacobian_j[1][1] = 0.;
