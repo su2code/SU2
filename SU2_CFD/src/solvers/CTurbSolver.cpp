@@ -413,9 +413,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double Psi_i[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter)
-      Psi_i[iVar] = nodes->GetLimiter(iPoint,iVar);
+      Psi_i[iVar] = sign*nodes->GetLimiter(iPoint,iVar)*good_i;
     else
-      Psi_i[iVar] = 0.5*(1.0-Kappa);
+      Psi_i[iVar] = sign*0.5*(1.0-Kappa)*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/
@@ -428,9 +428,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
-      dVl_dVi[iVar] = factor*Psi_i[iVar];
+      dVl_dVi[iVar] = gradWeightDotDist*Psi_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -449,9 +448,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    const su2double factor = sign*gradWeightDotDist*good_i;
     for (auto iVar = 0; iVar < nVar; iVar++)
-      dVl_dVi[iVar] = factor*Psi_i[iVar];
+      dVl_dVi[iVar] = gradWeightDotDist*Psi_i[iVar];
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
