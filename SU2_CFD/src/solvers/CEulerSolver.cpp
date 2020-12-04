@@ -3509,6 +3509,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool gg = (kindRecon == GREEN_GAUSS);
 
+  const auto InnerIter   = config->GetInnerIter();
   const bool tkeNeeded   = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());

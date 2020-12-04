@@ -359,7 +359,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool gg = (kindRecon == GREEN_GAUSS);
 
-  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const auto InnerIter  = config->GetInnerIter();
+  const bool limiter    = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const su2double Kappa = config->GetMUSCL_Kappa_Turb();
   
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
