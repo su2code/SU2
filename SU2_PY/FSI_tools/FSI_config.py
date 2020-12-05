@@ -112,8 +112,7 @@ class FSIConfig:
                 if case("MESH_INTERP_METHOD")         : pass
                 if case("DISP_PRED")		      : pass
                 if case("AITKEN_RELAX")               : pass
-                if case("TIME_MARCHING")	      : pass
-                if case("INTERNAL_FLOW")	      :
+                if case("TIME_MARCHING")	      : 
                     self._ConfigContent[this_param] = this_value
                     break
 
