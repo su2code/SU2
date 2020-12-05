@@ -526,6 +526,64 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
 }
 
+
+void CMeshSolver::StaticDeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+
+  if (multizone) nodes->Set_BGSSolution_k();
+
+  /*--- Capture a few MPI dependencies for AD. ---*/
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+
+  InitiateComms(geometry[MESH_0], config, SOLUTION);
+  CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+
+  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
+
+  const bool wasActive = AD::BeginPassive();
+
+  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
+
+  AD::EndPassive(wasActive);
+
+  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
+  SU2_OMP_PARALLEL {
+    LinSysRes.SetValZero();
+  }
+
+  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
+  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
+
+  /*--- Solve the linear system. ---*/
+  Solve_System(geometry[MESH_0], config);
+
+  SU2_OMP_PARALLEL {
+
+  /*--- Update the grid coordinates and cell volumes using the solution
+     of the linear system (usol contains the x, y, z displacements). ---*/
+  UpdateGridCoord(geometry[MESH_0], config);
+
+  /*--- Update the dual grid. ---*/
+  UpdateDualGrid(geometry[MESH_0], config);
+
+  /*--- Update the multigrid structure. ---*/
+  UpdateMultiGrid(geometry, config);
+
+  /*--- Check for failed deformation (negative volumes). ---*/
+  SetMinMaxVolume(geometry[MESH_0], config, true);
+
+  /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
+  nodes->Set_Solution_time_n();
+  nodes->Set_Solution_time_n1();
+
+  } // end parallel
+
+}
+
+
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/
@@ -650,6 +708,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Match_Deform_Mesh(iMarker) == NO) &&
         (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
@@ -662,6 +721,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   /*--- Symmetry plane is clamped, for now. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Match_Deform_Mesh(iMarker) == NO) &&
         (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
@@ -669,12 +729,62 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
+
   /*--- Impose displacement boundary conditions. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
+    }
+  }
+
+
+  /*--- Match deform plane is not clamped ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Match_Deform_Mesh(iMarker) == YES) {
+      const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
+
+      const bool quad = (geometry->bound[iMarker][0]->GetVTK_Type() == QUADRILATERAL);
+      const unsigned short nNodes = quad? 4 : nDim;
+
+      for (auto iNode = 0u; iNode < nNodes; iNode++) {
+        auto iPoint = geometry->bound[iMarker][0]->GetNode(iNode);
+        nodeCoord[iNode] = geometry->nodes->GetCoord(iPoint);
+      }
+
+      su2double normal[MAXNDIM] = {0.0};
+
+      switch (nNodes) {
+        case 2: LineNormal(nodeCoord, normal); break;
+        case 3: TriangleNormal(nodeCoord, normal); break;
+        case 4: QuadrilateralNormal(nodeCoord, normal); break;
+      }
+
+      auto axis = 0u;
+      for (auto iDim = 1u; iDim < MAXNDIM; ++iDim)
+        axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
+
+      if (fabs(normal[axis]) < 0.99*Norm(int(MAXNDIM),normal)) {
+        SU2_MPI::Error("The mesh solver only supports axis-aligned match markers.",CURRENT_FUNCTION);
+      }
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        /*--- Set and enforce solution at current and previous time-step ---*/
+        nodes->SetSolution(iPoint, axis, 0.0);
+        nodes->SetBound_Disp(iPoint, axis, 0.0);
+
+        if (config->GetTime_Domain()) {
+          nodes->SetSolution_Vel(iPoint, axis, 0.0);
+          nodes->SetSolution_Accel(iPoint, axis, 0.0);
+          nodes->Set_Solution_time_n(iPoint, axis, 0.0);
+          nodes->SetSolution_Vel_time_n(iPoint, axis, 0.0);
+          nodes->SetSolution_Accel_time_n(iPoint, axis, 0.0);
+        }
+
+        LinSysSol(iPoint, axis) = 0.0;
+        Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
+      }
     }
   }
 

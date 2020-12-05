@@ -234,6 +234,22 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
   }
 }
 
+void CSinglezoneDriver::StaticMeshUpdate() {
+
+  auto iteration = iteration_container[ZONE_0][INST_0];
+
+  iteration->SetMesh_StaticDeformation(geometry_container[ZONE_0][INST_0],
+                                 solver_container[ZONE_0][INST_0][MESH_0],
+                                 numerics_container[ZONE_0][INST_0][MESH_0],
+                                 config_container[ZONE_0], NONE);
+
+  /*--- Update the wall distances if the mesh was deformed. ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement() ||
+      config_container[ZONE_0]->GetDeform_Mesh()) {
+    CGeometry::ComputeWallDistance(config_container, geometry_container);
+  }
+}
+
 bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   unsigned long nInnerIter, InnerIter, nTimeIter;

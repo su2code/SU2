@@ -101,6 +101,18 @@ class CIteration {
   void SetMesh_Deformation(CGeometry** geometry, CSolver** solver_container, CNumerics*** numerics_container,
                            CConfig* config_container, unsigned short kind_recording);
 
+   /*!
+    * \brief Run the mesh deformation algorithms.
+    * \author R. Sanchez
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] iZone - Index of the zone.
+    * \param[in] kind_recording - Current kind of recording.
+    */
+  void SetMesh_StaticDeformation(CGeometry** geometry, CSolver** solver_container, CNumerics*** numerics_container,
+                                 CConfig* config_container, unsigned short kind_recording);
+
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.

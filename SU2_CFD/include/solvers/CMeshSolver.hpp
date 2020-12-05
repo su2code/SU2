@@ -116,6 +116,16 @@ public:
                   CNumerics **numerics,
                   CConfig *config) override;
 
+
+   /*!
+    * \brief Grid deformation using the linear elasticity equations.
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
+   void StaticDeformMesh(CGeometry **geometry,
+                         CNumerics **numerics,
+                         CConfig *config) override;
+
   /*!
    * \brief Set the stiffness of the mesh.
    * \param[in] geometry - Geometrical definition of the problem.

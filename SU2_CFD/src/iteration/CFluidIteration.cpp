@@ -233,7 +233,6 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
-
   if (config[val_iZone]->GetSinglezone_Driver()) {
     /*--- Compute the tractions at the vertices ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(geometry[val_iZone][val_iInst][MESH_0],
