@@ -622,7 +622,7 @@ inline su2double CSIGMAModel::ComputeEddyViscosity_3D(const su2double rho,
   /* Compute alpha_3 */
   su2double alpha3 = 0.0;
   su2double pre_alpha3 = alpha2 / pow(alpha1,3./2);
-  if ( pre_alpha3>=1. || std::isnan(pre_alpha3) ) alpha3 = 0.0;
+  if ( pre_alpha3>=1. || std::isnan(static_cast<double>(pre_alpha3)) ) alpha3 = 0.0;
   else if ( pre_alpha3<=-1. ) alpha3 = PI_NUMBER / 3.;
   else alpha3 = acos( pre_alpha3 )/3.;
 
