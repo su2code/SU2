@@ -53,7 +53,7 @@ def main():
 
   (options, args)=parser.parse_args()
 
-  if options.with_MPI == True:
+  if options.with_MPI:
     from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
     comm = MPI.COMM_WORLD
     myid = comm.Get_rank()
@@ -75,7 +75,7 @@ def main():
       else:
         print("Working directory is set to {}".format(os.getcwd()))
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # starts timer
@@ -89,7 +89,7 @@ def main():
 
   CSD_Solver = FSI_config['CSD_SOLVER']			# CSD solver
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # --- Initialize the fluid solver --- #
@@ -99,13 +99,13 @@ def main():
     FluidSolver = pysu2.CSinglezoneDriver(CFD_ConFile, 1, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CSinglezoneDriver : ',exception)
-    if have_MPI == True:
+    if have_MPI:
       print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
     else:
       print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
     return
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
@@ -122,29 +122,29 @@ def main():
   else:
     SolidSolver = None
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # --- Initialize and set the FSI interface (coupling environement) --- #
   if myid == rootProcess:
     print('\n***************************** Initializing FSI interface *****************************')
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
   FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, have_MPI)
 
   if myid == rootProcess:
     print('\n***************************** Connect fluid and solid solvers *****************************')
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
   FSIInterface.connect(FSI_config, FluidSolver, SolidSolver)
 
   if myid == rootProcess:
     print('\n***************************** Mapping fluid-solid interfaces *****************************')
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
   FSIInterface.interfaceMapping(FluidSolver, SolidSolver, FSI_config)
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # --- Launch a steady or unsteady FSI computation --- #
@@ -173,7 +173,7 @@ def main():
       if myid == rootProcess:
         print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # --- Exit cleanly the fluid and solid solvers --- #
@@ -181,7 +181,7 @@ def main():
   if myid == rootProcess:
       SolidSolver.exit()
 
-  if have_MPI == True:
+  if have_MPI:
     comm.barrier()
 
   # stops timer

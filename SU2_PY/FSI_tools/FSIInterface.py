@@ -51,7 +51,7 @@ class Interface:
         Class constructor. Declare some variables and do some screen outputs.
         """
 
-        if have_MPI == True:
+        if have_MPI:
           from mpi4py import MPI
           self.MPI = MPI
           self.comm = MPI.COMM_WORLD			#MPI World communicator
@@ -190,7 +190,7 @@ class Interface:
       Print a message on screen only from the master process.
       """
 
-      if self.have_MPI == True:
+      if self.have_MPI:
         myid = self.comm.Get_rank()
       else:
         myid = 0
@@ -203,7 +203,7 @@ class Interface:
       Perform a synchronization barrier in case of parallel run with MPI.
       """
 
-      if self.have_MPI == True:
+      if self.have_MPI:
         self.comm.barrier()
 
     def connect(self, FSI_config, FluidSolver, SolidSolver):
@@ -212,7 +212,7 @@ class Interface:
         Creates the communication support between the two solvers.
         Gets information about f/s interfaces from the two solvers.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
           MPIsize = self.comm.Get_size()
         else:
@@ -222,7 +222,7 @@ class Interface:
         # --- Identify the fluid and solid interfaces and store the number of nodes on both sides (and for each partition) ---
         self.fluidInterfaceIdentifier = None
         self.nLocalFluidInterfaceNodes = 0
-        if FluidSolver != None:
+        if FluidSolver is not :
             print('Fluid solver is initialized on process {}'.format(myid))
             self.haveFluidSolver = True
             allMovingMarkersTags = FluidSolver.GetAllDeformMeshMarkersTag()
@@ -232,7 +232,7 @@ class Interface:
             else:
                 if allMovingMarkersTags[0] in allMarkersID.keys():
                     self.fluidInterfaceIdentifier = allMarkersID[allMovingMarkersTags[0]]
-            if self.fluidInterfaceIdentifier != None:
+            if self.fluidInterfaceIdentifier is not None:
                 self.nLocalFluidInterfaceNodes = FluidSolver.GetNumberVertices(self.fluidInterfaceIdentifier)
             if self.nLocalFluidInterfaceNodes != 0:
               self.haveFluidInterface = True
@@ -240,7 +240,7 @@ class Interface:
         else:
             pass
 
-        if SolidSolver != None:
+        if SolidSolver is not None:
             print('Solid solver is initialized on process {}'.format(myid))
             self.haveSolidSolver = True
             self.solidInterfaceIdentifier = SolidSolver.getFSIMarkerID()
@@ -252,20 +252,20 @@ class Interface:
             pass
 
         # --- Exchange information about processors on which the solvers are defined and where the interface nodes are lying ---
-        if self.have_MPI == True:
-          if self.haveFluidSolver == True:
+        if self.have_MPI:
+          if self.haveFluidSolver:
             sendBufFluid = np.array(int(1))
           else:
             sendBufFluid = np.array(int(0))
-          if self.haveSolidSolver == True:
+          if self.haveSolidSolver:
             sendBufSolid = np.array(int(1))
           else:
             sendBufSolid = np.array(int(0))
-          if self.haveFluidInterface == True:
+          if self.haveFluidInterface:
             sendBufFluidInterface = np.array(int(1))
           else:
             sendBufFluidInterface = np.array(int(0))
-          if self.haveSolidInterface == True:
+          if self.haveSolidInterface:
             sendBufSolidInterface = np.array(int(1))
           else:
             sendBufSolidInterface = np.array(int(0))
@@ -298,26 +298,21 @@ class Interface:
         # Calculate the number of halo nodes on each partition
         self.nLocalFluidInterfaceHaloNode = 0
         for iVertex in range(self.nLocalFluidInterfaceNodes):
-            if FluidSolver.IsAHaloNode(self.fluidInterfaceIdentifier, iVertex) == True:
+            if FluidSolver.IsAHaloNode(self.fluidInterfaceIdentifier, iVertex):
               GlobalIndex = FluidSolver.GetVertexGlobalIndex(self.fluidInterfaceIdentifier, iVertex)
               self.FluidHaloNodeList[GlobalIndex] = iVertex
               self.nLocalFluidInterfaceHaloNode += 1
         # Calculate the number of physical (= not halo) nodes on each partition
         self.nLocalFluidInterfacePhysicalNodes = self.nLocalFluidInterfaceNodes - self.nLocalFluidInterfaceHaloNode
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.FluidHaloNodeList = self.comm.allgather(self.FluidHaloNodeList)
         else:
           self.FluidHaloNodeList = [{}]
 
         # Same thing for the solid part
         self.nLocalSolidInterfaceHaloNode = 0
-        #for iVertex in range(self.nLocalSolidInterfaceNodes):
-            #if SoliddSolver.IsAHaloNode(self.fluidInterfaceIdentifier, iVertex) == True:
-              #GlobalIndex = SolidSolver.GetVertexGlobalIndex(self.solidInterfaceIdentifier, iVertex)
-              #self.SolidHaloNodeList[GlobalIndex] = iVertex
-              #self.nLocalSolidInterfaceHaloNode += 1
         self.nLocalSolidInterfacePhysicalNodes = self.nLocalSolidInterfaceNodes - self.nLocalSolidInterfaceHaloNode
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.SolidHaloNodeList = self.comm.allgather(self.SolidHaloNodeList)
         else:
           self.SolidHaloNodeList = [{}]
@@ -328,7 +323,7 @@ class Interface:
         sendBuffPhysical = np.array(int(self.nLocalFluidInterfacePhysicalNodes))
         rcvBuffHalo = np.zeros(1, dtype=int)
         rcvBuffPhysical = np.zeros(1, dtype=int)
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.comm.barrier()
           self.comm.Allreduce(sendBuffHalo,rcvBuffHalo,op=self.MPI.SUM)
           self.comm.Allreduce(sendBuffPhysical,rcvBuffPhysical,op=self.MPI.SUM)
@@ -344,7 +339,7 @@ class Interface:
         sendBuffPhysical = np.array(int(self.nLocalSolidInterfacePhysicalNodes))
         rcvBuffHalo = np.zeros(1, dtype=int)
         rcvBuffPhysical = np.zeros(1, dtype=int)
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.comm.barrier()
           self.comm.Allreduce(sendBuffHalo,rcvBuffHalo,op=self.MPI.SUM)
           self.comm.Allreduce(sendBuffPhysical,rcvBuffPhysical,op=self.MPI.SUM)
@@ -357,7 +352,7 @@ class Interface:
 
         # --- Store the number of physical interface nodes on each processor and allgather the information ---
         self.fluidPhysicalInterfaceNodesDistribution = np.zeros(MPIsize, dtype=int)
-        if self.have_MPI == True:
+        if self.have_MPI:
           sendBuffPhysical = np.array(int(self.nLocalFluidInterfacePhysicalNodes))
           self.comm.Allgather(sendBuffPhysical,self.fluidPhysicalInterfaceNodesDistribution)
           del sendBuffPhysical
@@ -366,7 +361,7 @@ class Interface:
 
         # Same thing for the solid part
         self.solidPhysicalInterfaceNodesDistribution = np.zeros(MPIsize, dtype=int)
-        if self.have_MPI == True:
+        if self.have_MPI:
           sendBuffPhysical = np.array(int(self.nLocalSolidInterfaceNodes))
           self.comm.Allgather(sendBuffPhysical,self.solidPhysicalInterfaceNodesDistribution)
           del sendBuffPhysical
@@ -374,7 +369,7 @@ class Interface:
           self.solidPhysicalInterfaceNodesDistribution[0] = self.nSolidInterfacePhysicalNodes
 
         # --- Calculate and store the global indexing of interface physical nodes on each processor and allgather the information ---
-        if self.have_MPI == True:
+        if self.have_MPI:
           if myid in self.fluidInterfaceProcessors:
             globalIndexStart = 0
             for iProc in range(myid):
@@ -392,7 +387,7 @@ class Interface:
           self.fluidGlobalIndexRange.append(temp)
 
         # Same thing for the solid part
-        if self.have_MPI == True:
+        if self.have_MPI:
           if myid in self.solidInterfaceProcessors:
             globalIndexStart = 0
             for iProc in range(myid):
@@ -417,7 +412,7 @@ class Interface:
         self.MPIBarrier()
 
         # --- Create all the PETSc vectors required for parallel communication and parallel mesh mapping/interpolation (working for serial too) ---
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.solidInterface_array_DispX = PETSc.Vec().create(self.comm)
           self.solidInterface_array_DispY = PETSc.Vec().create(self.comm)
           self.solidInterface_array_DispZ = PETSc.Vec().create(self.comm)
@@ -438,7 +433,7 @@ class Interface:
         self.solidInterface_array_DispY.set(0.0)
         self.solidInterface_array_DispZ.set(0.0)
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.fluidInterface_array_DispX = PETSc.Vec().create(self.comm)
           self.fluidInterface_array_DispY = PETSc.Vec().create(self.comm)
           self.fluidInterface_array_DispZ = PETSc.Vec().create(self.comm)
@@ -459,7 +454,7 @@ class Interface:
         self.fluidInterface_array_DispY.set(0.0)
         self.fluidInterface_array_DispZ.set(0.0)
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.fluidLoads_array_X = PETSc.Vec().create(self.comm)
           self.fluidLoads_array_Y = PETSc.Vec().create(self.comm)
           self.fluidLoads_array_Z = PETSc.Vec().create(self.comm)
@@ -480,7 +475,7 @@ class Interface:
         self.fluidLoads_array_Y.set(0.0)
         self.fluidLoads_array_Z.set(0.0)
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.solidLoads_array_X = PETSc.Vec().create(self.comm)
           self.solidLoads_array_Y = PETSc.Vec().create(self.comm)
           self.solidLoads_array_Z = PETSc.Vec().create(self.comm)
@@ -502,7 +497,7 @@ class Interface:
         self.solidLoads_array_Z.set(0.0)
 
         # --- Create the PETSc vectors required for parallel relaxed BGS algo (working for serial too) ---
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.solidInterfaceResidual_array_X = PETSc.Vec().create(self.comm)
           self.solidInterfaceResidual_array_Y = PETSc.Vec().create(self.comm)
           self.solidInterfaceResidual_array_Z = PETSc.Vec().create(self.comm)
@@ -523,7 +518,7 @@ class Interface:
         self.solidInterfaceResidual_array_Y.set(0.0)
         self.solidInterfaceResidual_array_Z.set(0.0)
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           self.solidInterfaceResidualnM1_array_X = PETSc.Vec().create(self.comm)
           self.solidInterfaceResidualnM1_array_Y = PETSc.Vec().create(self.comm)
           self.solidInterfaceResidualnM1_array_Z = PETSc.Vec().create(self.comm)
@@ -549,7 +544,7 @@ class Interface:
         Creates the one-to-one mapping between interfaces in case of matching meshes.
         Creates the interpolation rules between interfaces in case of non-matching meshes.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
           MPIsize = self.comm.Get_size()
         else:
@@ -579,7 +574,7 @@ class Interface:
               self.localFluidInterface_array_Y_init[localIndex] = posy
               self.localFluidInterface_array_Z_init[localIndex] = posz
               localIndex += 1
-        if self.have_MPI == True:
+        if self.have_MPI:
           fluidIndexing_temp = self.comm.allgather(fluidIndexing_temp)
           for ii in range(len(fluidIndexing_temp)):
             for key, value in fluidIndexing_temp[ii].items():
@@ -608,7 +603,7 @@ class Interface:
             self.localSolidInterface_array_Y[localIndex] = posy
             self.localSolidInterface_array_Z[localIndex] = posz
             localIndex += 1
-        if self.have_MPI == True:
+        if self.have_MPI:
           solidIndexing_temp = self.comm.allgather(solidIndexing_temp)
           for ii in range(len(solidIndexing_temp)):
             for key, value in solidIndexing_temp[ii].items():
@@ -620,7 +615,7 @@ class Interface:
 
         # --- Create the PETSc parallel interpolation matrix ---
         if FSI_config['MATCHING_MESH'] == 'NO' and (FSI_config['MESH_INTERP_METHOD'] == 'RBF' or FSI_config['MESH_INTERP_METHOD'] == 'TPS'):
-          if self.have_MPI == True:
+          if self.have_MPI:
             self.MappingMatrixA = PETSc.Mat().create(self.comm)
             self.MappingMatrixB = PETSc.Mat().create(self.comm)
             self.MappingMatrixA_T = PETSc.Mat().create(self.comm)
@@ -663,7 +658,7 @@ class Interface:
           self.MappingMatrixB_T.setUp()
           self.MappingMatrixB_T.setOption(PETSc.Mat().Option.NEW_NONZERO_ALLOCATION_ERR, False)
         else:
-          if self.have_MPI == True:
+          if self.have_MPI:
             self.MappingMatrix = PETSc.Mat().create(self.comm)
             self.MappingMatrix_T = PETSc.Mat().create(self.comm)
             self.MappingMatrix.setType('mpiaij')
@@ -684,7 +679,7 @@ class Interface:
         # --- Fill the interpolation matrix in parallel (working in serial too) ---
         if FSI_config['MATCHING_MESH'] == 'NO' and (FSI_config['MESH_INTERP_METHOD'] == 'RBF' or FSI_config['MESH_INTERP_METHOD'] == 'TPS'):
           self.MPIPrint('Building interpolation matrices...')
-          if self.have_MPI == True:
+          if self.have_MPI:
             for iProc in self.solidInterfaceProcessors:
               if myid == iProc:
                 for jProc in self.solidInterfaceProcessors:
@@ -726,7 +721,7 @@ class Interface:
         else:
           self.MPIPrint("Building interpolation matrix...")
         self.MPIBarrier()
-        if self.have_MPI == True:
+        if self.have_MPI:
           for iProc in self.solidInterfaceProcessors:
             if myid == iProc:
               for jProc in self.fluidInterfaceProcessors:
@@ -797,7 +792,7 @@ class Interface:
         """
         Fill the mapping matrix in case of matching meshes at the f/s interface.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -847,7 +842,7 @@ class Interface:
         Description
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -888,7 +883,7 @@ class Interface:
         Description
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -942,7 +937,7 @@ class Interface:
         Description
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -996,7 +991,7 @@ class Interface:
         Description
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1032,7 +1027,7 @@ class Interface:
         Description
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1096,7 +1091,7 @@ class Interface:
         """
         Applies the one-to-one mapping or the interpolaiton rules from solid to fluid mesh.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
           MPIsize = self.comm.Get_size()
         else:
@@ -1106,7 +1101,7 @@ class Interface:
 
         # --- Interpolate (or map) in parallel the solid interface displacement on the fluid interface ---
         if FSI_config['MATCHING_MESH'] == 'NO' and (FSI_config['MESH_INTERP_METHOD'] == 'RBF' or FSI_config['MESH_INTERP_METHOD'] == 'TPS'):
-          if self.have_MPI == True:
+          if self.have_MPI:
             gamma_array_DispX = PETSc.Vec().create(self.comm)
             gamma_array_DispY = PETSc.Vec().create(self.comm)
             gamma_array_DispZ = PETSc.Vec().create(self.comm)
@@ -1175,7 +1170,7 @@ class Interface:
         # Gather the fluid interface on the master process
         # This is required because PETSc redistributes evenly in the cores, and does not use the same division
         # of SU2, thus we need to redistribute
-        if self.have_MPI == True:
+        if self.have_MPI:
           sendBuff_X = None
           sendBuff_Y = None
           sendBuff_Z = None
@@ -1248,7 +1243,7 @@ class Interface:
         # Special treatment for the halo nodes on the fluid interface
         self.haloNodesDisplacements = {}
         sendBuff = {}
-        if self.have_MPI == True:
+        if self.have_MPI:
           if myid == self.rootProcess:
             for iProc in self.fluidInterfaceProcessors:
               sendBuff = {}
@@ -1275,7 +1270,7 @@ class Interface:
         """
         Applies the one-to-one mapping or the interpolaiton rules from fluid to solid mesh.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
           MPIsize = self.comm.Get_size()
         else:
@@ -1285,7 +1280,7 @@ class Interface:
         # --- Interpolate (or map) in parallel the fluid interface loads on the solid interface ---
         #self.MappingMatrix.transpose()
         if FSI_config['MATCHING_MESH'] == 'NO' and (FSI_config['MESH_INTERP_METHOD'] == 'RBF' or FSI_config['MESH_INTERP_METHOD'] == 'TPS'):
-          if self.have_MPI == True:
+          if self.have_MPI:
             gamma_array_LoadX = PETSc.Vec().create(self.comm)
             gamma_array_LoadY = PETSc.Vec().create(self.comm)
             gamma_array_LoadZ = PETSc.Vec().create(self.comm)
@@ -1412,7 +1407,7 @@ class Interface:
         """
         Gets the current solid interface position from the solid solver.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1445,7 +1440,7 @@ class Interface:
         """
         Gets the fluid interface loads from the fluid solver.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1469,7 +1464,7 @@ class Interface:
               FZ += loadZ
               localIndex += 1
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           FX = self.comm.allreduce(FX)
           FY = self.comm.allreduce(FY)
           FZ = self.comm.allreduce(FZ)
@@ -1491,7 +1486,7 @@ class Interface:
         Communicate the change of coordinates of the fluid interface to the fluid solver.
         Prepare the fluid solver for mesh deformation.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1516,7 +1511,7 @@ class Interface:
         Communicates the new solid interface loads to the solid solver.
         In case of rigid body motion, calculates the new resultant forces (lift, drag, ...).
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1538,7 +1533,7 @@ class Interface:
           FY += self.localSolidLoads_array_Y[iVertex]
           FZ += self.localSolidLoads_array_Z[iVertex]
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           FX = self.comm.allreduce(FX)
           FY = self.comm.allreduce(FY)
           FZ = self.comm.allreduce(FZ)
@@ -1567,7 +1562,7 @@ class Interface:
         Computes the solid interface FSI displacement residual.
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1575,7 +1570,7 @@ class Interface:
         normInterfaceResidualSquare = 0.0
 
         # --- Create and fill the PETSc vector for the predicted solid interface position (predicted by the solid computation) ---
-        if self.have_MPI == True:
+        if self.have_MPI:
           predDisp_array_X = PETSc.Vec().create(self.comm)
           predDisp_array_X.setType('mpi')
           predDisp_array_Y = PETSc.Vec().create(self.comm)
@@ -1634,7 +1629,7 @@ class Interface:
         """
         Apply solid displacement under-relaxation.
         """
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1725,7 +1720,7 @@ class Interface:
         Calculates a prediciton for the solid interface position for the next time step.
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1744,7 +1739,7 @@ class Interface:
             alpha_1 = 0.0
 
         # --- Create the PETSc vectors to store the solid interface velocity ---
-        if self.have_MPI == True:
+        if self.have_MPI:
           Vel_array_X = PETSc.Vec().create(self.comm)
           Vel_array_X.setType('mpi')
           Vel_array_Y = PETSc.Vec().create(self.comm)
@@ -1839,7 +1834,7 @@ class Interface:
         Write the FSI history file of the computaion.
         """
 
-        if self.have_MPI == True:
+        if self.have_MPI:
           myid = self.comm.Get_rank()
         else:
           myid = 0
@@ -1892,7 +1887,7 @@ class Interface:
           F/s interface data are exchanged through interface mapping and interpolation (if non mathcing meshes).
           """
 
-          if self.have_MPI == True:
+          if self.have_MPI:
             myid = self.comm.Get_rank()
             numberPart = self.comm.Get_size()
           else:
@@ -2059,7 +2054,7 @@ class Interface:
           Runs the steady FSI computation by synchronizing the fluid and solid solver with data exchange at the f/s interface.
           """
 
-          if self.have_MPI == True:
+          if self.have_MPI:
             myid = self.comm.Get_rank()
             numberPart = self.comm.Get_size()
           else:
