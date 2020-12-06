@@ -8931,6 +8931,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   iPoint_Global = 0;
 
+  filename = config->GetSolution_AdjFileName();
+
   filename = config->GetObjFunc_Extension(filename);
 
 
@@ -8938,8 +8940,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     filename = config->GetFilename(filename, ".dat", nTimeIter-1);
 
-    char str_buf[CGNS_STRING_SIZE];
+    char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
+    strcpy(fname, filename.c_str());
     int nRestart_Vars = 5, nFields;
     int *Restart_Vars = new int[5];
     passivedouble *Restart_Data = nullptr;
@@ -8952,13 +8955,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Serial binary input. ---*/
 
     FILE *fhw;
-    fhw = fopen(filename.c_str(),"rb");
+    fhw = fopen(fname,"rb");
     size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points. ---*/
@@ -8972,7 +8975,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (Restart_Vars[0] != 535532) {
-      SU2_MPI::Error(string("File ") + filename + string(" is not a binary SU2 restart file.\n") +
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
@@ -9045,12 +9048,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
@@ -9069,7 +9072,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     if (Restart_Vars[0] != 535532) {
 
-      SU2_MPI::Error(string("File ") + filename + string(" is not a binary SU2 restart file.\n") +
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
@@ -9260,6 +9263,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- First, check that this is not a binary restart file. ---*/
 
+    char fname[100];
+    strcpy(fname, filename.c_str());
     int magic_number;
 
 #ifndef HAVE_MPI
@@ -9267,13 +9272,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Serial binary input. ---*/
 
     FILE *fhw;
-    fhw = fopen(filename.c_str(),"rb");
+    fhw = fopen(fname,"rb");
     size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
@@ -9287,7 +9292,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
      have the hex representation of "SU2" as the first int in the file. ---*/
 
     if (magic_number == 535532) {
-      SU2_MPI::Error(string("File ") + filename + string(" is a binary SU2 restart file, expected ASCII.\n") +
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
@@ -9304,12 +9309,12 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- All ranks open the file using MPI. ---*/
 
-    ierr = MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
     /*--- Error check opening the file. ---*/
 
     if (ierr) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + filename, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- Have the master attempt to read the magic number. ---*/
@@ -9326,7 +9331,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     if (magic_number == 535532) {
 
-      SU2_MPI::Error(string("File ") + filename + string(" is a binary SU2 restart file, expected ASCII.\n") +
+      SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
                      string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
