@@ -727,6 +727,12 @@ public:
   inline virtual void MatchPeriodic(CConfig *config, unsigned short val_periodic) {}
 
   /*!
+   * \brief For streamwise periodicity, find a unique reference node on the designated inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void FindUniqueNode_PeriodicBound(CConfig *config) {}
+
+  /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.

@@ -483,6 +483,12 @@ public:
   void MatchPeriodic(CConfig *config, unsigned short val_periodic) override;
 
   /*!
+   * \brief For streamwise periodicity, find a unique reference node on the designated inlet.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FindUniqueNode_PeriodicBound(CConfig *config) override;
+
+  /*!
    * \brief Set boundary vertex structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.

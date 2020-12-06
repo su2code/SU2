@@ -7632,102 +7632,101 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
   delete [] Buffer_Recv_GlobalIndex;
   delete [] Buffer_Recv_Vertex;
   delete [] Buffer_Recv_Marker;
+}
 
-  /*--- Compute reference Node for streamwise periodicity. ---*/
-  if (config->GetKind_Streamwise_Periodic() != NONE) {
+void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
 
-    /*-------------------------------------------------------------------------------------------*/
-    /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
-    /*--- of recovered pressure/temperature, such that this found node is independent of the  ---*/
-    /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
-    /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
-    /*--- with a higher number of ranks. If the periodic markers are a line\plane and the     ---*/
-    /*--- streamwise coordiante vector is perpendicular to that |--->|, the choice of the     ---*/
-    /*--- reference node is not relevant at all. This is probably true for most streamwise    ---*/
-    /*--- periodic cases. Other cases where it is relevant could look like this (--->( or     ---*/
-    /*--- \--->\ . The chosen metric is the minimal distance to the origin.                   ---*/
-    /*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Find reference node on the 'inlet' streamwise periodic marker for the computation   ---*/
+  /*--- of recovered pressure/temperature, such that this found node is independent of the  ---*/
+  /*--- number of ranks. This does not affect the 'correctness' of the solution as the      ---*/
+  /*--- absolute value is arbitrary anyway, but it assures that the solution does not change---*/
+  /*--- with a higher number of ranks. If the periodic markers are a line\plane and the     ---*/
+  /*--- streamwise coordiante vector is perpendicular to that |--->|, the choice of the     ---*/
+  /*--- reference node is not relevant at all. This is probably true for most streamwise    ---*/
+  /*--- periodic cases. Other cases where it is relevant could look like this (--->( or     ---*/
+  /*--- \--->\ . The chosen metric is the minimal distance to the origin.                   ---*/
+  /*-------------------------------------------------------------------------------------------*/
 
-    /*--- Initialize/Allocate variables. ---*/
-    unsigned short iMarker, iPeriodic, iDim;
-    unsigned long iPoint;
-    su2double norm, min_norm = 0.0;
+  /*--- Initialize/Allocate variables. ---*/
+  unsigned short iMarker, iPeriodic, iDim;
+  unsigned long iPoint;
+  su2double norm, min_norm = 0.0;
 
-    vector<su2double> Buffer_Send_RefNode(nDim, 1e300),
-                      Buffer_Recv_RefNode(size*nDim);
+  vector<su2double> Buffer_Send_RefNode(nDim, 1e300),
+                    Buffer_Recv_RefNode(size*nDim);
 
-    /*-------------------------------------------------------------------------------------------*/
-    /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
-    /*---         each process has the local ref-nodes from every process. Most processes     ---*/
-    /*---         won't have a boundary with the streamwise periodic 'inlet' marker,          ---*/
-    /*---         therefore the default value of the send value is set super high.            ---*/
-    /*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 1: Find a unique reference node on each rank and communicate them such that    ---*/
+  /*---         each process has the local ref-nodes from every process. Most processes     ---*/
+  /*---         won't have a boundary with the streamwise periodic 'inlet' marker,          ---*/
+  /*---         therefore the default value of the send value is set super high.            ---*/
+  /*-------------------------------------------------------------------------------------------*/
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
 
-        /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
-        iPeriodic = config->GetMarker_All_PerBound(iMarker);
-        if (iPeriodic == 1) {
+      /*--- 1 is the receiver/'inlet', 2 is the donor/'outlet', 0 if no PBC at all. ---*/
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if (iPeriodic == 1) {
 
-          for (iPoint = 0; iPoint < GetnVertex(iMarker); iPoint++) {
+        for (iPoint = 0; iPoint < GetnVertex(iMarker); iPoint++) {
 
-            /*--- Get the squared norm of the current point. ---*/
-            norm = 0.0;
+          /*--- Get the squared norm of the current point. ---*/
+          norm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            norm += pow(nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim),2);
+
+          /*--- Check if new unique reference node is found. ---*/
+          if (norm < min_norm || iPoint == 0) {
+            min_norm = norm;
             for (iDim = 0; iDim < nDim; iDim++)
-              norm += pow(nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim),2);
-
-            /*--- Check if new unique reference node is found. ---*/
-            if (norm < min_norm || iPoint == 0) {
-              min_norm = norm;
-              for (iDim = 0; iDim < nDim; iDim++)
-                Buffer_Send_RefNode[iDim] = nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim);
-            }
-            /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
+              Buffer_Send_RefNode[iDim] = nodes->GetCoord(vertex[iMarker][iPoint]->GetNode(),iDim);
           }
-          break; // Actually no more than one streamwise periodic marker pair is allowed
-        } // receiver conditional
-      } // periodic conditional
-    } // marker loop
+          /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
+        }
+        break; // Actually no more than one streamwise periodic marker pair is allowed
+      } // receiver conditional
+    } // periodic conditional
+  } // marker loop
 
-    /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
-    SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE,
-                       Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+  /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
+  SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE,
+                      Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, MPI_COMM_WORLD);
 
-    /*-------------------------------------------------------------------------------------------*/
-    /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
-    /*---         globally closest to the origin. Store the found node coordinates in the     ---*/
-    /*---         config container.                                                           ---*/
-    /*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
+  /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/
+  /*---         globally closest to the origin. Store the found node coordinates in the     ---*/
+  /*---         config container.                                                           ---*/
+  /*-------------------------------------------------------------------------------------------*/
 
-    for (iPoint = 0; iPoint < static_cast<unsigned long>(size); iPoint++) { // loop over all vertices on that marker and fi
+  for (iPoint = 0; iPoint < static_cast<unsigned long>(size); iPoint++) { // loop over all vertices on that marker and fi
 
-      /*--- Get the norm of the current Point. ---*/
-      norm = 0.0;
+    /*--- Get the norm of the current Point. ---*/
+    norm = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm += pow(Buffer_Recv_RefNode[iPoint*nDim + iDim],2);
+
+    /*--- Check if new unique reference node is found. ---*/
+    if (norm < min_norm || iPoint == 0) {
+      min_norm = norm;
       for (iDim = 0; iDim < nDim; iDim++)
-        norm += pow(Buffer_Recv_RefNode[iPoint*nDim + iDim],2);
-
-      /*--- Check if new unique reference node is found. ---*/
-      if (norm < min_norm || iPoint == 0) {
-        min_norm = norm;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_RefNode[iDim] = Buffer_Recv_RefNode[iPoint*nDim + iDim];
-      }
-      /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
+        Buffer_Send_RefNode[iDim] = Buffer_Recv_RefNode[iPoint*nDim + iDim];
     }
-
-    /*--- Store the final reference node. ---*/
-    config->SetStreamwise_Periodic_RefNode(Buffer_Send_RefNode);
-
-    /*--- Print the reference node to screen. ---*/
-    if (rank == MASTER_NODE) {
-      cout << "Streamwise Periodic Reference Node: [";
-      for (iDim = 0; iDim < nDim; iDim++)
-        cout <<  " " << Buffer_Send_RefNode[iDim];
-      cout << " ]" << endl;
-    }
-
+    /*--- The theoretical case, that multiple inlet points with the same distance to the origin exists, remains. ---*/
   }
+
+  /*--- Store the final reference node. ---*/
+  config->SetStreamwise_Periodic_RefNode(Buffer_Send_RefNode);
+
+  /*--- Print the reference node to screen. ---*/
+  if (rank == MASTER_NODE) {
+    cout << "Streamwise Periodic Reference Node: [";
+    for (iDim = 0; iDim < nDim; iDim++)
+      cout <<  " " << Buffer_Send_RefNode[iDim];
+    cout << " ]" << endl;
+  }
+
 }
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {

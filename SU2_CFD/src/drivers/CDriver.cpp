@@ -702,6 +702,10 @@ void CDriver::Geometrical_Preprocessing(CConfig* config, CGeometry **&geometry, 
         geometry[iMesh]->MatchPeriodic(config, iPeriodic);
       }
 
+      /*--- For Streamwise Periodic flow, find a unique reference node on the dedicated inlet marker. ---*/
+      if (config->GetKind_Streamwise_Periodic() != NONE)
+        geometry[iMesh]->FindUniqueNode_PeriodicBound(config);
+
       /*--- Initialize the communication framework for the periodic BCs. ---*/
       geometry[iMesh]->PreprocessPeriodicComms(geometry[iMesh], config);
 
