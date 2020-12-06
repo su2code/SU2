@@ -61,7 +61,6 @@ using namespace std;
 
 class CConfig {
 private:
-  bool DirectRunActive = false; /*!< \brief Indicates whether currently the primal is taped during discrete adjoint run.*/
   SU2_MPI::Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank, size;                 /*!< \brief MPI rank and size.*/
   bool base_config;
@@ -1042,7 +1041,7 @@ private:
   bool Streamwise_Periodic_Temperature;             /*!< \brief Use real periodicity for Energy equation or oterwise outlet source term. */
   su2double Streamwise_Periodic_PressureDrop,       /*!< \brief Value of prescribed pressure drop [Pa] which results in an artificial body force vector. */
             Streamwise_Periodic_TargetMassFlow,     /*!< \brief Value of prescribed massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
-            Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [ks/s] which results in an delta p and therefore an artificial body force vector. */
+            Streamwise_Periodic_MassFlow,           /*!< \brief Value of current massflow [kg/s] which results in an delta p and therefore an artificial body force vector. */
             Streamwise_Periodic_IntegratedHeatFlow, /*!< \brief Value of of the net sum of heatflow [W] into the domain. */
             Streamwise_Periodic_OutletHeat,         /*!< /brief Heatflux boundary [W/m^2] imposed at streamwise periodic outlet. */
             Streamwise_Periodic_InletTemperature;   /*!< /brief Area avg static Temp [K] at the periodic inlet. Used for adaptive outlet heatsink. */
@@ -9491,6 +9490,4 @@ public:
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
 
-  void SetDirectRunActive() { DirectRunActive = true; }
-  bool GetDirectRunActive() const { return DirectRunActive; }
 };

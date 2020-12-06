@@ -3710,8 +3710,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
           fully neglected if the pressure drop is converged. And for all other cases it should be minor difference at 
           best ---*/
     if((nZone==1 && InnerIter > 0) ||
-       (nZone>1  && OuterIter > 0) ||
-       (config->GetDirectRunActive())) // Otherwise this is not done during the adjoint run.
+       (nZone>1  && OuterIter > 0))
       config->SetStreamwise_Periodic_PressureDrop(Pressure_Drop_new);
     
     /*--- Output the new value of Delta P and ddp ---*/
