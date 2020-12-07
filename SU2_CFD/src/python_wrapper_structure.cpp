@@ -916,8 +916,8 @@ void CSinglezoneDriver::SetInitialMesh() {
   SU2_OMP_PARALLEL {
     // Overwrite fictious velocities
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->nPointDomain; iPoint++) {
-      for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->nDim; iDim++) {
+    for (unsigned long iPoint = 0; iPoint < solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetnPointDomain(); iPoint++) {
+      for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim(); iDim++) {
         su2double GridVel = 0.0;
         geometry_container[ZONE_0][INST_0][MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
       }
@@ -927,14 +927,14 @@ void CSinglezoneDriver::SetInitialMesh() {
     geometry_container[ZONE_0][INST_0][MESH_0]->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], GRID_VELOCITY);
 
     for (iMesh = 1u; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
-      SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[ZONE_0][INST_0][iMesh]->nPoint,omp_get_max_threads()))
-      for (unsigned long Point_Coarse = 0; Point_Coarse < geometry_container[ZONE_0][INST_0][iMesh]->nPoint; Point_Coarse++) {
+      SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(),omp_get_max_threads()))
+      for (unsigned long Point_Coarse = 0; Point_Coarse < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); Point_Coarse++) {
 
         /*--- Overwrite fictitious velocities ---*/
         su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
 
         /*--- Set the grid velocity for this coarse node. ---*/
-        for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->nDim; iDim++)
+        for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim(); iDim++)
           geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(Point_Coarse, iDim, Grid_Vel[iDim]);
       }
     }
