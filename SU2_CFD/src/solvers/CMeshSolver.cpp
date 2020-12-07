@@ -526,64 +526,6 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 
 }
 
-
-void CMeshSolver::StaticDeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
-
-  if (multizone) nodes->Set_BGSSolution_k();
-
-  /*--- Capture a few MPI dependencies for AD. ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
-
-  InitiateComms(geometry[MESH_0], config, SOLUTION);
-  CompleteComms(geometry[MESH_0], config, SOLUTION);
-
-  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
-  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
-
-  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
-
-  const bool wasActive = AD::BeginPassive();
-
-  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
-
-  AD::EndPassive(wasActive);
-
-  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
-  SU2_OMP_PARALLEL {
-    LinSysRes.SetValZero();
-  }
-
-  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
-
-  /*--- Solve the linear system. ---*/
-  Solve_System(geometry[MESH_0], config);
-
-  SU2_OMP_PARALLEL {
-
-  /*--- Update the grid coordinates and cell volumes using the solution
-     of the linear system (usol contains the x, y, z displacements). ---*/
-  UpdateGridCoord(geometry[MESH_0], config);
-
-  /*--- Update the dual grid. ---*/
-  UpdateDualGrid(geometry[MESH_0], config);
-
-  /*--- Update the multigrid structure. ---*/
-  UpdateMultiGrid(geometry, config);
-
-  /*--- Check for failed deformation (negative volumes). ---*/
-  SetMinMaxVolume(geometry[MESH_0], config, true);
-
-  /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
-  nodes->Set_Solution_time_n();
-  nodes->Set_Solution_time_n1();
-
-  } // end parallel
-
-}
-
-
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/

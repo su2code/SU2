@@ -93,11 +93,6 @@ public:
   void DynamicMeshUpdate(unsigned long TimeIter) override;
 
   /*!
-   * \brief Perform a static mesh deformation and the update of the multigrid structure.
-   */
-  void StaticMeshUpdate() override;
-
-  /*!
    * \brief Perform a mesh deformation as initial condition.
    */
   void SetInitialMesh() override;
