@@ -911,7 +911,7 @@ void CFluidDriver::SetInitialMesh() {
 
 void CSinglezoneDriver::SetInitialMesh() {
 
-  DynamicMeshUpdate();
+  DynamicMeshUpdate(0);
 
   SU2_OMP_PARALLEL {
     // Overwrite fictious velocities
