@@ -138,13 +138,17 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         }
       }
 
-      /*--- Find k closest points (need to define the comparator inline or debug build give wrong results). ---*/
-      partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
-        [](const DonorInfo& a, const DonorInfo& b) {
-          /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/
-          return (a.dist != b.dist)? (a.dist < b.dist) : (a.pidx < b.pidx);
-        }
-      );
+      /*--- Find k closest points. ---*/
+
+      for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
+        auto it = min_element(donorInfo.begin()+iDonor, donorInfo.end(),
+          [](const DonorInfo& a, const DonorInfo& b) {
+            /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/
+            return (a.dist != b.dist)? (a.dist < b.dist) : (a.pidx < b.pidx);
+          }
+        );
+        swap(donorInfo[iDonor], *it);
+      }
 
       /*--- Update stats. ---*/
       numTarget += 1;
