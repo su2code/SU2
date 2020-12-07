@@ -30,16 +30,6 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
-
-/*! \brief Helper struct to (partially) sort neighbours according to distance while
- *         keeping track of the origin of the point (i.e. index and processor). */
-struct DonorInfo {
-  su2double dist;
-  unsigned pidx;
-  int proc;
-  DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) : dist(d), pidx(i), proc(p) { }
-};
-
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
                                    unsigned int iZone, unsigned int jZone) :
   CInterpolator(geometry_container, config, iZone, jZone) {
@@ -139,16 +129,12 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       }
 
       /*--- Find k closest points. ---*/
-
-      for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
-        auto it = min_element(donorInfo.begin()+iDonor, donorInfo.end(),
-          [](const DonorInfo& a, const DonorInfo& b) {
-            /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/
-            return (a.dist != b.dist)? (a.dist < b.dist) : (a.pidx < b.pidx);
-          }
-        );
-        swap(donorInfo[iDonor], *it);
-      }
+      partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
+        [](const DonorInfo& a, const DonorInfo& b) {
+          /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/
+          return (a.dist != b.dist)? (a.dist < b.dist) : (a.pidx < b.pidx);
+        }
+      );
 
       /*--- Update stats. ---*/
       numTarget += 1;
