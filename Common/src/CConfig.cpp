@@ -2226,9 +2226,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
   addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
   /* DESCRIPTION: Visualize the deformation (surface grid) */
-  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
-  /* DESCRIPTION: Visualize the deformation (volume grid) */
-  addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
 
   /*!\par CONFIG_CATEGORY: Deformable mesh \ingroup Config*/
   /*--- option related to deformable meshes ---*/
@@ -2903,6 +2900,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
                              "and it also applies to discrete adjoint problems.\n\n");
           if (!option_name.compare("WRT_MESH_QUALITY"))
             newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
+          if (!option_name.compare("VISUALIZE_SURFACE_DEF"))
+            newString.append("VISUALIZE_SURFACE_DEF is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
+            newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -6722,9 +6723,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    if (Visualize_Surface_Def) cout << "A file will be created to visualize the surface deformation." << endl;
-    if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
-    else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
