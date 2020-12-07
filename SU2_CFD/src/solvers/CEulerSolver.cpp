@@ -2535,7 +2535,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver, CC
                                config->GetKind_Upwind_Flow() == SLAU2);
 
   /*--- BCM: Reset non-physical ---*/
-                              
+
   // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
   //   nodes->SetNon_Physical(iPoint, false);
 
@@ -3833,7 +3833,10 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
   const su2double Mean_Viscosity = Mean_LaminarVisc + Mean_EddyVisc;
 
   /*--- TODO: Correction with wall function ---*/
-  const su2double WF_Factor = nodes->GetTauWallFactor(iPoint);
+  su2double WF_Factor = 1.0;
+  if (nodes->GetTauWall(iPoint) > 0.0 && nodes->GetTauWall(jPoint) > 0.0) WF_Factor = 0.5*(nodes->GetTauWall(iPoint) + nodes->GetTauWall(jPoint));
+  else if (nodes->GetTauWall(iPoint) > 0.0) WF_Factor = nodes->GetTauWall(iPoint);
+  else if (nodes->GetTauWall(jPoint) > 0.0) WF_Factor = nodes->GetTauWall(jPoint);
 
   const su2double Density_i = nodes->GetDensity(iPoint);
   const su2double Xi_i = WF_Factor*Mean_Viscosity/Density_i;
