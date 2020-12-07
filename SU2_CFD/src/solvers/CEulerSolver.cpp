@@ -2536,8 +2536,8 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver, CC
 
   /*--- BCM: Reset non-physical ---*/
                               
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
-    nodes->SetNon_Physical(iPoint, false);
+  // for (auto iPoint = 0; iPoint < nPoint; iPoint++)
+  //   nodes->SetNon_Physical(iPoint, false);
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
 
@@ -2746,21 +2746,21 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       Normal = geometry->edge[iEdge]->GetNormal();
       Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
-      if (muscl) {
-        /*--- Extrapolate the state ---*/
+      // if (muscl) {
+      //   /*--- Extrapolate the state ---*/
 
-        const auto nTurbVarGrad = tkeNeeded? 1 : 0;
-        bool good_i = true, good_j = true;
-        ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                         &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
+      //   const auto nTurbVarGrad = tkeNeeded? 1 : 0;
+      //   bool good_i = true, good_j = true;
+      //   ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+      //                    &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
-        /*--- Check the extrapolation ---*/
+      //   /*--- Check the extrapolation ---*/
 
-        CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
+      //   CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
 
-        if (!good_i) nodes->SetNon_Physical(iPoint, true);
-        if (!good_j) nodes->SetNon_Physical(jPoint, true);
-      }
+      //   if (!good_i) nodes->SetNon_Physical(iPoint, true);
+      //   if (!good_j) nodes->SetNon_Physical(jPoint, true);
+      // }
 
       /*--- Mean Values ---*/
 
@@ -3131,10 +3131,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
-    // bool good_i = true, good_j = true;
-    // bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start);
-    bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
-    bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start) && (good_i || good_j);
+    bool good_i = true, good_j = true;
+    bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start);
+    // bool good_i = (!nodes->GetNon_Physical(iPoint)), good_j = (!nodes->GetNon_Physical(jPoint));
+    // bool muscl = (config->GetMUSCL_Flow() && (iMesh == MESH_0) && muscl_start) && (good_i || good_j);
     if (muscl) {
       /*--- Reconstruction ---*/
 
