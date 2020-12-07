@@ -693,6 +693,26 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
+  /*--- Clamp nodes outside of a given area. ---*/
+  if (config->GetHold_GridFixed()) {
+
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
+
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
+      auto Coord = geometry->nodes->GetCoord(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
+          su2double zeros[MAXNVAR] = {0.0};
+          nodes->SetSolution(iPoint, zeros);
+          LinSysSol.SetBlock(iPoint, zeros);
+          Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+          break;
+        }
+      }
+    }
+  }
+
 }
 
 void CMeshSolver::SetDualTime_Mesh(void){

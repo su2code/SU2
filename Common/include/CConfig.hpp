@@ -1478,7 +1478,7 @@ public:
    * \brief Get the coordinates where of the box where the grid is going to be deformed.
    * \return Coordinates where of the box where the grid is going to be deformed.
    */
-  su2double *GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
+  const su2double *GetHold_GridFixed_Coord(void) const { return Hold_GridFixed_Coord; }
 
   /*!
    * \brief Get the values of subsonic engine.
