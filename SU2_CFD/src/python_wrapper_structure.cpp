@@ -916,7 +916,7 @@ void CSinglezoneDriver::SetInitialMesh() {
   SU2_OMP_PARALLEL {
     // Overwrite fictious velocities
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetnPointDomain(); iPoint++) {
+    for (unsigned long iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain(); iPoint++) {
       for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim(); iDim++) {
         su2double GridVel = 0.0;
         geometry_container[ZONE_0][INST_0][MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
@@ -941,8 +941,8 @@ void CSinglezoneDriver::SetInitialMesh() {
   }
 
   /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->nodes->Set_Solution_time_n();
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->nodes->Set_Solution_time_n1();
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
+  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
 
   // Push back the volume
   for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
