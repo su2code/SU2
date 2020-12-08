@@ -682,51 +682,12 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   }
 
 
-  /*--- Match deform plane is not clamped ---*/
+  /*--- Symmetry deform plane is not clamped ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Match_Deform_Mesh(iMarker) == YES) {
-      const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
+      cout<<geometry->GetnElem_Bound(iMarker);
 
-      const bool quad = (geometry->bound[iMarker][0]->GetVTK_Type() == QUADRILATERAL);
-      const unsigned short nNodes = quad? 4 : nDim;
-
-      for (auto iNode = 0u; iNode < nNodes; iNode++) {
-        auto iPoint = geometry->bound[iMarker][0]->GetNode(iNode);
-        nodeCoord[iNode] = geometry->nodes->GetCoord(iPoint);
-      }
-
-      su2double normal[MAXNDIM] = {0.0};
-
-      switch (nNodes) {
-        case 2: LineNormal(nodeCoord, normal); break;
-        case 3: TriangleNormal(nodeCoord, normal); break;
-        case 4: QuadrilateralNormal(nodeCoord, normal); break;
-      }
-
-      auto axis = 0u;
-      for (auto iDim = 1u; iDim < MAXNDIM; ++iDim)
-        axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
-
-      if (fabs(normal[axis]) < 0.99*Norm(int(MAXNDIM),normal)) {
-        SU2_MPI::Error("The mesh solver only supports axis-aligned match markers.",CURRENT_FUNCTION);
-      }
-      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        /*--- Set and enforce solution at current and previous time-step ---*/
-        nodes->SetSolution(iPoint, axis, 0.0);
-        nodes->SetBound_Disp(iPoint, axis, 0.0);
-
-        if (config->GetTime_Domain()) {
-          nodes->SetSolution_Vel(iPoint, axis, 0.0);
-          nodes->SetSolution_Accel(iPoint, axis, 0.0);
-          nodes->Set_Solution_time_n(iPoint, axis, 0.0);
-          nodes->SetSolution_Vel_time_n(iPoint, axis, 0.0);
-          nodes->SetSolution_Accel_time_n(iPoint, axis, 0.0);
-        }
-
-        LinSysSol(iPoint, axis) = 0.0;
-        Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
-      }
+      BC_Sym_Plane(geometry, numerics, config, iMarker);
     }
   }
 
