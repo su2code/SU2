@@ -1795,11 +1795,11 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
-
+  cout<<"1"<<endl;
   const bool dynamic = config->GetTime_Domain();
 
   /*--- Determine axis of symmetry based on the normal of the first element in the marker. ---*/
-
+  cout<<"2"<<endl;
   const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
 
   const bool quad = (geometry->bound[val_marker][0]->GetVTK_Type() == QUADRILATERAL);
@@ -1809,7 +1809,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     auto iPoint = geometry->bound[val_marker][0]->GetNode(iNode);
     nodeCoord[iNode] = geometry->nodes->GetCoord(iPoint);
   }
-
+  cout<<"3"<<endl;
   su2double normal[MAXNDIM] = {0.0};
 
   switch (nNodes) {
@@ -1818,6 +1818,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     case 4: QuadrilateralNormal(nodeCoord, normal); break;
   }
 
+  cout<<"4"<<endl;
   auto axis = 0u;
   for (auto iDim = 1u; iDim < MAXNDIM; ++iDim)
     axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
@@ -1827,6 +1828,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
   }
 
   /*--- Impose zero displacement perpendicular to the symmetry plane. ---*/
+  cout<<"5"<<endl;
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -1835,7 +1837,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
     /*--- Set and enforce solution at current and previous time-step ---*/
     nodes->SetSolution(iPoint, axis, 0.0);
-
+    cout<<"6"<<endl;
     if (dynamic) {
       nodes->SetSolution_Vel(iPoint, axis, 0.0);
       nodes->SetSolution_Accel(iPoint, axis, 0.0);
@@ -1846,9 +1848,11 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
-
+    cout<<"7"<<endl;
     LinSysSol(iPoint, axis) = 0.0;
+    cout<<"8"<<endl;
     LinSysReact(iPoint, axis) = 0.0;
+    cout<<"9"<<endl;
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
 
   }
