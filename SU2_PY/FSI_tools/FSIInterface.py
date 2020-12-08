@@ -222,7 +222,7 @@ class Interface:
         # --- Identify the fluid and solid interfaces and store the number of nodes on both sides (and for each partition) ---
         self.fluidInterfaceIdentifier = None
         self.nLocalFluidInterfaceNodes = 0
-        if FluidSolver is not :
+        if FluidSolver is not None:
             print('Fluid solver is initialized on process {}'.format(myid))
             self.haveFluidSolver = True
             allMovingMarkersTags = FluidSolver.GetAllDeformMeshMarkersTag()
