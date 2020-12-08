@@ -685,7 +685,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   /*--- Symmetry deform plane is not clamped ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Match_Deform_Mesh(iMarker) == YES) {
-      cout<<geometry->GetnElem_Bound(iMarker);
 
       BC_Sym_Plane(geometry, numerics, config, iMarker);
     }
