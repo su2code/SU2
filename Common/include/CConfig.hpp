@@ -664,7 +664,6 @@ private:
   Wrt_Con_Freq_DualTime;        /*!< \brief Writing convergence history frequency. */
   bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Wrt_Binary_Restart,           /*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
@@ -5207,12 +5206,6 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void) const { return Restart; }
-
-  /*!
-   * \brief Flag for whether binary SU2 native restart files are written.
-   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
-   */
-  bool GetWrt_Binary_Restart(void) const { return Wrt_Binary_Restart; }
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are read.

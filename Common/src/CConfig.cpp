@@ -1122,8 +1122,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
-  addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
-  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
@@ -2904,6 +2902,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("VISUALIZE_SURFACE_DEF is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
           if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
             newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_BINARY_RESTART"))
+            newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
