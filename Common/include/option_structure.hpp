@@ -1104,6 +1104,7 @@ enum BC_TYPE {
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
+  NOT_AVAILABLE = 1000,       /*!< \brief Boundary not on this MPI rank. */
 };
 
 /*!

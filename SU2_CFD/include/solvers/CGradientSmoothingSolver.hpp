@@ -94,6 +94,27 @@ public:
                                     CConfig *config);
 
   /*!
+   * \brief Main routine to apply the method only on the surface for mesh sensitivities
+   *        Projects and smoothes only in the normal direction!
+   */
+  void ApplyGradientSmoothingSurface(CGeometry *geometry,
+                                       CSolver *solver,
+                                       CNumerics **numerics,
+                                       CConfig *config,
+                                       unsigned long val_marker);
+
+  /*!
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
+   */
+  void ApplyGradientSmoothingDV(CGeometry *geometry,
+                                CSolver *solver,
+                                CNumerics **numerics,
+                                CConfig *config,
+                                CSurfaceMovement *surface_movement,
+                                CVolumetricMovement *grid_movement);
+
+
+  /*!
    * \brief Assemble the stiffness matrix
    */
   void Compute_StiffMatrix(CGeometry *geometry,
@@ -101,11 +122,28 @@ public:
                            CConfig *config);
 
   /*!
+   * \brief Compute the stiffness matrix of the surface mesh
+   */
+  void Compute_Surface_StiffMatrix(CGeometry *geometry,
+                                   CNumerics **numerics,
+                                   CConfig *config,
+                                   unsigned long val_marker,
+                                   unsigned int nSurfDim=1);
+
+  /*!
    * \brief Calculate the RHS of the PDE
    */
   void Compute_Residual(CGeometry *geometry,
                         CSolver *solver,
                         CConfig *config);
+
+  /*!
+   * \brief Compute the RHS of the PDE on the surface mesh
+   */
+  void Compute_Surface_Residual(CGeometry *geometry,
+                                CSolver *solver,
+                                CConfig *config,
+                                unsigned long val_marker);
 
   /*!
    * \brief Set the boundary conditions
@@ -124,13 +162,11 @@ public:
                     unsigned int val_marker);
 
   /*!
-   * \brief Set Neumann boundary conditions
+   * \brief Set Dirichlet boundary conditions for the surface solver
    */
-  void BC_Neumann(CGeometry *geometry,
-                  CSolver **solver_container,
-                  CNumerics **numerics,
-                  CConfig *config,
-                  unsigned int val_marker);
+  void BC_Surface_Dirichlet(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned int val_marker);
 
   /*!
    * \brief Call the linear systems solver
@@ -139,65 +175,23 @@ public:
                            CConfig *config);
 
   /*!
-   * \brief Extract the solution of the linear solver and store it in the sensitivities of the nodes
+   * \brief Get the matrix vector product with the StiffnessMatrix
+   * \note This always applies the stiffness matrix for all dimensions independent of each other!
    */
-  void WriteSensitivities(CGeometry *geometry,
-                          CSolver *solver,
-                          CConfig *config,
-                          unsigned long val_marker=0);
+  CSysMatrixVectorProduct<su2mixedfloat> GetStiffnessMatrixVectorProduct(CGeometry *geometry,                                                                        CNumerics **numerics,
+                                                                         CConfig *config);
 
   /*!
-   * \brief Get the value of the reference coordinate to set on the element structure.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] indexNode - Index of the node.
-   * \param[in] iDim - Dimension required.
+   * \brief calculate the original DV gradient similar to SU2_DOT_AD
    */
-  inline su2double Get_ValCoord(CGeometry *geometry,
-                         unsigned long indexNode,
-                         unsigned int iDim)  {
-    return geometry->nodes->GetCoord(indexNode, iDim);
-  }
+  void CalculateOriginalGradient(CGeometry *geometry,
+                                 CVolumetricMovement* grid_movement,
+                                 CConfig *config);
 
   /*!
-   * \brief Main routine to apply the method only on the surface for mesh sensitivities
-   *        Projects and smoothes only in the normal direction!
+   * \brief write the DV gradient into a file
    */
-  void ApplyGradientSmoothingSurface(CGeometry *geometry,
-                                       CSolver *solver,
-                                       CNumerics **numerics,
-                                       CConfig *config,
-                                       unsigned long val_marker);
-
-  /*!
-   * \brief Compute the stiffness matrix of the surface mesh
-   */
-  void Compute_Surface_StiffMatrix(CGeometry *geometry,
-                                   CNumerics **numerics,
-                                   CConfig *config,
-                                   unsigned long val_marker,
-                                   unsigned int nSurfDim=1);
-
-  /*!
-   * \brief Compute the RHS of the PDE on the surface mesh
-   */
-  void Compute_Surface_Residual(CGeometry *geometry,
-                                CSolver *solver,
-                                CConfig *config,
-                                unsigned long val_marker);
-
-  /*!
-   * \brief Set Dirichlet boundary conditions for the surface solver
-   */
-  void BC_Surface_Dirichlet(CGeometry *geometry,
-                            CConfig *config,
-                            unsigned int val_marker);
-
-  /*!
-   * \brief Extract the Coordinates of the element from geometry
-   */
-  su2activematrix GetElementCoordinates(CGeometry *geometry,
-                                        std::vector<unsigned long>& indexNode,
-                                        int EL_KIND = 0);
+  void OutputDVGradient(string out_file="delta_p.txt");
 
   /*!
    * \brief Extract and set the sensitivity from the discrete adjoint solver.
@@ -220,7 +214,15 @@ public:
                          CConfig *config);
 
   /*!
-   * \brief Write the content of Sensitivity to the sensitivity in the geometry
+   * \brief Write the solution of the linear solver into the sensitivities of the nodes
+   */
+  void WriteSensitivity(CGeometry *geometry,
+                          CSolver *solver,
+                          CConfig *config,
+                          unsigned long val_marker=0);
+
+  /*!
+   * \brief Write the content of sensitivity in the nodes to the sensitivity in the geometry
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
@@ -228,7 +230,7 @@ public:
                           CConfig *config);
 
   /*!
-   * \brief Read the sensitivity in the geometry
+   * \brief Read the sensitivity for the geometry into the nodes
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
@@ -236,62 +238,42 @@ public:
                          CConfig *config);
 
   /*!
-   * \brief multiply the surface sensitivities with the parametrization Jacobian
-   * \param Jacobian of the parameterization
-   * \param bool to clarify if we multiply by transposed or not
-   */
-  void MultiplyParameterJacobian(su2double *Jacobian,
-                                 bool transposed);
-
-  /*!
-   * \brief write the DV gradient into a file
-   */
-  void OutputDVGradient(string out_file="delta_p.txt");
-
-  /*!
-   * \brief calculate the original DV gradient similar to SU2_DOT_AD
-   */
-  void CalculateOriginalGradient(CGeometry *geometry,
-                                 CVolumetricMovement* grid_movement,
-                                 CConfig *config);
-
-  /*!
-   * \brief read or write the surface sensitivity into an Eigen vector
-   */
-  void WriteReadSurfaceSensitivities(CGeometry *geometry,
-                                     CConfig *config,
-                                     VectorType& x,
-                                     bool write);
-
-  /*!
-   * \brief All steps required for smoothing the whole system on DV level in an iterative way
-   */
-  void ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement);
-
-  /*!
-   * \brief Get the matrix vector product with the StiffnessMatrix
-   * \note This always applies the stiffness matrix for all dimensions independent of each other!
-   */
-  CSysMatrixVectorProduct<su2mixedfloat> GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config);
-
-  /*!
-   * \brief Copy sensitivities from nodes to a vector
-   */
-  void WriteSens2Vector(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
-
-  /*!
    * \brief Copy sensitivities from a vector into the geometry
    */
-  void WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
+  void WriteVector2Geometry(CGeometry *geometry,
+                            CConfig *config,
+                            CSysVector<su2mixedfloat> &vector);
 
   /*!
    * \brief Copy sensitivities from the geometry into a vector
    */
-  void ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat> &vector);
+  void ReadVector2Geometry(CGeometry *geometry,
+                           CConfig *config,
+                           CSysVector<su2mixedfloat> &vector);
+
+  /*!
+   * \brief Get the value of the reference coordinate to set on the element structure.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] indexNode - Index of the node.
+   * \param[in] iDim - Dimension required.
+   */
+  inline su2double Get_ValCoord(CGeometry *geometry,
+                         unsigned long indexNode,
+                         unsigned int iDim)  {
+    return geometry->nodes->GetCoord(indexNode, iDim);
+  }
+
+  /*!
+   * \brief Extract the Coordinates of the element from geometry
+   */
+  su2activematrix GetElementCoordinates(CGeometry *geometry,
+                                        std::vector<unsigned long>& indexNode,
+                                        int EL_KIND = 0);
 
   /*!
    * \brief Extra entries to eliminate in the linear system
    */
-  void Set_VertexEliminationSchedule(CGeometry *geometry, CConfig *config);
+  void Set_VertexEliminationSchedule(CGeometry *geometry,
+                                     CConfig *config);
 
 };

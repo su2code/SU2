@@ -232,21 +232,13 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
 
     for (dir = 0; dir < nDim ; dir++) {
 
-      ofstream input ("input.txt");
-      auxVec.printVec(input);
-      input.close();
-
       Compute_Residual(geometry, solver, config);
 
       Impose_BC(geometry, numerics, config);
 
       Solve_Linear_System(geometry, config);
 
-      WriteSensitivities(geometry, solver, config);
-
-      ofstream result ("result.txt");
-      LinSysSol.printVec(result);
-      result.close();
+      WriteSensitivity(geometry, solver, config);
 
       LinSysSol.SetValZero();
       LinSysRes.SetValZero();
@@ -254,23 +246,148 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry *geometry,
 
   } else {
 
-    ofstream input ("input.txt");
-    auxVec.printVec(input);
-    input.close();
-
     Compute_Residual(geometry, solver, config);
 
     Impose_BC(geometry, numerics, config);
 
     Solve_Linear_System(geometry, config);
 
-    ofstream result ("result.txt");
-    LinSysSol.printVec(result);
-    result.close();
-
-    WriteSensitivities(geometry, solver, config);
+    WriteSensitivity(geometry, solver, config);
 
   }
+
+}
+
+
+void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
+
+  /*--- Set vector and sparse matrix to 0 ---*/
+  LinSysSol.SetValZero();
+  LinSysRes.SetValZero();
+  Jacobian.SetValZero();
+
+  Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
+
+  Compute_Surface_Residual(geometry, solver, config, val_marker);
+
+  if ( config->GetDirichletSurfaceBound() ) {
+    BC_Surface_Dirichlet(geometry, config, val_marker);
+  }
+
+  Solve_Linear_System(geometry, config);
+
+  WriteSensitivity(geometry, solver, config, val_marker);
+
+}
+
+
+void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement) {
+
+  /// Set to 0
+  Jacobian.SetValZero();
+
+  /// record the parameterization
+  if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
+  RecordParameterizationJacobian(geometry, config, surface_movement, activeCoord);
+
+  /// calculate the original gradinet
+  CalculateOriginalGradient(geometry, grid_movement, config);
+
+  /// compute the Hessian column by column
+  if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;
+
+  /// variable declarations
+  unsigned nDVtotal=config->GetnDV_Total();
+  unsigned column;
+  vector<su2double> seedvector(nDVtotal, 0.0);
+  MatrixType hessian = MatrixType::Zero(nDVtotal, nDVtotal);
+
+  /// get matrix vector product for this
+  auto mat_vec = GetStiffnessMatrixVectorProduct(geometry, numerics, config);
+
+  for (column=0; column<nDVtotal; column++) {
+
+    if (rank == MASTER_NODE)  cout << "    working in column " << column << endl;
+
+    /// create seeding
+    std::fill(seedvector.begin(), seedvector.end(), 0.0);
+    seedvector[column] = 1.0;
+
+    // necessary for surface case!
+    helperVecIn.SetValZero();
+    helperVecOut.SetValZero();
+    helperVecAux.SetValZero();
+
+    /// forward projection
+    ProjectDVtoMesh(geometry, config, seedvector, helperVecIn, activeCoord);
+
+    /// matrix vector product in the middle
+    if (config->GetSmoothOnSurface()) {
+
+      /// perform MPI communication
+      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+
+      /// compute the matrix vector product
+      /// MatrixVector product operator does mpi comm at the end
+      mat_vec(helperVecIn, helperVecAux);
+
+      /// delete entries from halo cells, otherwise we get errors for parallel computations
+      for (auto iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          helperVecOut(iPoint,iDim) = helperVecAux(iPoint,iDim);
+        }
+      }
+
+    } else {
+
+      /// meshdeformation forward
+      WriteVector2Geometry(geometry,config, helperVecIn);
+      grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
+      ReadVector2Geometry(geometry,config, helperVecIn);
+
+      /// perform MPI communication
+      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
+
+      /// compute the matrix vector product
+      /// MatrixVector product operator does mpi comm at the end
+      mat_vec(helperVecIn, helperVecAux);
+
+      /// delete entries from halo cells, otherwise we get errors for parallel computations
+      for (auto iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
+          helperVecOut(iPoint,iDim) = helperVecAux(iPoint,iDim);
+        }
+      }
+
+      /// mesh deformation backward
+      WriteVector2Geometry(geometry,config, helperVecOut);
+      grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
+      ReadVector2Geometry(geometry,config, helperVecOut);
+
+    }
+
+    /// reverse projection
+    ProjectMeshToDV(geometry, config, helperVecOut, seedvector, activeCoord);
+
+    /// extract projected direction
+    hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
+  }
+
+  /// output the matrix
+  ofstream SysMatrix(config->GetObjFunc_Hess_FileName() + std::to_string(rank));
+  SysMatrix << hessian.format(CSVFormat);
+  SysMatrix.close();
+
+  /// calculate and output the treated gradient
+  QRdecomposition QR(hessian);
+  VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
+  VectorType x = QR.solve(b);
+
+  deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
+
+  OutputDVGradient();
 
 }
 
@@ -368,7 +485,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry *geometry, 
   su2activematrix Coord;
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=1000) {
+  if (val_marker!=NOT_AVAILABLE) {
 
     /*--- Loops over all the elements ---*/
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
@@ -533,7 +650,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
   su2activematrix Coord;
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=1000) {
+  if (val_marker!=NOT_AVAILABLE) {
 
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
@@ -603,7 +720,6 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry *geometry, CSo
 }
 
 
-
 void CGradientSmoothingSolver::Impose_BC(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   unsigned int iMarker;
@@ -646,7 +762,7 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig
   const su2double zeros[nDim] = {0.0};
 
   /*--- Check if the current MPI rank has a part of the marker ---*/
-  if (val_marker!=1000) {
+  if (val_marker!=NOT_AVAILABLE) {
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
       /*--- Get node index ---*/
@@ -661,12 +777,6 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(CGeometry *geometry, CConfig
       }
     }
   }
-}
-
-
-// For now: left empty since there is no calculation necessary for zero Neumann boundaries.
-void CGradientSmoothingSolver::BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, unsigned int val_marker) {
-
 }
 
 
@@ -694,14 +804,87 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 }
 
 
-void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
+CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+
+  bool surf = config->GetSmoothOnSurface();
+
+  /*--- Compute the sparse stiffness matrix ---*/
+  if (surf) {
+    unsigned long dvMarker=NOT_AVAILABLE;
+    for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ( config->GetMarker_All_DV(iMarker) == YES ) {
+        dvMarker=iMarker;
+      }
+    }
+    Compute_Surface_StiffMatrix(geometry, numerics, config, dvMarker, nDim);
+  } else {
+    Compute_StiffMatrix(geometry, numerics, config);
+  }
+
+  return CSysMatrixVectorProduct<su2mixedfloat>(Jacobian, geometry, config);
+}
+
+
+void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config) {
+
+  if (rank == MASTER_NODE) cout << endl << "Calculating the original DV gradient." << endl;
+
+  WriteSens2Geometry(geometry,config);
+
+  grid_movement->SetVolume_Deformation(geometry, config, false, true);
+
+  ReadVector2Geometry(geometry,config, helperVecOut);
+
+  ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
+
+  OutputDVGradient("orig_grad.dat");
+}
+
+
+void CGradientSmoothingSolver::OutputDVGradient(string out_file) {
+
+  unsigned iDV;
+
+  ofstream delta_p (out_file);
+  delta_p.precision(17);
+  for (iDV = 0; iDV < deltaP.size(); iDV++) {
+    delta_p << deltaP[iDV] << ",";
+  }
+  delta_p.close();
+
+}
+
+
+void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      nodes->SetSensitivity(iPoint,iDim, solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint,iDim));
+    }
+  }
+}
+
+
+void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
+    }
+  }
+}
+
+
+void CGradientSmoothingSolver::WriteSensitivity(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned long val_marker){
 
   unsigned long iPoint, total_index;
   unsigned int iDim;
   su2double* normal;
   su2double norm;
 
-  if ( config->GetSmoothOnSurface() && val_marker!=1000) {
+  if ( config->GetSmoothOnSurface() && val_marker!=NOT_AVAILABLE) {
 
     for (unsigned long iVertex =0; iVertex<geometry->nVertex[val_marker]; iVertex++)  {
 
@@ -736,6 +919,50 @@ void CGradientSmoothingSolver::WriteSensitivities(CGeometry *geometry, CSolver *
       }
     }
 
+  }
+}
+
+
+void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *config) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
+    }
+  }
+}
+
+
+void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *config) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint,iDim));
+    }
+  }
+}
+
+
+void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      geometry->SetSensitivity(iPoint,iDim, vector[iPoint*nDim+iDim]);
+    }
+  }
+}
+
+
+void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
+  unsigned long iPoint;
+  unsigned int iDim;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
+    }
   }
 }
 
@@ -796,345 +1023,6 @@ su2activematrix CGradientSmoothingSolver::GetElementCoordinates(CGeometry *geome
 }
 
 
-void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, unsigned long val_marker) {
-
-  /*--- Set vector and sparse matrix to 0 ---*/
-  LinSysSol.SetValZero();
-  LinSysRes.SetValZero();
-  Jacobian.SetValZero();
-
-  ofstream input ("input" + std::to_string(rank) + ".txt");
-  auxVec.printVec(input);
-  input.close();
-
-  Compute_Surface_StiffMatrix(geometry, numerics, config, val_marker);
-
-  Compute_Surface_Residual(geometry, solver, config, val_marker);
-
-  if ( config->GetDirichletSurfaceBound() ) {
-    BC_Surface_Dirichlet(geometry, config, val_marker);
-  }
-
-  ofstream residual ("residual" + std::to_string(rank) + ".txt");
-  LinSysRes.printVec(residual);
-  residual.close();
-
-  Solve_Linear_System(geometry, config);
-
-  ofstream stiffness("jacobian" + std::to_string(rank) + ".dat");
-  Jacobian.printMat(stiffness);
-  stiffness.close();
-
-  ofstream result ("result" + std::to_string(rank) + ".txt");
-  LinSysSol.printVec(result);
-  result.close();
-
-  WriteSensitivities(geometry, solver, config, val_marker);
-
-  cout << "rank " << rank << " is at end of smoothing" << endl;
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
-
-
-}
-
-
-void CGradientSmoothingSolver::SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      nodes->SetSensitivity(iPoint,iDim, solver[ADJFLOW_SOL]->GetNodes()->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-
-void CGradientSmoothingSolver::OutputSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      solver[ADJFLOW_SOL]->GetNodes()->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-
-void CGradientSmoothingSolver::WriteSens2Geometry(CGeometry *geometry, CConfig *config) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->SetSensitivity(iPoint,iDim, nodes->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-
-void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *config) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      nodes->SetSensitivity(iPoint, iDim, geometry->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-void CGradientSmoothingSolver::WriteSens2Vector(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(nodes->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->SetSensitivity(iPoint,iDim, vector[iPoint*nDim+iDim]);
-    }
-  }
-}
-
-void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
-  unsigned long iPoint;
-  unsigned int iDim;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      vector[iPoint*nDim+iDim] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
-    }
-  }
-}
-
-void CGradientSmoothingSolver::MultiplyParameterJacobian(su2double *Jacobian, bool transposed){
-
-  unsigned iDV, iPoint, iDim,  total_index;
-  su2double Sens;
-
-  if (!transposed) {
-    for (iDV=0; iDV<deltaP.size(); iDV++) {
-      deltaP[iDV] = 0.0;
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim+iDim;
-          deltaP[iDV] += Jacobian[iDV * nPoint*nDim + total_index] * nodes->GetSensitivity(iPoint ,iDim);
-        }
-      }
-    }
-  } else if (transposed) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Sens = 0.0;
-        total_index = iPoint*nDim+iDim;
-        for (iDV=0; iDV<deltaP.size(); iDV++) {
-          Sens += Jacobian[iDV * nPoint*nDim + total_index] * deltaP[iDV];
-        }
-        nodes->SetSensitivity(iPoint ,iDim, Sens);
-      }
-    }
-  }
-
-}
-
-
-void CGradientSmoothingSolver::OutputDVGradient(string out_file) {
-
-  unsigned iDV;
-
-  ofstream delta_p (out_file);
-  delta_p.precision(17);
-  for (iDV = 0; iDV < deltaP.size(); iDV++) {
-    delta_p << deltaP[iDV] << ",";
-  }
-  delta_p.close();
-
-}
-
-
-void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config) {
-
-  if (rank == MASTER_NODE) cout << endl << "Calculating the original DV gradient." << endl;
-
-  WriteSens2Geometry(geometry,config);
-
-  grid_movement->SetVolume_Deformation(geometry, config, false, true);
-
-  ReadVector2Geometry(geometry,config, helperVecOut);
-
-  ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
-
-  OutputDVGradient("orig_grad.dat");
-}
-
-
-void CGradientSmoothingSolver::WriteReadSurfaceSensitivities(CGeometry *geometry, CConfig *config, VectorType& x, bool write) {
-
-  unsigned total_index, iPoint;
-
-  for (auto iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      for (auto iVertex = 0; iVertex <geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (auto iDim = 0; iDim < nDim; iDim++){
-          total_index = iPoint*nDim+iDim;
-          if (write) {
-            nodes->SetSensitivity(iPoint,iDim,x[total_index]);
-          } else {
-            x[total_index]=nodes->GetSensitivity(iPoint,iDim);
-          }
-        }
-      }
-    }
-  }
-
-}
-
-
-void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement) {
-
-  /// Set to 0
-  Jacobian.SetValZero();
-
-  /// record the parameterization
-  if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
-  RecordParameterizationJacobian(geometry, config, surface_movement, activeCoord);
-
-  /// calculate the original gradinet
-  CalculateOriginalGradient(geometry, grid_movement, config);
-
-  /// compute the Hessian column by column
-  if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;
-
-  /// variable declarations
-  unsigned nDVtotal=config->GetnDV_Total();
-  unsigned column;
-  vector<su2double> seedvector(nDVtotal, 0.0);
-  MatrixType hessian = MatrixType::Zero(nDVtotal, nDVtotal);
-
-  /// get matrix vector product for this
-  auto mat_vec = GetStiffnessMatrixVectorProduct(geometry, numerics, config);
-
-  for (column=0; column<nDVtotal; column++) {
-
-    if (rank == MASTER_NODE)  cout << "    working in column " << column << endl;
-
-    /// create seeding
-    std::fill(seedvector.begin(), seedvector.end(), 0.0);
-    seedvector[column] = 1.0;
-
-    // necessary for surface case!
-    helperVecIn.SetValZero();
-    helperVecOut.SetValZero();
-    helperVecAux.SetValZero();
-
-    /// forward projection
-    ProjectDVtoMesh(geometry, config, seedvector, helperVecIn, activeCoord);
-
-    /// matrix vector product in the middle
-    if (config->GetSmoothOnSurface()) {
-
-      /// perform MPI communication
-      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
-
-      /// compute the matrix vector product
-      /// MatrixVector product operator does mpi comm at the end
-      mat_vec(helperVecIn, helperVecAux);
-
-      /// delete entries from halo cells, otherwise we get errors for parallel computations
-      for (auto iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          helperVecOut(iPoint,iDim) = helperVecAux(iPoint,iDim);
-        }
-      }
-
-    } else {
-
-      /// meshdeformation forward
-      WriteVector2Geometry(geometry,config, helperVecIn);
-      grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
-      ReadVector2Geometry(geometry,config, helperVecIn);
-
-      /// perform MPI communication
-      Jacobian.InitiateComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      Jacobian.CompleteComms(helperVecIn, geometry, config, SOLUTION_MATRIX);
-
-      /// compute the matrix vector product
-      /// MatrixVector product operator does mpi comm at the end
-      mat_vec(helperVecIn, helperVecAux);
-
-      /// delete entries from halo cells, otherwise we get errors for parallel computations
-      for (auto iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-        for (auto iDim = 0; iDim < nDim; iDim++) {
-          helperVecOut(iPoint,iDim) = helperVecAux(iPoint,iDim);
-        }
-      }
-
-      /// mesh deformation backward
-      WriteVector2Geometry(geometry,config, helperVecOut);
-      grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
-      ReadVector2Geometry(geometry,config, helperVecOut);
-
-    }
-
-    /// reverse projection
-    ProjectMeshToDV(geometry, config, helperVecOut, seedvector, activeCoord);
-
-    /// extract projected direction
-    hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
-  }
-
-  /// output the matrix
-  ofstream SysMatrix(config->GetObjFunc_Hess_FileName() + std::to_string(rank));
-  SysMatrix << hessian.format(CSVFormat);
-  SysMatrix.close();
-
-  /// calculate and output the treated gradient
-  QRdecomposition QR(hessian);
-  VectorType b = Eigen::Map<VectorType, Eigen::Unaligned>(deltaP.data(), deltaP.size());
-  VectorType x = QR.solve(b);
-
-  deltaP = std::vector<su2double>(x.data(), x.data() + x.size());
-
-  OutputDVGradient();
-}
-
-
-CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
-
-  bool surf = config->GetSmoothOnSurface();
-
-  /*--- Compute the sparse stiffness matrix ---*/
-  if (surf) {
-    unsigned long dvMarker=1000;
-    for (unsigned int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ( config->GetMarker_All_DV(iMarker) == YES ) {
-        dvMarker=iMarker;
-      }
-    }
-    Compute_Surface_StiffMatrix(geometry, numerics, config, dvMarker, nDim);
-  } else {
-    Compute_StiffMatrix(geometry, numerics, config);
-  }
-
-  // for debugging
-  /*
-  ofstream stiffness("sobolevstiffness.dat");
-  Jacobian.printMat(stiffness);
-  stiffness.close();
-  */
-
-  return CSysMatrixVectorProduct<su2mixedfloat>(Jacobian, geometry, config);
-}
-
-
 void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry, CConfig *config) {
 
   /*--- Store global point indices of essential BC markers. ---*/
@@ -1146,7 +1034,7 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry
   if (config->GetSmoothOnSurface()) {
 
     /*--- Find Marker_DV if this node has any ---*/
-    unsigned long dvMarker=1000;
+    unsigned long dvMarker=NOT_AVAILABLE;
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_DV(iMarker) == YES) {
         dvMarker = iMarker;
@@ -1154,7 +1042,7 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry *geometry
     }
 
     /*--- surface case: design boundary border if Dirichlet condition is set and rank holds part of it. ---*/
-    if ( config->GetDirichletSurfaceBound() && dvMarker!=1000) {
+    if ( config->GetDirichletSurfaceBound() && dvMarker!=NOT_AVAILABLE) {
       for (auto iVertex = 0; iVertex < geometry->nVertex[dvMarker]; iVertex++) {
         /*--- Get node index ---*/
         iPoint = geometry->vertex[dvMarker][iVertex]->GetNode();
