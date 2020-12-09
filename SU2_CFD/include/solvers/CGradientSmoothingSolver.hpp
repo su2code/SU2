@@ -44,25 +44,22 @@ public:
   CElement*** element_container  = nullptr;  /*!< \brief Container which stores the element information. */
 
   su2double **Jacobian_block = nullptr;      /*!< \brief Submatrix to assemble the Jacobian matrix. */
-  su2double **mZeros_Aux  = nullptr;         /*!< \brief Submatrix to make zeros and impose Dirichlet boundary conditions. */
-  su2double **mId_Aux = nullptr;             /*!< \brief Diagonal submatrix to impose Dirichelt boundary conditions. */
+  su2double **mId_Aux = nullptr;             /*!< \brief Diagonal identity matrix to set blocks in the Jacobian. */
 
   unsigned int dir;                          /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
-  CSysVector<su2double> auxVecInp;           /*!< \brief Auxiliar vectors for output and debugging */
+  CSysVector<su2double> auxVec;              /*!< \brief Auxiliar vectors for output and debugging */
 
   CSysVector<su2double> activeCoord;         /*!< \brief Auxiliar vector to keep the indeces of geometry->vertex->Coord */
 
   #ifndef CODI_FORWARD_TYPE
     CSysVector<su2mixedfloat> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
     CSysVector<su2mixedfloat> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
-    CSysVector<su2mixedfloat> matVecIn;      /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
-    CSysVector<su2mixedfloat> matVecOut;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+    CSysVector<su2mixedfloat> helperVecAux;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
   #else
     CSysVector<su2double> helperVecIn;
     CSysVector<su2double> helperVecOut;
-    CSysVector<su2mixedfloat> matVecIn;      /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
-    CSysVector<su2mixedfloat> matVecOut;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+    CSysVector<su2double> helperVecAux;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
   #endif
 
   CVariable* nodes = nullptr;                /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
@@ -267,33 +264,7 @@ public:
                                      bool write);
 
   /*!
-   * \brief Return the stiffness matrix
-   */
-  MatrixType GetStiffnessMatrix(CGeometry *geometry,
-                                CNumerics **numerics,
-                                CConfig *config);
-
-  /*!
-   * \brief Return the stiffness matrix
-   */
-  MatrixType GetSurfaceStiffnessMatrix(CGeometry *geometry,
-                                       CNumerics **numerics,
-                                       CConfig *config,
-                                       unsigned long val_marker);
-
-  /*!
-   * \brief Smooth the system by multiplying out the whole system matrix and solving it
-   */
-  void SmoothCompleteSystem(CGeometry *geometry,
-                            CSolver *solver,
-                            CNumerics **numerics,
-                            CConfig *config,
-                            CVolumetricMovement* grid_movement,
-                            su2double *param_jacobi);
-
-  /*!
-   * \brief All steps required for smoothing the whole system on DV level
-   *        New layout for SmoothCompleteSystem + projections
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
    */
   void ApplyGradientSmoothingDV(CGeometry *geometry, CSolver *solver, CNumerics **numerics, CConfig *config, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement);
 
