@@ -169,7 +169,6 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(true
       if (((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
            (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) ||
            (config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-           (config->GetMarker_All_Match_Deform_Mesh(iMarker) == YES) ||
            (config->GetMarker_All_Moving(iMarker) == YES)) {
         essentialMarkers.push_back(iMarker);
       }
