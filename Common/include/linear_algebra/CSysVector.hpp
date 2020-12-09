@@ -325,7 +325,7 @@ public:
    * \param[in] val_residual - Value to set to the residual.
    */
   inline void SetBlock(unsigned long val_ipoint, const ScalarType *val_residual) {
-    cout<<nvar<<endl;
+    cout<<nVar<<endl;
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       vec_val[val_ipoint*nVar+iVar] = val_residual[iVar];
   }
