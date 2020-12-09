@@ -1763,8 +1763,6 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CCon
     nodes->SetBound_Disp(iPoint, zeros);
 
     LinSysSol.SetBlock(iPoint, zeros);
-    cout<<"Sono qui"<<endl;
-    cout<<&LinSysReact<<endl;
     LinSysReact.SetBlock(iPoint, zeros);
     Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
 
@@ -1797,6 +1795,7 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
+  cout << geometry->GetnElem_Bound(val_marker) <<endl;
   const bool dynamic = config->GetTime_Domain();
 
   /*--- Determine axis of symmetry based on the normal of the first element in the marker. ---*/
