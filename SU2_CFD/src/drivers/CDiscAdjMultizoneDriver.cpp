@@ -217,6 +217,10 @@ void CDiscAdjMultizoneDriver::Run() {
   /*--- If the gradient of the objective function is 0 so are the adjoint variables. ---*/
 
   if (rhs_norm < EPS) {
+    if (rank == MASTER_NODE) {
+      cout << "\nThe gradient of the objective function is numerically 0.";
+      cout << "\nThis implies that the adjoint variables are also 0.\n\n";
+    }
     EvaluateSensitivities(0, true);
     return;
   }

@@ -571,6 +571,10 @@ void CDriver::Postprocessing() {
     cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
       cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
+      if (BandwidthSum > 0) {
+        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
+        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
+      }
     } else cout << endl;
     cout << "-------------------------------------------------------------------------" << endl;
     cout << endl;
