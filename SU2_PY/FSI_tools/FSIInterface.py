@@ -837,7 +837,9 @@ class Interface:
 
     def NearestNeighboorMeshMapping(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc):
         """
-        Description
+        Interpolation based on the nearest neighboor.
+        For each node, the mesh is scanned to find the closed node to the first
+        one.
         """
 
         if self.have_MPI:
@@ -878,7 +880,9 @@ class Interface:
 
     def RBFMeshMapping_A(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc, rad):
         """
-        Description
+        First part of the RBF mapping. This method provides the matrix required to
+        obtain, from the structural displacements, the loadings of the kernel
+        functions.
         """
 
         if self.have_MPI:
@@ -932,7 +936,8 @@ class Interface:
 
     def RBFMeshMapping_B(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc, rad):
         """
-        Description
+        Second part of the RBF mapping. This method provides the matrix required to
+        obtain, from the kernel function loadings, the fluid nodes displacements.
         """
 
         if self.have_MPI:
@@ -986,7 +991,9 @@ class Interface:
 
     def TPSMeshMapping_A(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc):
         """
-        Description
+        First part of the RBF mapping. This method provides the matrix required to
+        obtain, from the structural displacements, the loadings of the kernel
+        functions.
         """
 
         if self.have_MPI:
@@ -1022,7 +1029,8 @@ class Interface:
 
     def TPSMeshMapping_B(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc):
         """
-        Description
+        Second part of the TPS mapping. This method provides the matrix required to
+        obtain, from the kernel function loadings, the fluid nodes displacements.
         """
 
         if self.have_MPI:
@@ -1059,7 +1067,8 @@ class Interface:
 
     def __CPC2(self, distance, rad):
         """
-        Description.
+        This method provides the value of the kernel function given the euclidean
+        distance. The kernel function is the one used for RBF.
         """
         phi = 0.0
         eps = distance/rad
@@ -1073,7 +1082,8 @@ class Interface:
 
     def __TPS(self, distance):
         """
-        Description
+        This method provides the value of the kernel function given the euclidean
+        distance. The kernel function is the one used for TPS.
         """
         phi = 0.0
 
