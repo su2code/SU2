@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## \file pysu2_nastran.py
-#  \brief Structural solver using Nastran models 
+#  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
 #  \version 7.0.6 "Blackbird"
 #
@@ -824,89 +824,31 @@ class Solver:
 
     return self.markers[markerID][iVertex]
 
-  def getInterfaceNodePosX(self, markerID, iVertex):
+  def getInterfaceNodePos(self, markerID, iVertex):
     """ Desciption. """
 
     iPoint = self.markers[markerID][iVertex]
     Coord = self.node[iPoint].GetCoord()
-    return float(Coord[0])
+    return Coord
 
-  def getInterfaceNodePosY(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return float(Coord[1])
-
-  def getInterfaceNodePosZ(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return float(Coord[2])
-
-  def getInterfaceNodeDispX(self, markerID, iVertex):
+  def getInterfaceNodeDisp(self, markerID, iVertex):
     """ Desciption. """
 
     iPoint = self.markers[markerID][iVertex]
     Coord = self.node[iPoint].GetCoord()
     Coord0 = self.node[iPoint].GetCoord0()
-    return float(Coord[0]-Coord0[0])
+    return (Coord-Coord0)
 
-  def getInterfaceNodeDispY(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    Coord0 = self.node[iPoint].GetCoord0()
-    return float(Coord[1]-Coord0[1])
-
-  def getInterfaceNodeDispZ(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    Coord0 = self.node[iPoint].GetCoord0()
-    return float(Coord[2]-Coord0[2])
-
-  def getInterfaceNodeVelX(self, markerID, iVertex):
+  def getInterfaceNodeVel(self, markerID, iVertex):
     """ Description """
 
     iPoint = self.markers[markerID][iVertex]
     Vel = self.node[iPoint].GetVel()
-    return float(Vel[0])
+    return Vel
 
-  def getInterfaceNodeVelY(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel()
-    return float(Vel[1])
-
-  def getInterfaceNodeVelZ(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel()
-    return float(Vel[2])
-
-  def getInterfaceNodeVelXNm1(self, markerID, iVertex):
+  def getInterfaceNodeVelNm1(self, markerID, iVertex):
     """ Description """
 
     iPoint = self.markers[markerID][iVertex]
     Vel = self.node[iPoint].GetVel_n()
-    return float(Vel[0])
-
-  def getInterfaceNodeVelYNm1(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel_n()
-    return float(Vel[1])
-
-  def getInterfaceNodeVelZNm1(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel_n()
-    return float(Vel[2])
+    return Vel
