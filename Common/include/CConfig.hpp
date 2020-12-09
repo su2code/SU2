@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -600,8 +600,9 @@ private:
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
-  Cent_Jac_Fix_Factor;              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
+  Cent_Jac_Fix_Factor,              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
+  Cent_Inc_Jac_Fix_Factor;          /*!< \brief Multiply the dissipation contribution to the Jacobian of incompressible central schemes */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
 
   su2double Min_Beta_RoeTurkel,     /*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -1109,7 +1110,6 @@ private:
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
   unsigned short Kind_Verification_Solution; /*!< \brief Verification solution for accuracy assessment. */
 
-  ofstream *ConvHistFile;        /*!< \brief Store the pointer to each history file */
   bool Time_Domain;              /*!< \brief Determines if the multizone problem is solved in time-domain */
   unsigned long nOuterIter,      /*!< \brief Determines the number of outer iterations in the multizone problem */
   nInnerIter,                    /*!< \brief Determines the number of inner iterations in each multizone block */
@@ -4627,6 +4627,12 @@ public:
   su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
 
   /*!
+   * \brief Factor by which to multiply the dissipation contribution to Jacobians of incompressible central schemes.
+   * \return The factor.
+   */
+  su2double GetCent_Inc_Jac_Fix_Factor(void) const { return Cent_Inc_Jac_Fix_Factor; }
+
+  /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the adjoint flow equations.
    * \note This value is obtained from the config file, and it is constant
@@ -5137,21 +5143,19 @@ public:
   bool GetHold_GridFixed(void) const { return Hold_GridFixed; }
 
   /*!
-   * \brief Get the kind of objective function. There are several options: Drag coefficient,
-   *        Lift coefficient, efficiency, etc.
-   * \note The objective function will determine the boundary condition of the adjoint problem.
-   * \return Kind of objective function.
-   */
-  unsigned short GetKind_ObjFunc(void) const { return Kind_ObjFunc[0]; }
-
-  /*!
    * \author H. Kline
    * \brief Get the kind of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
    * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \param[in] val_obj
    * \return Kind of objective function.
    */
-  unsigned short GetKind_ObjFunc(unsigned short val_obj) const { return Kind_ObjFunc[val_obj]; }
+  unsigned short GetKind_ObjFunc(unsigned short val_obj = 0) const { return Kind_ObjFunc[val_obj]; }
+
+  /*!
+   * \brief Similar to GetKind_ObjFunc but returns the corresponding string.
+   */
+  string GetName_ObjFunc(unsigned short val_obj = 0) const;
 
   /*!
    * \author H. Kline
@@ -5179,12 +5183,6 @@ public:
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
-
-  /*!
-   * \author H. Kline
-   * \brief Get the flag indicating whether to comput a combined objective.
-   */
-  bool GetComboObj(void);
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.
@@ -9011,16 +9009,6 @@ public:
   void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
     type = top_optim_proj_type;  param = top_optim_proj_param;
   }
-
-  /*!
-   * \brief Retrieve the ofstream of the history file for the current zone.
-   */
-  ofstream* GetHistFile(void) { return ConvHistFile; }
-
-  /*!
-   * \brief Set the ofstream of the history file for the current zone.
-   */
-  void SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
 
   /*!
    * \brief Get the filenames of the individual config files
