@@ -1843,7 +1843,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
     LinSysSol(iPoint, axis) = 0.0;
-    if (config->GetMarker_All_Match_Deform_Mesh(val_marker) == NO){
+    if (config->GetMarker_All_Deform_Mesh_Sym_Plane(val_marker) == NO){
       LinSysReact(iPoint, axis) = 0.0;
     }
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
