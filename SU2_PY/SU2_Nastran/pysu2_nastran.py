@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## \file pysu2_nastran.py
-#  \brief Structural solver tester (one or two degree of freedom) used for testing the Py wrapper for external FSI coupling.
+#  \brief Structural solver using Nastran models 
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
 #  \version 7.0.6 "Blackbird"
 #
