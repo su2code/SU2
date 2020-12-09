@@ -1015,7 +1015,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
     numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
     numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
-    numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
 
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
@@ -1884,7 +1883,6 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), node_infty->GetdTvedU(0));
         visc_numerics->SetEve   (nodes->GetEve(iPoint),    node_infty->GetEve(0));
         visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   node_infty->GetCvve(0));
-        visc_numerics->SetGamma (nodes->GetGamma(iPoint),  node_infty->GetGamma(0));
 
         /*--- Species diffusion coefficients ---*/
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),

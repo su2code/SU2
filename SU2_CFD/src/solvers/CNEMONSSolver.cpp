@@ -261,7 +261,6 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
     numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
     numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-    numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
 
     /*--- Species diffusion coefficients ---*/
     numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
