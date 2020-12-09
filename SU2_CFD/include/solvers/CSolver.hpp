@@ -4555,18 +4555,7 @@ public:
                                                unsigned long val_marker) { }
 
   /*!
-   * \brief Smooth the system by multiplying out the whole system matrix and solving it
-   */
-  virtual void SmoothCompleteSystem(CGeometry *geometry,
-                                    CSolver *solver,
-                                    CNumerics **numerics,
-                                    CConfig *config,
-                                    CVolumetricMovement* grid_movement,
-                                    su2double *param_jacobi) { }
-
-  /*!
-   * \brief All steps required for smoothing the whole system on DV level
-   *        New layout for SmoothCompleteSystem + projections
+   * \brief All steps required for smoothing the whole system on DV level in an iterative way
    */
   virtual void ApplyGradientSmoothingDV(CGeometry *geometry,
                                         CSolver *solver,

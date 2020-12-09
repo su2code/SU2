@@ -599,11 +599,13 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
 
     if (config->GetSmoothOnSurface()) {
 
+      unsigned long  dvMarker = 1000;
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if ( config->GetMarker_All_DV(iMarker) == YES ) {
-          solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, iMarker);
+          dvMarker = iMarker;
         }
       }
+      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingSurface(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, dvMarker);
 
     } else {
       solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingVolume(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config);
@@ -615,31 +617,8 @@ void CDiscAdjSinglezoneDriver::DerivativeTreatment() {
   /*--- Apply the smoothing procedure on the DV level. ---*/
   } else if (config->GetSobMode()==PARAM_LEVEL_COMPLETE) {
 
-    if (false) { // old version
-
-    if (rank == MASTER_NODE)  cout << "  working on design variable level" << endl;
-
-    /// variable declarations
-    unsigned nDVtotal=0;
-    unsigned nPoint = geometry->GetnPoint();
-    nDVtotal = config->GetnDV_Total();
-
-    /// vector to store the Gradient
-    su2double* param_jacobi;
-    param_jacobi =  new su2double[nDVtotal*nPoint*nDim];
-
-    /// get the Jacobian of the parametrization for simplicity in the rest of the function
-    GetParameterizationJacobianForward(geometry,config,surface_movement[ZONE_0], param_jacobi);
-
-    /// calculate the whole equation system.
-    solver[GRADIENT_SMOOTHING]->SmoothCompleteSystem(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, grid_movement[ZONE_0][INST_0], param_jacobi);
-
-    /// Free used memory.
-    delete [] param_jacobi;
-
-    } else { /// new layout for this
-      solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
-    }
+    /// new layout for this
+    solver[GRADIENT_SMOOTHING]->ApplyGradientSmoothingDV(geometry, solver[ADJFLOW_SOL], numerics[GRADIENT_SMOOTHING], config, surface_movement[ZONE_0], grid_movement[ZONE_0][INST_0]);
 
   /*--- warning if choose mode is unsupported. ---*/
   } else {
