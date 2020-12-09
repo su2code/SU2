@@ -2857,12 +2857,6 @@ public:
   unsigned short GetnMarker_Deform_Mesh(void) const { return nMarker_Deform_Mesh; }
 
   /*!
-   * \brief Get the total number of markers matching the deformation at the boundary.
-   * \return Total number of deformable markers at the boundary.
-   */
-  unsigned short GetnMarker_Deform_Mesh_Sym_Plane(void) const { return nMarker_Deform_Mesh_Sym_Plane; }
-
-  /*!
    * \brief Get the total number of markers in which the flow load is computed/employed.
    * \return Total number of markers in which the flow load is computed/employed.
    */
