@@ -1763,6 +1763,8 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CCon
     nodes->SetBound_Disp(iPoint, zeros);
 
     LinSysSol.SetBlock(iPoint, zeros);
+    cout<<"Sono qui"<<endl;
+    cout<<&LinSysReact<<endl;
     LinSysReact.SetBlock(iPoint, zeros);
     Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
 
