@@ -465,23 +465,28 @@ public:
    * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
    * \param[in] nDim - 2 or 3
    * \param[out] rateofstrain - Rate of strain matrix
-   * \param[in] primvargrad - A primitive variable gradient matrix.
+   * \param[in] velgrad - A velocity gradient matrix.
    */
-  static void ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double* const* primvargrad);
+  static void ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double* const* velgrad);
 
   /*!
    * \brief Compute the stress tensor from the velocity gradients.
    * \details To obtain the Reynolds stress tensor +(u_i' u_j')~, divide the result
    * of this function by (-rho). The argument density is only used if turb_ke is not 0.
+   * To select the velocity gradient components from a primitive variable gradient PrimVar_Grad_i,
+   * write PrimVar_Grad_i+1.
+   * If <code>nDim==2</code>, we use the same formula but only only access the entries [0][0]..[1][1] of
+   * stress and velgrad. If <code>reynolds3x3</code> is true, the other non-diagonal entries of stress
+   * set to zero, and <code>stress[2][2]</code> to some value.
    * \param[in] nDim - Dimension of the flow problem, 2 or 3
    * \param[out] stress - Stress tensor
-   * \param[in] primvargrad - A primitive variable gradient matrix.
+   * \param[in] velgrad - A velocity gradient matrix.
    * \param[in] viscosity - Viscosity
    * \param[in] density - Density
    * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
    * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
    */
-  static void ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* primvargrad,
+  static void ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* velgrad,
                            su2double viscosity, su2double density=0.0, su2double turb_ke=0.0, bool reynolds3x3=false);
 
   /*!

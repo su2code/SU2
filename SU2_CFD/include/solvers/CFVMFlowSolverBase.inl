@@ -2189,15 +2189,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       /*--- Evaluate Tau ---*/
-      su2double *Tau_pointer[3];
-      su2double *Grad_Vel_pointer[4];
-      Grad_Vel_pointer[0] = nullptr;
-      for(iDim=0;iDim<3;iDim++){
-        Tau_pointer[iDim] = Tau[iDim];
-        Grad_Vel_pointer[iDim+1] = Grad_Vel[iDim];
-      }
+      su2double *Tau_pointer[3] = {Tau[0], Tau[1], (nDim==3)?Tau[2]:nullptr};
+      su2double *Grad_Vel_pointer[3] = {Grad_Vel[0], Grad_Vel[1], (nDim==3)?Grad_Vel[2]:nullptr};
       CNumerics::ComputeStressTensor(nDim, Tau_pointer, Grad_Vel_pointer, Viscosity);
-      // Grad_Vel is not a primitive variable gradient, so we have to shift the index.
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 

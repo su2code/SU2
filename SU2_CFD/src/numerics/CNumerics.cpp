@@ -485,26 +485,26 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
   AD::EndPassive(wasActive);
 }
 
-void CNumerics::ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double * const* primvargrad){
+void CNumerics::ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** rateofstrain, const su2double * const* velgrad){
 
   /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
 
   if (nDim == 3){
-    rateofstrain[0][0] = primvargrad[1][0];
-    rateofstrain[1][1] = primvargrad[2][1];
-    rateofstrain[2][2] = primvargrad[3][2];
-    rateofstrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
-    rateofstrain[0][2] = 0.5 * (primvargrad[1][2] + primvargrad[3][0]);
-    rateofstrain[1][2] = 0.5 * (primvargrad[2][2] + primvargrad[3][1]);
+    rateofstrain[0][0] = velgrad[0][0];
+    rateofstrain[1][1] = velgrad[1][1];
+    rateofstrain[2][2] = velgrad[2][2];
+    rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+    rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
+    rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
     rateofstrain[1][0] = rateofstrain[0][1];
     rateofstrain[2][1] = rateofstrain[1][2];
     rateofstrain[2][0] = rateofstrain[0][2];
   }
   else { // nDim==2
-    rateofstrain[0][0] = primvargrad[1][0];
-    rateofstrain[1][1] = primvargrad[2][1];
+    rateofstrain[0][0] = velgrad[0][0];
+    rateofstrain[1][1] = velgrad[1][1];
     rateofstrain[2][2] = 0.0;
-    rateofstrain[0][1] = 0.5 * (primvargrad[1][1] + primvargrad[2][0]);
+    rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
     rateofstrain[0][2] = 0.0;
     rateofstrain[1][2] = 0.0;
     rateofstrain[1][0] = rateofstrain[0][1];
@@ -513,19 +513,19 @@ void CNumerics::ComputeMeanRateOfStrainMatrix(unsigned short nDim, su2double** r
   }
 }
 
-void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* primvargrad,
+void CNumerics::ComputeStressTensor(unsigned short nDim, su2double** stress, const su2double* const* velgrad,
                                     su2double viscosity, su2double density, su2double turb_ke, bool reynolds3x3){
   su2double TWO3 = 2.0/3.0;
 
   su2double divVel = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    divVel += primvargrad[iDim+1][iDim];
+    divVel += velgrad[iDim][iDim];
   }
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     for (unsigned short jDim = 0; jDim < nDim; jDim++){
       stress[iDim][jDim] =
-        viscosity * (primvargrad[iDim+1][jDim]+primvargrad[jDim+1][iDim])
+        viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim])
         - TWO3 * viscosity * divVel * (iDim==jDim)
         - TWO3 * density * turb_ke * (iDim==jDim);
     }

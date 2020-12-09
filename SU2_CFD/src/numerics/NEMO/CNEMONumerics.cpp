@@ -289,7 +289,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   }
 
   /*--- Compute the viscous stress tensor ---*/
-  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX-1, mu);
+  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
 
   /*--- Populate entries in the viscous flux vector ---*/
   for (iDim = 0; iDim < nDim; iDim++) {

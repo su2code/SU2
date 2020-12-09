@@ -1142,10 +1142,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       for (iVar = 0; iVar < nVar; iVar ++)
         Res_Visc[iVar] = 0.0;
 
-      su2double *Tau_pointer[3];
-      for(iDim=0; iDim<nDim; iDim++)
-        Tau_pointer[iDim] = Tau[iDim];
-      CNumerics::ComputeStressTensor(nDim, Tau_pointer, Grad_PrimVar+VEL_INDEX-1, Viscosity);
+      su2double *Tau_pointer[3] = {Tau[0], Tau[1], (nDim==3)?Tau[2]:nullptr};
+      CNumerics::ComputeStressTensor(nDim, Tau_pointer, Grad_PrimVar+VEL_INDEX, Viscosity);
       for (iDim = 0; iDim < nDim; iDim++) {
         TauElem[iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)

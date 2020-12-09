@@ -783,7 +783,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             else
               val_turb_ke = 0.0;
 
-            CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad, Laminar_Viscosity, Density, val_turb_ke);
+            CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
 
