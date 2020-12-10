@@ -2005,11 +2005,8 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Writing solution file frequency for dual time  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
   /*!\brief WRT_CON_FREQ
-   *  \n DESCRIPTION: Writing convergence history frequency  \ingroup Config*/
+   *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_CON_FREQ_DUALTIME
-   *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
-  addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
   /*!\brief WRT_OUTPUT
    *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
   addBoolOption("WRT_OUTPUT", Wrt_Output, true);
@@ -2901,6 +2898,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
           if (!option_name.compare("WRT_LIMITERS"))
             newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
+            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;

@@ -660,8 +660,7 @@ private:
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   unsigned long Wrt_Sol_Freq,   /*!< \brief Writing solution frequency. */
   Wrt_Sol_Freq_DualTime,        /*!< \brief Writing solution frequency for Dual Time. */
-  Wrt_Con_Freq,                 /*!< \brief Writing convergence history frequency. */
-  Wrt_Con_Freq_DualTime;        /*!< \brief Writing convergence history frequency. */
+  Wrt_Con_Freq;                 /*!< \brief Writing convergence history frequency. */
   bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
@@ -3090,12 +3089,6 @@ public:
    * \return It writes the convergence file with this frequency.
    */
   void SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
-
-  /*!
-   * \brief Get the frequency for writing the convergence file in Dual Time.
-   * \return It writes the convergence file with this frequency.
-   */
-  unsigned long GetWrt_Con_Freq_DualTime(void) const { return Wrt_Con_Freq_DualTime; }
 
   /*!
    * \brief Get information about writing unsteady headers and file extensions.

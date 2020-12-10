@@ -1250,7 +1250,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     bool Unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
                      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
     bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
+    bool In_DualTime_0 = DualTime_Iteration;
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
     bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
@@ -1258,11 +1258,10 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Header frequency: analogy for dynamic structural analysis ---*/
     /*--- DualTime_Iteration is a bool we receive, which is true if it comes from FEM_StructuralIteration and false from SU2_CFD ---*/
     /*--- We maintain the name, as it is an input of the function ---*/
-    /*--- The function GetWrt_Con_Freq_DualTime should be modified to be able to define different frequencies ---*/
     /*--- dynamic determines if the problem is, or not, time dependent ---*/
     bool dynamic = (config[val_iZone]->GetTime_Domain());              // Dynamic simulations.
     bool In_NoDynamic = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool In_Dynamic_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
+    bool In_Dynamic_0 = DualTime_Iteration;
     bool In_Dynamic_1 = (!DualTime_Iteration && nonlinear_analysis);
     bool In_Dynamic_2 = (nonlinear_analysis && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_Dynamic_3 = (nonlinear_analysis && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
