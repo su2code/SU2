@@ -523,19 +523,18 @@ public:
     for (unsigned short iDim = 0; iDim < nDim; iDim++){
       divVel += velgrad[iDim][iDim];
     }
+    su2double pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++){
       for (unsigned short jDim = 0; jDim < nDim; jDim++){
-        stress[iDim][jDim] =
-          viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim])
-          - 2./3. * viscosity * divVel * (iDim==jDim)
-          - 2./3. * density * turb_ke * (iDim==jDim);
+        stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]);
       }
+      stress[iDim][iDim] -= pTerm;
     }
 
     if(reynolds3x3 && nDim==2){ // fill the third row and column of Reynolds stress matrix
       stress[0][2] = stress[1][2] = stress[2][0] = stress[2][1] = 0.0;
-      stress[2][2] = -2./3. * ( viscosity * divVel + density * turb_ke );
+      stress[2][2] = -pTerm;
     }
 
   }
