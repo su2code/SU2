@@ -3,11 +3,11 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -33,7 +33,7 @@
 #include <map>
 #endif
 
-#include "./datatype_structure.hpp"
+#include "basic_types/datatype_structure.hpp"
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -50,35 +50,21 @@
 #include <medi/medi.hpp>
 using namespace medi;
 
+#include <codi/externals/codiMpiTypes.hpp>
+
 class CMediMPIWrapper;
 typedef CMediMPIWrapper SU2_MPI;
 
-#if defined CODI_REVERSE_TYPE
-#include <codi/externals/codiMediPackTypes.hpp>
-#if CODI_PRIMAL_INDEX_TAPE
-typedef CoDiPackToolPrimalRestore<su2double> MediTool;
-#else
-typedef CoDiPackTool<su2double> MediTool;
-#endif // defined CODI_REVERSE_TYPE
-#elif defined CODI_FORWARD_TYPE
-#include <codi/externals/codiForwardMediPackTypes.hpp>
-typedef CoDiPackForwardTool<su2double> MediTool;
-#endif // defined CODI_FORWARD_TYPE
-#define AMPI_ADOUBLE ((medi::MpiTypeInterface*)MediTool::MPI_TYPE)
+typedef CoDiMpiTypes<su2double> MediTypes;
+typedef MediTypes::Tool MediTool;
+
+extern MediTypes* mediTypes;
+#define AMPI_ADOUBLE ((medi::MpiTypeInterface*)mediTypes->MPI_TYPE)
 
 #else
 class CBaseMPIWrapper;
 typedef CBaseMPIWrapper SU2_MPI;
 #endif // defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
-
-/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
-template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
-
-/*--- In AD we specialize for the passive wrapper. ---*/
-#if defined CODI_REVERSE_TYPE
-class CBaseMPIWrapper;
-template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
-#endif
 
 /*!
  * \class CMPIWrapper
@@ -90,29 +76,29 @@ template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; }
 class CBaseMPIWrapper {
 
 public:
-  
+
   typedef MPI_Request  Request;
   typedef MPI_Status   Status;
   typedef MPI_Datatype Datatype;
   typedef MPI_Op       Op;
   typedef MPI_Comm     Comm;
   typedef MPI_Win      Win;
-  
+
 protected:
-  
+
   static int Rank, Size, MinRankError;
   static Comm currentComm;
   static bool winMinRankErrorInUse;
   static Win  winMinRankError;
-  
+
 public:
-  
+
   static int GetRank();
-  
+
   static int GetSize();
-  
+
   static Comm GetComm();
-  
+
   static void SetComm(Comm NewComm);
 
   static void Error(std::string ErrorMsg, std::string FunctionName);
@@ -126,13 +112,13 @@ public:
   static void Buffer_detach(void *buffer, int *size);
 
   static void Finalize();
-  
+
   static void Comm_rank(Comm comm, int* rank);
-  
+
   static void Comm_size(Comm comm, int* size);
-  
+
   static void Barrier(Comm comm);
-  
+
   static void Abort(Comm comm, int error);
 
   static void Get_count(Status *status, Datatype datatype, int *count);
@@ -200,6 +186,8 @@ public:
 
   static void Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
                              Datatype datatype, Op op, Comm comm);
+
+  static passivedouble Wtime(void);
 };
 
 typedef MPI_Comm SU2_Comm;
@@ -225,7 +213,7 @@ public:
   static AMPI_Datatype convertDatatype(MPI_Datatype datatype);
 
   static void SetComm(Comm NewComm);
-  
+
   static void Init(int *argc, char***argv);
 
   static void Init_thread(int *argc, char***argv, int required, int* provided);
@@ -321,6 +309,7 @@ public:
 #define MPI_UNSIGNED_LONG 1
 #define MPI_LONG 2
 #define MPI_UNSIGNED_SHORT 3
+#define MPI_FLOAT 4
 #define MPI_DOUBLE 4
 #define MPI_ANY_SOURCE 5
 #define MPI_SUM 6
@@ -330,14 +319,15 @@ public:
 #define MPI_MAX 10
 #define MPI_INT 11
 #define MPI_PROD 12
+#define MPI_STATUS_IGNORE nullptr
 class CBaseMPIWrapper {
-  
+
 public:
   typedef int Comm;
   typedef int Datatype;
   typedef int Request;
   typedef int Op;
-  
+
   struct Status {
     int MPI_TAG;
     int MPI_SOURCE;
@@ -350,33 +340,33 @@ private:
 
 public:
   static int GetRank();
-  
-  static int GetSize();  
-  
+
+  static int GetSize();
+
   static Comm GetComm();
-  
+
   static void SetComm(Comm NewComm);
-  
+
   static void Error(std::string ErrorMsg, std::string FunctionName);
-    
+
   static void Init(int *argc, char***argv);
 
   static void Init_thread(int *argc, char***argv, int required, int* provided);
-  
+
   static void Buffer_attach(void *buffer, int size);
-  
+
   static void Buffer_detach(void *buffer, int *size);
-  
+
   static void Finalize();
-  
+
   static void Comm_rank(Comm comm, int* rank);
-  
+
   static void Comm_size(Comm comm, int* size);
-  
+
   static void Barrier(Comm comm);
-  
+
   static void Abort(Comm comm, int error);
-  
+
   static void Get_count(Status *status, Datatype datatype, int *count);
 
   static void Isend(void *buf, int count, Datatype datatype, int dest,
@@ -422,13 +412,13 @@ public:
                         void *recvbuf, int recvcnt, Datatype recvtype, Comm comm);
 
   static void Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                         void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm);
+                         void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,
                        Datatype recvtype,int source, int recvtag,
                        Comm comm, Status *status);
-  
+
   static void Alltoall(void *sendbuf, int sendcount, Datatype sendtype,
                            void *recvbuf, int recvcount, Datatype recvtype,
                            Comm comm);
@@ -439,14 +429,25 @@ public:
 
   static void Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
                              Datatype datatype, Op op, Comm comm);
-    
+
   static void CopyData(void *sendbuf, void *recvbuf, int size, Datatype datatype);
-  
+
+  static passivedouble Wtime(void);
 };
 typedef int SU2_Comm;
 typedef CBaseMPIWrapper SU2_MPI;
-extern CBaseMPIWrapper::Status* MPI_STATUS_IGNORE;
 
+#endif
+
+/*--- Select the appropriate MPI wrapper based on datatype, to use in templated classes. ---*/
+template<class T> struct SelectMPIWrapper { typedef SU2_MPI W; };
+
+/*--- In AD we specialize for the passive wrapper. ---*/
+#if defined CODI_REVERSE_TYPE
+template<> struct SelectMPIWrapper<passivedouble> { typedef CBaseMPIWrapper W; };
+#if defined USE_MIXED_PRECISION
+template<> struct SelectMPIWrapper<su2mixedfloat> { typedef CBaseMPIWrapper W; };
+#endif
 #endif
 
 /* Depending on the compiler, define the correct macro to get the current function name */

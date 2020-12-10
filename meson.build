@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.2 "Blackbird"',
+        version: '7.0.8 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -12,14 +12,15 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-if build_machine.system() == 'windows'
-  default_warning_flags = []
-else
-  default_warning_flags = ['-Wno-unused-parameter',
-                           '-Wno-empty-body',
-                           '-Wno-format-security',
-                           '-Wno-deprecated-declarations',
-                           '-Wno-non-virtual-dtor']
+default_warning_flags = []
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    default_warning_flags += ['-Wno-empty-body']
+  endif
+  default_warning_flags += ['-Wno-unused-parameter',
+                            '-Wno-format-security',
+                            '-Wno-deprecated-declarations',
+                            '-Wno-non-virtual-dtor']
 endif
 
 # meson script path
@@ -61,9 +62,14 @@ if get_option('enable-cgns')
   su2_cpp_args += '-DHAVE_CGNS'
 endif
 
-# Check for non-debug build
+# check for non-debug build
 if get_option('buildtype')!='debug'
   su2_cpp_args += '-DNDEBUG'
+endif
+
+# check for mixed precision floating point arithmetic
+if get_option('enable-mixedprec')
+  su2_cpp_args += '-DUSE_MIXED_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them
@@ -150,6 +156,15 @@ elif get_option('enable-openblas')
 
 endif
 
+extra_deps = get_option('extra-deps').split(',')
+foreach dep : extra_deps
+  if dep != ''
+    su2_deps += dependency(dep)
+  endif
+endforeach
+
+catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
@@ -160,12 +175,12 @@ subdir('SU2_DOT/src')
 subdir('SU2_DEF/src')
 # compile SU2_GEO executable
 subdir('SU2_GEO/src')
-# compile SU2_MSH executable
-subdir('SU2_MSH/src')
 # compile SU2_SOL executable
 subdir('SU2_SOL/src')
 # install python scripts
 subdir('SU2_PY')
+# unit tests
+subdir('UnitTests')
 
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
@@ -177,7 +192,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.2 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.0.8 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -194,6 +209,7 @@ message('''---------------------------------------------------------------------
          OpenBlas:       @8@
          PaStiX:         @9@
          pyBeam:         @10@         
+         Mixed Float:    @11@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -205,8 +221,9 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @10@ install' to compile and install SU2
+         Use './ninja -C @12@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-pybeam'), meson.build_root().split('/')[-1]))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-pybeam'), get_option('enable-mixedprec'),
+           meson.build_root().split('/')[-1]))
 

@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -44,13 +44,13 @@ def init_submodules(method = 'auto'):
 
   # This information of the modules is used if projects was not cloned using git
   # The sha tag must be maintained manually to point to the correct commit
-  sha_version_codi = '501dcf0305df147481630f20ce37c2e624fb351f'
+  sha_version_codi = '1b8d3f5f03de560fb63a2a76ad91ab7bb3fa67d8'
   github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-  sha_version_medi = 'edde14f9ac4026b72b1e130f61c0a78e8652afa5'
+  sha_version_medi = '783f6ab7e6d068714e855758b338edde0cf0e025'
   github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
-  sha_version_meson = '0435691e83fb7172e2a9635d2eb32d5521089916'
+  sha_version_meson = '29ef4478df6d3aaca40c7993f125b29409be1de2'
   github_repo_meson = 'https://github.com/mesonbuild/meson'
-  sha_version_ninja = '2d15b04e411229cb902332957281622119025e77'
+  sha_version_ninja = '52649de2c56b63f42bc59513d51286531c595b44'
   github_repo_ninja = 'https://github.com/ninja-build/ninja'
   sha_version_pybeam = '358f9e0fd768f2f7c2f524953f30c0d675866cce'
   github_repo_pybeam = 'https://github.com/pyBeam/pyBeam'

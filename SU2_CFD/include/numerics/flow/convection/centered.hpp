@@ -3,7 +3,7 @@
  * \brief Delaration of numerics classes for centered schemes,
  *        the implementation is in centered.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,7 +96,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentBase_Flow(void);
+  ~CCentBase_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a centered method with artificial dissipation.
@@ -169,7 +169,7 @@ private:
    * \brief Set input variables for AD preaccumulation.
    * \return true, as we will define inputs.
    */
-  bool SetPreaccInVars(void);
+  bool SetPreaccInVars(void) override;
 
 public:
   /*!
@@ -252,6 +252,8 @@ private:
   variable_density,                /*!< \brief Variable density incompressible flows. */
   energy;                          /*!< \brief computation with the energy equation. */
 
+  su2double fix_factor;            /*!< \brief Fix factor for Jacobians. */
+
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
@@ -267,7 +269,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentLaxInc_Flow(void);
+  ~CCentLaxInc_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a Lax method.
@@ -312,6 +314,8 @@ private:
   variable_density,      /*!< \brief Variable density incompressible flows. */
   energy;                /*!< \brief computation with the energy equation. */
 
+  su2double fix_factor;  /*!< \brief Fix factor for Jacobians. */
+
   su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
@@ -327,7 +331,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentJSTInc_Flow(void);
+  ~CCentJSTInc_Flow(void) override;
 
   /*!
    * \brief Compute the flow residual using a JST method.

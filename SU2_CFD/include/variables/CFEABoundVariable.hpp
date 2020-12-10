@@ -2,11 +2,11 @@
  * \file CFEABoundVariable.hpp
  * \brief Class for defining the variables on the FEA boundaries for FSI applications.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -28,7 +28,7 @@
 #pragma once
 
 #include "CFEAVariable.hpp"
-#include "../../../Common/include/toolboxes/CVertexMap.hpp"
+#include "../../../Common/include/containers/CVertexMap.hpp"
 
 /*!
  * \class CFEABoundVariable
@@ -37,7 +37,7 @@
  * A map is constructed so that variables can be referenced by iPoint instead of iVertex.
  * \ingroup Structural Finite Element Analysis Variables
  * \author R. Sanchez.
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEABoundVariable final : public CFEAVariable {
 protected:
@@ -66,7 +66,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEABoundVariable() = default;
+  ~CFEABoundVariable() override = default;
 
   /*!
    * \brief Allocate member variables for points marked as vertex (via "Set_isVertex").

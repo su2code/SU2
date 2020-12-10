@@ -2,7 +2,7 @@
  * \file output_elasticity.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,6 +72,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
+    if (config->GetTopology_Optimization()) requestedVolumeFields.emplace_back("TOPOLOGY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -115,10 +116,9 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->LinSysSol.norm()));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->LinSysRes.norm()));
-    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->LinSysSol.dot(fea_solver->LinSysRes)));
-
+    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
+    SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
   }
 
   if (multiZone){
@@ -134,12 +134,14 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
 
+  SetHistoryOutputValue("COMBO", fea_solver->GetTotal_ComboObj());
+
 }
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
 
-  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL",  "Number of iterations of the linear solver.");
-  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL",  "Residual of the linear solver.");
+  AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+  AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
 
   // Residuals
 
@@ -159,17 +161,19 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
 
+  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
+
 }
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Struc = solver[FEA_SOL]->GetNodes();
-  CPoint*    Node_Geo  = geometry->node[iPoint];
+  CPoint*    Node_Geo  = geometry->nodes;
 
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(iPoint, 0));
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(iPoint, 1));
   if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(iPoint, 2));
 
   SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(iPoint, 0));
   SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
@@ -195,6 +199,9 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   }
   SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress(iPoint));
 
+  if (config->GetTopology_Optimization()) {
+    SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
+  }
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -231,11 +238,13 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
 
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
 
+  if (config->GetTopology_Optimization()) {
+    AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
+  }
 }
+
 bool CElasticityOutput::SetInit_Residuals(CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
 
 }
-
-

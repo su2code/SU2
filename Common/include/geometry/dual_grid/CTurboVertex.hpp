@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CTurboVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -117,7 +117,7 @@ public:
    * \brief get global index for ordered span-wise turbovertex.
    */
   inline int GetGlobalVertexIndex(void) const {return GlobalIndex;}
- 
+
   /*!
    * \brief set angular coord.
    */

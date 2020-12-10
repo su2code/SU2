@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.2 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,9 +36,10 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid_model.hpp"
-#include "../../../Common/include/toolboxes/C2DContainer.hpp"
+#include "../../../Common/include/containers/container_decorators.hpp"
 
+class CFluidModel;
+class CNEMOGas;
 
 using namespace std;
 
@@ -51,30 +52,6 @@ class CVariable {
 protected:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
-
-  /*--- This contrived container is used to store matrices in a contiguous manner but still present the
-   "su2double**" interface to the outside world, it will be replaced by something more efficient. ---*/
-  struct VectorOfMatrix {
-    su2activevector storage;
-    su2matrix<su2double*> interface;
-    unsigned long M, N;
-
-    void resize(unsigned long length, unsigned long rows, unsigned long cols, su2double value) {
-      M = rows;
-      N = cols;
-      storage.resize(length*rows*cols) = value;
-      interface.resize(length,rows);
-
-      for(unsigned long i=0; i<length; ++i)
-        for(unsigned long j=0; j<rows; ++j)
-          interface(i,j) = &(*this)(i,j,0);
-    }
-
-    su2double& operator() (unsigned long i, unsigned long j, unsigned long k) { return storage(i*M*N + j*N + k); }
-    const su2double& operator() (unsigned long i, unsigned long j, unsigned long k) const { return storage(i*M*N + j*N + k); }
-
-    su2double** operator[] (unsigned long i) { return interface[i]; }
-  };
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
@@ -93,8 +70,8 @@ protected:
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
 
-  VectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
-  VectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
+  C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
@@ -129,10 +106,10 @@ protected:
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
 
+  /*--- Only allow default construction by derived classes. ---*/
+  CVariable() = default;
 public:
-
-  /*--- Disable default construction copy and assignment. ---*/
-  CVariable() = delete;
+  /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
   CVariable(CVariable&&) = delete;
   CVariable& operator= (const CVariable&) = delete;
@@ -745,7 +722,7 @@ public:
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
-  inline VectorOfMatrix& GetGradient(void) { return Gradient; }
+  inline CVectorOfMatrix& GetGradient(void) { return Gradient; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -782,17 +759,10 @@ public:
   inline su2double GetRmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Rmatrix(iPoint,iDim,jDim); }
 
   /*!
-   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \return Value of the Rmatrix entry.
-   */
-  inline su2double **GetRmatrix(unsigned long iPoint) { return Rmatrix[iPoint]; }
-
-  /*!
    * \brief Get the value Rmatrix for the entire domain.
    * \return Reference to the Rmatrix.
    */
-  inline VectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
+  inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -1037,6 +1007,7 @@ public:
    * \return Value of the spectral radius.
    */
   inline su2double GetLambda(unsigned long iPoint) const { return Lambda(iPoint); }
+  inline const VectorType& GetLambda() const { return Lambda; }
 
   /*!
    * \brief Get the value of the spectral radius.
@@ -1067,6 +1038,7 @@ public:
    * \return Value of the pressure sensor.
    */
   inline su2double GetSensor(unsigned long iPoint) const { return Sensor(iPoint); }
+  inline const VectorType& GetSensor() const { return Sensor; }
 
   /*!
    * \brief Get the pressure sensor.
@@ -1075,16 +1047,6 @@ public:
    * \return Value of the pressure sensor.
    */
   inline virtual su2double GetSensor(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Index of the variable.
-   * \param[in] val_undivided_laplacian - Value of the undivided solution for the index <i>iVar</i>.
-   */
-  inline void SetUndivided_Laplacian(unsigned long iPoint, unsigned long iVar, su2double val_undivided_laplacian) {
-    Undivided_Laplacian(iPoint,iVar) = val_undivided_laplacian;
-  }
 
   /*!
    * \brief Add the value of the undivided laplacian of the solution.
@@ -1107,13 +1069,13 @@ public:
   }
 
   /*!
-   * \brief Subtract the value of the undivided laplacian of the solution.
+   * \brief Increment the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable of the undivided laplacian.
    * \param[in] val_und_lapl - Value of the undivided solution.
    */
-  inline void SubtractUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
-    Undivided_Laplacian(iPoint, iVar) -= val_und_lapl;
+  inline void AddUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
+    Undivided_Laplacian(iPoint, iVar) += val_und_lapl;
   }
 
   /*!
@@ -1145,6 +1107,7 @@ public:
    * \return Value of the undivided laplacian vector.
    */
   inline su2double GetUndivided_Laplacian(unsigned long iPoint, unsigned long iVar) const { return Undivided_Laplacian(iPoint, iVar); }
+  inline const MatrixType& GetUndivided_Laplacian() const { return Undivided_Laplacian; }
 
   /*!
    * \brief A virtual member.
@@ -1447,6 +1410,13 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline virtual bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) { return true; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] fluidmodel - fluid model.
+   */
+  inline virtual bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) {return false;}
 
   /*!
    * \brief A virtual member.
@@ -1971,7 +1941,7 @@ public:
    * \param[in] val_dim - Index of the dimension.
    * \param[in] val_value - Value of the gradient.
    */
-  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) {}
+  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
@@ -1983,7 +1953,7 @@ public:
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline virtual VectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
+  inline virtual CVectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
@@ -2109,32 +2079,6 @@ public:
   inline virtual void SetSolution_Geometry(unsigned long iPoint, unsigned long iVar, su2double solution_geometry) {}
 
   /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
-   * \brief A virtual member. Get the geometry solution.
-   * \param[in] iVar - Index of the variable.
-   * \return Value of the solution for the index <i>iVar</i>.
-   */
-  inline virtual su2double GetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iVar) const { return 0.0;}
-
-  /*!
-   * \brief A virtual member. Set the value of the mesh solution (adjoint).
-   * \param[in] solution - Solution of the problem (acceleration).
-   */
-  inline virtual void SetGeometry_CrossTerm_Derivative_Flow(unsigned long iPoint, unsigned long iDim, su2double der) {}
-
-  /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   inline virtual void Set_OldSolution_Geometry() {}
@@ -2146,9 +2090,13 @@ public:
   inline virtual su2double Get_OldSolution_Geometry(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
-   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   * \brief Get BGS solution to compute the BGS residual (difference between BGS and BGS_k).
+   * \note This is virtual because for some classes the result of a BGS iteration is not "Solution".
+   *       If this method is overriden, the BGSSolution_k ones proabably have to be too.
    */
-  inline virtual void Set_BGSSolution(unsigned long iPoint, unsigned long iDim, su2double solution) {}
+  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iVar) const {
+    return Solution(iPoint, iVar);
+  }
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
@@ -2158,12 +2106,12 @@ public:
   /*!
    * \brief Restore the previous BGS subiteration to solution.
    */
-  void Restore_BGSSolution_k();
+  virtual void Restore_BGSSolution_k();
 
   /*!
    * \brief Set the value of the solution in the previous BGS subiteration.
    */
-  inline void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
+  inline virtual void Set_BGSSolution_k(unsigned long iPoint, unsigned long iVar, su2double val_var) {
     Solution_BGS_k(iPoint,iVar) = val_var;
   }
 
@@ -2174,23 +2122,6 @@ public:
   inline virtual su2double Get_BGSSolution_k(unsigned long iPoint, unsigned long iVar) const {
     return Solution_BGS_k(iPoint,iVar);
   }
-
-  /*!
-   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
-   * \param[out] val_solution - old adjoint solution for coordinate iDim
-   */
-  inline virtual su2double Get_BGSSolution(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
-
-  /*!
-   * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
-   */
-  inline virtual void SetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
-
-  /*!
-   * \brief  A virtual member. Get the contribution of crossed terms into the derivative.
-   * \return The contribution of crossed terms into the derivative.
-   */
-  inline virtual su2double GetCross_Term_Derivative(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
@@ -2433,7 +2364,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetPrestretch(unsigned long iPoint) {return nullptr; }
+  inline virtual const su2double *GetPrestretch(unsigned long iPoint) const {return nullptr; }
 
   /*!
    * \brief A virtual member.

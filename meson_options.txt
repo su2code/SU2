@@ -14,4 +14,7 @@ option('enable-pastix', type : 'boolean', value : false, description: 'enable Pa
 option('pastix_root', type : 'string', value : 'externals/pastix/', description: 'PaStiX base directory')
 option('scotch_root', type : 'string', value : 'externals/scotch/', description: 'Scotch base directory')
 option('enable-pybeam',  type : 'boolean', value : false, description: 'enable pyBeam solver')
-option('custom-mpi',  type : 'boolean', value : false, description: 'Use custom mpi include and library path from env variables')
+option('custom-mpi',  type : 'boolean', value : false, description: 'enable MPI assuming the compiler and/or env vars give the correct include dirs and linker args.')
+option('enable-tests',  type : 'boolean', value : false, description: 'compile Unit Tests')
+option('enable-mixedprec', type : 'boolean', value : false, description: 'use single precision floating point arithmetic for sparse algebra')
+option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
