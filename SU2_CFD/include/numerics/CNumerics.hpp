@@ -215,7 +215,6 @@ protected:
 
   su2double *l, *m;
 
-  bool using_reynoldsstress;      /*!< \brief Flag for usage of mean Reynolds stress matrix */
   su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq,                  /*!< \brief Flag for UQ methodology  */

@@ -8827,14 +8827,6 @@ public:
   bool GetPrintInlet_InterpolatedData(void) const { return PrintInlet_InterpolatedData; }
 
   /*!
-   * \brief Get information about using the Reynolds stress tensor and mean rate of strain matrix.
-   * \return <code>TRUE</code> means that they will be used.
-   */
-  bool GetUsing_ReynoldsStress(void) const {
-    return (using_uq);
-  }
-
-  /*!
    * \brief Get information about using UQ methodology
    * \return <code>TRUE</code> means that UQ methodology of eigenspace perturbation will be used
    */
