@@ -619,8 +619,6 @@ private:
   su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
   Deform_PoissonRatio,               /*!< \brief Poisson's ratio for volume deformation stiffness model */
   Deform_StiffLayerSize;             /*!< \brief Size of the layer of highest stiffness for wall distance-based mesh stiffness */
-  bool Visualize_Surface_Def;        /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
-  bool Visualize_Volume_Def;         /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;           /*!< \brief FFD symmetry plane. */
 
   su2double Mach;             /*!< \brief Mach number. */
@@ -666,7 +664,6 @@ private:
   Wrt_Con_Freq_DualTime;        /*!< \brief Writing convergence history frequency. */
   bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Wrt_Binary_Restart,           /*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
@@ -1491,7 +1488,7 @@ public:
    * \brief Get the coordinates where of the box where the grid is going to be deformed.
    * \return Coordinates where of the box where the grid is going to be deformed.
    */
-  su2double *GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
+  const su2double *GetHold_GridFixed_Coord(void) const { return Hold_GridFixed_Coord; }
 
   /*!
    * \brief Get the values of subsonic engine.
@@ -4266,18 +4263,6 @@ public:
   su2double GetDeform_StiffLayerSize(void) const { return Deform_StiffLayerSize; }
 
   /*!
-   * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-   */
-  bool GetVisualize_Volume_Def(void) const { return Visualize_Volume_Def; }
-
-  /*!
-   * \brief Creates a teot file to visualize the surface deformation deformation made by the DEF software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-   */
-  bool GetVisualize_Surface_Def(void) const { return Visualize_Surface_Def; }
-
-  /*!
    * \brief Define the FFD box with a symetry plane.
    * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
    */
@@ -5240,12 +5225,6 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void) const { return Restart; }
-
-  /*!
-   * \brief Flag for whether binary SU2 native restart files are written.
-   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
-   */
-  bool GetWrt_Binary_Restart(void) const { return Wrt_Binary_Restart; }
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are read.
@@ -9410,19 +9389,16 @@ public:
 
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
-   * \return
    */
   unsigned long GetVolume_Wrt_Freq() const { return VolumeWrtFreq; }
 
   /*!
    * \brief GetVolumeOutputFiles
-   * \return
    */
-  unsigned short* GetVolumeOutputFiles() { return VolumeOutputFiles; }
+  const unsigned short* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
 
   /*!
    * \brief GetnVolumeOutputFiles
-   * \return
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
 

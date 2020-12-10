@@ -1133,9 +1133,7 @@ void CConfig::SetConfig_Options() {
   
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
-  addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
-  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
@@ -2237,10 +2235,6 @@ void CConfig::SetConfig_Options() {
   default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
   addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-  /* DESCRIPTION: Visualize the deformation (surface grid) */
-  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
-  /* DESCRIPTION: Visualize the deformation (volume grid) */
-  addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
 
   /*!\par CONFIG_CATEGORY: Deformable mesh \ingroup Config*/
   /*--- option related to deformable meshes ---*/
@@ -2915,6 +2909,12 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
                              "and it also applies to discrete adjoint problems.\n\n");
           if (!option_name.compare("WRT_MESH_QUALITY"))
             newString.append("WRT_MESH_QUALITY is deprecated. Use VOLUME_OUTPUT= (MESH_QUALITY, ...) instead.\n\n");
+          if (!option_name.compare("VISUALIZE_SURFACE_DEF"))
+            newString.append("VISUALIZE_SURFACE_DEF is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("VISUALIZE_VOLUME_DEF"))
+            newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_BINARY_RESTART"))
+            newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -6756,9 +6756,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    if (Visualize_Surface_Def) cout << "A file will be created to visualize the surface deformation." << endl;
-    if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
-    else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
