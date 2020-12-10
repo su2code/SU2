@@ -74,7 +74,7 @@ namespace LimiterHelpers
     const su2double R = delta / (proj + sign*epsilon());
     const su2double psi = 0.5*((1.0-kappa) + (1.0+kappa)*R);
 
-    return psi;
+    return psi * (R >= 0);
   }
 
   inline su2double venkatFunction(su2double proj, su2double delta, su2double eps2)

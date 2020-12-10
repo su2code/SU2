@@ -3582,24 +3582,24 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
 
   su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
-  for (auto iVar = 1; iVar < nDim+3; iVar++) {
+  for (auto iVar = 1; iVar <= nVar; iVar++) {
     if (limiter) {  
-      dVl_dVi[iVar%(nDim+2)] = sign*(1.0 + 0.5*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
-      dVr_dVi[iVar%(nDim+2)] = sign*(    - 0.5*nodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
+      dVl_dVi[iVar%nVar] = sign*(1.0 + 0.5*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
+      dVr_dVi[iVar%nVar] = sign*(    - 0.5*nodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
     }
     else {
-      dVl_dVi[iVar%(nDim+2)] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
-      dVr_dVi[iVar%(nDim+2)] = sign*(      0.5*Kappa_Flow*good_j);
+      dVl_dVi[iVar%nVar] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
+      dVr_dVi[iVar%nVar] = sign*(      0.5*Kappa_Flow*good_j);
     }
   }
   if (tkeNeeded) {
     if (limiterTurb) {
-      dVl_dVi[nDim+2] = sign*(1.0 + 0.5*turbNodes->GetLimiter(iPoint,0)*good_i);
-      dVr_dVi[nDim+2] = sign*(    - 0.5*turbNodes->GetLimiter(jPoint,0)*good_j);
+      dVl_dVi[nVar] = sign*(1.0 + 0.5*turbNodes->GetLimiter(iPoint,0)*good_i);
+      dVr_dVi[nVar] = sign*(    - 0.5*turbNodes->GetLimiter(jPoint,0)*good_j);
     }
     else {
-      dVl_dVi[nDim+2] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
-      dVr_dVi[nDim+2] = sign*(      0.5*Kappa_Turb*good_j);
+      dVl_dVi[nVar] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
+      dVr_dVi[nVar] = sign*(      0.5*Kappa_Turb*good_j);
     }
   }
 
@@ -3686,17 +3686,17 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- Store Psi_i since it's the same for the Jacobian  of all neighbors ---*/
 
   su2double Psi_i[MAXNVARTOT] = {0.0};
-  for (auto iVar = 1; iVar < nDim+3; iVar++) {
+  for (auto iVar = 1; iVar <= nVar; iVar++) {
     if (limiter)
-      Psi_i[iVar%(nDim+2)] = sign*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
+      Psi_i[iVar%nVar] = sign*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
     else
-      Psi_i[iVar%(nDim+2)] = sign*0.5*(1.0-Kappa_Flow)*good_i;
+      Psi_i[iVar%nVar] = sign*0.5*(1.0-Kappa_Flow)*good_i;
   }
   if (tkeNeeded) {
     if (limiterTurb)
-      Psi_i[nDim+2] = sign*turbNodes->GetLimiter(iPoint,0)*good_i;
+      Psi_i[nVar] = sign*turbNodes->GetLimiter(iPoint,0)*good_i;
     else
-      Psi_i[nDim+2] = sign*0.5*(1.0-Kappa_Turb)*good_i;
+      Psi_i[nVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/
