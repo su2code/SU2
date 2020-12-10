@@ -3,7 +3,7 @@
 ## \file Interface.py
 #  \brief Interface class that handles fluid/solid solvers synchronisation and communication.
 #  \author Rocco Bombardieri and Ruben Sanchez based on previous work by David Thomas.
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #

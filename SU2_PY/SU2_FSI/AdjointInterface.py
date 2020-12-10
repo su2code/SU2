@@ -3,7 +3,7 @@
 ## \file AdjointInterface.py
 #  \brief Interface class that handles adjoint FSI synchronisation and communication.
 #  \author Ruben Sanchez
-#  \version 7.0.2 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
