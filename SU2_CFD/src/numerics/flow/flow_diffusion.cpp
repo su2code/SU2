@@ -638,25 +638,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Wall shear stress values (wall functions) ---*/
 
-  bool UseWallFunction;
-
-  if (TauWallFlag_i && TauWallFlag_j){
-     UseWallFunction = false;
-     Mean_TauWall = 0.0;
-   }
-   else if (TauWallFlag_i && !TauWallFlag_j){
-     UseWallFunction = true;
-     Mean_TauWall = TauWall_i;
-   }
-   else if (!TauWallFlag_i && TauWallFlag_j){
-     UseWallFunction = true;
-     Mean_TauWall = TauWall_j;
-   }
-   else{
-     UseWallFunction = false;
-     Mean_TauWall = 0.0;
-   }
-
+  Mean_TauWall = 0.0;
+  bool UseWallFunction = TauWallFlag_i ^ TauWallFlag_j;
+  if (UseWallFunction)
+    Mean_TauWall = TauWallFlag_i ? TauWall_i : TauWall_j;
+  
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){

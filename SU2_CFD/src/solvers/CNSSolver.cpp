@@ -126,7 +126,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Alloc3D(nMarker, nVertex, nDim, VelTimeFilter_WMLES);
 
     /*--- Check if the Wall models or Wall functions are unique. ---*/
-    /*--- OBS: All the markers must have the same wall model/function ---*/
+    /*--- Note: At this moment, all markers must use the same wall model/function ---*/
 
     vector<unsigned short> WallFunctions_;
     vector<string> WallFunctionsMarker_;
@@ -1281,7 +1281,7 @@ void CNSSolver::BC_WallModel(CGeometry      *geometry,
 
         /*--- Weakly enforce the WM heat flux for the energy equation---*/
         su2double velWall_tan = 0.;
-        su2double DirTanWM[3] = {0.,0.,0.};
+        su2double DirTanWM[MAXNDIM] = {0.};
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           DirTanWM[iDim] = GetFlowDirTan_WMLES(val_marker,iVertex,iDim);
@@ -1524,7 +1524,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
   su2double B = 5.0;
 
   /*--- Compute the recovery factor ---*/
-  // su2double-check: laminar or turbulent Pr for this?
+  
   su2double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
 
   /* Loop over the markers and select the ones for which a wall model
@@ -1633,10 +1633,7 @@ void CNSSolver::SetEddyViscFirstPoint(CGeometry *geometry, CSolver **solver_cont
 
               if (Y_Plus_White > 1e4){
                 cout << "WARNING: Y+ is too high (>1e4). The muT computation at the 1st point off the wall is disable." << endl;
-                cout << rank << " " << iPoint;
-//                for (auto iDim = 0u; iDim < nDim; iDim++)
-//                  cout << " " << Coord[iDim];
-                cout << endl;
+                cout << "Rank: " << rank << " iPoint: " << iPoint << endl;
                 nodes->SetTauWall_Flag(iPoint,false);
                 continue;
               }
@@ -1810,7 +1807,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        if (curAbsTimeIter > 0){
 
          /*--- Old input LES velocity and GradP---*/
-         su2double Vel_old[3]   = {0.,0.,0.};
+         su2double Vel_old[MAXNDIM]   = {0.};
          for (iDim = 0; iDim < nDim; iDim++){
            Vel_old[iDim]   = VelTimeFilter_WMLES[iMarker][iVertex][iDim];
          }
@@ -1850,7 +1847,7 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        VelTangMod = sqrt(VelTangMod);
        VelTangMod = max(VelTangMod,1.e-25);
 
-       su2double dirTan[3] = {0.0, 0.0, 0.0};
+       su2double dirTan[MAXNDIM] = {0.0};
        for(iDim = 0; iDim<nDim; iDim++) dirTan[iDim] = VelTang[iDim]/VelTangMod;
 
        /*--- If it is pressure gradient driven flow

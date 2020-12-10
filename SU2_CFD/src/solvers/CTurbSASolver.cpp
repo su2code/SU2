@@ -1588,7 +1588,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   const su2double tol = 1e-10;
 
   /*--- Compute the recovery factor ---*/
-  // su2double-check: laminar or turbulent Pr for this?
+  
   const su2double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
 
   /*--- Typical constants from boundary layer theory ---*/
