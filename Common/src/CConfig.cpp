@@ -2028,12 +2028,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_SURFACE
    *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
   addBoolOption("WRT_SURFACE", Wrt_Surface, false);
-  /*!\brief WRT_RESIDUALS
-   *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
-  /*!\brief WRT_LIMITERS
-   *  \n DESCRIPTION: Output limiter value information to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
   /*!\brief WRT_SHARPEDGES
    *  \n DESCRIPTION: Output sharp edge limiter information to solution/restart file  \ingroup Config*/
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
@@ -2903,6 +2897,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
           if (!option_name.compare("WRT_BINARY_RESTART"))
             newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
+          if (!option_name.compare("WRT_RESIDUALS"))
+            newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_LIMITERS"))
+            newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -4860,9 +4858,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Use the same linear solver on the primal as the one used in the adjoint. ---*/
     Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
     Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
-
-    /*--- Disable writing of limiters if enabled ---*/
-    Wrt_Limiters = false;
 
     if (TimeMarching) {
 
