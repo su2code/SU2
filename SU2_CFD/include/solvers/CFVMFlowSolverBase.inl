@@ -2189,9 +2189,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       /*--- Evaluate Tau ---*/
-      su2double *Tau_pointer[3] = {Tau[0], Tau[1], (nDim==3)?Tau[2]:nullptr};
-      su2double *Grad_Vel_pointer[3] = {Grad_Vel[0], Grad_Vel[1], (nDim==3)?Grad_Vel[2]:nullptr};
-      CNumerics::ComputeStressTensor(nDim, Tau_pointer, Grad_Vel_pointer, Viscosity);
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 

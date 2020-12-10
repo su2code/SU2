@@ -188,8 +188,7 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
     su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
-    su2double tau_data[9]; // avoid dynamic allocation
-    su2double *tau[3] = {tau_data, tau_data+3, tau_data+6};
+    su2double tau[3][3];
     CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetGradient_Primitive(Point_Flow)+1,Viscosity);
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
