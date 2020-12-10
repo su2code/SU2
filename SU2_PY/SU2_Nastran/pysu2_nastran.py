@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 ## \file pysu2_nastran.py
-#  \brief Structural solver tester (one or two degree of freedom) used for testing the Py wrapper for external FSI coupling.
+#  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -76,7 +76,18 @@ class RefSystem:
     return self.CID
 
 class Point:
-  """ Description. """
+  """
+  Class containing data regarding all the structural nodes.
+  Coord0: Coordinates at the initial time iteration.
+  Coord: Coordinates at the current time iteration.
+  Coord_n: Coordinates at the previous time iteration.
+  Vel: Velocity at the current time iteration.
+  Vel_n: Velocity at the previous time iteration.
+  Force: Nodal force provided by the aerodynamics.
+  ID: ID of the node.
+  CP: Coordinate system definition of the position.
+  CD: Coordinate system definition of the output coming from Nastran.
+  """
 
   def __init__(self):
     self.Coord0 = np.zeros((3,1))
@@ -166,10 +177,15 @@ class Point:
     self.Vel_n = np.copy(self.Vel)
 
 class Solver:
-  """Description"""
+  """
+  Structural solver main class.
+  It contains all the required methods for the coupling with SU2.
+  """
 
   def __init__(self, config_fileName, ImposedMotion):
-    """ Description. """
+    """
+    Constructor of the structural solver class.
+    """
 
     self.Config_file = config_fileName
     self.Config = {}
@@ -228,7 +244,10 @@ class Solver:
       histFile.close()
 
   def __readConfig(self):
-    """ Description. """
+    """
+    This methods obtains the configuration options from the structural solver input
+    file.
+    """
 
     with open(self.Config_file) as configfile:
       while 1:
@@ -285,7 +304,9 @@ class Solver:
 
 
   def __readNastranMesh(self):
-      """ This function reads the nastran 3D mesh"""
+      """
+      This method reads the nastran 3D mesh.
+      """
 
       def nastran_float(s):
         if s.find('E') == -1:
@@ -405,7 +426,9 @@ class Solver:
           print(mark)
 
   def __setStructuralMatrices(self):
-    """ Descriptions. """
+    """
+    This method reads the punch file and obtains the modal shapes and modal stiffnesses.
+    """
 
     self.M = np.zeros((self.nDof, self.nDof))
     self.K = np.zeros((self.nDof, self.nDof))
@@ -487,7 +510,10 @@ class Solver:
 
 
   def __setNonDiagonalStructuralMatrices(self):
-    """ Descriptions. """
+    """
+    This method is part of an advanced feature of this solver that allows to set
+    nondiagonal matrices for the structural modes.
+    """
 
     K_updated = self.__readNonDiagonalMatrix('NDK')
     M_updated = self.__readNonDiagonalMatrix('NDM')
@@ -503,7 +529,10 @@ class Solver:
       sys.exit('Non-Diagonal mass matrix is missing')
 
   def __readNonDiagonalMatrix(self,keyword):
-    """ Descriptions. """
+    """
+    This method reads from the punch file the definition of nondiagonal structural
+    matrices.
+    """
 
     matrixUpdated = False
 
@@ -556,7 +585,9 @@ class Solver:
     self.C = VinvT.dot(C)
 
   def __setIntegrationParameters(self):
-    """ Description. """
+    """
+    This method uses the time step size to define the integration parameters.
+    """
 
     self.alpha_m = (2.0*self.rhoAlphaGen-1.0)/(self.rhoAlphaGen+1.0)
     self.alpha_f = (self.rhoAlphaGen)/(self.rhoAlphaGen+1.0)
@@ -576,7 +607,9 @@ class Solver:
     print('betaPrime : {}'.format(self.betaPrime))
 
   def __setInitialConditions(self):
-    """ Description. """
+    """
+    This method uses the list of initial modal amplitudes to set the initial conditions
+    """
 
     print('Setting initial conditions.')
 
@@ -596,13 +629,18 @@ class Solver:
     self.a_n = np.copy(self.qddot)
 
   def __reset(self, vector):
-    """ Description. """
+    """
+    This method set to zero any vector.
+    """
 
     for ii in range(vector.shape[0]):
       vector[ii] = 0.0
 
   def __computeInterfacePosVel(self, initialize):
-    """ Description. """
+    """
+    This method uses the mode shapes to compute, based on the modal velocities, the
+    nodal velocities at the interface.
+    """
 
     # Multiply the modal matrices with modal amplitudes
     X_vel = self.Ux.dot(self.qdot)
@@ -623,7 +661,9 @@ class Solver:
         self.node[iPoint].SetVel_n((X_vel[iPoint],Y_vel[iPoint],Z_vel[iPoint]))
 
   def __temporalIteration(self,time):
-    """ Description. """
+    """
+    This method integrates in time the solution.
+    """
 
     if not self.ImposedMotion:
       eps = 1e-6
@@ -666,7 +706,9 @@ class Solver:
 
 
   def __SetLoads(self):
-    """ Description """
+    """
+    This method uses the nodal forces and the mode shapes to obtain the modal forces.
+    """
     makerID = list(self.markers.keys())
     makerID = makerID[0]
     nodeList = self.markers[makerID]
@@ -681,14 +723,18 @@ class Solver:
     self.F = self.UxT.dot(FX) + self.UyT.dot(FY) + self.UzT.dot(FZ)
 
   def __ComputeResidual(self):
-    """ Description. """
+    """
+    This method computes the residual for integration.
+    """
 
     res = self.M.dot(self.qddot) + self.C.dot(self.qdot) + self.K.dot(self.q) - self.F
 
     return res
 
   def __TangentOperator(self):
-    """ Description. """
+    """
+    This method computes the tangent operator for solution.
+    """
 
     # The problem is linear, so the tangent operator is straightforward.
     St = self.betaPrime*self.M + self.gammaPrime*self.C + self.K
@@ -696,12 +742,16 @@ class Solver:
     return St
 
   def exit(self):
-    """ Description. """
+    """
+    This method cleanly exits the structural solver.
+    """
 
     print("\n**************** Exiting the structural tester solver ****************")
 
   def run(self,time):
-    """ Description. """
+    """
+    This method is the main function for advancing the solution of one time step.
+    """
     self.__temporalIteration(time)
     header = 'Time\t'
     for imode in range(min([self.nDof,5])):
@@ -716,7 +766,10 @@ class Solver:
     self.__computeInterfacePosVel(False)
 
   def setInitialDisplacements(self):
-    """ Description. """
+    """
+    This method provides public access to the method __computeInterfacePosVel and
+    sets velocities for previous time steps.
+    """
 
     self.__computeInterfacePosVel(True)
 
@@ -770,7 +823,9 @@ class Solver:
       self.__computeInterfacePosVel(False)
 
   def writeSolution(self, time, timeIter, FSIIter):
-    """ Description. """
+    """
+    This method is the main function for output. It writes the file StructHistoryModal.dat
+    """
 
     # Modal History
     histFile = open('StructHistoryModal.dat', "a")
@@ -782,7 +837,9 @@ class Solver:
     histFile.close()
 
   def updateSolution(self):
-    """ Description. """
+    """
+    This method updates the solution.
+    """
 
     self.q_n = np.copy(self.q)
     self.qdot_n = np.copy(self.qdot)
@@ -802,7 +859,9 @@ class Solver:
 
 
   def applyload(self, iVertex, fx, fy, fz):
-    """ Description """
+    """
+    This method can be accessed from outside to set the nodal forces.
+    """
 
     makerID = list(self.markers.keys())
     makerID = makerID[0]
@@ -810,103 +869,41 @@ class Solver:
     self.node[iPoint].SetForce((fx,fy,fz))
 
   def getFSIMarkerID(self):
-    """ Description. """
+    """
+    This method provides the ID of the interface marker
+    """
     L = list(self.markers)
     return L[0]
 
   def getNumberOfSolidInterfaceNodes(self, markerID):
-    """ Description. """
 
     return len(self.markers[markerID])
 
   def getInterfaceNodeGlobalIndex(self, markerID, iVertex):
-    """ Description. """
 
     return self.markers[markerID][iVertex]
 
-  def getInterfaceNodePosX(self, markerID, iVertex):
-    """ Desciption. """
+  def getInterfaceNodePos(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
     Coord = self.node[iPoint].GetCoord()
-    return float(Coord[0])
+    return Coord
 
-  def getInterfaceNodePosY(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return float(Coord[1])
-
-  def getInterfaceNodePosZ(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return float(Coord[2])
-
-  def getInterfaceNodeDispX(self, markerID, iVertex):
-    """ Desciption. """
+  def getInterfaceNodeDisp(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
     Coord = self.node[iPoint].GetCoord()
     Coord0 = self.node[iPoint].GetCoord0()
-    return float(Coord[0]-Coord0[0])
+    return (Coord-Coord0)
 
-  def getInterfaceNodeDispY(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    Coord0 = self.node[iPoint].GetCoord0()
-    return float(Coord[1]-Coord0[1])
-
-  def getInterfaceNodeDispZ(self, markerID, iVertex):
-    """ Desciption. """
-
-    iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    Coord0 = self.node[iPoint].GetCoord0()
-    return float(Coord[2]-Coord0[2])
-
-  def getInterfaceNodeVelX(self, markerID, iVertex):
-    """ Description """
+  def getInterfaceNodeVel(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
     Vel = self.node[iPoint].GetVel()
-    return float(Vel[0])
+    return Vel
 
-  def getInterfaceNodeVelY(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel()
-    return float(Vel[1])
-
-  def getInterfaceNodeVelZ(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel()
-    return float(Vel[2])
-
-  def getInterfaceNodeVelXNm1(self, markerID, iVertex):
-    """ Description """
+  def getInterfaceNodeVelNm1(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
     Vel = self.node[iPoint].GetVel_n()
-    return float(Vel[0])
-
-  def getInterfaceNodeVelYNm1(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel_n()
-    return float(Vel[1])
-
-  def getInterfaceNodeVelZNm1(self, markerID, iVertex):
-    """ Description """
-
-    iPoint = self.markers[markerID][iVertex]
-    Vel = self.node[iPoint].GetVel_n()
-    return float(Vel[2])
+    return Vel

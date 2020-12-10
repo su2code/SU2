@@ -222,7 +222,7 @@ class Interface:
         # --- Identify the fluid and solid interfaces and store the number of nodes on both sides (and for each partition) ---
         self.fluidInterfaceIdentifier = None
         self.nLocalFluidInterfaceNodes = 0
-        if FluidSolver is not :
+        if FluidSolver is not None:
             print('Fluid solver is initialized on process {}'.format(myid))
             self.haveFluidSolver = True
             allMovingMarkersTags = FluidSolver.GetAllDeformMeshMarkersTag()
@@ -592,9 +592,7 @@ class Interface:
         self.localSolidInterface_array_Z = np.zeros(self.nLocalSolidInterfaceNodes)
         for iVertex in range(self.nLocalSolidInterfaceNodes):
           GlobalIndex = SolidSolver.getInterfaceNodeGlobalIndex(self.solidInterfaceIdentifier, iVertex)
-          posx = SolidSolver.getInterfaceNodePosX(self.solidInterfaceIdentifier, iVertex)
-          posy = SolidSolver.getInterfaceNodePosY(self.solidInterfaceIdentifier, iVertex)
-          posz = SolidSolver.getInterfaceNodePosZ(self.solidInterfaceIdentifier, iVertex)
+          posx, posy, posz = SolidSolver.getInterfaceNodePos(self.solidInterfaceIdentifier, iVertex)
           if GlobalIndex in self.SolidHaloNodeList[myid].keys():
             pass
           else:
@@ -839,7 +837,9 @@ class Interface:
 
     def NearestNeighboorMeshMapping(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc):
         """
-        Description
+        Interpolation based on the nearest neighboor.
+        For each node, the mesh is scanned to find the closed node to the first
+        one.
         """
 
         if self.have_MPI:
@@ -880,7 +880,9 @@ class Interface:
 
     def RBFMeshMapping_A(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc, rad):
         """
-        Description
+        First part of the RBF mapping. This method provides the matrix required to
+        obtain, from the structural displacements, the loadings of the kernel
+        functions.
         """
 
         if self.have_MPI:
@@ -934,7 +936,8 @@ class Interface:
 
     def RBFMeshMapping_B(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc, rad):
         """
-        Description
+        Second part of the RBF mapping. This method provides the matrix required to
+        obtain, from the kernel function loadings, the fluid nodes displacements.
         """
 
         if self.have_MPI:
@@ -988,7 +991,9 @@ class Interface:
 
     def TPSMeshMapping_A(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc):
         """
-        Description
+        First part of the RBF mapping. This method provides the matrix required to
+        obtain, from the structural displacements, the loadings of the kernel
+        functions.
         """
 
         if self.have_MPI:
@@ -1024,7 +1029,8 @@ class Interface:
 
     def TPSMeshMapping_B(self, solidInterfaceBuffRcv_X, solidInterfaceBuffRcv_Y, solidInterfaceBuffRcv_Z, iProc):
         """
-        Description
+        Second part of the TPS mapping. This method provides the matrix required to
+        obtain, from the kernel function loadings, the fluid nodes displacements.
         """
 
         if self.have_MPI:
@@ -1061,7 +1067,8 @@ class Interface:
 
     def __CPC2(self, distance, rad):
         """
-        Description.
+        This method provides the value of the kernel function given the euclidean
+        distance. The kernel function is the one used for RBF.
         """
         phi = 0.0
         eps = distance/rad
@@ -1075,7 +1082,8 @@ class Interface:
 
     def __TPS(self, distance):
         """
-        Description
+        This method provides the value of the kernel function given the euclidean
+        distance. The kernel function is the one used for TPS.
         """
         phi = 0.0
 
@@ -1420,9 +1428,7 @@ class Interface:
           if GlobalIndex in self.SolidHaloNodeList[myid].keys():
             pass
           else:
-            newDispx = SolidSolver.getInterfaceNodeDispX(self.solidInterfaceIdentifier, iVertex)
-            newDispy = SolidSolver.getInterfaceNodeDispY(self.solidInterfaceIdentifier, iVertex)
-            newDispz = SolidSolver.getInterfaceNodeDispZ(self.solidInterfaceIdentifier, iVertex)
+            newDispx, newDispy, newDispz = SolidSolver.getInterfaceNodeDisp(self.solidInterfaceIdentifier, iVertex)
             iGlobalVertex = self.__getGlobalIndex('solid', myid, localIndex)
             self.solidInterface_array_DispX.setValues([iGlobalVertex],newDispx)
             self.solidInterface_array_DispY.setValues([iGlobalVertex],newDispy)
@@ -1590,9 +1596,7 @@ class Interface:
 
         if myid in self.solidSolverProcessors:
           for iVertex in range(self.nLocalSolidInterfaceNodes):
-            predDispx = SolidSolver.getInterfaceNodeDispX(self.solidInterfaceIdentifier, iVertex)
-            predDispy = SolidSolver.getInterfaceNodeDispY(self.solidInterfaceIdentifier, iVertex)
-            predDispz = SolidSolver.getInterfaceNodeDispZ(self.solidInterfaceIdentifier, iVertex)
+            predDispx, predDispy, predDispz = SolidSolver.getInterfaceNodeDisp(self.solidInterfaceIdentifier, iVertex)
             iGlobalVertex = self.__getGlobalIndex('solid', myid, iVertex)
             predDisp_array_X.setValues([iGlobalVertex], predDispx)
             predDisp_array_Y.setValues([iGlobalVertex], predDispy)
@@ -1788,12 +1792,8 @@ class Interface:
               pass
             else:
               iGlobalVertex = self.__getGlobalIndex('solid', myid, localIndex)
-              velx = SolidSolver.getInterfaceNodeVelX(self.solidInterfaceIdentifier, iVertex)
-              vely = SolidSolver.getInterfaceNodeVelY(self.solidInterfaceIdentifier, iVertex)
-              velz = SolidSolver.getInterfaceNodeVelZ(self.solidInterfaceIdentifier, iVertex)
-              velxNm1 = SolidSolver.getInterfaceNodeVelXNm1(self.solidInterfaceIdentifier, iVertex)
-              velyNm1 = SolidSolver.getInterfaceNodeVelYNm1(self.solidInterfaceIdentifier, iVertex)
-              velzNm1 = SolidSolver.getInterfaceNodeVelZNm1(self.solidInterfaceIdentifier, iVertex)
+              velx, vely, velz = SolidSolver.getInterfaceNodeVel(self.solidInterfaceIdentifier, iVertex)
+              velxNm1, velyNm1, velzNm1 = SolidSolver.getInterfaceNodeVelNm1(self.solidInterfaceIdentifier, iVertex)
               Vel_array_X.setValues([iGlobalVertex],velx)
               Vel_array_Y.setValues([iGlobalVertex],vely)
               Vel_array_Z.setValues([iGlobalVertex],velz)
