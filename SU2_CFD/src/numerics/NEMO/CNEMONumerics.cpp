@@ -64,10 +64,15 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      fluidmodel = new CMutationTCLib(config, nDim);
+        #ifdef HAVE_MPP
+          FluidModel = new CMutationTCLib(config, nDim);
+        #else
+          SU2_MPI::Error(string("Mutation++ has not been configured/compiled. Add 1) '-Denable-mpp=true' to your meson string or 2) '-DHAVE_MPP' to the CXX FLAGS of your configure string, and recompile."),
+          CURRENT_FUNCTION);
+        #endif    
       break;
       case USER_DEFINED_NONEQ:
-      fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+        fluidmodel = new CUserDefinedTCLib(config, nDim, false);
       break;
     }
 }

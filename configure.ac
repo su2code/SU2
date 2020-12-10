@@ -214,36 +214,36 @@ su2_externals_INCLUDES="-I\$(top_srcdir)/externals/CLI11 $su2_externals_INCLUDES
 # check for lib
 Mutationpplib=libmutation++.a
 Mutationppheader=mutation++.h
-have_Mutationpp="no"
+have_MPP="no"
 
 if test "$with_Mutationpp_lib" != "no"
 then
-  	AC_CHECK_FILE([$with_Mutationpp_lib/$Mutationpplib],[have_Mutationpp="yes"],[have_Mutationpp="no"])
-	if test "$have_Mutationpp" == "no"
+  	AC_CHECK_FILE([$with_Mutationpp_lib/$Mutationpplib],[have_MPP="yes"],[have_MPP="no"])
+	if test "$have_MPP" == "no"
 	then
 		AC_MSG_ERROR([Mutation++ requested but library file not found.])
 	fi
 fi
 
 # check for header
-if test "$have_Mutationpp" != "no"
+if test "$have_MPP" != "no"
 then
 	if test "$with_Mutationpp_include" != "no"
 	then
-		AC_CHECK_FILE([$with_Mutationpp_include/$Mutationppheader],[have_Mutationpp='yes'],[have_Mutationpp='no'])
-		if test "$have_Mutationpp" == "no"
+		AC_CHECK_FILE([$with_Mutationpp_include/$Mutationppheader],[have_MPP='yes'],[have_MPP='no'])
+		if test "$have_MPP" == "no"
 		then
 			AC_MSG_ERROR([Mutation++ requested but header file not found.])
 		fi
 	else
-		have_Mutationpp="no"
+		have_MPP="no"
 	fi
 fi
 
-if test "$have_Mutationpp" != "no"
+if test "$have_MPP" != "no"
 then
-  	AM_CONDITIONAL(BUILD_MUTATIONPP,true)
-	MUTATIONPP_CXX="-DHAVE_MUTATIONPP -I"$with_Mutationpp_include""
+  	AM_CONDITIONAL(BUILD_MUTATIONPP,true,test x$enablempp = xyes -a x$have_MPP = xyes)
+	MUTATIONPP_CXX="-DHAVE_MPP -I"$with_Mutationpp_include""
 	MUTATIONPP_LD="$with_Mutationpp_lib"/$Mutationpplib
 else
 	AM_CONDITIONAL(BUILD_MUTATIONPP,false)
@@ -395,7 +395,7 @@ Build Configuration Summary:
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
     CGNS support:         $enablecgns
-    Mutation++ support:   $have_Mutationpp
+    Mutation++ support:   $have_MPP
     MKL support:          $have_MKL
     Datatype support:
         double            $build_NORMAL

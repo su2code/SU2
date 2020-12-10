@@ -27,6 +27,8 @@
 
 #include "../../include/fluid/CMutationTCLib.hpp"
 
+#ifdef HAVE_MPP
+
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
  
   Mutation::MixtureOptions opt(gas_model);
@@ -221,3 +223,5 @@ vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
 
    return Enthalpy_Formation;  
 }
+
+#endif
