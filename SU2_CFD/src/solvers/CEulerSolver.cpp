@@ -3397,14 +3397,16 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
           Lim_Flow_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
           break;
       }
-    }
-    else {
-      Lim_Flow_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
-      Lim_Flow_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+      primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Lim_Flow_i[iVar];
+      primvar_j[iVar] = V_j[iVar] - Project_Grad_j*Lim_Flow_j[iVar];
     }
 
-    primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Lim_Flow_i[iVar];
-    primvar_j[iVar] = V_j[iVar] - Project_Grad_j*Lim_Flow_j[iVar];
+    /*--- Unlimited kappa scheme ---*/
+    
+    else {
+      primvar_i[iVar] = V_i[iVar] + LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
+      primvar_j[iVar] = V_j[iVar] - LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+    }
   }
 
   /*--- Reconstruct turbulent primitive variables. ---*/
@@ -3445,15 +3447,16 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             Lim_Turb_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
             break;
         }
-      }
-      else {
-        Lim_Turb_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa_Turb);
-        Lim_Turb_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa_Turb);
-      }
-
       turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Lim_Turb_i[iVar];
       turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Lim_Turb_j[iVar];
+      }
 
+      /*--- Unlimited kappa scheme ---*/
+
+      else {
+        turbvar_i[iVar] = T_i[iVar] + LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa_Turb);
+        turbvar_j[iVar] = T_j[iVar] - LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa_Turb);
+      }
     }
   }
 }
