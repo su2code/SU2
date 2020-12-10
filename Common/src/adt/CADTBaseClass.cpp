@@ -2,7 +2,7 @@
  * \file CADTBaseClass.cpp
  * \brief Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
