@@ -8831,7 +8831,7 @@ public:
    * \return <code>TRUE</code> means that they will be used.
    */
   bool GetUsing_ReynoldsStress(void) const {
-      return (using_uq);
+    return (using_uq);
   }
 
   /*!
