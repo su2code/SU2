@@ -3330,12 +3330,12 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
                                     const unsigned long nFlowVarGrad,
                                     const unsigned long nTurbVarGrad) {
 
-  const auto InnerIter   = config->GetInnerIter();
-  const auto turb_model  = config->GetKind_Turb_Model();
-  const bool turb        = (turb_model != NONE) && (nTurbVarGrad > 0);
-  const bool tkeNeeded   = (turb_model == SST) || (turb_model == SST_SUST);
-  const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool limiterTurb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const auto InnerIter     = config->GetInnerIter();
+  const auto turb_model    = config->GetKind_Turb_Model();
+  const bool turb          = (turb_model != NONE) && (nTurbVarGrad > 0);
+  const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
+  const bool limNeeded     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limTurbNeeded = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
   const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
   const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
@@ -3363,10 +3363,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   /*--- Reconstruct flow primitive variables. ---*/
 
-  for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
+  auto Lim_Flow_i = flowNodes->GetLimiter_Primitive(iPoint);
+  auto Lim_Flow_j = flowNodes->GetLimiter_Primitive(jPoint);
 
-    auto Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
-    auto Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
+  for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
 
     const auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint)[iVar];
     const auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint)[iVar];
@@ -3386,35 +3386,35 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     /*--- Edge-based limiters ---*/
 
-    if (limiter) {
+    if (limNeeded) {
       switch(config->GetKind_SlopeLimit_Flow()) {
         case VAN_ALBADA_EDGE:
-          Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa_Flow);
-          Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+          Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa_Flow);
+          Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa_Flow);
           break;
         case PIPERNO:
-          Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-          Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+          Lim_Flow_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+          Lim_Flow_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
           break;
       }
     }
     else {
-      Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
-      Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+      Lim_Flow_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
+      Lim_Flow_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
     }
 
-    primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Limiter_i[iVar];
-    primvar_j[iVar] = V_j[iVar] - Project_Grad_j*Limiter_j[iVar];
+    primvar_i[iVar] = V_i[iVar] + Project_Grad_i*Lim_Flow_i[iVar];
+    primvar_j[iVar] = V_j[iVar] - Project_Grad_j*Lim_Flow_j[iVar];
   }
 
   /*--- Reconstruct turbulent primitive variables. ---*/
 
   if (turb) {
 
-    for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
+    auto Lim_Turb_i = turbNodes->GetLimiter(iPoint);
+    auto Lim_Turb_j = turbNodes->GetLimiter(jPoint);
 
-      auto Limiter_i = turbNodes->GetLimiter(iPoint);
-      auto Limiter_j = turbNodes->GetLimiter(jPoint);
+    for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
 
       const auto Gradient_i = turbNodes->GetGradient_Reconstruction(iPoint)[iVar];
       const auto Gradient_j = turbNodes->GetGradient_Reconstruction(jPoint)[iVar];
@@ -3434,25 +3434,25 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       /*--- Edge-based limiters ---*/
 
-      if (limiterTurb) {
+      if (limTurbNeeded) {
         switch(config->GetKind_SlopeLimit_Turb()) {
           case VAN_ALBADA_EDGE:
-            Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa_Turb);
-            Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa_Turb);
+            Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa_Turb);
+            Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa_Turb);
             break;
           case PIPERNO:
-            Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
-            Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
+            Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
+            Lim_Turb_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, T_ij);
             break;
         }
       }
       else {
-        Limiter_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa_Turb);
-        Limiter_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa_Turb);
+        Lim_Turb_i[iVar] = LimiterHelpers::kappaFunction(Project_Grad_i, T_ij, Kappa_Turb);
+        Lim_Turb_j[iVar] = LimiterHelpers::kappaFunction(Project_Grad_j, T_ij, Kappa_Turb);
       }
 
-      turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Limiter_i[iVar];
-      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Limiter_j[iVar];
+      turbvar_i[iVar] = T_i[iVar] + Project_Grad_i*Lim_Turb_i[iVar];
+      turbvar_j[iVar] = T_j[iVar] - Project_Grad_j*Lim_Turb_j[iVar];
 
     }
   }
