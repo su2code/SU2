@@ -1479,7 +1479,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the body force source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -1510,7 +1510,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the boussinesq source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
