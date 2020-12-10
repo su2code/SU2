@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
    requires to move all the data to the master node---*/
 
   for (iZone = 0; iZone < nZone; iZone++){
-    
+
     /*--- Compute Mesh Quality if requested. Necessary geometry preprocessing re-done beforehand. ---*/
 
     if (config_container[iZone]->GetWrt_MeshQuality() && !config->GetStructuralProblem()) {
@@ -331,14 +331,11 @@ int main(int argc, char *argv[]) {
     output[iZone]->SetVolume_Filename("volume_deformed");
     output[iZone]->SetSurface_Filename("surface_deformed");
 
-    if (config_container[iZone]->GetVisualize_Volume_Def()){
-      for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
-        unsigned short* FileFormat = config_container[iZone]->GetVolumeOutputFiles();
-        if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
-          output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
-      }
+    for (unsigned short iFile = 0; iFile < config_container[iZone]->GetnVolumeOutputFiles(); iFile++){
+      auto FileFormat = config_container[iZone]->GetVolumeOutputFiles();
+      if (FileFormat[iFile] != RESTART_ASCII && FileFormat[iFile] != RESTART_BINARY)
+        output[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone], FileFormat[iFile]);
     }
-
   }
 
 
