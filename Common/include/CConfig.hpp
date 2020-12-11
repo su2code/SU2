@@ -3968,6 +3968,14 @@ public:
   bool GetLeastSquaresRequired(void) const { return LeastSquaresRequired; }
 
   /*!
+   * \brief Get flag for whether a least-squares gradient method is being applied to upwind reconstruction.
+   * \return <code>TRUE</code> means that a least-squares gradient method is being applied to upwind reconstruction.
+   */
+  bool GetLeastSquaresReconstructionRequired(void) const { return ReconstructionGradientRequired && 
+                                                                 (Kind_Gradient_Method_Recon == LEAST_SQUARES || 
+                                                                  Kind_Gradient_Method_Recon == WEIGHTED_LEAST_SQUARES); }
+
+  /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */

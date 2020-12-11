@@ -31,7 +31,8 @@
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
                                unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config),
-                               Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
+                               Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive),
+                               Smatrix_Reconstruction(config->GetLeastSquaresReconstructionRequired() ? Smatrix_Aux : Smatrix) {
 
   bool dual_time = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                    (config->GetTime_Marching() == DT_STEPPING_2ND);
@@ -126,7 +127,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
     Smatrix.resize(nPoint,nDim,nDim,0.0);
-    if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
+    if (config->GetLeastSquaresReconstructionRequired())
       Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
   }
 

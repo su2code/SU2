@@ -29,8 +29,9 @@
 #include "../../include/variables/CTurbVariable.hpp"
 
 
-CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
-  : CVariable(npoint, ndim, nvar, config), Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) : CVariable(npoint, ndim, nvar, config), 
+                             Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient),
+                             Smatrix_Reconstruction(config->GetLeastSquaresReconstructionRequired() ? Smatrix_Aux : Smatrix)  {
 
   /*--- Allocate space for the harmonic balance source terms ---*/
 
@@ -49,7 +50,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
     Smatrix.resize(nPoint,nDim,nDim,0.0);
-    if (config->GetMUSCL_Flow() || config->GetMUSCL_Turb())
+    if (config->GetLeastSquaresReconstructionRequired())
       Smatrix_Aux.resize(nPoint,nDim,nDim,0.0);
       
   }
