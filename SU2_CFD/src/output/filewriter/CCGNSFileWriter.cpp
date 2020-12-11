@@ -30,8 +30,6 @@
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../include/solvers/CSolver.hpp"
-#include "../../../../Common/include/option_structure.hpp"
-#include "../../../include/output/COutputLegacy.hpp"
 
 #include <algorithm>
 

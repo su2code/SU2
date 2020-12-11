@@ -28,18 +28,10 @@
 #pragma once
 #include "CFileWriter.hpp"
 #include "../../solvers/CSolver.hpp"
-#include "../COutputLegacy.hpp"
-#include "../../../../Common/include/geometry/CGeometry.hpp"
-class CGeometry;
-class COutputLegacy;
-
 
 class CCGNSFileWriter final: public CFileWriter{
 
   unsigned long nElem;  // Global number of elems without halos
-
-  unsigned long timeIter;  //!< Current value of the time iteration
-  su2double timeStep;       //!< Current value of the time step
 
 public:
 
