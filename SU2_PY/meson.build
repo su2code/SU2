@@ -16,7 +16,6 @@ install_data(['continuous_adjoint.py',
 	     'fsi_computation.py',
 	     'pyBeamFSI.py',
 	     'pyBeamFSI_AD.py',
-	     'SU2_CFD.py'], 
 	     'SU2_CFD.py'],
 	     install_dir: join_paths(get_option('bindir')))
 
@@ -87,5 +86,5 @@ install_data(['FSI_tools/__init__.py',
 	      install_dir: join_paths(get_option('bindir'), 'FSI_tools'))
 
 install_data(['SU2_Nastran/__init__.py',
-              'SU2_Nastran/pysu2_nastran.py',],
+              'SU2_Nastran/pysu2_nastran.py'],
         install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))
