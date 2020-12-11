@@ -771,8 +771,6 @@ private:
 
   bool
   Wrt_Surface,               /*!< \brief Write solution at each surface */
-  Wrt_SharpEdges,            /*!< \brief Write residuals to solution file */
-  Wrt_Halo,                  /*!< \brief Write rind layers in solution files */
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
@@ -3076,18 +3074,6 @@ public:
    * \return <code>TRUE</code> means that the solution at each surface will be written.
    */
   bool GetWrt_Surface(void) const { return Wrt_Surface; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_SharpEdges(void) const { return Wrt_SharpEdges; }
-
-  /*!
-   * \brief Get information about writing rind layers to the solution files.
-   * \return <code>TRUE</code> means that rind layers will be written to the solution file.
-   */
-  bool GetWrt_Halo(void) const { return Wrt_Halo; }
 
   /*!
    * \brief Get information about writing the performance summary at the end of a calculation.
