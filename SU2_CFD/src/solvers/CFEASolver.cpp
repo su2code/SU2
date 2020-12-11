@@ -1843,7 +1843,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
     LinSysSol(iPoint, axis) = 0.0;
-    if (config->GetMarker_All_Deform_Mesh_Sym_Plane(val_marker) == NO){
+    if (LinSysReact.GetLocSize() > 0){
       LinSysReact(iPoint, axis) = 0.0;
     }
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
@@ -2784,11 +2784,6 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   /*--- Solve or smooth the linear system. ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-  if (rank == MASTER_NODE){
-    if (iter >= config->GetDeform_Linear_Solver_Iter()){
-      cout<<"Reached maximum number of iterations in structural deformation solver"<<endl;
-    }
-  }
 
   SU2_OMP_MASTER
   {

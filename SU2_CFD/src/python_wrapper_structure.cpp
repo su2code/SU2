@@ -915,41 +915,24 @@ void CSinglezoneDriver::SetInitialMesh() {
 
   SU2_OMP_PARALLEL {
     // Overwrite fictious velocities
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain(); iPoint++) {
-      for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim(); iDim++) {
-        su2double GridVel = 0.0;
-        geometry_container[ZONE_0][INST_0][MESH_0]->nodes->SetGridVel(iPoint, iDim, GridVel);
-      }
-    }
-
-    geometry_container[ZONE_0][INST_0][MESH_0]->InitiateComms(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], GRID_VELOCITY);
-    geometry_container[ZONE_0][INST_0][MESH_0]->CompleteComms(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], GRID_VELOCITY);
-
-    for (iMesh = 1u; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+    for (iMesh = 0u; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
       SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(),omp_get_max_threads()))
-      for (unsigned long Point_Coarse = 0; Point_Coarse < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); Point_Coarse++) {
+      for (unsigned long iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); iPoint++) {
 
         /*--- Overwrite fictitious velocities ---*/
         su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
 
         /*--- Set the grid velocity for this coarse node. ---*/
-        for (unsigned short iDim = 0; iDim < geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim(); iDim++)
-          geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(Point_Coarse, iDim, Grid_Vel[iDim]);
+        geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
       }
-    }
-  }
-
-  /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
-
-  // Push back the volume
-  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+      /*--- Push back the volume. ---*/
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
       geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
+    }
+    /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
+    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
+    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
   }
-
 }
 
 void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ttotal_passive){

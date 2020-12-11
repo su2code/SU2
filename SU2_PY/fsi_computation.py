@@ -118,7 +118,7 @@ def main():
       from SU2_Nastran import pysu2_nastran
       SolidSolver = pysu2_nastran.Solver(CSD_ConFile,True)
     else:
-      print("\n I have no idea about the solid solver you want to use")
+      print("\n Invalid solid solver option")
   else:
     SolidSolver = None
 
