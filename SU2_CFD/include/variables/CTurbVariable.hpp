@@ -43,6 +43,8 @@ protected:
   VectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   VectorOfMatrix Gradient_Aux;              /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
 
+  VectorOfMatrix &Smatrix_Reconstruction;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  VectorOfMatrix Smatrix_Aux;               /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
 public:
   /*!
@@ -107,6 +109,37 @@ public:
    * \return Reference to variable reconstruction gradient.
    */
   inline VectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+
+  /*!
+   * \overload
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix.
+   */
+  inline void SetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix_Reconstruction(iPoint,iDim,jDim) = value; }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix_Reconstruction(iPoint,iDim,jDim); }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double **GetSmatrix_Reconstruction(unsigned long iPoint) { return Smatrix_Reconstruction[iPoint]; }
+
+  /*!
+   * \brief Get the value Smatrix for the entire domain.
+   * \return Reference to the Smatrix.
+   */
+  inline VectorOfMatrix& GetSmatrix_Reconstruction(void) { return Smatrix_Reconstruction; }
 
   /*!
    * \brief A virtual member.

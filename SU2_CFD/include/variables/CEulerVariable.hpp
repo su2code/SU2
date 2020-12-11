@@ -49,6 +49,9 @@ protected:
   VectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
+  VectorOfMatrix &Smatrix_Reconstruction;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  VectorOfMatrix Smatrix_Aux;               /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
 
@@ -198,6 +201,37 @@ public:
    * \return Array of the reconstruction variables gradient at a node.
    */
   inline su2double **GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+
+  /*!
+   * \overload
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] value - Value of the Smatrix.
+   */
+  inline void SetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix_Reconstruction(iPoint,iDim,jDim) = value; }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] jDim - Index of the dimension.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix_Reconstruction(iPoint,iDim,jDim); }
+
+  /*!
+   * \brief Get the value of the Smatrix entry for least squares gradient calculations.
+   * \param[in] iPoint - Point index.
+   * \return Value of the Smatrix entry.
+   */
+  inline su2double **GetSmatrix_Reconstruction(unsigned long iPoint) { return Smatrix_Reconstruction[iPoint]; }
+
+  /*!
+   * \brief Get the value Smatrix for the entire domain.
+   * \return Reference to the Smatrix.
+   */
+  inline VectorOfMatrix& GetSmatrix_Reconstruction(void) { return Smatrix_Reconstruction; }
 
   /*!
    * \brief A virtual member.
