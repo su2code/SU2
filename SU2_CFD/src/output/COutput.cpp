@@ -1992,9 +1992,10 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
-  if (config->GetTime_Domain()) {
+  if (config->GetTime_Domain()){
     return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
-  } else {
+  }
+  else {
     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   }
 }

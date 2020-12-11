@@ -27,6 +27,7 @@
 
 
  #include "../include/drivers/CDriver.hpp"
+ #include "../include/drivers/CSinglezoneDriver.hpp"
 
 void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geometry, CSolver *****solver){
 
@@ -891,6 +892,32 @@ void CFluidDriver::SetInitialMesh() {
   //}
 }
 
+void CSinglezoneDriver::SetInitialMesh() {
+
+  DynamicMeshUpdate(0);
+
+  SU2_OMP_PARALLEL {
+    // Overwrite fictious velocities
+    for (iMesh = 0u; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+      SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(),omp_get_max_threads()))
+      for (unsigned long iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); iPoint++) {
+
+        /*--- Overwrite fictitious velocities ---*/
+        su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
+
+        /*--- Set the grid velocity for this coarse node. ---*/
+        geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
+      }
+      /*--- Push back the volume. ---*/
+      geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
+      geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
+    }
+    /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
+    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
+    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
+  }
+}
+
 void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ttotal_passive){
 
   su2double val_Ttotal = val_Ttotal_passive;
@@ -1231,4 +1258,3 @@ void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha){
   }
 
 }
-
