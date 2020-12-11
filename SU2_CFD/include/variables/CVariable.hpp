@@ -973,7 +973,7 @@ public:
    * \param[in] iDim - Index of the dimension.
    * \param[in] value - Value of the Smatrix.
    */
-  inline void SetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { }
+  inline virtual void SetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { }
 
   /*!
    * \brief Get the value of the Smatrix entry for least squares gradient calculations.
@@ -982,20 +982,20 @@ public:
    * \param[in] jDim - Index of the dimension.
    * \return Value of the Smatrix entry.
    */
-  inline su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return 0.0; }
+  inline virtual su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return 0.0; }
 
   /*!
    * \brief Get the value of the Smatrix entry for least squares gradient calculations.
    * \param[in] iPoint - Point index.
    * \return Value of the Smatrix entry.
    */
-  inline su2double **GetSmatrix_Reconstruction(unsigned long iPoint) { return nullptr; }
+  inline virtual su2double **GetSmatrix_Reconstruction(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the value Smatrix for the entire domain.
    * \return Reference to the Smatrix.
    */
-  inline VectorOfMatrix& GetSmatrix_Reconstruction(void) { return Smatrix; }
+  inline virtual VectorOfMatrix& GetSmatrix_Reconstruction(void) { return Smatrix; }
 
   /*!
    * \brief Set the value of the limiter.
