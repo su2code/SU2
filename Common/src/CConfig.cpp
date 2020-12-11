@@ -3419,20 +3419,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Time_Domain){
-    if (TimeMarching == TIME_STEPPING){
-      InnerIter = 1;
-    }
-    if (!OptionIsSet("OUTPUT_WRT_FREQ"))
-      VolumeWrtFreq = 1;
-    if (Restart == NO){
-      Restart_Iter = 0;
-    }
-    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")){
-      HistoryWrtFreq[2] = 0;
-    }
-    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")){
-      HistoryWrtFreq[1] = 0;
-    }
+    Delta_UnstTime = Time_Step;
+    Delta_DynTime  = Time_Step;
+
+    if (TimeMarching == TIME_STEPPING){ InnerIter = 1; }
+
+    /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
+    if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
+
+    /*--- Set History write freq for inner and outer iteration to zero by default, so only time iterations write. ---*/
+    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")) { HistoryWrtFreq[1] = 0; }
+
+    if (Restart == NO) { Restart_Iter = 0; }
+
+    if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
+  } else {
+    nTimeIter = 1;
+    Time_Step = 0;
+
+    /*--- Entry 0 corresponds to unsteady simulation so for steady simulation are just set to 1. ---*/
+    ScreenWrtFreq[0]  = 1;
+    HistoryWrtFreq[0] = 1;
+
+    if (TimeMarching != HARMONIC_BALANCE) { TimeMarching = STEADY; }
   }
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
@@ -3615,33 +3625,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
-  if (Time_Domain && Time_Step <= 0.0 && Unst_CFL == 0.0){
-    SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
-  }
-
   if (TimeMarching == TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
-  }
-
-  if (!Time_Domain){
-    nTimeIter = 1;
-    Time_Step = 0;
-
-    ScreenWrtFreq[0]  = 1;
-    HistoryWrtFreq[0] = 1;
-
-    if (TimeMarching != HARMONIC_BALANCE)
-      TimeMarching = STEADY;
-  }
-
-  if (Time_Domain){
-    Delta_UnstTime = Time_Step;
-    Delta_DynTime  = Time_Step;
-    /*--- Set the default write frequency to 1 if unsteady ---*/
-    if (!OptionIsSet("OUTPUT_WRT_FREQ")){
-      VolumeWrtFreq = 1;
-    }
   }
 
   if (!Multizone_Problem){
