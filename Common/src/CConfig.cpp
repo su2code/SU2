@@ -2001,29 +2001,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_SRF_SOL
-   *  \n DESCRIPTION: Write a surface solution file  \ingroup Config*/
-  addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
-  /*!\brief WRT_CSV_SOL
-   *  \n DESCRIPTION: Write a surface CSV solution file  \ingroup Config*/
-  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /*!\brief WRT_CSV_SOL
-   *  \n DESCRIPTION: Write a binary coordinates file  \ingroup Config*/
-  addBoolOption("WRT_CRD_SOL", Wrt_Crd_Sol, false);
   /*!\brief WRT_SURFACE
    *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
   addBoolOption("WRT_SURFACE", Wrt_Surface, false);
-  /*!\brief WRT_SHARPEDGES
-   *  \n DESCRIPTION: Output sharp edge limiter information to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
-  /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
-  addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
-    /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
-  addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
@@ -2885,10 +2869,14 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
           if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
             newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
+          if (!option_name.compare("WRT_SRF_SOL"))
+            newString.append("WRT_SRF_SOL is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_CSV_SOL"))
+            newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ"))
-            newString.append("WRT_CON_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+            newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
-            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+            newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -4774,12 +4762,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Comm_Level == COMM_NONE)
       SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
-
-    /*--- Write only the restart. ---*/
-
-    Wrt_Slice   = false;
-    Wrt_Srf_Sol = false;
-    Wrt_Csv_Sol = false;
   }
 
   /*--- Check the conductivity model. Deactivate the turbulent component
