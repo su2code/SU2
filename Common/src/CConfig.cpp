@@ -2879,9 +2879,9 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
           if (!option_name.compare("WRT_CSV_SOL"))
             newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ"))
-            newString.append("WRT_CON_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+            newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
-            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+            newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
