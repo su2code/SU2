@@ -7,7 +7,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -91,6 +91,11 @@ public:
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
    */
   void DynamicMeshUpdate(unsigned long TimeIter) override;
+
+  /*!
+   * \brief Perform a mesh deformation as initial condition.
+   */
+  void SetInitialMesh() override;
 
   /*!
    * \brief Monitor
