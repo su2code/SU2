@@ -3402,7 +3402,7 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     }
 
     /*--- Unlimited kappa scheme ---*/
-    
+
     else {
       primvar_i[iVar] = V_i[iVar] + LimiterHelpers::kappaFunction(Project_Grad_i, V_ij, Kappa_Flow);
       primvar_j[iVar] = V_j[iVar] - LimiterHelpers::kappaFunction(Project_Grad_j, V_ij, Kappa_Flow);
@@ -5635,7 +5635,7 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
   auto kindComms = reconstruction? PRIMITIVE_GRADIENT_RECON : PRIMITIVE_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
 
-  auto& smatrix = reconstruction? nodes->GetSmatrix_Aux() : nodes->GetSmatrix();
+  auto& smatrix = reconstruction? nodes->GetSmatrix_Reconstruction() : nodes->GetSmatrix();
   auto kindSmatComms = reconstruction? SMATRIX_RECON : SMATRIX;
 
   computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, kindSmatComms, *geometry, *config,

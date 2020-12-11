@@ -2121,7 +2121,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SMATRIX_RECON:
             for (iDim = 0; iDim < nDim; iDim++) {
               for (jDim = 0; jDim < nDim; jDim++) {
-                bufDSend[buf_offset+iDim*nDim+jDim] = base_nodes->GetSmatrix_Aux(iPoint, iDim, jDim);
+                bufDSend[buf_offset+iDim*nDim+jDim] = base_nodes->GetSmatrix_Reconstruction(iPoint, iDim, jDim);
               }
             }
             break;
@@ -2334,7 +2334,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SMATRIX_RECON:
             for (iDim = 0; iDim < nDim; iDim++) {
               for (jDim = 0; jDim < nDim; jDim++) {
-                base_nodes->SetSmatrix_Aux(iPoint, iDim, jDim, bufDRecv[buf_offset+iDim*nDim+jDim]);
+                base_nodes->SetSmatrix_Reconstruction(iPoint, iDim, jDim, bufDRecv[buf_offset+iDim*nDim+jDim]);
               }
             }
             break;
@@ -3210,7 +3210,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config, bool
   auto kindComms = reconstruction? SOLUTION_GRADIENT_RECON : SOLUTION_GRADIENT;
   PERIODIC_QUANTITIES kindPeriodicComm = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
 
-  auto& smatrix = reconstruction? base_nodes->GetSmatrix_Aux() : base_nodes->GetSmatrix();
+  auto& smatrix = reconstruction? base_nodes->GetSmatrix_Reconstruction() : base_nodes->GetSmatrix();
   auto kindSmatComms = reconstruction? SMATRIX_RECON : SMATRIX;
 
   computeGradientsLeastSquares(this, kindComms, kindPeriodicComm, kindSmatComms, *geometry, *config,
@@ -3246,7 +3246,7 @@ void CSolver::SetGradWeights(su2double *gradWeight, CSolver *solver, const CGeom
           weight = pow(weight, 0.5*config->GetWeighted_Least_Squares_Coeff());
         }
         weight = 1.0/weight;
-        const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Aux(iPoint)
+        const auto Smat = reconstruction? solver->GetNodes()->GetSmatrix_Reconstruction(iPoint)
                                         : solver->GetNodes()->GetSmatrix(iPoint);
         for (auto iDim = 0; iDim < nDim; iDim++) {
           gradWeight[iDim] = 0.0;
