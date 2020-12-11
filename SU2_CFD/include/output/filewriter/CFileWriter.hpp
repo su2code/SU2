@@ -128,6 +128,11 @@ public:
   virtual void Write_Data(){}
 
   /*!
+   * \brief Write sorted data to file
+   */
+  virtual void Write_Data_CGNS(CConfig *config){}
+
+  /*!
    * \brief Get the bandwith used for the last writing
    */
   su2double Get_Bandwidth() const {return bandwidth;}
