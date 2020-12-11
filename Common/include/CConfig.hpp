@@ -772,9 +772,6 @@ private:
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
   bool
-  Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
-  Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
-  Wrt_Crd_Sol,               /*!< \brief Write a binary file with the grid coordinates only. */
   Wrt_Surface,               /*!< \brief Write solution at each surface */
   Wrt_SharpEdges,            /*!< \brief Write residuals to solution file */
   Wrt_Halo,                  /*!< \brief Write rind layers in solution files */
@@ -3089,24 +3086,6 @@ public:
   void SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
 
   /*!
-   * \brief Get information about writing a surface solution file.
-   * \return <code>TRUE</code> means that a surface solution file will be written.
-   */
-  bool GetWrt_Srf_Sol(void) const { return Wrt_Srf_Sol; }
-
-  /*!
-   * \brief Get information about writing a surface comma-separated values (CSV) solution file.
-   * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
-   */
-  bool GetWrt_Csv_Sol(void) const { return Wrt_Csv_Sol; }
-
-  /*!
-   * \brief Get information about writing a binary coordinates file.
-   * \return <code>TRUE</code> means that a binary coordinates file will be written.
-   */
-  bool GetWrt_Crd_Sol(void) const { return Wrt_Crd_Sol; }
-
-  /*!
    * \brief Write solution at each surface.
    * \return <code>TRUE</code> means that the solution at each surface will be written.
    */
@@ -3141,12 +3120,6 @@ public:
    * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
    */
   bool GetWrt_MeshQuality(void) const { return Wrt_MeshQuality; }
-
-  /*!
-   * \brief Get information about writing a 1D slice of a 2D cartesian solution.
-   * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
-   */
-  bool GetWrt_Slice(void) const { return Wrt_Slice; }
 
   /*!
    * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
