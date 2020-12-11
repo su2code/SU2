@@ -2001,12 +2001,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_OUTPUT
-   *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
-  addBoolOption("WRT_OUTPUT", Wrt_Output, true);
-  /*!\brief WRT_VOL_SOL
-   *  \n DESCRIPTION: Write a volume solution file  \ingroup Config*/
-  addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
   /*!\brief WRT_SRF_SOL
    *  \n DESCRIPTION: Write a surface solution file  \ingroup Config*/
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
@@ -2686,9 +2680,6 @@ void CConfig::SetConfig_Options() {
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
-
-  /* DESCRIPTION: Writing surface solution file frequency for dual time */
-  addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
 
   /* DESCRIPTION: Starting Iteration for windowing approach */
   addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
@@ -4801,7 +4792,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Write only the restart. ---*/
 
     Wrt_Slice   = false;
-    Wrt_Vol_Sol = false;
     Wrt_Srf_Sol = false;
     Wrt_Csv_Sol = false;
   }

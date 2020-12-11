@@ -769,8 +769,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
-  bool Wrt_Output,           /*!< \brief Write any output files */
-  Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
+  bool
   Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
   Wrt_Crd_Sol,               /*!< \brief Write a binary file with the grid coordinates only. */
@@ -1001,7 +1000,6 @@ private:
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                  /*!< \brief AD-based discrete adjoint mode. */
-  unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -3075,24 +3073,6 @@ public:
    * \return It writes the convergence file with this frequency.
    */
   void SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
-
-  /*!
-   * \brief Get information about writing unsteady headers and file extensions.
-   * \return    <code>TRUE</code> means that unsteady solution files will be written.
-   */
-  bool GetWrt_Unsteady(void);
-
-  /*!
-   * \brief Get information about writing output files.
-   * \return <code>TRUE</code> means that output files will be written.
-   */
-  bool GetWrt_Output(void) const { return Wrt_Output; }
-
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetWrt_Vol_Sol(void) const { return Wrt_Vol_Sol; }
 
   /*!
    * \brief Get information about writing a surface solution file.
@@ -8834,12 +8814,6 @@ public:
    * \return Sum of the bandwidth for writing binary restarts.
    */
   su2double GetRestart_Bandwidth_Agg(void) const { return Restart_Bandwidth_Agg; }
-
-  /*!
-   * \brief Get the frequency for writing the surface solution file in Dual Time.
-   * \return It writes the surface solution file with this frequency.
-   */
-  unsigned long GetWrt_Surf_Freq_DualTime(void) const { return Wrt_Surf_Freq_DualTime; }
 
   /*!
    * \brief Get the Kind of Hybrid RANS/LES.
