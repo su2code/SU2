@@ -1998,12 +1998,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
   addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
-  /*!\brief WRT_SOL_FREQ
-   *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
-  addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
-  /*!\brief WRT_SOL_FREQ_DUALTIME
-   *  \n DESCRIPTION: Writing solution file frequency for dual time  \ingroup Config*/
-  addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
@@ -2884,6 +2878,10 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_SRF_SOL is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
           if (!option_name.compare("WRT_CSV_SOL"))
             newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_SOL_FREQ"))
+            newString.append("WRT_CON_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
+            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
