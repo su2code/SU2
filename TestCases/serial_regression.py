@@ -375,18 +375,6 @@ def main():
     propeller.tol       = 0.00001
     test_list.append(propeller)
 
-    # PROPELLER VARIBLE LOAD
-    propeller_var_load            = TestCase('propeller_variable_load')
-    propeller_var_load.cfg_dir    = "rans/actuatordisk_variable_load"
-    propeller_var_load.cfg_file   = "propeller_variable_load.cfg"
-    propeller_var_load.test_iter  = 20
-    propeller_var_load.test_vals  = [-1.824944, -4.535272, -0.000008, 0.172071] #last 4 columns
-    propeller_var_load.su2_exec   = "SU2_CFD"
-    propeller_var_load.new_output = True
-    propeller_var_load.timeout    = 3200
-    propeller_var_load.tol        = 0.00001
-    test_list.append(propeller_var_load)
-
     #################################
     ## Compressible RANS Restart  ###
     #################################

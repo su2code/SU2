@@ -38,6 +38,15 @@ class CNearestNeighbor final : public CInterpolator {
 private:
   su2double AvgDistance = 0.0, MaxDistance = 0.0;
 
+  /*! \brief Helper struct to (partially) sort neighbours according to distance while
+   *         keeping track of the origin of the point (i.e. index and processor). */
+  struct DonorInfo {
+    su2double dist;
+    unsigned pidx;
+    int proc;
+    DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) : dist(d), pidx(i), proc(p) { }
+  };
+
 public:
   /*!
    * \brief Constructor of the class.
