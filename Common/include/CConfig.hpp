@@ -9244,6 +9244,7 @@ public:
 
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
    * \return
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter) const { return ScreenWrtFreq[iter]; }
