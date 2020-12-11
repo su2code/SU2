@@ -2007,9 +2007,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_VOL_SOL
-   *  \n DESCRIPTION: Write a volume solution file  \ingroup Config*/
-  addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
   /*!\brief WRT_SRF_SOL
    *  \n DESCRIPTION: Write a surface solution file  \ingroup Config*/
   addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
@@ -4800,7 +4797,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Write only the restart. ---*/
 
     Wrt_Slice   = false;
-    Wrt_Vol_Sol = false;
     Wrt_Srf_Sol = false;
     Wrt_Csv_Sol = false;
   }

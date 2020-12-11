@@ -772,7 +772,6 @@ private:
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
   bool
-  Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
   Wrt_Crd_Sol,               /*!< \brief Write a binary file with the grid coordinates only. */
@@ -3088,18 +3087,6 @@ public:
    * \return It writes the convergence file with this frequency.
    */
   void SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
-
-  /*!
-   * \brief Get information about writing unsteady headers and file extensions.
-   * \return    <code>TRUE</code> means that unsteady solution files will be written.
-   */
-  bool GetWrt_Unsteady(void);
-
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetWrt_Vol_Sol(void) const { return Wrt_Vol_Sol; }
 
   /*!
    * \brief Get information about writing a surface solution file.
