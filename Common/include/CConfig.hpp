@@ -658,9 +658,7 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  unsigned long Wrt_Sol_Freq,   /*!< \brief Writing solution frequency. */
-  Wrt_Sol_Freq_DualTime,        /*!< \brief Writing solution frequency for Dual Time. */
-  Wrt_Con_Freq;                 /*!< \brief Writing convergence history frequency. */
+  unsigned long  Wrt_Con_Freq;        /*!< \brief Writing convergence history frequency. */
   bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
@@ -3065,18 +3063,6 @@ public:
    * \return Current physical time.
    */
   su2double GetPhysicalTime(void) const { return PhysicalTime; }
-
-  /*!
-   * \brief Get the frequency for writing the solution file.
-   * \return It writes the solution file with this frequency.
-   */
-  unsigned long GetWrt_Sol_Freq(void) const { return Wrt_Sol_Freq; }
-
-  /*!
-   * \brief Get the frequency for writing the solution file in Dual Time.
-   * \return It writes the solution file with this frequency.
-   */
-  unsigned long GetWrt_Sol_Freq_DualTime(void) const { return Wrt_Sol_Freq_DualTime; }
 
   /*!
    * \brief Get the frequency for writing the convergence file.
