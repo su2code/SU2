@@ -1003,7 +1003,6 @@ private:
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                  /*!< \brief AD-based discrete adjoint mode. */
-  unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -8848,12 +8847,6 @@ public:
    * \return Sum of the bandwidth for writing binary restarts.
    */
   su2double GetRestart_Bandwidth_Agg(void) const { return Restart_Bandwidth_Agg; }
-
-  /*!
-   * \brief Get the frequency for writing the surface solution file in Dual Time.
-   * \return It writes the surface solution file with this frequency.
-   */
-  unsigned long GetWrt_Surf_Freq_DualTime(void) const { return Wrt_Surf_Freq_DualTime; }
 
   /*!
    * \brief Get the Kind of Hybrid RANS/LES.

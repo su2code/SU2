@@ -2693,9 +2693,6 @@ void CConfig::SetConfig_Options() {
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
 
-  /* DESCRIPTION: Writing surface solution file frequency for dual time */
-  addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
-
   /* DESCRIPTION: Starting Iteration for windowing approach */
   addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
 
