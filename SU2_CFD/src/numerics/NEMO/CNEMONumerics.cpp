@@ -237,7 +237,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
 
   unsigned short iSpecies, iVar, iDim, jDim;
-  su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
+  su2double *Ds, *V, **GV, mu, ktr, kve;
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
@@ -279,12 +279,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
-  /*--- Calculate the velocity divergence ---*/
-  div_vel = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += GV[VEL_INDEX+iDim][iDim];
-
-
+  
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
@@ -294,16 +289,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   }
 
   /*--- Compute the viscous stress tensor ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      tau[iDim][jDim] = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      tau[iDim][jDim] += mu * (val_gradprimvar[VEL_INDEX+jDim][iDim] +
-          val_gradprimvar[VEL_INDEX+iDim][jDim]);
-    }
-    tau[iDim][iDim] -= TWO3*mu*div_vel;
-  }
+  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
 
   /*--- Populate entries in the viscous flux vector ---*/
   for (iDim = 0; iDim < nDim; iDim++) {

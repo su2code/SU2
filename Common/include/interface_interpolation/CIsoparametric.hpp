@@ -37,6 +37,17 @@ private:
   su2double MaxDistance = 0.0, ErrorRate = 0.0;
   unsigned long ErrorCounter = 0;
 
+  /*! \brief Helper struct to store information about candidate donor elements. */
+  struct DonorInfo {
+    su2double isoparams[4] = {0.0};  /*!< \brief Interpolation coefficients. */
+    su2double distance = 0.0;        /*!< \brief Distance from target to final mapped point on donor plane. */
+    unsigned iElem = 0;              /*!< \brief Identification of the element. */
+    int error = 0;                   /*!< \brief If the mapped point is "outside" of the donor. */
+
+    /*--- Best donor is one for which the mapped point is closest to target. ---*/
+    bool operator< (const DonorInfo& other) const { return distance < other.distance; }
+  };
+
 public:
   /*!
    * \brief Constructor of the class.

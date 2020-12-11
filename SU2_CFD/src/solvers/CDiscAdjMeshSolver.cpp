@@ -35,7 +35,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config) : C
 
 CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver) : CSolver() {
 
-  unsigned short iVar, iDim;
+  unsigned short iVar;
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();

@@ -3132,7 +3132,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   fclose(fhw);
@@ -3171,7 +3171,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   MPI_File_close(&fhw);
@@ -3280,7 +3280,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   /*--- Store the number of fields to be read for clarity. ---*/
@@ -3357,7 +3357,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   /*--- Store the number of fields to be read for clarity. ---*/
@@ -4036,11 +4036,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
                        (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   // Parameters for the calculations
-  su2double Pn = 0.0, div_vel = 0.0;
-  su2double Viscosity = 0.0;
-  su2double Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0},{0.0, 0.0, 1.0}};
+  su2double Pn = 0.0;
   su2double auxForce[3] = {1.0, 0.0, 0.0};
 
   unsigned short iMarker;
@@ -4089,26 +4085,11 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
           // Calculate tn in the fluid nodes for the viscous term
           if (viscous_flow) {
-
-            Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-
+            su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+            su2double Tau[3][3];
+            CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
             for (iDim = 0; iDim < nDim; iDim++) {
               for (jDim = 0 ; jDim < nDim; jDim++) {
-                Grad_Vel[iDim][jDim] = base_nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
-              }
-            }
-
-            // Divergence of the velocity
-            div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++) {
-              for (jDim = 0 ; jDim < nDim; jDim++) {
-
-                // Viscous stress
-                Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim])
-                                 - TWO3*Viscosity*div_vel*delta[iDim][jDim];
-
-                // Viscous component in the tn vector --> Units of force (non-dimensional).
                 auxForce[iDim] += Tau[iDim][jDim]*iNormal[jDim];
               }
             }
