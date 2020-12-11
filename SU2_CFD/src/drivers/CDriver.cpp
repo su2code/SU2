@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -374,8 +374,7 @@ void CDriver::SetContainers_Null(){
 
 void CDriver::Postprocessing() {
 
-  bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
-  bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
+  const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
     /*--- Output some information to the console. ---*/
 
@@ -572,7 +571,7 @@ void CDriver::Postprocessing() {
     cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
       cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
-      if (isBinary) {
+      if (BandwidthSum > 0) {
         cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
         cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
       }
@@ -3202,7 +3201,6 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
         output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
       }
     }
   }
@@ -3448,7 +3446,6 @@ CHBDriver::CHBDriver(char* confFile,
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
         output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][iInst]);
       }
     }
   }

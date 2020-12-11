@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -919,65 +919,13 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 }
 
-void CSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
-{
-    /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
-
-  if (nDim == 3){
-    S_ij[0][0] = PrimVar_Grad_i[1][0];
-    S_ij[1][1] = PrimVar_Grad_i[2][1];
-    S_ij[2][2] = PrimVar_Grad_i[3][2];
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]);
-    S_ij[0][2] = 0.5 * (PrimVar_Grad_i[1][2] + PrimVar_Grad_i[3][0]);
-    S_ij[1][2] = 0.5 * (PrimVar_Grad_i[2][2] + PrimVar_Grad_i[3][1]);
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-  }
-  else {
-    S_ij[0][0] = PrimVar_Grad_i[1][0];
-    S_ij[1][1] = PrimVar_Grad_i[2][1];
-    S_ij[2][2] = 0.0;
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[1][1] + PrimVar_Grad_i[2][0]);
-    S_ij[0][2] = 0.0;
-    S_ij[1][2] = 0.0;
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-
-  }
-}
-
 void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
-  unsigned short iDim, jDim;
-  su2double **S_ij = new su2double* [3];
-  su2double divVel = 0;
-  su2double TWO3 = 2.0/3.0;
-
-
-
-  for (iDim = 0; iDim < 3; iDim++){
-    S_ij[iDim] = new su2double [3];
-  }
-
-  GetMeanRateOfStrainMatrix(S_ij);
-
-    /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
-
-  for (iDim = 0; iDim < 3; iDim++){
-    divVel += S_ij[iDim][iDim];
-  }
-
-  for (iDim = 0; iDim < 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - Eddy_Viscosity_i / Density_i * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+  ComputeStressTensor(nDim, MeanReynoldsStress, PrimVar_Grad_i+1, Eddy_Viscosity_i, Density_i, turb_ke, true);
+  for(unsigned short iDim=0; iDim<3; iDim++){
+    for(unsigned short jDim=0; jDim<3; jDim++){
+      MeanReynoldsStress[iDim][jDim] /= (-Density_i);
     }
   }
-
-  for (iDim = 0; iDim < 3; iDim++)
-    delete [] S_ij[iDim];
-  delete [] S_ij;
 }
 
 void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){

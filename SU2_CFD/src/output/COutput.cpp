@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -762,7 +762,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     volumeDataSorter->SortOutputData();
 
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
+    auto VolumeFiles = config->GetVolumeOutputFiles();
 
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -1992,7 +1992,9 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
-  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+  if (config->GetTime_Domain()){
+    return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+  }
   else {
     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   }

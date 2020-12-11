@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -457,6 +457,86 @@ public:
                                      su2double **val_turbpsivar_grad_j) {
     TurbPsi_Grad_i = val_turbpsivar_grad_i;
     TurbPsi_Grad_j = val_turbpsivar_grad_j;
+  }
+
+  /*!
+   * \brief Compute the mean rate of strain matrix.
+   * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
+   * \param[in] nDim - 2 or 3
+   * \param[out] rateofstrain - Rate of strain matrix
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \tparam TWOINDICES_1 - any type that supports the [][] interface
+   * \tparam TWOINDICES_2 - any type that supports the [][] interface
+   */
+  template<class TWOINDICES_1, class TWOINDICES_2>
+  inline static void ComputeMeanRateOfStrainMatrix(unsigned short nDim, TWOINDICES_1& rateofstrain, const TWOINDICES_2& velgrad){
+
+    /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+    if (nDim == 3){
+      rateofstrain[0][0] = velgrad[0][0];
+      rateofstrain[1][1] = velgrad[1][1];
+      rateofstrain[2][2] = velgrad[2][2];
+      rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+      rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
+      rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
+      rateofstrain[1][0] = rateofstrain[0][1];
+      rateofstrain[2][1] = rateofstrain[1][2];
+      rateofstrain[2][0] = rateofstrain[0][2];
+    }
+    else { // nDim==2
+      rateofstrain[0][0] = velgrad[0][0];
+      rateofstrain[1][1] = velgrad[1][1];
+      rateofstrain[2][2] = 0.0;
+      rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
+      rateofstrain[0][2] = 0.0;
+      rateofstrain[1][2] = 0.0;
+      rateofstrain[1][0] = rateofstrain[0][1];
+      rateofstrain[2][1] = rateofstrain[1][2];
+      rateofstrain[2][0] = rateofstrain[0][2];
+    }
+  }
+
+  /*!
+   * \brief Compute the stress tensor from the velocity gradients.
+   * \details To obtain the Reynolds stress tensor +(u_i' u_j')~, divide the result
+   * of this function by (-rho). The argument density is only used if turb_ke is not 0.
+   * To select the velocity gradient components from a primitive variable gradient PrimVar_Grad_i,
+   * write PrimVar_Grad_i+1.
+   * If <code>nDim==2</code>, we use the same formula but only only access the entries [0][0]..[1][1] of
+   * stress and velgrad. If <code>reynolds3x3</code> is true, the other non-diagonal entries of stress
+   * set to zero, and <code>stress[2][2]</code> to some value.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3
+   * \param[out] stress - Stress tensor
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \param[in] viscosity - Viscosity
+   * \param[in] density - Density
+   * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
+   * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
+   * \tparam TWOINDICES_1 - any type that supports the [][] interface
+   * \tparam TWOINDICES_2 - any type that supports the [][] interface
+   */
+  template<class TWOINDICES_1, class TWOINDICES_2>
+  inline static void ComputeStressTensor(unsigned short nDim, TWOINDICES_1& stress, const TWOINDICES_2& velgrad,
+                                      su2double viscosity, su2double density=0.0, su2double turb_ke=0.0, bool reynolds3x3=false){
+    su2double divVel = 0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
+      divVel += velgrad[iDim][iDim];
+    }
+    su2double pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++){
+      for (unsigned short jDim = 0; jDim < nDim; jDim++){
+        stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]);
+      }
+      stress[iDim][iDim] -= pTerm;
+    }
+
+    if(reynolds3x3 && nDim==2){ // fill the third row and column of Reynolds stress matrix
+      stress[0][2] = stress[1][2] = stress[2][0] = stress[2][1] = 0.0;
+      stress[2][2] = -pTerm;
+    }
+
   }
 
   /*!

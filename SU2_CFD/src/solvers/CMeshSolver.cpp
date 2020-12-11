@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -649,6 +649,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO) &&
         (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
@@ -661,6 +662,7 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
   /*--- Symmetry plane is clamped, for now. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO) &&
         (config->GetMarker_All_Moving(iMarker) == NO) &&
         (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
 
@@ -668,12 +670,22 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
+
   /*--- Impose displacement boundary conditions. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
+    }
+  }
+
+
+  /*--- Symmetry deform plane is not clamped ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
+
+      BC_Sym_Plane(geometry, numerics, config, iMarker);
     }
   }
 
@@ -690,6 +702,26 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
       nodes->SetSolution(iPoint, zeros);
       LinSysSol.SetBlock(iPoint, zeros);
       Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+    }
+  }
+
+  /*--- Clamp nodes outside of a given area. ---*/
+  if (config->GetHold_GridFixed()) {
+
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
+
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
+      auto Coord = geometry->nodes->GetCoord(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
+          su2double zeros[MAXNVAR] = {0.0};
+          nodes->SetSolution(iPoint, zeros);
+          LinSysSol.SetBlock(iPoint, zeros);
+          Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+          break;
+        }
+      }
     }
   }
 

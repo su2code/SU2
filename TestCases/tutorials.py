@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.7 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -163,6 +163,17 @@ def main():
     tutorial_unst_naca0012.tol           = 0.00001
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
+    
+    # PROPELLER VARIBLE LOAD
+    propeller_var_load           = TestCase('propeller_variable_load')
+    propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
+    propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
+    propeller_var_load.test_iter = 20
+    propeller_var_load.test_vals = [-1.837780, -4.535082, -0.000315, 0.171887]
+    propeller_var_load.su2_exec  = "mpirun -np 2 SU2_CFD"
+    propeller_var_load.timeout   = 3200
+    propeller_var_load.tol       = 0.00001
+    test_list.append(propeller_var_load)
 
     ### Design
     

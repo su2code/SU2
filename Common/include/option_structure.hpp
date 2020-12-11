@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1711,6 +1711,39 @@ static const MapType<string, ENUM_OUTPUT> Output_Map = {
   MakePair("STL", STL)
   MakePair("STL_BINARY", STL_BINARY)
 };
+
+/*!
+ * \brief Return true if format is one of the Paraview options.
+ */
+inline bool isParaview(ENUM_OUTPUT format) {
+  switch(format) {
+    case PARAVIEW:
+    case PARAVIEW_BINARY:
+    case SURFACE_PARAVIEW:
+    case SURFACE_PARAVIEW_BINARY:
+    case PARAVIEW_XML:
+    case SURFACE_PARAVIEW_XML:
+    case PARAVIEW_MULTIBLOCK:
+      return true;
+    default:
+      return false;
+  }
+}
+
+/*!
+ * \brief Return true if format is one of the Tecplot options.
+ */
+inline bool isTecplot(ENUM_OUTPUT format) {
+  switch(format) {
+    case TECPLOT:
+    case TECPLOT_BINARY:
+    case SURFACE_TECPLOT:
+    case SURFACE_TECPLOT_BINARY:
+      return true;
+    default:
+      return false;
+  }
+}
 
 /*!
  * \brief Type of solution output file formats
