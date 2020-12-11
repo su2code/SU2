@@ -117,7 +117,7 @@ public:
    * \param[in] iDim - Index of the dimension.
    * \param[in] value - Value of the Smatrix.
    */
-  inline void SetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) { Smatrix_Reconstruction(iPoint,iDim,jDim) = value; }
+  inline void SetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim, su2double value) final { Smatrix_Reconstruction(iPoint,iDim,jDim) = value; }
 
   /*!
    * \brief Get the value of the Smatrix entry for least squares gradient calculations.
@@ -126,20 +126,20 @@ public:
    * \param[in] jDim - Index of the dimension.
    * \return Value of the Smatrix entry.
    */
-  inline su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Smatrix_Reconstruction(iPoint,iDim,jDim); }
+  inline su2double GetSmatrix_Reconstruction(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const final { return Smatrix_Reconstruction(iPoint,iDim,jDim); }
 
   /*!
    * \brief Get the value of the Smatrix entry for least squares gradient calculations.
    * \param[in] iPoint - Point index.
    * \return Value of the Smatrix entry.
    */
-  inline su2double **GetSmatrix_Reconstruction(unsigned long iPoint) { return Smatrix_Reconstruction[iPoint]; }
+  inline su2double **GetSmatrix_Reconstruction(unsigned long iPoint) final { return Smatrix_Reconstruction[iPoint]; }
 
   /*!
    * \brief Get the value Smatrix for the entire domain.
    * \return Reference to the Smatrix.
    */
-  inline VectorOfMatrix& GetSmatrix_Reconstruction(void) { return Smatrix_Reconstruction; }
+  inline VectorOfMatrix& GetSmatrix_Reconstruction(void) final { return Smatrix_Reconstruction; }
 
   /*!
    * \brief A virtual member.
