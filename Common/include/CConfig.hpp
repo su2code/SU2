@@ -752,7 +752,6 @@ private:
   string Mesh_FileName,          /*!< \brief Mesh input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
-  Solution_LinFileName,          /*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Residual_FileName,             /*!< \brief Residual variables output file. */
@@ -765,7 +764,6 @@ private:
   ObjFunc_Value_FileName,        /*!< \brief Objective function. */
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
-  New_SU2_FileName,              /*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
