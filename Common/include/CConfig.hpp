@@ -771,7 +771,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
-  bool Wrt_Output,           /*!< \brief Write any output files */
+  bool
   Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
@@ -3094,12 +3094,6 @@ public:
    * \return    <code>TRUE</code> means that unsteady solution files will be written.
    */
   bool GetWrt_Unsteady(void);
-
-  /*!
-   * \brief Get information about writing output files.
-   * \return <code>TRUE</code> means that output files will be written.
-   */
-  bool GetWrt_Output(void) const { return Wrt_Output; }
 
   /*!
    * \brief Get information about writing a volume solution file.

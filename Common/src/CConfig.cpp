@@ -2007,9 +2007,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_OUTPUT
-   *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
-  addBoolOption("WRT_OUTPUT", Wrt_Output, true);
   /*!\brief WRT_VOL_SOL
    *  \n DESCRIPTION: Write a volume solution file  \ingroup Config*/
   addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
