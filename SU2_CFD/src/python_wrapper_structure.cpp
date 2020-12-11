@@ -356,16 +356,9 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex)
   /*--- Parameters for the calculations ---*/
   // Pn: Pressure
   // Pinf: Pressure_infinite
-  // div_vel: Velocity divergence
-  // Dij: Dirac delta
-  su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
+  su2double Pn = 0.0;
   su2double Viscosity = 0.0;
-  su2double Grad_Vel[3][3] = { {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} } ;
-  su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} } ;
+  su2double Tau[3][3] = {{0.0}};
 
   su2double Pinf = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetPressure_Inf();
 
@@ -384,11 +377,6 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex)
     /*--- Get the values of pressure and viscosity ---*/
     Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     if (viscous_flow) {
-      for(iDim=0; iDim<nDim; iDim++) {
-        for(jDim=0; jDim<nDim; jDim++) {
-          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, iDim+1, jDim);
-        }
-      }
       Viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     }
 
@@ -399,23 +387,18 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex)
 
     /*--- Calculate the viscous (shear stress) part of tn in the fluid nodes (force units) ---*/
     if ((incompressible || compressible) && viscous_flow) {
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += Grad_Vel[iDim][iDim];
-     if (incompressible) div_vel = 0.0;
-
+      CNumerics::ComputeStressTensor(nDim, Tau,
+        solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint)+1, Viscosity);
       for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0 ; jDim < nDim; jDim++) {
-         Dij = 0.0; if (iDim == jDim) Dij = 1.0;
-         Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*Dij;
-         PyWrapNodalForce[iDim] += Tau[iDim][jDim]*Normal[jDim];
+        for (jDim = 0 ; jDim < nDim; jDim++) {
+          PyWrapNodalForce[iDim] += Tau[iDim][jDim]*Normal[jDim];
         }
       }
     }
 
     //Divide by local are in case of force density communication.
-   for(iDim = 0; iDim < nDim; iDim++) {
-     PyWrapNodalForceDensity[iDim] = PyWrapNodalForce[iDim]/Area;
+    for(iDim = 0; iDim < nDim; iDim++) {
+      PyWrapNodalForceDensity[iDim] = PyWrapNodalForce[iDim]/Area;
     }
 
     halo = false;
