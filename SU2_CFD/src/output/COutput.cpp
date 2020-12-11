@@ -788,7 +788,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     volumeDataSorter->SortOutputData();
 
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
+    auto VolumeFiles = config->GetVolumeOutputFiles();
 
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
