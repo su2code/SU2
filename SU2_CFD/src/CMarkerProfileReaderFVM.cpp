@@ -2,7 +2,7 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -180,7 +180,6 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
   char str_buf[MAX_STRING_SIZE];
   vector<string> Marker_Tags;
-  vector<string>::iterator it;
 
   vector<unsigned long> nRowCum_Counter;
 

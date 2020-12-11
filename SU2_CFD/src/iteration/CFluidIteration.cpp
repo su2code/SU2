@@ -2,7 +2,7 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,6 +76,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case DISC_ADJ_EULER:
     case INC_EULER:
     case DISC_ADJ_INC_EULER:
+    case NEMO_EULER:
       config[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS);
       break;
 
@@ -83,6 +84,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     case DISC_ADJ_NAVIER_STOKES:
     case INC_NAVIER_STOKES:
     case DISC_ADJ_INC_NAVIER_STOKES:
+    case NEMO_NAVIER_STOKES:
       config[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS);
       break;
 
@@ -302,9 +304,14 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   if (multizone && steady) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
 
-    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+    /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
 
-    integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    if (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) {
+      integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
+    }
+    else {
+      integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    }
   }
 }
 

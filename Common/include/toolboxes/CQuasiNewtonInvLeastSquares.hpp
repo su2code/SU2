@@ -7,7 +7,7 @@
  * \note Based on the IQN-ILS method, see DOI 10.1007/s11831-013-9085-5 and
  * references therein.
  * \author P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

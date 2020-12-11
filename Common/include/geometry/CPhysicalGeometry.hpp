@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,8 @@
 
 #include "CGeometry.hpp"
 #include "meshreader/CMeshReaderFVM.hpp"
-#include "../toolboxes/C2DContainer.hpp"
+#include "../containers/C2DContainer.hpp"
+
 
 /*!
  * \class CPhysicalGeometry
@@ -105,6 +106,9 @@ class CPhysicalGeometry final : public CGeometry {
   unsigned long *Elem_ID_BoundTria_Linear{nullptr};
   unsigned long *Elem_ID_BoundQuad_Linear{nullptr};
 
+  vector<int> GlobalMarkerStorageDispl;
+  vector<su2double> GlobalRoughness_Height;
+
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
@@ -160,14 +164,14 @@ public:
    * \param[in] geometry - Definition of the geometry container holding the initial linear partitions of the grid + coloring.
    * \param[in] config - Definition of the particular problem.
    */
-  void DistributeColoring(CConfig *config, CGeometry *geometry);
+  void DistributeColoring(const CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void DistributePoints(CConfig *config, CGeometry *geometry);
+  void DistributePoints(const CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS coloring.
@@ -175,7 +179,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being distributed.
    */
-  void DistributeVolumeConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void DistributeVolumeConnectivity(const CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
 
   /*!
    * \brief Distribute the connectivity for a single surface element type in all markers across all ranks based on a ParMETIS coloring.
@@ -269,21 +273,17 @@ public:
    * \brief Routine to sort the adjacency for ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
-  void SortAdjacency(CConfig *config);
+  void SortAdjacency(const CConfig *config);
 
   /*!
    * \brief Set the send receive boundaries of the grid.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_domain - Number of domains for parallelization purposes.
    */
-  void SetSendReceive(CConfig *config) override;
+  void SetSendReceive(const CConfig *config) override;
 
   /*!
    * \brief Set the send receive boundaries of the grid.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_domain - Number of domains for parallelization purposes.
    */
   void SetBoundaries(CConfig *config) override;
 
@@ -369,7 +369,7 @@ public:
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
-  void PrepareAdjacency(CConfig *config);
+  void PrepareAdjacency(const CConfig *config);
 
   /*!
    * \brief Find repeated nodes between two elements to identify the common face.
@@ -529,7 +529,7 @@ public:
    * \brief Set the domains for grid grid partitioning using ParMETIS.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetColorGrid_Parallel(CConfig *config) override;
+  void SetColorGrid_Parallel(const CConfig *config) override;
 
   /*!
    * \brief Set the domains for FEM grid partitioning using ParMETIS.
@@ -803,5 +803,10 @@ public:
       nodes->SetWall_Distance(iPoint, val);
     }
   }
+
+  /*!
+   * \brief Set roughness values for markers in a global array.
+   */
+  void SetGlobalMarkerRoughness(const CConfig* config);
 
 };

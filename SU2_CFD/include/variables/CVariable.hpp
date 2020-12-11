@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,9 +36,10 @@
 #include <cstdlib>
 
 #include "../../../Common/include/CConfig.hpp"
-#include "../fluid/CFluidModel.hpp"
-#include "../../../Common/include/toolboxes/C2DContainer.hpp"
+#include "../../../Common/include/containers/container_decorators.hpp"
 
+class CFluidModel;
+class CNEMOGas;
 
 using namespace std;
 
@@ -70,7 +71,7 @@ protected:
   VectorType Delta_Time;         /*!< \brief Time step. */
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
-  CVectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
+  C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
   MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
@@ -758,17 +759,10 @@ public:
   inline su2double GetRmatrix(unsigned long iPoint, unsigned long iDim, unsigned long jDim) const { return Rmatrix(iPoint,iDim,jDim); }
 
   /*!
-   * \brief Get the value of the Rmatrix entry for least squares gradient calculations.
-   * \param[in] iPoint - Point index.
-   * \return Value of the Rmatrix entry.
-   */
-  inline su2double **GetRmatrix(unsigned long iPoint) { return Rmatrix[iPoint]; }
-
-  /*!
    * \brief Get the value Rmatrix for the entire domain.
    * \return Reference to the Rmatrix.
    */
-  inline CVectorOfMatrix& GetRmatrix(void) { return Rmatrix; }
+  inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
 
   /*!
    * \brief Set the value of the limiter.
@@ -1013,6 +1007,7 @@ public:
    * \return Value of the spectral radius.
    */
   inline su2double GetLambda(unsigned long iPoint) const { return Lambda(iPoint); }
+  inline const VectorType& GetLambda() const { return Lambda; }
 
   /*!
    * \brief Get the value of the spectral radius.
@@ -1043,6 +1038,7 @@ public:
    * \return Value of the pressure sensor.
    */
   inline su2double GetSensor(unsigned long iPoint) const { return Sensor(iPoint); }
+  inline const VectorType& GetSensor() const { return Sensor; }
 
   /*!
    * \brief Get the pressure sensor.
@@ -1111,6 +1107,7 @@ public:
    * \return Value of the undivided laplacian vector.
    */
   inline su2double GetUndivided_Laplacian(unsigned long iPoint, unsigned long iVar) const { return Undivided_Laplacian(iPoint, iVar); }
+  inline const MatrixType& GetUndivided_Laplacian() const { return Undivided_Laplacian; }
 
   /*!
    * \brief A virtual member.
@@ -1413,6 +1410,13 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline virtual bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) { return true; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] fluidmodel - fluid model.
+   */
+  inline virtual bool SetPrimVar(unsigned long iPoint, CNEMOGas *fluidmodel) {return false;}
 
   /*!
    * \brief A virtual member.
@@ -1937,7 +1941,7 @@ public:
    * \param[in] val_dim - Index of the dimension.
    * \param[in] val_value - Value of the gradient.
    */
-  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) {}
+  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.

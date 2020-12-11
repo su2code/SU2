@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,10 +38,6 @@ CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  SU2_Comm MPICommunicator)
 
                         : CMultizoneDriver(confFile, val_nZone, MPICommunicator) {
-
-  retape = !config_container[ZONE_0]->GetFull_Tape();
-
-  RecordingState = NONE;
 
   direct_nInst.resize(nZone,1);
   nInnerIter.resize(nZone);
@@ -201,12 +197,32 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
+   su2double rhs_norm = 0.0;
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
                                                 surface_movement, grid_movement, FFDBox, iZone, INST_0);
     Add_Solution_To_External(iZone);
+
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && solver->GetAdjoint())
+        for (unsigned short iVar=0; iVar < solver->GetnVar(); ++iVar)
+          rhs_norm += solver->GetRes_RMS(iVar);
+    }
+  }
+
+  /*--- If the gradient of the objective function is 0 so are the adjoint variables. ---*/
+
+  if (rhs_norm < EPS) {
+    if (rank == MASTER_NODE) {
+      cout << "\nThe gradient of the objective function is numerically 0.";
+      cout << "\nThis implies that the adjoint variables are also 0.\n\n";
+    }
+    EvaluateSensitivities(0, true);
+    return;
   }
 
   /*--- Loop over the number of outer iterations. ---*/
@@ -236,7 +252,7 @@ void CDiscAdjMultizoneDriver::Run() {
     /*--- If we want to set up zone-specific tapes (retape), we do not need to record
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
-    if (!retape && (RecordingState != SOLUTION_VARIABLES)) {
+    if (RecordingState != SOLUTION_VARIABLES) {
       SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
       SetRecording(SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
     }
@@ -246,11 +262,6 @@ void CDiscAdjMultizoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
 
       config_container[iZone]->Set_StartTime(SU2_MPI::Wtime());
-
-      if (retape) {
-        SetRecording(NONE, Kind_Tape::FULL_TAPE, ZONE_0);
-        SetRecording(SOLUTION_VARIABLES, Kind_Tape::ZONE_SPECIFIC_TAPE, iZone);
-      }
 
       /*--- Start inner iterations from where we stopped in previous outer iteration. ---*/
 
@@ -413,20 +424,24 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
         if(Has_Deformation(iZone)) {
-          solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJFLOW_SOL]);
         } else {
-          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, solvers, config);
+          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, config);
         }
         break;
 
       case DISC_ADJ_HEAT:
 
-        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, solvers, config);
+        if(Has_Deformation(iZone)) {
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJHEAT_SOL]);
+        } else {
+          solvers[ADJHEAT_SOL]->SetSensitivity(geometry, config);
+        }
         break;
 
       case DISC_ADJ_FEM:
 
-        solvers[ADJFEA_SOL]->SetSensitivity(geometry, solvers, config);
+        solvers[ADJFEA_SOL]->SetSensitivity(geometry, config);
         break;
 
       default:
@@ -502,7 +517,6 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
   AD::Push_TapePosition(); /// REGISTERED
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
   }
@@ -515,9 +529,14 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
   if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == MESH_COORDS)) {
     HandleDataTransfer();
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (Has_Deformation(iZone)) {
+        iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
+                                                            config_container, iZone, INST_0, kind_recording);
+      }
+    }
+    SetObjFunction(kind_recording);
   }
-
-  SetObjFunction(kind_recording);
 
   AD::Push_TapePosition(); /// OBJECTIVE_FUNCTION
 
@@ -537,18 +556,10 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
 
       AD::Push_TapePosition(); /// enter_zone
 
-      if (tape_type == Kind_Tape::ZONE_SPECIFIC_TAPE) {
-        if (iZone == record_zone) {
-          DirectIteration(iZone, kind_recording);
-        }
-      }
-      else {
-        DirectIteration(iZone, kind_recording);
-      }
+      DirectIteration(iZone, kind_recording);
 
       iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container,
                                                          config_container, output_container[iZone], iZone, INST_0);
-
       AD::Push_TapePosition(); /// leave_zone
     }
   }
@@ -712,18 +723,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
           // Aerodynamic coefficients
 
-          case DRAG_COEFFICIENT:      FieldName = "DRAG";       break;
-          case LIFT_COEFFICIENT:      FieldName = "LIFT";       break;
-          case SIDEFORCE_COEFFICIENT: FieldName = "SIDEFORCE";  break;
-          case EFFICIENCY:            FieldName = "EFFICIENCY"; break;
-          case MOMENT_X_COEFFICIENT:  FieldName = "MOMENT-X";   break;
-          case MOMENT_Y_COEFFICIENT:  FieldName = "MOMENT-Y";   break;
-          case MOMENT_Z_COEFFICIENT:  FieldName = "MOMENT-Z";   break;
-          case FORCE_X_COEFFICIENT:   FieldName = "FORCE-X";    break;
-          case FORCE_Y_COEFFICIENT:   FieldName = "FORCE-Y";    break;
-          case FORCE_Z_COEFFICIENT:   FieldName = "FORCE-Z";    break;
+          case DRAG_COEFFICIENT:
+          case LIFT_COEFFICIENT:
+          case SIDEFORCE_COEFFICIENT:
+          case EFFICIENCY:
+          case MOMENT_X_COEFFICIENT:
+          case MOMENT_Y_COEFFICIENT:
+          case MOMENT_Z_COEFFICIENT:
+          case FORCE_X_COEFFICIENT:
+          case FORCE_Y_COEFFICIENT:
+          case FORCE_Z_COEFFICIENT:
+            FieldName = config->GetName_ObjFunc();
+            break;
 
           // Other surface-related output values
+          // The names are different than in CConfig...
 
           case SURFACE_MASSFLOW:            FieldName = "AVG_MASSFLOW";              break;
           case SURFACE_MACH:                FieldName = "AVG_MACH";                  break;
@@ -788,7 +802,6 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
             break;
           case TOPOL_COMPLIANCE:
-            static_cast<CFEASolver*>(solvers[FEA_SOL])->Integrate_FSI_Loads(geometry, config);
             solvers[FEA_SOL]->Compute_OFCompliance(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
             break;
@@ -864,10 +877,10 @@ void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_tr
   AD::ComputeAdjoint(enter_izone, leave_izone);
 
   /*--- Compute adjoints of transfer and mesh deformation routines, only stricktly needed
-   *    on the last inner iteration, so if for this zone this section is expensive
-   *    (due to mesh deformation) we delay its evaluation. ---*/
+   *    on the last inner iteration. Structural problems have some minor issue and we
+   *    need to evaluate this section on every iteration. ---*/
 
-  if (eval_transfer || !Has_Deformation(iZone))
+  if (eval_transfer || config_container[iZone]->GetStructuralProblem())
     AD::ComputeAdjoint(TRANSFER, OBJECTIVE_FUNCTION);
 
   /*--- Adjoints of dependencies, needed if derivatives of variables
@@ -915,7 +928,7 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
     /*--- Transfer from all the remaining zones ---*/
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
-      if (jZone != iZone && interface_container[iZone][jZone] != nullptr) {
+      if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
         DeformMesh = DeformMesh || Transfer_Data(jZone, iZone);
       }
     }

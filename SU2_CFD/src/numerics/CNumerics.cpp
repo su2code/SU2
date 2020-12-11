@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -44,15 +44,14 @@ CNumerics::CNumerics(void) {
   delta  = nullptr;
   delta3 = nullptr;
 
-  Diffusion_Coeff_i = nullptr;
-  Diffusion_Coeff_j = nullptr;
-
   Vector = nullptr;
 
   l = nullptr;
   m = nullptr;
 
   using_uq = false;
+
+  nemo = false;
 
 }
 
@@ -63,11 +62,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Normal = nullptr;
 
-  Diffusion_Coeff_i = nullptr;
-  Diffusion_Coeff_j = nullptr;
-
   nDim = val_nDim;
   nVar = val_nVar;
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   Prandtl_Lam = config->GetPrandtl_Lam();
@@ -180,8 +177,6 @@ CNumerics::~CNumerics(void) {
     delete [] delta3;
   }
 
-  delete [] Diffusion_Coeff_i;
-  delete [] Diffusion_Coeff_j;
   delete [] Vector;
 
   delete [] l;
@@ -208,7 +203,6 @@ CNumerics::~CNumerics(void) {
     delete [] Barycentric_Coord;
     delete [] New_Coord;
   }
-
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, const su2double *val_velocity,

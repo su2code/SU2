@@ -3,7 +3,7 @@
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling a third-party structural solver to SU2.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -29,7 +29,10 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os
+import sys
+import shutil
+import copy
 import time as timer
 from math import *	# use mathematical expressions
 from optparse import OptionParser	# use a parser for configuration

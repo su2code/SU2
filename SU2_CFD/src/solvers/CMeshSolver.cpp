@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,10 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/adt_structure.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../../Common/include/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
-#include "../../include/variables/CMeshBoundVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 using namespace GeometryToolbox;
@@ -703,6 +702,26 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
       nodes->SetSolution(iPoint, zeros);
       LinSysSol.SetBlock(iPoint, zeros);
       Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+    }
+  }
+
+  /*--- Clamp nodes outside of a given area. ---*/
+  if (config->GetHold_GridFixed()) {
+
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
+
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
+      auto Coord = geometry->nodes->GetCoord(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
+          su2double zeros[MAXNVAR] = {0.0};
+          nodes->SetSolution(iPoint, zeros);
+          LinSysSol.SetBlock(iPoint, zeros);
+          Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+          break;
+        }
+      }
     }
   }
 

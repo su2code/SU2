@@ -2,7 +2,7 @@
  * \file fem_wall_distance.cpp
  * \brief Main subroutines for computing the wall distance for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/fem_geometry_structure.hpp"
-#include "../../include/adt_structure.hpp"
+#include "../../include/adt/CADTElemClass.hpp"
 
 std::unique_ptr<CADTElemClass> CMeshFEM_DG::ComputeViscousWallADT(const CConfig *config) const {
 

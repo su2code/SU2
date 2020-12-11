@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,8 @@
 
 #pragma once
 
-#include "../../toolboxes/C2DContainer.hpp"
+#include "../../containers/C2DContainer.hpp"
+#include "../../containers/container_decorators.hpp"
 #include "../../toolboxes/graph_toolbox.hpp"
 #include <vector>
 
@@ -85,6 +86,7 @@ private:
   su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
   su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
+  su2activevector RoughnessHeight;          /*!< \brief Roughness of the nearest wall. */
 
   su2matrix<int> AD_InputIndex;           /*!< \brief Indices of Coord variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;          /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
@@ -135,6 +137,11 @@ public:
    * \return pointer to the coordinate of the point.
    */
   inline su2double *GetCoord(unsigned long iPoint) { return Coord[iPoint]; }
+
+  /*!
+   * \brief Get the entire matrix of coordinates of the control volumes.
+   */
+  inline const su2activematrix& GetCoord() const { return Coord; }
 
   /*!
    * \brief Set the coordinates for the control volume.
@@ -189,6 +196,11 @@ public:
   inline unsigned long GetElem(unsigned long iPoint, unsigned long nelem) const { return Elem.getInnerIdx(iPoint,nelem); }
 
   /*!
+   * \brief Get inner iterator to loop over neighbor elements.
+   */
+  inline CCompressedSparsePatternL::CInnerIter GetElems(unsigned long iPoint) const { return Elem.getInnerIter(iPoint); }
+
+  /*!
    * \brief Set the points that compose the control volume.
    * \param[in] pointsMatrix - List of lists with the neighbor points connected to each point.
    */
@@ -220,6 +232,11 @@ public:
   inline unsigned long GetPoint(unsigned long iPoint, unsigned long npoint) const { return Point.getInnerIdx(iPoint,npoint); }
 
   /*!
+   * \brief Get inner iterator to loop over neighbor points.
+   */
+  inline CCompressedSparsePatternUL::CInnerIter GetPoints(unsigned long iPoint) const { return Point.getInnerIter(iPoint); }
+
+  /*!
    * \brief Set the edges that compose the control volume.
    * \param[in] iPoint - Index of the point.
    * \param[in] iedge - Edge to be added.
@@ -234,6 +251,11 @@ public:
    * \return Index of the edge.
    */
   inline long GetEdge(unsigned long iPoint, unsigned long nedge) const { return Edge.getInnerIdx(iPoint,nedge); }
+
+  /*!
+   * \brief Get inner iterator to loop over neighbor edges.
+   */
+  inline CCompressedSparsePatternL::CInnerIter GetEdges(unsigned long iPoint) const { return Edge.getInnerIter(iPoint); }
 
   /*!
    * \brief Set the boundary vertex that compose the control volume.
@@ -399,6 +421,20 @@ public:
    * \return Value of the distance to the nearest wall.
    */
   inline su2double GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
+
+  /*!
+   * \brief Set the value of the distance to the nearest wall.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] distance - Value of the distance.
+   */
+  inline void SetRoughnessHeight(unsigned long iPoint, su2double roughheight) { RoughnessHeight(iPoint) = roughheight; }
+
+  /*!
+   * \brief Get the value of the distance to the nearest wall.
+   * \param[in] iPoint - Index of the point.
+   * \return Value of the distance to the nearest wall.
+   */
+  inline su2double GetRoughnessHeight(unsigned long iPoint) const { return RoughnessHeight(iPoint); }
 
   /*!
    * \brief Set the value of the distance to a sharp edge.

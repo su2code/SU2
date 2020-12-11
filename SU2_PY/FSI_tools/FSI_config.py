@@ -3,7 +3,7 @@
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -112,7 +112,7 @@ class FSIConfig:
                 if case("MESH_INTERP_METHOD")         : pass
                 if case("DISP_PRED")		      : pass
                 if case("AITKEN_RELAX")               : pass
-                if case("TIME_MARCHING")	      : 
+                if case("TIME_MARCHING")	      :
                     self._ConfigContent[this_param] = this_value
                     break
 
