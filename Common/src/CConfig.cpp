@@ -1998,9 +1998,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
   addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
-  /*!\brief WRT_CON_FREQ
-   *  \n DESCRIPTION: Writing frequency for a few specialized outputs, should get replaced with SCREEN_WRT_FREQ*  \ingroup Config*/
-  addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
   /*!\brief WRT_SURFACE
    *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
   addBoolOption("WRT_SURFACE", Wrt_Surface, false);
@@ -2867,6 +2864,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
           if (!option_name.compare("WRT_LIMITERS"))
             newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_CON_FREQ"))
+            newString.append("WRT_CON_FREQ is deprecated. Use SCREEN_WRT_FREQ_INNER or SCREEN_WRT_FREQ_OUTER for multizone cases instead.\n\n");
           if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
             newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
           if (!option_name.compare("WRT_SRF_SOL"))

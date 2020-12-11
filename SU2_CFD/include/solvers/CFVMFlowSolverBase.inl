@@ -552,7 +552,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
    global measures, one can compute the order of accuracy. ---*/
 
   bool write_heads =
-      ((((config->GetInnerIter() % (config->GetWrt_Con_Freq() * 40)) == 0) && (config->GetInnerIter() != 0)) ||
+      ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2) * 40)) == 0) && (config->GetInnerIter() != 0)) ||
        (config->GetInnerIter() == 1));
   if (!write_heads) return;
 
