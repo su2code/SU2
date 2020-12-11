@@ -17,6 +17,7 @@ install_data(['continuous_adjoint.py',
 	     'pyBeamFSI.py',
 	     'pyBeamFSI_AD.py',
 	     'SU2_CFD.py'], 
+	     'SU2_CFD.py'],
 	     install_dir: join_paths(get_option('bindir')))
 
 install_data(['SU2/__init__.py'], install_dir: join_paths(get_option('bindir'), 'SU2/'))
@@ -24,7 +25,7 @@ install_data(['SU2/__init__.py'], install_dir: join_paths(get_option('bindir'), 
 install_data(['SU2/eval/design.py',
     	      'SU2/eval/functions.py',
     	      'SU2/eval/gradients.py',
-    	      'SU2/eval/__init__.py'], 
+    	      'SU2/eval/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/eval'))
 
 install_data(['SU2/io/config.py',
@@ -35,17 +36,17 @@ install_data(['SU2/io/config.py',
               'SU2/io/state.py',
               'SU2/io/tools.py',
               'SU2/io/historyMap.py',
-              'SU2/io/__init__.py'], 
+              'SU2/io/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/io'))
 
 install_data(['SU2/mesh/adapt.py',
               'SU2/mesh/tools.py',
-              'SU2/mesh/__init__.py'], 
+              'SU2/mesh/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/mesh'))
 
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
-              'SU2/opt/__init__.py'], 
+              'SU2/opt/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 
 install_data(['SU2/run/adaptation.py',
@@ -79,5 +80,12 @@ install_data(['SU2_FSI/PrimalInterface.py',
               'SU2_FSI/switch.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2_FSI'))
 
+install_data(['FSI_tools/__init__.py',
+              'FSI_tools/FSIInterface.py',
+              'FSI_tools/FSI_config.py',
+              'FSI_tools/switch.py'],
+	      install_dir: join_paths(get_option('bindir'), 'FSI_tools'))
 
-
+install_data(['SU2_Nastran/__init__.py',
+              'SU2_Nastran/pysu2_nastran.py',],
+        install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))
