@@ -633,10 +633,8 @@ int main(int argc, char *argv[]) {
       bool SolutionInstantiated = false;
 
 
-
       /*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-      if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY &&
-          config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
+      if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY && config_container[ZONE_0]->GetRestart())
         TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
       while (TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {

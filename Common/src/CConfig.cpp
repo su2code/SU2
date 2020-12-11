@@ -3481,24 +3481,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Initialize the ofstream ConvHistFile. ---*/
-//  ofstream ConvHistFile;
-
-//  if (Kind_Solver == FEM_ELASTICITY) {
-
-//    if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
-//    else { Wrt_Dynamic = true; }
-
-//  } else {
-//    Wrt_Dynamic = false;
-//  }
-
-  if (Kind_Radiation != NO_RADIATION) {
-    Radiation = true;
-  }
-  else{
-    Radiation = false;
-  }
+  Radiation = (Kind_Radiation != NO_RADIATION);
 
   /*--- Check for unsupported features. ---*/
 

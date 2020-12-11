@@ -660,7 +660,6 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
@@ -8411,12 +8410,6 @@ public:
    * \param[in] iInst - current instance identifier.
    */
   void SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
-
-  /*!
-   * \brief Get information about writing dynamic structural analysis headers and file extensions.
-   * \return    <code>TRUE</code> means that dynamic structural analysis solution files will be written.
-   */
-  bool GetWrt_Dynamic(void) const { return Wrt_Dynamic; }
 
   /*!
    * \brief Get Newmark alpha parameter.
