@@ -1,5 +1,5 @@
 ﻿/*!
- * \file CGeneralSquareMatrixCM.hpp
+ * \file CSquareMatrixCM.hpp
  * \brief Dense general square matrix, used for example in DG standard elements
  *        in Column Major order storage.
  * \author Edwin van der Weide, Pedro Gomes.
@@ -35,7 +35,7 @@
  *        Major order storage format. The code should be compiled with
  *        LAPACK to use optimized matrix inversion and multiplication routines.
  */
-class CGeneralSquareMatrixCM {
+class CSquareMatrixCM {
   static_assert(ColMajorMatrix<passivedouble>::Storage == StorageType::ColumnMajor,
                 "Column major storage is assumed for LAPACK.");
 private:
@@ -46,7 +46,7 @@ public:
   /*!
    * \brief Default constructor. Nothing to be done.
    */
-  CGeneralSquareMatrixCM() = default;
+  CSquareMatrixCM() = default;
 
   /*!
    * \overload
@@ -54,7 +54,7 @@ public:
    *        the matrix.
    * \param[in] N - Number of rows and colums of the matrix.
    */
-  CGeneralSquareMatrixCM(int N) {Initialize(N);}
+  CSquareMatrixCM(int N) {Initialize(N);}
 
   /*!
    * \brief Operator, which makes available the given matrix element as a reference.

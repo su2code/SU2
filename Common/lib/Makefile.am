@@ -113,7 +113,7 @@ lib_sources = \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/C1DInterpolation.cpp \
   ../src/toolboxes/CSymmetricMatrix.cpp \
-  ../src/toolboxes/CGeneralSquareMatrixCM.cpp \
+  ../src/toolboxes/CSquareMatrixCM.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \

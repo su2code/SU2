@@ -1,5 +1,5 @@
 /*!
- * \file CGeneralSquareMatrixCM.cpp
+ * \file CSquareMatrixCM.cpp
  * \brief Implementation of dense matrix helper class in Column Major order (see hpp).
  * \author Edwin van der Weide, Pedro Gomes.
  * \version 7.0.8 "Blackbird"
@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 #include "../../include/mpi_structure.hpp"
 #include "../../include/blas_structure.hpp"
 
@@ -37,7 +37,7 @@ using namespace std;
 #define HAVE_LAPACK
 #endif
 #elif defined(HAVE_LAPACK)
-/*--- Lapack / Blas routines used in CGeneralSquareMatrixCM. ---*/
+/*--- Lapack / Blas routines used in CSquareMatrixCM. ---*/
 extern "C" void dgetrf_(const int*, const int*, passivedouble*, const int*,
                         int*, int*);
 extern "C" void dgetri_(const int*, passivedouble*, const int*, int*,
@@ -49,14 +49,14 @@ extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
 #define DGEMM dgemm_
 #endif
 
-void CGeneralSquareMatrixCM::Transpose() {
+void CSquareMatrixCM::Transpose() {
 
   for(int j=1; j<Size(); ++j)
     for(int i=0; i<j; ++i)
       swap(mat(i,j), mat(j,i));
 }
 
-void CGeneralSquareMatrixCM::Invert() {
+void CSquareMatrixCM::Invert() {
 
 #ifdef HAVE_LAPACK
 
@@ -77,7 +77,7 @@ void CGeneralSquareMatrixCM::Invert() {
 #endif
 }
 
-void CGeneralSquareMatrixCM::MatMatMult(const char                          side,
+void CSquareMatrixCM::MatMatMult(const char                          side,
                                         const ColMajorMatrix<passivedouble> &mat_in,
                                         ColMajorMatrix<passivedouble>       &mat_out) const {
 
