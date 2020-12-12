@@ -2,7 +2,7 @@
  * \file CEdge.hpp
  * \brief Declaration of the edge class <i>CEdge.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../toolboxes/C2DContainer.hpp"
+#include "../../containers/C2DContainer.hpp"
 
 /*!
  * \class CEdge
@@ -35,12 +35,13 @@
  * \author F. Palacios
  */
 class CEdge {
-  static_assert(su2activematrix::Storage == StorageType::RowMajor, "Needed to return normal as pointer.");
-
+  static_assert(su2activematrix::IsRowMajor, "Needed to return normal as pointer.");
 private:
-  su2matrix<unsigned long> Nodes; /*!< \brief Vector to store the node indices of the edge. */
-  su2activematrix Normal;         /*!< \brief Normal (area) of the edge. */
-  su2activematrix Coord_CG;       /*!< \brief Center-of-gravity (mid point) of the edge. */
+  using Index = unsigned long;
+  using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
+  NodeArray Nodes;           /*!< \brief Vector to store the node indices of the edge. */
+  su2activematrix Normal;    /*!< \brief Normal (area) of the edge. */
+  su2activematrix Coord_CG;  /*!< \brief Center-of-gravity (mid point) of the edge. */
 
 public:
   enum NodePosition : unsigned long {LEFT = 0, RIGHT = 1};
@@ -83,6 +84,14 @@ public:
    * \return Index of the node that composes the edge.
    */
   inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge,iNode); }
+
+  /*!
+   * \brief SIMD version of GetNode, iNode returned for multiple contiguous iEdges
+   */
+  template<class T, size_t N>
+  FORCEINLINE simd::Array<T,N> GetNode(simd::Array<T,N> iEdge, unsigned long iNode) const {
+    return simd::Array<T,N>(&Nodes(iEdge[0],iNode));
+  }
 
   /*!
    * \brief Set the node indices of an edge.
@@ -167,6 +176,11 @@ public:
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
   inline const su2double* GetNormal(unsigned long iEdge) const { return Normal[iEdge]; }
+
+  /*!
+   * \brief Get the entire matrix of edge normals.
+   */
+  inline const su2activematrix& GetNormal() const { return Normal; }
 
   /*!
    * \brief Initialize normal vector to 0.

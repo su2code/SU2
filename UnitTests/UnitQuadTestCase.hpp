@@ -2,7 +2,7 @@
  * \file UnitQuadTestCase.hpp
  * \brief Simple unit quad test to be used in unit tests.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -95,7 +95,8 @@ struct UnitQuadTestCase {
     geometry->SetPoint_Connectivity();
     geometry->SetElement_Connectivity();
     geometry->SetBoundVolume();
-
+    geometry->Check_IntElem_Orientation(config.get());
+    geometry->Check_BoundElem_Orientation(config.get());
     geometry->SetEdges();
     geometry->SetVertex(config.get());
     geometry->SetCoord_CG();

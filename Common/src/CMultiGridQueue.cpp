@@ -2,7 +2,7 @@
  * \file CMultiGridQueue.cpp
  * \brief Implementation of the multigrid queue class for the FVM solver.
  * \author F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -186,9 +186,7 @@ void CMultiGridQueue::Update(unsigned long updatePoint, CGeometry *fineGrid) {
 
   RemoveCV(updatePoint);
 
-  for (auto iNode = 0u; iNode < fineGrid->nodes->GetnPoint(updatePoint); ++iNode) {
-    const auto jPoint = fineGrid->nodes->GetPoint(updatePoint,iNode);
+  for (auto jPoint : fineGrid->nodes->GetPoints(updatePoint))
     if (!fineGrid->nodes->GetAgglomerate(jPoint))
       IncrPriorityCV(jPoint);
-  }
 }

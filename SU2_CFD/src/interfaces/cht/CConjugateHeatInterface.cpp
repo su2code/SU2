@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,16 +27,16 @@
  */
 
 #include "../../../include/interfaces/cht/CConjugateHeatInterface.hpp"
+#include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
-CConjugateHeatInterface::CConjugateHeatInterface(void) : CInterface() { }
-
-CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                                 CConfig *config) : CInterface(val_nVar, val_nConst, config) { }
-
-CConjugateHeatInterface::~CConjugateHeatInterface(void) { }
+CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst) :
+  CInterface(val_nVar, val_nConst) {
+}
 
 void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                                CConfig *donor_config, unsigned long Marker_Donor,
+                                                const CConfig *donor_config, unsigned long Marker_Donor,
                                                 unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short nDim, iDim;
@@ -189,14 +189,14 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
   }
 
-  
+
 
   delete [] Edge_Vector;
-  
+
 }
 
 void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                                 CConfig *target_config, unsigned long Marker_Target,
+                                                 const CConfig *target_config, unsigned long Marker_Target,
                                                  unsigned long Vertex_Target, unsigned long Point_Target) {
 
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0,

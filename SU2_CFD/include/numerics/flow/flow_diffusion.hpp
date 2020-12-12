@@ -2,7 +2,7 @@
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -189,12 +189,6 @@ protected:
    * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
    */
   void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-
-  /*!
-   * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param[in] S_ij
-   */
-  void GetMeanRateOfStrainMatrix(su2double **S_ij) const;
 
 public:
 

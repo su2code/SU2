@@ -2,7 +2,7 @@
  * \file CSymmetricMatrix.cpp
  * \brief Implementation of dense symmetric matrix helper class (see hpp).
  * \author Joel Ho, P. Gomes
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -241,7 +241,7 @@ void CSymmetricMatrix::MatMatMult(const char side,
   /*--- Left side: mat_out = this * mat_in. ---*/
   if (side == 'L' || side == 'l') {
     const int M = Size(), N = mat_in.cols();
-    assert(M == mat_in.rows());
+    assert(M == static_cast<int>(mat_in.rows()));
 
     mat_out.resize(M,N);
 
@@ -263,7 +263,7 @@ void CSymmetricMatrix::MatMatMult(const char side,
   /*--- Right_side: mat_out = mat_in * this. ---*/
   else {
     const int M = mat_in.rows(), N = Size();
-    assert(N == mat_in.cols());
+    assert(N == static_cast<int>(mat_in.cols()));
 
     mat_out.resize(M,N);
 

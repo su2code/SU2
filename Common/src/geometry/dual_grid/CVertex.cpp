@@ -2,7 +2,7 @@
  * \file CVertex.cpp
  * \brief Main classes for defining the vertices of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,49 +27,9 @@
 
 #include "../../../include/geometry/dual_grid/CVertex.hpp"
 
-CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(val_nDim) {
-
-  unsigned short iDim;
-
-  /*--- Set periodic points to zero ---*/
-
-  PeriodicPoint[0] = -1; PeriodicPoint[1] = -1; PeriodicPoint[2] = -1;
-  PeriodicPoint[3] = -1; PeriodicPoint[4] = -1;
-
-  /*--- Identify the points at the perimeter of the actuatrod disk ---*/
-
-  ActDisk_Perimeter = false;
-
-  /*--- Initializate the structure ---*/
-
+CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) :
+  CDualGrid(val_nDim) {
   Nodes[0] = val_point;
-
-  for (iDim = 0; iDim < 3; iDim ++) Normal[iDim] = 0.0;
-
-  /*--- Set to zero the variation of the coordinates ---*/
-
-  for (iDim = 0; iDim < 3; iDim ++) VarCoord[iDim] = 0.0;
-
-  /*--- Set to nullptr variation of the rotation  ---*/
-
-  VarRot = nullptr;
-
-  /*--- Set to nullptr donor arrays for interpolation ---*/
-
-  Donor_Points  = nullptr;
-  Donor_Proc    = nullptr;
-  Donor_Coeff   = nullptr;
-  nDonor_Points = 1;
-
-}
-
-CVertex::~CVertex() {
-
-  delete[] VarRot;
-  delete[] Donor_Coeff;
-  delete[] Donor_Proc;
-  delete[] Donor_Points;
-
 }
 
 void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
@@ -111,19 +71,5 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
-
-}
-
-void CVertex::Allocate_DonorInfo(unsigned short nDonor) {
-
-  nDonor_Points = nDonor;
-
-  delete [] Donor_Points;
-  delete [] Donor_Proc;
-  delete [] Donor_Coeff;
-
-  Donor_Points = new unsigned long [nDonor_Points];
-  Donor_Proc   = new unsigned long [nDonor_Points];
-  Donor_Coeff  = new su2double [nDonor_Points];
 
 }

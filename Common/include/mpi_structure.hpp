@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -412,7 +412,7 @@ public:
                         void *recvbuf, int recvcnt, Datatype recvtype, Comm comm);
 
   static void Allgatherv(void *sendbuf, int sendcnt, Datatype sendtype,
-                         void *recvbuf, int recvcnt, int *displs, Datatype recvtype, Comm comm);
+                         void *recvbuf, int *recvcnt, int *displs, Datatype recvtype, Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
                        int dest, int sendtag, void *recvbuf, int recvcnt,

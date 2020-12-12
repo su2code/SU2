@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.6 "Blackbird"
+# \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -56,8 +56,13 @@ lib_sources = \
   ../src/CMultiGridQueue.cpp \
   ../src/fem/geometry_structure_fem_part.cpp \
   ../src/graph_coloring_structure.cpp \
-  ../src/grid_adaptation_structure.cpp \
-  ../src/grid_movement_structure.cpp \
+  ../src/grid_movement/CGridMovement.cpp \
+  ../src/grid_movement/CFreeFormBlending.cpp \
+  ../src/grid_movement/CBSplineBlending.cpp \
+  ../src/grid_movement/CBezierBlending.cpp \
+  ../src/grid_movement/CFreeFormDefBox.cpp \
+  ../src/grid_movement/CVolumetricMovement.cpp \
+  ../src/grid_movement/CSurfaceMovement.cpp \
   ../src/mpi_structure.cpp \
   ../src/basic_types/ad_structure.cpp \
   ../src/fem/fem_gauss_jacobi_quadrature.cpp \
@@ -100,7 +105,9 @@ lib_sources = \
   ../src/interface_interpolation/CIsoparametric.cpp \
   ../src/interface_interpolation/CNearestNeighbor.cpp \
   ../src/interface_interpolation/CRadialBasisFunction.cpp \
-  ../src/adt_structure.cpp \
+  ../src/adt/CADTBaseClass.cpp \
+  ../src/adt/CADTPointsOnlyClass.cpp \
+  ../src/adt/CADTElemClass.cpp \
   ../src/wall_model.cpp \
   ../src/toolboxes/printing_toolbox.cpp \
   ../src/toolboxes/CLinearPartitioner.cpp \

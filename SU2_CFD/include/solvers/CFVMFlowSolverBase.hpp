@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,25 +30,16 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
 
-namespace detail {
-template <class VariableType>
-constexpr size_t flowSolMaxnVar() {
-  return 12;
-}
-// template<>
-// constexpr size_t flowSolMaxnVar<"your variable type">() { return "your size"; }
-}  // namespace detail
+class CNumericsSIMD;
 
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
  protected:
-  enum : size_t { MAXNDIM = 3 }; /*!< \brief Max number of space dimensions, used in some static arrays. */
-  enum : size_t {
-    MAXNVAR = detail::flowSolMaxnVar<VariableType>()
-  }; /*!< \brief Max number of variables, used in some static arrays. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = VariableType::MAXNVAR; /*!< \brief Max number of variables, for static arrays. */
 
-  enum : size_t { OMP_MAX_SIZE = 512 }; /*!< \brief Max chunk size for light point loops. */
-  enum : size_t { OMP_MIN_SIZE = 32 };  /*!< \brief Min chunk size for edge loops (max is color group size). */
+  static constexpr size_t OMP_MAX_SIZE = 512; /*!< \brief Max chunk size for light point loops. */
+  static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
@@ -154,6 +145,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double** HeatFluxTarget = nullptr;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   su2double*** CharacPrimVar = nullptr;    /*!< \brief Value of the characteristic variables at each boundary. */
   su2double*** CSkinFriction = nullptr;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  su2double** WallShearStress = nullptr;   /*!< \brief Wall Shear Stress for each boundary and vertex. */
   su2double*** HeatConjugateVar = nullptr; /*!< \brief CHT variables for each boundary and vertex. */
   su2double** CPressure = nullptr;         /*!< \brief Pressure coefficient for each boundary and vertex. */
   su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
@@ -189,7 +181,12 @@ class CFVMFlowSolverBase : public CSolver {
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
-  VariableType* nodes = nullptr; /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CNumericsSIMD* edgeNumerics = nullptr; /*!< \brief Object for edge flux computation. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy the DERIVED solver can safely use.
+   */
+  VariableType* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -233,6 +230,16 @@ class CFVMFlowSolverBase : public CSolver {
   su2double EvaluateCommonObjFunc(const CConfig& config) const;
 
   /*!
+   * \brief Method to compute convective and viscous residual contribution using vectorized numerics.
+   */
+  void EdgeFluxResidual(const CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   */
+  void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();
@@ -245,7 +252,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
+  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
 
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -254,7 +261,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
+  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
 
   /*!
    * \brief Compute the limiter of the primitive variables.
@@ -328,7 +335,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                    CConfig* config, unsigned short val_marker) final;
+                    CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
@@ -1545,6 +1552,16 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
     return CSkinFriction[val_marker][val_dim][val_vertex];
+  }
+
+  /*!
+   * \brief Get the wall shear stress.
+   * \param[in] val_marker - Surface marker where the wall shear stress is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the wall shear stress is evaluated.
+   * \return Value of the wall shear stress.
+   */
+  inline su2double GetWallShearStress(unsigned short val_marker, unsigned long val_vertex) const final {
+    return WallShearStress[val_marker][val_vertex];
   }
 
   /*!
