@@ -1759,8 +1759,18 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+      
        if (!geometry->nodes->GetDomain(iPoint)) continue;
 
+       /*--- Check if the normal point lies on a surface. If yes, skip the wall model calculation.
+        For complex geometries, it is possible to have only one element connecting 2 boundaries,
+        i.e. very small gaps. This will avoid unphysical shear stress and possible divergence. --*/
+       
+       if (geometry->nodes->GetPhysicalBoundary(Point_Normal)){
+         nodes->SetTauWall_Flag(iPoint,false);
+         continue;
+       }
+      
        /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
        const auto Coord = geometry->nodes->GetCoord(iPoint);
