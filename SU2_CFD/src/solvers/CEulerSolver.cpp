@@ -3363,8 +3363,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   /*--- Reconstruct flow primitive variables. ---*/
 
-  auto Lim_Flow_i = flowNodes->GetLimiter_Primitive(iPoint);
-  auto Lim_Flow_j = flowNodes->GetLimiter_Primitive(jPoint);
+  auto& Lim_Flow_i = flowNodes->GetLimiter_Primitive(iPoint);
+  auto& Lim_Flow_j = flowNodes->GetLimiter_Primitive(jPoint);
 
   for (auto iVar = 0; iVar < nFlowVarGrad; iVar++) {
 
@@ -3413,8 +3413,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   if (turb) {
 
-    auto Lim_Turb_i = turbNodes->GetLimiter(iPoint);
-    auto Lim_Turb_j = turbNodes->GetLimiter(jPoint);
+    auto& Lim_Turb_i = turbNodes->GetLimiter(iPoint);
+    auto& Lim_Turb_j = turbNodes->GetLimiter(jPoint);
 
     for (auto iVar = 0; iVar < nTurbVarGrad; iVar++) {
 
