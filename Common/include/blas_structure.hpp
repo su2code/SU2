@@ -94,6 +94,65 @@ public:
   void axpy(const int n,    const su2double a,  const su2double *x,
             const int incx, su2double *y,       const int incy);
 
+  /*!
+   * \brief Invert a square matrix.
+   * \param[in] M - Size.
+   * \param[in,out] mat - Matrix, and inverse on exit.
+   */
+  template<class Mat>
+  static void inverse(const int M, Mat& mat) {
+
+    Mat augmentedmatrix(M, 2*M);
+
+    /*--- Copy the data from A into the first part of augmentedmatrix and
+        augmenting with identity matrix of similar dimensions. ---*/
+    for(int j=0; j<M; ++j) {
+      for(int i=0; i<M; ++i) {
+        augmentedmatrix(i,j) = mat(i,j);
+        augmentedmatrix(i,j+M) = (i == j) ? 1.0 : 0.0;
+      }
+    }
+
+    /*--- Outer loop of the Gauss-Jordan elimination. ---*/
+    for(int j=0; j<M; ++j) {
+
+      /*--- Find the pivot in the current column. ---*/
+      int jj = j;
+      passivedouble  valMax = fabs(augmentedmatrix(j,j));
+      for(int i=j+1; i<M; ++i) {
+        passivedouble val = fabs(augmentedmatrix(i,j));
+        if(val > valMax){
+          jj = i;
+          valMax = val;
+        }
+      }
+
+      /*--- Swap the rows j and jj, if needed. ---*/
+      if(jj > j)
+        for(int k=j; k<2*M; ++k)
+          std::swap(augmentedmatrix(j,k), augmentedmatrix(jj,k));
+
+      /*--- Performing row operations to form required identity
+            matrix out of the input matrix.  ---*/
+      for(int i=0; i<M; ++i) {
+        if(i != j) {
+          valMax = augmentedmatrix(i,j)/augmentedmatrix(j,j);
+          for(int k=j; k<2*M; ++k)
+            augmentedmatrix(i,k) -= valMax*augmentedmatrix(j,k);
+        }
+      }
+
+      valMax = 1.0/augmentedmatrix(j,j);
+      for(int k=j; k<2*M; ++k)
+        augmentedmatrix(j,k) *= valMax;
+    }
+
+    /*--- Store the inverse in mat. ---*/
+    for(int j=0; j<M; ++j)
+      for(int i=0; i<M; ++i)
+        mat(i,j) = augmentedmatrix(i,j+M);
+  }
+
 private:
 
 #if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))

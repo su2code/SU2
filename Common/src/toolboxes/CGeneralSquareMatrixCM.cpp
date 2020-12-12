@@ -2,7 +2,7 @@
  * \file CGeneralSquareMatrixCM.cpp
  * \brief Implementation of dense matrix helper class in Column Major order (see hpp).
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 #include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
 #include "../../include/mpi_structure.hpp"
+#include "../../include/blas_structure.hpp"
 
 using namespace std;
 
@@ -45,6 +46,7 @@ extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
                        const passivedouble*, const passivedouble*,
                        const int *, const passivedouble*, const int*,
                        const passivedouble*, passivedouble*, const int*);
+#define DGEMM dgemm_
 #endif
 
 void CGeneralSquareMatrixCM::Transpose() {
@@ -71,60 +73,7 @@ void CGeneralSquareMatrixCM::Invert() {
   if(info != 0) SU2_MPI::Error(string("Matrix inversion failed"), CURRENT_FUNCTION);
 
 #else
-
-  /*--- Standard implementation without Lapack. Create a local augmented
-        matrix to carry out the actual inversion. ---*/
-  const int M = Size();
-  ColMajorMatrix<passivedouble> augmentedmatrix(M, 2*M);
-
-  /*--- Copy the data from A into the first part of augmentedmatrix and
-        augmenting with identity matrix of similar dimensions. ---*/
-  for(int j=0; j<M; ++j) {
-    for(int i=0; i<M; ++i) {
-      augmentedmatrix(i,j) = mat(i,j);
-      augmentedmatrix(i,j+M) = (i == j) ? 1.0 : 0.0;
-    }
-  }
-
-  /*--- Outer loop of the Gauss-Jordan elimination. ---*/
-  for(int j=0; j<M; ++j) {
-
-    /*--- Find the pivot in the current column. ---*/
-    int jj = j;
-    passivedouble  valMax = fabs(augmentedmatrix(j,j));
-    for(int i=j+1; i<M; ++i) {
-      passivedouble val = fabs(augmentedmatrix(i,j));
-      if(val > valMax){
-        jj = i;
-        valMax = val;
-      }
-    }
-
-    /*--- Swap the rows j and jj, if needed. ---*/
-    if(jj > j)
-      for(int k=j; k<2*M; ++k)
-        swap(augmentedmatrix(j,k), augmentedmatrix(jj,k));
-
-    /*--- Performing row operations to form required identity
-          matrix out of the input matrix.  ---*/
-    for(int i=0; i<M; ++i) {
-      if(i != j) {
-        valMax = augmentedmatrix(i,j)/augmentedmatrix(j,j);
-        for(int k=j; k<2*M; ++k)
-          augmentedmatrix(i,k) -= valMax*augmentedmatrix(j,k);
-      }
-    }
-
-    valMax = 1.0/augmentedmatrix(j,j);
-    for(int k=j; k<2*M; ++k)
-      augmentedmatrix(j,k) *= valMax;
-  }
-
-  /*--- Store the inverse in mat. ---*/
-  for(int j=0; j<M; ++j)
-    for(int i=0; i<M; ++i)
-      mat(i,j) = augmentedmatrix(i,j+M);
-
+  CBlasStructure::inverse(Size(), mat);
 #endif
 }
 
@@ -149,15 +98,15 @@ void CGeneralSquareMatrixCM::MatMatMult(const char                          side
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    dgemm_(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M,
-           mat_in.data(), &M, &beta, mat_out.data(), &M);
+    DGEMM(&trans, &trans, &M, &N, &M, &alpha, mat.data(), &M,
+          mat_in.data(), &M, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {
       for (int j = 0; j < N; ++j) {
         mat_out(i,j) = 0.0;
         for (int k = 0; k < M; ++k)
-          mat_out(i,j) += Get(i,k) * mat_in(k,j);
+          mat_out(i,j) += mat(i,k) * mat_in(k,j);
       }
     }
 #endif
@@ -179,15 +128,15 @@ void CGeneralSquareMatrixCM::MatMatMult(const char                          side
     passivedouble alpha = 1.0, beta = 0.0;
     char trans = 'N';
 
-    dgemm_(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M,
-           mat.data(), &N, &beta, mat_out.data(), &M);
+    DGEMM(&trans, &trans, &M, &N, &N, &alpha, mat_in.data(), &M,
+          mat.data(), &N, &beta, mat_out.data(), &M);
 #else
     /*--- Naive product. ---*/
     for (int i = 0; i < M; ++i) {
       for (int j = 0; j < N; ++j) {
         mat_out(i,j) = 0.0;
         for (int k = 0; k < N; ++k)
-          mat_out(i,j) += mat_in(i,k) * Get(k,j);
+          mat_out(i,j) += mat_in(i,k) * mat(k,j);
       }
     }
 #endif
