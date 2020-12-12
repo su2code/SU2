@@ -29,7 +29,6 @@
 
 #include "CSolver.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
-#include "../../../Common/include/gradient_projection.hpp"
 
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
@@ -192,6 +191,41 @@ public:
    * \brief write the DV gradient into a file
    */
   void OutputDVGradient(string out_file="delta_p.txt");
+
+  /*!
+   * \brief Record a tape containing the parameter Jacobian.
+   * \param geometry
+   * \param config
+   * \param surface_movement
+   */
+  void RecordParameterizationJacobian(CGeometry *geometry,
+                                      CSurfaceMovement *surface_movement,
+                                      CSysVector<su2double> &registeredCoord,
+                                      CConfig *config);
+
+  /*!
+   * \brief Forward evaluate parameterization Jacobian.
+   * \param geometry
+   * \param config
+   * \param surface_movement
+   */
+  void ProjectDVtoMesh(CGeometry *geometry,
+                       std::vector<su2double>& seeding,
+                       CSysVector<su2mixedfloat>& result,
+                       CSysVector<su2double>& registeredCoord,
+                       CConfig *config);
+
+  /*!
+   * \brief Reverse evaluate parameterization Jacobian.
+   * \param geometry
+   * \param config
+   * \param surface_movement
+   */
+  void ProjectMeshToDV(CGeometry *geometry,
+                       CSysVector<su2mixedfloat>& sensitivity,
+                       std::vector<su2double>& output,
+                       CSysVector<su2double> &registeredCoord,
+                       CConfig *config);
 
   /*!
    * \brief Extract and set the sensitivity from the discrete adjoint solver.

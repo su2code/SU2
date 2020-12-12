@@ -34,7 +34,6 @@
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
-#include "../../../Common/include/gradient_projection.hpp"
 #include <chrono>
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,

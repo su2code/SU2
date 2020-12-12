@@ -288,7 +288,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
 
   /// record the parameterization
   if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
-  RecordParameterizationJacobian(geometry, config, surface_movement, activeCoord);
+  RecordParameterizationJacobian(geometry, surface_movement, activeCoord, config);
 
   /// calculate the original gradinet
   CalculateOriginalGradient(geometry, grid_movement, config);
@@ -319,7 +319,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     helperVecAux.SetValZero();
 
     /// forward projection
-    ProjectDVtoMesh(geometry, config, seedvector, helperVecIn, activeCoord);
+    ProjectDVtoMesh(geometry, seedvector, helperVecIn, activeCoord, config);
 
     /// matrix vector product in the middle
     if (config->GetSmoothOnSurface()) {
@@ -369,16 +369,18 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
     }
 
     /// reverse projection
-    ProjectMeshToDV(geometry, config, helperVecOut, seedvector, activeCoord);
+    ProjectMeshToDV(geometry, helperVecOut, seedvector, activeCoord, config);
 
     /// extract projected direction
     hessian.col(column) = Eigen::Map<VectorType, Eigen::Unaligned>(seedvector.data(), seedvector.size());
   }
 
   /// output the matrix
-  ofstream SysMatrix(config->GetObjFunc_Hess_FileName() + std::to_string(rank));
-  SysMatrix << hessian.format(CSVFormat);
-  SysMatrix.close();
+  if (rank == MASTER_NODE) {
+    ofstream SysMatrix(config->GetObjFunc_Hess_FileName());
+    SysMatrix << hessian.format(CSVFormat);
+    SysMatrix.close();
+  }
 
   /// calculate and output the treated gradient
   QRdecomposition QR(hessian);
@@ -835,7 +837,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   ReadVector2Geometry(geometry,config, helperVecOut);
 
-  ProjectMeshToDV(geometry, config, helperVecOut, deltaP, activeCoord);
+  ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
   OutputDVGradient("orig_grad.dat");
 }
@@ -844,13 +846,167 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 void CGradientSmoothingSolver::OutputDVGradient(string out_file) {
 
   unsigned iDV;
-
-  ofstream delta_p (out_file);
-  delta_p.precision(17);
-  for (iDV = 0; iDV < deltaP.size(); iDV++) {
-    delta_p << deltaP[iDV] << ",";
+  if (rank == MASTER_NODE) {
+    ofstream delta_p (out_file);
+    delta_p.precision(17);
+    for (iDV = 0; iDV < deltaP.size(); iDV++) {
+      delta_p << deltaP[iDV] << ",";
+    }
+    delta_p.close();
   }
-  delta_p.close();
+
+}
+
+
+void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometry, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord, CConfig *config) {
+
+  unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
+  unsigned int iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
+  su2double* VarCoord;
+  su2double** DV_Value;
+
+  /*--- get information from config ---*/
+  nMarker = config->GetnMarker_All();
+  nDim    = geometry->GetnDim();
+  nPoint  = geometry->GetnPoint();
+  nDV     = config->GetnDV();
+
+  /*--- Start recording of operations ---*/
+
+  AD::Reset();
+
+  AD::StartRecording();
+
+  /*--- Register design variables as input and set them to zero
+   * (since we want to have the derivative at alpha = 0, i.e. for the current design) ---*/
+
+  DV_Value = config->GetDV_Pointer();
+  for (iDV = 0; iDV < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+
+      /*--- Initilization of su2double with 0.0 resets the index ---*/
+      DV_Value[iDV][iDV_Value] = 0.0;
+      AD::RegisterInput(DV_Value[iDV][iDV_Value]);
+
+    }
+  }
+
+  /*--- Call the surface deformation routine ---*/
+  surface_movement->SetSurface_Deformation(geometry, config);
+
+  /*--- Register Outputs --- */
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      nVertex = geometry->nVertex[iMarker];
+      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim=0; iDim<nDim; iDim++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          registeredCoord(iPoint,iDim) = VarCoord[iDim];
+        }
+      }
+    }
+  }
+  for (iPoint = 0; iPoint<nPoint; iPoint++) {
+    for (iDim=0; iDim<nDim; iDim++) {
+      AD::RegisterOutput(registeredCoord(iPoint,iDim));
+    }
+  }
+
+  /*--- Stop the recording --- */
+  AD::StopRecording();
+
+}
+
+
+void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
+
+  unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
+  su2double** DV_Value = config->GetDV_Pointer();
+
+  /*--- get information from config ---*/
+  nMarker = config->GetnMarker_All();
+  nDim    = geometry->GetnDim();
+  nDV     = config->GetnDV();
+
+  /*--- Seeding for the DV. --*/
+  iDV_index = 0;
+  for (iDV = 0; iDV  < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      SU2_TYPE::SetDerivative(DV_Value[iDV][iDV_Value], SU2_TYPE::GetValue(seeding[iDV_index]));
+      iDV_index++;
+    }
+  }
+
+  AD::ComputeAdjointForward();
+
+  /*--- Extract sensitivities ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      nVertex = geometry->nVertex[iMarker];
+      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim=0; iDim<nDim; iDim++) {
+          result(iPoint,iDim) = AD::GetDerivativeValue(registeredCoord(iPoint,iDim));
+        }
+      }
+    }
+  }
+
+  AD::ClearAdjoints();
+
+}
+
+
+void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
+
+  /*--- adjoint surface deformation ---*/
+
+  unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
+  unsigned int iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
+  su2double** DV_Value = config->GetDV_Pointer();
+  su2double my_Gradient, localGradient;
+
+  // get some numbers from config
+  nMarker = config->GetnMarker_All();
+  nDim    = geometry->GetnDim();
+  nDV     = config->GetnDV();
+
+  /*--- Set the seeding appropriately ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      nVertex = geometry->nVertex[iMarker];
+      for (iVertex = 0; iVertex <nVertex; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++){
+          SU2_TYPE::SetDerivative(registeredCoord(iPoint,iDim), SU2_TYPE::GetValue(sensitivity(iPoint,iDim)));
+        }
+      }
+    }
+  }
+
+  /*--- Compute derivatives and extract gradient ---*/
+  AD::ComputeAdjoint();
+
+  iDV_index = 0;
+  for (iDV = 0; iDV  < nDV; iDV++){
+    nDV_Value =  config->GetnDV_Value(iDV);
+    for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
+      my_Gradient = AD::GetDerivativeValue(DV_Value[iDV][iDV_Value]);
+      #ifdef HAVE_MPI
+        SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      #else
+        localGradient = my_Gradient;
+      #endif
+      output[iDV_index] = localGradient;
+      iDV_index++;
+    }
+  }
+
+  AD::ClearAdjoints();
 
 }
 
