@@ -3361,9 +3361,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
     Vector_ij[iDim] = Coord_j[iDim] - Coord_i[iDim];
   }
 
-  const bool bound_i = geometry->node[iPoint]->GetPhysicalBoundary();
-  const bool bound_j = geometry->node[jPoint]->GetPhysicalBoundary();
-
   /*--- Reconstruct flow primitive variables. ---*/
 
   auto Lim_Flow_i = flowNodes->GetLimiter_Primitive(iPoint);
@@ -3376,8 +3373,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-    su2double Project_Grad_i = -V_ij*(!bound_i);
-    su2double Project_Grad_j = -V_ij*(!bound_j);
+    su2double Project_Grad_i = -V_ij;
+    su2double Project_Grad_j = -V_ij;
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
@@ -3426,8 +3423,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
-      su2double Project_Grad_i = -T_ij*(!bound_i);
-      su2double Project_Grad_j = -T_ij*(!bound_j);
+      su2double Project_Grad_i = -T_ij;
+      su2double Project_Grad_j = -T_ij;
 
       for (auto iDim = 0; iDim < nDim; iDim++) {
         Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
