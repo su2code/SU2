@@ -770,7 +770,6 @@ private:
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
   bool
-  Wrt_Surface,               /*!< \brief Write solution at each surface */
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
@@ -3056,12 +3055,6 @@ public:
    * \return Current physical time.
    */
   su2double GetPhysicalTime(void) const { return PhysicalTime; }
-
-  /*!
-   * \brief Write solution at each surface.
-   * \return <code>TRUE</code> means that the solution at each surface will be written.
-   */
-  bool GetWrt_Surface(void) const { return Wrt_Surface; }
 
   /*!
    * \brief Get information about writing the performance summary at the end of a calculation.
