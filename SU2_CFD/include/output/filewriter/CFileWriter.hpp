@@ -128,9 +128,9 @@ public:
   virtual void Write_Data(){}
 
   /*!
-   * \brief Write sorted data to file
+   * \brief Set config Class
    */
-  virtual void Write_Data_CGNS(CConfig *config){}
+  virtual void SetConfig(CConfig *config){}
 
   /*!
    * \brief Get the bandwith used for the last writing

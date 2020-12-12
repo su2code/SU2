@@ -724,6 +724,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           (*fileWritingTable) << "CGNS" << fileName + CCGNSFileWriter::fileExt;
 
         fileWriter = new CCGNSFileWriter(fileName, volumeDataSorter);
+        fileWriter->SetConfig(config);
         break;
       }
       else{
@@ -739,10 +740,8 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
-   if(format == CGNS)
-     fileWriter->Write_Data_CGNS(config);
-   else
-     fileWriter->Write_Data();
+
+    fileWriter->Write_Data();
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
 

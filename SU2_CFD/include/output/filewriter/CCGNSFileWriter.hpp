@@ -31,6 +31,7 @@
 
 class CCGNSFileWriter final: public CFileWriter{
 
+  CConfig *config;
   unsigned long nElem;  // Global number of elems without halos
 
 public:
@@ -44,8 +45,6 @@ public:
    * \brief Construct a file writer using field names and the data sorter.
    * \param[in] valFileName - The name of the file
    * \param[in] valDataSorter - The parallel sorted data to write
-   * \param[in] valTimeIter - The current time iteration
-   * \param[in] valTimeStep - The current physical time step value
    */
   CCGNSFileWriter(string valFileName, CParallelDataSorter* valDataSorter);
 
@@ -55,10 +54,12 @@ public:
   ~CCGNSFileWriter() override;
 
   /*!
-   * \brief Write sorted data to file in tecplot ASCII file format
+   * \brief Write sorted data to file in CGNS file format
    */
-//  void Write_Data_CGNS(CConfig *config);
-   void Write_Data_CGNS(CConfig *config);
+//  void Write_Data();
+   void Write_Data();
+
+   void SetConfig(CConfig *configClass){config = configClass;}
 
 };
 

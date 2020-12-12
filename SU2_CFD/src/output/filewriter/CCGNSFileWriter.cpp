@@ -40,7 +40,7 @@ CCGNSFileWriter::CCGNSFileWriter(string valFileName, CParallelDataSorter *valDat
 
 CCGNSFileWriter::~CCGNSFileWriter(){}
 
-void CCGNSFileWriter::Write_Data_CGNS(CConfig *config){
+void CCGNSFileWriter::Write_Data(){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -138,6 +138,7 @@ void CCGNSFileWriter::Write_Data_CGNS(CConfig *config){
     GridLocation_t location;
     ElementType_t type;
     DataClass_t dataclass;
+    #define MIXED 20
 
     unsigned short iDim = 0, nDim = dataSorter->GetnDim();
     unsigned short varStart = 2;
@@ -202,7 +203,7 @@ void CCGNSFileWriter::Write_Data_CGNS(CConfig *config){
         if(cgns_err) cg_error_print();
         cgns_err = cg_ElementDataSize(cgns_file, nbases, nzones, i, &ElementDataSize);
         if(cgns_err) cg_error_print();
-        if(type != 20){
+        if(type != MIXED){
             Elements = new cgsize_t[ElementDataSize];
             cgns_err = cg_elements_read(cgns_file, nbases, nzones, i, Elements, NULL);
             if(cgns_err) cg_error_print();
