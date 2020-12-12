@@ -773,7 +773,6 @@ private:
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
-  Wrt_Slice,                 /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short
