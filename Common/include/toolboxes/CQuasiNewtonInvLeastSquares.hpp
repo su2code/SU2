@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "../omp_structure.hpp"
-#include "../mpi_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
 #include "CSymmetricMatrix.hpp"
 
 /*!

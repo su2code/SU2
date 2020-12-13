@@ -26,7 +26,7 @@
  */
 
 #include "../../include/grid_movement/CBSplineBlending.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 
 CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints): CFreeFormBlending(){
   SetOrder(val_order, n_controlpoints);

@@ -29,8 +29,8 @@
 #pragma once
 
 #include <vector>
-#include "containers/CFastFindAndEraseQueue.hpp"
-#include "geometry/CGeometry.hpp"
+#include "../containers/CFastFindAndEraseQueue.hpp"
+#include "CGeometry.hpp"
 
 using namespace std;
 
