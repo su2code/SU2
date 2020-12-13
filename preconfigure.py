@@ -168,12 +168,10 @@ def prepare_source(replace = False, remove = False, revert = False):
 
 
     # Hardcoded files that will be skipped
-    exclude_dic_files = { 'Common/include/datatype_structure.hpp' : [-1],
-                          'Common/include/datatype_structure.inl' : [-1],
-                          'Common/include/mpi_structure.hpp' : [-1],
-                          'Common/include/mpi_structure.inl' : [-1],
-                          'Common/src/datatype_structure.cpp': [-1],
-                          'Common/src/mpi_structure.cpp' : [-1] }
+    exclude_dic_files = { 'Common/include/basic_types/datatype_structure.hpp' : [-1],
+                          'Common/include/parallelization/mpi_structure.hpp' : [-1],
+                          'Common/src/basic_types/datatype_structure.cpp': [-1],
+                          'Common/include/parallelization/mpi_structure.cpp' : [-1] }
 
     str_double = 'double'
 
