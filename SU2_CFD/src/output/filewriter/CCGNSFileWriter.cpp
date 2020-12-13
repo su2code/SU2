@@ -133,7 +133,7 @@ void CCGNSFileWriter::Write_Data(){
     DataClass_t dataclass;
     int MIXED = 20,
         QUAD_4 = 7,
-		ElementTypeNull = 0;
+        ElementTypeNull = 0;
 
     unsigned short iDim = 0, nDim = dataSorter->GetnDim();
     unsigned short varStart = 2;
@@ -171,7 +171,7 @@ void CCGNSFileWriter::Write_Data(){
     /*---    Write Coordinates    ---*/
     callCGNS(cg_ncoords(cgns_file, nbases, nzones, &ncoords));
     for (i = 1; i < ncoords + 1; i++){
-    	callCGNS(cg_coord_info(cgns_file, nbases, nzones, i, &datatype, coordname));
+        callCGNS(cg_coord_info(cgns_file, nbases, nzones, i, &datatype, coordname));
         start = 1;
         end = isize[0][0];
         vector<double> buf(end);
@@ -184,10 +184,10 @@ void CCGNSFileWriter::Write_Data(){
     /*---    Write Connectivity    ---*/
     callCGNS(cg_nsections(cgns_file, nbases, nzones, &nsections));
     for ( i = 1; i < nsections + 1; i++)    {
-    	callCGNS(cg_section_read(cgns_file, nbases, nzones, i,
+        callCGNS(cg_section_read(cgns_file, nbases, nzones, i,
                                  ElementSectionName, &type, &start,
                                  &end, &nbndry, &parent_flag));
-    	callCGNS(cg_ElementDataSize(cgns_file, nbases, nzones, i, &ElementDataSize));
+        callCGNS(cg_ElementDataSize(cgns_file, nbases, nzones, i, &ElementDataSize));
         if(type != MIXED){
             Elements = new cgsize_t[ElementDataSize];
             callCGNS(cg_elements_read(cgns_file, nbases, nzones, i, Elements, NULL));
