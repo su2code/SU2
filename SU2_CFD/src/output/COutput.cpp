@@ -710,27 +710,24 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
     case CGNS:
 
-      if(config->GetMesh_FileFormat() == CGNS_GRID){
-        if (fileName.empty())
-          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if(config->GetMesh_FileFormat() != CGNS_GRID)
+        SU2_MPI::Error("CGNS output not supported with SU2 mesh file format.", CURRENT_FUNCTION);
 
-        /*--- Load and sort the output data and connectivity. ---*/
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
-        volumeDataSorter->SortConnectivity(config, geometry, true);
-        volumeDataSorter->SortOutputData();
+      /*--- Load and sort the output data and connectivity. ---*/
 
-        /*--- Write a CGNS file ---*/
-        if (rank == MASTER_NODE)
-          (*fileWritingTable) << "CGNS" << fileName + CCGNSFileWriter::fileExt;
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+      volumeDataSorter->SortOutputData();
 
-        fileWriter = new CCGNSFileWriter(fileName, volumeDataSorter);
-        fileWriter->SetConfig(config);
-        break;
-      }
-      else{
-        cout << "CGNS output not supported with SU2 mesh file format." << endl;
-        break;
-      }
+      /*--- Write a CGNS file ---*/
+      if (rank == MASTER_NODE)
+        (*fileWritingTable) << "CGNS" << fileName + CCGNSFileWriter::fileExt;
+
+      fileWriter = new CCGNSFileWriter(fileName, volumeDataSorter);
+      fileWriter->SetConfig(config);
+      break;
 
     default:
       fileWriter = nullptr;
@@ -2017,9 +2014,7 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
-  if (config->GetTime_Domain()){
-    return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
-  }
+  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   else {
     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   }
