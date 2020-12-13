@@ -591,7 +591,7 @@ protected:
                                    vector<passivedouble> &s);
 
   /*!
-   * \brief Function, which computes the values of the derivatives Lagrangian
+   * \brief Function, which computes the values of the derivatives of the Lagrangian
    *        basis functions of a line in the given integration points for the
    *        given location of the DOFs.
    * \param[in]  rDOFs  - Vector, which contains the parametric locations of the DOFs.
@@ -603,6 +603,20 @@ protected:
   void DerLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
                                 const vector<passivedouble>   &rInt,
                                 ColMajorMatrix<passivedouble> &derLag);
+
+  /*!
+   * \brief Function, which computes the values of the 2nd derivatives, Hessian,
+   *        of the Lagrangian basis functions of a line in the given integration
+   *        points for the given location of the DOFs.
+   * \param[in]  rDOFs  - Vector, which contains the parametric locations of the DOFs.
+   * \param[in]  rInt   - Vector, which contains the parametric locations of the
+   *                      integration points.
+   * \param[out] hesLag - Matrix, which contains the values of 2nd derivatives of all
+   *                      the Lagrangian basis functions in all the integration points.
+   */
+  void HesLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
+                                const vector<passivedouble>   &rInt,
+                                ColMajorMatrix<passivedouble> &hesLag);
 
   /*!
    * \brief Function, which computes the values of the Lagrangian basis functions
@@ -619,17 +633,36 @@ protected:
                              ColMajorMatrix<passivedouble> &lag);
 
   /*!
-   * \brief Function, which computes the value of the gradient of the Jacobi polynomial for the given x-coordinate.
+   * \brief Function, which computes the value of the gradient of the
+   *        Jacobi polynomial for the given x-coordinate.
    * \param[in] n     - Order of the Jacobi polynomial.
    * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
    * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
-   * \param[in] x     - Coordinate (-1 <= x <= 1) for which the gradient of the Jacobi polynomial must be evaluated.
-   * \return            The value of the gradient of the normalized Jacobi polynomial of order n for the given value of x.
+   * \param[in] x     - Coordinate (-1 <= x <= 1) for which the gradient of
+   *                    the Jacobi polynomial must be evaluated.
+   * \return            The value of the gradient of the normalized Jacobi polynomial
+   *                    of order n for the given value of x.
    */
   passivedouble GradNormJacobi(unsigned short n,
                                unsigned short alpha,
                                unsigned short beta,
                                passivedouble  x);
+
+  /*!
+   * \brief Function, which computes the value of the Hessian (2nd derivative) of the
+   *        Jacobi polynomial for the given x-coordinate.
+   * \param[in] n     - Order of the Jacobi polynomial.
+   * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
+   * \param[in] beta  - Beta coefficient of the Jacobi polynomial.
+   * \param[in] x     - Coordinate (-1 <= x <= 1) for which the gradient of the
+   *                    Jacobi polynomial must be evaluated.
+   * \return            The value of the 2nd derivative of the normalized Jacobi polynomial
+   *                    of order n for the given value of x.
+   */
+  passivedouble HesNormJacobi(unsigned short n,
+                              unsigned short alpha,
+                              unsigned short beta,
+                              passivedouble  x);
 
   /*!
    * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
@@ -712,6 +745,16 @@ private:
    */
   void GradVandermonde1D(const vector<passivedouble>   &r,
                          ColMajorMatrix<passivedouble> &VDr);
+
+  /*!
+   * \brief Function, which computes the Hessian (2nd derivative) of the Vandermonde
+   *        matrix for a standard 1D edge.
+   * \param[in]  r   -  Parametric coordinates for which the Hessian of the Vandermonde
+   *                    matrix must be computed.
+   * \param[out] VD2r - Matrix to store the Hessian of the Vandermonde matrix in all r-locations.
+   */
+  void HesVandermonde1D(const vector<passivedouble>   &r,
+                        ColMajorMatrix<passivedouble> &VD2r);
 
   /*!
    * \brief Function, which computes the Vandermonde matrix for a standard 1D edge.

@@ -79,9 +79,10 @@ CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPolyGrid,
   if(val_locGridDOFs == LGL) {
 
     /*--- LGL distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsTriangle(rTriangleDOFsLGL, sTriangleDOFsLGL, lagBasisIntLGL);
     DerLagBasisIntPointsTriangle(rTriangleDOFsLGL, sTriangleDOFsLGL, derLagBasisIntLGL);
+    HesLagBasisIntPointsTriangle(rTriangleDOFsLGL, sTriangleDOFsLGL);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -95,9 +96,10 @@ CFEMStandardTriGrid::CFEMStandardTriGrid(const unsigned short val_nPolyGrid,
   else {
 
     /*--- Equidistant distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, lagBasisIntEqui);
     DerLagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui, derLagBasisIntEqui);
+    HesLagBasisIntPointsTriangle(rTriangleDOFsEqui, sTriangleDOFsEqui);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -278,6 +280,51 @@ void CFEMStandardTriGrid::DerLagBasisIntPointsTriangle(const vector<passivedoubl
   }
 }
 
+void CFEMStandardTriGrid::HesLagBasisIntPointsTriangle(const vector<passivedouble> &rDOFs,
+                                                       const vector<passivedouble> &sDOFs) {
+
+  /*--- Determine the padded number of the total number of integration points. ---*/
+  const unsigned short nIntTot    = rTriangleInt.size();
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Hessian of the Vandermonde matrix of the integration points. Make
+        sure to allocate the number of rows to nIntTotPad and initialize them to zero. ---*/
+  ColMajorMatrix<passivedouble> VDr2(nIntTotPad,rDOFs.size()),
+                                VDs2(nIntTotPad,rDOFs.size()),
+                                VDrs(nIntTotPad,rDOFs.size());
+  VDr2.setConstant(0.0);
+  VDs2.setConstant(0.0);
+  VDrs.setConstant(0.0);
+
+  HesVandermondeTriangle(rTriangleInt, sTriangleInt, VDr2, VDs2, VDrs);
+
+  /*--- The Hessian of the Lagrangian basis functions can be obtained by
+        multiplying VDr2, VDs2, VDrs and VInv. ---*/
+  hesLagBasisInt.resize(3);
+  VInv.MatMatMult('R', VDr2, hesLagBasisInt[0]);
+  VInv.MatMatMult('R', VDs2, hesLagBasisInt[1]);
+  VInv.MatMatMult('R', VDrs, hesLagBasisInt[2]);
+
+  /*--- Check if the sum of the elements of the relevant rows of hesLagBasisInt is 0. ---*/
+  for(unsigned short i=0; i<nIntTot; ++i) {
+    passivedouble rowSumDr2 = 0.0, rowSumDs2 = 0.0, rowSumDrs = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSumDr2 += hesLagBasisInt[0](i,j);
+      rowSumDs2 += hesLagBasisInt[1](i,j);
+      rowSumDrs += hesLagBasisInt[2](i,j);
+    }
+
+    assert(fabs(rowSumDr2) < 1.e-6);
+    assert(fabs(rowSumDs2) < 1.e-6);
+    assert(fabs(rowSumDrs) < 1.e-6);
+  }
+}
+
 void CFEMStandardTriGrid::LagBasisIntPointsTriangle(const vector<passivedouble>   &rDOFs,
                                                     const vector<passivedouble>   &sDOFs,
                                                     ColMajorMatrix<passivedouble> &lag) {
@@ -353,6 +400,10 @@ void CFEMStandardTriGrid::GradVandermondeTriangle(const vector<passivedouble>   
                                                   ColMajorMatrix<passivedouble> &VDr,
                                                   ColMajorMatrix<passivedouble> &VDs) {
 
+  /*--- Abbreviate sqrt(2), which is the scaling factor for the orthonormal basis
+        functions of a triangle. ---*/
+  const passivedouble sqrt2 = sqrt(2.0);
+
   /*--- For a triangle the orthogonal basis for the reference element is obtained
         by a combination of a Jacobi polynomial and a Legendre polynomial. This
         is the result of the orthonormalization of the monomial basis.
@@ -371,30 +422,93 @@ void CFEMStandardTriGrid::GradVandermondeTriangle(const vector<passivedouble>   
         const passivedouble b = s[k];
 
         /*--- Determine the value of the two 1D contributions to the 2D
-              basis functions as well as the gradients of these basis
-              functions w.r.t. to their arguments. ---*/
+              basis functions as well as the gradients of these 
+              contributions w.r.t. their arguments. ---*/
         const passivedouble fa  = NormJacobi(i,0,    0,a);
         const passivedouble gb  = NormJacobi(j,2*i+1,0,b);
         const passivedouble dfa = GradNormJacobi(i,0,    0,a);
         const passivedouble dgb = GradNormJacobi(j,2*i+1,0,b);
 
-        /*--- Determine the gradients of the basis functions w.r.t. the
-              coordinates r and s. The product rule must be used in order
-              to change the derivative of a to the derivative of r and s. ---*/
-        VDr(k,ii) = sqrt(2.0)*dfa*gb;
-        VDs(k,ii) = VDr(k,ii);
-        if(i > 0)
-        {
-          passivedouble tmp = 1.0;
-          if( i-1 ) tmp = pow((1.0-b), (i-1));
+        /*--- Computation of the powers of (1-b) that occur in the expressions for
+              the gradients. Note the safeguard to avoid division by zero. This is
+              allowed, because the implementation is such that when this clipping
+              is active, it is multiplied by zero. ---*/
+        const passivedouble tmpbi   = i > 0 ? pow((1.0-b), i)   : 1.0;
+        const passivedouble tmpbim1 = i > 1 ? pow((1.0-b), i-1) : 1.0;
 
-          VDr(k,ii) = 2.0*tmp*VDr(k,ii);
-          VDs(k,ii) = (a+1.0)*tmp*VDs(k,ii) - i*tmp*sqrt(2.0)*fa*gb;
-        }
+        /*--- Compute the derivatives of the basis function. ---*/
+        VDr(k,ii) = sqrt2*tmpbim1* 2.0*dfa*gb;
+        VDs(k,ii) = sqrt2*tmpbim1*((a+1)*dfa*gb - i*fa*gb)
+                  + sqrt2*tmpbi  * fa*dgb;
+      }
+    }
+  }
+}
 
-        passivedouble tmp = 1.0;
-        if( i ) tmp = pow((1.0-b), i);
-        VDs(k,ii) += sqrt(2.0)*fa*dgb*tmp;
+void CFEMStandardTriGrid::HesVandermondeTriangle(const vector<passivedouble>   &r,
+                                                 const vector<passivedouble>   &s,
+                                                 ColMajorMatrix<passivedouble> &VDr2,
+                                                 ColMajorMatrix<passivedouble> &VDs2,
+                                                 ColMajorMatrix<passivedouble> &VDrs) {
+
+  /*--- Abbreviate sqrt(2), which is the scaling factor for the orthonormal basis
+        functions of a triangle. ---*/
+  const passivedouble sqrt2 = sqrt(2.0);
+
+  /*--- For a triangle the orthogonal basis for the reference element is obtained
+        by a combination of a Jacobi polynomial and a Legendre polynomial. This
+        is the result of the orthonormalization of the monomial basis.
+        Note that the sequence of the i and j loop must be identical to
+        the evaluation of the Vandermonde matrix itself. ---*/
+  unsigned short ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j, ++ii) {
+      for(unsigned short k=0; k<r.size(); ++k) {
+
+        /*--- Determine the coefficients a and b. ---*/
+        passivedouble a;
+        if(fabs(s[k]-1.0) < 1.e-8) a = -1.0;
+        else a = 2.0*(1.0+r[k])/(1.0-s[k]) - 1.0;
+
+        const passivedouble b = s[k];
+
+        /*--- Determine the value of the two 1D contributions to the 2D
+              basis functions as well as the 1st and 2nd derivatives of
+              these contributions w.r.t. their arguments. ---*/
+        const passivedouble fa   = NormJacobi(i,0,    0,a);
+        const passivedouble gb   = NormJacobi(j,2*i+1,0,b);
+        const passivedouble dfa  = GradNormJacobi(i,0,    0,a);
+        const passivedouble dgb  = GradNormJacobi(j,2*i+1,0,b);
+        const passivedouble d2fa = HesNormJacobi(i,0,    0,a);
+        const passivedouble d2gb = HesNormJacobi(j,2*i+1,0,b);
+
+        /*--- Computation of the powers of (1-b) that occur in the expressions for
+              the Hessian. Note the safeguard to avoid division by zero. This is
+              allowed, because the implementation is such that when this clipping
+              is active, it is multiplied by zero. ---*/
+        const passivedouble tmpbi   = i > 0 ? pow((1.0-b), i)   : 1.0;
+        const passivedouble tmpbim1 = i > 1 ? pow((1.0-b), i-1) : 1.0;
+        const passivedouble tmpbim2 = i > 2 ? pow((1.0-b), i-2) : 1.0;
+
+        /*--- Compute the 2nd derivative w.r.t. to r. ---*/
+        VDr2(k,ii) = tmpbim2*4.0*d2fa*gb;
+
+        /*--- Compute the 2nd derivative w.r.t. s. ---*/
+        VDs2(k,ii) = tmpbim2*((a+1.0)*(a+1.0)*d2fa*gb
+                   +          i*(i-1)*gb*fa
+                   -          2.0*(i-1)*(a+1.0)*gb*dfa)
+                   + tmpbim1* 2.0*dgb*(dfa*(a+1.0) - i*fa)
+                   + tmpbi  * fa*d2gb;
+
+        /*--- Compute the cross derivative w.r.t. r and s. ---*/
+        VDrs(k,ii) = tmpbim2*2.0*gb*((a+1.0)*d2fa - (i-1)*dfa)
+                   + tmpbim1*2.0*dfa*dgb;
+
+        /*--- Multiply all 2nd derivatives with sqrt(2) to obtain the
+              correct expressions. ---*/
+        VDr2(k,ii) *= sqrt2;
+        VDs2(k,ii) *= sqrt2;
+        VDrs(k,ii) *= sqrt2;
       }
     }
   }

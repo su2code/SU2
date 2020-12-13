@@ -202,6 +202,10 @@ private:
   ColMajorMatrix<passivedouble> derLagBasisLineSolDOFs; /*!< \brief The values of the derivatives of the 1D Lagrangian
                                                                     basis functions in the nodal solution DOFs. */
 
+  ColMajorMatrix<passivedouble> hesLagBasisLineInt;     /*!< \brief The values of the 2nd derivatives, Hessian, of the
+                                                                    Lagrangian basis function in the integration points
+                                                                    for the point distribution that is in use. */
+
   TPI2D TensorProductDataVolSolDOFs = nullptr; /*!< \brief Function pointer to carry out the tensor product
                                                            to compute the data in the nodal solution DOFs. */
 

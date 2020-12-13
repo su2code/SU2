@@ -3232,13 +3232,13 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig                      
     if(rank == MASTER_NODE)
       cout << endl <<"------- Element distribution for time accurate local time stepping ------" << endl;
 
-    /* Determine the local number of elements per time level. */
+    /*--- Determine the local number of elements per time level. ---*/
     vector<unsigned long> nLocalElemPerLevel(nTimeLevels, 0);
     for(unsigned long i=0; i<nElem; ++i)
       ++nLocalElemPerLevel[elem[i]->GetTimeLevel()];
 
-    /* Determine the global version of nLocalElemPerLevel. This only needs to
-       be known on the master node. */
+    /*--- Determine the global version of nLocalElemPerLevel. This only needs to
+          be known on the master node. ---*/
     vector<unsigned long> nGlobalElemPerLevel = nLocalElemPerLevel;
 
 #ifdef HAVE_MPI
@@ -3247,7 +3247,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig                      
                      MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    /* Write the output. */
+    /*--- Write the output. ---*/
     if(rank == MASTER_NODE) {
       for(unsigned short i=0; i<nTimeLevels; ++i) {
         if( nGlobalElemPerLevel[i] )
@@ -3255,6 +3255,9 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig                      
                << nGlobalElemPerLevel[i] << endl;
       }
     }
+
+    /*--- And a newline, such that the output is more visible. ---*/
+    if(rank == MASTER_NODE) cout << endl;
   }
 }
 

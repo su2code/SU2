@@ -69,9 +69,10 @@ CFEMStandardPyraGrid::CFEMStandardPyraGrid(const unsigned short val_nPolyGrid,
   if(val_locGridDOFs == LGL) {
 
     /*--- LGL distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsPyra(rPyraDOFsLGL, sPyraDOFsLGL, tPyraDOFsLGL, lagBasisIntLGL);
     DerLagBasisIntPointsPyra(rPyraDOFsLGL, sPyraDOFsLGL, tPyraDOFsLGL, derLagBasisIntLGL);
+    HesLagBasisIntPointsPyra(rPyraDOFsLGL, sPyraDOFsLGL, tPyraDOFsLGL);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -85,9 +86,10 @@ CFEMStandardPyraGrid::CFEMStandardPyraGrid(const unsigned short val_nPolyGrid,
   else {
 
     /*--- Equidistant distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsPyra(rPyraDOFsEqui, sPyraDOFsEqui, tPyraDOFsEqui, lagBasisIntEqui);
     DerLagBasisIntPointsPyra(rPyraDOFsEqui, sPyraDOFsEqui, tPyraDOFsEqui, derLagBasisIntEqui);
+    HesLagBasisIntPointsPyra(rPyraDOFsEqui, sPyraDOFsEqui, tPyraDOFsEqui);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -218,6 +220,43 @@ void CFEMStandardPyraGrid::DerLagBasisIntPointsPyra(const vector<passivedouble> 
 
   GradVandermondePyramid(rInt, sInt, tInt, VDr, VDs, VDt);
 
+  /*--- TEST ----*/
+/*const passivedouble dr = 1.e-4;
+  vector<passivedouble> rMin = rInt, rPlus = rInt;
+  vector<passivedouble> sMin = sInt, sPlus = sInt;
+  vector<passivedouble> tMin = tInt, tPlus = tInt;
+
+  for(unsigned short i=0; i<rInt.size(); ++i) {
+    rMin[i] -= dr; rPlus[i] += dr; 
+    sMin[i] -= dr; sPlus[i] += dr;
+    tMin[i] -= dr; tPlus[i] += dr;
+  }
+
+  ColMajorMatrix<passivedouble> VMin(nIntTotPad,rDOFs.size()),
+                                VPlus(nIntTotPad,rDOFs.size());
+
+  VMin.setConstant(0.0);
+  VPlus.setConstant(0.0);
+
+  VandermondePyramid(rInt, sInt, tMin,  VMin);
+  VandermondePyramid(rInt, sInt, tPlus, VPlus);
+
+  passivedouble maxDiff = 0.0;
+  for(unsigned i=0; i<rDOFs.size(); ++i) {
+    for(unsigned short j=0; j<rInt.size(); ++j) {
+
+      const passivedouble diff = (VPlus(j,i) - VMin(j,i))/(2.0*dr);
+      cout << "t comparison: " << i << " " << j << ": "
+           << VDt(j,i) << " " << diff << " " << fabs(VDt(j,i)-diff) << endl;
+      maxDiff = max(maxDiff, fabs(VDt(j,i)-diff));
+    }
+  }
+
+  cout << endl << "maxDiff: " << maxDiff << endl << endl;
+  SU2_MPI::Error("Test", CURRENT_FUNCTION); */
+
+  /*--- End TEST. ---*/
+
   /*--- The gradients of the Lagrangian basis functions can be obtained by
         multiplying VDr, VDs, VDt and VInv. ---*/
   derLag.resize(3);
@@ -237,6 +276,141 @@ void CFEMStandardPyraGrid::DerLagBasisIntPointsPyra(const vector<passivedouble> 
     assert(fabs(rowSumDr) < 1.e-6);
     assert(fabs(rowSumDs) < 1.e-6);
     assert(fabs(rowSumDt) < 1.e-6);
+  }
+}
+
+void CFEMStandardPyraGrid::HesLagBasisIntPointsPyra(const vector<passivedouble> &rDOFs,
+                                                    const vector<passivedouble> &sDOFs,
+                                                    const vector<passivedouble> &tDOFs) {
+
+  /*--- Determine the parametric coordinates of all integration points
+        of the pyramid. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  LocationAllIntegrationPoints(rInt, sInt, tInt);
+
+  /*--- Determine the padded number of the total number of integration points. ---*/
+  const unsigned short nIntTot    = rInt.size();
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondePyramid(rDOFs, sDOFs, tDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Hessian of the Vandermonde matrix of the integration points. Make
+        sure to allocate the number of rows to nIntTotPad and initialize them to zero. ---*/
+  ColMajorMatrix<passivedouble> VDr2(nIntTotPad,rDOFs.size()),
+                                VDs2(nIntTotPad,rDOFs.size()),
+                                VDt2(nIntTotPad,rDOFs.size()),
+                                VDrs(nIntTotPad,rDOFs.size()),
+                                VDrt(nIntTotPad,rDOFs.size()),
+                                VDst(nIntTotPad,rDOFs.size());
+  VDr2.setConstant(0.0);
+  VDs2.setConstant(0.0);
+  VDt2.setConstant(0.0);
+  VDrs.setConstant(0.0);
+  VDrt.setConstant(0.0);
+  VDst.setConstant(0.0);
+
+  HesVandermondePyramid(rInt, sInt, tInt, VDr2, VDs2, VDt2, VDrs, VDrt, VDst);
+
+  /*--- TEST ----*/
+/*const passivedouble dr = 1.e-4;
+  vector<passivedouble> rMin = rInt, rPlus = rInt;
+  vector<passivedouble> sMin = sInt, sPlus = sInt;
+  vector<passivedouble> tMin = tInt, tPlus = tInt;
+
+  for(unsigned short i=0; i<rInt.size(); ++i) {
+    rMin[i] -= dr; rPlus[i] += dr; 
+    sMin[i] -= dr; sPlus[i] += dr;
+    tMin[i] -= dr; tPlus[i] += dr;
+  } */
+
+/*ColMajorMatrix<passivedouble> VMin(nIntTotPad,rDOFs.size()),
+                                V(nIntTotPad,rDOFs.size()),
+                                VPlus(nIntTotPad,rDOFs.size());
+
+  VMin.setConstant(0.0);
+  V.setConstant(0.0);
+  VPlus.setConstant(0.0);
+
+  VandermondePyramid(rInt, sInt, tMin,  VMin);
+  VandermondePyramid(rInt, sInt, tInt,  V);
+  VandermondePyramid(rInt, sInt, tPlus, VPlus);
+
+  passivedouble maxDiff = 0.0;
+  for(unsigned i=0; i<rDOFs.size(); ++i) {
+    for(unsigned short j=0; j<rInt.size(); ++j) {
+
+      const passivedouble d2t = (VMin(j,i) - 2.0*V(j,i) + VPlus(j,i))/(dr*dr);
+      cout << "t2 comparison: " << i << " " << j << ": "
+           << VDt2(j,i) << " " << d2t << " " << fabs(VDt2(j,i)-d2t) << endl;
+      maxDiff = max(maxDiff, fabs(VDt2(j,i)-d2t));
+    }
+  }
+
+  cout << endl << "maxDiff: " << maxDiff << endl << endl; */
+
+/*ColMajorMatrix<passivedouble> VMinMin(nIntTotPad,rDOFs.size()),
+                                VMinPlus(nIntTotPad,rDOFs.size()),
+                                VPlusMin(nIntTotPad,rDOFs.size()),
+                                VPlusPlus(nIntTotPad,rDOFs.size());
+
+  VMinMin.setConstant(0.0);
+  VMinPlus.setConstant(0.0);
+  VPlusMin.setConstant(0.0);
+  VPlusPlus.setConstant(0.0);
+
+  VandermondePyramid(rInt, sMin,  tMin,  VMinMin);
+  VandermondePyramid(rInt, sMin,  tPlus, VMinPlus);
+  VandermondePyramid(rInt, sPlus, tMin,  VPlusMin);
+  VandermondePyramid(rInt, sPlus, tPlus, VPlusPlus);
+
+  passivedouble maxDiff = 0.0;
+  for(unsigned i=0; i<rDOFs.size(); ++i) {
+    for(unsigned short j=0; j<rInt.size(); ++j) {
+
+      const passivedouble dst = (VPlusPlus(j,i) - VMinPlus(j,i) - VPlusMin(j,i) + VMinMin(j,i))/(4.0*dr*dr);
+      cout << "st comparison: " << i << " " << j << ": "
+           << VDst(j,i) << " " << dst << " " << fabs(VDst(j,i)-dst) << endl;
+      maxDiff = max(maxDiff, fabs(VDst(j,i)-dst));
+    }
+  }
+
+  cout << endl << "maxDiff: " << maxDiff << endl << endl; */
+/*SU2_MPI::Error("Test", CURRENT_FUNCTION); */
+
+  /*--- End TEST. ---*/
+
+  /*--- The Hessian of the Lagrangian basis functions can be obtained by
+        multiplying VDr2, VDs2, etc and VInv. ---*/
+  hesLagBasisInt.resize(6);
+  VInv.MatMatMult('R', VDr2, hesLagBasisInt[0]);
+  VInv.MatMatMult('R', VDs2, hesLagBasisInt[1]);
+  VInv.MatMatMult('R', VDt2, hesLagBasisInt[2]);
+  VInv.MatMatMult('R', VDrs, hesLagBasisInt[3]);
+  VInv.MatMatMult('R', VDrt, hesLagBasisInt[4]);
+  VInv.MatMatMult('R', VDst, hesLagBasisInt[5]);
+
+  /*--- Check if the sum of the elements of the relevant rows of hesLagBasisInt is 0. ---*/
+  for(unsigned short i=0; i<nIntTot; ++i) {
+    passivedouble rowSumDr2 = 0.0, rowSumDs2 = 0.0, rowSumDt2 = 0.0;
+    passivedouble rowSumDrs = 0.0, rowSumDrt = 0.0, rowSumDst = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSumDr2 += hesLagBasisInt[0](i,j);
+      rowSumDs2 += hesLagBasisInt[1](i,j);
+      rowSumDt2 += hesLagBasisInt[2](i,j);
+      rowSumDrs += hesLagBasisInt[3](i,j);
+      rowSumDrt += hesLagBasisInt[4](i,j);
+      rowSumDst += hesLagBasisInt[5](i,j);
+    }
+
+    assert(fabs(rowSumDr2) < 1.e-6);
+    assert(fabs(rowSumDs2) < 1.e-6);
+    assert(fabs(rowSumDt2) < 1.e-6);
+    assert(fabs(rowSumDrs) < 1.e-6);
+    assert(fabs(rowSumDrt) < 1.e-6);
+    assert(fabs(rowSumDst) < 1.e-6);
   }
 }
 
@@ -338,24 +512,23 @@ void CFEMStandardPyraGrid::GradVandermondePyramid(const vector<passivedouble>   
   for(unsigned short i=0; i<=nPoly; ++i) {
     for(unsigned short j=0; j<=nPoly; ++j) {
       unsigned short muij = max(i,j);
-      const passivedouble scaleFact = pow(2,muij+1);
       for(unsigned short k=0; k<=(nPoly-muij); ++k, ++ii) {
         for(unsigned short l=0; l<r.size(); ++l) {
 
-          /*--- Determine the coefficients a, b and c. ---*/
+          /*--- Determine the coefficients a, b, c and d. ---*/
           passivedouble a, b;
-          const passivedouble tmp = 0.5*(1.0-t[l]);
-          if(fabs(tmp) < 1.e-8) a = b = 0.0;
+          const passivedouble d = 1.0-t[l];
+          if(fabs(d) < 1.e-8) a = b = 0.0;
           else {
-            a = r[l]/tmp;
-            b = s[l]/tmp;
+            a = 2.0*r[l]/d;
+            b = 2.0*s[l]/d;
           }
 
           const passivedouble c = t[l];
 
-          /*--- Determine the value of the three 1D contributions to the 3D
-                basis functions as well as the gradients of these basis
-                functions w.r.t. to their arguments. ---*/
+          /*--- Determine the value of the three 1D contributions to the 
+                3D basis functions as well as the gradients of these
+                contributions functions w.r.t. to their arguments. ---*/
           const passivedouble fa  = NormJacobi(i,0,         0,a);
           const passivedouble gb  = NormJacobi(j,0,         0,b);
           const passivedouble hc  = NormJacobi(k,2*(muij+1),0,c);
@@ -363,48 +536,114 @@ void CFEMStandardPyraGrid::GradVandermondePyramid(const vector<passivedouble>   
           const passivedouble dgb = GradNormJacobi(j,0,         0,b);
           const passivedouble dhc = GradNormJacobi(k,2*(muij+1),0,c);
 
-          /*--- Compute the derivative of the basis function w.r.t. r and s.
-                As r is only present in the parameter a the derivative of
-                the basis function w.r.t. a is multiplied by dadr. A similar
-                argument holds for s, which is only present in the parameter b.
-                Note that the implementation is such that all possible
-                singularities are divided out of the expression.  ---*/
-          VDr(l,ii) = dfa*gb*hc;
-          VDs(l,ii) = fa*dgb*hc;
-          if(muij > 1) {
-            const passivedouble tmpt = pow(tmp, (muij-1));
-            VDr(l,ii) *= tmpt;
-            VDs(l,ii) *= tmpt;
-          }
+          /*--- Computation of the powers of d that occur in the expressions for
+                the gradients. Note the safeguard to avoid division by zero. This is
+                allowed, because the implementation is such that when this clipping
+                is active, it is multiplied by zero. ---*/
+          const passivedouble tmpdmu   = muij > 0 ? pow(d, muij)   : 1.0;
+          const passivedouble tmpdmum1 = muij > 1 ? pow(d, muij-1) : 1.0;
 
-          /*--- Compute the derivative of the basis function w.r.t. t.
-                As t is present in a, b and c, all parameters must be taken into
-                account when the derivative is computed. Note that the
-                implementation is such that all possible singularities are
-                divided out of the expression. The first part is the derivative
-                of the basis function w.r.t. c, which is equal to t. --*/
-          VDt(l,ii) = dhc;
-          if(muij > 0) VDt(l,ii) *= pow(tmp, muij);
+          /*--- Compute the derivatives of the basis function. ---*/
+          VDr(l,ii) = 2.0*tmpdmum1* 2.0*dfa*gb*hc;
+          VDs(l,ii) = 2.0*tmpdmum1* 2.0*fa*dgb*hc;
+          VDt(l,ii) = 2.0*tmpdmum1*(a*dfa*gb*hc + b*fa*dgb*hc - muij*fa*gb*hc)
+                    + 2.0*tmpdmu  * fa*gb*dhc;
+        }
+      }
+    }
+  }
+}
 
-          if(muij > 0) {
-            passivedouble tmpt = 0.5*muij*hc;
-            if(muij > 1) tmpt *= pow(tmp, (muij-1));
-            VDt(l,ii) -= tmpt;
-          }
+void CFEMStandardPyraGrid::HesVandermondePyramid(const vector<passivedouble>   &r,
+                                                 const vector<passivedouble>   &s,
+                                                 const vector<passivedouble>   &t,
+                                                 ColMajorMatrix<passivedouble> &VDr2,
+                                                 ColMajorMatrix<passivedouble> &VDs2,
+                                                 ColMajorMatrix<passivedouble> &VDt2,
+                                                 ColMajorMatrix<passivedouble> &VDrs,
+                                                 ColMajorMatrix<passivedouble> &VDrt,
+                                                 ColMajorMatrix<passivedouble> &VDst) {
 
-          VDt(l,ii) *= fa*gb;
+  /*--- For a pyramid the orthogonal basis for the reference element is
+        obtained by a combination of Jacobi polynomials (of which the Legendre
+        polynomials is a special case). This is the result of the
+        orthonormalization of the monomial basis.
+        Note that the sequence of the i, j and k loop must be identical to
+        the evaluation of the Vandermonde matrix itself.  ---*/
+  unsigned short ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      unsigned short muij = max(i,j);
+      for(unsigned short k=0; k<=(nPoly-muij); ++k, ++ii) {
+        for(unsigned short l=0; l<r.size(); ++l) {
 
-          /*--- Add the contribution from the derivative of the basis function
-                w.r.t. a multiplied by dadt and the derivative w.r.t. b multiplied
-                by dbdt.                      ---*/
-          VDt(l,ii) += 0.5*a*VDr(l,ii) + 0.5*b*VDs(l,ii);
+          /*--- Determine the coefficients a, b, c and d. ---*/
+          const passivedouble d = 1.0-t[l];
+          const passivedouble dInv = (fabs(d) < 1.e-8) ? 1.e+8 : 1.0/d; 
+          const passivedouble a = 2.0*r[l]*dInv;
+          const passivedouble b = 2.0*s[l]*dInv;
+          const passivedouble c = t[l];
 
-          /*--- Multiply the three derivatives with the scale factor to
-                obtain the correct answers. See Vandermonde3D_Pyramid for
-                the explanation. ---*/
-          VDr(l,ii) *= scaleFact;
-          VDs(l,ii) *= scaleFact;
-          VDt(l,ii) *= scaleFact;
+          /*--- Determine the value of the three 1D contributions to the 
+                3D basis functions as well as the 1st and 2nd derivative of
+                these contributions functions w.r.t. to their arguments. ---*/
+          const passivedouble fa   = NormJacobi(i,0,         0,a);
+          const passivedouble gb   = NormJacobi(j,0,         0,b);
+          const passivedouble hc   = NormJacobi(k,2*(muij+1),0,c);
+          const passivedouble dfa  = GradNormJacobi(i,0,         0,a);
+          const passivedouble dgb  = GradNormJacobi(j,0,         0,b);
+          const passivedouble dhc  = GradNormJacobi(k,2*(muij+1),0,c);
+          const passivedouble d2fa = HesNormJacobi(i,0,         0,a);
+          const passivedouble d2gb = HesNormJacobi(j,0,         0,b);
+          const passivedouble d2hc = HesNormJacobi(k,2*(muij+1),0,c);
+
+          /*--- Computation of the powers of d that occur in the expressions for
+                the gradients. Note the safeguard to avoid division by zero. This is
+                allowed, because the implementation is such that when this clipping
+                is active, it is multiplied by zero. However, for the pyramid with
+                its rational basis functions there are some terms in which a division
+                by d cannot be avoided. This is handled via dInv. ---*/
+          const passivedouble tmpdmu   = muij > 0 ? pow(d, muij)   : 1.0;
+          const passivedouble tmpdmum1 = muij > 1 ? pow(d, muij-1) : 1.0;
+          const passivedouble tmpdmum2 = muij > 2 ? pow(d, muij-2) : 1.0;
+
+          /*--- Compute the 2nd derivative w.r.t. to r. ---*/
+          VDr2(l,ii) = tmpdmum2*4.0*d2fa*gb*hc;
+
+          /*--- Compute the 2nd derivative w.r.t. to s. ---*/
+          VDs2(l,ii) = tmpdmum2*4.0*fa*d2gb*hc;
+
+          /*--- Compute the 2nd derivative w.r.t. to r. ---*/
+          VDt2(l,ii) = tmpdmum2*(muij*(muij-1)*fa*gb*hc
+                     -           2.0*a*(muij-1)*dfa*gb*hc
+                     -           2.0*b*(muij-1)*fa*dgb*hc
+                     +           a*a*d2fa*gb*hc
+                     +           b*b*fa*d2gb*hc)
+                     + tmpdmum1*(2.0*a*dfa*gb*dhc
+                     +           2.0*b*fa*dgb*dhc
+                     -           2.0*muij*fa*gb*dhc)
+                     + tmpdmu  *fa*gb*d2hc
+                     + tmpdmum1*2.0*a*b*dfa*dgb*hc*dInv;
+
+          /*--- Compute the cross derivative w.r.t. r and s. ---*/
+          VDrs(l,ii) = tmpdmum1*4.0*dfa*dgb*hc*dInv;
+
+          /*--- Compute the cross derivative w.r.t. r and t. ---*/
+          VDrt(l,ii) = tmpdmum2*2.0*(a*d2fa*gb*hc - (muij-1)*dfa*gb*hc)
+                     + tmpdmum1*2.0*(dfa*gb*dhc + b*dfa*dgb*hc*dInv);
+
+          /*--- Compute the cross derivative w.r.t. s and t. ---*/
+          VDst(l,ii) = tmpdmum2*2.0*(b*fa*d2gb*hc - (muij-1)*fa*dgb*hc)
+                     + tmpdmum1*2.0*(fa*dgb*dhc + a*dfa*dgb*hc*dInv);
+
+          /*--- Multiply all 2nd derivatives with 2 to obtain the
+                correct expressions. ---*/
+          VDr2(l,ii) *= 2.0;
+          VDs2(l,ii) *= 2.0;
+          VDt2(l,ii) *= 2.0;
+          VDrs(l,ii) *= 2.0;
+          VDrt(l,ii) *= 2.0;
+          VDst(l,ii) *= 2.0;
         }
       }
     }
@@ -424,28 +663,22 @@ void CFEMStandardPyraGrid::VandermondePyramid(const vector<passivedouble>   &r,
   for(unsigned short i=0; i<=nPoly; ++i) {
     for(unsigned short j=0; j<=nPoly; ++j) {
       unsigned short muij = max(i,j);
-      const passivedouble scaleFact = pow(2,muij+1);
       for(unsigned short k=0; k<=(nPoly-muij); ++k, ++ii) {
         for(unsigned short l=0; l<r.size(); ++l) {
 
-          /*--- Determine the coefficients a, b and c. ---*/
+          /*--- Determine the coefficients a, b, c and d. ---*/
           passivedouble a, b;
-          const passivedouble tmp = 0.5*(1.0-t[l]);
-          if(fabs(tmp) < 1.e-8) a = b = 0.0;
+          const passivedouble d = 1.0-t[l];
+          if(fabs(d) < 1.e-8) a = b = 0.0;
           else {
-            a = r[l]/tmp;
-            b = s[l]/tmp;
+            a = 2.0*r[l]/d;
+            b = 2.0*s[l]/d;
           }
 
           const passivedouble c = t[l];
 
-          /*--- Determine the value of the current basis function in this point.
-                The multiplication with scaleFact is necessary, because this
-                formulation is derived in literature for a t coordinate between
-                0 and 1, while in this code t varies between -1 and 1. ---*/
-          const passivedouble tmpt = muij ? pow(tmp,muij) : 1.0;
-
-          V(l,ii) = scaleFact*tmpt*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
+          /*--- Determine the value of the current basis function in this point. ---*/
+          V(l,ii) = 2.0*pow(d,muij)*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
                   * NormJacobi(k,2*(muij+1),0,c);
         }
       }

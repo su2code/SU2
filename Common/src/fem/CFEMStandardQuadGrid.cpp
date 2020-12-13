@@ -74,9 +74,10 @@ CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPolyGrid,
   if(val_locGridDOFs == LGL) {
 
     /*--- LGL distribution. Compute the 1D Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsLine(rLineDOFsLGL, rLineInt, lagBasisLineIntLGL);
     DerLagBasisIntPointsLine(rLineDOFsLGL, rLineInt, derLagBasisLineIntLGL);
+    HesLagBasisIntPointsLine(rLineDOFsLGL, rLineInt, hesLagBasisLineInt);
 
     /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
           different from rLineDOFsLGL when a different polynomial degree is
@@ -94,9 +95,10 @@ CFEMStandardQuadGrid::CFEMStandardQuadGrid(const unsigned short val_nPolyGrid,
   else {
 
     /*--- Equidistant distribution. Compute the 1D Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsLine(rLineDOFsEqui, rLineInt, lagBasisLineIntEqui);
     DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, derLagBasisLineIntEqui);
+    HesLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, hesLagBasisLineInt);
 
     /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
           different from rLineDOFsEqui when a different polynomial degree is

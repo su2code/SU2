@@ -934,6 +934,38 @@ void CFEMStandardElementBase::DerLagBasisIntPointsLine(const vector<passivedoubl
   }
 }
 
+void CFEMStandardElementBase::HesLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
+                                                       const vector<passivedouble>   &rInt,
+                                                       ColMajorMatrix<passivedouble> &hesLag) {
+
+  /*--- Determine the number of integration points along the line
+        and its padded value. ---*/
+  const unsigned short nIntLine    = rInt.size();
+  const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
+  CGeneralSquareMatrixCM VInv(nPoly+1);
+  Vandermonde1D(rDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Hessian of the Vandermonde matrix of rInt. Make sure to
+        allocate the number of rows to nIntPadLine and initialize them to zero. ---*/ 
+  ColMajorMatrix<passivedouble> hesV(nIntPadLine,nPoly+1);
+  hesV.setConstant(0.0);
+  HesVandermonde1D(rInt, hesV);
+
+  /*--- The Hessian of the Lagrangian basis functions can be obtained
+        by multiplying hesV and VInv. ---*/
+  VInv.MatMatMult('R', hesV, hesLag);
+
+  /*--- Check if the sum of the elements of the relevant rows of hesLag is 0. ---*/
+  for(unsigned short i=0; i<nIntLine; ++i) {
+    passivedouble rowsum = 0.0;
+    for(unsigned short j=0; j<=nPoly; ++j) rowsum += hesLag(i,j);
+    assert(fabs(rowsum) < 1.e-6);
+  }
+}
+
 void CFEMStandardElementBase::LagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
                                                     const vector<passivedouble>   &rInt,
                                                     ColMajorMatrix<passivedouble> &lag) {
@@ -984,6 +1016,27 @@ passivedouble CFEMStandardElementBase::GradNormJacobi(unsigned short n,
   /*--- Return the gradient. ---*/
   return grad;
 }
+
+passivedouble CFEMStandardElementBase::HesNormJacobi(unsigned short n,
+                                                     unsigned short alpha,
+                                                     unsigned short beta,
+                                                     passivedouble  x) {
+
+  /*--- Make a distinction for n < 2 and n >= 2. For n < 2 the 2nd
+        derivative is zero, because the polynomial itself is either
+        constant or linear. ---*/
+  passivedouble hes;
+  if(n < 2) hes = 0.0;
+  else
+  {
+    passivedouble tmp = n*(n+alpha+beta+1.0);
+    hes               = sqrt(tmp)*GradNormJacobi(n-1, alpha+1, beta+1, x);
+  }
+
+  /*--- Return the gradient. ---*/
+  return hes;
+}
+
 
 passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
                                                   unsigned short alpha,
@@ -1134,6 +1187,15 @@ void CFEMStandardElementBase::GradVandermonde1D(const vector<passivedouble>   &r
   for(unsigned short j=0; j<=nPoly; ++j)
     for(unsigned short i=0; i<r.size(); ++i)
       VDr(i,j) = GradNormJacobi(j, 0, 0, r[i]);
+}
+
+void CFEMStandardElementBase::HesVandermonde1D(const vector<passivedouble>   &r,
+                                               ColMajorMatrix<passivedouble> &VD2r) {
+
+  /*--- Compute the Hessian of the 1D Vandermonde matrix. ---*/
+  for(unsigned short j=0; j<=nPoly; ++j)
+    for(unsigned short i=0; i<r.size(); ++i)
+      VD2r(i,j) = HesNormJacobi(j, 0, 0, r[i]);
 }
 
 void CFEMStandardElementBase::Vandermonde1D(const vector<passivedouble>   &r,

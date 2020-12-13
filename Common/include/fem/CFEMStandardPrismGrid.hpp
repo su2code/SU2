@@ -161,6 +161,11 @@ private:
                                                                          LGL point distribution. It is a vector, because
                                                                          there are derivatives in three directions. */
 
+  vector<ColMajorMatrix<passivedouble> > hesLagBasisInt;     /*!< \brief The values of the 2nd derivatives, Hessian, of the
+                                                                         Lagrangian basis functions in the integration points
+                                                                         for the point distribution in use. It is a vector,
+                                                                         because there are 6 2nd derivatives in 3D. */
+
   ColMajorMatrix<passivedouble> lagBasisSolDOFs;             /*!< \brief The values of the Lagrangian basis functions
                                                                          in the nodal solution DOFs. */
   vector<ColMajorMatrix<passivedouble> > derLagBasisSolDOFs; /*!< \brief The values of the derivatives of the Lagrangian
@@ -188,6 +193,21 @@ private:
                                  const vector<passivedouble>            &sTriangleDOFs,
                                  const vector<passivedouble>            &rLineDOFs,
                                  vector<ColMajorMatrix<passivedouble> > &derLag);
+
+  /*!
+   * \brief Function, which computes the values of the 2nd derivatives, Hessian,
+   *        of the Lagrangian basis functions of a prism in the integration
+   *        points for the given location of the DOFs.
+   * \param[in]  rTriangleDOFs - Vector, which contains the parametric r-locations of the DOFs
+   *                             of the base triangle.
+   * \param[in]  sTriangleDOFs - Vector, which contains the parametric s-locations of the DOFs
+   *                             of the base triangle.
+   * \param[in]  rLineDOFs     - Vector, which contains the parametric r-locations of the DOFs
+   *                             of the line normal to the triangles.
+   */
+  void HesLagBasisIntPointsPrism(const vector<passivedouble> &rTriangleDOFs,
+                                 const vector<passivedouble> &sTriangleDOFs,
+                                 const vector<passivedouble> &rLineDOFs);
 
   /*!
    * \brief Function, which computes the values of the Lagrangian basis functions
@@ -259,6 +279,34 @@ private:
                             ColMajorMatrix<passivedouble> &VDr,
                             ColMajorMatrix<passivedouble> &VDs,
                             ColMajorMatrix<passivedouble> &VDt);
+
+  /*!
+   * \brief Function, which computes the Hessian of the Vandermonde matrix for a standard prism.
+   * \param[in]  r   - Parametric r-coordinates for which the Vandermonde matrix must be computed.
+   * \param[in]  s   - Parametric s-coordinates for which the Vandermonde matrix must be computed
+   * \param[in]  t   - Parametric t-coordinates for which the Vandermonde matrix must be computed
+   * \param[out] VDr2 - Matrix to store the 2nd derivative in r-direction of the Vandermonde matrix
+   *                    in all r,s,t-locations.
+   * \param[out] VDs2 - Matrix to store the 2nd derivative in s-direction of the Vandermonde matrix
+   *                    in all r,s,t-locations.
+   * \param[out] VDt2 - Matrix to store the 2nd derivative in t-direction of the Vandermonde matrix
+   *                    in all r,s,t-locations.
+   * \param[out] VDrs - Matrix to store the cross derivative in rs-direction of the Vandermonde matrix
+   *                    in all r,s,t-locations.
+   * \param[out] VDrt - Matrix to store the cross derivative in rt-direction of the Vandermonde matrix
+   *                    in all r,s,t-locations.
+   * \param[out] VDst - Matrix to store the cross derivative in st-direction of the Vandermonde matrix
+   *                    in all r,s,t-locations.
+   */
+  void HesVandermondePrism(const vector<passivedouble>   &r,
+                           const vector<passivedouble>   &s,
+                           const vector<passivedouble>   &t,
+                           ColMajorMatrix<passivedouble> &VDr2,
+                           ColMajorMatrix<passivedouble> &VDs2,
+                           ColMajorMatrix<passivedouble> &VDt2,
+                           ColMajorMatrix<passivedouble> &VDrs,
+                           ColMajorMatrix<passivedouble> &VDrt,
+                           ColMajorMatrix<passivedouble> &VDst);
 
   /*!
    * \brief Function, which computes the Vandermonde matrix for a standard prism.

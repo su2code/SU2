@@ -69,9 +69,10 @@ CFEMStandardPrismGrid::CFEMStandardPrismGrid(const unsigned short val_nPolyGrid,
   if(val_locGridDOFs == LGL) {
 
     /*--- LGL distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsPrism(rTriangleDOFsLGL, sTriangleDOFsLGL, rLineDOFsLGL, lagBasisIntLGL);
     DerLagBasisIntPointsPrism(rTriangleDOFsLGL, sTriangleDOFsLGL, rLineDOFsLGL, derLagBasisIntLGL);
+    HesLagBasisIntPointsPrism(rTriangleDOFsLGL, sTriangleDOFsLGL, rLineDOFsLGL);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -86,9 +87,10 @@ CFEMStandardPrismGrid::CFEMStandardPrismGrid(const unsigned short val_nPolyGrid,
   else {
 
     /*--- Equidistant distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui, lagBasisIntEqui);
     DerLagBasisIntPointsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui, derLagBasisIntEqui);
+    HesLagBasisIntPointsPrism(rTriangleDOFsEqui, sTriangleDOFsEqui, rLineDOFsEqui);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -245,6 +247,75 @@ void CFEMStandardPrismGrid::DerLagBasisIntPointsPrism(const vector<passivedouble
   }
 }
 
+void CFEMStandardPrismGrid::HesLagBasisIntPointsPrism(const vector<passivedouble> &rTriangleDOFs,
+                                                      const vector<passivedouble> &sTriangleDOFs,
+                                                      const vector<passivedouble> &rLineDOFs) {
+  /*--- Determine the parametric coordinates of all DOFs of the prism. ---*/
+  vector<passivedouble> rDOFs, sDOFs, tDOFs;
+  LocationAllDOFsPrism(rTriangleDOFs, sTriangleDOFs, rLineDOFs, rDOFs, sDOFs, tDOFs);
+
+  /*--- Determine the parametric coordinates of all integration points of the prism. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  LocationAllIntegrationPoints(rInt, sInt, tInt);
+
+  /*--- Determine the padded number of the total number of integration points. ---*/
+  const unsigned short nIntTot    = rInt.size();
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondePrism(rDOFs, sDOFs, tDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Hessian of the Vandermonde matrix of the integration points. Make
+        sure to allocate the number of rows to nIntTotPad and initialize them to zero. ---*/
+  ColMajorMatrix<passivedouble> VDr2(nIntTotPad,rDOFs.size()),
+                                VDs2(nIntTotPad,rDOFs.size()),
+                                VDt2(nIntTotPad,rDOFs.size()),
+                                VDrs(nIntTotPad,rDOFs.size()),
+                                VDrt(nIntTotPad,rDOFs.size()),
+                                VDst(nIntTotPad,rDOFs.size());
+  VDr2.setConstant(0.0);
+  VDs2.setConstant(0.0);
+  VDt2.setConstant(0.0);
+  VDrs.setConstant(0.0);
+  VDrt.setConstant(0.0);
+  VDst.setConstant(0.0);
+
+  HesVandermondePrism(rInt, sInt, tInt, VDr2, VDs2, VDt2, VDrs, VDrt, VDst);
+
+  /*--- The Hessian of the Lagrangian basis functions can be obtained by
+        multiplying VDr2, VDs2, etc and VInv. ---*/
+  hesLagBasisInt.resize(6);
+  VInv.MatMatMult('R', VDr2, hesLagBasisInt[0]);
+  VInv.MatMatMult('R', VDs2, hesLagBasisInt[1]);
+  VInv.MatMatMult('R', VDt2, hesLagBasisInt[2]);
+  VInv.MatMatMult('R', VDrs, hesLagBasisInt[3]);
+  VInv.MatMatMult('R', VDrt, hesLagBasisInt[4]);
+  VInv.MatMatMult('R', VDst, hesLagBasisInt[5]);
+
+  /*--- Check if the sum of the elements of the relevant rows of hesLagBasisInt is 0. ---*/
+  for(unsigned short i=0; i<nIntTot; ++i) {
+    passivedouble rowSumDr2 = 0.0, rowSumDs2 = 0.0, rowSumDt2 = 0.0;
+    passivedouble rowSumDrs = 0.0, rowSumDrt = 0.0, rowSumDst = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSumDr2 += hesLagBasisInt[0](i,j);
+      rowSumDs2 += hesLagBasisInt[1](i,j);
+      rowSumDt2 += hesLagBasisInt[2](i,j);
+      rowSumDrs += hesLagBasisInt[3](i,j);
+      rowSumDrt += hesLagBasisInt[4](i,j);
+      rowSumDst += hesLagBasisInt[5](i,j);
+    }
+
+    assert(fabs(rowSumDr2) < 1.e-6);
+    assert(fabs(rowSumDs2) < 1.e-6);
+    assert(fabs(rowSumDt2) < 1.e-6);
+    assert(fabs(rowSumDrs) < 1.e-6);
+    assert(fabs(rowSumDrt) < 1.e-6);
+    assert(fabs(rowSumDst) < 1.e-6);
+  }
+}
+
 void CFEMStandardPrismGrid::LagBasisIntPointsPrism(const vector<passivedouble>   &rTriangleDOFs,
                                                    const vector<passivedouble>   &sTriangleDOFs,
                                                    const vector<passivedouble>   &rLineDOFs,
@@ -381,13 +452,17 @@ void CFEMStandardPrismGrid::GradVandermondePrism(const vector<passivedouble>   &
                                                  ColMajorMatrix<passivedouble> &VDs,
                                                  ColMajorMatrix<passivedouble> &VDt) {
 
+  /*--- Abbreviate sqrt(2), which is the scaling factor for the orthonormal basis
+        functions of a triangle/prism. ---*/
+  const passivedouble sqrt2 = sqrt(2.0);
+
   /*--- For a prism the orthogonal basis for the reference element is a tensor
         product of the 1D basis functions in the structured direction of the prism
         and the basis functions of a triangle. For that triangle the orthogonal
         basis is obtained by a combination of a Jacobi polynomial and a Legendre
         polynomial. This is the result of the orthonormalization of the
         monomial basis. Note that the sequence of the i, j and k loop must be
-        identical to the evaluation of the Vandermonde matrix itself.  ---*/
+        identical to the evaluation of the Vandermonde matrix itself. ---*/
   unsigned short ii = 0;
   for(unsigned short i=0; i<=nPoly; ++i) {
     for(unsigned short j=0; j<=(nPoly-i); ++j) {
@@ -403,39 +478,127 @@ void CFEMStandardPrismGrid::GradVandermondePrism(const vector<passivedouble>   &
 
           /*--- Determine the value of the two 1D contributions to the 2D
                 basis functions of the triangle as well as the gradients of
-                these basis functions w.r.t. to its argument. ---*/
+                these basis functions w.r.t. their arguments. ---*/
           const passivedouble fa  = NormJacobi(i,0,    0,a);
           const passivedouble gb  = NormJacobi(j,2*i+1,0,b);
           const passivedouble dfa = GradNormJacobi(i,0,    0,a);
           const passivedouble dgb = GradNormJacobi(j,2*i+1,0,b);
 
-          /*--- Determine the gradients of the basis functions w.r.t. the
-                coordinates r and s. The product rule must be used in order
-                to change the derivative of a to the derivative of r and s. ---*/
-          VDr(l,ii) = sqrt(2.0)*dfa*gb;
-          VDs(l,ii) = VDr(l,ii);
-          if(i > 0)
-          {
-            passivedouble tmp = 1.0;
-            if(i > 1) tmp = pow((1.0-b), (i-1));
+          /*--- Determine the value of the 1D basis function in the structured
+                direction of the prism as well as the gradient of this basis
+                function w.r.t. its argument. ---*/
+          const passivedouble ht  = NormJacobi(k,0,0,t[l]);
+          const passivedouble dht = GradNormJacobi(k,0,0,t[l]);
 
-            VDr(l,ii) = 2.0*tmp*VDr(l,ii);
-            VDs(l,ii) = (a+1.0)*tmp*VDs(l,ii) - i*tmp*sqrt(2.0)*fa*gb;
-          }
+          /*--- Computation of the powers of (1-b) that occur in the expressions for
+                the gradients. Note the safeguard to avoid division by zero. This is
+                allowed, because the implementation is such that when this clipping
+                is active, it is multiplied by zero. ---*/
+          const passivedouble tmpbi   = i > 0 ? pow((1.0-b), i)   : 1.0;
+          const passivedouble tmpbim1 = i > 1 ? pow((1.0-b), i-1) : 1.0;
 
-          passivedouble tmp = 1.0;
-          if(i > 0) tmp = pow((1.0-b), i);
+          /*--- Compute the derivatives of the basis function. ---*/
+          VDr(l,ii) = sqrt2*tmpbim1* 2.0*dfa*gb*ht;
+          VDs(l,ii) = sqrt2*tmpbim1*((a+1)*dfa*gb - i*fa*gb)*ht
+                    + sqrt2*tmpbi  * fa*dgb*ht;
+          VDt(l,ii) = sqrt2*tmpbi  * fa*gb*dht;
+        }
+      }
+    }
+  }
+}
 
-          VDs(l,ii) += sqrt(2.0)*fa*dgb*tmp;
+void CFEMStandardPrismGrid::HesVandermondePrism(const vector<passivedouble>   &r,
+                                                const vector<passivedouble>   &s,
+                                                const vector<passivedouble>   &t,
+                                                ColMajorMatrix<passivedouble> &VDr2,
+                                                ColMajorMatrix<passivedouble> &VDs2,
+                                                ColMajorMatrix<passivedouble> &VDt2,
+                                                ColMajorMatrix<passivedouble> &VDrs,
+                                                ColMajorMatrix<passivedouble> &VDrt,
+                                                ColMajorMatrix<passivedouble> &VDst) {
 
-          /*--- Multiply VDr and VDs with the contribution from the structured
-                direction of the prism. ---*/
-          VDr(l,ii) *= NormJacobi(k,0,0,t[l]);
-          VDs(l,ii) *= NormJacobi(k,0,0,t[l]);
+  /*--- Abbreviate sqrt(2), which is the scaling factor for the orthonormal basis
+        functions of a triangle/prism. ---*/
+  const passivedouble sqrt2 = sqrt(2.0);
 
-          /*--- Compute the derivative of the basis function in the t-direction,
-                which is the structured direction. ---*/
-          VDt(l,ii) = sqrt(2.0)*tmp*fa*gb*GradNormJacobi(k,0,0,t[l]);
+  /*--- For a prism the orthogonal basis for the reference element is a tensor
+        product of the 1D basis functions in the structured direction of the prism
+        and the basis functions of a triangle. For that triangle the orthogonal
+        basis is obtained by a combination of a Jacobi polynomial and a Legendre
+        polynomial. This is the result of the orthonormalization of the
+        monomial basis. Note that the sequence of the i, j and k loop must be
+        identical to the evaluation of the Vandermonde matrix itself. ---*/
+  unsigned short ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=nPoly; ++k, ++ii) {
+        for(unsigned short l=0; l<r.size(); ++l) {
+
+          /*--- Determine the coefficients a and b. ---*/
+          passivedouble a;
+          if(fabs(s[l]-1.0) < 1.e-8) a = -1.0;
+          else a = 2.0*(1.0+r[l])/(1.0-s[l]) - 1.0;
+
+          const passivedouble b = s[l];
+
+          /*--- Determine the value of the two 1D contributions to the 2D
+                basis functions of the triangle as well as the 1st and 2nd
+                derivatives of these contributions w.r.t. to their arguments. ---*/
+          const passivedouble fa   = NormJacobi(i,0,    0,a);
+          const passivedouble gb   = NormJacobi(j,2*i+1,0,b);
+          const passivedouble dfa  = GradNormJacobi(i,0,    0,a);
+          const passivedouble dgb  = GradNormJacobi(j,2*i+1,0,b);
+          const passivedouble d2fa = HesNormJacobi(i,0,    0,a);
+          const passivedouble d2gb = HesNormJacobi(j,2*i+1,0,b);
+
+          /*--- Determine the value of the 1D basis function in the structured
+                direction of the prism as well as the 1st and 2nd derivative
+                of this basis function w.r.t. its argument. ---*/
+          const passivedouble ht   = NormJacobi(k,0,0,t[l]);
+          const passivedouble dht  = GradNormJacobi(k,0,0,t[l]);
+          const passivedouble d2ht = HesNormJacobi(k,0,0,t[l]);
+
+          /*--- Computation of the powers of (1-b) that occur in the expressions for
+                the Hessian. Note the safeguard to avoid division by zero. This is
+                allowed, because the implementation is such that when this clipping
+                is active, it is multiplied by zero. ---*/
+          const passivedouble tmpbi   = i > 0 ? pow((1.0-b), i)   : 1.0;
+          const passivedouble tmpbim1 = i > 1 ? pow((1.0-b), i-1) : 1.0;
+          const passivedouble tmpbim2 = i > 2 ? pow((1.0-b), i-2) : 1.0;
+
+          /*--- Compute the 2nd derivative w.r.t. to r. ---*/
+          VDr2(l,ii) = tmpbim2*4.0*d2fa*gb*ht;
+
+          /*--- Compute the 2nd derivative w.r.t. s. ---*/
+          VDs2(l,ii) = tmpbim2*((a+1.0)*(a+1.0)*d2fa*gb
+                     +          i*(i-1)*gb*fa
+                     -          2.0*(i-1)*(a+1.0)*gb*dfa)*ht
+                     + tmpbim1* 2.0*dgb*(dfa*(a+1.0) - i*fa)*ht
+                     + tmpbi  * fa*d2gb*ht;
+
+          /*--- Compute the 2nd derivative w.r.t. t. ---*/
+          VDt2(l,ii) = tmpbi*fa*gb*d2ht;
+
+          /*--- Compute the cross derivative w.r.t. r and s. ---*/
+          VDrs(l,ii) = tmpbim2*2.0*gb*((a+1.0)*d2fa - (i-1)*dfa)*ht
+                     + tmpbim1*2.0*dfa*dgb*ht;
+
+          /*--- Compute the cross derivative w.r.t. r and t. ---*/
+          VDrt(l,ii) = tmpbim1*2.0*dfa*gb*dht;
+
+          /*--- Compute the cross derivative w.r.t. s and t. ---*/
+          VDst(l,ii) = tmpbim1*((a+1)*dfa*gb - i*fa*gb)*dht
+                     + tmpbi  * fa*dgb*dht;
+
+          /*--- Multiply all 2nd derivatives with sqrt(2) to obtain the
+                correct expressions. ---*/
+          VDr2(l,ii) *= sqrt2;
+          VDs2(l,ii) *= sqrt2;
+          VDt2(l,ii) *= sqrt2;
+          VDrs(l,ii) *= sqrt2;
+          VDrt(l,ii) *= sqrt2;
+          VDst(l,ii) *= sqrt2;
         }
       }
     }

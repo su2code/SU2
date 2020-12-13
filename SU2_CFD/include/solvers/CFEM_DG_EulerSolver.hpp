@@ -39,6 +39,18 @@
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
+  su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
+
+  CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
+
+  su2double
+  Mach_Inf,         /*!< \brief Mach number at infinity. */
+  Density_Inf,      /*!< \brief Density at infinity. */
+  Energy_Inf,     /*!< \brief Energy at infinity. */
+  Temperature_Inf,  /*!< \brief Energy at infinity. */
+  Pressure_Inf,     /*!< \brief Pressure at infinity. */
+  *Velocity_Inf;    /*!< \brief Flow velocity vector at infinity. */
 
 
 private:

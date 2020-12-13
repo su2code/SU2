@@ -69,9 +69,10 @@ CFEMStandardTetGrid::CFEMStandardTetGrid(const unsigned short val_nPolyGrid,
   if(val_locGridDOFs == LGL) {
 
     /*--- LGL distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsTet(rTetDOFsLGL, sTetDOFsLGL, tTetDOFsLGL, lagBasisIntLGL);
     DerLagBasisIntPointsTet(rTetDOFsLGL, sTetDOFsLGL, tTetDOFsLGL, derLagBasisIntLGL);
+    HesLagBasisIntPointsTet(rTetDOFsLGL, sTetDOFsLGL, tTetDOFsLGL);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -85,9 +86,10 @@ CFEMStandardTetGrid::CFEMStandardTetGrid(const unsigned short val_nPolyGrid,
   else {
 
     /*--- Equidistant distribution. Compute the corresponding Lagrangian basis functions and
-          its derivatives in the integration points. ---*/
+          its first and second derivatives in the integration points. ---*/
     LagBasisIntPointsTet(rTetDOFsEqui, sTetDOFsEqui, tTetDOFsEqui, lagBasisIntEqui);
     DerLagBasisIntPointsTet(rTetDOFsEqui, sTetDOFsEqui, tTetDOFsEqui, derLagBasisIntEqui);
+    HesLagBasisIntPointsTet(rTetDOFsEqui, sTetDOFsEqui, tTetDOFsEqui);
 
     /*--- Determine the location of nodal solution DOFs. ---*/
     nPoly = val_nPolySol;
@@ -234,6 +236,69 @@ void CFEMStandardTetGrid::DerLagBasisIntPointsTet(const vector<passivedouble>   
   }
 }
 
+void CFEMStandardTetGrid::HesLagBasisIntPointsTet(const vector<passivedouble> &rDOFs,
+                                                  const vector<passivedouble> &sDOFs,
+                                                  const vector<passivedouble> &tDOFs) {
+
+  /*--- Determine the padded number of the total number of integration points. ---*/
+  const unsigned short nIntTot    = rTetInt.size();
+  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  VandermondeTetrahedron(rDOFs, sDOFs, tDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Determine the Hessian of the Vandermonde matrix of the integration points. Make
+        sure to allocate the number of rows to nIntTotPad and initialize them to zero. ---*/
+  ColMajorMatrix<passivedouble> VDr2(nIntTotPad,rDOFs.size()),
+                                VDs2(nIntTotPad,rDOFs.size()),
+                                VDt2(nIntTotPad,rDOFs.size()),
+                                VDrs(nIntTotPad,rDOFs.size()),
+                                VDrt(nIntTotPad,rDOFs.size()),
+                                VDst(nIntTotPad,rDOFs.size());
+  VDr2.setConstant(0.0);
+  VDs2.setConstant(0.0);
+  VDt2.setConstant(0.0);
+  VDrs.setConstant(0.0);
+  VDrt.setConstant(0.0);
+  VDst.setConstant(0.0);
+
+  HesVandermondeTetrahedron(rTetInt, sTetInt, tTetInt, VDr2, VDs2, VDt2,
+                            VDrs, VDrt, VDst);
+
+  /*--- The Hessian of the Lagrangian basis functions can be obtained by
+        multiplying VDr2, VDs2, etc and VInv. ---*/
+  hesLagBasisInt.resize(6);
+  VInv.MatMatMult('R', VDr2, hesLagBasisInt[0]);
+  VInv.MatMatMult('R', VDs2, hesLagBasisInt[1]);
+  VInv.MatMatMult('R', VDt2, hesLagBasisInt[2]);
+  VInv.MatMatMult('R', VDrs, hesLagBasisInt[3]);
+  VInv.MatMatMult('R', VDrt, hesLagBasisInt[4]);
+  VInv.MatMatMult('R', VDst, hesLagBasisInt[5]);
+
+  /*--- Check if the sum of the elements of the relevant rows of hesLagBasisInt is 0. ---*/
+  for(unsigned short i=0; i<nIntTot; ++i) {
+    passivedouble rowSumDr2 = 0.0, rowSumDs2 = 0.0, rowSumDt2 = 0.0;
+    passivedouble rowSumDrs = 0.0, rowSumDrt = 0.0, rowSumDst = 0.0;
+    for(unsigned short j=0; j<rDOFs.size(); ++j) {
+      rowSumDr2 += hesLagBasisInt[0](i,j);
+      rowSumDs2 += hesLagBasisInt[1](i,j);
+      rowSumDt2 += hesLagBasisInt[2](i,j);
+      rowSumDrs += hesLagBasisInt[3](i,j);
+      rowSumDrt += hesLagBasisInt[4](i,j);
+      rowSumDst += hesLagBasisInt[5](i,j);
+    }
+
+    assert(fabs(rowSumDr2) < 1.e-6);
+    assert(fabs(rowSumDs2) < 1.e-6);
+    assert(fabs(rowSumDt2) < 1.e-6);
+    assert(fabs(rowSumDrs) < 1.e-6);
+    assert(fabs(rowSumDrt) < 1.e-6);
+    assert(fabs(rowSumDst) < 1.e-6);
+  }
+}
+
 void CFEMStandardTetGrid::LagBasisIntPointsTet(const vector<passivedouble>   &rDOFs,
                                                const vector<passivedouble>   &sDOFs,
                                                const vector<passivedouble>   &tDOFs,
@@ -317,6 +382,10 @@ void CFEMStandardTetGrid::GradVandermondeTetrahedron(const vector<passivedouble>
                                                      ColMajorMatrix<passivedouble> &VDs,
                                                      ColMajorMatrix<passivedouble> &VDt) {
 
+  /*--- Abbreviate sqrt(8), which is the scaling factor for the orthonormal basis
+        functions of a tetrahedron. ---*/
+  const passivedouble sqrt8 = sqrt(8.0);
+
   /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
         combination of Jacobi polynomials (of which the Legendre polynomials is a special
         case). This is the result of the orthonormalization of the monomial basis.
@@ -340,8 +409,8 @@ void CFEMStandardTetGrid::GradVandermondeTetrahedron(const vector<passivedouble>
 
           const passivedouble c = t[l];
 
-          /*--- Determine the value of the three 1D contributions to the 3D basis functions as
-                well as the gradients of these basis functions w.r.t. to their arguments. ---*/
+          /*--- Determine the value of the three 1D contributions to the 3D basis functions
+                as well as the gradients of these contributions w.r.t. their arguments. ---*/
           const passivedouble fa  = NormJacobi(i,0,    0,a);
           const passivedouble gb  = NormJacobi(j,2*i+1,0,b);
           const passivedouble hc  = NormJacobi(k,2*(i+j+1),0,c);
@@ -349,65 +418,160 @@ void CFEMStandardTetGrid::GradVandermondeTetrahedron(const vector<passivedouble>
           const passivedouble dgb = GradNormJacobi(j,2*i+1,0,b);
           const passivedouble dhc = GradNormJacobi(k,2*(i+j+1),0,c);
 
-          /*--- Compute the derivative of the basis function w.r.t. r. As r is only present in
-                the parameter a the derivative of the basis function w.r.t. a is multiplied by
-                dadr. Note that the implementation is such that all possible singularities are
-                divided out of the expression. ---*/
-          VDr(l,ii) = sqrt(8.0)*dfa*gb*hc;
-          if(i > 0) {
-            VDr(l,ii) *= 4.0;
-            if(i > 1 ) VDr(l,ii) *= pow((1.0-b), (i-1));
-          }
+          /*--- Computation of the powers of (1-b) and (1-c) that occur in the
+                expressions for the Hessian. Note the safeguard to avoid division
+                by zero. This is allowed, because the implementation is such that
+                when this clipping is active, it is multiplied by zero. ---*/
+          const passivedouble tmpbi   = i > 0 ? pow((1.0-b), i)   : 1.0;
+          const passivedouble tmpbim1 = i > 1 ? pow((1.0-b), i-1) : 1.0;
 
-          if(i+j > 1) VDr(l,ii) *= pow((1.0-c), (i+j-1));
+          const passivedouble tmpcij   = (i+j) > 0 ? pow((1.0-c), i+j)   : 1.0;
+          const passivedouble tmpcijm1 = (i+j) > 1 ? pow((1.0-c), i+j-1) : 1.0;
 
-          /*--- Compute the derivative of the basis function w.r.t. s. As s is present in both
-                the parameters a and b, both variables must be taken into account when the
-                derivative is computed. Note that the implementation is such that all possible
-                singularities are divided out of the expression. The first part is the derivative
-                of the basis function w.r.t. b multiplied by dbds. This value is stored, because
-                it is needed later on to compute the derivative w.r.t. t. ---*/
-          VDs(l,ii) = dgb;
-          if( i ) VDs(l,ii) *= pow((1.0-b), i);
+          /*--- Compute the derivatives of the basis function. ---*/
+          VDr(l,ii) = tmpbim1*tmpcijm1*4.0*dfa*gb*hc;
+          VDs(l,ii) = tmpbim1*tmpcijm1*2.0*gb*hc*((a+1.0)*dfa - i*fa)
+                    + tmpbi  *tmpcijm1*2.0*fa*dgb*hc;
+          VDt(l,ii) = tmpbim1*tmpcijm1*gb*hc*(2.0*(a+1.0)*dfa - (b+1.0)*i*fa)
+                    + tmpbi  *tmpcijm1*fa*hc*((b+1.0)*dgb - (i+j)*gb)
+                    + tmpbi  *tmpcij  *fa*gb*dhc;
 
-          if(i > 0) {
-            tmp = i*gb;
-            if(i > 1) tmp *= pow((1.0-b), (i-1));
-            VDs(l,ii) -= tmp;
-          }
+          /*--- Multiply all derivatives with sqrt(8) to obtain the
+                correct expressions. ---*/
+          VDr(l,ii) *= sqrt8;
+          VDs(l,ii) *= sqrt8;
+          VDt(l,ii) *= sqrt8;
+        }
+      }
+    }
+  }
+}
 
-          if(i+j > 0) {
-            VDs(l,ii) *= 2.0*sqrt(8.0)*fa*hc;
-            if(i+j > 1) VDs(l,ii) *= pow((1.0-c), (i+j-1));
-          }
+void CFEMStandardTetGrid::HesVandermondeTetrahedron(const vector<passivedouble>   &r,
+                                                    const vector<passivedouble>   &s,
+                                                    const vector<passivedouble>   &t,
+                                                    ColMajorMatrix<passivedouble> &VDr2,
+                                                    ColMajorMatrix<passivedouble> &VDs2,
+                                                    ColMajorMatrix<passivedouble> &VDt2,
+                                                    ColMajorMatrix<passivedouble> &VDrs,
+                                                    ColMajorMatrix<passivedouble> &VDrt,
+                                                    ColMajorMatrix<passivedouble> &VDst) {
 
-          const passivedouble dPsidbXdbds = VDs(l,ii);
+  /*--- Abbreviate sqrt(8), which is the scaling factor for the orthonormal basis
+        functions of a tetrahedron. ---*/
+  const passivedouble sqrt8 = sqrt(8.0);
 
-          /*--- Add the contribution from the derivative of the basis function
-                w.r.t. a multiplied by dads. ---*/
-          VDs(l,ii) += 0.5*(a+1.0)*VDr(l,ii);
+  /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
+        combination of Jacobi polynomials (of which the Legendre polynomials is a special
+        case). This is the result of the orthonormalization of the monomial basis.
+        Note that the sequence of the i, j and k loop must be identical to
+        the evaluation of the Vandermonde matrix itself. ---*/
+  unsigned short ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=(nPoly-i-j); ++k, ++ii) {
+        for(unsigned short l=0; l<r.size(); ++l) {
 
-          /*--- Compute the derivative of the basis function w.r.t. t. As t is present in a, b and c,
-                all parameters must be taken into account when the derivative is computed. Note that
-                the implementation is such that all possible singularities are divided out of the
-                expression. The first part is the derivative of the basis function w.r.t. c,
-                which is equal to t. ---*/
-          VDt(l,ii) = dhc;
-          if(i+j > 0) {
-            VDt(l,ii) *= pow((1.0-c), (i+j));
+          /*--- Determine the coefficients a, b and c. ---*/
+          passivedouble a, b;
+          passivedouble tmp = s[l] + t[l];
+          if(fabs(tmp) < 1.e-8) a = -1.0;
+          else                  a = -1.0 - 2.0*(1.0+r[l])/tmp;
 
-            tmp = (i+j)*hc;
-            if(i+j > 1) tmp *= pow((1.0-c), (i+j-1));
+          tmp = 1.0 - t[l];
+          if(fabs(tmp) < 1.e-8) b = -1.0;
+          else                  b = -1.0 + 2.0*(1.0+s[l])/tmp;
 
-            VDt(l,ii) -= tmp;
-          }
+          const passivedouble c = t[l];
 
-          VDt(l,ii) *= sqrt(8.0)*fa*gb;
-          if( i ) VDt(l,ii) *= pow((1.0-b), i);
+          /*--- Determine the value of the three 1D contributions to the 3D
+                basis functions as well as the 1st and 2nd derivatives of
+                these contributions w.r.t. their arguments. ---*/
+          const passivedouble fa   = NormJacobi(i,0,    0,a);
+          const passivedouble gb   = NormJacobi(j,2*i+1,0,b);
+          const passivedouble hc   = NormJacobi(k,2*(i+j+1),0,c);
+          const passivedouble dfa  = GradNormJacobi(i,0,    0,a);
+          const passivedouble dgb  = GradNormJacobi(j,2*i+1,0,b);
+          const passivedouble dhc  = GradNormJacobi(k,2*(i+j+1),0,c);
+          const passivedouble d2fa = HesNormJacobi(i,0,    0,a);
+          const passivedouble d2gb = HesNormJacobi(j,2*i+1,0,b);
+          const passivedouble d2hc = HesNormJacobi(k,2*(i+j+1),0,c);
 
-          /*--- Add the contribution from the derivative of the basis function w.r.t. a multiplied
-                by dadt and the derivative w.r.t. b multiplied by dbdt. ---*/
-          VDt(l,ii) += 0.5*(a+1.0)*VDr(l,ii) + 0.5*(b+1.0)*dPsidbXdbds;
+          /*--- Computation of the powers of (1-b) and (1-c) that occur in the
+                expressions for the Hessian. Note the safeguard to avoid division
+                by zero. This is allowed, because the implementation is such that
+                when this clipping is active, it is multiplied by zero. ---*/
+          const passivedouble tmpbi   = i > 0 ? pow((1.0-b), i)   : 1.0;
+          const passivedouble tmpbim1 = i > 1 ? pow((1.0-b), i-1) : 1.0;
+          const passivedouble tmpbim2 = i > 2 ? pow((1.0-b), i-2) : 1.0;
+
+          const passivedouble tmpcij   = (i+j) > 0 ? pow((1.0-c), i+j)   : 1.0;
+          const passivedouble tmpcijm1 = (i+j) > 1 ? pow((1.0-c), i+j-1) : 1.0;
+          const passivedouble tmpcijm2 = (i+j) > 2 ? pow((1.0-c), i+j-2) : 1.0;
+
+          /*--- Compute the 2nd derivative w.r.t. to r. ---*/
+          VDr2(l,ii) = tmpbim2*tmpcijm2*16.0*d2fa*gb*hc;
+
+          /*--- Compute the 2nd derivative w.r.t. to s. ---*/
+          VDs2(l,ii) = tmpbim2*tmpcijm2*(4.0*(a+1.0)*(a+1.0)*d2fa*gb*hc
+                     -                   8.0*(i-1)*(a+1.0)*dfa*gb*hc
+                     +                   4.0*i*(i-1)*fa*gb*hc)
+                     + tmpbim1*tmpcijm2*(8.0*(a+1.0)*dfa*dgb*hc
+                     -                   8.0*i*fa*dgb*hc)
+                     + tmpbi  *tmpcijm2* 4.0*fa*d2gb*hc;
+
+          /*--- Compute the 2nd derivative w.r.t. to t. ---*/
+          VDt2(l,ii) = tmpbim2*tmpcijm2*(4.0*(a+1.0)*(a+1.0)*d2fa*gb*hc
+                     -                   2.0*(a+1.0)*(b+3.0)*(i-1)*dfa*gb*hc
+                     +                   i*(i-1)*(b+1.0)*(b+1.0)*fa*gb*hc)
+                     + tmpbim1*tmpcijm2*(4.0*(a+1.0)*(b+1.0)*dfa*dgb*hc
+                     -                   2.0*(b+1.0)*(b+1.0)*i*fa*dgb*hc
+                     -                   2.0*(a+1.0)*(i+2*j-1)*dfa*gb*hc
+                     +                   2.0*(b+1.0)*i*(i+j-1)*fa*gb*hc)
+                     + tmpbi  *tmpcijm2*((b+1.0)*(b+1.0)*fa*d2gb*hc
+                     -                   2.0*(b+1.0)*(i+j-1)*fa*dgb*hc
+                     +                   (i+j)*(i+j-1)*fa*gb*hc)
+                     + tmpbim1*tmpcijm1*(4.0*(a+1.0)*dfa*gb*dhc
+                     -                   2.0*(b+1.0)*i*fa*gb*dhc)
+                     + tmpbi  *tmpcijm1*(2.0*(b+1.0)*fa*dgb*dhc
+                     -                   2.0*(i+j)*fa*gb*dhc)
+                     + tmpbi  *tmpcij  * fa*gb*d2hc;
+
+          /*--- Compute the cross derivative w.r.t. r and s. ---*/
+          VDrs(l,ii) = tmpbim2*tmpcijm2*8.0*gb*hc*((a+1.0)*d2fa - (i-1)*dfa)
+                     + tmpbim1*tmpcijm2*8.0*dfa*dgb*hc;
+
+          /*--- Compute the cross derivative w.r.t. r and t. ---*/
+          VDrt(l,ii) = tmpbim2*tmpcijm2*(8.0*(a+1.0)*d2fa*gb*hc
+                     -                   4.0*(b+1.0)*(i-1)*dfa*gb*hc)
+                     + tmpbim1*tmpcijm2*(4.0*(b+1.0)*dfa*dgb*hc
+                     -                   4.0*(i+j-1)*dfa*gb*hc)
+                     + tmpbim1*tmpcijm1* 4.0*dfa*gb*dhc;
+
+          /*--- Compute the cross derivative w.r.t. s and t. ---*/
+          VDst(l,ii) = tmpbim2*tmpcijm2*(4.0*(a+1.0)*(a+1.0)*d2fa*gb*hc
+                     -                   2.0*(a+1.0)*(b+1.0)*(i-1)*dfa*gb*hc
+                     -                   4.0*(a+1.0)*(i-1)*dfa*gb*hc
+                     +                   2.0*(b+1.0)*i*(i-1)*fa*gb*hc)
+                     + tmpbim1*tmpcijm2*(2.0*(a+1.0)*(b+1.0)*dfa*dgb*hc
+                     -                   2.0*(a+1.0)*(i+j-1)*dfa*gb*hc
+                     +                   4.0*(a+1.0)*dfa*dgb*hc
+                     -                   4.0*(b+1.0)*i*fa*dgb*hc
+                     +                   2.0*i*(i+j-1)*fa*gb*hc)
+                     + tmpbim1*tmpcijm1*(2.0*(a+1.0)*dfa*gb*dhc
+                     -                   2.0*i*fa*gb*dhc)
+                     + tmpbi  *tmpcijm2*(2.0*(b+1.0)*fa*d2gb*hc
+                     -                   2.0*(i+j-1)*fa*dgb*hc)
+                     + tmpbi  *tmpcijm1* 2.0*fa*dgb*dhc;
+
+          /*--- Multiply all 2nd derivatives with sqrt(8) to obtain the
+                correct expressions. ---*/
+          VDr2(l,ii) *= sqrt8;
+          VDs2(l,ii) *= sqrt8;
+          VDt2(l,ii) *= sqrt8;
+          VDrs(l,ii) *= sqrt8;
+          VDrt(l,ii) *= sqrt8;
+          VDst(l,ii) *= sqrt8;
         }
       }
     }
