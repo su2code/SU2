@@ -42,13 +42,10 @@ CCGNSFileWriter::~CCGNSFileWriter(){}
 
 void CCGNSFileWriter::Write_Data(){
 
-  if (!dataSorter->GetConnectivitySorted()){
+  if (!dataSorter->GetConnectivitySorted())
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
-  }
 
-  #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
-  #endif
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   startTime = SU2_MPI::Wtime();
   int iProcessor, nProcessor = size, index;
@@ -80,9 +77,7 @@ void CCGNSFileWriter::Write_Data(){
       }
   }
 
-  #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
-  #endif
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   if (rank == MASTER_NODE)
       buffGlobData = new su2double[nProcessor * nVar * MaxLocalVertex]();
@@ -114,9 +109,7 @@ void CCGNSFileWriter::Write_Data(){
 // delete [] buffLocData;
 
 // Free memory: *Buffer_Recv_nVertex(solo master), *buffGlobData(solo master), *buffLocData
-  #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
-  #endif
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 
   if (rank == MASTER_NODE){
   #ifdef HAVE_CGNS
@@ -138,7 +131,9 @@ void CCGNSFileWriter::Write_Data(){
     GridLocation_t location;
     ElementType_t type;
     DataClass_t dataclass;
-    #define MIXED 20
+    int MIXED = 20,
+        QUAD_4 = 7,
+		ElementTypeNull = 0;
 
     unsigned short iDim = 0, nDim = dataSorter->GetnDim();
     unsigned short varStart = 2;
@@ -224,8 +219,8 @@ void CCGNSFileWriter::Write_Data(){
         /*---    Add Boundary Condition    ---*/
         for (j = 0; j <= config->GetnMarker_All(); j++){
             if (ElementSectionName == config->GetMarker_All_TagBound(j)){
-                if (config->GetMarker_All_KindBC(j) == 26){
-                    bocotype = (BCType_t)20;
+                if (config->GetMarker_All_KindBC(j) == HEAT_FLUX){
+                    bocotype = (BCType_t)MIXED;
                     ptset_type = (PointSetType_t)PointList;
                     cgns_err = cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
                                              bocotype, ptset_type, ElementDataSize, Elements, &bcnum);
@@ -234,8 +229,8 @@ void CCGNSFileWriter::Write_Data(){
                     cgns_err = cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location);
                     if(cgns_err) cg_error_print();
                 }
-                else if (config->GetMarker_All_KindBC(j) == 2){
-                    bocotype = (BCType_t)7;
+                else if (config->GetMarker_All_KindBC(j) == FAR_FIELD){
+                    bocotype = (BCType_t)QUAD_4;
                     ptset_type = (PointSetType_t)PointList;
                     cgns_err = cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
                                              bocotype, ptset_type, ElementDataSize, Elements, &bcnum);
@@ -245,7 +240,7 @@ void CCGNSFileWriter::Write_Data(){
                     if(cgns_err) cg_error_print();
                 }
                 else{
-                    bocotype = (BCType_t)0;
+                    bocotype = (BCType_t)ElementTypeNull;
                     ptset_type = (PointSetType_t)PointList;
                     cgns_err = cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
                                              bocotype, ptset_type, ElementDataSize, Elements, &bcnum);
@@ -284,9 +279,7 @@ void CCGNSFileWriter::Write_Data(){
     cout << "CGNS file requested but SU2 was built without CGNS support. No file written" << "\n";
   #endif
   }
-  #ifdef HAVE_MPI
-      SU2_MPI::Barrier(MPI_COMM_WORLD);
-  #endif
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
 /*
   if(rank==MASTER_NODE){
       for (int iVar = 0; iVar < nVar; iVar++)

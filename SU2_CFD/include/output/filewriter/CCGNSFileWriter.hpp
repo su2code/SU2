@@ -31,7 +31,7 @@
 
 class CCGNSFileWriter final: public CFileWriter{
 
-  CConfig *config;
+  const CConfig* config;
   unsigned long nElem;  // Global number of elems without halos
 
 public:
@@ -59,7 +59,7 @@ public:
 //  void Write_Data();
    void Write_Data();
 
-   void SetConfig(CConfig *configClass){config = configClass;}
+   void SetConfig(CConfig* configClass) {config = configClass;}
 
 };
 
