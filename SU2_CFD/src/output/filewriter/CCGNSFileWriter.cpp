@@ -156,65 +156,51 @@ void CCGNSFileWriter::Write_Data(){
 
     /*---    Open Mesh File    ---*/
     mesh_file = config->GetMesh_FileName();
-    cgns_err = cg_open(mesh_file.c_str(), CG_MODE_READ, &cgns_file);
-    if(cgns_err) cg_error_print();
+    callCGNS(cg_open(mesh_file.c_str(), CG_MODE_READ, &cgns_file));
     nbases = 1;
     nzones = 1;
 
     /*---      Create Solution File    ---*/
     base_file = fileName;
-    cgns_err = cg_open(base_file.c_str(), CG_MODE_WRITE, &cgns_file1);
-    if(cgns_err) cg_error_print;
+    callCGNS(cg_open(base_file.c_str(), CG_MODE_WRITE, &cgns_file1));
     cell_dim = 3;
     phys_dim = 3;
-    cgns_err = cg_base_write(cgns_file1, basename, cell_dim, phys_dim,  &base_number);
-    if(cgns_err) cg_error_print;
-    cgns_err = cg_zone_write(cgns_file1, base_number, zonename, *isize, Unstructured, &zone_number);
+    callCGNS(cg_base_write(cgns_file1, basename, cell_dim, phys_dim,  &base_number));
+    callCGNS(cg_zone_write(cgns_file1, base_number, zonename, *isize, Unstructured, &zone_number));
 
     /*---    Write Coordinates    ---*/
-    cgns_err = cg_ncoords(cgns_file, nbases, nzones, &ncoords);
-    if(cgns_err) cg_error_print();
+    callCGNS(cg_ncoords(cgns_file, nbases, nzones, &ncoords));
     for (i = 1; i < ncoords + 1; i++){
-        cgns_err = cg_coord_info(cgns_file, nbases, nzones, i, &datatype, coordname);
-        if(cgns_err) cg_error_print();
+    	callCGNS(cg_coord_info(cgns_file, nbases, nzones, i, &datatype, coordname));
         start = 1;
         end = isize[0][0];
         vector<double> buf(end);
-        cgns_err = cg_coord_read(cgns_file, nbases, nzones, coordname,
-                                 datatype, &start, &end, buf.data());
-        if(cgns_err) cg_error_print();
-        cgns_err = cg_coord_write(cgns_file1, base_number, zone_number, datatype, coordname,
-                                  buf.data(), &coord_index);
-        if(cgns_err) cg_error_print();
+        callCGNS(cg_coord_read(cgns_file, nbases, nzones, coordname,
+                               datatype, &start, &end, buf.data()));
+        callCGNS(cg_coord_write(cgns_file1, base_number, zone_number, datatype, coordname,
+                                buf.data(), &coord_index));
     }
 
     /*---    Write Connectivity    ---*/
-    cgns_err = cg_nsections(cgns_file, nbases, nzones, &nsections);
-    if(cgns_err) cg_error_print();
+    callCGNS(cg_nsections(cgns_file, nbases, nzones, &nsections));
     for ( i = 1; i < nsections + 1; i++)    {
-        cgns_err = cg_section_read(cgns_file, nbases, nzones, i,
-                                   ElementSectionName, &type, &start,
-                                   &end, &nbndry, &parent_flag);
-        if(cgns_err) cg_error_print();
-        cgns_err = cg_ElementDataSize(cgns_file, nbases, nzones, i, &ElementDataSize);
-        if(cgns_err) cg_error_print();
+    	callCGNS(cg_section_read(cgns_file, nbases, nzones, i,
+                                 ElementSectionName, &type, &start,
+                                 &end, &nbndry, &parent_flag));
+    	callCGNS(cg_ElementDataSize(cgns_file, nbases, nzones, i, &ElementDataSize));
         if(type != MIXED){
             Elements = new cgsize_t[ElementDataSize];
-            cgns_err = cg_elements_read(cgns_file, nbases, nzones, i, Elements, NULL);
-            if(cgns_err) cg_error_print();
-            cgns_err = cg_section_write(cgns_file1, base_number, zone_number,
-                                        ElementSectionName, type, start,
-                                        end, nbndry, Elements, &S);
-            if(cgns_err) cg_error_print();
+            callCGNS(cg_elements_read(cgns_file, nbases, nzones, i, Elements, NULL));
+            callCGNS(cg_section_write(cgns_file1, base_number, zone_number,
+                                      ElementSectionName, type, start,
+                                      end, nbndry, Elements, &S));
         }
         else{
             Elements = new cgsize_t[ElementDataSize];
-            cgns_err = cg_poly_elements_read(cgns_file, nbases, nzones, i, Elements, ConnectOffset, NULL);
-            if(cgns_err) cg_error_print();
-            cgns_err = cg_poly_section_write(cgns_file1, base_number, zone_number,
-                                             ElementSectionName, type, start,
-                                             end, nbndry, Elements, ConnectOffset, &S);
-            if(cgns_err) cg_error_print();
+            callCGNS(cg_poly_elements_read(cgns_file, nbases, nzones, i, Elements, ConnectOffset, NULL));
+            callCGNS(cg_poly_section_write(cgns_file1, base_number, zone_number,
+                                           ElementSectionName, type, start,
+                                           end, nbndry, Elements, ConnectOffset, &S));
         }
         /*---    Add Boundary Condition    ---*/
         for (j = 0; j <= config->GetnMarker_All(); j++){
@@ -222,58 +208,47 @@ void CCGNSFileWriter::Write_Data(){
                 if (config->GetMarker_All_KindBC(j) == HEAT_FLUX){
                     bocotype = (BCType_t)MIXED;
                     ptset_type = (PointSetType_t)PointList;
-                    cgns_err = cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
-                                             bocotype, ptset_type, ElementDataSize, Elements, &bcnum);
-                    if(cgns_err) cg_error_print();
+                    callCGNS(cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
+                                           bocotype, ptset_type, ElementDataSize, Elements, &bcnum));
                     location = Vertex;
-                    cgns_err = cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location);
-                    if(cgns_err) cg_error_print();
+                    callCGNS(cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location));
                 }
                 else if (config->GetMarker_All_KindBC(j) == FAR_FIELD){
                     bocotype = (BCType_t)QUAD_4;
                     ptset_type = (PointSetType_t)PointList;
-                    cgns_err = cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
-                                             bocotype, ptset_type, ElementDataSize, Elements, &bcnum);
-                    if(cgns_err) cg_error_print();
+                    callCGNS(cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
+                                           bocotype, ptset_type, ElementDataSize, Elements, &bcnum));
                     location = Vertex;
-                    cgns_err = cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location);
-                    if(cgns_err) cg_error_print();
+                    callCGNS(cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location));
                 }
                 else{
                     bocotype = (BCType_t)ElementTypeNull;
                     ptset_type = (PointSetType_t)PointList;
-                    cgns_err = cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
-                                             bocotype, ptset_type, ElementDataSize, Elements, &bcnum);
-                    if(cgns_err) cg_error_print();
+                    callCGNS(cg_boco_write(cgns_file1, base_number, zone_number, ElementSectionName,
+                                           bocotype, ptset_type, ElementDataSize, Elements, &bcnum));
                     location = Vertex;
-                    cgns_err = cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location);
-                    if(cgns_err) cg_error_print();
+                    callCGNS(cg_boco_gridlocation_write(cgns_file1, base_number, zone_number, bcnum, location));
                 }
             }
         }
     }
 
     /*---      Close CGNS Mesh File    ---*/
-    cgns_err = cg_close(cgns_file);
-    if(cgns_err) cg_error_print();
+    callCGNS(cg_close(cgns_file));
 
     /*---    Write Solution    ---*/
-    cgns_err = cg_sol_write(cgns_file1, base_number, zone_number, (char *)"Solution", Vertex, &cgns_flow);
-    if(cgns_err) cg_error_print();
-    cgns_err = cg_goto(cgns_file1, nbases, "Zone_t", 1, "end");
+    callCGNS(cg_sol_write(cgns_file1, base_number, zone_number, (char *)"Solution", Vertex, &cgns_flow));
+    callCGNS(cg_goto(cgns_file1, nbases, "Zone_t", 1, "end"));
     dataclass = NormalizedByUnknownDimensional;
-    cgns_err = cg_dataclass_write(dataclass);
+    callCGNS(cg_dataclass_write(dataclass));
     nbases = base_number;
     nzones = zone_number;
-    if(cgns_err) cg_error_print();
     for (unsigned short iField = varStart; iField < fieldNames.size(); iField++){
         const char *fieldname = fieldNames[iField].c_str();
-        cgns_err = cg_field_write(cgns_file1, nbases, nzones, cgns_flow, RealDouble, fieldname, GlobalData[iField], &cgns_field);
-        if(cgns_err) cg_error_print();
+        callCGNS(cg_field_write(cgns_file1, nbases, nzones, cgns_flow, RealDouble, fieldname, GlobalData[iField], &cgns_field));
     }
     /*---    Close CGNS Solution File    ---*/
-    cgns_err = cg_close(cgns_file1);
-    if(cgns_err) cg_error_print();
+    callCGNS(cg_close(cgns_file1));
 
   #else
     cout << "CGNS file requested but SU2 was built without CGNS support. No file written" << "\n";

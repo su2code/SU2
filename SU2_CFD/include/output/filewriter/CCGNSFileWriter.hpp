@@ -61,5 +61,7 @@ public:
 
    void SetConfig(CConfig* configClass) {config = configClass;}
 
+   void callCGNS(int error){if (error) cg_error_print();}
+
 };
 
