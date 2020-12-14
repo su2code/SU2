@@ -8098,11 +8098,12 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       // if (tkeNeeded)
       //   conv_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
       //                                       Kine_Infty);
-      su2double RhoKine_Infty = 0.0;
+      su2double T_i = 0.0, T_Infty = 0.0;
       if (tkeNeeded) {
-        RhoKine_Infty = Density*Kine_Infty;
-        conv_numerics->SetTurbVar(&turbNodes->GetSolution(iPoint,0),
-                                  &RhoKine_Infty);
+        T_i = turbNodes->GetSolution(iPoint,0);
+        T_Infty = Density*Kine_Infty;
+        conv_numerics->SetTurbVar(&T_i,
+                                  &T_Infty);
       }
 
       /*--- Set various quantities in the numerics class ---*/
