@@ -159,8 +159,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (muscl) {
       /*--- Reconstruction ---*/
 
+      // solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
+      //                                    turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-                                         turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
+                                         turbPrimVar_i, turbPrimVar_j, good_i, good_j, solver[FLOW_SOL]->GetnVar(), nVar);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,

@@ -3151,7 +3151,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       // ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
       //                  &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-                       &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
+                       &tke_i, &tke_j, good_i, good_j, nVar, nTurbVarGrad);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
