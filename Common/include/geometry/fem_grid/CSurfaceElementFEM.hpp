@@ -3,7 +3,7 @@
  * \brief Class definition for a surface element for the FEM solver.
  *        The implementations are in the <i>CSurfaceElementFEM.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@ using namespace std;
  * \class CSurfaceeSurfaceFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 struct CSurfaceElementFEM {
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */

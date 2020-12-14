@@ -3,7 +3,7 @@
  * \brief Class definition for a boundary for the FEM solver.
  *        The implementations are in the <i>CBoundaryFEM.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@ using namespace std;
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 struct CBoundaryFEM {
   string markerTag;  /*!< \brief Marker tag of this boundary. */

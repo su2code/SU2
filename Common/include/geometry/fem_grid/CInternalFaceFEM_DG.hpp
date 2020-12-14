@@ -3,7 +3,7 @@
  * \brief Class for an internal face element for the DG-FEM solver.
  *        The implementations are in the <i>CInternalFaceFEM_DG.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@ using namespace std;
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CInternalFaceFEM_DG final {
 public:

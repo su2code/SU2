@@ -3,7 +3,7 @@
  * \brief Class definition for a grid point for the FEM solver.
  *        The implementations are in the <i>CPointFEM.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@ using namespace std;
  * \class CPointFEM
  * \brief Class to define a point for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 struct CPointFEM {
   unsigned long globalID;    /*!< \brief The global ID of this point in the grid. */

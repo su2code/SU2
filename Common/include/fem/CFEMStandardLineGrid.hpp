@@ -3,7 +3,7 @@
  * \brief Class for the FEM line standard element for the grid.
  *        The functions are in the <i>CFEMStandardaceLineGrid.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class which defines the variables and methods for the
  *        line standard element for the grid.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEMStandardLineGrid final: public CFEMStandardLine {
 

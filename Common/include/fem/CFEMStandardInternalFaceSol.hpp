@@ -4,7 +4,7 @@
  *        for the solution.
  *        The functions are in the <i>CFEMStandardInternalFaceSol.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Class which defines the variables and methods for the standard
  *        standard element for an internal matching face for the solution.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEMStandardInternalFaceSol final {
 private:
