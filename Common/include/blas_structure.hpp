@@ -94,6 +94,55 @@ public:
   void axpy(const int n,    const su2double a,  const su2double *x,
             const int incx, su2double *y,       const int incy);
 
+  /*!
+   * \brief Invert a square matrix.
+   * \param[in] M - Size.
+   * \param[in,out] mat - Matrix, and inverse on exit.
+   */
+  template<class Mat>
+  static void inverse(const int M, Mat& mat) {
+    using Scalar = typename Mat::Scalar;
+
+    /*--- Copy the data from A into the augmented matrix and initialize mat with the identity. ---*/
+    Mat aug = mat;
+    mat = Scalar(0);
+    for(int j=0; j<M; ++j) mat(j,j) = 1;
+
+    /*--- Outer loop of the Gauss-Jordan elimination. ---*/
+    for(int j=0; j<M; ++j) {
+
+      /*--- Find the pivot in the current column. ---*/
+      int jj = j;
+      Scalar valMax = fabs(aug(j,j));
+      for(int i=j+1; i<M; ++i) {
+        Scalar val = fabs(aug(i,j));
+        if(val > valMax){
+          jj = i;
+          valMax = val;
+        }
+      }
+
+      /*--- Swap the rows j and jj, if needed. ---*/
+      if(jj > j) {
+        for(int k=j; k<M; ++k) std::swap(aug(j,k), aug(jj,k));
+        for(int k=0; k<M; ++k) std::swap(mat(j,k), mat(jj,k));
+      }
+
+      /*--- Performing row operations to form required identity
+            matrix out of the input matrix.  ---*/
+      for(int i=0; i<M; ++i) {
+        if(i == j) continue;
+        valMax = aug(i,j)/aug(j,j);
+        for(int k=j; k<M; ++k) aug(i,k) -= valMax*aug(j,k);
+        for(int k=0; k<M; ++k) mat(i,k) -= valMax*mat(j,k);
+      }
+
+      valMax = 1.0/aug(j,j);
+      for(int k=j; k<M; ++k) aug(j,k) *= valMax;
+      for(int k=0; k<M; ++k) mat(j,k) *= valMax;
+    }
+  }
+
 private:
 
 #if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
