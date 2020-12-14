@@ -3039,13 +3039,17 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
 void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool implicit         = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+  const bool viscous          = config->GetViscous();
   const bool rotating_frame   = config->GetRotating_Frame();
   const bool axisymmetric     = config->GetAxisymmetric();
   const bool gravity          = (config->GetGravityForce() == YES);
   const bool harmonic_balance = (config->GetTime_Marching() == HARMONIC_BALANCE);
   const bool windgust         = config->GetWind_Gust();
   const bool body_force       = config->GetBody_Force();
+  const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                                (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool rans             = (config->GetKind_Turb_Model() != NONE);
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -3107,6 +3111,34 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   if (axisymmetric) {
 
+    /*--- For viscous problems, we need an additional gradient. ---*/
+    if (viscous) {
+
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+        su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+        su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+        su2double xVelocity       = nodes->GetVelocity(iPoint,0);
+        su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
+
+        if (yCoord > EPS){
+          su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
+          nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
+          nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
+          nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
+        }
+      }
+
+      /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+    }
+
     /*--- loop over points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3119,6 +3151,27 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+
+      /*--- Set primitive variables for viscous terms and/or generalised source ---*/
+      if (!ideal_gas || viscous) numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
+
+      /*--- Set secondary variables for generalised source ---*/
+      if (!ideal_gas) numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
+      if (viscous) {
+
+        /*--- Set gradient of primitive variables ---*/
+        numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
+
+        /*--- Set gradient of auxillary variables ---*/
+        numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
+
+        /*--- Set turbulence kinetic energy ---*/
+        if (rans){
+          CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+          numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
+        }
+      }
 
       /*--- Compute Source term Residual ---*/
       auto residual = numerics->ComputeResidual(config);

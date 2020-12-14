@@ -1662,7 +1662,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Set the auxilairy variable for this node. ---*/
 
-        nodes->SetAuxVar(iPoint, AuxVar);
+        nodes->SetAuxVar(iPoint, 0, AuxVar);
 
       }
 

@@ -184,8 +184,8 @@ protected:
   **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
   **TurbPsi_Grad_j;  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   su2double
-  *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
-  *AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  **AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
+  **AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -565,12 +565,13 @@ public:
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
-   * \param[in] val_auxvargrad_i - Gradient of the auxiliary variable at point i.
-   * \param[in] val_auxvargrad_j - Gradient of the auxiliary variable at point j.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
    */
-  inline void SetAuxVarGrad(su2double *val_auxvargrad_i, su2double *val_auxvargrad_j) {
-    AuxVar_Grad_i = val_auxvargrad_i;
-    AuxVar_Grad_j = val_auxvargrad_j;
+  inline void SetAuxVarGrad(su2double **val_auxvar_grad_i,
+                            su2double **val_auxvar_grad_j) {
+    AuxVar_Grad_i = val_auxvar_grad_i;
+    AuxVar_Grad_j = val_auxvar_grad_j;
   }
 
   /*!
