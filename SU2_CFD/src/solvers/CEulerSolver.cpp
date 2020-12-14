@@ -7929,6 +7929,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
     /*--- Allocate the value at the infinity ---*/
     const auto V_infty = GetCharacPrimVar(val_marker, iVertex);
+    su2double U_infty[MAXNVAR] = {0.0};
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -8084,16 +8085,17 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       /*--- Store new primitive state for computing the flux. ---*/
 
-      // V_infty[0] = Pressure/(Gas_Constant*Density);
-      // for (auto iDim = 0; iDim < nDim; iDim++)
-      //   V_infty[iDim+1] = Velocity[iDim];
-      // V_infty[nDim+1] = Pressure;
-      // V_infty[nDim+2] = Density;
-      // V_infty[nDim+3] = Energy + Pressure/Density;
-      V_infty[0] = Density;
+      V_infty[0] = Pressure/(Gas_Constant*Density);
       for (auto iDim = 0; iDim < nDim; iDim++)
-        V_infty[iDim+1] = Density*Velocity[iDim];
-      V_infty[nDim+1] = Density*Energy;
+        V_infty[iDim+1] = Velocity[iDim];
+      V_infty[nDim+1] = Pressure;
+      V_infty[nDim+2] = Density;
+      V_infty[nDim+3] = Energy + Pressure/Density;
+
+      U_infty[0] = Density;
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        U_infty[iDim+1] = Density*Velocity[iDim];
+      U_infty[nDim+1] = Density*Energy;
 
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
 
@@ -8111,7 +8113,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
       /*--- Set various quantities in the numerics class ---*/
 
       // conv_numerics->SetPrimitive(V_domain, V_infty);
-      conv_numerics->SetConservative(nodes->GetSolution(iPoint), V_infty);
+      conv_numerics->SetConservative(nodes->GetSolution(iPoint), U_infty);
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(node_i->GetGridVel(),

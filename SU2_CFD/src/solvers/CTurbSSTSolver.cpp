@@ -752,6 +752,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   Normal = new su2double[nDim];
+  U_infty[MAXNVARFLOW] = {0.0};
 
   for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -765,6 +766,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       /*--- Allocate the value at the infinity ---*/
 
       const auto V_infty = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      U_infty[0] = V_infty[nDim+2];
+      for (auto iDim = 0; iDim < nDim; iDim++)
+        U_infty[iDim+1] = V_infty[iDim+1]*U_infty[0];
+      U_infty[nDim+1] = V_infty[nDim+3]*U_infty[0] - V_infty[nDim+1];
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
@@ -773,7 +778,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       // conv_numerics->SetPrimitive(V_domain, V_infty);
       const auto V_domain = flowNodes->GetSolution(iPoint);
 
-      conv_numerics->SetConservative(V_domain, V_infty);
+      conv_numerics->SetConservative(V_domain, U_infty);
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
@@ -798,24 +803,17 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       }
       else {
         /*--- Inflow conditions ---*/
-        // Velocity2 = 0.0;
-        // for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
-        // const su2double Rho_Infty = V_infty[nDim+2];
-        // const su2double muT_Infty = V_infty[nDim+6];
-        // Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
-        // Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
-
-        // Primitive_j[0] = Kine_Infty;
-        // Primitive_j[1] = Omega_Infty;
         Velocity2 = 0.0;
-        for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1]/V_infty[0],2.);
+        for (auto iDim = 0; iDim < nDim; iDim++) Velocity2 += pow(V_infty[iDim+1],2.);
         const su2double Rho_Infty = V_infty[nDim+2];
         const su2double muT_Infty = V_infty[nDim+6];
         Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
         Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
 
-        Primitive_j[0] = Rho_Infty*Kine_Infty;
-        Primitive_j[1] = Rho_Infty*Omega_Infty;
+        // Primitive_j[0] = Kine_Infty;
+        // Primitive_j[1] = Omega_Infty;
+        Primitive_j[0] = U_infty[0]*Kine_Infty;
+        Primitive_j[1] = U_infty[0]*Omega_Infty;
       }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);
