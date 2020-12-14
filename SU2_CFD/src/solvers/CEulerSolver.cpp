@@ -3500,8 +3500,10 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
 
   /*--- Positive density ---*/
 
-  good_i = good_i && (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
-  good_j = good_j && (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
+  // good_i = good_i && (primvar_i[nDim+1] > 0.0) && (primvar_i[nDim+2] > 0.0);
+  // good_j = good_j && (primvar_j[nDim+1] > 0.0) && (primvar_j[nDim+2] > 0.0);
+  good_i = good_i && (primvar_i[0] > 0.0) && (primvar_i[nVar-1] > 0.0);
+  good_j = good_j && (primvar_j[0] > 0.0) && (primvar_j[nVar-1] > 0.0);
 
   /*--- Positive turbulent kinetic energy ---*/
 
@@ -3522,28 +3524,28 @@ void CEulerSolver::CheckExtrapolatedState(const CConfig       *config,
 
   /*--- Positive Roe sound speed ---*/
 
-  const su2double R = sqrt(fabs(primvar_j[nDim+2]/primvar_i[nDim+2]));
-  const su2double R_Plus_One = R+1.;
+  // const su2double R = sqrt(fabs(primvar_j[nDim+2]/primvar_i[nDim+2]));
+  // const su2double R_Plus_One = R+1.;
 
-  su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    const su2double RoeVelocity = (R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One;
-    RoeSqVel += pow(RoeVelocity, 2);
-    SqVel_i += pow(primvar_i[iDim+1],2);
-    SqVel_j += pow(primvar_j[iDim+1],2);
-  }
+  // su2double RoeSqVel = 0.0, SqVel_i = 0.0, SqVel_j = 0.0;
+  // for (auto iDim = 0; iDim < nDim; iDim++) {
+  //   const su2double RoeVelocity = (R*primvar_j[iDim+1]+primvar_i[iDim+1])/R_Plus_One;
+  //   RoeSqVel += pow(RoeVelocity, 2);
+  //   SqVel_i += pow(primvar_i[iDim+1],2);
+  //   SqVel_j += pow(primvar_j[iDim+1],2);
+  // }
   
-  const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+tke_i+0.5*SqVel_i;
-  const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+tke_j+0.5*SqVel_j;
+  // const su2double Energy_i = primvar_i[nDim+1]/(Gamma_Minus_One*primvar_i[nDim+2])+tke_i+0.5*SqVel_i;
+  // const su2double Energy_j = primvar_j[nDim+1]/(Gamma_Minus_One*primvar_j[nDim+2])+tke_j+0.5*SqVel_j;
 
-  const su2double Enthalpy_i = Energy_i+primvar_i[nDim+1]/primvar_i[nDim+2];
-  const su2double Enthalpy_j = Energy_j+primvar_j[nDim+1]/primvar_j[nDim+2];
+  // const su2double Enthalpy_i = Energy_i+primvar_i[nDim+1]/primvar_i[nDim+2];
+  // const su2double Enthalpy_j = Energy_j+primvar_j[nDim+1]/primvar_j[nDim+2];
 
-  const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
-  const su2double RoeTke = (R*tke_j+tke_i)/R_Plus_One;
+  // const su2double RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/R_Plus_One;
+  // const su2double RoeTke = (R*tke_j+tke_i)/R_Plus_One;
 
-  good_i = good_i && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
-  good_j = good_j && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
+  // good_i = good_i && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
+  // good_j = good_j && (RoeEnthalpy-0.5*RoeSqVel-RoeTke > 0.0);
 }
 
 void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,

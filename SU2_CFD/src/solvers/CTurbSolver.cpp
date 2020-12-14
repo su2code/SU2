@@ -330,8 +330,10 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 
   /*--- Positive density ---*/
 
-  good_i = good_i && (primvar_i[nDim+2] > 0.0);
-  good_j = good_j && (primvar_j[nDim+2] > 0.0);
+  // good_i = good_i && (primvar_i[nDim+2] > 0.0);
+  // good_j = good_j && (primvar_j[nDim+2] > 0.0);
+  good_i = good_i && (primvar_i[0] > 0.0);
+  good_j = good_j && (primvar_j[0] > 0.0);
 
   /*--- Positive turbulent variables ---*/
 
