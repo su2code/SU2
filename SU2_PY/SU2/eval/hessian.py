@@ -247,7 +247,7 @@ def adjoint_hessian( func_name, config, state=None ):
             konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_hessian'
 
             # Run Solution
-            su2run.interface.CFD_SERIAL(konfig)
+            su2run.interface.CFD(konfig)
 
             # merge
             konfig['SOLUTION_ADJ_FILENAME'] = konfig['RESTART_ADJ_FILENAME']

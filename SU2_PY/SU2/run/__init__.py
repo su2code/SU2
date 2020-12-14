@@ -8,8 +8,7 @@ from .interface import (
     DEF               ,
     DOT               ,
     SOL               ,
-    SOL_FSI           ,
-    CFD_SERIAL)
+    SOL_FSI)
 
 from .direct     import direct
 from .adjoint    import adjoint
