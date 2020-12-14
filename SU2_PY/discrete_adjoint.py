@@ -86,10 +86,6 @@ def discrete_adjoint( filename           ,
     # State
     state = SU2.io.State()
 
-    # Force CSV output in order to compute gradients
-    config.WRT_CSV_SOL = 'YES'
-
-
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
     # check for existing files

@@ -3915,8 +3915,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double Cp = Gas_Constant*Gamma / (Gamma-1.0);
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
-  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
+  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
 
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;

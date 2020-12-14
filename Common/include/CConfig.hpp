@@ -660,11 +660,6 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  unsigned long Wrt_Sol_Freq,   /*!< \brief Writing solution frequency. */
-  Wrt_Sol_Freq_DualTime,        /*!< \brief Writing solution frequency for Dual Time. */
-  Wrt_Con_Freq,                 /*!< \brief Writing convergence history frequency. */
-  Wrt_Con_Freq_DualTime;        /*!< \brief Writing convergence history frequency. */
-  bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
@@ -759,7 +754,6 @@ private:
   string Mesh_FileName,          /*!< \brief Mesh input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
-  Solution_LinFileName,          /*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Residual_FileName,             /*!< \brief Residual variables output file. */
@@ -772,24 +766,13 @@ private:
   ObjFunc_Value_FileName,        /*!< \brief Objective function. */
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
-  New_SU2_FileName,              /*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
-  bool Wrt_Output,           /*!< \brief Write any output files */
-  Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
-  Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
-  Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
-  Wrt_Crd_Sol,               /*!< \brief Write a binary file with the grid coordinates only. */
-  Wrt_Residuals,             /*!< \brief Write residuals to solution file */
-  Wrt_Surface,               /*!< \brief Write solution at each surface */
-  Wrt_Limiters,              /*!< \brief Write residuals to solution file */
-  Wrt_SharpEdges,            /*!< \brief Write residuals to solution file */
-  Wrt_Halo,                  /*!< \brief Write rind layers in solution files */
+  bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
-  Wrt_Slice,                 /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short
@@ -1010,7 +993,6 @@ private:
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                  /*!< \brief AD-based discrete adjoint mode. */
-  unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -3074,102 +3056,6 @@ public:
   su2double GetPhysicalTime(void) const { return PhysicalTime; }
 
   /*!
-   * \brief Get the frequency for writing the solution file.
-   * \return It writes the solution file with this frequency.
-   */
-  unsigned long GetWrt_Sol_Freq(void) const { return Wrt_Sol_Freq; }
-
-  /*!
-   * \brief Get the frequency for writing the solution file in Dual Time.
-   * \return It writes the solution file with this frequency.
-   */
-  unsigned long GetWrt_Sol_Freq_DualTime(void) const { return Wrt_Sol_Freq_DualTime; }
-
-  /*!
-   * \brief Get the frequency for writing the convergence file.
-   * \return It writes the convergence file with this frequency.
-   */
-  unsigned long GetWrt_Con_Freq(void) const { return Wrt_Con_Freq; }
-
-  /*!
-   * \brief Set the frequency for writing the convergence file.
-   * \return It writes the convergence file with this frequency.
-   */
-  void SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
-
-  /*!
-   * \brief Get the frequency for writing the convergence file in Dual Time.
-   * \return It writes the convergence file with this frequency.
-   */
-  unsigned long GetWrt_Con_Freq_DualTime(void) const { return Wrt_Con_Freq_DualTime; }
-
-  /*!
-   * \brief Get information about writing unsteady headers and file extensions.
-   * \return    <code>TRUE</code> means that unsteady solution files will be written.
-   */
-  bool GetWrt_Unsteady(void);
-
-  /*!
-   * \brief Get information about writing output files.
-   * \return <code>TRUE</code> means that output files will be written.
-   */
-  bool GetWrt_Output(void) const { return Wrt_Output; }
-
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetWrt_Vol_Sol(void) const { return Wrt_Vol_Sol; }
-
-  /*!
-   * \brief Get information about writing a surface solution file.
-   * \return <code>TRUE</code> means that a surface solution file will be written.
-   */
-  bool GetWrt_Srf_Sol(void) const { return Wrt_Srf_Sol; }
-
-  /*!
-   * \brief Get information about writing a surface comma-separated values (CSV) solution file.
-   * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
-   */
-  bool GetWrt_Csv_Sol(void) const { return Wrt_Csv_Sol; }
-
-  /*!
-   * \brief Get information about writing a binary coordinates file.
-   * \return <code>TRUE</code> means that a binary coordinates file will be written.
-   */
-  bool GetWrt_Crd_Sol(void) const { return Wrt_Crd_Sol; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_Residuals(void) const { return Wrt_Residuals; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_Limiters(void) const { return Wrt_Limiters; }
-
-  /*!
-   * \brief Write solution at each surface.
-   * \return <code>TRUE</code> means that the solution at each surface will be written.
-   */
-  bool GetWrt_Surface(void) const { return Wrt_Surface; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_SharpEdges(void) const { return Wrt_SharpEdges; }
-
-  /*!
-   * \brief Get information about writing rind layers to the solution files.
-   * \return <code>TRUE</code> means that rind layers will be written to the solution file.
-   */
-  bool GetWrt_Halo(void) const { return Wrt_Halo; }
-
-  /*!
    * \brief Get information about writing the performance summary at the end of a calculation.
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
@@ -3186,12 +3072,6 @@ public:
    * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
    */
   bool GetWrt_MeshQuality(void) const { return Wrt_MeshQuality; }
-
-  /*!
-   * \brief Get information about writing a 1D slice of a 2D cartesian solution.
-   * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
-   */
-  bool GetWrt_Slice(void) const { return Wrt_Slice; }
 
   /*!
    * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
@@ -8524,12 +8404,6 @@ public:
   void SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
 
   /*!
-   * \brief Get information about writing dynamic structural analysis headers and file extensions.
-   * \return    <code>TRUE</code> means that dynamic structural analysis solution files will be written.
-   */
-  bool GetWrt_Dynamic(void) const { return Wrt_Dynamic; }
-
-  /*!
    * \brief Get Newmark alpha parameter.
    * \return Value of the Newmark alpha parameter.
    */
@@ -8907,12 +8781,6 @@ public:
    * \return Sum of the bandwidth for writing binary restarts.
    */
   su2double GetRestart_Bandwidth_Agg(void) const { return Restart_Bandwidth_Agg; }
-
-  /*!
-   * \brief Get the frequency for writing the surface solution file in Dual Time.
-   * \return It writes the surface solution file with this frequency.
-   */
-  unsigned long GetWrt_Surf_Freq_DualTime(void) const { return Wrt_Surf_Freq_DualTime; }
 
   /*!
    * \brief Get the Kind of Hybrid RANS/LES.
@@ -9303,6 +9171,7 @@ public:
 
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
    * \return
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter) const { return ScreenWrtFreq[iter]; }

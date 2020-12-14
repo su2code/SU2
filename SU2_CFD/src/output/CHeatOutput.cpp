@@ -136,6 +136,8 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
   AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
 
+  // MPI-Rank
+  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
 }
 
 
@@ -163,6 +165,8 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
+  // MPI-Rank
+  SetVolumeOutputValue("RANK", iPoint, rank);
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

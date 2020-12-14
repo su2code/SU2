@@ -83,7 +83,6 @@ def continuous_adjoint( filename           ,
     state = SU2.io.State()
     
     # Force CSV output in order to compute gradients
-    config.WRT_CSV_SOL = 'YES'
     
     if not 'OUTPUT_FILES' in config:
         config['OUTPUT_FILES'] = ['RESTART']

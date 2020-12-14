@@ -645,45 +645,26 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   unsigned short iMarker;
 
-  /*--- Impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries). ---*/
-  /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
+  /*--- Impose zero displacements of all non-moving surfaces that are not MARKER_DEFORM_SYM_PLANE. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
         (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO) &&
         (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
-        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 
       BC_Clamped(geometry, numerics, config, iMarker);
     }
   }
 
-  /*--- Symmetry plane is clamped, for now. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
-        (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO) &&
-        (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
-
-      BC_Clamped(geometry, numerics, config, iMarker);
-    }
-  }
-
-
-  /*--- Impose displacement boundary conditions. ---*/
+  /*--- Impose displacement boundary conditions and symmetry. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
     }
-  }
-
-
-  /*--- Symmetry deform plane is not clamped ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
+    else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
 
       BC_Sym_Plane(geometry, numerics, config, iMarker);
     }
