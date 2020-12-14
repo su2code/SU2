@@ -161,7 +161,7 @@ class CBaseMPIWrapper {
 
   static inline void Abort(Comm comm, int error) { MPI_Abort(comm, error); }
 
-  static inline void Get_count(Status* status, Datatype datatype, int* count) {
+  static inline void Get_count(const Status* status, Datatype datatype, int* count) {
     MPI_Get_count(status, datatype, count);
   }
 
@@ -370,7 +370,7 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
   static inline void Abort(Comm comm, int error) { AMPI_Abort(convertComm(comm), error); }
 
-  static inline void Get_count(Status* status, Datatype datatype, int* count) {
+  static inline void Get_count(const Status* status, Datatype datatype, int* count) {
     AMPI_Get_count(status, convertDatatype(datatype), count);
   }
 
