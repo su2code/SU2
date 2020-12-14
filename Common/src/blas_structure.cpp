@@ -3,7 +3,7 @@
  * \brief Implementation of the functions that either simulate BLAS functionality
           or interface to an actual BLAS implementation.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
