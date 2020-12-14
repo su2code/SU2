@@ -136,6 +136,9 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = flowNodes->GetPrimitive(iPoint);
     const auto V_j = flowNodes->GetPrimitive(jPoint);
 
+    const auto U_i = flowNodes->GetSolution(iPoint);
+    const auto U_j = flowNodes->GetSolution(jPoint);
+
     /*--- Turbulent variables w/o reconstruction ---*/
 
     // const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
@@ -171,8 +174,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       // numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
       //                        good_j? flowPrimVar_j : V_j);
-      numerics->SetConservative(good_i? flowPrimVar_i : V_i, 
-                                good_j? flowPrimVar_j : V_j);
+      numerics->SetConservative(good_i? flowPrimVar_i : U_i, 
+                                good_j? flowPrimVar_j : U_j);
       numerics->SetTurbVar(  good_i? turbPrimVar_i : T_i, 
                              good_j? turbPrimVar_j : T_j);
     }
