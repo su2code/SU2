@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardTriGrid.hpp"
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*             Public member functions of CFEMStandardTriGrid.                      */
@@ -248,7 +248,7 @@ void CFEMStandardTriGrid::DerLagBasisIntPointsTriangle(const vector<passivedoubl
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -288,7 +288,7 @@ void CFEMStandardTriGrid::HesLagBasisIntPointsTriangle(const vector<passivedoubl
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -334,7 +334,7 @@ void CFEMStandardTriGrid::LagBasisIntPointsTriangle(const vector<passivedouble> 
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -360,7 +360,7 @@ void CFEMStandardTriGrid::LagBasisAndDerSolDOFsTriangle(const vector<passivedoub
                                                         const vector<passivedouble> &sDOFs) {
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTriangle(rDOFs, sDOFs, VInv.GetMat());
   VInv.Invert();
 

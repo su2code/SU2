@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardTetGrid.hpp"
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*             Public member functions of CFEMStandardTetGrid.                      */
@@ -199,7 +199,7 @@ void CFEMStandardTetGrid::DerLagBasisIntPointsTet(const vector<passivedouble>   
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTetrahedron(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -245,7 +245,7 @@ void CFEMStandardTetGrid::HesLagBasisIntPointsTet(const vector<passivedouble> &r
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTetrahedron(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -309,7 +309,7 @@ void CFEMStandardTetGrid::LagBasisIntPointsTet(const vector<passivedouble>   &rD
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTetrahedron(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -336,7 +336,7 @@ void CFEMStandardTetGrid::LagBasisAndDerSolDOFsTet(const vector<passivedouble>  
                                                    const vector<passivedouble>  &tDOFs) {
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondeTetrahedron(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 

@@ -2,7 +2,7 @@
  * \file CDummyMesh_DG.cpp
  * \brief Implementations of the member functions of CDummyMesh_DG.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,5 +29,21 @@
 
 CDummyMeshFEM_DG::CDummyMeshFEM_DG(CConfig *config): CMeshFEM_DG() {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  nZone = config->GetnZone();
+
+  nPoint_P2PSend = new int[size] ();
+  nPoint_P2PRecv = new int[size] ();
+
+  nVertex = new unsigned long[config->GetnMarker_All()] ();
+
+  Tag_to_Marker = new string[config->GetnMarker_All()];
+
+  for (unsigned short i=0; i <= config->GetnLevels_TimeAccurateLTS(); i++){
+    nMatchingFacesWithHaloElem.push_back(0);
+  }
+
+  boundaries.resize(config->GetnMarker_All());
+
+  nDim = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+
 }

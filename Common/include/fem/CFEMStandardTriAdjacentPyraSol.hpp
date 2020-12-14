@@ -4,7 +4,7 @@
  *        adjacent to a pyramid for the solution.
  *        The functions are in the <i>CFEMStandardTriAdjacentPyraSol.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
  * \brief Class which defines the variables and methods for the triangle 
  *        standard surface element adjacent to a pyramid for the solution.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEMStandardTriAdjacentPyraSol final: public CFEMStandardElementBase {
 

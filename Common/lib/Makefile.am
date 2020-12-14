@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.7 "Blackbird"
+# \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -113,6 +113,7 @@ lib_sources = \
   ../src/toolboxes/CLinearPartitioner.cpp \
   ../src/toolboxes/C1DInterpolation.cpp \
   ../src/toolboxes/CSymmetricMatrix.cpp \
+  ../src/toolboxes/CSquareMatrixCM.cpp \
   ../src/toolboxes/MMS/CVerificationSolution.cpp \
   ../src/toolboxes/MMS/CIncTGVSolution.cpp \
   ../src/toolboxes/MMS/CInviscidVortexSolution.cpp \

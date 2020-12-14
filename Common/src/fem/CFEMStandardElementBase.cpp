@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardElementBase.hpp"
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 #include "../../include/omp_structure.hpp"
 
 /*----------------------------------------------------------------------------------*/
@@ -912,7 +912,7 @@ void CFEMStandardElementBase::DerLagBasisIntPointsLine(const vector<passivedoubl
   const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
-  CGeneralSquareMatrixCM VInv(nPoly+1);
+  CSquareMatrixCM VInv(nPoly+1);
   Vandermonde1D(rDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -944,7 +944,7 @@ void CFEMStandardElementBase::HesLagBasisIntPointsLine(const vector<passivedoubl
   const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
-  CGeneralSquareMatrixCM VInv(nPoly+1);
+  CSquareMatrixCM VInv(nPoly+1);
   Vandermonde1D(rDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -976,7 +976,7 @@ void CFEMStandardElementBase::LagBasisIntPointsLine(const vector<passivedouble> 
   const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
-  CGeneralSquareMatrixCM VInv(nPoly+1);
+  CSquareMatrixCM VInv(nPoly+1);
   Vandermonde1D(rDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -1226,7 +1226,7 @@ void CFEMStandardElementBase::WarpFactor(const vector<passivedouble> &rout,
 
   /*--- Determine the 1D Vandermonde matrix based on the equidistant node
         distribution. Invert the matrix afterwards. ---*/
-  CGeneralSquareMatrixCM V1D(nPoly+1);
+  CSquareMatrixCM V1D(nPoly+1);
   Vandermonde1D(r1DEqui, V1D.GetMat());
   V1D.Invert();
 

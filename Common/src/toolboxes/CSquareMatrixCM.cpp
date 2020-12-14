@@ -1,8 +1,8 @@
 /*!
- * \file CGeneralSquareMatrixCM.cpp
+ * \file CSquareMatrixCM.cpp
  * \brief Implementation of dense matrix helper class in Column Major order (see hpp).
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,8 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 #include "../../include/mpi_structure.hpp"
+#include "../../include/blas_structure.hpp"
 
 using namespace std;
 
@@ -36,7 +37,7 @@ using namespace std;
 #define HAVE_LAPACK
 #endif
 #elif defined(HAVE_LAPACK)
-/*--- Lapack / Blas routines used in CGeneralSquareMatrixCM. ---*/
+/*--- Lapack / Blas routines used in CSquareMatrixCM. ---*/
 extern "C" void dgetrf_(const int*, const int*, passivedouble*, const int*,
                         int*, int*);
 extern "C" void dgetri_(const int*, passivedouble*, const int*, int*,
@@ -48,14 +49,14 @@ extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
 #define DGEMM dgemm_
 #endif
 
-void CGeneralSquareMatrixCM::Transpose() {
+void CSquareMatrixCM::Transpose() {
 
   for(int j=1; j<Size(); ++j)
     for(int i=0; i<j; ++i)
       swap(mat(i,j), mat(j,i));
 }
 
-void CGeneralSquareMatrixCM::Invert() {
+void CSquareMatrixCM::Invert() {
 
 #ifdef HAVE_LAPACK
 
@@ -72,64 +73,11 @@ void CGeneralSquareMatrixCM::Invert() {
   if(info != 0) SU2_MPI::Error(string("Matrix inversion failed"), CURRENT_FUNCTION);
 
 #else
-
-  /*--- Standard implementation without Lapack. Create a local augmented
-        matrix to carry out the actual inversion. ---*/
-  const int M = Size();
-  ColMajorMatrix<passivedouble> augmentedmatrix(M, 2*M);
-
-  /*--- Copy the data from A into the first part of augmentedmatrix and
-        augmenting with identity matrix of similar dimensions. ---*/
-  for(int j=0; j<M; ++j) {
-    for(int i=0; i<M; ++i) {
-      augmentedmatrix(i,j) = mat(i,j);
-      augmentedmatrix(i,j+M) = (i == j) ? 1.0 : 0.0;
-    }
-  }
-
-  /*--- Outer loop of the Gauss-Jordan elimination. ---*/
-  for(int j=0; j<M; ++j) {
-
-    /*--- Find the pivot in the current column. ---*/
-    int jj = j;
-    passivedouble  valMax = fabs(augmentedmatrix(j,j));
-    for(int i=j+1; i<M; ++i) {
-      passivedouble val = fabs(augmentedmatrix(i,j));
-      if(val > valMax){
-        jj = i;
-        valMax = val;
-      }
-    }
-
-    /*--- Swap the rows j and jj, if needed. ---*/
-    if(jj > j)
-      for(int k=j; k<2*M; ++k)
-        swap(augmentedmatrix(j,k), augmentedmatrix(jj,k));
-
-    /*--- Performing row operations to form required identity
-          matrix out of the input matrix.  ---*/
-    for(int i=0; i<M; ++i) {
-      if(i != j) {
-        valMax = augmentedmatrix(i,j)/augmentedmatrix(j,j);
-        for(int k=j; k<2*M; ++k)
-          augmentedmatrix(i,k) -= valMax*augmentedmatrix(j,k);
-      }
-    }
-
-    valMax = 1.0/augmentedmatrix(j,j);
-    for(int k=j; k<2*M; ++k)
-      augmentedmatrix(j,k) *= valMax;
-  }
-
-  /*--- Store the inverse in mat. ---*/
-  for(int j=0; j<M; ++j)
-    for(int i=0; i<M; ++i)
-      mat(i,j) = augmentedmatrix(i,j+M);
-
+  CBlasStructure::inverse(Size(), mat);
 #endif
 }
 
-void CGeneralSquareMatrixCM::MatMatMult(const char                          side,
+void CSquareMatrixCM::MatMatMult(const char                          side,
                                         const ColMajorMatrix<passivedouble> &mat_in,
                                         ColMajorMatrix<passivedouble>       &mat_out) const {
 
@@ -158,7 +106,7 @@ void CGeneralSquareMatrixCM::MatMatMult(const char                          side
       for (int j = 0; j < N; ++j) {
         mat_out(i,j) = 0.0;
         for (int k = 0; k < M; ++k)
-          mat_out(i,j) += Get(i,k) * mat_in(k,j);
+          mat_out(i,j) += mat(i,k) * mat_in(k,j);
       }
     }
 #endif
@@ -188,7 +136,7 @@ void CGeneralSquareMatrixCM::MatMatMult(const char                          side
       for (int j = 0; j < N; ++j) {
         mat_out(i,j) = 0.0;
         for (int k = 0; k < N; ++k)
-          mat_out(i,j) += mat_in(i,k) * Get(k,j);
+          mat_out(i,j) += mat_in(i,k) * mat(k,j);
       }
     }
 #endif

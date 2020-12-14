@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardPrismGrid.hpp"
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*             Public member functions of CFEMStandardPrismGrid.                    */
@@ -210,7 +210,7 @@ void CFEMStandardPrismGrid::DerLagBasisIntPointsPrism(const vector<passivedouble
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePrism(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -263,7 +263,7 @@ void CFEMStandardPrismGrid::HesLagBasisIntPointsPrism(const vector<passivedouble
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePrism(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -334,7 +334,7 @@ void CFEMStandardPrismGrid::LagBasisIntPointsPrism(const vector<passivedouble>  
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePrism(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -380,7 +380,7 @@ void CFEMStandardPrismGrid::LagBasisAndDerSolDOFsPrism(const vector<passivedoubl
   }
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePrism(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 

@@ -5,7 +5,7 @@
  *        case a tensor product is used.
  *        The functions are in the <i>CGemmFaceQuad.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,7 @@ using namespace std;
  * \brief Class to carry out a GEMM multiplication for a face when the adjacent
  *        element is a quadrilateral. In this case a tensor product is used.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CGemmFaceQuad final : public CGemmBase {
 

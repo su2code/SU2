@@ -3,7 +3,7 @@
  * \brief Base class for the FEM standard elements.
  *        The functions are in the <i>CFEMStandardElementBase.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,7 +52,7 @@ using namespace std;
  * \class CFEMStandardElementBase
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEMStandardElementBase {
 public:

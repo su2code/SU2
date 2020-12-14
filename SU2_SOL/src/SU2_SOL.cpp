@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -812,7 +812,7 @@ void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container
   output->SetSurface_Filename(config->GetSurfCoeff_FileName());
 
   for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-    unsigned short* FileFormat = config->GetVolumeOutputFiles();
+    auto FileFormat = config->GetVolumeOutputFiles();
     if (FileFormat[iFile] != RESTART_ASCII &&
         FileFormat[iFile] != RESTART_BINARY &&
         FileFormat[iFile] != CSV)

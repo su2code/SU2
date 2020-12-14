@@ -26,7 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardPyraGrid.hpp"
-#include "../../include/toolboxes/CGeneralSquareMatrixCM.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*             Public member functions of CFEMStandardPyraGrid.                     */
@@ -205,7 +205,7 @@ void CFEMStandardPyraGrid::DerLagBasisIntPointsPyra(const vector<passivedouble> 
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePyramid(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -293,7 +293,7 @@ void CFEMStandardPyraGrid::HesLagBasisIntPointsPyra(const vector<passivedouble> 
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePyramid(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -429,7 +429,7 @@ void CFEMStandardPyraGrid::LagBasisIntPointsPyra(const vector<passivedouble>   &
   const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePyramid(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 
@@ -456,7 +456,7 @@ void CFEMStandardPyraGrid::LagBasisAndDerSolDOFsPyra(const vector<passivedouble>
                                                      const vector<passivedouble>  &tDOFs) {
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
-  CGeneralSquareMatrixCM VInv(rDOFs.size());
+  CSquareMatrixCM VInv(rDOFs.size());
   VandermondePyramid(rDOFs, sDOFs, tDOFs, VInv.GetMat());
   VInv.Invert();
 

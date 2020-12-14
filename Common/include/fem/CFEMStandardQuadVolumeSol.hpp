@@ -3,7 +3,7 @@
  * \brief Class for the FEM quadrilateral standard element for the volume solution.
  *        The functions are in the <i>CFEMStandardQuadVolumeSol.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class which defines the variables and methods for the
  *        quadrilateral standard element for the volume solution.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CFEMStandardQuadVolumeSol final: public CFEMStandardQuad {
 

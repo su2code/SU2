@@ -1,9 +1,9 @@
 ﻿/*!
- * \file CGeneralSquareMatrixCM.hpp
+ * \file CSquareMatrixCM.hpp
  * \brief Dense general square matrix, used for example in DG standard elements
  *        in Column Major order storage.
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  *        Major order storage format. The code should be compiled with
  *        LAPACK to use optimized matrix inversion and multiplication routines.
  */
-class CGeneralSquareMatrixCM {
+class CSquareMatrixCM {
   static_assert(ColMajorMatrix<passivedouble>::Storage == StorageType::ColumnMajor,
                 "Column major storage is assumed for LAPACK.");
 private:
@@ -46,7 +46,7 @@ public:
   /*!
    * \brief Default constructor. Nothing to be done.
    */
-  CGeneralSquareMatrixCM() = default;
+  CSquareMatrixCM() = default;
 
   /*!
    * \overload
@@ -54,7 +54,7 @@ public:
    *        the matrix.
    * \param[in] N - Number of rows and colums of the matrix.
    */
-  CGeneralSquareMatrixCM(int N) {Initialize(N);}
+  CSquareMatrixCM(int N) {Initialize(N);}
 
   /*!
    * \brief Operator, which makes available the given matrix element as a reference.
@@ -73,12 +73,6 @@ public:
   inline const passivedouble& operator() (int i, int j) const {return mat(i,j);}
 
   /*!
-   * \brief Function, which allocates the memory for the matrix.
-   * \param[in] N - Number of rows and colums of the matrix.
-   */
-  inline void Initialize(int N) {mat.resize(N,N);}
-
-  /*!
    * \brief Function, which makes available a reference to the actual matrix.
    * \return A reference to mat.
    */
@@ -91,26 +85,16 @@ public:
   inline const ColMajorMatrix<passivedouble>& GetMat() const {return mat;}
 
   /*!
+   * \brief Function, which allocates the memory for the matrix.
+   * \param[in] N - Number of rows and colums of the matrix.
+   */
+  inline void Initialize(int N) {mat.resize(N,N);}
+
+  /*!
    * \brief Function, which makes available the size of the matrix.
    * \return The number of rows, columns of the matrix.
    */
   inline int Size() const {return mat.rows();}
-
-  /*!
-   * \brief Function, which gets the given matrix element.
-   * \param[in] i  - Row index of the matrix element.
-   * \param[in] j  - Column index of the matrix element.
-   * \return  The value of matrix element (i,j).
-   */
-  inline passivedouble Get(int i, int j) const {return mat(i,j);}
-
-  /*!
-   * \brief Function, which sets the given matrix element.
-   * \param[in] i   - Row index of the matrix element.
-   * \param[in] j   - Column index of the matrix element.
-   * \param[in] val - Value to which element (i,j) must be set.
-   */
-  inline void Set(int i, int j, passivedouble val) {mat(i,j) = val;}
 
   /*!
    * \brief Function, which carries out the matrix produc of the current matrix
@@ -124,12 +108,27 @@ public:
                   ColMajorMatrix<passivedouble>       &mat_out) const;
 
   /*!
-   * \brief Function, which inverts the matrix.
+   * \brief Naive matrix-vector multiplication with general type.
+   */
+  template<class ForwardIt>
+  void MatVecMult(ForwardIt vec_in, ForwardIt vec_out) const
+  {
+    for (int i = 0; i < Size(); ++i) {
+      *vec_out = 0.0;
+      auto vec = vec_in;
+      for (int k = 0; k < Size(); ++k)
+        *vec_out += *(vec++) * mat(i,k);
+      ++vec_out;
+    }
+  }
+
+  /*!
+   * \brief Function, which inverts the matrix in-place.
    */
   void Invert();
 
   /*!
-   * \brief Function, which transposes the matrix.
+   * \brief Function, which transposes the matrix in-place.
    */
   void Transpose();
 
