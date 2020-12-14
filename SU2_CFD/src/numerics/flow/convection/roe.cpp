@@ -120,51 +120,23 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Primitive variables ---*/
 
-  // for (auto iDim = 0; iDim < nDim; iDim++) {
-  //   Velocity_i[iDim] = V_i[iDim+1];
-  //   Velocity_j[iDim] = V_j[iDim+1];
-  // }
-
-  // Pressure_i = V_i[nDim+1];
-  // Pressure_j = V_j[nDim+1];
-
-  // Density_i  = V_i[nDim+2];
-  // Density_j  = V_j[nDim+2];
-
-  // Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
-  // Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
-  // for (auto iDim = 0; iDim < nDim; iDim++) {
-  //   Energy_i += 0.5*pow(Velocity_i[iDim],2);
-  //   Energy_j += 0.5*pow(Velocity_j[iDim],2);
-  // }
-
-  // Enthalpy_i = Energy_i + Pressure_i/Density_i;
-  // Enthalpy_j = Energy_j + Pressure_j/Density_j;
-
-  // SoundSpeed_i = sqrt(fabs(Pressure_i*Gamma/Density_i));
-  // SoundSpeed_j = sqrt(fabs(Pressure_j*Gamma/Density_j));
-
-  Density_i  = U_i[0];
-  Density_j  = U_j[0];
-
-  Pressure_i = 0.0;
-  Pressure_j = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-    Velocity_j[iDim] = U_j[iDim+1]/Density_j;
-
-    Pressure_i -= 0.5*pow(Velocity_i[iDim],2);
-    Pressure_j -= 0.5*pow(Velocity_j[iDim],2); 
+    Velocity_i[iDim] = V_i[iDim+1];
+    Velocity_j[iDim] = V_j[iDim+1];
   }
 
-  Energy_i = U_i[nVar-1]/Density_i;
-  Energy_j = U_j[nVar-1]/Density_j;
+  Pressure_i = V_i[nDim+1];
+  Pressure_j = V_j[nDim+1];
 
-  turb_ke_i = *TurbVar_i/Density_i;
-  turb_ke_j = *TurbVar_j/Density_j;
+  Density_i  = V_i[nDim+2];
+  Density_j  = V_j[nDim+2];
 
-  Pressure_i = Gamma_Minus_One*Density_i*(Energy_i + Pressure_i - turb_ke_i);
-  Pressure_j = Gamma_Minus_One*Density_j*(Energy_j + Pressure_j - turb_ke_j);
+  Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+turb_ke_i;
+  Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+turb_ke_j;
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    Energy_i += 0.5*pow(Velocity_i[iDim],2);
+    Energy_j += 0.5*pow(Velocity_j[iDim],2);
+  }
 
   Enthalpy_i = Energy_i + Pressure_i/Density_i;
   Enthalpy_j = Energy_j + Pressure_j/Density_j;

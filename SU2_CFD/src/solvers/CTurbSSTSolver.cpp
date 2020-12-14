@@ -308,23 +308,13 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver, CConf
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
 
-  // if (config->GetReconstructionGradientRequired()) {
-  //   switch (config->GetKind_Gradient_Method_Recon()) {
-  //     case GREEN_GAUSS:
-  //       SetPrimitive_Gradient_GG(geometry, config, true); break;
-  //     case LEAST_SQUARES:
-  //     case WEIGHTED_LEAST_SQUARES:
-  //       SetPrimitive_Gradient_LS(geometry, config, true); break;
-  //     default: break;
-  //   }
-  // }
   if (config->GetReconstructionGradientRequired()) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetSolution_Gradient_GG(geometry, config, true); break;
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetSolution_Gradient_LS(geometry, config, true); break;
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
   }
@@ -752,7 +742,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   Normal = new su2double[nDim];
-  su2double U_infty[MAXNVARFLOW] = {0.0};
 
   for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -766,24 +755,16 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
       /*--- Allocate the value at the infinity ---*/
 
       const auto V_infty = solver[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-      U_infty[0] = V_infty[nDim+2];
-      for (auto iDim = 0; iDim < nDim; iDim++)
-        U_infty[iDim+1] = V_infty[iDim+1]*U_infty[0];
-      U_infty[nDim+1] = V_infty[nDim+3]*U_infty[0] - V_infty[nDim+1];
 
       /*--- Retrieve solution at the farfield boundary node ---*/
 
-      // const auto V_domain = flowNodes->GetPrimitive(iPoint);
+      const auto V_domain = flowNodes->GetPrimitive(iPoint);
 
-      // conv_numerics->SetPrimitive(V_domain, V_infty);
-      const auto V_domain = flowNodes->GetSolution(iPoint);
-
-      conv_numerics->SetConservative(V_domain, U_infty);
+      conv_numerics->SetPrimitive(V_domain, V_infty);
 
       /*--- Set turbulent variable at the wall, and at infinity ---*/
 
-      // for (auto iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
-      for (auto iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetSolution(iPoint,iVar);
+      for (auto iVar = 0; iVar < nVar; iVar++) Primitive_i[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
       /*--- Set Normal (it is necessary to change the sign) ---*/
 
@@ -810,10 +791,8 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
         Kine_Infty  = 1.5*Velocity2*Intensity*Intensity;
         Omega_Infty = Rho_Infty*Kine_Infty/muT_Infty;
 
-        // Primitive_j[0] = Kine_Infty;
-        // Primitive_j[1] = Omega_Infty;
-        Primitive_j[0] = U_infty[0]*Kine_Infty;
-        Primitive_j[1] = U_infty[0]*Omega_Infty;
+        Primitive_j[0] = Kine_Infty;
+        Primitive_j[1] = Omega_Infty;
       }
       
       conv_numerics->SetTurbVar(Primitive_i, Primitive_j);

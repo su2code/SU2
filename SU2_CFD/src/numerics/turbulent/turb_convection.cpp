@@ -68,19 +68,13 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   /*--- Primitive variables ---*/
 
-  // for (auto iDim = 0; iDim < nDim; iDim++) {
-  //   Velocity_i[iDim] = V_i[iDim+1];
-  //   Velocity_j[iDim] = V_j[iDim+1];
-  // }
-
-  // Density_i = V_i[nDim+2];
-  // Density_j = V_j[nDim+2];
-  Density_i = U_i[0];
-  Density_j = U_j[0];
   for (auto iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-    Velocity_j[iDim] = U_j[iDim+1]/Density_j;
+    Velocity_i[iDim] = V_i[iDim+1];
+    Velocity_j[iDim] = V_j[iDim+1];
   }
+
+  Density_i = V_i[nDim+2];
+  Density_j = V_j[nDim+2];
 
   a_ij = 0.0;
   if (dynamic_grid) {
@@ -92,7 +86,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (auto iDim = 0; iDim < nDim; iDim++)
-      a_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
+      a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
   }
 
   a_i = 0.5*(a_ij+fabs(a_ij));
@@ -137,10 +131,8 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  // Flux[0] = a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0];
-  // Flux[1] = a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1];
-  Flux[0] = a_i*TurbVar_i[0]+a_j*TurbVar_j[0];
-  Flux[1] = a_i*TurbVar_i[1]+a_j*TurbVar_j[1];
+  Flux[0] = a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0];
+  Flux[1] = a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1];
 
   Jacobian_i[0][0] = Jacobian_i[1][1] = a_i;
   Jacobian_j[0][0] = Jacobian_j[1][1] = a_j;

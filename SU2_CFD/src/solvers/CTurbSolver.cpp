@@ -136,15 +136,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = flowNodes->GetPrimitive(iPoint);
     const auto V_j = flowNodes->GetPrimitive(jPoint);
 
-    const auto U_i = flowNodes->GetSolution(iPoint);
-    const auto U_j = flowNodes->GetSolution(jPoint);
-
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    // const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
-    // const auto T_j = sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
-    const auto T_i = nodes->GetSolution(iPoint);
-    const auto T_j = nodes->GetSolution(jPoint);
+    const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
+    const auto T_j = sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
 
     /*--- Grid Movement ---*/
 
@@ -159,10 +154,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (muscl) {
       /*--- Reconstruction ---*/
 
-      // solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-      //                                    turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
       solver[FLOW_SOL]->ExtrapolateState(solver, geometry, config, iPoint, jPoint, flowPrimVar_i, flowPrimVar_j, 
-                                         turbPrimVar_i, turbPrimVar_j, good_i, good_j, solver[FLOW_SOL]->GetnVar(), nVar);
+                                         turbPrimVar_i, turbPrimVar_j, good_i, good_j, nFlowVarGrad, nVar);
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
@@ -174,10 +167,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store the state ---*/
 
-      // numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
-      //                        good_j? flowPrimVar_j : V_j);
-      numerics->SetConservative(good_i? flowPrimVar_i : U_i, 
-                                good_j? flowPrimVar_j : U_j);
+      numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
+                             good_j? flowPrimVar_j : V_j);
       numerics->SetTurbVar(  good_i? turbPrimVar_i : T_i, 
                              good_j? turbPrimVar_j : T_j);
     }
@@ -335,10 +326,8 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 
   /*--- Positive density ---*/
 
-  // good_i = good_i && (primvar_i[nDim+2] > 0.0);
-  // good_j = good_j && (primvar_j[nDim+2] > 0.0);
-  good_i = good_i && (primvar_i[0] > 0.0);
-  good_j = good_j && (primvar_j[0] > 0.0);
+  good_i = good_i && (primvar_i[nDim+2] > 0.0);
+  good_j = good_j && (primvar_j[nDim+2] > 0.0);
 
   /*--- Positive turbulent variables ---*/
 
@@ -378,12 +367,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
-  // const su2double dUl_dVl = *rho_l;
-  // const su2double dUr_dVr = *rho_r;
-  // const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
-  const su2double dUl_dVl = 1.0;
-  const su2double dUr_dVr = 1.0;
-  const su2double dVi_dUi = 1.0;
+  const su2double dUl_dVl = *rho_l;
+  const su2double dUr_dVr = *rho_r;
+  const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -454,8 +440,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const auto kPoint = node_i->GetPoint(iNeigh);
-    // const su2double dVk_dUk = 1.0/flowNodes->GetDensity(kPoint);
-    const su2double dVk_dUk = 1.0;
+    const su2double dVk_dUk = 1.0/flowNodes->GetDensity(kPoint);
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
