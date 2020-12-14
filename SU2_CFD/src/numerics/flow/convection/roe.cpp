@@ -147,6 +147,8 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   Density_i  = U_i[0];
   Density_j  = U_j[0];
 
+  Pressure_i = 0.0;
+  Pressure_j = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1]/Density_i;
     Velocity_j[iDim] = U_j[iDim+1]/Density_j;
