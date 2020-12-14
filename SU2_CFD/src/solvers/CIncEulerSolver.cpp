@@ -1600,7 +1600,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the boussinesq source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -3389,7 +3389,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   bool axisymmetric = config->GetAxisymmetric();
 
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetInnerIter()!= 0))
                       || (config->GetInnerIter() == 1));
 

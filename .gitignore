@@ -88,5 +88,5 @@ Mercurial
 ./build/
 build/
 
-# ninja binary
+# ninja binary (build system)
 ninja

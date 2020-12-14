@@ -2774,16 +2774,9 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
 
-
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetTime_Domain() && config_container[ZONE_0]->GetRestart())
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
-  /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
-      && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
 
 }
 

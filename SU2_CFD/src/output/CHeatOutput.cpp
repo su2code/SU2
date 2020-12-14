@@ -167,7 +167,6 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
 
   // MPI-Rank
   SetVolumeOutputValue("RANK", iPoint, rank);
-
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

@@ -142,32 +142,6 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   }
 }
 
-void CAvgGrad_Base::AddQCR(const su2double* const *val_gradprimvar) {
-
-  su2double den_aux, c_cr1= 0.3, O_ik, O_jk;
-  unsigned short iDim, jDim, kDim;
-
-  /*--- Denominator Antisymmetric normalized rotation tensor ---*/
-
-  den_aux = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-      den_aux += val_gradprimvar[iDim+1][jDim] * val_gradprimvar[iDim+1][jDim];
-  den_aux = sqrt(max(den_aux,1E-10));
-
-  /*--- Adding the QCR contribution ---*/
-
-  for (iDim = 0 ; iDim < nDim; iDim++){
-    for (jDim = 0 ; jDim < nDim; jDim++){
-      for (kDim = 0 ; kDim < nDim; kDim++){
-        O_ik = (val_gradprimvar[iDim+1][kDim] - val_gradprimvar[kDim+1][iDim])/ den_aux;
-        O_jk = (val_gradprimvar[jDim+1][kDim] - val_gradprimvar[kDim+1][jDim])/ den_aux;
-        tau[iDim][jDim] -= c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
-      }
-    }
-  }
-}
-
 void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
                                const su2double val_tau_wall) {
 
@@ -595,7 +569,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
+  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
