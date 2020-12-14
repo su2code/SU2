@@ -752,7 +752,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumeri
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
   Normal = new su2double[nDim];
-  U_infty[MAXNVARFLOW] = {0.0};
+  su2double U_infty[MAXNVARFLOW] = {0.0};
 
   for (auto iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
