@@ -2642,12 +2642,20 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver, CConfig 
 
     /*--- Gradient computation for MUSCL reconstruction. ---*/
 
+    // switch (config->GetKind_Gradient_Method_Recon()) {
+    //   case GREEN_GAUSS:
+    //     SetPrimitive_Gradient_GG(geometry, config, true); break;
+    //   case LEAST_SQUARES:
+    //   case WEIGHTED_LEAST_SQUARES:
+    //     SetPrimitive_Gradient_LS(geometry, config, true); break;
+    //   default: break;
+    // }
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetPrimitive_Gradient_GG(geometry, config, true); break;
+        SetSolution_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetPrimitive_Gradient_LS(geometry, config, true); break;
+        SetSolution_Gradient_LS(geometry, config, true); break;
       default: break;
     }
 
@@ -3129,6 +3137,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     const auto V_i = nodes->GetPrimitive(iPoint); const auto V_j = nodes->GetPrimitive(jPoint);
     const auto S_i = nodes->GetSecondary(iPoint); const auto S_j = nodes->GetSecondary(jPoint);
 
+    const auto U_i = nodes->GetSolution(iPoint); const auto U_j = nodes->GetSolution(jPoint);
+
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
     bool good_i = true, good_j = true;
@@ -3138,6 +3148,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
     if (muscl) {
       /*--- Reconstruction ---*/
 
+      // ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
+      //                  &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
       ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
                        &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
 
@@ -3164,17 +3176,22 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       counter_local += (!good_i+!good_j);
 
-      numerics->SetPrimitive(good_i? Primitive_i : V_i, 
-                             good_j? Primitive_j : V_j);
+      // numerics->SetPrimitive(good_i? Primitive_i : V_i, 
+      //                        good_j? Primitive_j : V_j);
+      numerics->SetConservative(good_i? Primitive_i : U_i, 
+                                good_j? Primitive_j : U_j);
       numerics->SetSecondary(good_i? Secondary_i : S_i, 
                              good_j? Secondary_j : S_j);
 
       /*--- Turbulent variables ---*/
 
       if (tkeNeeded) {
-        tke_i = good_i? tke_i : turbNodes->GetPrimitive(iPoint,0);
-        tke_j = good_j? tke_j : turbNodes->GetPrimitive(jPoint,0);
-        numerics->SetTurbKineticEnergy(tke_i, tke_j);
+        // tke_i = good_i? tke_i : turbNodes->GetPrimitive(iPoint,0);
+        // tke_j = good_j? tke_j : turbNodes->GetPrimitive(jPoint,0);
+        // numerics->SetTurbKineticEnergy(tke_i, tke_j);
+        tke_i = good_i? tke_i : turbNodes->GetSolution(iPoint,0);
+        tke_j = good_j? tke_j : turbNodes->GetSolution(jPoint,0);
+        numerics->SetTurbVar(&tke_i, &tke_j);
       }
     }
     else {
@@ -3344,13 +3361,21 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   CVariable* turbNodes = nullptr;
   if (turb) turbNodes = solver[TURB_SOL]->GetNodes();
 
-  const auto V_i = flowNodes->GetPrimitive(iPoint);
-  const auto V_j = flowNodes->GetPrimitive(jPoint);
+  // const auto V_i = flowNodes->GetPrimitive(iPoint);
+  // const auto V_j = flowNodes->GetPrimitive(jPoint);
+
+  // su2double *T_i, *T_j;
+  // if (turb) {
+  //   T_i = tkeNeeded? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
+  //   T_j = tkeNeeded? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
+  // }
+  const auto V_i = flowNodes->GetSolution(iPoint);
+  const auto V_j = flowNodes->GetSolution(jPoint);
 
   su2double *T_i, *T_j;
   if (turb) {
-    T_i = tkeNeeded? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
-    T_j = tkeNeeded? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
+    T_i = turbNodes->GetSolution(iPoint);
+    T_j = turbNodes->GetSolution(jPoint);
   }
 
   const auto Coord_i = geometry->node[iPoint]->GetCoord();
@@ -3608,26 +3633,30 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- dU/d{r,v,p,k}, evaluated at face ---*/
 
-  dUl_dVl[0][0] = dUr_dVr[0][0] = 1.0;
+  // dUl_dVl[0][0] = dUr_dVr[0][0] = 1.0;
 
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    dUl_dVl[iDim+1][0] = vel_l[iDim];
-    dUr_dVr[iDim+1][0] = vel_r[iDim];
+  // for (auto iDim = 0; iDim < nDim; iDim++) {
+  //   dUl_dVl[iDim+1][0] = vel_l[iDim];
+  //   dUr_dVr[iDim+1][0] = vel_r[iDim];
 
-    dUl_dVl[iDim+1][iDim+1] = rho_l;
-    dUr_dVr[iDim+1][iDim+1] = rho_r;
+  //   dUl_dVl[iDim+1][iDim+1] = rho_l;
+  //   dUr_dVr[iDim+1][iDim+1] = rho_r;
 
-    dUl_dVl[nDim+1][iDim+1] = rho_l*vel_l[iDim];
-    dUr_dVr[nDim+1][iDim+1] = rho_r*vel_r[iDim];
-  }
-  dUl_dVl[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
-  dUr_dVr[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
+  //   dUl_dVl[nDim+1][iDim+1] = rho_l*vel_l[iDim];
+  //   dUr_dVr[nDim+1][iDim+1] = rho_r*vel_r[iDim];
+  // }
+  // dUl_dVl[nDim+1][0] = 0.5*sq_vel_l+(*tke_l);
+  // dUr_dVr[nDim+1][0] = 0.5*sq_vel_r+(*tke_r);
 
-  dUl_dVl[nDim+1][nDim+1] = dUr_dVr[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
+  // dUl_dVl[nDim+1][nDim+1] = dUr_dVr[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
 
-  if (tkeNeeded) {
-    dUl_dVl[nDim+1][nDim+2] = rho_l;
-    dUr_dVr[nDim+1][nDim+2] = rho_r;
+  // if (tkeNeeded) {
+  //   dUl_dVl[nDim+1][nDim+2] = rho_l;
+  //   dUr_dVr[nDim+1][nDim+2] = rho_r;
+  // }
+  for (auto iVar = 0; iVar < nVar+1; iVar++) {
+    dUl_dVl[iVar][iVar] = dUl_dVl[iVar][iVar] = 1.0;
+    dVi_dUi[iVar][iVar] = dVk_dUk[iVar][iVar] = 1.0;
   }
 
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
@@ -3648,23 +3677,23 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double inv_rho_i = 1.0/primvar_i[nDim+2];
   su2double vel_i[MAXNDIM] = {0.0};
   su2double sq_vel_i = 0.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    vel_i[iDim] = primvar_i[iDim+1];
-    sq_vel_i += pow(vel_i[iDim],2);
-  }
+  // for (auto iDim = 0; iDim < nDim; iDim++) {
+  //   vel_i[iDim] = primvar_i[iDim+1];
+  //   sq_vel_i += pow(vel_i[iDim],2);
+  // }
 
-  dVi_dUi[0][0] = 1.0;
-  for (auto iDim = 0; iDim < nDim; iDim++) {
-    dVi_dUi[iDim+1][0]      = -vel_i[iDim]*inv_rho_i;
-    dVi_dUi[iDim+1][iDim+1] = inv_rho_i;
-    dVi_dUi[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
-  }
-  dVi_dUi[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
-  dVi_dUi[nDim+1][nDim+1] = Gamma_Minus_One;
-  if (tkeNeeded)
-    dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
+  // dVi_dUi[0][0] = 1.0;
+  // for (auto iDim = 0; iDim < nDim; iDim++) {
+  //   dVi_dUi[iDim+1][0]      = -vel_i[iDim]*inv_rho_i;
+  //   dVi_dUi[iDim+1][iDim+1] = inv_rho_i;
+  //   dVi_dUi[nDim+1][iDim+1] = -Gamma_Minus_One*vel_i[iDim];
+  // }
+  // dVi_dUi[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_i;
+  // dVi_dUi[nDim+1][nDim+1] = Gamma_Minus_One;
   // if (tkeNeeded)
-  //   dVi_dUi[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(iPoint,0);
+  //   dVi_dUi[nDim+2][0] = -turbNodes->GetPrimitive(iPoint,0)*inv_rho_i;
+  // // if (tkeNeeded)
+  // //   dVi_dUi[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(iPoint,0);
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
@@ -3737,18 +3766,18 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       sq_vel_k += pow(vel_k[iDim],2);
     }
 
-    dVk_dUk[0][0] = 1.0;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
-      dVk_dUk[iDim+1][iDim+1] = inv_rho_k;
-      dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
-    }
-    dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
-    dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
-    if (tkeNeeded)
-      dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
+    // dVk_dUk[0][0] = 1.0;
+    // for (auto iDim = 0; iDim < nDim; iDim++) {
+    //   dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;
+    //   dVk_dUk[iDim+1][iDim+1] = inv_rho_k;
+    //   dVk_dUk[nDim+1][iDim+1] = -Gamma_Minus_One*vel_k[iDim];
+    // }
+    // dVk_dUk[nDim+1][0] = 0.5*Gamma_Minus_One*sq_vel_k;
+    // dVk_dUk[nDim+1][nDim+1] = Gamma_Minus_One;
     // if (tkeNeeded)
-    //   dVk_dUk[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(kPoint,0);
+    //   dVk_dUk[nDim+2][0] = -turbNodes->GetPrimitive(kPoint,0)*inv_rho_k;
+    // // if (tkeNeeded)
+    // //   dVk_dUk[nDim+1][0] -= Gamma_Minus_One*turbNodes->GetPrimitive(kPoint,0);
 
     SetGradWeights(gradWeight, solver[FLOW_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
@@ -5597,7 +5626,7 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
     /* Choose the minimum factor between mean flow and turbulence. */
 
-    // localUnderRelaxation = min(localUnderRelaxation, solver[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
+    localUnderRelaxation = min(localUnderRelaxation, solver[TURB_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
@@ -8053,22 +8082,33 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver, CNumerics
 
       /*--- Store new primitive state for computing the flux. ---*/
 
-      V_infty[0] = Pressure/(Gas_Constant*Density);
+      // V_infty[0] = Pressure/(Gas_Constant*Density);
+      // for (auto iDim = 0; iDim < nDim; iDim++)
+      //   V_infty[iDim+1] = Velocity[iDim];
+      // V_infty[nDim+1] = Pressure;
+      // V_infty[nDim+2] = Density;
+      // V_infty[nDim+3] = Energy + Pressure/Density;
+      V_infty[0] = Density;
       for (auto iDim = 0; iDim < nDim; iDim++)
-        V_infty[iDim+1] = Velocity[iDim];
-      V_infty[nDim+1] = Pressure;
-      V_infty[nDim+2] = Density;
-      V_infty[nDim+3] = Energy + Pressure/Density;
+        V_infty[iDim+1] = Density*Velocity[iDim];
+      V_infty[nDim+1] = Density*Energy;
 
       /*--- Turbulent kinetic energy, if needed for flux Jacobian ---*/
 
-      if (tkeNeeded)
-        conv_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
-                                            Kine_Infty);
+      // if (tkeNeeded)
+      //   conv_numerics->SetTurbKineticEnergy(turbNodes->GetPrimitive(iPoint,0),
+      //                                       Kine_Infty);
+      su2double RhoKine_Infty = 0.0;
+      if (tkeNeeded) {
+        RhoKine_Infty = Density*Kine_Infty;
+        conv_numerics->SetTurbVar(&turbNodes->GetSolution(iPoint,0),
+                                  &RhoKine_Infty);
+      }
 
       /*--- Set various quantities in the numerics class ---*/
 
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+      // conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetConservative(nodes->GetSolution(iPoint), V_infty);
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(node_i->GetGridVel(),

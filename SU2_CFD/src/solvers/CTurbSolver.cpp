@@ -138,8 +138,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
-    const auto T_j = sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
+    // const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
+    // const auto T_j = sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
+    const auto T_i = nodes->GetSolution(iPoint);
+    const auto T_j = nodes->GetSolution(jPoint);
 
     /*--- Grid Movement ---*/
 
@@ -167,8 +169,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
       /*--- Store the state ---*/
 
-      numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
-                             good_j? flowPrimVar_j : V_j);
+      // numerics->SetPrimitive(good_i? flowPrimVar_i : V_i, 
+      //                        good_j? flowPrimVar_j : V_j);
+      numerics->SetConservative(good_i? flowPrimVar_i : V_i, 
+                                good_j? flowPrimVar_j : V_j);
       numerics->SetTurbVar(  good_i? turbPrimVar_i : T_i, 
                              good_j? turbPrimVar_j : T_j);
     }
@@ -367,9 +371,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
-  const su2double dUl_dVl = *rho_l;
-  const su2double dUr_dVr = *rho_r;
-  const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
+  // const su2double dUl_dVl = *rho_l;
+  // const su2double dUr_dVr = *rho_r;
+  // const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
+  const su2double dUl_dVl = 1.0;
+  const su2double dUr_dVr = 1.0;
+  const su2double dVi_dUi = 1.0;
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -440,7 +447,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
     const auto kPoint = node_i->GetPoint(iNeigh);
-    const su2double dVk_dUk = 1.0/flowNodes->GetDensity(kPoint);
+    // const su2double dVk_dUk = 1.0/flowNodes->GetDensity(kPoint);
+    const su2double dVk_dUk = 1.0;
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
