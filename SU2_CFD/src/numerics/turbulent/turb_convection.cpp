@@ -92,7 +92,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (auto iDim = 0; iDim < nDim; iDim++)
-      a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+      a_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
   }
 
   a_i = 0.5*(a_ij+fabs(a_ij));
