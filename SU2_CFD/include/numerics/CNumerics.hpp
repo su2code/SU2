@@ -540,6 +540,53 @@ public:
   }
 
   /*!
+   * \brief Add a correction using a Quadratic Constitutive Relation
+   *
+   * This function requires that the stress tensor already be
+   * computed using \ref GetStressTensor
+   *
+   * See: Spalart, P. R., "Strategies for Turbulence Modelling and
+   * Simulation," International Journal of Heat and Fluid Flow, Vol. 21,
+   * 2000, pp. 252-263
+   *
+   * \param[in] nDim: 2D or 3D.
+   * \param[in] gradvel: Velocity gradients.
+   * \param[in,out] tau: Shear stress tensor.
+   */
+  template <class U, class V>
+  inline static void AddQCR(unsigned short nDim, const U& gradvel, V& tau) {
+
+    const su2double c_cr1= 0.3;
+    unsigned short iDim, jDim, kDim;
+
+    /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+
+    su2double den_aux = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        den_aux += gradvel[iDim][jDim] * gradvel[iDim][jDim];
+    den_aux = sqrt(max(den_aux,1E-10));
+
+    /*--- Adding the QCR contribution ---*/
+
+    su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
+
+    for (iDim = 0; iDim < nDim; iDim++){
+      for (jDim = 0; jDim < nDim; jDim++){
+        for (kDim = 0; kDim < nDim; kDim++){
+          su2double O_ik = (gradvel[iDim][kDim] - gradvel[kDim][iDim])/ den_aux;
+          su2double O_jk = (gradvel[jDim][kDim] - gradvel[kDim][jDim])/ den_aux;
+          tauQCR[iDim][jDim] = c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
+        }
+      }
+    }
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        tau[iDim][jDim] -= tauQCR[iDim][jDim];
+  }
+
+  /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first Menter blending function at point i.
    * \param[in] val_F1_j - Value of the first Menter blending function at point j.
