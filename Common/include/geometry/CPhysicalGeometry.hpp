@@ -118,7 +118,6 @@ class CPhysicalGeometry final : public CGeometry {
 public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetVertex;
-  using CGeometry::SetMeshFile;
   using CGeometry::SetControlVolume;
   using CGeometry::SetBoundControlVolume;
   using CGeometry::SetPoint_Connectivity;
@@ -551,13 +550,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) override;
-
-  /*!
-   * \brief Write the .su2 file.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  void SetMeshFile(CConfig *config, string val_mesh_out_filename) override;
 
   /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
