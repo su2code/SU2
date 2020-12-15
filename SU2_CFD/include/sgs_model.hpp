@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cmath>
@@ -604,20 +604,20 @@ public:
  * \version 7.0.8 "Blackbird"
  */
 class CVremanModel : public CSGSModel {
-  
+
 public:
   su2double const_Vreman; /*!< \brief Vreman Constant c=2.5*Cs*Cs.  */
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CVremanModel(void);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CVremanModel(void) override;
-  
+
   /*!
    * \brief Function to determine the eddy viscosity for
    the given function arguments for a 2D simulation.
@@ -637,7 +637,7 @@ public:
                                     const su2double dvdy,
                                     const su2double lenScale,
                                     const su2double distToWall) override;
-  
+
   /*!
    * \brief Function to determine the eddy viscosity for
    the given function arguments for a 3D simulation.
@@ -667,7 +667,7 @@ public:
                                     const su2double dwdz,
                                     const su2double lenScale,
                                     const su2double distToWall) override;
-  
+
   /*!
    * \brief Function to determine the gradients of the eddy viscosity
    for the given function arguments for a 2D simulation.
@@ -706,7 +706,7 @@ public:
                                    const su2double distToWall,
                                    su2double &dMuTdx,
                                    su2double &dMuTdy) override;
-  
+
   /*!
    * \brief function to determine the gradients of the eddy viscosity
    for the given function arguments for a 3D simulation.

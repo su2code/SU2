@@ -26,7 +26,7 @@
  */
 
 #include "../../include/adt/CADTElemClass.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 #include "../../include/option_structure.hpp"
 
 /* Define the tolerance to decide whether or not a point is inside an element. */

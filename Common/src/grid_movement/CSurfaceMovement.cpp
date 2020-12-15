@@ -3820,10 +3820,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   unsigned short SplineOrder[3];
   unsigned short Blending = 0;
 
-  char *cstr = new char [val_mesh_filename.size()+1];
-  strcpy (cstr, val_mesh_filename.c_str());
-
-  mesh_file.open(cstr, ios::in);
+  mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
     SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
   }
@@ -4635,8 +4632,6 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
   unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
   unsigned long iSurfacePoints;
-  char cstr[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
-  string str;
   ofstream output_file;
   su2double *coord;
   string text_line;
@@ -4685,18 +4680,12 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
     /*--- Read the name of the output file ---*/
 
-    str = config[ZONE_0]->GetMesh_Out_FileName();
-
+    auto str = config[ZONE_0]->GetMesh_Out_FileName();
     unsigned short lastindex = str.find_last_of(".");
-    str = str.substr(0, lastindex);
-
-    str += ".su2";
-
-    strcpy (mesh_file, str.c_str());
-    strcpy (cstr, mesh_file);
+    str = str.substr(0, lastindex) + ".su2";
 
     output_file.precision(15);
-    output_file.open(cstr, ios::out | ios::app);
+    output_file.open(str, ios::out | ios::app);
 
     if (nFFDBox != 0) {
       output_file << "FFD_NBOX= " << nFFDBox << endl;
