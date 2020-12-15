@@ -79,6 +79,8 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   Density_j = V_j[nDim+2];
 
   a_ij = 0.0;
+  a_i = 0.0;
+  a_j = 0.0;
   if (dynamic_grid) {
     for (auto iDim = 0; iDim < nDim; iDim++) {
       su2double Velocity_i = V_i[iDim+1] - GridVel_i[iDim];
