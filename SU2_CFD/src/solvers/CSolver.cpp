@@ -2046,6 +2046,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
+  /* Number of iterations considered to check for stagnation. */
+  const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
+
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
     /* Store the mean flow, and turbulence solvers more clearly. */
@@ -2065,17 +2068,22 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check whether we achieved the requested reduction in the linear
      solver residual within the specified number of linear iterations. */
 
-    bool reduceCFL = false;
-    su2double linResFlow = solverFlow->GetResLinSolver();
-    su2double linResTurb = -1.0;
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      linResTurb = solverTurb->GetResLinSolver();
-    }
+    su2double linResTurb = 0.0;
+    if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
 
-    su2double maxLinResid = max(linResFlow, linResTurb);
-    if (maxLinResid > 0.5) {
-      reduceCFL = true;
-    }
+    unsigned short linIterTurb = 0;
+    if ((iMesh == MESH_0) && solverTurb) linIterTurb = solverTurb->GetIterLinSolver();
+
+    /* Max residual and iterations between flow and turbulence. */
+    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+    const auto linIter = max(solverFlow->GetIterLinSolver(), linIterTurb);
+
+    /* Tolerance limited to a "reasonable" value. */
+    const su2double linTol = max(0.001, config->GetLinear_Solver_Error());
+
+    /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
+    const bool reduceCFL = linRes > 1.2*linTol;
+    const bool canIncrease = (linIter <= config->GetLinear_Solver_Iter()) && (linRes < linTol);
 
     /* Check that we are meeting our nonlinear residual reduction target
      over time so that we do not get stuck in limit cycles. */
@@ -2084,7 +2092,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     Old_Func = New_Func;
-    unsigned short Res_Count = 100;
     if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
 
     /* Sum the RMS residuals for all equations. */
@@ -2134,9 +2141,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
 
-    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-      reduceCFL = true;
-    }
+    const bool resetCFL = fabs(NonLinRes_Value) < 0.1*New_Func;
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -2173,9 +2178,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if ((underRelaxation < 0.1)) {
+      if (underRelaxation < 0.1 || reduceCFL) {
         CFLFactor = CFLFactorDecrease;
-      } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+      } else if ((underRelaxation >= 0.1 && underRelaxation < 1.0) || !canIncrease) {
         CFLFactor = 1.0;
       } else {
         CFLFactor = CFLFactorIncrease;
@@ -2194,7 +2199,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* If we detect a stalled nonlinear residual, then force the CFL
        for all points to the minimum temporarily to restart the ramp. */
 
-      if (reduceCFL) {
+      if (resetCFL) {
         CFL       = CFLMin;
         CFLFactor = MGFactor[iMesh];
       }
