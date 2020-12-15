@@ -97,18 +97,17 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(turb_ke_i);
-  AD::SetPreaccIn(V_j, nDim+3); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3); 
   AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); 
-    AD::SetPreaccIn(GridVel_j, nDim);
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   if (roe_low_dissipation){
-    AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Dissipation_i);
-    AD::SetPreaccIn(Sensor_j); AD::SetPreaccIn(Dissipation_j);
+    AD::SetPreaccIn(Sensor_i); AD::SetPreaccIn(Sensor_j);
+    AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
-   
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+
   /*--- Face area (norm or the normal vector) and unit normal ---*/
 
   Area = 0.0;
