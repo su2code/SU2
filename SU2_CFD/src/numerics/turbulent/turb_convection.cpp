@@ -146,9 +146,9 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   const su2double inv_R_Plus_One = 1.0/(R + 1.0);
   su2double RoeProjVel = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++)
-    RoeProjVel += (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One;
+    RoeProjVel += (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One*Normal[iDim];
   RoeProjVel = fabs(RoeProjVel);
-  
+
   Flux[0] = 0.5*(a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0]
                - RoeProjVel*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]));
   Flux[1] = 0.5*(a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1]
