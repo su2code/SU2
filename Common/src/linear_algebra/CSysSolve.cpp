@@ -27,7 +27,7 @@
 
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/option_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"

@@ -26,7 +26,7 @@
  */
 
 #include "../../include/solvers/CTurbSolver.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CTurbSolver::CTurbSolver(void) : CSolver() { }

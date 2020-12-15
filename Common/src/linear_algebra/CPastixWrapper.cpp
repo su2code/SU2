@@ -28,8 +28,8 @@
 
 #ifdef HAVE_PASTIX
 
-#include "../../include/mpi_structure.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CPastixWrapper.hpp"

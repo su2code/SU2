@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include "../integration/CIntegration.hpp"
 #include "../solvers/CSolver.hpp"
@@ -60,7 +60,7 @@ protected:
             UsedTimeCompute,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
             UsedTimeOutput,                     /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
-  su2double BandwidthSum;                       /*!< \brief Aggregate value of the bandwidth for writing restarts (to be average later).*/
+  su2double BandwidthSum = 0.0;                 /*!< \brief Aggregate value of the bandwidth for writing restarts (to be average later).*/
   unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
   OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */

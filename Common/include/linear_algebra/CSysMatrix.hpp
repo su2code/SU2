@@ -28,8 +28,8 @@
 
 #pragma once
 
-#include "../../include/mpi_structure.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/parallelization/vectorization.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"

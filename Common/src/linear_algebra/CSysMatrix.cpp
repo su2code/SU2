@@ -29,7 +29,7 @@
 
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/CConfig.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>

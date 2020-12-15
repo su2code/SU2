@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"

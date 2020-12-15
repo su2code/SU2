@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../linear_algebra/vector_expressions.hpp"
-#include "../omp_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 #include <initializer_list>
 #include <algorithm>
 #include <cmath>
