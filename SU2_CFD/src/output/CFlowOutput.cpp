@@ -816,30 +816,21 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
-  char cstr[200];
 
   /*--- Prepare to read the surface pressure files (CSV) ---*/
 
-  surfCp_filename = "TargetCp";
-
-  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curTimeIter, ".dat");
-
-  strcpy (cstr, surfCp_filename.c_str());
+  surfCp_filename = config->GetUnsteady_FileName("TargetCp", (int)curTimeIter, ".dat");
 
   /*--- Read the surface pressure file ---*/
 
   string::size_type position;
 
-  Surface_file.open(cstr, ios::in);
+  Surface_file.open(surfCp_filename);
 
   if (!(Surface_file.fail())) {
 
     nPointLocal = geometry->GetnPoint();
-#ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nPointGlobal = nPointLocal;
-#endif
 
     Point2Vertex = new unsigned long[nPointGlobal][2];
     PointInDomain = new bool[nPointGlobal];
