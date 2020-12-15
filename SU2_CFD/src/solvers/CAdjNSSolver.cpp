@@ -604,7 +604,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, temp_sens = 0.0,
   *Psi = nullptr, *U = nullptr, Enthalpy, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density,
   Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0},
-  CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,
+  CrossProduct[3], r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,
   dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0,
   RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
   const su2double* const* GridVel_Grad;
@@ -783,17 +783,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             else
               val_turb_ke = 0.0;
 
-            div_vel = 0.0;
-            for (iDim = 0 ; iDim < nDim; iDim++) {
-              Velocity[iDim] = U[iDim+1]/Density;
-              div_vel += PrimVar_Grad[iDim+1][iDim];
-            }
-
-            for (iDim = 0 ; iDim < nDim; iDim++)
-              for (jDim = 0 ; jDim < nDim; jDim++)
-                tau[iDim][jDim] = Laminar_Viscosity*(PrimVar_Grad[jDim+1][iDim] + PrimVar_Grad[iDim+1][jDim])
-                - TWO3*Laminar_Viscosity*div_vel*delta[iDim][jDim]
-                - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+            CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
 
@@ -810,6 +800,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               normal_grad_v_ux[iDim] = normal_grad_vel[iDim] - normal_grad_gridvel[iDim];
 
             /*--- Form Sigma_Psi5v ---*/
+
+            div_vel = 0.0;
+            for (iDim = 0 ; iDim < nDim; iDim++) {
+              Velocity[iDim] = U[iDim+1]/Density;
+              div_vel += PrimVar_Grad[iDim+1][iDim];
+            }
 
             gradPsi5_v = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {

@@ -1021,7 +1021,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double TauElem[3], TauTangent[3];
   su2double Tau[3][3];
   su2double TauNormal;
-  su2double div_vel=0, Delta;
 
   bool ionization = config->GetIonization();
 
@@ -1154,17 +1153,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       for (iVar = 0; iVar < nVar; iVar ++)
         Res_Visc[iVar] = 0.0;
 
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
-
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
       for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0 ; jDim < nDim; jDim++) {
-          Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-          Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[VEL_INDEX+jDim][iDim] +
-              Grad_PrimVar[VEL_INDEX+iDim][jDim]  )
-              - TWO3*Viscosity*div_vel*Delta;
-        }
         TauElem[iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
           TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];

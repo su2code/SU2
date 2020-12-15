@@ -552,7 +552,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
    global measures, one can compute the order of accuracy. ---*/
 
   bool write_heads =
-      ((((config->GetInnerIter() % (config->GetWrt_Con_Freq() * 40)) == 0) && (config->GetInnerIter() != 0)) ||
+      ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2) * 40)) == 0) && (config->GetInnerIter() != 0)) ||
        (config->GetInnerIter() == 1));
   if (!write_heads) return;
 
@@ -2030,12 +2030,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve = 0.0,
-            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor,
-            delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   su2double **Grad_PrimVar = nullptr, dTn, dTven;
 
@@ -2190,47 +2189,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       /*--- Evaluate Tau ---*/
-
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0; jDim < nDim; jDim++) {
-          Tau[iDim][jDim] = Viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) -
-                            TWO3 * Viscosity * div_vel * delta[iDim][jDim];
-        }
-      }
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 
-      if (QCR) {
-        su2double den_aux, c_cr1 = 0.3, O_ik, O_jk;
-        unsigned short kDim;
-
-        /*--- Denominator Antisymmetric normalized rotation tensor ---*/
-
-        den_aux = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++) den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
-        den_aux = sqrt(max(den_aux, 1E-10));
-
-        /*--- Adding the QCR contribution ---*/
-
-        su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            for (kDim = 0; kDim < nDim; kDim++) {
-              O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim]) / den_aux;
-              O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim]) / den_aux;
-              tauQCR[iDim][jDim] += O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim];
-            }
-          }
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++) Tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
-      }
+      if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau);
 
       /*--- Project Tau in each surface element ---*/
 
