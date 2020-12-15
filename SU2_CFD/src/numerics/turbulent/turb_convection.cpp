@@ -59,9 +59,11 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
+  AD::SetPreaccIn(TurbVar_i, nVar);  
+  AD::SetPreaccIn(TurbVar_j, nVar);
   if (dynamic_grid) {
-    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+    AD::SetPreaccIn(GridVel_i, nDim); 
+    AD::SetPreaccIn(GridVel_j, nDim);
   }
 
   ExtraADPreaccIn();
@@ -85,12 +87,15 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
     }
   }
   else {
-    for (auto iDim = 0; iDim < nDim; iDim++)
-      a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      // a_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+      a_i += Velocity_i[iDim]*Normal[iDim];
+      a_j += Velocity_j[iDim]*Normal[iDim];
+    }
   }
 
-  a_i = 0.5*(a_ij+fabs(a_ij));
-  a_j = 0.5*(a_ij-fabs(a_ij));
+  // a_i = 0.5*(a_ij+fabs(a_ij));
+  // a_j = 0.5*(a_ij-fabs(a_ij));
 
   FinishResidualCalc(config);
   
@@ -131,9 +136,25 @@ void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
 void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
-  Flux[0] = a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0];
-  Flux[1] = a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1];
+  // Flux[0] = a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0];
+  // Flux[1] = a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1];
 
-  Jacobian_i[0][0] = Jacobian_i[1][1] = a_i;
-  Jacobian_j[0][0] = Jacobian_j[1][1] = a_j;
+  // Jacobian_i[0][0] = Jacobian_i[1][1] = a_i;
+  // Jacobian_j[0][0] = Jacobian_j[1][1] = a_j;
+
+  const su2double R = sqrt(fabs(Density_j/Density_i));
+  const su2double inv_R_Plus_One = 1.0/(R + 1.0);
+  su2double RoeProjVel = 0.0;
+  for (auto iDim = 0; iDim < nDim; iDim++)
+    RoeProjVel += (R*Velocity_j[iDim]+Velocity_i[iDim])*inv_R_Plus_One;
+
+  const su2double DeltaRhoK = 
+  const su2double DeltaRhoO = 
+  Flux[0] = 0.5*(a_i*Density_i*TurbVar_i[0]+a_j*Density_j*TurbVar_j[0]
+               - RoeProjVel*(Density_j*TurbVar_j[0]-Density_i*TurbVar_i[0]));
+  Flux[1] = 0.5*(a_i*Density_i*TurbVar_i[1]+a_j*Density_j*TurbVar_j[1]
+               - RoeProjVel*(Density_j*TurbVar_j[1]-Density_i*TurbVar_i[1]));
+
+  Jacobian_i[0][0] = Jacobian_i[1][1] = 0.5*a_i + 0.5*RoeProjVel;
+  Jacobian_j[0][0] = Jacobian_j[1][1] = 0.5*a_j - 0.5*RoeProjVel;
 }
