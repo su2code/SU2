@@ -884,7 +884,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.0)*Volume;
 
   pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*min(diverg,0.0);
-  pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*min(diverg,0.0);
+  pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*min(diverg,0.0));
     
   pk = min(pk, pkmax);
   // pw = min(pw, pwmax);
