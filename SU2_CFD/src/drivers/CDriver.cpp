@@ -87,7 +87,7 @@
 
 #include "../../include/iteration/CIterationFactory.hpp"
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 #include <cassert>
 

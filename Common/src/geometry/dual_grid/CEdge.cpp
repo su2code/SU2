@@ -27,7 +27,7 @@
 
 #include "../../../include/geometry/dual_grid/CEdge.hpp"
 #include "../../../include/toolboxes/geometry_toolbox.hpp"
-#include "../../../include/omp_structure.hpp"
+#include "../../../include/parallelization/omp_structure.hpp"
 
 using namespace GeometryToolbox;
 
