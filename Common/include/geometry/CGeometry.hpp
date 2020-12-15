@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_METIS
 #include "metis.h"
@@ -855,20 +855,6 @@ public:
    * \param[in] action - Allocate or not the new elements.
    */
   inline virtual void SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  inline virtual void SetMeshFile(CConfig *config, string val_mesh_out_filename) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_out_filename - Name of the output file.
-   */
-  inline virtual void SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) {}
 
   /*!
    * \brief A virtual member.

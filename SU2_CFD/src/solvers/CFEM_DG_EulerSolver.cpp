@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -7323,7 +7323,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetTimeIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetTimeIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetTimeIter()!= 0))
                       || (config->GetTimeIter() == 1));
   if( !write_heads ) return;

@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1504,7 +1504,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the body force source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -1535,7 +1535,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the boussinesq source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -1552,9 +1552,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Load the conservative variables ---*/
+      /*--- Load the primitive variables ---*/
 
-      numerics->SetConservative(nodes->GetSolution(iPoint), nullptr);
+      numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
 
       /*--- Set incompressible density ---*/
 
@@ -1597,7 +1597,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Set the auxilairy variable for this node. ---*/
 
-        nodes->SetAuxVar(iPoint, AuxVar);
+        nodes->SetAuxVar(iPoint, 0, AuxVar);
 
       }
 
@@ -3076,33 +3076,19 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       LinSysRes.AddBlock(iPoint, Residual);
 
       if (implicit) {
-
-        SetPreconditioner(config, iPoint);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] = Preconditioner[iVar][jVar];
-          }
+        for (iVar = 1; iVar < nVar; iVar++) {
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (config->GetTime_Marching() == DT_STEPPING_1ST)
-              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
-            if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
-          }
-        }
-
-        if (!energy) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Jacobian_i[iVar][nDim+1] = 0.0;
-              Jacobian_i[nDim+1][iVar] = 0.0;
-            }
-        }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
 
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-
       }
+
     }
 
   }
@@ -3301,31 +3287,21 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
        to the dual time source term. ---*/
       if (!energy) Residual[nDim+1] = 0.0;
       LinSysRes.AddBlock(iPoint, Residual);
+
       if (implicit) {
-        SetPreconditioner(config, iPoint);
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_i[iVar][jVar] = Preconditioner[iVar][jVar];
-          }
+        for (iVar = 1; iVar < nVar; iVar++) {
+          if (config->GetTime_Marching() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetTime_Marching() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
         }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
+        if (energy) Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
 
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (config->GetTime_Marching() == DT_STEPPING_1ST)
-              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
-            if (config->GetTime_Marching() == DT_STEPPING_2ND)
-              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
-          }
-        }
-
-        if (!energy) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Jacobian_i[iVar][nDim+1] = 0.0;
-            Jacobian_i[nDim+1][iVar] = 0.0;
-          }
-        }
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
       }
+
     }
   }
 
@@ -3342,7 +3318,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   bool axisymmetric = config->GetAxisymmetric();
 
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetInnerIter()!= 0))
                       || (config->GetInnerIter() == 1));
 

@@ -2,7 +2,7 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -131,13 +131,13 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
       if (rank == MASTER_NODE) {
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-          unsigned short *FileFormat = config->GetVolumeOutputFiles();
-          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
+          auto FileFormat = config->GetVolumeOutputFiles();
+          if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
+          } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -215,14 +215,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
 
         for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-          unsigned short *FileFormat = config->GetVolumeOutputFiles();
+          auto FileFormat = config->GetVolumeOutputFiles();
 
-          if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
+          if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
             }
-          } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
+          } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
             cout << "Writing a Tecplot file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -394,14 +394,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
 
           for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
-            unsigned short *FileFormat = config->GetVolumeOutputFiles();
+            auto FileFormat = config->GetVolumeOutputFiles();
 
-            if (FileFormat[iFile] == PARAVIEW || FileFormat[iFile] == PARAVIEW_BINARY) {
+            if (isParaview(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
               cout << "Writing a Paraview file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
               }
-            } else if (FileFormat[iFile] == TECPLOT || FileFormat[iFile] == TECPLOT_BINARY) {
+            } else if (isTecplot(static_cast<ENUM_OUTPUT>(FileFormat[iFile]))) {
               cout << "Writing a Tecplot file of the FFD boxes." << endl;
               for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
                 FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
@@ -3820,10 +3820,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   unsigned short SplineOrder[3];
   unsigned short Blending = 0;
 
-  char *cstr = new char [val_mesh_filename.size()+1];
-  strcpy (cstr, val_mesh_filename.c_str());
-
-  mesh_file.open(cstr, ios::in);
+  mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
     SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
   }
@@ -4635,8 +4632,6 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
   unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
   unsigned long iSurfacePoints;
-  char cstr[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
-  string str;
   ofstream output_file;
   su2double *coord;
   string text_line;
@@ -4685,18 +4680,12 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
     /*--- Read the name of the output file ---*/
 
-    str = config[ZONE_0]->GetMesh_Out_FileName();
-
+    auto str = config[ZONE_0]->GetMesh_Out_FileName();
     unsigned short lastindex = str.find_last_of(".");
-    str = str.substr(0, lastindex);
-
-    str += ".su2";
-
-    strcpy (mesh_file, str.c_str());
-    strcpy (cstr, mesh_file);
+    str = str.substr(0, lastindex) + ".su2";
 
     output_file.precision(15);
-    output_file.open(cstr, ios::out | ios::app);
+    output_file.open(str, ios::out | ios::app);
 
     if (nFFDBox != 0) {
       output_file << "FFD_NBOX= " << nFFDBox << endl;

@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/geometry/CMultiGridGeometry.hpp"
-#include "../../include/CMultiGridQueue.hpp"
+#include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 
 

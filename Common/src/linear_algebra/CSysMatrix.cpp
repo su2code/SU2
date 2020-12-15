@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/CConfig.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>

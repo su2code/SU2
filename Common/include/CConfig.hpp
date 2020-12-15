@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "./parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <cstdlib>
@@ -196,6 +196,7 @@ private:
   nMarker_NearFieldBound,         /*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet,           /*!< \brief Number of actuator disk inlet markers. */
   nMarker_ActDiskOutlet,          /*!< \brief Number of actuator disk outlet markers. */
+  nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,   /*!< \brief Number of fluid interface markers. */
@@ -242,6 +243,7 @@ private:
   *Marker_TurboBoundOut,          /*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
   *Marker_Deform_Mesh,            /*!< \brief Deformable markers at the boundary. */
+  *Marker_Deform_Mesh_Sym_Plane,  /*!< \brief Marker with symmetric deformation. */
   *Marker_Fluid_Load,             /*!< \brief Markers in which the flow load is computed/employed. */
   *Marker_Fluid_InterfaceBound,   /*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
@@ -601,8 +603,9 @@ private:
   Kappa_4th_Flow,           /*!< \brief JST 4th order dissipation coefficient for flow equations. */
   Kappa_2nd_Heat,           /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat,           /*!< \brief 4th order dissipation coefficient for heat equation. */
-  Cent_Jac_Fix_Factor;              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
+  Cent_Jac_Fix_Factor,              /*!< \brief Multiply the dissipation contribution to the Jacobian of central schemes
                                                 by this factor to make the global matrix more diagonal dominant. */
+  Cent_Inc_Jac_Fix_Factor;          /*!< \brief Multiply the dissipation contribution to the Jacobian of incompressible central schemes */
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
 
   su2double Min_Beta_RoeTurkel,     /*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -619,8 +622,6 @@ private:
   su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
   Deform_PoissonRatio,               /*!< \brief Poisson's ratio for volume deformation stiffness model */
   Deform_StiffLayerSize;             /*!< \brief Size of the layer of highest stiffness for wall distance-based mesh stiffness */
-  bool Visualize_Surface_Def;        /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
-  bool Visualize_Volume_Def;         /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;           /*!< \brief FFD symmetry plane. */
 
   su2double Mach;             /*!< \brief Mach number. */
@@ -660,13 +661,7 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
-  unsigned long Wrt_Sol_Freq,   /*!< \brief Writing solution frequency. */
-  Wrt_Sol_Freq_DualTime,        /*!< \brief Writing solution frequency for Dual Time. */
-  Wrt_Con_Freq,                 /*!< \brief Writing convergence history frequency. */
-  Wrt_Con_Freq_DualTime;        /*!< \brief Writing convergence history frequency. */
-  bool Wrt_Dynamic;             /*!< \brief Write dynamic data adding header and prefix. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Wrt_Binary_Restart,           /*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
@@ -706,6 +701,7 @@ private:
   *Marker_All_DV,                    /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,                /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Deform_Mesh,           /*!< \brief Global index for deformable markers at the boundary. */
+  *Marker_All_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
   *Marker_All_Fluid_Load,            /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,              /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,             /*!< \brief Global index for moving using the grid information. */
@@ -720,6 +716,7 @@ private:
   *Marker_CfgFile_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Moving,             /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_Deform_Mesh,        /*!< \brief Global index for deformable markers at the boundary. */
+  *Marker_CfgFile_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
   *Marker_CfgFile_Fluid_Load,         /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,           /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,                 /*!< \brief Global index for design variable markers using the config information. */
@@ -758,7 +755,6 @@ private:
   string Mesh_FileName,          /*!< \brief Mesh input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
-  Solution_LinFileName,          /*!< \brief Linearized flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Residual_FileName,             /*!< \brief Residual variables output file. */
@@ -771,24 +767,13 @@ private:
   ObjFunc_Value_FileName,        /*!< \brief Objective function. */
   SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
-  New_SU2_FileName,              /*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 
-  bool Wrt_Output,           /*!< \brief Write any output files */
-  Wrt_Vol_Sol,               /*!< \brief Write a volume solution file */
-  Wrt_Srf_Sol,               /*!< \brief Write a surface solution file */
-  Wrt_Csv_Sol,               /*!< \brief Write a surface comma-separated values solution file */
-  Wrt_Crd_Sol,               /*!< \brief Write a binary file with the grid coordinates only. */
-  Wrt_Residuals,             /*!< \brief Write residuals to solution file */
-  Wrt_Surface,               /*!< \brief Write solution at each surface */
-  Wrt_Limiters,              /*!< \brief Write residuals to solution file */
-  Wrt_SharpEdges,            /*!< \brief Write residuals to solution file */
-  Wrt_Halo,                  /*!< \brief Write rind layers in solution files */
+  bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
-  Wrt_Slice,                 /*!< \brief Write 1D slice of a 2D cartesian solution */
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short
@@ -1009,7 +994,6 @@ private:
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                  /*!< \brief AD-based discrete adjoint mode. */
-  unsigned long Wrt_Surf_Freq_DualTime;  /*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_WindowFct;       /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1110,7 +1094,6 @@ private:
   unsigned short Comm_Level;                 /*!< \brief Level of MPI communications to be performed. */
   unsigned short Kind_Verification_Solution; /*!< \brief Verification solution for accuracy assessment. */
 
-  ofstream *ConvHistFile;        /*!< \brief Store the pointer to each history file */
   bool Time_Domain;              /*!< \brief Determines if the multizone problem is solved in time-domain */
   unsigned long nOuterIter,      /*!< \brief Determines the number of outer iterations in the multizone problem */
   nInnerIter,                    /*!< \brief Determines the number of inner iterations in each multizone block */
@@ -1481,7 +1464,7 @@ public:
    * \brief Get the coordinates where of the box where the grid is going to be deformed.
    * \return Coordinates where of the box where the grid is going to be deformed.
    */
-  su2double *GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
+  const su2double *GetHold_GridFixed_Coord(void) const { return Hold_GridFixed_Coord; }
 
   /*!
    * \brief Get the values of subsonic engine.
@@ -3074,102 +3057,6 @@ public:
   su2double GetPhysicalTime(void) const { return PhysicalTime; }
 
   /*!
-   * \brief Get the frequency for writing the solution file.
-   * \return It writes the solution file with this frequency.
-   */
-  unsigned long GetWrt_Sol_Freq(void) const { return Wrt_Sol_Freq; }
-
-  /*!
-   * \brief Get the frequency for writing the solution file in Dual Time.
-   * \return It writes the solution file with this frequency.
-   */
-  unsigned long GetWrt_Sol_Freq_DualTime(void) const { return Wrt_Sol_Freq_DualTime; }
-
-  /*!
-   * \brief Get the frequency for writing the convergence file.
-   * \return It writes the convergence file with this frequency.
-   */
-  unsigned long GetWrt_Con_Freq(void) const { return Wrt_Con_Freq; }
-
-  /*!
-   * \brief Set the frequency for writing the convergence file.
-   * \return It writes the convergence file with this frequency.
-   */
-  void SetWrt_Con_Freq(unsigned long val_freq) { Wrt_Con_Freq = val_freq; }
-
-  /*!
-   * \brief Get the frequency for writing the convergence file in Dual Time.
-   * \return It writes the convergence file with this frequency.
-   */
-  unsigned long GetWrt_Con_Freq_DualTime(void) const { return Wrt_Con_Freq_DualTime; }
-
-  /*!
-   * \brief Get information about writing unsteady headers and file extensions.
-   * \return    <code>TRUE</code> means that unsteady solution files will be written.
-   */
-  bool GetWrt_Unsteady(void);
-
-  /*!
-   * \brief Get information about writing output files.
-   * \return <code>TRUE</code> means that output files will be written.
-   */
-  bool GetWrt_Output(void) const { return Wrt_Output; }
-
-  /*!
-   * \brief Get information about writing a volume solution file.
-   * \return <code>TRUE</code> means that a volume solution file will be written.
-   */
-  bool GetWrt_Vol_Sol(void) const { return Wrt_Vol_Sol; }
-
-  /*!
-   * \brief Get information about writing a surface solution file.
-   * \return <code>TRUE</code> means that a surface solution file will be written.
-   */
-  bool GetWrt_Srf_Sol(void) const { return Wrt_Srf_Sol; }
-
-  /*!
-   * \brief Get information about writing a surface comma-separated values (CSV) solution file.
-   * \return <code>TRUE</code> means that a surface comma-separated values (CSV) solution file will be written.
-   */
-  bool GetWrt_Csv_Sol(void) const { return Wrt_Csv_Sol; }
-
-  /*!
-   * \brief Get information about writing a binary coordinates file.
-   * \return <code>TRUE</code> means that a binary coordinates file will be written.
-   */
-  bool GetWrt_Crd_Sol(void) const { return Wrt_Crd_Sol; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_Residuals(void) const { return Wrt_Residuals; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_Limiters(void) const { return Wrt_Limiters; }
-
-  /*!
-   * \brief Write solution at each surface.
-   * \return <code>TRUE</code> means that the solution at each surface will be written.
-   */
-  bool GetWrt_Surface(void) const { return Wrt_Surface; }
-
-  /*!
-   * \brief Get information about writing residuals to volume solution file.
-   * \return <code>TRUE</code> means that residuals will be written to the solution file.
-   */
-  bool GetWrt_SharpEdges(void) const { return Wrt_SharpEdges; }
-
-  /*!
-   * \brief Get information about writing rind layers to the solution files.
-   * \return <code>TRUE</code> means that rind layers will be written to the solution file.
-   */
-  bool GetWrt_Halo(void) const { return Wrt_Halo; }
-
-  /*!
    * \brief Get information about writing the performance summary at the end of a calculation.
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
@@ -3186,12 +3073,6 @@ public:
    * \return <code>TRUE</code> means that the mesh quality metrics will be written to the visualization files.
    */
   bool GetWrt_MeshQuality(void) const { return Wrt_MeshQuality; }
-
-  /*!
-   * \brief Get information about writing a 1D slice of a 2D cartesian solution.
-   * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
-   */
-  bool GetWrt_Slice(void) const { return Wrt_Slice; }
 
   /*!
    * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
@@ -3414,6 +3295,13 @@ public:
   void SetMarker_All_Deform_Mesh(unsigned short val_marker, unsigned short val_deform) { Marker_All_Deform_Mesh[val_marker] = val_deform; }
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH_SYM_PLANE marker.
+   */
+  void SetMarker_All_Deform_Mesh_Sym_Plane(unsigned short val_marker, unsigned short val_deform) { Marker_All_Deform_Mesh_Sym_Plane[val_marker] = val_deform; }
+
+  /*!
    * \brief Set if a in marker <i>val_marker</i> the flow load will be computed/employed.
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a Fluid_Load marker.
@@ -3549,6 +3437,13 @@ public:
    * \return 0 or 1 depending if the marker belongs to the DEFORM_MESH subset.
    */
   unsigned short GetMarker_All_Deform_Mesh(unsigned short val_marker) const { return Marker_All_Deform_Mesh[val_marker]; }
+
+  /*!
+   * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH_SYM_PLANE marker
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the DEFORM_MESH_SYM_PLANE subset.
+   * \return 0 or 1 depending if the marker belongs to the DEFORM_MESH_SYM_PLANE subset.
+   */
+  unsigned short GetMarker_All_Deform_Mesh_Sym_Plane(unsigned short val_marker) const { return Marker_All_Deform_Mesh_Sym_Plane[val_marker]; }
 
   /*!
    * \brief Get whether marker <i>val_marker</i> is a Fluid_Load marker
@@ -4248,18 +4143,6 @@ public:
   su2double GetDeform_StiffLayerSize(void) const { return Deform_StiffLayerSize; }
 
   /*!
-   * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-   */
-  bool GetVisualize_Volume_Def(void) const { return Visualize_Volume_Def; }
-
-  /*!
-   * \brief Creates a teot file to visualize the surface deformation deformation made by the DEF software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-   */
-  bool GetVisualize_Surface_Def(void) const { return Visualize_Surface_Def; }
-
-  /*!
    * \brief Define the FFD box with a symetry plane.
    * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
    */
@@ -4644,6 +4527,12 @@ public:
    * \return The factor.
    */
   su2double GetCent_Jac_Fix_Factor(void) const { return Cent_Jac_Fix_Factor; }
+
+  /*!
+   * \brief Factor by which to multiply the dissipation contribution to Jacobians of incompressible central schemes.
+   * \return The factor.
+   */
+  su2double GetCent_Inc_Jac_Fix_Factor(void) const { return Cent_Inc_Jac_Fix_Factor; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5156,21 +5045,19 @@ public:
   bool GetHold_GridFixed(void) const { return Hold_GridFixed; }
 
   /*!
-   * \brief Get the kind of objective function. There are several options: Drag coefficient,
-   *        Lift coefficient, efficiency, etc.
-   * \note The objective function will determine the boundary condition of the adjoint problem.
-   * \return Kind of objective function.
-   */
-  unsigned short GetKind_ObjFunc(void) const { return Kind_ObjFunc[0]; }
-
-  /*!
    * \author H. Kline
    * \brief Get the kind of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
    * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \param[in] val_obj
    * \return Kind of objective function.
    */
-  unsigned short GetKind_ObjFunc(unsigned short val_obj) const { return Kind_ObjFunc[val_obj]; }
+  unsigned short GetKind_ObjFunc(unsigned short val_obj = 0) const { return Kind_ObjFunc[val_obj]; }
+
+  /*!
+   * \brief Similar to GetKind_ObjFunc but returns the corresponding string.
+   */
+  string GetName_ObjFunc(unsigned short val_obj = 0) const;
 
   /*!
    * \author H. Kline
@@ -5198,12 +5085,6 @@ public:
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
    */
   su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return Obj_ChainRuleCoeff[iVar]; }
-
-  /*!
-   * \author H. Kline
-   * \brief Get the flag indicating whether to comput a combined objective.
-   */
-  bool GetComboObj(void);
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.
@@ -5242,12 +5123,6 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void) const { return Restart; }
-
-  /*!
-   * \brief Flag for whether binary SU2 native restart files are written.
-   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
-   */
-  bool GetWrt_Binary_Restart(void) const { return Wrt_Binary_Restart; }
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are read.
@@ -6135,6 +6010,12 @@ public:
   unsigned short GetMarker_CfgFile_Deform_Mesh(string val_marker) const;
 
   /*!
+   * \brief Get the DEFORM_MESH_SYM_PLANE information from the config definition for the marker <i>val_marker</i>.
+   * \return DEFORM_MESH_SYM_PLANE information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Deform_Mesh_Sym_Plane(string val_marker) const;
+
+  /*!
    * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
    * \return Fluid_Load information of the boundary in the config information for the marker <i>val_marker</i>.
    */
@@ -6461,6 +6342,12 @@ public:
   unsigned short GetMarker_Deform_Mesh(string val_marker) const;
 
   /*!
+   * \brief Get the internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
+   * \return Internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Deform_Mesh_Sym_Plane(string val_marker) const;
+
+  /*!
    * \brief Get the internal index for a Fluid_Load boundary <i>val_marker</i>.
    * \return Internal index for a Fluid_Load boundary <i>val_marker</i>.
    */
@@ -6481,6 +6368,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_Deform_Mesh_TagBound(unsigned short val_marker) const { return Marker_Deform_Mesh[val_marker]; }
+
+  /*!
+   * \brief Get the name of the DEFORM_MESH_SYM_PLANE boundary defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Name that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Deform_Mesh_Sym_Plane_TagBound(unsigned short val_marker) const { return Marker_Deform_Mesh_Sym_Plane[val_marker]; }
 
   /*!
    * \brief Get the name of the Fluid_Load boundary defined in the geometry file.
@@ -8528,12 +8423,6 @@ public:
   void SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
 
   /*!
-   * \brief Get information about writing dynamic structural analysis headers and file extensions.
-   * \return    <code>TRUE</code> means that dynamic structural analysis solution files will be written.
-   */
-  bool GetWrt_Dynamic(void) const { return Wrt_Dynamic; }
-
-  /*!
    * \brief Get Newmark alpha parameter.
    * \return Value of the Newmark alpha parameter.
    */
@@ -8913,12 +8802,6 @@ public:
   su2double GetRestart_Bandwidth_Agg(void) const { return Restart_Bandwidth_Agg; }
 
   /*!
-   * \brief Get the frequency for writing the surface solution file in Dual Time.
-   * \return It writes the surface solution file with this frequency.
-   */
-  unsigned long GetWrt_Surf_Freq_DualTime(void) const { return Wrt_Surf_Freq_DualTime; }
-
-  /*!
    * \brief Get the Kind of Hybrid RANS/LES.
    * \return Value of Hybrid RANS/LES method.
    */
@@ -9022,16 +8905,6 @@ public:
   void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
     type = top_optim_proj_type;  param = top_optim_proj_param;
   }
-
-  /*!
-   * \brief Retrieve the ofstream of the history file for the current zone.
-   */
-  ofstream* GetHistFile(void) { return ConvHistFile; }
-
-  /*!
-   * \brief Set the ofstream of the history file for the current zone.
-   */
-  void SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
 
   /*!
    * \brief Get the filenames of the individual config files
@@ -9317,6 +9190,7 @@ public:
 
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
+   * \param[in] iter: index for Time (0), Outer (1), or Inner (2) iterations
    * \return
    */
   unsigned long GetScreen_Wrt_Freq(unsigned short iter) const { return ScreenWrtFreq[iter]; }
@@ -9330,19 +9204,16 @@ public:
 
   /*!
    * \brief GetScreen_Wrt_Freq_Inner
-   * \return
    */
   unsigned long GetVolume_Wrt_Freq() const { return VolumeWrtFreq; }
 
   /*!
    * \brief GetVolumeOutputFiles
-   * \return
    */
-  unsigned short* GetVolumeOutputFiles() { return VolumeOutputFiles; }
+  const unsigned short* GetVolumeOutputFiles() const { return VolumeOutputFiles; }
 
   /*!
    * \brief GetnVolumeOutputFiles
-   * \return
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
 

@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1515,8 +1515,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -1705,32 +1704,17 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, total_index;
-  su2double *Coord, *MinCoordValues, *MaxCoordValues, *Hold_GridFixed_Coord;
 
   if (config->GetHold_GridFixed()) {
 
-    MinCoordValues = new su2double [nDim];
-    MaxCoordValues = new su2double [nDim];
-
-    for (iDim = 0; iDim < nDim; iDim++) {
-      MinCoordValues[iDim] = 0.0;
-      MaxCoordValues[iDim] = 0.0;
-    }
-
-    Hold_GridFixed_Coord = config->GetHold_GridFixed_Coord();
-
-    MinCoordValues[0] = Hold_GridFixed_Coord[0];
-    MinCoordValues[1] = Hold_GridFixed_Coord[1];
-    MinCoordValues[2] = Hold_GridFixed_Coord[2];
-    MaxCoordValues[0] = Hold_GridFixed_Coord[3];
-    MaxCoordValues[1] = Hold_GridFixed_Coord[4];
-    MaxCoordValues[2] = Hold_GridFixed_Coord[5];
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
 
     /*--- Set to zero displacements of all the points that are not going to be moved
      except the surfaces ---*/
 
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Coord = geometry->nodes->GetCoord(iPoint);
+      auto Coord = geometry->nodes->GetCoord(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) {
         if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
           total_index = iPoint*nDim + iDim;
@@ -1740,10 +1724,6 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
         }
       }
     }
-
-    delete [] MinCoordValues;
-    delete [] MaxCoordValues;
-
   }
 
   /*--- Don't move the volume grid outside the limits based

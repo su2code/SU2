@@ -2,7 +2,7 @@
  * \file vectorization.hpp
  * \brief Implementation of a portable SIMD type.
  * \author P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #pragma once
 
 #include "../linear_algebra/vector_expressions.hpp"
-#include "../omp_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 #include <initializer_list>
 #include <algorithm>
 #include <cmath>

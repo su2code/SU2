@@ -2,7 +2,7 @@
  * \file CDiscAdjHeatIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -194,6 +194,14 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
     /*--- Register node coordinates as input ---*/
 
     geometry[iZone][iInst][MESH_0]->RegisterCoordinates(config[iZone]);
+  }
+  /*--- Register the variables of the mesh deformation ---*/
+  if (kind_recording == MESH_DEFORM) {
+    /*--- Undeformed mesh coordinates ---*/
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+    /*--- Boundary displacements ---*/
+    solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
   }
 }
 

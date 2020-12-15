@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1788,11 +1788,9 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
-
   const bool dynamic = config->GetTime_Domain();
 
   /*--- Determine axis of symmetry based on the normal of the first element in the marker. ---*/
-
   const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
 
   const bool quad = (geometry->bound[val_marker][0]->GetVTK_Type() == QUADRILATERAL);
@@ -1802,7 +1800,6 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     auto iPoint = geometry->bound[val_marker][0]->GetNode(iNode);
     nodeCoord[iNode] = geometry->nodes->GetCoord(iPoint);
   }
-
   su2double normal[MAXNDIM] = {0.0};
 
   switch (nNodes) {
@@ -1828,7 +1825,6 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
     /*--- Set and enforce solution at current and previous time-step ---*/
     nodes->SetSolution(iPoint, axis, 0.0);
-
     if (dynamic) {
       nodes->SetSolution_Vel(iPoint, axis, 0.0);
       nodes->SetSolution_Accel(iPoint, axis, 0.0);
@@ -1839,9 +1835,10 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
-
     LinSysSol(iPoint, axis) = 0.0;
-    LinSysReact(iPoint, axis) = 0.0;
+    if (LinSysReact.GetLocSize() > 0){
+      LinSysReact(iPoint, axis) = 0.0;
+    }
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
 
   }
@@ -2708,7 +2705,6 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
-
   Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
   Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
 
@@ -2725,6 +2721,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   /*--- Solve or smooth the linear system. ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
   SU2_OMP_MASTER
   {
     SetIterLinSolver(iter);
@@ -3478,7 +3475,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
         sum += w * element_properties[iElem]->GetPhysicalDensity();
         vol += w;
       }
-      nodes->SetAuxVar(iPoint, sum/vol);
+      nodes->SetAuxVar(iPoint, 0, sum/vol);
     }
   }
 
