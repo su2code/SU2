@@ -2001,53 +2001,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief VOLUME_SENS_FILENAME
    *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
   addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
-  /*!\brief WRT_SOL_FREQ
-   *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
-  addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
-  /*!\brief WRT_SOL_FREQ_DUALTIME
-   *  \n DESCRIPTION: Writing solution file frequency for dual time  \ingroup Config*/
-  addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
-  /*!\brief WRT_CON_FREQ
-   *  \n DESCRIPTION: Writing convergence history frequency  \ingroup Config*/
-  addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /*!\brief WRT_CON_FREQ_DUALTIME
-   *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
-  addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
-  /*!\brief WRT_OUTPUT
-   *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
-  addBoolOption("WRT_OUTPUT", Wrt_Output, true);
-  /*!\brief WRT_VOL_SOL
-   *  \n DESCRIPTION: Write a volume solution file  \ingroup Config*/
-  addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
-  /*!\brief WRT_SRF_SOL
-   *  \n DESCRIPTION: Write a surface solution file  \ingroup Config*/
-  addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
-  /*!\brief WRT_CSV_SOL
-   *  \n DESCRIPTION: Write a surface CSV solution file  \ingroup Config*/
-  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
-  /*!\brief WRT_CSV_SOL
-   *  \n DESCRIPTION: Write a binary coordinates file  \ingroup Config*/
-  addBoolOption("WRT_CRD_SOL", Wrt_Crd_Sol, false);
-  /*!\brief WRT_SURFACE
-   *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
-  addBoolOption("WRT_SURFACE", Wrt_Surface, false);
-  /*!\brief WRT_RESIDUALS
-   *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
-  /*!\brief WRT_LIMITERS
-   *  \n DESCRIPTION: Output limiter value information to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
-  /*!\brief WRT_SHARPEDGES
-   *  \n DESCRIPTION: Output sharp edge limiter information to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
-  /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
-  addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
   /* DESCRIPTION: Output the tape statistics (discrete adjoint)  \ingroup Config*/
   addBoolOption("WRT_AD_STATISTICS", Wrt_AD_Statistics, false);
-    /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
-  addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
@@ -2705,9 +2662,6 @@ void CConfig::SetConfig_Options() {
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
 
-  /* DESCRIPTION: Writing surface solution file frequency for dual time */
-  addUnsignedLongOption("WRT_SURF_FREQ_DUALTIME", Wrt_Surf_Freq_DualTime, 1);
-
   /* DESCRIPTION: Starting Iteration for windowing approach */
   addUnsignedLongOption("WINDOW_START_ITER", StartWindowIteration, 0);
 
@@ -2906,6 +2860,22 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("VISUALIZE_VOLUME_DEF is deprecated. Simply add a volume format to OUTPUT_FILES.\n\n");
           if (!option_name.compare("WRT_BINARY_RESTART"))
             newString.append("WRT_BINARY_RESTART is deprecated. The type of restart is determined from the OUTPUT_FILES list.\n\n");
+          if (!option_name.compare("WRT_RESIDUALS"))
+            newString.append("WRT_RESIDUALS is deprecated. Use VOLUME_OUTPUT= ( RESIDUAL, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_LIMITERS"))
+            newString.append("WRT_LIMITERS is deprecated. Use VOLUME_OUTPUT= ( LIMITER, ... ) instead.\n\n");
+          if (!option_name.compare("WRT_CON_FREQ"))
+            newString.append("WRT_CON_FREQ is deprecated. Use SCREEN_WRT_FREQ_INNER or SCREEN_WRT_FREQ_OUTER for multizone cases instead.\n\n");
+          if (!option_name.compare("WRT_CON_FREQ_DUALTIME"))
+            newString.append("WRT_CON_FREQ_DUALTIME is deprecated. Use SCREEN_WRT_FREQ_TIME instead.\n\n");
+          if (!option_name.compare("WRT_SRF_SOL"))
+            newString.append("WRT_SRF_SOL is deprecated. Simply add a surface format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_CSV_SOL"))
+            newString.append("WRT_CSV_SOL is deprecated. Simply add a CSV format to OUTPUT_FILES.\n\n");
+          if (!option_name.compare("WRT_SOL_FREQ"))
+            newString.append("WRT_SOL_FREQ is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
+          if (!option_name.compare("WRT_SOL_FREQ_DUALTIME"))
+            newString.append("WRT_SOL_FREQ_DUALTIME is deprecated. Use OUTPUT_WRT_FREQ instead.\n\n");
           errorString.append(newString);
           err_count++;
           line_count++;
@@ -3436,20 +3406,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Time_Domain){
-    if (TimeMarching == TIME_STEPPING){
-      InnerIter = 1;
-    }
-    if (!OptionIsSet("OUTPUT_WRT_FREQ"))
-      VolumeWrtFreq = 1;
-    if (Restart == NO){
-      Restart_Iter = 0;
-    }
-    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")){
-      HistoryWrtFreq[2] = 0;
-    }
-    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")){
-      HistoryWrtFreq[1] = 0;
-    }
+    Delta_UnstTime = Time_Step;
+    Delta_DynTime  = Time_Step;
+
+    if (TimeMarching == TIME_STEPPING){ InnerIter = 1; }
+
+    /*--- Set the default write frequency to 1 if unsteady instead of 250 ---*/
+    if (!OptionIsSet("OUTPUT_WRT_FREQ")) { VolumeWrtFreq = 1; }
+
+    /*--- Set History write freq for inner and outer iteration to zero by default, so only time iterations write. ---*/
+    if (!OptionIsSet("HISTORY_WRT_FREQ_INNER")) { HistoryWrtFreq[2] = 0; }
+    if (!OptionIsSet("HISTORY_WRT_FREQ_OUTER")) { HistoryWrtFreq[1] = 0; }
+
+    if (Restart == NO) { Restart_Iter = 0; }
+
+    if (Time_Step <= 0.0 && Unst_CFL == 0.0){ SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION); }
+  } else {
+    nTimeIter = 1;
+    Time_Step = 0;
+
+    /*--- Entry 0 corresponds to unsteady simulation so for steady simulation are just set to 1. ---*/
+    ScreenWrtFreq[0]  = 1;
+    HistoryWrtFreq[0] = 1;
+
+    if (TimeMarching != HARMONIC_BALANCE) { TimeMarching = STEADY; }
   }
 
   /*--- Ensure that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
@@ -3498,24 +3478,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Initialize the ofstream ConvHistFile. ---*/
-//  ofstream ConvHistFile;
-
-//  if (Kind_Solver == FEM_ELASTICITY) {
-
-//    if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
-//    else { Wrt_Dynamic = true; }
-
-//  } else {
-//    Wrt_Dynamic = false;
-//  }
-
-  if (Kind_Radiation != NO_RADIATION) {
-    Radiation = true;
-  }
-  else{
-    Radiation = false;
-  }
+  Radiation = (Kind_Radiation != NO_RADIATION);
 
   /*--- Check for unsupported features. ---*/
 
@@ -3632,33 +3595,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Number of KIND_SURFACE_MOVEMENT must match number of MARKER_MOVING", CURRENT_FUNCTION);
   }
 
-  if (Time_Domain && Time_Step <= 0.0 && Unst_CFL == 0.0){
-    SU2_MPI::Error("Invalid value for TIME_STEP.", CURRENT_FUNCTION);
-  }
-
   if (TimeMarching == TIME_STEPPING){
     nIter      = 1;
     nInnerIter  = 1;
-  }
-
-  if (!Time_Domain){
-    nTimeIter = 1;
-    Time_Step = 0;
-
-    ScreenWrtFreq[0]  = 1;
-    HistoryWrtFreq[0] = 1;
-
-    if (TimeMarching != HARMONIC_BALANCE)
-      TimeMarching = STEADY;
-  }
-
-  if (Time_Domain){
-    Delta_UnstTime = Time_Step;
-    Delta_DynTime  = Time_Step;
-    /*--- Set the default write frequency to 1 if unsteady ---*/
-    if (!OptionIsSet("OUTPUT_WRT_FREQ")){
-      VolumeWrtFreq = 1;
-    }
   }
 
   if (!Multizone_Problem){
@@ -4805,16 +4744,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     if (Comm_Level == COMM_NONE)
       SU2_MPI::Error("COMM_LEVEL = NONE not yet implemented.", CURRENT_FUNCTION);
-
-    Wrt_Sol_Freq          = nTimeIter+1;
-    Wrt_Sol_Freq_DualTime = nTimeIter+1;
-
-    /*--- Write only the restart. ---*/
-
-    Wrt_Slice   = false;
-    Wrt_Vol_Sol = false;
-    Wrt_Srf_Sol = false;
-    Wrt_Csv_Sol = false;
   }
 
   /*--- Check the conductivity model. Deactivate the turbulent component
@@ -4863,9 +4792,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Use the same linear solver on the primal as the one used in the adjoint. ---*/
     Kind_Linear_Solver = Kind_DiscAdj_Linear_Solver;
     Kind_Linear_Solver_Prec = Kind_DiscAdj_Linear_Prec;
-
-    /*--- Disable writing of limiters if enabled ---*/
-    Wrt_Limiters = false;
 
     if (TimeMarching) {
 
