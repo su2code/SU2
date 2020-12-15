@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"

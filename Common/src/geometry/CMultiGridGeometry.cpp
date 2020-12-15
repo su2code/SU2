@@ -26,7 +26,7 @@
  */
 
 #include "../../include/geometry/CMultiGridGeometry.hpp"
-#include "../../include/CMultiGridQueue.hpp"
+#include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 
 

@@ -33,7 +33,7 @@
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
 
 using namespace std;
