@@ -36,6 +36,18 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
+private:
+  
+  su2double
+  **TauWall_WMLES = nullptr,        /*!< \brief Wall shear stress for each boundary and vertex (WMLES). */
+  **HeatFlux_WMLES = nullptr,       /*!< \brief Heat transfer coefficient for each boundary and vertex (WMLES). */
+  ***FlowDirTan_WMLES = nullptr,    /*!< \brief Velocity unit tangent for each boundary and vertex (WMLES). */
+  ***VelTimeFilter_WMLES = nullptr; /*!< \brief Input time filter Velocity for each boundary and vertex (WMLES). */
+
+  CSGSModel *SGSModel;               /*!< \brief LES Subgrid Scale model. */
+  bool SGSModelUsed;                 /*!< \brief Whether or not an LES Subgrid Scale model is used. */
+  CWallModel *WallModel;             /*!< \brief Choice of the Wall Model LES. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -48,6 +60,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CIncNSSolver(void) override;
 
   /*!
    * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
@@ -138,6 +155,22 @@ public:
                                   unsigned short val_marker) override;
 
   /*!
+   * \brief Impose a wall model shear stress at wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * */
+  void BC_WallModel(CGeometry      *geometry,
+                    CSolver        **solver_container,
+                    CNumerics      *conv_numerics,
+                    CNumerics      *visc_numerics,
+                    CConfig        *config,
+                    unsigned short val_marker) override;
+  
+  /*!
    * \brief Compute the viscous residuals.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -153,4 +186,27 @@ public:
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
 
+  /*!
+   * \brief Computes eddy viscosity (SGS model) for LES problems.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Setmut_LES(CGeometry *geometry,
+                     CSolver** solver_container,
+                     CConfig* config) override;
+
+  /*!
+   * \brief Computes the shear stress and heat flux using the 1st node off the wall
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+
+  void SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry,
+                                        CSolver **solver_container,
+                                        CConfig *config,
+                                        unsigned short iRKStep) override;
+  
 };

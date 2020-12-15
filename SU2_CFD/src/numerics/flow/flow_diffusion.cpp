@@ -824,8 +824,17 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                     dist_ij_2, nVar);
   }
 
+  /*--- Wall shear stress values (wall functions) ---*/
+
+  Mean_TauWall = 0.0;
+  bool UseWallFunction = TauWallFlag_i ^ TauWallFlag_j;
+  if (UseWallFunction)
+    Mean_TauWall = TauWallFlag_i ? TauWall_i : TauWall_j;
+  
   /*--- Get projected flux tensor (viscous residual) ---*/
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  
+  if (UseWallFunction) AddTauWall(Normal, Mean_TauWall);
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
 
