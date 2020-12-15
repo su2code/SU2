@@ -1437,6 +1437,7 @@ enum ENUM_OBJECTIVE {
   SURFACE_SECOND_OVER_UNIFORM = 55, /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
   SURFACE_PRESSURE_DROP = 56, 	/*!< \brief Pressure drop objective function definition. */
   CUSTOM_OBJFUNC = 31, 	        /*!< \brief Custom objective function definition. */
+  AVG_NORMAL_VEL = 32,          /*!< \brief Mass-averaged normal velocity. */
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
   TOTAL_EFFICIENCY = 41,
@@ -1487,6 +1488,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
   MakePair("SURFACE_PRESSURE_DROP", SURFACE_PRESSURE_DROP)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
+  MakePair("AVG_NORMAL_VEL", AVG_NORMAL_VEL)
   MakePair("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
   MakePair("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
   MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)

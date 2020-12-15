@@ -705,6 +705,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
           case SURFACE_STATIC_PRESSURE:
             ObjFunc += config->GetSurface_Pressure(0)*Weight_ObjFunc;
             break;
+          case AVG_NORMAL_VEL:
+            ObjFunc += config->GetSurface_NormalVelocity(0)*Weight_ObjFunc;
+            break;  
           case TOTAL_HEATFLUX:
             ObjFunc += solvers[FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
             break;
