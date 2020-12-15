@@ -626,7 +626,7 @@ void CWallModelAPGLL::WallShearStressAndHeatFlux(const su2double h_wm,
     monitor = fabs(1.0 - u_tau/u_tau0);
     if ( monitor < tol) converged = true;
 
-    if (std::isnan(static_cast<double>(u_tau))){
+    if (std::isnan(SU2_TYPE::GetValue(u_tau))){
       SU2_MPI::Error("u_tau is nan at APGLL Wall Model", CURRENT_FUNCTION);
     }
   }
