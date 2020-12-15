@@ -374,8 +374,7 @@ void CDriver::SetContainers_Null(){
 
 void CDriver::Postprocessing() {
 
-  bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
-  bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
+  const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
     /*--- Output some information to the console. ---*/
 
@@ -572,7 +571,7 @@ void CDriver::Postprocessing() {
     cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
       cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
-      if (isBinary) {
+      if (BandwidthSum > 0) {
         cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
         cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
       }
@@ -1865,8 +1864,10 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else if (config->GetAxisymmetric() == YES) {
         if (incompressible)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncAxisymmetric_Flow(nDim, nVar_Flow, config);
-        else
+        else if (ideal_gas)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
+        else
+          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGeneralAxisymmetric_Flow(nDim, nVar_Flow, config);
       }
       else if (config->GetGravityForce() == YES) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGravity(nDim, nVar_Flow, config);
@@ -2763,16 +2764,9 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
 
-
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetTime_Domain() && config_container[ZONE_0]->GetRestart())
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
-  /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
-      && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
 
 }
 

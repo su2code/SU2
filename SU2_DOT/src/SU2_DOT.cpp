@@ -955,7 +955,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     /*--- Write to file ---*/
 
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
-      unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
+      auto FileFormat = config[iZone]->GetVolumeOutputFiles();
       if (FileFormat[iFile] != RESTART_ASCII &&
           FileFormat[iFile] != RESTART_BINARY &&
           FileFormat[iFile] != CSV)

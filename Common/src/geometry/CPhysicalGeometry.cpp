@@ -3593,6 +3593,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
       config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -3615,6 +3616,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_Deform_Mesh(iMarker, NO);
+      config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, NO);
       config->SetMarker_All_Fluid_Load(iMarker, NO);
       config->SetMarker_All_PyCustom(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -4016,6 +4018,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
       config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -7897,95 +7900,6 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
 
 }
 
-void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
-  unsigned long iElem, iPoint, iElem_Bound;
-  unsigned short iMarker, iNodes, iDim;
-  ofstream output_file;
-  string Grid_Marker;
-  char *cstr;
-
-  cstr = new char [val_mesh_out_filename.size()+1];
-  strcpy (cstr, val_mesh_out_filename.c_str());
-
-  /*--- Open .su2 grid file ---*/
-
-  output_file.precision(15);
-  output_file.open(cstr, ios::out);
-
-  /*--- Write dimension, number of elements and number of points ---*/
-
-  output_file << "NDIME= " << nDim << endl;
-  output_file << "NELEM= " << nElem << endl;
-  for (iElem = 0; iElem < nElem; iElem++) {
-    output_file << elem[iElem]->GetVTK_Type();
-    for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-      output_file << "\t" << elem[iElem]->GetNode(iNodes);
-    output_file << "\t"<<iElem<< endl;
-  }
-
-  /*--- Write the node coordinates ---*/
-
-  output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
-  output_file.precision(15);
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << nodes->GetCoord(iPoint, iDim) ;
-#ifndef HAVE_MPI
-    output_file << "\t" << iPoint << endl;
-#else
-    output_file << "\t" << iPoint << "\t" << nodes->GetGlobalIndex(iPoint) << endl;
-#endif
-
-  }
-
-  /*--- Loop through and write the boundary info ---*/
-
-  output_file << "NMARK= " << nMarker << endl;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    /*--- Ignore SEND_RECEIVE for the moment ---*/
-    if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
-
-      Grid_Marker = config->GetMarker_All_TagBound(iMarker);
-      output_file << "MARKER_TAG= " << Grid_Marker << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-
-      if (nDim == 2) {
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file << iElem_Bound << endl;
-        }
-      }
-
-      if (nDim == 3) {
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file << iElem_Bound << endl;
-        }
-      }
-
-    } else if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-      if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-      if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
-        bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
-        bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
-      }
-
-    }
-  }
-
-  output_file.close();
-}
-
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
   unsigned short iSmooth, nneigh, iMarker;
   su2double *Coord_Old, *Coord_Sum, *Coord, *Coord_i, *Coord_j, Position_Plane = 0.0;
@@ -8955,7 +8869,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + fname, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points. ---*/
@@ -8972,7 +8886,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     /*--- Store the number of fields for simplicity. ---*/
@@ -9069,7 +8983,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     /*--- Store the number of fields for simplicity. ---*/
@@ -9289,7 +9203,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     fclose(fhw);
@@ -9328,7 +9242,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                      string("SU2 reads/writes binary restart files by default.\n") +
                      string("Note that backward compatibility for ASCII restart files is\n") +
-                     string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                     string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
     }
 
     MPI_File_close(&fhw);

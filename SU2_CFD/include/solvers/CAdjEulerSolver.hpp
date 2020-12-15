@@ -78,6 +78,13 @@ protected:
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
 
+  /*!
+   * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
+
 public:
 
   /*!

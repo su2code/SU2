@@ -69,20 +69,6 @@ protected:
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
 
   /*!
-   * \brief Add a correction using a Quadratic Constitutive Relation
-   *
-   * This function requires that the stress tensor already be
-   * computed using \ref GetStressTensor
-   *
-   * See: Spalart, P. R., "Strategies for Turbulence Modelling and
-   * Simulation," International Journal of Heat and Fluid Flow, Vol. 21,
-   * 2000, pp. 252-263
-   *
-   * \param[in] val_gradprimvar
-   */
-  void AddQCR(const su2double* const *val_gradprimvar);
-
-  /*!
    * \brief Scale the stress tensor using a predefined wall stress.
    *
    * This function requires that the stress tensor already be
@@ -190,12 +176,6 @@ protected:
    * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
    */
   void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-
-  /*!
-   * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param[in] S_ij
-   */
-  void GetMeanRateOfStrainMatrix(su2double **S_ij) const;
 
 public:
 

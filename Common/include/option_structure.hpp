@@ -102,6 +102,7 @@ const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
 const su2double ONE2 = 0.5;         /*!< \brief One divided by two. */
+const su2double ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
 const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
 const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
@@ -1715,6 +1716,39 @@ static const MapType<string, ENUM_OUTPUT> Output_Map = {
 };
 
 /*!
+ * \brief Return true if format is one of the Paraview options.
+ */
+inline bool isParaview(ENUM_OUTPUT format) {
+  switch(format) {
+    case PARAVIEW:
+    case PARAVIEW_BINARY:
+    case SURFACE_PARAVIEW:
+    case SURFACE_PARAVIEW_BINARY:
+    case PARAVIEW_XML:
+    case SURFACE_PARAVIEW_XML:
+    case PARAVIEW_MULTIBLOCK:
+      return true;
+    default:
+      return false;
+  }
+}
+
+/*!
+ * \brief Return true if format is one of the Tecplot options.
+ */
+inline bool isTecplot(ENUM_OUTPUT format) {
+  switch(format) {
+    case TECPLOT:
+    case TECPLOT_BINARY:
+    case SURFACE_TECPLOT:
+    case SURFACE_TECPLOT_BINARY:
+      return true;
+    default:
+      return false;
+  }
+}
+
+/*!
  * \brief Type of solution output file formats
  */
 enum ENUM_TAB_OUTPUT {
@@ -2182,7 +2216,7 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 29,   /*!< \brief Solution at time n-1. */
+  SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
   PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
 };
 
