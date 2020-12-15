@@ -845,8 +845,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
                     -  TWO3*diverg*(iDim == jDim)) * PrimVar_Grad_i[iDim+1][jDim];
   }
 
-  su2double pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*diverg;
-  su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*diverg);
+  // su2double pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*diverg;
+  // su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*diverg);
+  su2double pk = Eddy_Viscosity_i*StrainMag2;
+  su2double pw = Density_i*alfa_blended*StrainMag2;
 
   const su2double pkmax = 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0];
   // const su2double pkmax = 20.*beta_star*Density_i*TurbVar_i[0]*zeta;
@@ -883,10 +885,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   if (!stress_limited)
     Jacobian_i[1][1] -= TWO3*alfa_blended*max(diverg,0.0)*Volume;
 
-  pk = Eddy_Viscosity_i*StrainMag2 - TWO3*Density_i*TurbVar_i[0]*min(diverg,0.0);
-  pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*min(diverg,0.0));
+  pk = min(pk, pkmax) - TWO3*Density_i*TurbVar_i[0]*min(diverg,0.0);
+  pw = pw - TWO3*zeta*min(diverg,0.0);
     
-  pk = min(pk, pkmax);
+  // pk = min(pk, pkmax);
   // pw = min(pw, pwmax);
     
   // pk = max(pk, 0.0);
