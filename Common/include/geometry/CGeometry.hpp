@@ -83,7 +83,7 @@ protected:
   nPointGhost{0},                 /*!< \brief Number of ghost points of the mesh. */
   nPointNode{0},                  /*!< \brief Size of the node array allocated to hold CPoint objects. */
   Global_nPoint{0},               /*!< \brief Total number of nodes in a simulation across all processors (including halos). */
-  Global_nPointDomain{0},	        /*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
+  Global_nPointDomain{0},         /*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
   nElem{0},                       /*!< \brief Number of elements of the mesh. */
   Global_nElem{0},                /*!< \brief Total number of elements in a simulation across all processors (all types). */
   Global_nElemDomain{0},          /*!< \brief Total number of elements in a simulation across all processors (excluding halos). */
@@ -188,7 +188,7 @@ public:
 
   CPrimalGrid** elem{nullptr};           /*!< \brief Element vector (primal grid information). */
   CPrimalGrid** face{nullptr};           /*!< \brief Face vector (primal grid information). */
-  CPrimalGrid*** bound{nullptr};	       /*!< \brief Boundary vector (primal grid information). */
+  CPrimalGrid*** bound{nullptr};         /*!< \brief Boundary vector (primal grid information). */
   CPoint* nodes{nullptr};                /*!< \brief Node vector (dual grid information). */
   CEdge* edges{nullptr};                 /*!< \brief Edge vector (dual grid information). */
   CVertex*** vertex{nullptr};            /*!< \brief Boundary Vertex vector (dual grid information). */
