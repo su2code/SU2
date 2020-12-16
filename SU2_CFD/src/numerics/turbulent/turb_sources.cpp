@@ -883,8 +883,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   pk = min(pk, pkmax);
   // pw = min(pw, pwmax);
     
-  // pk = max(pk, 0.0);
-  // pw = max(pw, 0.0);
+  pk = max(pk, 0.0);
+  pw = max(pw, 0.0);
 
   /*--- Sustaining terms, if desired. Note that if the production terms are
         larger equal than the sustaining terms, the original formulation is
