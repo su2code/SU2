@@ -71,7 +71,8 @@ protected:
   MatrixType dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
-
+  VectorType Gamma;  /*!< \brief Ratio of specific heats. */
+  
   CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
@@ -516,6 +517,11 @@ public:
   inline su2double GetMassFraction(unsigned long iPoint, unsigned short val_Species) const {
     return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
   }
+
+  /*!
+   * \brief Returns the stored value of Gamma at the specified node
+   */
+  inline su2double GetGamma(unsigned long iPoint) { return Gamma(iPoint); }
 
   /*---------------------------------------*/
   /*---           NEMO indices          ---*/

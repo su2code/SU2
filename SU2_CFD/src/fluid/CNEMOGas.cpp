@@ -131,9 +131,26 @@ su2double CNEMOGas::ComputeGasConstant(){
   return GasConstant;
 }
 
-su2double CNEMOGas::GetrhoCvve() {
+su2double CNEMOGas::ComputeGamma(){
 
-    Cvves = GetSpeciesCvVibEle();
+  /*--- Extract Values ---*/
+  rhoCvtr = ComputerhoCvtr();
+  rhoCvve = ComputerhoCvve();
+
+  /*--- Gamma Computation ---*/
+  su2double rhoR = 0.0;
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhoR += rhos[iSpecies]*Ru/MolarMass[iSpecies];
+
+  gamma = rhoR/(rhoCvtr+rhoCvve)+1;
+
+  return gamma;
+
+}
+
+su2double CNEMOGas::ComputerhoCvve() {
+
+    Cvves = ComputeSpeciesCvVibEle();
 
     rhoCvve = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
