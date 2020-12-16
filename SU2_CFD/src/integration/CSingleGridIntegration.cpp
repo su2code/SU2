@@ -26,7 +26,7 @@
  */
 
 #include "../../include/integration/CSingleGridIntegration.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CSingleGridIntegration::CSingleGridIntegration() : CIntegration() { }

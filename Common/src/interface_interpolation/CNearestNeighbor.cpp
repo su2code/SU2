@@ -30,16 +30,6 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
-
-/*! \brief Helper struct to (partially) sort neighbours according to distance while
- *         keeping track of the origin of the point (i.e. index and processor). */
-struct DonorInfo {
-  su2double dist;
-  unsigned pidx;
-  int proc;
-  DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) : dist(d), pidx(i), proc(p) { }
-};
-
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
                                    unsigned int iZone, unsigned int jZone) :
   CInterpolator(geometry_container, config, iZone, jZone) {
@@ -138,7 +128,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         }
       }
 
-      /*--- Find k closest points (need to define the comparator inline or debug build give wrong results). ---*/
+      /*--- Find k closest points. ---*/
       partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
         [](const DonorInfo& a, const DonorInfo& b) {
           /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/

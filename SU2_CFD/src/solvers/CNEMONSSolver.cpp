@@ -110,11 +110,12 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
+  //TODO: THIS NEEDS TO BE UPDATED ASAP!
   StrainMag_Max = 0.0;
   Omega_Max = 0.0;
   //nodes->SetVorticity_StrainMag();
 
-  su2double omegaMax = 0.0; //strainMax = 0.0
+  su2double strainMax = 0.0, omegaMax = 0.0;
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -378,7 +379,6 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
       /*--- Scale thermal conductivity with turb ---*/
       // TODO: Need to determine proper way to incorporate eddy viscosity
       // This is only scaling Kve by same factor as ktr
-      // Could add to fluid model?
       su2double Mass = 0.0;
       auto&     Ms   = FluidModel->GetSpeciesMolarMass();
       su2double tmp1, scl, Cptr;
@@ -816,7 +816,8 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   ///////////// FINITE DIFFERENCE METHOD ///////////////
   /*--- Local variables ---*/
   bool implicit;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar,
+      RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double rho, *eves, *dTdU, *dTvedU, *Cvve, *Normal, Area, Ru, RuSI,
   dij, *Di, *Vi, *Vj, *Yj, *dYdn, SdYdn, **GradY, **dVdU;
@@ -833,15 +834,15 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
   Yst = config->GetWall_Catalycity();
 
   /*--- Get universal information ---*/
-  RuSI = UNIVERSAL_GAS_CONSTANT;
-  Ru   = 1000.0*RuSI;
-  auto& Ms   = FluidModel->GetSpeciesMolarMass();
+  RuSI     = UNIVERSAL_GAS_CONSTANT;
+  Ru       = 1000.0*RuSI;
+  auto& Ms = FluidModel->GetSpeciesMolarMass();
 
   /*--- Get the locations of the primitive variables ---*/
-  RHOS_INDEX    = nodes->GetRhosIndex();
-  RHO_INDEX     = nodes->GetRhoIndex();
-  T_INDEX       = nodes ->GetTIndex();
-  TVE_INDEX     = nodes ->GetTveIndex();
+  RHOS_INDEX  = nodes->GetRhosIndex();
+  RHO_INDEX   = nodes->GetRhoIndex();
+  T_INDEX     = nodes->GetTIndex();
+  TVE_INDEX   = nodes->GetTveIndex();
 
   /*--- Allocate arrays ---*/
   Yj    = new su2double[nSpecies];
@@ -889,7 +890,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Vj   = nodes->GetPrimitive(jPoint);
       Di   = nodes->GetDiffusionCoeff(iPoint);
       eves = nodes->GetEve(iPoint);
-      hs   = FluidModel->GetSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
+      hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)      
         Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       rho    = Vi[RHO_INDEX];
@@ -997,9 +998,10 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
 
   unsigned short iDim, jDim, iVar, iSpecies;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX,
+      RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
-  su2double ktr, kve;
+  su2double ktr, kve, Mass = 0.0;
   su2double Ti, Tvei, Tj, Tvej;
   su2double Twall, Tslip, Tslip_ve, dij;
   su2double Pi;
@@ -1008,7 +1010,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double C, alpha_V, alpha_T;
 
   su2double TMAC, TAC;
-  su2double Viscosity, Lambda;
+  su2double Viscosity, Eddy_Visc, Lambda;
   su2double Density, GasConstant;
 
   su2double **Grad_PrimVar;
@@ -1019,7 +1021,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double TauElem[3], TauTangent[3];
   su2double Tau[3][3];
   su2double TauNormal;
-  su2double div_vel=0, Delta;
 
   bool ionization = config->GetIonization();
 
@@ -1076,12 +1077,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
         dij += (Coord_j[iDim] - Coord_i[iDim])*(Coord_j[iDim] - Coord_i[iDim]);
       dij = sqrt(dij);
 
-      /*--- Calculate geometrical parameters ---*/
-      /*theta = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        theta += UnitNormal[iDim]*UnitNormal[iDim];
-      }*/
-
       /*--- Calculate Pressure ---*/
       Pi   = nodes->GetPressure(iPoint);
 
@@ -1101,14 +1096,29 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Retrieve Flow Data ---*/
       Viscosity = nodes->GetLaminarViscosity(iPoint);
+      Eddy_Visc = nodes->GetEddyViscosity(iPoint);
       Density   = nodes->GetDensity(iPoint);
+      Gamma     = nodes->GetGamma(iPoint);
 
-      auto& Ms = FluidModel->GetSpeciesMolarMass();
+      /*--- Incorporate turbulence effects ---*/
+      auto&      Ms = FluidModel->GetSpeciesMolarMass();
+      su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
+      su2double  tmp1, scl, Cptr;
+      su2double *Vi = nodes->GetPrimitive(iPoint);
+
+      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+        Mass += Vi[iSpecies]*Ms[iSpecies];
+      Cptr = Vi[RHOCVTR_INDEX]+Ru/Mass;
+      tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
+      scl  = tmp1/ktr;
+      ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
+      kve  = kve*(1.0+scl);
 
       /*--- Retrieve Primitive Gradients ---*/
       Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
 
       /*--- Calculate specific gas constant --- */
+      //TODO: Move to fluidmodel?
       GasConstant = 0.0;
       for(iSpecies = 0; iSpecies<nSpecies; iSpecies++)
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
@@ -1121,7 +1131,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       }
 
       /*--- Calculate molecular mean free path ---*/
-      Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2*GasConstant*Ti));
+      Lambda = Viscosity/Density*sqrt(PI_NUMBER/(2.0*GasConstant*Ti));
 
       /*--- Calculate Temperature Slip ---*/
       Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
@@ -1143,17 +1153,8 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       for (iVar = 0; iVar < nVar; iVar ++)
         Res_Visc[iVar] = 0.0;
 
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
-
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
       for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0 ; jDim < nDim; jDim++) {
-          Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-          Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[VEL_INDEX+jDim][iDim] +
-              Grad_PrimVar[VEL_INDEX+iDim][jDim]  )
-              - TWO3*Viscosity*div_vel*Delta;
-        }
         TauElem[iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
           TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];

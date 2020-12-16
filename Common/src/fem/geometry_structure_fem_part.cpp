@@ -35,7 +35,7 @@
 #endif
 #include "../../include/adt/CADTElemClass.hpp"
 
-#include "../../include/blas_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>

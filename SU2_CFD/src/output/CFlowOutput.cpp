@@ -816,30 +816,21 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
   bool *PointInDomain;
   string text_line, surfCp_filename;
   ifstream Surface_file;
-  char cstr[200];
 
   /*--- Prepare to read the surface pressure files (CSV) ---*/
 
-  surfCp_filename = "TargetCp";
-
-  surfCp_filename = config->GetUnsteady_FileName(surfCp_filename, (int)curTimeIter, ".dat");
-
-  strcpy (cstr, surfCp_filename.c_str());
+  surfCp_filename = config->GetUnsteady_FileName("TargetCp", (int)curTimeIter, ".dat");
 
   /*--- Read the surface pressure file ---*/
 
   string::size_type position;
 
-  Surface_file.open(cstr, ios::in);
+  Surface_file.open(surfCp_filename);
 
   if (!(Surface_file.fail())) {
 
     nPointLocal = geometry->GetnPoint();
-#ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nPointGlobal = nPointLocal;
-#endif
 
     Point2Vertex = new unsigned long[nPointGlobal][2];
     PointInDomain = new bool[nPointGlobal];
@@ -1033,29 +1024,35 @@ void CFlowOutput::WriteMetaData(CConfig *config){
 
 void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
-  ofstream Breakdown_file;
 
-  bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool unsteady           = (config->GetTime_Marching() != NO);
-  bool viscous            = config->GetViscous();
-  bool dynamic_grid       = config->GetDynamic_Grid();
-  bool gravity            = config->GetGravityForce();
-  bool turbulent          = config->GetKind_Solver() == RANS;
-  bool fixed_cl           = config->GetFixed_CL_Mode();
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  unsigned short Kind_Turb_Model = config->GetKind_Turb_Model();
-  unsigned short Ref_NonDim = config->GetRef_NonDim();
+  const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
+  const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  const bool unsteady        = config->GetTime_Domain();
+  const bool viscous         = config->GetViscous();
+  const bool dynamic_grid    = config->GetDynamic_Grid();
+  const bool gravity         = config->GetGravityForce();
+  const bool turbulent       = config->GetKind_Solver() == RANS;
+  const bool fixed_cl        = config->GetFixed_CL_Mode();
+  const auto Kind_Solver     = config->GetKind_Solver();
+  const auto Kind_Turb_Model = config->GetKind_Turb_Model();
+  const auto Ref_NonDim      = config->GetRef_NonDim();
 
-  unsigned short nDim =  geometry->GetnDim();
+  const auto nDim =  geometry->GetnDim();
+
+  auto fileName = config->GetBreakdown_FileName();
+  if (unsteady) {
+    const auto lastindex = fileName.find_last_of(".");
+    const auto ext = fileName.substr(lastindex, fileName.size());
+    fileName = fileName.substr(0, lastindex);
+    fileName = config->GetFilename(fileName, ext, curTimeIter);
+  }
 
   /*--- Output the mean flow solution using only the master node ---*/
 
   if ( rank == MASTER_NODE) {
 
-    cout << endl << "Writing the forces breakdown file ("<< config->GetBreakdown_FileName() << ")." << endl;
+    cout << endl << "Writing the forces breakdown file ("<< fileName << ")." << endl;
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
 
@@ -1366,13 +1363,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     }
 
-
     /*--- Write file name with extension ---*/
 
-    string filename = config->GetBreakdown_FileName();
-    strcpy (cstr, filename.data());
-
-    Breakdown_file.open(cstr, ios::out);
+    ofstream Breakdown_file;
+    Breakdown_file.open(fileName);
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "|    ___ _   _ ___                                                      |" << "\n";
@@ -2842,8 +2836,6 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     delete [] Surface_CMy_Mnt;
     delete [] Surface_CMz_Mnt;
 
-    Breakdown_file.close();
-
   }
 
 }
@@ -2852,16 +2844,16 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 bool CFlowOutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
 
   if (config->GetTime_Domain()){
-    if (((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-         (config->GetTime_Marching() == TIME_STEPPING)) &&
+    if (((config->GetTime_Marching() == DT_STEPPING_1ST) || (config->GetTime_Marching() == TIME_STEPPING)) &&
         ((Iter == 0) || (Iter % config->GetVolume_Wrt_Freq() == 0))){
       return true;
     }
 
     if ((config->GetTime_Marching() == DT_STEPPING_2ND) &&
-        ((Iter == 0) || (Iter    % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) ||
-         ((Iter+2 == config->GetnTime_Iter())))){
+        ((Iter == 0) ||
+         (Iter % config->GetVolume_Wrt_Freq() == 0) ||
+         ((Iter+1) % config->GetVolume_Wrt_Freq() == 0) || // Restarts need 2 old solution.
+         ((Iter+2) == config->GetnTime_Iter()))){ // The last timestep is written anyways but again one needs the step before for restarts.
       return true;
     }
   } else {

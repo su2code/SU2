@@ -86,7 +86,7 @@ def main():
     viscwedge.test_vals = [-5.204061,   -5.728824,  -20.259919,  -20.213137,  -20.252642,   -1.781679,   -2.150885,    1.724447,   -2.861733]
     viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     viscwedge.timeout   = 1600
-    viscwedge.new_output = False
+    viscwedge.new_output = True
     viscwedge.tol       = 0.00001
     test_list.append(viscwedge)
 
@@ -225,7 +225,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.492876, -7.672445, -0.000000, 2.085796]
+    poiseuille_profile.test_vals = [-12.492859, -7.672756, -0.000000, 2.085796]
     poiseuille_profile.su2_exec  = "parallel_computation.py -f"
     poiseuille_profile.timeout   = 1600
     poiseuille_profile.tol       = 0.00001
@@ -333,17 +333,6 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
-
-    # PROPELLER VARIBLE LOAD
-    propeller_var_load           = TestCase('propeller_variable_load')
-    propeller_var_load.cfg_dir   = "rans/actuatordisk_variable_load"
-    propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
-    propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.837780, -4.535082, -0.000315, 0.171887]
-    propeller_var_load.su2_exec  = "parallel_computation.py -f"
-    propeller_var_load.timeout   = 3200
-    propeller_var_load.tol       = 0.00001
-    test_list.append(propeller_var_load)
 
     #################################
     ## Compressible RANS Restart  ###
@@ -694,7 +683,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.973124, 1.141759, 0.861168, 0.014208]
+    turb_naca0012_1c.test_vals = [-4.973120, 1.141760, 0.861180, 0.014211]
     turb_naca0012_1c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_1c.timeout   = 1600
     turb_naca0012_1c.tol       = 0.00001
@@ -705,7 +694,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484227, 0.967174, 0.901039, 0.029201]
+    turb_naca0012_2c.test_vals = [-5.484231, 0.967172, 0.901005, 0.029186]
     turb_naca0012_2c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_2c.timeout   = 1600
     turb_naca0012_2c.tol       = 0.00001
@@ -727,7 +716,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.128931, 1.076207, 0.954587, 0.040176]
+    turb_naca0012_p1c1.test_vals = [-5.128763, 1.076245, 0.954666, 0.040210]
     turb_naca0012_p1c1.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c1.timeout   = 1600
     turb_naca0012_p1c1.tol       = 0.00001
@@ -738,7 +727,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556651, 0.941872, 0.950627, 0.041946]
+    turb_naca0012_p1c2.test_vals = [-5.556632, 0.941881, 0.950638, 0.041949]
     turb_naca0012_p1c2.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c2.timeout   = 1600
     turb_naca0012_p1c2.tol       = 0.00001
