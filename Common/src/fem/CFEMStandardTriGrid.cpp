@@ -185,6 +185,18 @@ void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                   
   }
 }
 
+void CFEMStandardTriGrid::Derivatives2ndCoorIntPoints(const bool                         LGLDistribution,
+                                                      ColMajorMatrix<su2double>          &matCoor,
+                                                      vector<ColMajorMatrix<su2double> > &matDer2ndCoor) {
+
+  /*--- Call the function OwnGemm 3 times to compute the 2nd derivatives of
+        the Cartesian coordinates w.r.t. the two parametric coordinates. Note
+        that when this function is called, it is always a volume element. ---*/
+  OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, hesLagBasisInt[0], matCoor, matDer2ndCoor[0], nullptr);
+  OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, hesLagBasisInt[1], matCoor, matDer2ndCoor[1], nullptr);
+  OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, hesLagBasisInt[2], matCoor, matDer2ndCoor[2], nullptr);
+}
+
 void CFEMStandardTriGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                                                  vector<ColMajorMatrix<su2double> > &matDerCoor) {
 

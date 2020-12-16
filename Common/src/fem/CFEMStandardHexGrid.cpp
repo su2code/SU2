@@ -184,6 +184,49 @@ void CFEMStandardHexGrid::DerivativesCoorIntPoints(const bool                   
   }
 }
 
+void CFEMStandardHexGrid::Derivatives2ndCoorIntPoints(const bool                         LGLDistribution,
+                                                      ColMajorMatrix<su2double>          &matCoor,
+                                                      vector<ColMajorMatrix<su2double> > &matDer2ndCoor) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function TensorProductIntegrationPoints 6 times to compute the
+          2nd derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    TensorProductIntegrationPoints(3, hesLagBasisLineInt, lagBasisLineIntLGL, lagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[0], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntLGL, hesLagBasisLineInt, lagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[1], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntLGL, lagBasisLineIntLGL, hesLagBasisLineInt,
+                                   matCoor, matDer2ndCoor[2], nullptr);
+
+    TensorProductIntegrationPoints(3, derLagBasisLineIntLGL, derLagBasisLineIntLGL, lagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[3], nullptr);
+    TensorProductIntegrationPoints(3, derLagBasisLineIntLGL, lagBasisLineIntLGL, derLagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[4], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntLGL, derLagBasisLineIntLGL, derLagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[5], nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 6 times to compute the
+          2nd derivatives of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
+    TensorProductIntegrationPoints(3, hesLagBasisLineInt, lagBasisLineIntEqui, lagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[0], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntEqui, hesLagBasisLineInt, lagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[1], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntEqui, lagBasisLineIntEqui, hesLagBasisLineInt,
+                                   matCoor, matDer2ndCoor[2], nullptr);
+
+    TensorProductIntegrationPoints(3, derLagBasisLineIntEqui, derLagBasisLineIntEqui, lagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[3], nullptr);
+    TensorProductIntegrationPoints(3, derLagBasisLineIntEqui, lagBasisLineIntEqui, derLagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[4], nullptr);
+    TensorProductIntegrationPoints(3, lagBasisLineIntEqui, derLagBasisLineIntEqui, derLagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[5], nullptr);
+  }
+}
+
 void CFEMStandardHexGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                                                  vector<ColMajorMatrix<su2double> > &matDerCoor) {
 

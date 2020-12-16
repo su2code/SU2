@@ -197,6 +197,37 @@ void CFEMStandardQuadGrid::DerivativesCoorIntPoints(const bool                  
   }
 }
 
+void CFEMStandardQuadGrid::Derivatives2ndCoorIntPoints(const bool                         LGLDistribution,
+                                                       ColMajorMatrix<su2double>          &matCoor,
+                                                       vector<ColMajorMatrix<su2double> > &matDer2ndCoor) {
+
+  /*--- Check for which point distribution the derivatives must be computed. ---*/
+  if( LGLDistribution ) {
+
+    /*--- LGL distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
+          2nd derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. Note
+          that when this function is called, it is always a volume element. ---*/
+    TensorProductIntegrationPoints(2, hesLagBasisLineInt, lagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[0], nullptr);
+    TensorProductIntegrationPoints(2, lagBasisLineIntLGL, hesLagBasisLineInt,
+                                   matCoor, matDer2ndCoor[1], nullptr);
+    TensorProductIntegrationPoints(2, derLagBasisLineIntLGL, derLagBasisLineIntLGL,
+                                   matCoor, matDer2ndCoor[2], nullptr);
+  }
+  else {
+
+    /*--- Equidistant distribution. Call the function TensorProductIntegrationPoints 3 times to compute the
+          2nd derivatives of the Cartesian coordinates w.r.t. the two parametric coordinates. Note
+          that when this function is called, it is always a volume element. ---*/
+    TensorProductIntegrationPoints(2, hesLagBasisLineInt, lagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[0], nullptr);
+    TensorProductIntegrationPoints(2, lagBasisLineIntEqui, hesLagBasisLineInt,
+                                   matCoor, matDer2ndCoor[1], nullptr);
+    TensorProductIntegrationPoints(2, derLagBasisLineIntEqui, derLagBasisLineIntEqui,
+                                   matCoor, matDer2ndCoor[2], nullptr);
+  }
+}
+
 void CFEMStandardQuadGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                                                   vector<ColMajorMatrix<su2double> > &matDerCoor) {
 

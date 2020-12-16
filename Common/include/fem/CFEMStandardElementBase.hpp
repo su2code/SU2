@@ -149,6 +149,19 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDer2ndCoor   - Vector of matrices to store the 2nd derivatives of the coordinates.
+   */
+  virtual void Derivatives2ndCoorIntPoints(const bool                         LGLDistribution,
+                                           ColMajorMatrix<su2double>          &matCoor,
+                                           vector<ColMajorMatrix<su2double> > &matDer2ndCoor) {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \param[in]  matCoor    - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matDerCoor - Vector of matrices to store the derivatives of the coordinates.
    */
@@ -332,6 +345,22 @@ public:
                                   ColMajorMatrix<su2double>          &matCoor,
                                   vector<ColMajorMatrix<su2double> > &matMetricTerms,
                                   su2activevector                    &Jacobians);
+
+  /*!
+   * \brief Function, which computes the metric terms needed to compute the 2nd derivatives
+   *        in the volume integration points.
+   * \param[in]  LGLDistribution      - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor              - Matrix that contains the coordinates of the grid DOFs.
+   * \param[in]  matMetricTerms       - Vector of matrices, which contains the standard metric terms.
+   * \param[in]  Jacobians            - Vector, which contains the Jacobians of the transformation.
+   * \param[out] matMetricTerms2ndDer - Vector of matrices to store the metric terms for the
+   *                                    2nd derivatives.
+   */
+  void MetricTerms2ndDerVolumeIntPoints(const bool                         LGLDistribution,
+                                        ColMajorMatrix<su2double>          &matCoor,
+                                        vector<ColMajorMatrix<su2double> > &matMetricTerms,
+                                        su2activevector                    &Jacobians,
+                                        vector<ColMajorMatrix<su2double> > &matMetricTerms2ndDer);
 
   /*!
    * \brief Function, which computes the metric terms in the nodal solution DOFs.

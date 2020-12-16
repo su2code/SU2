@@ -1452,8 +1452,9 @@ void CPhysicalGeometry::DetermineFEMGraphWeights(CConfig                        
   for(unsigned long i=0; i<nElem; ++i) minvwgt = min(minvwgt, vwgt[2*i]);
 
 #ifdef HAVE_MPI
-  passivedouble locminvwgt = minvwgt;
-  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  su2double locminvwgt = minvwgt, globminvwgt;
+  SU2_MPI::Allreduce(&locminvwgt, &globminvwgt, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  minvwgt = SU2_TYPE::GetValue(globminvwgt);
 #endif
 
   /*--- Apply the scaling. ---*/

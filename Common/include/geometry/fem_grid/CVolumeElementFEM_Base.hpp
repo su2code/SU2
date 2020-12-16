@@ -81,10 +81,16 @@ public:
   su2activevector JacobiansInt;      /*!< \brief The Jacobians in the integration points of this element. */ 
   su2activevector JacobiansSolDOFs;  /*!< \brief The Jacobians in the nodal solution DOFs of this element. */
 
-  vector<ColMajorMatrix<su2double> > metricTermsInt;    /*!< \brief The metric terms in the integration
-                                                                    points of this element. */
-  vector<ColMajorMatrix<su2double> >metricTermsSolDOFs; /*!< \brief The metric terms in the nodal
-                                                                    solution DOFs of this element. */
+  vector<ColMajorMatrix<su2double> > metricTermsInt;     /*!< \brief The metric terms in the integration
+                                                                     points of this element. */
+  vector<ColMajorMatrix<su2double> > metricTermsSolDOFs; /*!< \brief The metric terms in the nodal
+                                                                     solution DOFs of this element. */
+
+  vector<ColMajorMatrix<su2double> > metricTerms2ndDerInt; /*!< \brief The metric terms needed for the computation
+                                                                       of the 2nd derivatives in the integration
+                                                                       points. Only determined when needed (ADER-DG
+                                                                       with non-aliased predictor for the 
+                                                                       Navier-Stokes equations). */
 
   ColMajorMatrix<su2double> coorIntegrationPoints;  /*!< \brief Coordinates of the integration points of this element. */
   ColMajorMatrix<su2double> gridVelocitiesInt;      /*!< \brief Grid velocities of the integration points of this element. */
@@ -105,7 +111,6 @@ public:
    *         in the integration points.
    * \param[in] LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in] nDim            - Number of spatial dimensions.
-   * \return  True of all Jacobians are positive and negative otherwise.
    */
   void DerMetricTermsIntegrationPoints(const bool           LGLDistribution,
                                        const unsigned short nDim);

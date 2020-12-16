@@ -36,7 +36,20 @@
 void CVolumeElementFEM_Base::DerMetricTermsIntegrationPoints(const bool           LGLDistribution,
                                                              const unsigned short nDim) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Allocate the memory for the metric terms to compute the second derivatives
+        in the integration points. ---*/
+  const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+  const unsigned short n2ndDer = nDim + nDim*(nDim-1)/2;
+
+  metricTerms2ndDerInt.resize(n2ndDer);
+  for(unsigned short k=0; k<n2ndDer; ++k)
+    metricTerms2ndDerInt[k].resize(nIntPad, nDim);
+
+  /*--- Compute the metric terms for the 2nd derivatives in
+        the volume integration points. ---*/
+  standardElemGrid->MetricTerms2ndDerVolumeIntPoints(LGLDistribution, coorGridDOFs,
+                                                     metricTermsInt, JacobiansInt,
+                                                     metricTerms2ndDerInt);
 }
 
 void CVolumeElementFEM_Base::GetCornerPointsAllFaces(unsigned short &numFaces,
@@ -99,6 +112,10 @@ bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           L
     volume += wInt[i]*JacobiansInt(i);
     if(JacobiansInt(i) <= 0.0) elemIsGood = false;
   }
+
+  /*--- Make sure that the Jacobian for the padded data is
+        not zero, to avoid problems later on. ---*/
+  for(unsigned short i=nInt; i<nIntPad; ++i) JacobiansInt(i) = 1.0;
 
   /*--- Return the value of elemIsGood. ---*/
   return elemIsGood;

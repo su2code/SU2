@@ -96,6 +96,17 @@ public:
                                 vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
+   * \brief Function, which computes the 2nd derivatives of the coordinates in the
+   *        integration points.
+   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs
+   * \param[out] matDer2ndCoor   - Vector of matrices to store the 2nd derivatives of the coordinates.
+   */
+  void Derivatives2ndCoorIntPoints(const bool                         LGLDistribution,
+                                   ColMajorMatrix<su2double>          &matCoor,
+                                   vector<ColMajorMatrix<su2double> > &matDer2ndCoor) override;
+
+  /*!
    * \brief Function, which computes the derivatives of the coordinates in the
    *        solution DOFs.
    * \param[in]  matCoor    - Matrix that contains the coordinates of the grid DOFs.
