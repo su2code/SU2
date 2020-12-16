@@ -59,7 +59,8 @@
 
 #ifdef HAVE_LIBROM
 #include "BasisGenerator.h"
-
+#include "QDEIM.h"
+#include "DEIM.h"
 #endif
 
 using namespace std;
@@ -1612,6 +1613,13 @@ public:
    * \return Value of the norm of the reduced residual.
    */
   inline su2double GetRes_ROM(void) const { return ReducedResNorm_Cur; }
+  
+  /*!
+   * \brief Create mask for hyper-reduction using QDEIM method and libROM.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Create mask for hyper-reduction.

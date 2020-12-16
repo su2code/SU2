@@ -4565,7 +4565,7 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
   }
   else std::cout << "ERROR: Did not read file for initial solution (ROM)." << std::endl;
   
-  /*--- Use reference solution from file to overwrite the solution and solution_old ---*/
+  /*--- Use initial solution from file to overwrite the solution and solution_old ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     su2double node_sol[nVar];
@@ -4575,6 +4575,8 @@ void CSolver::SetROM_Variables(unsigned long nPoint, unsigned long nPointDomain,
       nodes->SetSolution(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
       nodes->SetSolution_Old(iPoint, iVar, init_sol[iVar + iPoint*nVar]);
     }
+    
+    /*--- Set reference solution ---*/
     
     nodes->Set_RefSolution(iPoint, &node_sol[0]);
   }
@@ -4600,12 +4602,100 @@ bool CSolver::GetRom_Convergence() {
   return RomConverged;
 }
 
+#ifdef HAVE_LIBROM
+void CSolver::Mask_Selection_QDEIM(CGeometry *geometry, CConfig *config) {
+  
+  std::cout << "Performing QDEIM selection of nodes." << std::endl;
+  
+  /*--- Read trial basis (Phi) from file. File should contain matrix size of : N x nsnaps ---*/
+  
+  string phi_filename  = config->GetRom_FileName(); //TODO: better file names
+  int desired_nodes = 4500; //TODO: create config file option
+  ifstream in_phi(phi_filename);
+  std::vector<std::vector<double>> Phi;
+  unsigned long iPoint, iVar, nsnaps;
+  int num_cols;
+  int firstrun = 0;
+  
+  if (in_phi) {
+    std::string line;
+    
+    while (getline(in_phi, line)) {
+      stringstream sep(line);
+      string field;
+      int s = 0;
+      while (getline(sep, field, ',')) {
+        if (firstrun == 0) Phi.push_back({});
+        Phi[s].push_back(stod(field)); // Phi[0] is 1st snapshot
+        s++;
+      }
+      firstrun++;
+    }
+  }
+  else {
+    SU2_MPI::Error("Phi matrix was not read from file.", CURRENT_FUNCTION);
+  }
+  
+  nsnaps = Phi.size();
+  num_cols = (int)nsnaps;
+  double* PhiNodes = new double[nsnaps*nPointDomain](); // TODO: parallel case?
+  int tally = 0;
+  for (unsigned long n = 0; n < nsnaps; n++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      double norm_phi = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        norm_phi += Phi[0][iPoint*nVar + iVar] * Phi[0][iPoint*nVar + iVar];
+      }
+      
+      PhiNodes[tally] =  sqrt(norm_phi);
+      tally++;
+    }
+  }
+  //int argc; char* argv[0];
+  //MPI_Init(&argc, &argv);
+  CAROM::Matrix* u = new CAROM::Matrix(PhiNodes, (int)nPointDomain, num_cols, false);
+  int* f_sampled_row = new int[desired_nodes] {0};
+  int* f_sampled_rows_per_proc = new int[desired_nodes] {0};
+  CAROM::Matrix f_basis_sampled_inv = CAROM::Matrix(desired_nodes, num_cols, false);
+  std::cout << "Performing QDEIM." << std::endl;
+  //CAROM::QDEIM(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+  CAROM::GNAT(u, num_cols, f_sampled_row, f_sampled_rows_per_proc, f_basis_sampled_inv, 0, 1, desired_nodes);
+  
+  for (int i = 0; i < desired_nodes; i++){
+    Mask.push_back(f_sampled_row[i]);
+  }
+  
+  sort(Mask.begin(),Mask.end());
+  
+  ofstream fs;
+  std::string fname = "masked_nodes_airfoil_"+to_string(desired_nodes)+".csv";
+  fs.open(fname);
+  for(int i=0; i < (int)Mask.size(); i++){
+    fs << Mask[i] << "," ;
+  }
+  fs << "\n";
+  fs.close();
+  
+}
+#endif
 
 void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
+  
+#ifdef HAVE_LIBROM
+  bool gnat = false;
+  if (gnat) {
+    Mask_Selection_QDEIM(geometry, config);
+    return;
+  }
+#endif
+  
   auto t_start = std::chrono::high_resolution_clock::now();
   // This function selects the masks E and E' using the Phi matrix and mesh data
   
   bool read_mask_from_file = false;
+  
+
   
   /*--- Get solver nodes ---*/
   //CVariable* nodes = GetNodes();
@@ -4737,9 +4827,9 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
     for (int i = 0; i < (int)nPointDomain; i++){
       Mask.push_back(i);
     }
-    
-    //std::cout << "Reading " << desired_nodes<< " masked nodes from file" << std::endl;
-    //ifstream in_ref("masked_nodes_2000.csv");
+    //std::string file_name = "masked_nodes_airfoil_4500.csv";
+    //std::cout << "Reading " << desired_nodes<< " masked nodes from file: " << file_name << std::endl;
+    //ifstream in_ref(file_name);
     //
     //if (in_ref) {
     //  std::string line;
@@ -4758,15 +4848,16 @@ void CSolver::Mask_Selection(CGeometry *geometry, CConfig *config) {
   
   sort(Mask.begin(),Mask.end());
   
+  if (!read_mask_from_file) {
   ofstream fs;
-  std::string fname = "masked_nodes_flatplate_100.csv";
+  std::string fname = "masked_nodes_flatplate_"+to_string(desired_nodes)+".csv";
   fs.open(fname);
   for(int i=0; i < (int)Mask.size(); i++){
     fs << Mask[i] << "," ;
   }
   fs << "\n";
   fs.close();
-  
+  }
   
   auto t_end = std::chrono::high_resolution_clock::now();
   double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
@@ -4862,7 +4953,7 @@ void CSolver::CheckROMConvergence(CConfig *config, double ReducedRes) {
   }
   
   else {
-    if (1.0 / ReducedRes >= 1e16) {
+    if (1.0 / ReducedRes >= 1e13) {
       RomConverged = true;
       return;
     }
