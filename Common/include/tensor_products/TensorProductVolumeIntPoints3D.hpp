@@ -30,7 +30,7 @@
 #include <iostream>
 #include <map>
 #include "../basic_types/datatype_structure.hpp"
-#include "../omp_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 #include "../toolboxes/classes_multiple_integers.hpp"
 
 using namespace std;

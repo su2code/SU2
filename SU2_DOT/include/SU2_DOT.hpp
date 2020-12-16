@@ -33,8 +33,8 @@
 #include "../../Common/include/CConfig.hpp"
 #undef ENABLE_MAPS
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../Common/include/parallelization/omp_structure.hpp"
 
 #include <cstdlib>
 #include <iostream>

@@ -109,33 +109,27 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
 
   /*--- Now put this info into a CSV file for processing ---*/
 
-  char cstr[200];
   ofstream Profile_File;
-  strcpy (cstr, "partitioning.csv");
   Profile_File.precision(15);
 
   if (rank == MASTER_NODE) {
     /*--- Prepare and open the file ---*/
-    Profile_File.open(cstr, ios::out);
+    Profile_File.open("partitioning.csv");
     /*--- Create the CSV header ---*/
     Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", \"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
     Profile_File.close();
   }
-#ifdef HAVE_MPI
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
 
   /*--- Loop through the map and write the results to the file ---*/
 
   for (iRank = 0; iRank < size; iRank++) {
     if (rank == iRank) {
-      Profile_File.open(cstr, ios::out | ios::app);
+      Profile_File.open("partitioning.csv", ios::out | ios::app);
       Profile_File << rank << ", " << nNeighbors << ", " << nPointTotal << ", " << nEdge << "," << nPointGhost << ", " << nSendTotal << ", " << nRecvTotal << ", " << nElemTotal << "," << nElemBound << ", " << nElemHalo << ", " << nnz << endl;
       Profile_File.close();
     }
-#ifdef HAVE_MPI
     SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
   }
 
   delete [] isHalo;

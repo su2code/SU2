@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "basic_types/datatype_structure.hpp"
+#include "../basic_types/datatype_structure.hpp"
 
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)

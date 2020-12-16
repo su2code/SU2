@@ -27,7 +27,7 @@
 
 #include "../../include/fem/CFEMStandardElementBase.hpp"
 #include "../../include/toolboxes/CSquareMatrixCM.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*          Constructor and destructor of CFEMStandardElementBase.                  */

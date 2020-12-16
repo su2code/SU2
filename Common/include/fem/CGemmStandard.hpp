@@ -34,7 +34,7 @@
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 #include "mkl.h"
 #else
-#include "../blas_structure.hpp"
+#include "../linear_algebra/blas_structure.hpp"
 #endif
 
 using namespace std;

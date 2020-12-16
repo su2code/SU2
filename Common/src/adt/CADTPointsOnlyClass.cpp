@@ -26,7 +26,7 @@
  */
 
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 #include "../../include/option_structure.hpp"
 
 CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,

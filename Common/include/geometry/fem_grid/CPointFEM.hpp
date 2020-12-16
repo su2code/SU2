@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../mpi_structure.hpp"
+#include "../../parallelization/mpi_structure.hpp"
 
 using namespace std;
 

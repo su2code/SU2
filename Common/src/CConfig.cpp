@@ -9432,14 +9432,9 @@ void CConfig::SetProfilingCSV(void) {
 
     /*--- Now write a CSV file with the processed results ---*/
 
-    char cstr[200];
     ofstream Profile_File;
-    strcpy (cstr, "profiling.csv");
-
-    /*--- Prepare and open the file ---*/
-
     Profile_File.precision(15);
-    Profile_File.open(cstr, ios::out);
+    Profile_File.open("profiling.csv");
 
     /*--- Create the CSV header ---*/
 
@@ -9671,12 +9666,9 @@ void CConfig::GEMMProfilingCSV(void) {
     sort(sortedTime.begin(), sortedTime.end());
 
     /* Open the profiling file. */
-    char cstr[200];
     ofstream Profile_File;
-    strcpy (cstr, "gemm_profiling.csv");
-
     Profile_File.precision(15);
-    Profile_File.open(cstr, ios::out);
+    Profile_File.open("gemm_profiling.csv");
 
     /* Create the CSV header */
     Profile_File << "\"Total_Time\", \"N_Calls\", \"Avg_Time\", \"Min_Time\", \"Max_Time\", \"M\", \"N\", \"K\", \"Avg GFLOPs\"" << endl;

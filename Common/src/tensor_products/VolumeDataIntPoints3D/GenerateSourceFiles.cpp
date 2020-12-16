@@ -151,7 +151,7 @@ void CreateIncludeFile(const std::vector<int> &nDOFs1D,
   includeFile << "#include <map>"   << std::endl;
 
   includeFile << "#include \"../basic_types/datatype_structure.hpp\"" << std::endl;
-  includeFile << "#include \"../omp_structure.hpp\"" << std::endl;
+  includeFile << "#include \"../parallelization/omp_structure.hpp\"" << std::endl;
   includeFile << "#include \"../toolboxes/classes_multiple_integers.hpp\"" << std::endl;
   includeFile << std::endl;
 

@@ -27,8 +27,8 @@
  */
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../Common/include/parallelization/omp_structure.hpp"
 #include "CLI11.hpp"
 
 #include "drivers/CDriver.hpp"
