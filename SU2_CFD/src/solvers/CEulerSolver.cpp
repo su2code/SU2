@@ -182,10 +182,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    
-    if ((rank == MASTER_NODE) and (config->GetReduced_Model())) 
-      cout << "Initialize Test Basis structure (ROM - Euler). MG level: " << iMesh <<"." << endl;
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -370,6 +366,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*---- Initialize ROM specific variables. ----*/
   bool rom = config->GetReduced_Model();
   if (rom && (TrialBasis.size() == 0) && (MGLevel == MESH_0)) {
+    if (rank == MASTER_NODE)
+      cout << "Selecting nodes for hyper-reduction (ROM)." << endl;
     Mask_Selection(geometry, config);
     FindMaskedEdges(geometry, config);
     SetROM_Variables(nPoint, nPointDomain, nVar, geometry, config);
@@ -3814,7 +3812,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       unsigned long total_index = iPoint*nVar + iVar;
-      fs << LinSysRes[total_index] << "\n" ;
+      fs << setprecision(10) << LinSysRes[total_index] << "\n" ;
     }
   }
   fs.close();
@@ -3915,7 +3913,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   fs.open(fname2);
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      fs << nodes->GetSolution(iPoint,iVar) << "\n" ;
+      fs << setprecision(10) << nodes->GetSolution(iPoint,iVar) << "\n" ;
     }
   }
   fs.close();
@@ -3926,7 +3924,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   std::string fname = "check_reduced_residual.csv";
   fs.open(fname);
   for(int i=0; i < n; i++){
-    fs << r_red[i] << "\n";
+    fs << setprecision(10) << r_red[i] << "\n";
   }
   fs.close();
   
@@ -3954,7 +3952,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs.open(fname);
     for(int i=0; i < m; i++){
       for(int j=0; j < n; j++){
-        fs << TestBasis2[i +j*m] << "," ;
+        fs << setprecision(10) << TestBasis2[i +j*m] << "," ;
       }
       fs << "\n";
     }
@@ -3964,7 +3962,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     fs.open(fname1);
     for(int i=0; i < m; i++){
       for(int j=0; j < n; j++){
-        fs << TrialBasis[i][j] << "," ;
+        fs << setprecision(10) << TrialBasis[i][j] << "," ;
       }
       fs << "\n";
     }
@@ -3973,9 +3971,28 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
     std::string fname2 = "check_residual.csv";
     fs.open(fname2);
     for(int i=0; i < m; i++){
-      fs << r[i] << "\n" ;
+      fs << setprecision(10) << r[i] << "\n" ;
     }
     fs.close();
+    
+    std::string file_name = "check_coords.csv";
+    if (InnerIter == 0) {
+      fs.open(file_name);
+      for(int i=0; i < n; i++){
+        fs << setprecision(10) << GenCoordsY[i] << "," ;
+      }
+      fs <<  "\n" ;
+      fs.close();
+    }
+    else {
+      std::ofstream file( file_name, std::ios::app ) ;
+      //file.open(file_name);
+      for(int i=0; i < n; i++){
+        file << setprecision(10) << GenCoordsY[i] << "," ;
+      }
+      file <<  "\n" ;
+      file.close();
+    }       
   }
   
   // Compute least-squares solution using QR decomposition
@@ -4001,6 +4018,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   /*--- Backtracking line search ---*/
   // TODO: backtracking line search to find step size:
   double a = 0.5;
+    
   
   for (int i = 0; i < n; i++) {
     GenCoordsY[i] += a * r[i];
@@ -4009,7 +4027,7 @@ void CEulerSolver::ROM_Iteration(CGeometry *geometry, CSolver **solver_container
   std::string fname4 = "check_red_coords_y.csv";
   fs.open(fname4);
   for(int i=0; i < n; i++){
-    fs << GenCoordsY[i] << "\n" ;
+    fs << setprecision(10) << GenCoordsY[i] << "\n" ;
   }
   fs.close();
   
