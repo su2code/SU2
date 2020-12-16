@@ -26,8 +26,8 @@
  */
 
 #include "../../include/toolboxes/CSymmetricMatrix.hpp"
-#include "../../include/mpi_structure.hpp"
-#include "../../include/blas_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 
 using namespace std;
 

@@ -7849,7 +7849,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iPoint_Viz));
   strcat(cstr, buffer);
 
-  Tecplot_File.open(cstr, ios::out);
+  Tecplot_File.open(cstr);
   Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
 
   if (nDim == 2) {

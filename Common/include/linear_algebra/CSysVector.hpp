@@ -28,8 +28,8 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
-#include "../omp_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
 #include "vector_expressions.hpp"
 
