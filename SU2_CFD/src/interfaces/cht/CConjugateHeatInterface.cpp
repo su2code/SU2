@@ -29,6 +29,7 @@
 #include "../../../include/interfaces/cht/CConjugateHeatInterface.hpp"
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst) :
@@ -75,11 +76,9 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_Normal[iDim] - Coord[iDim];
-    dist2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  dist = sqrt(dist2);
-  Area = sqrt(Area);
+  dist = GeometryToolbox::Norm(nDim, Edge_Vector);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Retrieve temperature solution and its gradient ---*/
 

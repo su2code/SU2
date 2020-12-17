@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/roe.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                            unsigned short val_nPrimVar,
@@ -87,17 +88,14 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
 
   /*--- Face area (norm or the normal vector) ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  /*--- Calculate Roe variables ---*/
-  R    = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
+  /*--- Calculate Roe averaged variables ---*/
+  R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
 
   for (iVar = 0; iVar < nVar; iVar++)
     RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
@@ -105,7 +103,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   for (iVar = 0; iVar < nPrimVar; iVar++)
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
-  vector<su2double> roe_eves = fluidmodel->GetSpeciesEve(RoeV[TVE_INDEX]);
+  vector<su2double> roe_eves = fluidmodel->ComputeSpeciesEve(RoeV[TVE_INDEX]);
 
   /*--- Calculate derivatives of pressure ---*/
   fluidmodel->ComputedPdU(RoeV, roe_eves, RoedPdU);

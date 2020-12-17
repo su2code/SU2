@@ -4590,8 +4590,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
-          if (nDim == 2) WettedArea += AxiFactor * sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1]);
-          if (nDim == 3) WettedArea += sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+          if (nDim == 2) WettedArea = AxiFactor * GeometryToolbox::Norm(nDim, Normal);
+          if (nDim == 3) WettedArea = GeometryToolbox::Norm(nDim, Normal);
 
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
@@ -5088,7 +5088,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   if (nDim == 2){
     nSpanWiseSections[marker_flag-1] = 1;
     //TODO (turbo) make it more genral
-    if(marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
+    if(marker_flag == OUTFLOW) config->SetnSpanWiseSections(1);
 
     /*---Initilize the vector of span-wise values that will be ordered ---*/
     SpanWiseValue[marker_flag -1] = new su2double[1];
@@ -5154,7 +5154,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                  	jVertex = nodes->GetVertex(iPoint, jMarker);
+                    jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                       coord = nodes->GetCoord(iPoint);
                       switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -5234,9 +5234,9 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
       // check if the value are gathered correctly
       //
       //  for (iSpan = 0; iSpan < nSpan; iSpan++){
-      //  	if(rank == MASTER_NODE){
-      //  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
-      //  	}
+      //    if(rank == MASTER_NODE){
+      //      cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
+      //    }
       //  }
 
 
@@ -5633,10 +5633,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               /*--- compute the face area associated with the vertex ---*/
               vertex[iMarker][iVertex]->GetNormal(NormalArea);
               for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] = -NormalArea[iDim];
-              Area = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                Area += NormalArea[iDim]*NormalArea[iDim];
-              Area = sqrt(Area);
+              Area = GeometryToolbox::Norm(nDim, NormalArea);
+
               for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] /= Area;
               /*--- store all the all the info into the auxiliary containers ---*/
               disordered[jSpan][nVertexSpanHalo[jSpan]]  = iPoint;
@@ -6814,8 +6812,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 

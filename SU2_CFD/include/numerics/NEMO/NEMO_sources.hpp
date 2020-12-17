@@ -78,7 +78,7 @@ public:
   * \param[in] val_reaction - Reaction number indicator.
   * \param[in] config - Definition of the particular problem.
   */
-  void GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
+  void ComputeKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
  
   /*!
    * \brief Residual of the translational to vibrational energy.
