@@ -589,7 +589,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     P[3][2] = alpha*(h+(*c)*theta);
     P[3][3] = alpha*(h-(*c)*theta);
 
-    if (tkeNeeded) P[3][4] = alpha;
+    if (tkeNeeded) P[3][4] = 2.0*alpha;
   }
   else {
     P[0][0] = n[0];
@@ -632,7 +632,7 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     P[4][3] = alpha*(h+(*c)*theta);
     P[4][4] = alpha*(h-(*c)*theta);
 
-    if (tkeNeeded) P[4][5] = alpha;
+    if (tkeNeeded) P[4][5] = 2.0*alpha;
   }
 
 }
