@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/lax.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
@@ -69,10 +70,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   su2double ProjVel_i, ProjVel_j;
 
   /*--- Calculate geometrical quantities ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -96,13 +94,12 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
 
   /*--- Compute the local spectral radius and the stretching factor ---*/
-  ProjVel_i = 0; ProjVel_j = 0; Area = 0;
+  ProjVel_i = 0; ProjVel_j = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVel_i += V_i[VEL_INDEX+iDim]*Normal[iDim];
     ProjVel_j += V_j[VEL_INDEX+iDim]*Normal[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Dissipation --*/
   Local_Lambda_i = (fabs(ProjVel_i)+a_i*Area);
