@@ -3626,15 +3626,18 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   dUl_dVl[nDim+1][nDim+1] = dUr_dVr[nDim+1][nDim+1] = 1.0/Gamma_Minus_One;
 
   if (tkeNeeded) {
-    dUl_dVl[nDim+1][nDim+2] = rho_l;
-    dUr_dVr[nDim+1][nDim+2] = rho_r;
+    dUl_dVl[nDim+1][nDim+2] = dUl_dVl[nDim+2][nDim+2] = rho_l;
+    dUr_dVr[nDim+1][nDim+2] = dUr_dVr[nDim+2][nDim+2] = rho_r;
+
+    dUl_dVl[0][nDim+2] = (*tke_l);
+    dUr_dVr[0][nDim+2] = (*tke_r);
   }
 
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
-      for (auto kVar = 0; kVar < nVar; kVar++) {
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
         dFl_dVl[iVar][jVar] += dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
         dFr_dVr[iVar][jVar] += dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
       }

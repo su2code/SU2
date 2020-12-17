@@ -51,13 +51,13 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new su2double [nPrimVarTot] ();
-    Jacobian_i[iVar] = new su2double [nVar] ();
-    Jacobian_j[iVar] = new su2double [nVar] ();
+    P_Tensor[iVar]   = new su2double [nPrimVarTot] ();
+    Jacobian_i[iVar] = new su2double [nPrimVarTot] ();
+    Jacobian_j[iVar] = new su2double [nPrimVarTot] ();
   }
 
   for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
-    invP_Tensor[iVar] = new su2double [nVar] ();
+    invP_Tensor[iVar] = new su2double [nPrimVarTot] ();
 }
 
 CUpwRoeBase_Flow::~CUpwRoeBase_Flow(void) {
@@ -303,9 +303,11 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
     invP_Tensor[nVar][0]   = RoeTke;
   }
 
-  /*--- Diference between conservative variables at jPoint and iPoint ---*/
+  /*--- Difference between conservative variables at jPoint and iPoint ---*/
   for (auto iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = Conservatives_j[iVar]-Conservatives_i[iVar];
+  if (tkeNeeded)
+    Diff_U[nDim+2] = Density_j*turb_ke_j-Density_i*turb_ke_i;
 
   /*--- Low dissipation formulation ---*/
   if (roe_low_dissipation)
@@ -316,7 +318,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Standard Roe "dissipation" ---*/
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
       for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
