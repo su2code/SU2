@@ -142,8 +142,11 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   /*--- Jacobian wrt flow variables ---*/
   for (auto iVar = 0; iVar < nVar; iVar++) {
+    const su2double dai_daij = 0.5*(1.0+a_ij/fabs(a_ij));
+    const su2double daj_daij = 0.5*(1.0-a_ij/fabs(a_ij));
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[iVar][iDim+2] = a_i/(a_i+a_j)*TurbVar_i[iVar]*Normal[iDim];
+      Jacobian_i[iVar][iDim+2] = 0.5*(Density_i*dai_daij + Density_j*daj_daij)/Density_i*Normal[iDim];
+      Jacobian_j[iVar][iDim+2] = 0.5*(Density_i*dai_daij + Density_j*daj_daij)/Density_j*Normal[iDim];
     }
     Jacobian_i[iVar][nDim+2] = -a_i*TurbVar_i[iVar];
     Jacobian_j[iVar][nDim+2] = -a_j*TurbVar_j[iVar];
