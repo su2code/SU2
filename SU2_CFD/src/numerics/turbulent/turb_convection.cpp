@@ -35,12 +35,15 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
   dynamic_grid(config->GetDynamic_Grid())
 {
+
+  nPrimVarTot = nVar + (nDim+1);
+
   Flux = new su2double [nVar] ();
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nVar] ();
-    Jacobian_j[iVar] = new su2double [nVar] ();
+    Jacobian_i[iVar] = new su2double [nPrimVarTot] ();
+    Jacobian_j[iVar] = new su2double [nPrimVarTot] ();
   }
 }
 

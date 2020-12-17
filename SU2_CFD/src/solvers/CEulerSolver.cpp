@@ -3564,8 +3564,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double dFl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
             dFr_dVr[MAXNVAR][MAXNVARTOT] = {0.0},
-            dUl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
-            dUr_dVr[MAXNVAR][MAXNVARTOT] = {0.0},
+            dUl_dVl[MAXNVARTOT][MAXNVARTOT] = {0.0},
+            dUr_dVr[MAXNVARTOT][MAXNVARTOT] = {0.0},
             dVi_dUi[MAXNVARTOT][MAXNVAR] = {0.0},
             dVk_dUk[MAXNVARTOT][MAXNVAR] = {0.0};
 
@@ -3629,8 +3629,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     dUl_dVl[nDim+1][nDim+2] = dUl_dVl[nDim+2][nDim+2] = rho_l;
     dUr_dVr[nDim+1][nDim+2] = dUr_dVr[nDim+2][nDim+2] = rho_r;
 
-    dUl_dVl[0][nDim+2] = (*tke_l);
-    dUr_dVr[0][nDim+2] = (*tke_r);
+    dUl_dVl[nDim+2][0] = (*tke_l);
+    dUr_dVr[nDim+2][0] = (*tke_r);
   }
 
   /*--- dF/d{r,v,p,k}, evaluated at face ---*/
