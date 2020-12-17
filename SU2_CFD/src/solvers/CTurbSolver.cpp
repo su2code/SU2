@@ -376,6 +376,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
+  const unsigned long nPrimVarTot = nVar + solver[FLOW_SOL]->GetnVar();
+
   constexpr size_t MAXNVARTOT = MAXNVAR + MAXNVARFLOW;
 
   su2double dFl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
@@ -384,8 +386,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
             dUr_dVr[MAXNVARTOT][MAXNVARTOT] = {0.0},
             dVi_dUi[MAXNVARTOT][MAXNVAR] = {0.0},
             dVk_dUk[MAXNVARTOT][MAXNVAR] = {0.0};
-
-  const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
