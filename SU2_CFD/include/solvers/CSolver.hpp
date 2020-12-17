@@ -2255,18 +2255,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual void GetStreamwise_Periodic_Properties(CGeometry *geometry,
-                                                        CConfig *config,
-                                                        unsigned short iMesh,
-                                                        bool Output) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] convergence - boolean for whether the solution is converged
    * \return boolean for whether the Fixed C_L mode is converged to target C_L

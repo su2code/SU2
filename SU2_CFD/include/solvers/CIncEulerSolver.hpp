@@ -46,6 +46,19 @@ protected:
   CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
   su2double **Preconditioner = nullptr; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
+  /*!
+   * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
+   *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void GetStreamwise_Periodic_Properties(CGeometry *geometry,
+                                         CConfig *config,
+                                         unsigned short iMesh,
+                                         bool Output);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -380,18 +393,6 @@ public:
                             CConfig *config,
                             unsigned short iMesh,
                             bool Output) final;
-  /*!
-   * \brief Compute necessary quantities (massflow, integrated heatflux, avg density)
-   *        for streamwise periodic cases. Also sets new delta P for prescribed massflow.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void GetStreamwise_Periodic_Properties(CGeometry *geometry,
-                                         CConfig *config,
-                                         unsigned short iMesh,
-                                         bool Output) final;
 
   /*!
    * \brief Print verification error to screen.
