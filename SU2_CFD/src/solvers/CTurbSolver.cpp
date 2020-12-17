@@ -406,15 +406,23 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     }
   }
 
-  for (auto iVar = 0; iVar < nDim+1; iVar++) {
-    if (limiter) {
-      dVl_dVi[nVar+iVar] = sign*(1.0 + 0.5*flowNodes->GetLimiter_Primitive(iPoint,iVar+1)*good_i);
-      dVr_dVi[nVar+iVar] = sign*(    - 0.5*flowNodes->GetLimiter_Primitive(jPoint,iVar+1)*good_j);
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    if (limiterFlow) {
+      dVl_dVi[nVar+iDim] = sign*(1.0 + 0.5*flowNodes->GetLimiter_Primitive(iPoint,iDim+1)*good_i);
+      dVr_dVi[nVar+iDim] = sign*(    - 0.5*flowNodes->GetLimiter_Primitive(jPoint,iDim+1)*good_j);
     }
     else {
-      dVl_dVi[nVar+iVar] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
-      dVr_dVi[nVar+iVar] = sign*(      0.5*Kappa_Turb*good_j);
+      dVl_dVi[nVar+iDim] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
+      dVr_dVi[nVar+iDim] = sign*(      0.5*Kappa_Turb*good_j);
     }
+  }
+  if (limiterFlow) {
+    dVl_dVi[nVar+nDim] = sign*(1.0 + 0.5*flowNodes->GetLimiter_Primitive(iPoint,nDim+2)*good_i);
+    dVr_dVi[nVar+nDim] = sign*(    - 0.5*flowNodes->GetLimiter_Primitive(jPoint,nDim+2)*good_j);
+  }
+  else {
+    dVl_dVi[nVar+nDim] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
+    dVr_dVi[nVar+nDim] = sign*(      0.5*Kappa_Turb*good_j);
   }
 
   /*--- dU/d{k,o,v,r}, evaluated at face ---*/
@@ -492,12 +500,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     else
       Psi_i[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
   }
-  for (auto iVar = 0; iVar < nDim+1; iVar++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
     if (limiterFlow)
-      Psi_i[nVar+iVar] = sign*flowNodes->GetLimiter_Primitive(iPoint,iVar+1)*good_i;
+      Psi_i[nVar+iDim] = sign*flowNodes->GetLimiter_Primitive(iPoint,iDim+1)*good_i;
     else
-      Psi_i[nVar+iVar] = sign*0.5*(1.0-Kappa_Flow)*good_i;
+      Psi_i[nVar+iDim] = sign*0.5*(1.0-Kappa_Flow)*good_i;
   }
+  if (limiterFlow)
+    Psi_i[nVar+nDim] = sign*flowNodes->GetLimiter_Primitive(iPoint,nDim+2)*good_i;
+  else
+    Psi_i[nVar+nDim] = sign*0.5*(1.0-Kappa_Flow)*good_i;
 
   /*--- Green-Gauss surface terms ---*/
 
