@@ -454,7 +454,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     dVi_dUi[iVar][iVar] = 1.0/primvar_i[nDim+2];
-    dVi_dUi[iVar][nVar+nDim] = turbvar_i[iVar]/primvar_i[iDim+1];
+    dVi_dUi[iVar][nVar+nDim] = turbvar_i[iVar]/primvar_i[nDim+2];
   }
   for (auto iDim = 0; iDim < nDim; iDim++) {
     dVi_dUi[nVar+iDim][nVar+iDim] = 1.0/primvar_i[nDim+2];
@@ -527,7 +527,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       dVk_dUk[iVar][iVar] = 1.0/primvar_k[nDim+2];
-      dVk_dUk[iVar][nVar+nDim] = turbvar_k[iVar]/primvar_k[iDim+1];
+      dVk_dUk[iVar][nVar+nDim] = turbvar_k[iVar]/primvar_k[nDim+2];
     }
     for (auto iDim = 0; iDim < nDim; iDim++) {
       dVk_dUk[nVar+iDim][nVar+iDim] = 1.0/primvar_k[nDim+2];
