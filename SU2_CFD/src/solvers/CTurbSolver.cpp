@@ -412,8 +412,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
       dVr_dVi[nVar+iDim] = sign*(    - 0.5*flowNodes->GetLimiter_Primitive(jPoint,iDim+1)*good_j);
     }
     else {
-      dVl_dVi[nVar+iDim] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
-      dVr_dVi[nVar+iDim] = sign*(      0.5*Kappa_Turb*good_j);
+      dVl_dVi[nVar+iDim] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
+      dVr_dVi[nVar+iDim] = sign*(      0.5*Kappa_Flow*good_j);
     }
   }
   if (limiterFlow) {
@@ -421,8 +421,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     dVr_dVi[nVar+nDim] = sign*(    - 0.5*flowNodes->GetLimiter_Primitive(jPoint,nDim+2)*good_j);
   }
   else {
-    dVl_dVi[nVar+nDim] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
-    dVr_dVi[nVar+nDim] = sign*(      0.5*Kappa_Turb*good_j);
+    dVl_dVi[nVar+nDim] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
+    dVr_dVi[nVar+nDim] = sign*(      0.5*Kappa_Flow*good_j);
   }
 
   /*--- dU/d{k,o,v,r}, evaluated at face ---*/
@@ -500,6 +500,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     else
       Psi_i[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
   }
+  
   for (auto iDim = 0; iDim < nDim; iDim++) {
     if (limiterFlow)
       Psi_i[nVar+iDim] = sign*flowNodes->GetLimiter_Primitive(iPoint,iDim+1)*good_i;
