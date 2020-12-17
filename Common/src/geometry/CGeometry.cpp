@@ -2687,7 +2687,10 @@ void CGeometry::ComputeSurf_Straightness(CConfig *config,
             UnitNormal = Normal;
 
             /*--- Compute unit normal. ---*/
-            Area = GeometryToolbox::Norm(nDim, Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
 
             /*--- Negate for outward convention. ---*/
             for (iDim = 0; iDim < nDim; iDim++)

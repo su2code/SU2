@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/msw.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim,
                            unsigned short val_nVar,

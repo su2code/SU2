@@ -28,7 +28,7 @@
 #include "../../include/geometry/CMultiGridGeometry.hpp"
 #include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
-
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
 

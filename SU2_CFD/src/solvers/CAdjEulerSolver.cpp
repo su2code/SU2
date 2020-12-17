@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CAdjEulerSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 

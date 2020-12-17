@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/centered.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                 CNumerics(val_nDim, val_nVar, config) {

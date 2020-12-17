@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/ausm_slau.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                              CNumerics(val_nDim, val_nVar, config) {

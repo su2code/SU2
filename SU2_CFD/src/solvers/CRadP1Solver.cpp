@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/variables/CRadP1Variable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 

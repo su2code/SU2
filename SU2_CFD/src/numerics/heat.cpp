@@ -26,6 +26,7 @@
  */
 
 #include "../../include/numerics/heat.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentSca_Heat::CCentSca_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) :
                CNumerics(val_nDim, val_nVar, config) {

@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/numerics/NEMO/NEMO_diffusion.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
