@@ -115,10 +115,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Calculate supporting geometry parameters ---*/
 
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;

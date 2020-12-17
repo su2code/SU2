@@ -588,10 +588,8 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint) && compressible){
     Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
+
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     for (iDim = 0; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
@@ -642,10 +640,8 @@ vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsig
   vector<passivedouble> ret_Normal_passive(3, 0.0);
 
   Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   ret_Normal[0] = Normal[0]/Area;
   ret_Normal[1] = Normal[1]/Area;

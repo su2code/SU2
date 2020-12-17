@@ -451,10 +451,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
 
         /*--- The value of Area computed here includes also portion of boundary belonging to different marker ---*/
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         for (iDim = 0; iDim < nDim; iDim++)
           Normal[iDim] /= Area;

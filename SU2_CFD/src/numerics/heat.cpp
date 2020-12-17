@@ -70,13 +70,12 @@ void CCentSca_Heat::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Projected velocities at the current edge ---*/
 
-  ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
+  ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += V_i[iDim+1]*Normal[iDim];
     ProjVelocity_j += V_j[iDim+1]*Normal[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Computing the second order centered scheme part ---*/
 

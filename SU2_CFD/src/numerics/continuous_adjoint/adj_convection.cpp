@@ -62,16 +62,16 @@ void CCentLax_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
   MeanPsiE =  0.5*(Psi_i[nVar-1]+Psi_j[nVar-1]);
 
   /*--- Evaluation at point i ---*/
-  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0; Area = 0;
+  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1] / U_i[0];
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjPhi += MeanPhi[iDim]*Normal[iDim];
     ProjPhi_Vel += MeanPhi[iDim]*Velocity_i[iDim];
     sq_vel += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
+
   phis1 = ProjPhi + ProjVelocity_i*MeanPsiE;
   phis2 = MeanPsiRho + ProjPhi_Vel + Enthalpy_i*MeanPsiE;
 
@@ -272,16 +272,15 @@ void CCentJST_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
 
   /*--- Point i convective residual evaluation ---*/
 
-  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0; Area = 0;
+  ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = U_i[iDim+1] / U_i[0];
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjPhi += MeanPhi[iDim]*Normal[iDim];
     ProjPhi_Vel += MeanPhi[iDim]*Velocity_i[iDim];
     sq_vel += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
   phis1 = ProjPhi + ProjVelocity_i*MeanPsiE;
   phis2 = MeanPsiRho + ProjPhi_Vel + Enthalpy_i*MeanPsiE;
 

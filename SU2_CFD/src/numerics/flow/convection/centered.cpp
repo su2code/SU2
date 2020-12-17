@@ -146,13 +146,12 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
 
   /*--- Compute the local spectral radius and the stretching factor ---*/
 
-  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
+  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Adjustment due to mesh motion ---*/
 
