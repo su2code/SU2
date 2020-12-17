@@ -580,14 +580,16 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     // P[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
     // P[3][2] = alpha*(h+two3k+(*c)*theta);
     // P[3][3] = alpha*(h+two3k-(*c)*theta);
-    P[3][0] = q2+(*k);
+    // P[3][0] = q2+(*k);
+    // P[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
+    // P[3][2] = alpha*(h+(*c)*theta);
+    // P[3][3] = alpha*(h-(*c)*theta);
+    P[3][0] = q2;
     P[3][1] = (*r)*(v[0]*n[1]-v[1]*n[0]);
     P[3][2] = alpha*(h+(*c)*theta);
     P[3][3] = alpha*(h-(*c)*theta);
 
-    if (tkeNeeded) {
-      P[3][4] = -1.0;
-    }
+    if (tkeNeeded) P[3][4] = alpha;
   }
   else {
     P[0][0] = n[0];
@@ -619,15 +621,18 @@ void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2doub
     // P[4][2] = (q2+five3k)*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
     // P[4][3] = alpha*(h+two3k+(*c)*theta);
     // P[4][4] = alpha*(h+two3k-(*c)*theta);
-    P[4][0] = (q2+(*k))*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
-    P[4][1] = (q2+(*k))*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
-    P[4][2] = (q2+(*k))*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    // P[4][0] = (q2+(*k))*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    // P[4][1] = (q2+(*k))*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    // P[4][2] = (q2+(*k))*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
+    // P[4][3] = alpha*(h+(*c)*theta);
+    // P[4][4] = alpha*(h-(*c)*theta);
+    P[4][0] = q2*n[0]+(*r)*(v[1]*n[2]-v[2]*n[1]);
+    P[4][1] = q2*n[1]+(*r)*(v[2]*n[0]-v[0]*n[2]);
+    P[4][2] = q2*n[2]+(*r)*(v[0]*n[1]-v[1]*n[0]);
     P[4][3] = alpha*(h+(*c)*theta);
     P[4][4] = alpha*(h-(*c)*theta);
 
-    if (tkeNeeded) {
-      P[4][5] = -1.0;
-    }
+    if (tkeNeeded) P[4][5] = alpha;
   }
 
 }
@@ -738,7 +743,16 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     PInv[3][3] = Gamma_Minus_One;
 
     if (tkeNeeded) {
+      PInv[0][4] = Gamma_Minus_One/c2;
+      PInv[1][4] = 0.0;
+      PInv[2][4] = -Gamma_Minus_One;
+      PInv[3][4] = -Gamma_Minus_One;
+
       PInv[4][0] = (*k);
+      PInv[4][1] = phi2*(*k)*v[0]/Gamma_Minus_One;
+      PInv[4][2] = phi2*(*k)*v[1]/Gamma_Minus_One;
+      PInv[4][3] = -phi2*(*k)/Gamma_Minus_One;
+      PInv[4][4] = phi2*(*k)/Gamma_Minus_One+c2;
     }
   }
   else {
@@ -773,7 +787,18 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
     PInv[4][4] = Gamma_Minus_One;
 
     if (tkeNeeded) {
-      PInv[5][0] = (*k);
+      PInv[0][5] = Gamma_Minus_One*n[0]/c2;
+      PInv[1][5] = Gamma_Minus_One*n[1]/c2;
+      PInv[2][5] = Gamma_Minus_One*n[2]/c2;
+      PInv[3][5] = -Gamma_Minus_One;
+      PInv[4][5] = -Gamma_Minus_One;
+
+      PInv[5][0] = -phi2*(*k);
+      PInv[5][1] = phi2*(*k)*v[0]/Gamma_Minus_One;
+      PInv[5][2] = phi2*(*k)*v[1]/Gamma_Minus_One;
+      PInv[5][3] = phi2*(*k)*v[2]/Gamma_Minus_One;
+      PInv[5][4] = -phi2*(*k)/Gamma_Minus_One;
+      PInv[5][5] = phi2*(*k)/Gamma_Minus_One+c2;
     }
   }
 }
