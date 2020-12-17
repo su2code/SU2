@@ -139,8 +139,10 @@ private:
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] rho_l - Density extrapolated from node i to face.
-   * \param[in] rho_r - Density extrapolated from node j to face.
+   * \param[in] primvar_l - Primitive vector extrapolated from node i to face.
+   * \param[in] primvar_r - Primitive vector extrapolated from node j to face.
+   * \param[in] turbvar_l - Turbulent vector energy extrapolated from node i to face.
+   * \param[in] turbvar_r - Turbulent vector energy extrapolated from node j to face.
    * \param[in] dFl_dUl - Flux Jacobian wrt left extrapolated state.
    * \param[in] dFr_dUr - Flux Jacobian wrt right extrapolated state.
    * \param[in] good_i - Whether the extrapolation from node i is good.
@@ -149,8 +151,10 @@ private:
   void SetExtrapolationJacobian(CSolver             **solver,
                                 const CGeometry     *geometry,
                                 const CConfig       *config,
-                                const su2double     *rho_l, 
-                                const su2double     *rho_r,
+                                const su2double     *primvar_l, 
+                                const su2double     *primvar_r,
+                                const su2double     *turbvar_l, 
+                                const su2double     *turbvar_r,
                                 const su2double     *const *const dFl_dUl,
                                 const su2double     *const *const dFr_dUr,
                                 const bool          good_i,
