@@ -748,7 +748,7 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
       PInv[2][4] = -Gamma_Minus_One;
       PInv[3][4] = -Gamma_Minus_One;
 
-      PInv[4][0] = (*k);
+      PInv[4][0] = -phi2*(*k);
       PInv[4][1] = phi2*(*k)*v[0]/Gamma_Minus_One;
       PInv[4][2] = phi2*(*k)*v[1]/Gamma_Minus_One;
       PInv[4][3] = -phi2*(*k)/Gamma_Minus_One;
