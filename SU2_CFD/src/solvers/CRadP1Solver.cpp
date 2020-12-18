@@ -270,7 +270,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
@@ -344,7 +344,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
@@ -377,7 +377,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-    
+
       Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
@@ -419,7 +419,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
@@ -576,7 +576,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
-  unsigned short iDim, iMarker;
+  unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;

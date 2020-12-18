@@ -32,8 +32,8 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad,
-                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, 
-                                                              val_nPrimVar, 
+                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar,
+                                                              val_nPrimVar,
                                                               val_nPrimVarGrad,
                                                               config) {
 
@@ -47,14 +47,14 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   MeanV    = new su2double[nPrimVar];
   MeandPdU = new su2double[nVar];
   ProjFlux = new su2double[nVar];
-  Flux     = new su2double[nVar]; 
+  Flux     = new su2double[nVar];
 
   mean_eves.resize(nSpecies,0.0);
 
 }
 
 CCentLax_NEMO::~CCentLax_NEMO(void) {
-  
+
   delete [] Diff_U;
   delete [] MeanU;
   delete [] MeanV;
@@ -65,7 +65,7 @@ CCentLax_NEMO::~CCentLax_NEMO(void) {
 
 CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) {
 
-  unsigned short iDim, iSpecies, iVar;
+  unsigned short iDim, iVar;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
   su2double ProjVel_i, ProjVel_j;
 
@@ -87,7 +87,7 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
 
   /*--- Compute NonEq specific variables ---*/
-  vector<su2double> mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]); 
+  vector<su2double> mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
   fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
@@ -104,12 +104,12 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
   /*--- Dissipation --*/
   Local_Lambda_i = (fabs(ProjVel_i)+a_i*Area);
   Local_Lambda_j = (fabs(ProjVel_j)+a_j*Area);
-  MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);  
+  MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
 
   Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
   Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
-  
+
   /*--- Computes differences btw. conservative variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = U_i[iVar] - U_j[iVar];
