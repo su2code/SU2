@@ -634,7 +634,6 @@ passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned l
 
 vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex){
 
-  unsigned short iDim;
   su2double *Normal;
   su2double Area;
   vector<su2double> ret_Normal(3, 0.0);

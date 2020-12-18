@@ -1084,7 +1084,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   unsigned long iFinePoint, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
-  unsigned short iChildren, iDim;
+  unsigned short iChildren;
   bool change_face_orientation;
   su2double Coarse_Volume, Area;
 

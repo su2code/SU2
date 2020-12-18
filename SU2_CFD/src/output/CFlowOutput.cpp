@@ -811,7 +811,7 @@ void CFlowOutput::Add_CpInverseDesignOutput(CConfig *config){
 
 void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CConfig *config){
 
-  unsigned short iMarker, icommas, Boundary, iDim;
+  unsigned short iMarker, icommas, Boundary;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
   su2double XCoord, YCoord, ZCoord, Pressure, PressureCoeff = 0, Cp, CpTarget, *Normal = nullptr, Area, PressDiff = 0.0;
   bool *PointInDomain;
