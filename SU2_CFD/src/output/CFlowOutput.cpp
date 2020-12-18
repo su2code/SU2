@@ -27,6 +27,7 @@
 
 #include "../../include/output/CFlowOutput.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 CFlowOutput::CFlowOutput(CConfig *config, unsigned short nDim, bool fem_output) : COutput (config, nDim, fem_output){
@@ -909,10 +910,7 @@ void CFlowOutput::Set_CpInverseDesign(CSolver *solver, CGeometry *geometry, CCon
           Cp = solver->GetCPressure(iMarker, iVertex);
           CpTarget = solver->GetCPressureTarget(iMarker, iVertex);
 
-          Area = 0.0;
-          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           PressDiff += Area * (CpTarget - Cp) * (CpTarget - Cp);
         }

@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/ausmplusup2.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                                            unsigned short val_nPrimVar,
@@ -109,10 +110,7 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi, sq_veli, sq_velj;
 
   /*--- Face area ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
