@@ -376,7 +376,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
-  const unsigned long nPrimVarTot = nVar + solver[FLOW_SOL]->GetnVar();
+  const unsigned long nPrimVarTot = nVar + (nDim+1);
 
   constexpr size_t MAXNVARTOT = MAXNVAR + MAXNVARFLOW;
 
