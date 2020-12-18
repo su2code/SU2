@@ -434,11 +434,11 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
 void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  const bool viscous      = config->GetViscous();
-  const bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  const bool time_steping = (config->GetTime_Marching() == TIME_STEPPING;
-  const bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                            (config->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool viscous       = config->GetViscous();
+  const bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+  const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                             (config->GetTime_Marching() == DT_STEPPING_2ND);
   const su2double K_v = 0.25;
 
   /*--- Init thread-shared variables to compute min/max values.
@@ -472,7 +472,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     /*--- Loop over the neighbors of point i. ---*/
     for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
     {
-      jPoint = geometry->edges->GetPoint(iPoint,iNeigh);
+      jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
 
       iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
       Normal = geometry->edges->GetNormal(iEdge);

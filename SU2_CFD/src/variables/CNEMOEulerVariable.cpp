@@ -356,6 +356,7 @@ void CNEMOEulerVariable::Prim2ConsVar(su2double *U, su2double *V) {
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     U[iSpecies]    = V[iSpecies];
     rhos[iSpecies] = V[iSpecies];
+  }
 
   /*--- Set momentum and compute v^2 ---*/
   //TODO: geometry toolbox
