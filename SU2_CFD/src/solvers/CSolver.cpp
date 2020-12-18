@@ -2087,7 +2087,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     SU2_OMP_MASTER
     { /* Only the master thread updates the shared variables. */
 
-    if (iMesh == MESH_0) {
+    if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
       if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
 

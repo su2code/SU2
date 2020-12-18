@@ -232,7 +232,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.978913, 1.140283, 1.211887, 0.194208]
+    turb_naca0012_1c.test_vals = [-4.978220, 1.140467, 0.242785, -0.113457]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -240,7 +240,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484204, 0.969783, 1.311085, 0.231449]
+    turb_naca0012_2c.test_vals = [-5.483337, 0.968887, 0.212022, -0.120321]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -248,7 +248,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.586959, 0.932359, 1.535455, 0.315820]
+    turb_naca0012_3c.test_vals = [-5.584300, 0.931383, 0.205075, -0.120905]
     test_list.append(turb_naca0012_3c)
 
     # NACA0012 p1c1
@@ -256,7 +256,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.132991, 1.076082, 1.177974, 0.181556]
+    turb_naca0012_p1c1.test_vals = [-5.133237, 1.075365, 0.337532, -0.077873]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -264,7 +264,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556581, 0.945167, 1.240884, 0.205031]
+    turb_naca0012_p1c2.test_vals = [-5.554623, 0.943691, 0.226361, -0.116560]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
