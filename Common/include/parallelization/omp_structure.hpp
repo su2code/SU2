@@ -48,7 +48,7 @@
 
 /*--- Detect compilation with OpenMP support, protect agaisnt
  *    using OpenMP with Reverse AD (not supported yet). ---*/
-#if 0 //defined(_OPENMP) && !defined(CODI_REVERSE_TYPE)
+#if defined(_OPENMP) && !defined(CODI_REVERSE_TYPE)
 #define HAVE_OMP
 #include <omp.h>
 
