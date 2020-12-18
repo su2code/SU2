@@ -747,13 +747,13 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
-  unsigned short iVar, jVar;
+  unsigned short iVar;
   bool err;
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
   /*--- Set booleans based on config settings ---*/
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -787,23 +787,23 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar])
         err = true;
-    if (implicit)
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
-              (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
-            err = true;
+    //if (implicit)
+    //  for (iVar = 0; iVar < nVar; iVar++)
+    //    for (jVar = 0; jVar < nVar; jVar++)
+    //      if ((Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) ||
+    //          (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])   )
+    //        err = true;
 
     /*--- Update the residual and Jacobian ---*/
     if (!err) {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      if (implicit) {
-        Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-        Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
-        Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_i);
-        Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_j);
-      }
+    //  if (implicit) {
+    //    Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+    //    Jacobian.AddBlock(iPoint,jPoint,Jacobian_j);
+    //    Jacobian.SubtractBlock(jPoint,iPoint,Jacobian_i);
+    //    Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_j);
+    //  }
     }
   }
 }
@@ -815,7 +815,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
   /*--- Set booleans based on config settings ---*/
   const auto InnerIter        = config->GetInnerIter();
-  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  //const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
@@ -1003,14 +1003,14 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  unsigned short iVar, jVar;
+  unsigned short iVar;
   unsigned long iPoint;
   unsigned long eAxi_local, eChm_local, eVib_local;
   unsigned long eAxi_global, eChm_global, eVib_global;
 
   /*--- Assign booleans ---*/
   bool err        = false;
-  bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  //bool implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool frozen     = config->GetFrozen();
   bool monoatomic = config->GetMonoatomic();
 
@@ -1051,16 +1051,16 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       err = false;
       for (iVar = 0; iVar < nVar; iVar++)
         if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+      //if (implicit)
+      //  for (iVar = 0; iVar < nVar; iVar++)
+      //    for (jVar = 0; jVar < nVar; jVar++)
+      //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
       /*--- Apply the update to the linear system ---*/
       if (!err) {
         LinSysRes.AddBlock(iPoint, residual);
-        if (implicit)
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        //if (implicit)
+        //  Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
       else
         eAxi_local++;
@@ -1075,16 +1075,16 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         err = false;
         for (iVar = 0; iVar < nVar; iVar++)
           if (residual[iVar] != residual[iVar]) err = true;
-        if (implicit)
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+        //if (implicit)
+        //  for (iVar = 0; iVar < nVar; iVar++)
+        //    for (jVar = 0; jVar < nVar; jVar++)
+        //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
         /*--- Apply the chemical sources to the linear system ---*/
         if (!err) {
           LinSysRes.SubtractBlock(iPoint, residual);
-          if (implicit)
-            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          //if (implicit)
+          //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         } else
           eChm_local++;
       }
@@ -1100,16 +1100,16 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       err = false;
       for (iVar = 0; iVar < nVar; iVar++)
         if (residual[iVar] != residual[iVar]) err = true;
-      if (implicit)
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+      //if (implicit)
+      //  for (iVar = 0; iVar < nVar; iVar++)
+      //    for (jVar = 0; jVar < nVar; jVar++)
+      //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
       /*--- Apply the vibrational relaxation terms to the linear system ---*/
       if (!err) {
         LinSysRes.SubtractBlock(iPoint, residual);
-        if (implicit)
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        //if (implicit)
+        //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       } else
         eVib_local++;
     }
