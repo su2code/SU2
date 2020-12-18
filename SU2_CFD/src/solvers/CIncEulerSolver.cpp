@@ -2742,7 +2742,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area;
   su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
   su2double Damping = config->GetInc_Outlet_Damping();
@@ -2778,8 +2777,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Current solution at this boundary node ---*/
 

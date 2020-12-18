@@ -6699,7 +6699,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array workArray as temporary storage. */
-      for(unsigned long mm=0; mm<nVar*volElem[l].nDOFsSol; ++mm)
+      for(unsigned short mm=0; mm<nVar*volElem[l].nDOFsSol; ++mm)
         workArray[mm] = res[mm];
 
       blasFunctions->gemm(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,

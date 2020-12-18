@@ -709,7 +709,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iMarker, iMarker_HeatFlux, Monitoring, iDim;
+  unsigned short iMarker, iMarker_HeatFlux, Monitoring;
   unsigned long iPoint, iVertex;
   string HeatFlux_Tag, Marker_Tag;
 
@@ -831,7 +831,6 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                                      unsigned short val_marker) {
 
-  unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double Wall_HeatFlux, Area, *Normal;
 
@@ -1067,7 +1066,6 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iVertex, iPoint;
-  unsigned short iDim;
 
   su2double thermal_diffusivity, rho_cp_solid, Temperature_Ref, T_Conjugate, Tinterface,
       Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
@@ -1283,7 +1281,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
-  unsigned short iDim, iMarker;
+  unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
