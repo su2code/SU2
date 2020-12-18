@@ -198,7 +198,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
                                                       epsilon*epsilon));
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  CreateBasis(UnitNormal);
+  CreateBasis   (UnitNormal);
   GetPMatrix    (Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, P_Tensor   );
   GetPMatrix_inv(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, invP_Tensor);
 
@@ -233,8 +233,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
   CreateBasis(UnitNormal);
-  GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
-  GetPMatrix_inv(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, invP_Tensor);
+  GetPMatrix(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, P_Tensor);
+  GetPMatrix_inv(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, invP_Tensor);
 
   /*--- Projected flux (f-) ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

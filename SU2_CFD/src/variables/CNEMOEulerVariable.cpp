@@ -40,10 +40,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        unsigned long nvarprimgrad,
                                        CConfig *config,
                                        CNEMOGas *fluidmodel) : CVariable(npoint,
-                                                                    ndim,
-                                                                    nvar,
-                                                                    config   ),
-                                      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+                                                                         ndim,
+                                                                         nvar,
+                                                                         config ),
+                                       Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
  
   vector<su2double> energies; 
   unsigned short iDim, iSpecies;
@@ -95,9 +95,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
   Limiter.resize(nPoint,nVar) = su2double(0.0);
+  Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
-  Solution_Max.resize(nPoint,nVar) = su2double(0.0);
-  Solution_Min.resize(nPoint,nVar) = su2double(0.0);
+  Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
+  Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Primitive and secondary variables ---*/
   Primitive.resize(nPoint,nPrimVar) = su2double(0.0);
@@ -131,7 +132,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
 
+  /* Under-relaxation parameter. */
   LocalCFL.resize(nPoint) = su2double(0.0);
 
   /*--- Loop over all points --*/
@@ -145,7 +148,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
     /*--- Compute necessary quantities ---*/
     rho = fluidmodel->GetDensity();
-    soundspeed = fluidmodel->GetSoundSpeed();
+    soundspeed = fluidmodel->ComputeSoundSpeed();
     for (iDim = 0; iDim < nDim; iDim++){
       sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
     }
@@ -343,4 +346,87 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   return nonPhys;
 }
 
+void CNEMOEulerVariable::Prim2ConsVar(su2double *U, su2double *V) {
+
+  /*---Useful variables ---*/
+  vector<su2double> Energies, rhos;
+  rhos.resize(nSpecies,0.0);
+
+  /*--- Set densities and mass fraction ---*/
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    U[iSpecies]    = V[iSpecies];
+    rhos[iSpecies] = V[iSpecies];
+
+  /*--- Set momentum and compute v^2 ---*/
+  //TODO: geometry toolbox
+  su2double sqvel = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
+    sqvel           += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+  }
+
+  /*--- Set the fluidmodel and recompute energies ---*/
+  fluidmodel->SetTDStateRhosTTv( rhos, V[T_INDEX], V[TVE_INDEX]);
+  Energies = fluidmodel->ComputeMixtureEnergies();
+
+  /*--- Set conservative energies ---*/
+  U[nSpecies+nDim]   = V[RHO_INDEX]*(Energies[0]+0.5*sqvel);
+  U[nSpecies+nDim+1] = V[RHO_INDEX]*(Energies[1]);
+}
+
 void CNEMOEulerVariable::SetSolution_New() { Solution_New = Solution; }
+
+bool CNEMOEulerVariable::CheckNonPhys(su2double *V) {
+
+  su2double Tmin, Tmax, Tvemin, Tvemax;
+
+  /*--- Set booleans ---*/
+  bool nonPhys = false;
+
+  /*--- Set temperature clipping values ---*/
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = 50.0; Tvemax = 8E4;
+
+  /*--- Check whether state makes sense ---*/
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    if (V[RHOS_INDEX+iSpecies] < 0.0) nonPhys = true;
+
+  if (V[P_INDEX] < 0.0) nonPhys = true;
+
+  if (V[T_INDEX] < Tmin || V[T_INDEX] > Tmax) nonPhys = true;
+
+  if (V[TVE_INDEX] < Tvemin || V[TVE_INDEX] > Tvemax) nonPhys = true;
+
+  if (V[A_INDEX] < 0.0 ) nonPhys = true;
+
+  return nonPhys;
+
+}
+
+su2double CNEMOEulerVariable::ComputeConsistentExtrapolation(su2double* V, su2double* dPdU, su2double* dTdU,
+                                                             su2double* dTvedU, su2double *val_eves,
+                                                             su2double *val_Cvves) {
+
+  //NOTE: TODO - this doesnt compute Cvves/ dPdU,etc.yet
+  su2double val_gamma;
+  vector<su2double> rhos, eves, cvves;
+
+  /*--- Rename density vector ---*/
+  rhos.resize(nSpecies,0.0);
+  for (unsigned short iSpecies=0; iSpecies < nSpecies; iSpecies++ ){
+    rhos[iSpecies] = V[iSpecies];
+  }
+
+  /*--- Set new fluid state ---*/
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
+
+  /*---Compute the secondary values ---*/
+  eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
+  val_gamma = fluidmodel->ComputeGamma();
+
+  /*--- Set the variables ---*/
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_eves[iSpecies]  = eves[iSpecies];
+
+  return val_gamma;
+}

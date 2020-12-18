@@ -141,10 +141,10 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-  e_ve_i = 0; e_ve_j = 0;
+  e_ve_i = 0.0; e_ve_j = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
-    e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
+    e_ve_i += (rhos_i[iSpecies]*eve_i[iSpecies])/rho_i;
+    e_ve_j += (rhos_j[iSpecies]*eve_j[iSpecies])/rho_j;
   }
 
   /*--- Projected velocities ---*/

@@ -75,25 +75,25 @@ public:
   CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, const bool navier_stokes = false);
 
   /*!
-     * \brief Destructor of the class.
-     */
+   * \brief Destructor of the class.
+   */
   ~CNEMOEulerSolver(void) override;
 
   /*!
-     * \brief Set the maximum value of the eigenvalue.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
+   * \brief Set the maximum value of the eigenvalue.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
-   /*!
-  * \brief Compute the time step for solving the Euler equations.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] iMesh - Index of the mesh in multigrid computations.
-  * \param[in] Iteration - Value of the current iteration.
-    */
+  /*!
+   * \brief Compute the time step for solving the Euler equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Value of the current iteration.
+   */
   void SetTime_Step(CGeometry *geometry,
                     CSolver **solver_container,
                     CConfig *config,

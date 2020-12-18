@@ -116,7 +116,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   GetInviscidProjFlux(U_j, V_j, Normal, ProjFlux_j);
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  GetPMatrix(RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
+  GetPMatrix    (RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(RoeU, RoeV, RoedPdU, UnitNormal, l, m, invP_Tensor);
 
   /*--- Compute projected velocities ---*/
@@ -128,7 +128,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
-      RoeV[P_INDEX]/RoeV[RHO_INDEX]);
+                            RoeV[P_INDEX]/RoeV[RHO_INDEX]);
 
   /*--- Calculate eigenvalues ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

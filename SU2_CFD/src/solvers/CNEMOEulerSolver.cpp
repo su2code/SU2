@@ -347,8 +347,8 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
 
   /*--- Set the primitive variables ---*/
-  ErrorCounter = 0;
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  ErrorCounter  = 0;
+  ErrorCounter += SetPrimitive_Variables(solver_container, config, Output);
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
 
@@ -394,15 +394,15 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetSolution_Gradient_GG(geometry, config, true);
+      SetPrimitive_Gradient_GG(geometry, config, true);
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetSolution_Gradient_LS(geometry, config, true);
+      SetPrimitive_Gradient_LS(geometry, config, true);
     }
 
     /*--- Limiter computation ---*/
     if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
-      SetSolution_Limiter(geometry, config);
+      SetPrimitive_Limiter(geometry, config);
     }
   }
 }
@@ -438,7 +438,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
-  su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, cv, Lambda_1, Lambda_2, K_v, Local_Delta_Time_Visc;
+  su2double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, cv,
+  Lambda_1, Lambda_2, K_v, Local_Delta_Time_Visc;
 
   const bool viscous       = config->GetViscous();
 
@@ -785,139 +786,55 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar;
-  su2double *U_i, *U_j, *V_i, *V_j;
-  su2double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
-  su2double *Limiter_i, *Limiter_j;
-  su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
-  su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
-  su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
+
   su2double Gamma_i, Gamma_j;
-  su2double lim_i, lim_j, lim_ij = 0.0;
 
-  unsigned long InnerIter = config->GetInnerIter();
+  /*--- Set booleans based on config settings ---*/
+  const auto InnerIter        = config->GetInnerIter();
+  const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
+                                (InnerIter <= config->GetLimiterIter());
+  const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
+  /*--- Non-physical counter. ---*/
+  unsigned long counter_local = 0;
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
+
+  /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-   /*--- Set booleans based on config settings ---*/
-  bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
-  bool limiter      = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) &&
-                       !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool chk_err_i, chk_err_j, err;
-
-  /*--- Allocate arrays ---*/
-  Primitive_i = new su2double[nPrimVar];
-  Primitive_j = new su2double[nPrimVar];
-  Conserved_i = new su2double[nVar];
-  Conserved_j = new su2double[nVar];
-  dPdU_i      = new su2double[nVar];
-  dPdU_j      = new su2double[nVar];
-  dTdU_i      = new su2double[nVar];
-  dTdU_j      = new su2double[nVar];
-  dTvedU_i    = new su2double[nVar];
-  dTvedU_j    = new su2double[nVar];
-  Eve_i       = new su2double[nSpecies];
-  Eve_j       = new su2double[nSpecies];
-  Cvve_i      = new su2double[nSpecies];
-  Cvve_j      = new su2double[nSpecies];
-
+  /*--- Static arrays for MUSCL reconstructed variables ---*/
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
+  su2double Conserved_i[MAXNVAR] = {0.0}, Conserved_j[MAXNVAR] = {0.0};
+  su2double      dPdU_i[MAXNVAR] = {0.0},      dPdU_j[MAXNVAR] = {0.0};
+  su2double      dTdU_i[MAXNVAR] = {0.0},      dTdU_j[MAXNVAR] = {0.0};
+  su2double    dTvedU_i[MAXNVAR] = {0.0},    dTvedU_j[MAXNVAR] = {0.0};
+  su2double       Eve_i[MAXNVAR] = {0.0},       Eve_j[MAXNVAR] = {0.0};
+  su2double      Cvve_i[MAXNVAR] = {0.0},      Cvve_j[MAXNVAR] = {0.0};
 
   /*--- Loop over edges and calculate convective fluxes ---*/
-  for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  for(unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
+    unsigned short iDim, iVar;
 
     /*--- Retrieve node numbers and pass edge normal to CNumerics ---*/
-    iPoint = geometry->edges->GetNode(iEdge, 0);
-    jPoint = geometry->edges->GetNode(iEdge, 1);
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
+    auto Coord_i = geometry->nodes->GetCoord(iPoint);
+    auto Coord_j = geometry->nodes->GetCoord(jPoint);
+
     /*--- Get conserved & primitive variables from CVariable ---*/
-    U_i = nodes->GetSolution(iPoint);   U_j = nodes->GetSolution(jPoint);
-    V_i = nodes->GetPrimitive(iPoint);  V_j = nodes->GetPrimitive(jPoint);
+    auto U_i = nodes->GetSolution(iPoint);   auto U_j = nodes->GetSolution(jPoint);
+    auto V_i = nodes->GetPrimitive(iPoint);  auto V_j = nodes->GetPrimitive(jPoint);
 
-    /*--- Extract Gamma from CVariable ---*/
-    // Note: this will outdated with new reconstruction.
-    Gamma_i = nodes->GetGamma(iPoint);
-    Gamma_j = nodes->GetGamma(jPoint);
+    /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
+    if (!muscl) {
 
-    /*--- High order reconstruction using MUSCL strategy ---*/
-    if (muscl) {
-
-
-      /*--- Assign i-j and j-i to projection vectors ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->nodes->GetCoord(jPoint, iDim) -
-                              geometry->nodes->GetCoord(iPoint, iDim)   );
-        Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) -
-                              geometry->nodes->GetCoord(jPoint, iDim)   );
-      }
-
-
-      /*---+++ Conserved variable reconstruction & limiting +++---*/
-
-      /*--- Retrieve gradient information & limiter ---*/
-      GradU_i = nodes->GetGradient_Reconstruction(iPoint);
-      GradU_j = nodes->GetGradient_Reconstruction(jPoint);
-
-      if (limiter) {
-        Limiter_i = nodes->GetLimiter(iPoint);
-        Limiter_j = nodes->GetLimiter(jPoint);
-        lim_i = 1.0;
-        lim_j = 1.0;
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (lim_i > Limiter_i[iVar]) lim_i = Limiter_i[iVar];
-          if (lim_j > Limiter_j[iVar]) lim_j = Limiter_j[iVar];
-        }
-        lim_ij = min(lim_i, lim_j);
-      }
-
-      /*--- Reconstruct conserved variables at the edge interface ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        ProjGradU_i = 0.0; ProjGradU_j = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjGradU_i += Vector_i[iDim]*GradU_i[iVar][iDim];
-          ProjGradU_j += Vector_j[iDim]*GradU_j[iVar][iDim];
-        }
-        if (limiter) {
-          Conserved_i[iVar] = U_i[iVar] + lim_ij*ProjGradU_i;
-          Conserved_j[iVar] = U_j[iVar] + lim_ij*ProjGradU_j;
-        }
-        else {
-          Conserved_i[iVar] = U_i[iVar] + ProjGradU_i;
-          Conserved_j[iVar] = U_j[iVar] + ProjGradU_j;
-        }
-      }
-
-      chk_err_i = nodes->Cons2PrimVar(Conserved_i, Primitive_i,
-                                      dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
-      chk_err_j = nodes->Cons2PrimVar(Conserved_j, Primitive_j,
-                                      dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
-
-      /*--- Check for physical solutions in the reconstructed values ---*/
-      // Note: If non-physical, revert to first order
-      if ( chk_err_i || chk_err_j) {
-        numerics->SetPrimitive   (V_i, V_j);
-        numerics->SetConservative(U_i, U_j);
-        numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
-        numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(jPoint));
-        numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
-        numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
-        numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-        numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
-      } else {
-        numerics->SetConservative(Conserved_i, Conserved_j);
-        numerics->SetPrimitive   (Primitive_i, Primitive_j);
-        numerics->SetdPdU  (dPdU_i,   dPdU_j  );
-        numerics->SetdTdU  (dTdU_i,   dTdU_j  );
-        numerics->SetdTvedU(dTvedU_i, dTvedU_j);
-        numerics->SetEve   (Eve_i,    Eve_j   );
-        numerics->SetCvve  (Cvve_i,   Cvve_j  );
-        numerics->SetGamma (Gamma_i,  Gamma_j );
-      }
-    } else {
-      /*--- Set variables without reconstruction ---*/
       numerics->SetPrimitive   (V_i, V_j);
       numerics->SetConservative(U_i, U_j);
       numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(jPoint));
@@ -925,15 +842,100 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(jPoint));
       numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(jPoint));
       numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(jPoint));
-      numerics->SetGamma (nodes->GetGamma(iPoint),   nodes->GetGamma(jPoint));
+      numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(jPoint));
+
+    } else {
+
+      /*--- High order reconstruction using MUSCL strategy ---*/
+      su2double Vector_ij[MAXNDIM] = {0.0};
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+      }
+
+      /*--- Retrieve gradient information ---*/
+      auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
+      /*--- Set and extract limiters ---*/
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
+
+      if (limiter){
+        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
+        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
+      }
+
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+
+        su2double lim_i = 0.0;
+        su2double lim_j = 0.0;
+        su2double Project_Grad_i = 0.0;
+        su2double Project_Grad_j = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        }
+
+        if (limiter) {
+          if (van_albada) {
+            su2double V_ij = V_j[iVar] - V_i[iVar];
+            Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
+            Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
+          }
+          if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
+          if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
+          su2double lim_ij = min(lim_i, lim_j);
+
+          Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
+          Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
+        } else {
+          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+          Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+        }
+      }
+
+      /*--- Check for non-physical solutions after reconstruction. If found, use the
+       cell-average value of the solution. This is a locally 1st order approximation,
+       which is typically only active during the start-up of a calculation. ---*/
+      bool chk_err_i = nodes->CheckNonPhys(Primitive_i);
+      bool chk_err_j = nodes->CheckNonPhys(Primitive_j);
+
+      nodes->SetNon_Physical(iPoint, chk_err_i);
+      nodes->SetNon_Physical(jPoint, chk_err_j);
+
+      /*--- Get updated state, in case the point recovered after the set. ---*/
+      chk_err_i = nodes->GetNon_Physical(iPoint);
+      chk_err_j = nodes->GetNon_Physical(jPoint);
+
+      counter_local += chk_err_i + chk_err_j;
+
+      /*--- Compute Secondary variables in a thermaodynamically consistent way. ---*/
+      if (!chk_err_i) Gamma_i = nodes->ComputeConsistentExtrapolation(Primitive_i, dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
+      if (!chk_err_j) Gamma_j = nodes->ComputeConsistentExtrapolation(Primitive_j, dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
+
+      /*--- Recompute Conserved variables if Roe or MSW scheme ---*/
+      if ((config->GetKind_Upwind_Flow() == ROE) || (config->GetKind_Upwind_Flow() == MSW)){
+        if (!chk_err_i) nodes->Prim2ConsVar(Conserved_i,Primitive_i);
+        if (!chk_err_j) nodes->Prim2ConsVar(Conserved_j,Primitive_j);
+      }
+
+      /*--- If non-physical, revert to first order ---*/
+      numerics->SetConservative(chk_err_i ? U_i : Conserved_i, chk_err_j ? U_j : Conserved_j);
+      numerics->SetPrimitive   (chk_err_i ? V_i : Primitive_i, chk_err_j ? V_j : Primitive_j);
+      numerics->SetdPdU  (chk_err_i ? nodes->GetdPdU  (iPoint) : dPdU_i,    chk_err_j ? nodes->GetdPdU  (jPoint) : dPdU_j);
+      numerics->SetdTdU  (chk_err_i ? nodes->GetdTdU  (iPoint) : dTdU_i,    chk_err_j ? nodes->GetdTdU  (jPoint) : dTdU_j);
+      numerics->SetdTvedU(chk_err_i ? nodes->GetdTvedU(iPoint) : dTvedU_i,  chk_err_j ? nodes->GetdTvedU(jPoint) : dTvedU_j);
+      numerics->SetEve   (chk_err_i ? nodes->GetEve   (iPoint) : Eve_i,     chk_err_j ? nodes->GetEve   (jPoint) : Eve_j);
+      numerics->SetCvve  (chk_err_i ? nodes->GetCvve  (iPoint) : Cvve_i,    chk_err_j ? nodes->GetCvve  (jPoint) : Cvve_j);
+      numerics->SetGamma (chk_err_i ? nodes->GetGamma (iPoint) : Gamma_i,   chk_err_j ? nodes->GetGamma (jPoint) : Gamma_j);
+
     }
 
     /*--- Compute the residual ---*/
-
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Check for NaNs before applying the residual to the linear system ---*/
-    err = false;
+    bool err = false;
     for (iVar = 0; iVar < nVar; iVar++)
       if (residual[iVar] != residual[iVar]) err = true;
     //if (implicit)
@@ -956,20 +958,22 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     }
   }
 
-  delete [] Conserved_i;
-  delete [] Conserved_j;
-  delete [] Primitive_i;
-  delete [] Primitive_j;
-  delete [] dPdU_i;
-  delete [] dPdU_j;
-  delete [] dTdU_i;
-  delete [] dTdU_j;
-  delete [] dTvedU_i;
-  delete [] dTvedU_j;
-  delete [] Eve_i;
-  delete [] Eve_j;
-  delete [] Cvve_i;
-  delete [] Cvve_j;
+  /*--- Warning message about non-physical reconstructions. ---*/
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    /*--- Add counter results for all threads. ---*/
+    SU2_OMP_ATOMIC
+    ErrorCounter += counter_local;
+    SU2_OMP_BARRIER
+
+    /*--- Add counter results for all ranks. ---*/
+    SU2_OMP_MASTER
+    {
+      counter_local = ErrorCounter;
+      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      config->SetNonphysical_Reconstr(ErrorCounter);
+    }
+    SU2_OMP_BARRIER
+  }
 
 }
 
@@ -1671,7 +1675,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 }
 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned short iDim, jDim, iSpecies, iVar, jVar;
   unsigned long iPoint, iVertex;
