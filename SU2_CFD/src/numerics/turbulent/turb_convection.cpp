@@ -36,14 +36,12 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
   dynamic_grid(config->GetDynamic_Grid())
 {
 
-  nPrimVarTot = nVar + (nDim+1);
-
   Flux = new su2double [nVar] ();
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_i[iVar] = new su2double [nPrimVarTot] ();
-    Jacobian_j[iVar] = new su2double [nPrimVarTot] ();
+    Jacobian_i[iVar] = new su2double [nVar] ();
+    Jacobian_j[iVar] = new su2double [nVar] ();
   }
 }
 
@@ -139,17 +137,4 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
 
   Jacobian_i[0][0] = Jacobian_i[1][1] = a_i;
   Jacobian_j[0][0] = Jacobian_j[1][1] = a_j;
-
-  /*--- Jacobian wrt flow variables ---*/
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    const su2double dai_daij = 0.5*(1.0+a_ij/fabs(a_ij));
-    const su2double daj_daij = 0.5*(1.0-a_ij/fabs(a_ij));
-    const su2double dF_daij = Density_i*TurbVar_i[iVar]*dai_daij+Density_j*TurbVar_j[iVar]*daj_daij;
-    for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[iVar][iDim+2] = 0.5*dF_daij/Density_i*Normal[iDim];
-      Jacobian_j[iVar][iDim+2] = 0.5*dF_daij/Density_j*Normal[iDim];
-    }
-    Jacobian_i[iVar][nDim+2] = -a_i*TurbVar_i[iVar];
-    Jacobian_j[iVar][nDim+2] = -a_j*TurbVar_j[iVar];
-  }
 }
