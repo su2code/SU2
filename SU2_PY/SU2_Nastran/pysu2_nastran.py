@@ -40,6 +40,35 @@ from FSI_tools.switch import switch
 #  Config class
 # ----------------------------------------------------------------------
 
+class ImposedMotionFunction:
+
+    def __init__(self,time0,type,parameters):
+        self.time0 = time0
+        self.type = type
+        for case in switch(self.type)
+            if case("SINUSOIDAL"):
+                self.bias = parameters[0]
+                self.amplitude = parameters[1]
+                self.frequency = parameters[2]
+
+
+    def GetDispl(self,time):
+        for case in switch(self.type):
+            if case("SINUSOIDAL"):
+                return self.bias+self.amplitude*sin(2*pi*self.frequency*(time-self.time0))
+
+    def GetVel(self,time):
+        for case in switch(self.type):
+            if case("SINUSOIDAL"):
+                return self.amplitude*cos(2*pi*self.frequency*(time-self.time0))*2*pi*self.frequency
+
+    def GetAcc(self,time):
+        for case in switch(self.type):
+            if case("SINUSOIDAL"):
+                return -self.amplitude*sin(2*pi*self.frequency*(time-self.time0))*(2*pi*self.frequency)**2
+
+
+
 class RefSystem:
 
   def __init__(self):
@@ -222,6 +251,8 @@ class Solver:
     self.node = []
     self.markers = {}
     self.refsystems = []
+    self.ImposedMotionToSet = True
+    self.ImposedMotionFunction = []
 
     print("\n------------------------------ Reading the mesh ------------------------------")
     self.__readNastranMesh()
@@ -268,7 +299,6 @@ class Solver:
         for case in switch(this_param):
           #integer values
           if case("NMODES")		: pass
-          if case("IMPOSED_MODE") : pass
           if case("RESTART_ITER") :
             self.Config[this_param] = int(this_value)
             break
@@ -285,15 +315,14 @@ class Solver:
           if case("MESH_FILE")			: pass
           if case("PUNCH_FILE")        : pass
           if case("RESTART_SOL")       : pass
-          if case("IMPOSED_DISP")      : pass
-          if case("IMPOSED_VEL")       : pass
-          if case("IMPOSED_ACC")       : pass
           if case("MOVING_MARKER")		:
             self.Config[this_param] = this_value
             break
 
           #lists values
-          if case("INITIAL_MODES"):
+          if case("INITIAL_MODES"): pass
+          if case("IMPOSED_MODES"): pass
+          if case("IMPOSED_PARAMETERS"):
             self.Config[this_param] = eval(this_value)
             break
 
@@ -411,7 +440,7 @@ class Solver:
                   for iPoint in range(self.nPoint):
                       if self.node[iPoint].GetID() == ID:
                           break
-                  self.markers[self.FSI_marker].append(iPoint)
+                  self.markers[markerTag].append(iPoint)
                   existValue = len(line)>=1
               continue
 
@@ -699,10 +728,14 @@ class Solver:
 
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
-      self.q[self.Config["IMPOSED_MODE"]] = eval(self.Config["IMPOSED_DISP"])
-      self.qdot[self.Config["IMPOSED_MODE"]] = eval(self.Config["IMPOSED_VEL"])
-      self.qddot[self.Config["IMPOSED_MODE"]] = eval(self.Config["IMPOSED_ACC"])
-      self.a = np.copy(self.qddot)
+      for imode in self.Config["IMPOSED_MODES"].keys():
+        if ImposedMotionToSet:
+          self.ImposedMotionFunction.append(ImposedMotionFunction(time,self.Config["IMPOSED_MODES"][imode],self.Config["IMPOSED_PARAMETERS"][imode]))
+          ImposedMotionToSet = False
+        self.q[imode] = self.ImposedMotionFunction[imode].GetDispl(time)
+        self.qdot[imode] = self.ImposedMotionFunction[imode].GetVel(time)
+        self.qddot[imode] = self.ImposedMotionFunction[imode].GetAcc(time)
+        self.a = np.copy(self.qddot)
 
 
   def __SetLoads(self):
