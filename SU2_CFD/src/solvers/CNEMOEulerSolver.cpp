@@ -1002,8 +1002,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 }
 
 su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
-		                                           su2double* dPdU, su2double* dTdU, su2double* dTvedU,
-							   su2double* val_eves, su2double *val_Cvves) {
+                                                           su2double* dPdU, su2double* dTdU, su2double* dTvedU,
+                                                           su2double* val_eves, su2double *val_Cvves) {
 
   //NOTE: TODO - this doesnt compute Cvves/ dPdU,etc.yet
   su2double val_gamma;
