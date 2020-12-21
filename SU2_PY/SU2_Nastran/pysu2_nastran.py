@@ -51,8 +51,16 @@ class ImposedMotionFunction:
                 self.amplitude = parameters[1]
                 self.frequency = parameters[2]
                 break
+            if case("BLENDED_STEP"):
+                self.kmax = parameters[0]
+                self.vinf = parameters[1]
+                self.lref = parameters[2]
+                self.amplitude = parameters[3]
+                self.tmax = 2*pi/self.kmax*self.lref/self.vinf
+                self.omega0 = 1/2*self.kmax
+                break
             if case():
-                print(self.type + " is an invalid option !")
+                sys.exit('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.type))
                 break
 
 
@@ -61,11 +69,21 @@ class ImposedMotionFunction:
             if case("SINUSOIDAL"):
                 return self.bias+self.amplitude*sin(2*pi*self.frequency*(time-self.time0))
                 break
+            if case("BLENDED_STEP"):
+                if time < self.tmax:
+                    return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
+                return self.amplitude
+                break
 
     def GetVel(self,time):
         for case in switch(self.type):
             if case("SINUSOIDAL"):
                 return self.amplitude*cos(2*pi*self.frequency*(time-self.time0))*2*pi*self.frequency
+                break
+            if case("BLENDED_STEP"):
+                if time < self.tmax:
+                    return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
+                return 0.0
                 break
 
     def GetAcc(self,time):
@@ -73,7 +91,11 @@ class ImposedMotionFunction:
             if case("SINUSOIDAL"):
                 return -self.amplitude*sin(2*pi*self.frequency*(time-self.time0))*(2*pi*self.frequency)**2
                 break
-
+            if case("BLENDED_STEP"):
+                if time < self.tmax:
+                    return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
+                return 0.0
+                break
 
 
 class RefSystem:
@@ -334,7 +356,7 @@ class Solver:
             break
 
           if case():
-            print(this_param + " is an invalid option !")
+            sys.exit('{} is an invalid option !'.format(this_param))
             break
 
 
