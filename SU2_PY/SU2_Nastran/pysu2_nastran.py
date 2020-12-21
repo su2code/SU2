@@ -50,22 +50,29 @@ class ImposedMotionFunction:
                 self.bias = parameters[0]
                 self.amplitude = parameters[1]
                 self.frequency = parameters[2]
+                break
+            if case():
+                print(self.type + " is an invalid option !")
+                break
 
 
     def GetDispl(self,time):
         for case in switch(self.type):
             if case("SINUSOIDAL"):
                 return self.bias+self.amplitude*sin(2*pi*self.frequency*(time-self.time0))
+                break
 
     def GetVel(self,time):
         for case in switch(self.type):
             if case("SINUSOIDAL"):
                 return self.amplitude*cos(2*pi*self.frequency*(time-self.time0))*2*pi*self.frequency
+                break
 
     def GetAcc(self,time):
         for case in switch(self.type):
             if case("SINUSOIDAL"):
                 return -self.amplitude*sin(2*pi*self.frequency*(time-self.time0))*(2*pi*self.frequency)**2
+                break
 
 
 
