@@ -45,7 +45,7 @@ class ImposedMotionFunction:
     def __init__(self,time0,type,parameters):
         self.time0 = time0
         self.type = type
-        for case in switch(self.type)
+        for case in switch(self.type):
             if case("SINUSOIDAL"):
                 self.bias = parameters[0]
                 self.amplitude = parameters[1]
