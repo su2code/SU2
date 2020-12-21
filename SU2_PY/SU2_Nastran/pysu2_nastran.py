@@ -729,9 +729,9 @@ class Solver:
       self.a += (1-self.alpha_f)/(1-self.alpha_m)*self.qddot
     else:
       for imode in self.Config["IMPOSED_MODES"].keys():
-        if ImposedMotionToSet:
+        if self.ImposedMotionToSet:
           self.ImposedMotionFunction.append(ImposedMotionFunction(time,self.Config["IMPOSED_MODES"][imode],self.Config["IMPOSED_PARAMETERS"][imode]))
-          ImposedMotionToSet = False
+          self.ImposedMotionToSet = False
         self.q[imode] = self.ImposedMotionFunction[imode].GetDispl(time)
         self.qdot[imode] = self.ImposedMotionFunction[imode].GetVel(time)
         self.qddot[imode] = self.ImposedMotionFunction[imode].GetAcc(time)
