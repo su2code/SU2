@@ -934,8 +934,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       counter_local += chk_err_i + chk_err_j;
 
       /*--- Compute Secondary variables in a thermaodynamically consistent way. ---*/
-      if (!chk_err_i) Gamma_i = nodes->ComputeConsistentExtrapolation(Primitive_i, dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
-      if (!chk_err_j) Gamma_j = nodes->ComputeConsistentExtrapolation(Primitive_j, dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
+      if (!chk_err_i) Gamma_i = ComputeConsistentExtrapolation(GetFluidModel(), nSpecies, Primitive_i, dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
+      if (!chk_err_j) Gamma_j = ComputeConsistentExtrapolation(GetFluidModel(), nSpecies, Primitive_j, dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
 
       /*--- Recompute Conserved variables if Roe or MSW scheme ---*/
       if ((config->GetKind_Upwind_Flow() == ROE) || (config->GetKind_Upwind_Flow() == MSW)){
@@ -999,6 +999,39 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     SU2_OMP_BARRIER
   }
 
+}
+
+su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
+		                                           su2double* dPdU, su2double* dTdU, su2double* dTvedU,
+							   su2double* val_eves, su2double *val_Cvves) {
+
+  //NOTE: TODO - this doesnt compute Cvves/ dPdU,etc.yet
+  su2double val_gamma;
+  vector<su2double> rhos;
+
+  /*--- Rename index information ---*/
+  unsigned short T_INDEX   = nSpecies;
+  unsigned short TVE_INDEX = nSpecies+1;
+
+  /*--- Rename density vector ---*/
+  rhos.resize(nSpecies,0.0);
+  for (unsigned short iSpecies=0; iSpecies < nSpecies; iSpecies++ ){
+    rhos[iSpecies] = V[iSpecies];
+  }
+
+  /*--- Set new fluid state ---*/
+  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
+
+  /*---Compute the secondary values ---*/
+  auto it = val_eves;
+  auto& ref = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
+  for (auto v : ref) {
+    *it = v;  ++it;
+  }
+  val_eves  = it;
+  val_gamma = fluidmodel->ComputeGamma();
+
+  return val_gamma;
 }
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {

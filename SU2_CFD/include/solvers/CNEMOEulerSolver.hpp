@@ -148,6 +148,18 @@ public:
                        unsigned short iMesh) final;
 
   /*!
+   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
+   *        in a more thermodynamically consistent way.
+   * \param[in] V - primitve variables.
+   * \param[out] d*dU - reconstructed secondaryvariables.
+   * \param[out] val_eves - reconstructed eve per species.
+   * \param[out] val_cvves - reconstructed cvve per species.
+   * \param[out] Gamma - reconstructed gamma.
+   */
+  static su2double ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
+		                                  su2double* dPdU, su2double* dTdU, su2double* dTvedU,
+                                                  su2double* val_eves, su2double* val_cvves);
+  /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -201,6 +213,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
+
+    /*!
+   * \brief Compute the pressure at the infinity.
+   * \return Value of the pressure at the infinity.
+   */
+  inline CNEMOGas* GetFluidModel(void) const final { return FluidModel;}
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.

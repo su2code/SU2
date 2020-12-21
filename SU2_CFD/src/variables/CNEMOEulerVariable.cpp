@@ -403,31 +403,3 @@ bool CNEMOEulerVariable::CheckNonPhys(su2double *V) {
   return nonPhys;
 
 }
-
-su2double CNEMOEulerVariable::ComputeConsistentExtrapolation(su2double* V, su2double* dPdU, su2double* dTdU,
-                                                             su2double* dTvedU, su2double *val_eves,
-                                                             su2double *val_Cvves) {
-
-  //NOTE: TODO - this doesnt compute Cvves/ dPdU,etc.yet
-  su2double val_gamma;
-  vector<su2double> rhos, eves, cvves;
-
-  /*--- Rename density vector ---*/
-  rhos.resize(nSpecies,0.0);
-  for (unsigned short iSpecies=0; iSpecies < nSpecies; iSpecies++ ){
-    rhos[iSpecies] = V[iSpecies];
-  }
-
-  /*--- Set new fluid state ---*/
-  fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
-
-  /*---Compute the secondary values ---*/
-  eves  = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
-  val_gamma = fluidmodel->ComputeGamma();
-
-  /*--- Set the variables ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    val_eves[iSpecies]  = eves[iSpecies];
-
-  return val_gamma;
-}
