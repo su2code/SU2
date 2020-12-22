@@ -65,9 +65,10 @@ class ImposedMotionFunction:
 
 
     def GetDispl(self,time):
+        time = time - self.time0
         for case in switch(self.type):
             if case("SINUSOIDAL"):
-                return self.bias+self.amplitude*sin(2*pi*self.frequency*(time-self.time0))
+                return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
                 break
             if case("BLENDED_STEP"):
                 if time < self.tmax:
@@ -76,9 +77,10 @@ class ImposedMotionFunction:
                 break
 
     def GetVel(self,time):
+        time = time - self.time0
         for case in switch(self.type):
             if case("SINUSOIDAL"):
-                return self.amplitude*cos(2*pi*self.frequency*(time-self.time0))*2*pi*self.frequency
+                return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
                 break
             if case("BLENDED_STEP"):
                 if time < self.tmax:
@@ -87,9 +89,10 @@ class ImposedMotionFunction:
                 break
 
     def GetAcc(self,time):
+        time = time - self.time0
         for case in switch(self.type):
             if case("SINUSOIDAL"):
-                return -self.amplitude*sin(2*pi*self.frequency*(time-self.time0))*(2*pi*self.frequency)**2
+                return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
                 break
             if case("BLENDED_STEP"):
                 if time < self.tmax:
