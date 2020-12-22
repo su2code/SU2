@@ -39,7 +39,7 @@ def SQPconstrained(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_
     # prepare output, using 'with' command to automatically close the file in case of exceptions
     with open("optimizer_history.csv", "w") as outfile:
         csv_writer = csv.writer(outfile, delimiter=',')
-        header = ['iter', 'objective function', 'equal constraint', 'inequal constraint', 'parameter', 'norm(gradient)', 'norm(delta_p)']
+        header = ['iter', 'objective function', 'equal constraint', 'inequal constraint', 'parameter', 'norm(gradient)', 'norm(delta_p)', 'lm_eqcons', 'lm_ieqcons', 'Lagrangian1', 'Lagrangian2','gradLagrangian1','gradLagrangian2']
         csv_writer.writerow(header)
 
         # main optimizer loop
@@ -93,8 +93,19 @@ def SQPconstrained(x0, func, f_eqcons, f_ieqcons, fprime, fprime_eqcons, fprime_
 
             sys.stdout.write('New design: ' + str(p) + '\n')
 
+            # extract some values from the quadratic solver
+            lm_eqcons = np.array([i for i in sol['y']])
+            lm_ieqcons = np.zeros(np.size(C))
+            for i in range(np.size(C)):
+                lm_ieqcons[i] = sol['z'][i]
+
+            Lagrangian1 = F + np.inner(E,lm_eqcons)
+            Lagrangian2 = Lagrangian1 + np.inner(C,lm_ieqcons)
+            gradL1 = D_F + lm_eqcons @ D_E
+            gradL2 = gradL1 + lm_ieqcons @ D_C
+
             # write to the history file
-            line = [step, F, E, C, p, np.linalg.norm(D_F, 2), err]
+            line = [step, F, E, C, p, np.linalg.norm(D_F, 2), err, lm_eqcons, lm_ieqcons, Lagrangian1, Lagrangian2, gradL1, gradL2]
             csv_writer.writerow(line)
             outfile.flush()
 
