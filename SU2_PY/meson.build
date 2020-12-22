@@ -77,5 +77,6 @@ install_data(['FSI_tools/__init__.py',
 	      install_dir: join_paths(get_option('bindir'), 'FSI_tools'))
 
 install_data(['SU2_Nastran/__init__.py',
-              'SU2_Nastran/pysu2_nastran.py',],
+              'SU2_Nastran/pysu2_nastran.py',
+              'SU2_Nastran/compute_polar_modes.py'],
         install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))
