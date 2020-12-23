@@ -59,6 +59,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config, vector<vector<su2double> >& totalDeformation) { }
 
 };

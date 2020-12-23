@@ -211,7 +211,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config, su2double** totaldeformation = nullptr);
+  void SetSurface_Deformation(CGeometry *geometry, CConfig *config, vector<vector<su2double> >& totaldeformation) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
@@ -501,5 +501,5 @@ public:
    * \param[in] FFDBox - Free form deformation box.
    * \return Number of points with negative Jacobian determinant.
    */
-  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox);
+  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox) const;
 };
