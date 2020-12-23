@@ -229,7 +229,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     Density_Inf     = FluidModel->GetDensity();
     Soundspeed_Inf  = FluidModel->GetSoundSpeed();
     Gamma           = FluidModel->ComputeGamma();
-    Gamma_Minus_One = Gamma - 1.0; 
+    Gamma_Minus_One = Gamma - 1.0;
 
     sqvel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
@@ -289,7 +289,7 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
 void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   unsigned long iPoint;
-  unsigned short iMesh, iDim;
+  unsigned short iMesh;
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = false;
   const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
@@ -341,7 +341,6 @@ void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
@@ -469,7 +468,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     jPoint = geometry->edges->GetNode(iEdge,1);
 
     const auto *Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Mean Values ---*/
     Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint, Normal) + nodes->GetProjVel(jPoint,Normal));
@@ -527,7 +526,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         /*--- Point identification, Normal vector and area ---*/
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         const auto* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         /*--- Mean Values ---*/
         Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
@@ -677,9 +676,7 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
       auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
       auto Normal = geometry->edges->GetNormal(iEdge);
-      su2double Area = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2);
-      Area = sqrt(Area);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
       su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
@@ -701,10 +698,7 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       /*--- Point identification, Normal vector and area ---*/
       auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      su2double Area = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Area += pow(Normal[iDim],2);
-      Area = sqrt(Area);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
       su2double Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
@@ -920,7 +914,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         numerics->SetdTvedU(dTvedU_i, dTvedU_j);
         numerics->SetEve   (Eve_i,    Eve_j   );
         numerics->SetCvve  (Cvve_i,   Cvve_j  );
-        numerics->SetGamma (Gamma_i,  Gamma_i );
+        numerics->SetGamma (Gamma_i,  Gamma_j );
       }
     } else {
       /*--- Set variables without reconstruction ---*/
@@ -1714,9 +1708,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
       /*--- Calculate parameters from the geometry ---*/
-      Area   = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++){
         NormalArea[iDim] = -Normal[iDim];
@@ -1962,9 +1954,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -2234,9 +2224,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -2253,8 +2241,8 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 
       /*--- Compute Gamma using domain state ---*/
       Gamma = nodes->GetGamma(iPoint);
-      Gamma_Minus_One = Gamma - 1.0; 
-      
+      Gamma_Minus_One = Gamma - 1.0;
+
       /*--- Retrieve the specified back pressure for this outlet. ---*/
       if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->nodes->GetCoord(iPoint, nDim-1)*STANDARD_GRAVITY;
       else         P_Exit = config->GetOutlet_Pressure(Marker_Tag);

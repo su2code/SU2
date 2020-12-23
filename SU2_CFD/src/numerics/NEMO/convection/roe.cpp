@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/roe.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                            unsigned short val_nPrimVar,
@@ -87,10 +88,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
 
   /*--- Face area (norm or the normal vector) ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)

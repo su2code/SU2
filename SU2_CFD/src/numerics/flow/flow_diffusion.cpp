@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/numerics/flow/flow_diffusion.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              unsigned short val_nVar,
@@ -148,10 +149,7 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
   unsigned short iDim, jDim;
   su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += val_normal[iDim]*val_normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = val_normal[iDim]/Area;
@@ -501,10 +499,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Normalized normal vector ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -690,10 +685,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Normalized normal vector ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -992,10 +984,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /*--- Normalized normal vector ---*/
 
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
