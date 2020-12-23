@@ -109,7 +109,8 @@ protected:
   nelem_triangle_bound{0},        /*!< \brief Number of triangles on the mesh boundaries. */
   Global_nelem_triangle_bound{0}, /*!< \brief Total number of triangles on the mesh boundaries across all processors. */
   nelem_quad_bound{0},            /*!< \brief Number of quads on the mesh boundaries. */
-  Global_nelem_quad_bound{0};     /*!< \brief Total number of quads on the mesh boundaries across all processors. */
+  Global_nelem_quad_bound{0},     /*!< \brief Total number of quads on the mesh boundaries across all processors. */
+  nNonconvexElements{0};          /*!< \brief Number of nonconvex elements in the mesh. */
 
   unsigned short nDim{0};         /*!< \brief Number of dimension of the problem. */
   unsigned short nZone{0};        /*!< \brief Number of zones in the problem. */
@@ -1699,5 +1700,16 @@ public:
    */
   static void ComputeWallDistance(const CConfig * const *config_container, CGeometry ****geometry_container);
 
+  /*!
+   * \brief Set the amount of nonconvex elements in the mesh.
+   * \param[in] nonconvex_elems - amount of nonconvex elements in the mesh
+   */
+  void SetnNonconvexElements(unsigned long nonconvex_elems) {nNonconvexElements = nonconvex_elems;}
+
+  /*!
+   * \brief Get the amount of nonconvex elements in the mesh.
+   * \param[out] nNonconvexElements- amount of nonconvex elements in the mesh
+   */
+  unsigned long GetnNonconvexElements(void) {return nNonconvexElements;}
 };
 
