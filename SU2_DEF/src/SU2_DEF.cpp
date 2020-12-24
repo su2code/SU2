@@ -230,12 +230,6 @@ int main(int argc, char *argv[]) {
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    /*--- Initialize total deformation of design variables to zero ---*/
-    vector<vector<su2double> > TotalDeformation(config_container[iZone]->GetnDV());
-    for (size_t iDV = 0; iDV < TotalDeformation.size(); iDV++) {
-      TotalDeformation[iDV].resize(config_container[iZone]->GetnDV_Value(iDV), 0.0);
-    }
-
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
 
       /*--- Definition of the Class for grid movement ---*/
@@ -283,7 +277,7 @@ int main(int argc, char *argv[]) {
         /*--- Surface grid deformation ---*/
 
         if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
-        surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone], TotalDeformation);
+        auto TotalDeformation = surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
 
         if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
 
@@ -353,7 +347,7 @@ int main(int argc, char *argv[]) {
               /*--- Surface grid deformation ---*/
               if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
 
-              surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone], TotalDeformation);
+              TotalDeformation = surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
 
               if (rank == MASTER_NODE)
                 cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;

@@ -39,8 +39,7 @@ CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 
 CSurfaceMovement::~CSurfaceMovement(void) {}
 
-void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config,
-                                              vector<vector<su2double> >& totaldeformation) {
+vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
 
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
   unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
@@ -48,11 +47,13 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   string FFDBoxTag;
   bool allmoving;
 
-  bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
-  bool spherical   = (config->GetFFD_CoordSystem() == SPHERICAL);
-  bool polar       = (config->GetFFD_CoordSystem() == POLAR);
-  bool cartesian   = (config->GetFFD_CoordSystem() == CARTESIAN);
-  su2double BoundLimit = config->GetOpt_LineSearch_Bound();
+  const bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
+  const bool spherical   = (config->GetFFD_CoordSystem() == SPHERICAL);
+  const bool polar       = (config->GetFFD_CoordSystem() == POLAR);
+  const bool cartesian   = (config->GetFFD_CoordSystem() == CARTESIAN);
+  const su2double BoundLimit = config->GetOpt_LineSearch_Bound();
+
+  vector<vector<su2double> > totaldeformation;
 
   /*--- Setting the Free Form Deformation ---*/
 
@@ -323,7 +324,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             /*--- Set total deformation values in config ---*/
             if (config->GetKind_SU2() == SU2_DEF) {
 
+              totaldeformation.resize(config->GetnDV());
               for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+                totaldeformation[iDV].resize(config->GetnDV_Value(iDV));
                 for (auto iDV_Value = 0u; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
                   totaldeformation[iDV][iDV_Value] = config->GetDV_Value(iDV, iDV_Value);
                 }
@@ -675,6 +678,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       cout << "Design Variable not implemented yet" << endl;
   }
 
+  return totaldeformation;
 }
 
 
@@ -705,8 +709,7 @@ void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *confi
 
   /*--- Run the surface deformation with DV_Value = 0.0 (no deformation at all) ---*/
 
-  auto dummy = vector<vector<su2double> >();
-  SetSurface_Deformation(geometry, config, dummy);
+  SetSurface_Deformation(geometry, config);
 }
 
 void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {

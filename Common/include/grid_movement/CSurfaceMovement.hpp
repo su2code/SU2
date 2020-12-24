@@ -210,8 +210,9 @@ public:
    * \brief Set the surface/boundary deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config, vector<vector<su2double> >& totaldeformation) override;
+  vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
