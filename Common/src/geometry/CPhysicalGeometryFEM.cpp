@@ -30,13 +30,13 @@
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 #include "../../include/geometry/CPhysicalGeometry.hpp"
-#include "../../include/fem/CFEMStandardTriGrid.hpp"
-#include "../../include/fem/CFEMStandardQuadGrid.hpp"
-#include "../../include/fem/CFEMStandardTetGrid.hpp"
-#include "../../include/fem/CFEMStandardPyraGrid.hpp"
-#include "../../include/fem/CFEMStandardPrismGrid.hpp"
-#include "../../include/fem/CFEMStandardHexGrid.hpp"
-#include "../../include/fem/CFEMStandardLineGrid.hpp"
+#include "../../include/fem/CFEMStandardTriPartition.hpp"
+#include "../../include/fem/CFEMStandardQuadPartition.hpp"
+#include "../../include/fem/CFEMStandardTetPartition.hpp"
+#include "../../include/fem/CFEMStandardPyraPartition.hpp"
+#include "../../include/fem/CFEMStandardPrismPartition.hpp"
+#include "../../include/fem/CFEMStandardHexPartition.hpp"
+#include "../../include/fem/CFEMStandardLinePartition.hpp"
 
 void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReader *mesh) {
 
@@ -1588,22 +1588,22 @@ void CPhysicalGeometry::DetermineFEMStandardElements(CConfig *config) {
     /*--- Determine the element type and allocate the appropriate object. ---*/
     switch( VTK_Type ) {
       case TRIANGLE:
-        standardVolumeElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, false);
+        standardVolumeElements[i] = new CFEMStandardTriPartition(nPoly, orderExact, false);
         break;
       case QUADRILATERAL:
-        standardVolumeElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, false);
+        standardVolumeElements[i] = new CFEMStandardQuadPartition(nPoly, orderExact, false);
         break;
       case TETRAHEDRON:
-        standardVolumeElements[i] = new CFEMStandardTetGrid(nPoly, orderExact);
+        standardVolumeElements[i] = new CFEMStandardTetPartition(nPoly, orderExact);
         break;
       case PYRAMID:
-        standardVolumeElements[i] = new CFEMStandardPyraGrid(nPoly, orderExact);
+        standardVolumeElements[i] = new CFEMStandardPyraPartition(nPoly, orderExact);
         break;
       case PRISM:
-        standardVolumeElements[i] = new CFEMStandardPrismGrid(nPoly, orderExact);
+        standardVolumeElements[i] = new CFEMStandardPrismPartition(nPoly, orderExact);
         break;
       case HEXAHEDRON:
-        standardVolumeElements[i] = new CFEMStandardHexGrid(nPoly, orderExact);
+        standardVolumeElements[i] = new CFEMStandardHexPartition(nPoly, orderExact);
         break;
       default:  /*--- To avoid a compiler warning. ---*/
         SU2_MPI::Error(string("Unknown volume element. This should not happen"),
@@ -1645,13 +1645,13 @@ void CPhysicalGeometry::DetermineFEMStandardElements(CConfig *config) {
     /*--- Determine the element type and allocate the appropriate object. ---*/
     switch( VTK_Type ) {
       case LINE:
-        standardFaceElements[i] = new CFEMStandardLineGrid(nPoly, orderExact);
+        standardFaceElements[i] = new CFEMStandardLinePartition(nPoly, orderExact);
         break;
       case TRIANGLE:
-        standardFaceElements[i] = new CFEMStandardTriGrid(nPoly, orderExact, true);
+        standardFaceElements[i] = new CFEMStandardTriPartition(nPoly, orderExact, true);
         break;
       case QUADRILATERAL:
-        standardFaceElements[i] = new CFEMStandardQuadGrid(nPoly, orderExact, true);
+        standardFaceElements[i] = new CFEMStandardQuadPartition(nPoly, orderExact, true);
         break;
       default:  /*--- To avoid a compiler warning. ---*/
         SU2_MPI::Error(string("Unknown surface element. This should not happen"),

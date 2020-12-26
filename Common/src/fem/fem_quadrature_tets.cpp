@@ -25,14 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardElementBase.hpp"
+#include "../../include/fem/CFEMStandardTetBase.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*--- Member functions of CFEMStandardElementBase related to the quadrature      ---*/
+/*--- Member functions of CFEMStandardTetBase related to the quadrature          ---*/
 /*--- rules for tetrahedra.                                                      ---*/
 /*----------------------------------------------------------------------------------*/
 
-unsigned short CFEMStandardElementBase::GetNIntTetrahedronStatic(unsigned short orderExact) {
+unsigned short CFEMStandardTetBase::GetNIntTetrahedronStatic(unsigned short orderExact) {
 
  /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
@@ -62,27 +62,24 @@ unsigned short CFEMStandardElementBase::GetNIntTetrahedronStatic(unsigned short 
   return nIntegration;
 }
 
-void CFEMStandardElementBase::IntegrationPointsTetrahedron(vector<passivedouble> &rTet,
-                                                           vector<passivedouble> &sTet,
-                                                           vector<passivedouble> &tTet,
-                                                           vector<passivedouble> &wTet) {
+void CFEMStandardTetBase::IntegrationPointsTetrahedron(void) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
   nIntegration = GetNIntTetrahedronStatic(orderExact); 
 
   /*--- Allocate the memory for the integration points and their weights. ---*/
-  rTet.resize(nIntegration);
-  sTet.resize(nIntegration);
-  tTet.resize(nIntegration);
-  wTet.resize(nIntegration);
+  rTetInt.resize(nIntegration);
+  sTetInt.resize(nIntegration);
+  tTetInt.resize(nIntegration);
+  wTetInt.resize(nIntegration);
 
   /*--- Set the pointers to the data arrays of the variables just allocated, such
         that the names are shorter. This is useful for the code below. ---*/
-  passivedouble *r = rTet.data();
-  passivedouble *s = sTet.data();
-  passivedouble *t = tTet.data();
-  passivedouble *w = wTet.data();
+  passivedouble *r = rTetInt.data();
+  passivedouble *s = sTetInt.data();
+  passivedouble *t = tTetInt.data();
+  passivedouble *w = wTetInt.data();
 
   /*--- Set the data for the integration points, depending on the order.
         These integration rules are obtained with the open source program

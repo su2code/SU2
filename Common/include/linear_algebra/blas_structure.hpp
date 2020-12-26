@@ -29,11 +29,6 @@
 
 #pragma once
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
 class CConfig;
 
 /*!

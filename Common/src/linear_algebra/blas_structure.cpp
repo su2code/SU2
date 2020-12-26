@@ -47,7 +47,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*,
 
 /* Constructor. Initialize the const member variables, if needed. */
 CBlasStructure::CBlasStructure(void)
-#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL))
+#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_BLAS) || defined(HAVE_MKL))
   : mc (256), kc (128), nc (128)
 #endif
 {}
@@ -66,20 +66,10 @@ void CBlasStructure::gemm(const int M,            const int N,        const int 
   if( config ) config->GEMM_Tick(&timeGemm);
 #endif
 
-#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_LIBXSMM) || defined(HAVE_MKL) || defined(HAVE_BLAS))
+#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_MKL) || defined(HAVE_BLAS))
   /* Native implementation of the matrix product. This implementation is based
      on https://github.com/flame/how-to-optimize-gemm. */
   gemm_imp(M, N, K, A, B, C);
-
-#else
-#ifdef HAVE_LIBXSMM
-
-  /* The gemm function of libxsmm is used to carry out the multiplication. */
-  passivedouble alpha = 1.0;
-  passivedouble beta  = 0.0;
-  char trans = 'N';
-
-  libxsmm_dgemm(&trans, &trans, &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &M);
 
 #else // MKL and BLAS
 
@@ -90,7 +80,6 @@ void CBlasStructure::gemm(const int M,            const int N,        const int 
 
   dgemm_(&trans, &trans, &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &M);
 
-#endif
 #endif
 
   /* Store the profiling information, if needed. */
@@ -132,7 +121,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const passivedouble
 #endif
 }
 
-#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL))
+#if !defined(PRIMAL_SOLVER) || !(defined(HAVE_BLAS) || defined(HAVE_MKL))
 
 /* Macros for accessing submatrices of a matmul using the leading dimension. */
 #define A(i, j) a[(j)*lda + (i)]

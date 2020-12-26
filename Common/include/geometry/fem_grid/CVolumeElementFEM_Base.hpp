@@ -109,11 +109,9 @@ public:
   /*!
    * \brief Function, which computes the derivatives of the metric terms
    *         in the integration points.
-   * \param[in] LGLDistribution - Whether or not the LGL node distribution must be used.
-   * \param[in] nDim            - Number of spatial dimensions.
+   * \param[in] nDim - Number of spatial dimensions.
    */
-  void DerMetricTermsIntegrationPoints(const bool           LGLDistribution,
-                                       const unsigned short nDim);
+  void DerMetricTermsIntegrationPoints(const unsigned short nDim);
 
   /*!
    * \brief Get all the corner points of all the faces of this element. It must be made sure

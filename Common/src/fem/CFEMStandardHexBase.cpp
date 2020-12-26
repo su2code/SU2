@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardHex.cpp
- * \brief Functions for the class CFEMStandardHex.
+ * \file CFEMStandardHexBase.cpp
+ * \brief Functions for the class CFEMStandardHexBase.
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  *
@@ -25,15 +25,16 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardHex.hpp"
+#include "../../include/fem/CFEMStandardHexBase.hpp"
 #include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*                  Public member functions of CFEMStandardHex.                     */
+/*                  Public member functions of CFEMStandardHexBase.                 */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardHex::CFEMStandardHex(const unsigned short val_nPoly,
-                                 const unsigned short val_orderExact) {
+CFEMStandardHexBase::CFEMStandardHexBase(const unsigned short val_nPoly,
+                                         const unsigned short val_orderExact)
+  : CFEMStandardQuadBase() {
 
   /*--- Store the command line arguments. ---*/
   VTK_Type   = HEXAHEDRON;
@@ -45,11 +46,6 @@ CFEMStandardHex::CFEMStandardHex(const unsigned short val_nPoly,
   nDOFs1D  = nPoly + 1;
   nDOFs    = nDOFs1D*nDOFs1D*nDOFs1D;
   nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
-
-  /*--- Determine the 1D parametric locations of the grid DOFs. 1D is enough,
-        because a tensor product is used to obtain the 3D coordinates. ---*/
-  Location1DGridDOFsEquidistant(rLineDOFsEqui);
-  Location1DGridDOFsLGL(rLineDOFsLGL);
 
   /*--- Determine the number of integration points in 1D as well as the total number
         of integration points. Also determine the padded value of the latter. ---*/
@@ -77,34 +73,91 @@ CFEMStandardHex::CFEMStandardHex(const unsigned short val_nPoly,
     for(unsigned short j=0; j<nInt1D; ++j)
       for(unsigned short i=0; i<nInt1D; ++i, ++ii)
         wIntegration(ii) = wLineInt[i]*wLineInt[j]*wLineInt[k];
-
-  /*--- Create the map with the function pointers to carry out the tensor product
-        to compute the data in the 3D integration points of the hexahedron. ---*/
-  map<CUnsignedShort2T, TPI3D> mapFunctions;
-  CreateMapTensorProductVolumeIntPoints3D(mapFunctions);
-
-  /*--- Try to find the combination of the number of 1D DOFs and integration points
-        in mapFunctions. If not found, write a clear error message that this
-        tensor product is not supported. ---*/
-  CUnsignedShort2T nDOFsAndInt(nDOFs1D, nInt1D);
-  auto MI = mapFunctions.find(nDOFsAndInt);
-  if(MI == mapFunctions.end()) {
-    std::ostringstream message;
-    message << "The tensor product TensorProductVolumeIntPoints3D_" << nDOFs1D
-            << "_" << nInt1D << " not created by the automatic source code "
-            << "generator. Modify this automatic source code creator";
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-
-  /*--- Set the function pointer to carry out tensor product. ---*/
-  TensorProductDataVolIntPoints = MI->second;
 }
 
 /*----------------------------------------------------------------------------------*/
 /*                Protected member functions of CFEMStandardHex.                    */
 /*----------------------------------------------------------------------------------*/
 
-void CFEMStandardHex::TensorProductIntegrationPoints(const int                           N,
+void CFEMStandardHexBase::SubConnLinearElements(void) {
+
+  /*--- The hexahedron is split into several linear hexahedra.
+        Set the VTK sub-types accordingly. ---*/
+  VTK_SubType1 = HEXAHEDRON;
+  VTK_SubType2 = NONE;
+
+  /*--- Determine the nodal offset in j- and k-direction. ---*/
+  const unsigned short jOff = nPoly+1;
+  const unsigned short kOff = jOff*jOff;
+
+  /*--- Loop over the subelements in k-direction. ---*/
+  for(unsigned short k=0; k<nPoly; ++k) {
+
+    /*--- Abbreviate the offset in k-direction used in the connectivity. ---*/
+    const unsigned short kk = k*kOff;
+
+    /*--- Loop over the subelements in j-direction. ---*/
+    for(unsigned short j=0; j<nPoly; ++j) {
+
+      /*--- Abbreviate the offset in j-direction used in the connectivity. ---*/
+      const unsigned short jj = j*jOff;
+
+      /*--- Loop over the subelements in i-direction. ---*/
+      for(unsigned short i=0; i<nPoly; ++i) {
+
+        /*--- Determine the 8 vertices of this subhexahedron and store
+              them in subConn1ForPlotting. ---*/
+        const unsigned short n0 = kk + jj + i;
+        const unsigned short n1 = n0 + 1;
+        const unsigned short n2 = n1 + jOff;
+        const unsigned short n3 = n0 + jOff;
+        const unsigned short n4 = n0 + kOff;
+        const unsigned short n5 = n1 + kOff;
+        const unsigned short n6 = n2 + kOff;
+        const unsigned short n7 = n3 + kOff;
+
+        subConn1ForPlotting.push_back(n0);
+        subConn1ForPlotting.push_back(n1);
+        subConn1ForPlotting.push_back(n2);
+        subConn1ForPlotting.push_back(n3);
+        subConn1ForPlotting.push_back(n4);
+        subConn1ForPlotting.push_back(n5);
+        subConn1ForPlotting.push_back(n6);
+        subConn1ForPlotting.push_back(n7);
+      }
+    }
+  }
+}
+
+void CFEMStandardHexBase::SetFunctionPointerVolumeDataHex(const unsigned short K,
+                                                          const unsigned short M,
+                                                          TPI3D                &TPVolData) {
+
+  /*--- Create the map with the function pointers to carry out the tensor product
+        to compute the data in the volume points of the quadrilateral. ---*/
+  map<CUnsignedShort2T, TPI3D> mapFunctions;
+  CreateMapTensorProductVolumeIntPoints3D(mapFunctions);
+
+  /*--- Try to find the combination of K and M in mapFunctions. If not found,
+        write a clear error message that this tensor product is not supported. ---*/
+  CUnsignedShort2T KM(K, M);
+  auto MI = mapFunctions.find(KM);
+  if(MI == mapFunctions.end()) {
+    std::ostringstream message;
+    message << "The tensor product TensorProductVolumeIntPoints3D_" << K
+            << "_" << M << " not created by the automatic source code "
+            << "generator. Modify this automatic source code creator";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Set the function pointer to carry out tensor product. ---*/
+  TPVolData = MI->second;
+}
+
+void CFEMStandardHexBase::TensorProductVolumeDataHex(TPI3D                               &TPVolData,
+                                                     const int                           N,
+                                                     const int                           K,
+                                                     const int                           M,
                                                      const ColMajorMatrix<passivedouble> &Ai,
                                                      const ColMajorMatrix<passivedouble> &Aj,
                                                      const ColMajorMatrix<passivedouble> &Ak,
@@ -112,17 +165,16 @@ void CFEMStandardHex::TensorProductIntegrationPoints(const int                  
                                                      ColMajorMatrix<su2double>           &C,
                                                      const CConfig                       *config) {
 
-  /*--- Call the function to which TensorProductDataVolIntPoints points to carry out
-        the actual tensor product. Perform the timing, if desired. ---*/
+  /*--- Call the function to which TPVolData points to carry out the
+        actual tensor product. Perform the timing, if desired. ---*/
 #ifdef PROFILE
   double timeGemm;
   if( config ) config->TensorProduct_Tick(&timeGemm);
 #endif
 
-  TensorProductDataVolIntPoints(N, B.rows(), C.rows(), Ai.data(), Aj.data(), Ak.data(),
-                                B.data(), C.data());
+  TPVolData(N, B.rows(), C.rows(), Ai.data(), Aj.data(), Ak.data(), B.data(), C.data());
 
 #ifdef PROFILE
-  if( config ) config->TensorProduct_Tock(timeGemm, 3, N, nDOFs1D, nInt1D);
+  if( config ) config->TensorProduct_Tock(timeGemm, 3, N, K, M);
 #endif
 }

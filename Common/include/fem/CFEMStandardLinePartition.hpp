@@ -1,7 +1,8 @@
 /*!
- * \file CFEMStandardLineGrid.hpp
- * \brief Class for the FEM line standard element for the grid.
- *        The functions are in the <i>CFEMStandardaceLineGrid.cpp</i> file.
+ * \file CFEMStandardLinePartition.hpp
+ * \brief Class for the FEM line standard element
+ *        used during the partitioning.
+ *        The functions are in the <i>CFEMStandardaceLinePartition.cpp</i> file.
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  *
@@ -28,23 +29,23 @@
 
 #pragma once 
 
-#include "CFEMStandardLine.hpp"
+#include "CFEMStandardLineBase.hpp"
 
 /*!
- * \class CFEMStandardLineGrid
+ * \class CFEMStandardLinePartition
  * \brief Class which defines the variables and methods for the
- *        line standard element for the grid.
+ *        line standard element used in the partitioning.
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardLineGrid final: public CFEMStandardLine {
+class CFEMStandardLinePartition final: public CFEMStandardLineBase {
 
 public:
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
    */
-  CFEMStandardLineGrid() = delete;
+  CFEMStandardLinePartition() = delete;
 
   /*!
    * \overload
@@ -52,13 +53,13 @@ public:
    * \param[in] val_orderExact - Polynomial order that must be integrated exactly
    *                             by the integration rule.
    */
-  CFEMStandardLineGrid(const unsigned short val_nPoly,
-                       const unsigned short val_orderExact);
+  CFEMStandardLinePartition(const unsigned short val_nPoly,
+                            const unsigned short val_orderExact);
 
   /*!
-   * \brief Destructor. Nothing to be done.
+   * \brief Destructor.
    */
-  ~CFEMStandardLineGrid() = default;
+  ~CFEMStandardLinePartition();
 
   /*!
    * \brief Function, which computes the coordinates in the integration points.
@@ -121,6 +122,11 @@ public:
                                           const unsigned short elemType) override;
 private:
 
+  vector<passivedouble> rLineDOFsEqui; /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when equidistant spacing is used. */
+  vector<passivedouble> rLineDOFsLGL;  /*!< \brief 1D parametric coordinates of the grid
+                                                   DOFs when the LGL distribution is used. */
+
   ColMajorMatrix<passivedouble> lagBasisLineIntEqui; /*!< \brief The values of the 1D Lagrangian basis functions
                                                                  in the integration points for the equidistant
                                                                  point distribution. */
@@ -135,9 +141,6 @@ private:
                                                                     basis functions in the integration points for the
                                                                     LGL point distribution. */
 
-  /*!
-   * \brief Function, which creates the connectivity of the linear sub-elements when the
-   *        high order element is split in such elements.
-   */
-  void SubConnLinearElements(void);
+  void *jitterDOFs2Int = nullptr;       /*!< \brief Pointer to the data for the jitted gemm function. */
+  dgemm_jit_kernel_t gemmDOFs2Int;      /*!< \brief Pointer to the function to carry out the jitted gemm call. */
 };

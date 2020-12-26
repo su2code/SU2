@@ -28,7 +28,7 @@
 
 #pragma once 
 
-#include "CFEMStandardTet.hpp"
+#include "CFEMStandardTetBase.hpp"
 
 /*!
  * \class CFEMStandardTetVolumeSol
@@ -37,7 +37,7 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardTetVolumeSol final: public CFEMStandardTet {
+class CFEMStandardTetVolumeSol final: public CFEMStandardTetBase {
 
 public:
   /*!
@@ -52,31 +52,46 @@ public:
    * \param[in] val_orderExact  - Polynomial order that must be integrated exactly
    *                              by the integration rule.
    * \param[in] val_locGridDOFs - Location of the grid DOFs (LGL or Equidistant).
+   * \param[in] val_nVar        - Number of variables in the jitted gemm calls.
    */
   CFEMStandardTetVolumeSol(const unsigned short val_nPoly,
                            const unsigned short val_orderExact,
-                           const unsigned short val_locGridDOFs);
+                           const unsigned short val_locGridDOFs,
+                           const unsigned short val_nVar);
 
   /*!
-   * \brief Destructor. Nothing to be done.
+   * \brief Destructor.
    */
-  ~CFEMStandardTetVolumeSol() = default;
+  ~CFEMStandardTetVolumeSol();
 
 private:
+  vector<passivedouble> rTetSolDOFs; /*!< \brief Parametric r-coordinates of the tetrahedron solution DOFs. */
+  vector<passivedouble> sTetSolDOFs; /*!< \brief Parametric s-coordinates of the tetrahedron solution DOFs. */
+  vector<passivedouble> tTetSolDOFs; /*!< \brief Parametric t-coordinates of the tetrahedron solution DOFs. */
 
-  ColMajorMatrix<passivedouble> legBasisInt; /*!< \brief The values of the Legendre basis functions
-                                                         in the integration points. */
-
+  ColMajorMatrix<passivedouble> legBasisInt;             /*!< \brief The values of the Legendre basis functions
+                                                                     in the integration points. */
   vector<ColMajorMatrix<passivedouble> > derLegBasisInt; /*!< \brief The values of the derivatives of the Legendre
                                                                      basis functions in the integration points.
                                                                      It is a vector, because there are derivatives
                                                                      in three directions. */
+  vector<ColMajorMatrix<passivedouble> > hesLegBasisInt; /*!< \brief The values of the 2nd derivatives of the Legendre
+                                                                     basis functions in the integration points.
+                                                                     It is a vector, because there are 6 2nd derivatives
+                                                                     in three space dimensions. */
 
-  ColMajorMatrix<passivedouble> legBasisGridDOFs; /*!< \brief The values of the Legendre basis functions
-                                                              in the grid DOFs. */
+  ColMajorMatrix<passivedouble> legBasisSolDOFs;             /*!< \brief The values of the Legendre basis functions
+                                                                         in the solution DOFs. */
+  vector<ColMajorMatrix<passivedouble> > derLegBasisSolDOFs; /*!< \brief The values of the derivatives of the
+                                                                         Legendre basis functions in the solution
+                                                                         DOFs. It is a vector, because there
+                                                                         are derivatives in three directions. */
 
-  vector<ColMajorMatrix<passivedouble> > derLegBasisGridDOFs; /*!< \brief The values of the derivatives of the
-                                                                          Legendre basis functions in the grid
-                                                                          DOFs. It is a vector, because there
-                                                                          are derivatives in three directions. */
+  void *jitterDOFs2Int = nullptr;      /*!< \brief Pointer to the data for the jitted gemm function
+                                                   to compute data in the integration points. */
+  dgemm_jit_kernel_t gemmDOFs2Int;     /*!< \brief Pointer to the function to carry out jitterDOFs2Int. */
+
+  void *jitterDOFs2SolDOFs = nullptr;  /*!< \brief Pointer to the data for the jitted gemm function
+                                                   to compute data in the solution DOFs. */
+  dgemm_jit_kernel_t gemmDOFs2SolDOFs; /*!< \brief Pointer to the function to carry out jitterDOFs2SolDOFs. */
 };

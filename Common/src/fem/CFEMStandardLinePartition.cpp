@@ -1,6 +1,6 @@
 /*!
- * \file CFEMStandardLineGrid.cpp
- * \brief Functions for the class CFEMStandardLineGrid.
+ * \file CFEMStandardLinePartition.cpp
+ * \brief Functions for the class CFEMStandardLinePartition.
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  *
@@ -25,15 +25,15 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardLineGrid.hpp"
+#include "../../include/fem/CFEMStandardLinePartition.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*            Public member functions of CFEMStandardLineGrid.                      */
+/*            Public member functions of CFEMStandardLinePartition.                 */
 /*----------------------------------------------------------------------------------*/
 
-CFEMStandardLineGrid::CFEMStandardLineGrid(const unsigned short val_nPoly,
-                                           const unsigned short val_orderExact)
-  : CFEMStandardLine(val_nPoly, val_orderExact) {
+CFEMStandardLinePartition::CFEMStandardLinePartition(const unsigned short val_nPoly,
+                                                     const unsigned short val_orderExact)
+  : CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
   /*--- Compute the values of the 1D Lagrangian basis functions in the integration
         points for both the equidistant and LGL point distribution. ---*/
@@ -50,56 +50,66 @@ CFEMStandardLineGrid::CFEMStandardLineGrid(const unsigned short val_nPoly,
   SubConnLinearElements();
 
   /*--- Set up the jitted gemm call, if supported. For this particular standard
-        element the derivatives of the coordinates are computed, which is 2,
+        element the the coordinates and derivatives are computed, which is 2,
         because the line element is only present as a surface element in a
         2D simulation. ---*/
-  SetUpJittedGEMM(nIntegrationPad, 2, nDOFs, jitter, my_dgemm);
+  SetUpJittedGEMM(nIntegrationPad, 2, nDOFs, jitterDOFs2Int, gemmDOFs2Int);
 }
 
-void CFEMStandardLineGrid::CoorIntPoints(const bool                LGLDistribution,
-                                         ColMajorMatrix<su2double> &matCoorDOF,
-                                         ColMajorMatrix<su2double> &matCoorInt) {
+CFEMStandardLinePartition::~CFEMStandardLinePartition() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  if( jitterDOFs2Int ) {
+    mkl_jit_destroy(jitterDOFs2Int);
+    jitterDOFs2Int = nullptr;
+  }
+#endif
+}
+
+void CFEMStandardLinePartition::CoorIntPoints(const bool                LGLDistribution,
+                                              ColMajorMatrix<su2double> &matCoorDOF,
+                                              ColMajorMatrix<su2double> &matCoorInt) {
 
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, lagBasisLineIntLGL,
+    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, lagBasisLineIntLGL,
             matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, lagBasisLineIntEqui,
+    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, lagBasisLineIntEqui,
             matCoorDOF, matCoorInt, nullptr);
   }
 }
 
-void CFEMStandardLineGrid::DerivativesCoorIntPoints(const bool                         LGLDistribution,
-                                                    ColMajorMatrix<su2double>          &matCoor,
-                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {
+void CFEMStandardLinePartition::DerivativesCoorIntPoints(const bool                         LGLDistribution,
+                                                         ColMajorMatrix<su2double>          &matCoor,
+                                                         vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Check for which point distribution the derivatives must be computed. ---*/
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, derLagBasisLineIntLGL,
+    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisLineIntLGL,
             matCoor, matDerCoor[0], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    OwnGemm(my_dgemm, nIntegrationPad, 2, nDOFs, derLagBasisLineIntEqui,
+    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisLineIntEqui,
             matCoor, matDerCoor[0], nullptr);
   }
 }
 
-passivedouble CFEMStandardLineGrid::WorkEstimateBoundaryFace(CConfig              *config,
-                                                             const unsigned short elemType) {
+passivedouble CFEMStandardLinePartition::WorkEstimateBoundaryFace(CConfig              *config,
+                                                                  const unsigned short elemType) {
 
   /*--- Determine the number of DOFs of the neighboring element. ---*/
   const unsigned short nDOFsElem = GetNDOFsStatic(elemType, nPoly);
@@ -108,11 +118,11 @@ passivedouble CFEMStandardLineGrid::WorkEstimateBoundaryFace(CConfig            
   return nIntegration + 0.05*nDOFsElem;
 }
 
-passivedouble CFEMStandardLineGrid::WorkEstimateInternalFace(CConfig              *config,
-                                                             const unsigned short elemType0,
-                                                             const unsigned short nPoly0,
-                                                             const unsigned short elemType1,
-                                                             const unsigned short nPoly1) {
+passivedouble CFEMStandardLinePartition::WorkEstimateInternalFace(CConfig              *config,
+                                                                  const unsigned short elemType0,
+                                                                  const unsigned short nPoly0,
+                                                                  const unsigned short elemType1,
+                                                                  const unsigned short nPoly1) {
 
   /*--- Determine the number of DOFs of the neighboring elements. ---*/
   const unsigned short nDOFsElem0 = GetNDOFsStatic(elemType0, nPoly0);
@@ -122,31 +132,10 @@ passivedouble CFEMStandardLineGrid::WorkEstimateInternalFace(CConfig            
   return 2.0*nIntegration + 0.05*(nDOFsElem0 + nDOFsElem1);
 }
 
-passivedouble CFEMStandardLineGrid::WorkEstimateWallFunctions(CConfig              *config,
-                                                              const unsigned short nPointsWF,
-                                                              const unsigned short elemType) {
+passivedouble CFEMStandardLinePartition::WorkEstimateWallFunctions(CConfig              *config,
+                                                                   const unsigned short nPointsWF,
+                                                                   const unsigned short elemType) {
 
   /*--- TEMPORARY IMPLEMENTATION. ---*/
   return 0.25*nIntegration*nPointsWF;
-}
-
-/*----------------------------------------------------------------------------------*/
-/*            Private member functions of CFEMStandardLineGrid.                     */
-/*----------------------------------------------------------------------------------*/
-
-void CFEMStandardLineGrid::SubConnLinearElements(void) {
-
-  /*--- The line is split into several linear lines.
-        Set the VTK sub-types accordingly. ---*/
-  VTK_SubType1 = LINE;
-  VTK_SubType2 = NONE;
-
-  /*--- Determine the local subconnectivity of the line element used for plotting
-        purposes. This is rather trivial, because the line element is subdivided
-        into nPoly linear line elements. ---*/
-  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
-  for(unsigned short i=0; i<nnPoly; ++i) {
-    subConn1ForPlotting.push_back(i);
-    subConn1ForPlotting.push_back(i+1);
-  }
 }

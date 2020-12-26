@@ -28,7 +28,7 @@
 
 #pragma once 
 
-#include "CFEMStandardHex.hpp"
+#include "CFEMStandardHexBase.hpp"
 
 /*!
  * \class CFEMStandardHexGrid
@@ -37,23 +37,18 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardHexGrid final: public CFEMStandardHex {
+class CFEMStandardHexGrid final: public CFEMStandardHexBase {
 
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
    */
   CFEMStandardHexGrid() = delete;
-
-  /*!
-   * \overload
-   * \param[in] val_nPoly      - Polynomial degree of the grid for this element.
-   * \param[in] val_orderExact - Polynomial order that must be integrated exactly
-   *                             by the integration rule.
-   */
-  CFEMStandardHexGrid(const unsigned short val_nPoly,
-                      const unsigned short val_orderExact);
 
   /*!
    * \overload
@@ -73,37 +68,54 @@ public:
    */
   ~CFEMStandardHexGrid() = default;
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, that returns the number of solution DOFs.
+   * \return The number of solution DOFs of the volume element.
+   */
+  inline unsigned short GetNSolDOFs(void) const override {
+    const unsigned short nSol1D = rLineSolDOFs.size();
+    return nSol1D*nSol1D*nSol1D;
+  }
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Public member functions.                                ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Function, which computes the coordinates in the integration points.
-   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
+   * \param[in]  notUsed    - Argument present to be consistent with the base class
+   *                          function, which is overwritten.
    * \param[in]  matCoorDOF - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matCoorInt - Matrix that contains the coordinates of the integration
    *                          points.
    */
-  void CoorIntPoints(const bool                LGLDistribution,
+  void CoorIntPoints(const bool                notUsed,
                      ColMajorMatrix<su2double> &matCoorDOF,
                      ColMajorMatrix<su2double> &matCoorInt) override;
 
   /*!
    * \brief Function, which computes the derivatives of the coordinates in the
    *        integration points.
-   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
-   * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
-   * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.
+   * \param[in]  notUsed    - Argument present to be consistent with the base class
+   *                          function, which is overwritten.
+   * \param[in]  matCoor    - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDerCoor - Vector of matrices to store the derivatives of the coordinates.
    */
-  void DerivativesCoorIntPoints(const bool                         LGLDistribution,
+  void DerivativesCoorIntPoints(const bool                         notUsed,
                                 ColMajorMatrix<su2double>          &matCoor,
                                 vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
   /*!
    * \brief Function, which computes the 2nd derivatives of the coordinates in the
    *        integration points.
-   * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs
    * \param[out] matDer2ndCoor   - Vector of matrices to store the 2nd derivatives of the coordinates.
    */
-  void Derivatives2ndCoorIntPoints(const bool                         LGLDistribution,
-                                   ColMajorMatrix<su2double>          &matCoor,
+  void Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>          &matCoor,
                                    vector<ColMajorMatrix<su2double> > &matDer2ndCoor) override;
 
   /*!
@@ -115,96 +127,26 @@ public:
   void DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                               vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
-  /*!
-   * \brief Function, that returns the number of different face types
-   *        occuring in this volume element.
-   * \return The number of different face types of the volume element.
-   */
-  unsigned short GetnFaceTypes(void) const override {return 1;}
-
-  /*!
-   * \brief Function, that returns the number of solution DOFs.
-   * \return The number of solution DOFs of the volume element.
-   */
-  unsigned short GetNSolDOFs(void) const override {
-    const unsigned short nSol1D = rLineSolDOFs.size();
-    return nSol1D*nSol1D*nSol1D;
-  }
-
-  /*!
-   * \brief Function that returns the VTK type for the given face type index.
-   * \param[in] ind - Index of the face type for which the VTK type must be returned.
-   * \return The VTK type of the given face type.
-   */
-  unsigned short GetVTK_TypeFace(unsigned short ind) const override {return QUADRILATERAL;}
-
-  /*!
-   * \brief Function, which estimates the amount of work for a volume hexahedron.
-   *        This information is used to determine a well balanced partition.
-   *        The work of the surface integral in DG is not included.
-   * \param[in] config - Object, which contains the input parameters.
-   * \return The work estimate for the volume for this type of element.
-   */
-  passivedouble WorkEstimateVolume(CConfig *config) override;
-
 private:
 
+  vector<passivedouble> rLineDOFs;    /*!< \brief 1D parametric coordinates of the grid DOFs. */
   vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
 
-  ColMajorMatrix<passivedouble> lagBasisLineIntEqui; /*!< \brief The values of the 1D Lagrangian basis functions
-                                                                 in the integration points for the equidistant
-                                                                 point distribution. */
-  ColMajorMatrix<passivedouble> lagBasisLineIntLGL;  /*!< \brief The values of the 1D Lagrangian basis functions
-                                                                 in the integration points for the LGL
-                                                                 point distribution. */
+  ColMajorMatrix<passivedouble> lagBasisLineInt;    /*!< \brief The values of the 1D Lagrangian basis functions
+                                                                in the integration points. */
+  ColMajorMatrix<passivedouble> derLagBasisLineInt; /*!< \brief The values of the derivatives of the 1D Lagrangian
+                                                                basis functions in the integration points. */
+  ColMajorMatrix<passivedouble> hesLagBasisLineInt; /*!< \brief The values of the 2nd derivatives, Hessian, of the
+                                                                Lagrangian basis function in the integration points. */
 
-  ColMajorMatrix<passivedouble> derLagBasisLineIntEqui; /*!< \brief The values of the derivatives of the 1D Lagrangian
-                                                                    basis functions in the integration points for the
-                                                                    equidistant point distribution. */
-  ColMajorMatrix<passivedouble> derLagBasisLineIntLGL;  /*!< \brief The values of the derivatives of the 1D Lagrangian
-                                                                    basis functions in the integration points for the
-                                                                    LGL point distribution. */
 
   ColMajorMatrix<passivedouble> lagBasisLineSolDOFs;    /*!< \brief The values of the 1D Lagrangian basis functions
                                                                     in the nodal solution DOFs. */
   ColMajorMatrix<passivedouble> derLagBasisLineSolDOFs; /*!< \brief The values of the derivatives of the 1D Lagrangian
                                                                     basis functions in the nodal solution DOFs. */
 
-  ColMajorMatrix<passivedouble> hesLagBasisLineInt;     /*!< \brief The values of the 2nd derivatives, Hessian, of the
-                                                                    Lagrangian basis function in the integration points
-                                                                    for the point distribution that is in use. */
-
-  TPI3D TensorProductDataVolSolDOFs = nullptr; /*!< \brief Function pointer to carry out the tensor product
-                                                           to compute the data in the nodal solution DOFs. */
-
-  /*!
-   * \brief Function, which creates the local grid connectivities of the faces
-   *        of the volume element.
-   */
-  void LocalGridConnFaces(void);
-
-  /*!
-   * \brief Function, which creates the connectivity of the linear sub-elements when the
-   *        high order element is split in such elements.
-   */
-  void SubConnLinearElements(void);
-
-  /*!
-   * \brief Function, which serves as an interface to carry out the tensor product C = A*B
-   *        to obtain the data in the solution DOFs.
-   * \param[in]  N      - Number of values to be computed in the integration points.
-   * \param[in]  Ai     - 1D matrix for the i-component of the A tensor.
-   * \param[in]  Aj     - 1D matrix for the j-component of the A tensor.
-   * \param[in]  Ak     - 1D matrix for the k-component of the A tensor.
-   * \param[in]  B      - B tensor stored as a matrix.
-   * \param[out] C      - C tensor stored as a matrix.
-   * \param[out] config - Object used for the timing of the tensor product call.
-   */
-  void TensorProductSolDOFs(const int                           N,
-                            const ColMajorMatrix<passivedouble> &Ai,
-                            const ColMajorMatrix<passivedouble> &Aj,
-                            const ColMajorMatrix<passivedouble> &Ak,
-                            const ColMajorMatrix<su2double>     &B,
-                            ColMajorMatrix<su2double>           &C,
-                            const CConfig                       *config);
+  TPI3D TensorProductDataVolIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume integration points. */
+  TPI3D TensorProductDataVolSolDOFs   = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume nodal solution DOFs. */
 };

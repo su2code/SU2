@@ -25,14 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fem/CFEMStandardElementBase.hpp"
+#include "../../include/fem/CFEMStandardTriBase.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*--- Member functions of CFEMStandardElementBase related to the quadrature      ---*/
-/*--- rules for triangles.                                                       ---*/
+/*--- Member functions of CFEMStandardTriBase related to the quadrature rules    ---*/
+/*--- for triangles.                                                             ---*/
 /*----------------------------------------------------------------------------------*/
 
-unsigned short CFEMStandardElementBase::GetNIntTriangleStatic(unsigned short orderExact) {
+unsigned short CFEMStandardTriBase::GetNIntTriangleStatic(unsigned short orderExact) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
@@ -75,24 +75,22 @@ unsigned short CFEMStandardElementBase::GetNIntTriangleStatic(unsigned short ord
   return nIntegration;
 }
 
-void CFEMStandardElementBase::IntegrationPointsTriangle(vector<passivedouble> &rTriangle,
-                                                        vector<passivedouble> &sTriangle,
-                                                        vector<passivedouble> &wTriangle) {
+void CFEMStandardTriBase::IntegrationPointsTriangle(void) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
   nIntegration = GetNIntTriangleStatic(orderExact); 
 
   /*--- Allocate the memory for the integration points and their weights. ---*/
-  rTriangle.resize(nIntegration);
-  sTriangle.resize(nIntegration);
-  wTriangle.resize(nIntegration);
+  rTriangleInt.resize(nIntegration);
+  sTriangleInt.resize(nIntegration);
+  wTriangleInt.resize(nIntegration);
 
   /*--- Set the pointers to the data arrays of the variables just allocated, such
         that the names are shorter. This is useful for the code below. ---*/
-  passivedouble *r = rTriangle.data();
-  passivedouble *s = sTriangle.data();
-  passivedouble *w = wTriangle.data();
+  passivedouble *r = rTriangleInt.data();
+  passivedouble *s = sTriangleInt.data();
+  passivedouble *w = wTriangleInt.data();
 
   /*--- Set the data for the integration points, depending on the order.
         These integration rules come from the Matlab codes corresponding to

@@ -28,7 +28,7 @@
 
 #pragma once 
 
-#include "CFEMStandardQuad.hpp"
+#include "CFEMStandardQuadBase.hpp"
 
 /*!
  * \class CFEMStandardQuadVolumeSol
@@ -37,7 +37,7 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardQuadVolumeSol final: public CFEMStandardQuad {
+class CFEMStandardQuadVolumeSol final: public CFEMStandardQuadBase {
 
 public:
   /*!
@@ -64,15 +64,23 @@ public:
 
 private:
 
+  vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
+
   ColMajorMatrix<passivedouble> legBasisLineInt;    /*!< \brief The values of the 1D Legendre basis functions
                                                                 in the integration points. */
-
   ColMajorMatrix<passivedouble> derLegBasisLineInt; /*!< \brief The values of the derivatives of the 1D Legendre
                                                                 basis functions in the integration points. */
+  ColMajorMatrix<passivedouble> hesLegBasisLineInt; /*!< \brief The values of the 2nd derivatives of the 1D Legendre
+                                                                basis functions in the integration points. */
 
-  ColMajorMatrix<passivedouble> legBasisLineGridDOFs;    /*!< \brief The values of the 1D Legendre basis functions
-                                                                in the grid DOFs. */
+  ColMajorMatrix<passivedouble> legBasisLineSolDOFs;    /*!< \brief The values of the 1D Legendre basis functions
+                                                                    in the solution DOFs. */
 
-  ColMajorMatrix<passivedouble> derLegBasisLineGridDOFs; /*!< \brief The values of the derivatives of the 1D Legendre
-                                                                basis functions in the grid DOFs. */
+  ColMajorMatrix<passivedouble> derLegBasisLineSolDOFs; /*!< \brief The values of the derivatives of the 1D Legendre
+                                                                    basis functions in the solution DOFs. */
+
+  TPI2D TensorProductDataVolIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume integration points. */
+  TPI2D TensorProductDataVolSolDOFs   = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume nodal solution DOFs. */
 };

@@ -111,7 +111,7 @@ void CMeshFEM_Base::CreateStandardVolumeElementsGrid(const vector<CUnsignedShort
         break;
       default:  /*--- To avoid a compiler warning. ---*/
         SU2_MPI::Error(string("Unknown volume element. This should not happen"),
-                         CURRENT_FUNCTION);
+                       CURRENT_FUNCTION);
     }
   }
 }

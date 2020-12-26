@@ -2261,7 +2261,46 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Determine whether or not the viscous terms are needed. ---*/
+  const bool viscousTerms = config->GetFEMSolver_Viscous();
+
+  /*--- Determine the chunk size for the OMP loop below. ---*/
+#ifdef HAVE_OMP
+  const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Loop over the internal matching faces. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+      /*--- Initialize the grid velocities. ---*/
+      matchingFaces[i].InitGridVelocities(nDim);
+
+      /*--- Compute the metric terms in the integration points. ---*/
+      matchingFaces[i].MetricTermsIntegrationPoints(viscousTerms, nDim, volElem);
+    }
+
+    /*--- Loop over the physical boundaries. ---*/
+    for(unsigned int l=0; l<boundaries.size(); ++l) {
+      if( !boundaries[l].periodicBoundary ) {
+
+        /*--- Loop over the boundary faces. ---*/
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for(unsigned long i=0; i<boundaries[l].surfElem.size(); ++i) {
+
+          /*--- Initialize the grid velocities. ---*/
+          boundaries[l].surfElem[i].InitGridVelocities(nDim);
+
+          /*--- Compute the metric terms in the integration points. ---*/
+          boundaries[l].surfElem[i].MetricTermsIntegrationPoints(viscousTerms,
+                                                                 nDim, volElem);
+        }        
+      }
+    }
+  }
 }
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
@@ -2318,7 +2357,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       /*--- Compute the derivatives of the metric terms in the
             integration points, if needed. ---*/
       if( DerMetricTerms )
-        volElem[i].DerMetricTermsIntegrationPoints(useLGL, nDim);
+        volElem[i].DerMetricTermsIntegrationPoints(nDim);
     }
   } /*--- end SU2_OMP_PARALLEL ---*/
 
@@ -2353,6 +2392,9 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
 void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
                                       const vector<CFaceOfElement> &localFaces) {
+
+  /*--- Determine whether or not the LGL node distribution is used. ---*/
+  const bool useLGL = config->GetKind_FEM_GridDOFsLocation() == LGL;
 
   /*--- Check if an incompressible solver is used. ---*/
   const unsigned short Kind_Solver = config->GetKind_Solver();
@@ -2750,13 +2792,13 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceGrid[i].short2 ) {
           case TRIANGLE:
             standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentTriGrid(nPoly, faceID_Elem,
-                                                                                 orientation,
+                                                                                 orientation, useLGL,
                                                                                  gemmTypesFaces[ind]);
             break;
 
           case QUADRILATERAL:
             standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentQuadGrid(nPoly, faceID_Elem,
-                                                                                  orientation,
+                                                                                  orientation, useLGL,
                                                                                   gemmTypesFaces[ind]);
             break;
 
@@ -2776,19 +2818,19 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceGrid[i].short2 ) {
           case TETRAHEDRON:
             standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentTetGrid(nPoly, faceID_Elem,
-                                                                                orientation,
+                                                                                orientation, useLGL,
                                                                                 gemmTypesFaces[ind]);
             break;
 
           case PYRAMID:
             standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPyraGrid(nPoly, faceID_Elem,
-                                                                                 orientation,
+                                                                                 orientation, useLGL,
                                                                                  gemmTypesFaces[ind]);
             break;
 
           case PRISM:
             standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPrismGrid(nPoly, faceID_Elem,
-                                                                                  orientation,
+                                                                                  orientation, useLGL,
                                                                                   gemmTypesFaces[ind]);
             break;
 
@@ -2808,19 +2850,19 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceGrid[i].short2 ) {
           case HEXAHEDRON:
             standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentHexGrid(nPoly, faceID_Elem,
-                                                                                 orientation,
+                                                                                 orientation, useLGL,
                                                                                  gemmTypesFaces[ind]);
             break;
 
           case PYRAMID:
             standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPyraGrid(nPoly, faceID_Elem,
-                                                                                  orientation,
+                                                                                  orientation, useLGL,
                                                                                   gemmTypesFaces[ind]);
             break;
 
           case PRISM:
             standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPrismGrid(nPoly, faceID_Elem,
-                                                                                   orientation,
+                                                                                   orientation, useLGL,
                                                                                    gemmTypesFaces[ind]);
             break;
 
@@ -2888,14 +2930,14 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceSol[i].short2 ) {
           case TRIANGLE:
             standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentTriSol(nPoly, faceID_Elem,
-                                                                                    orientation,
+                                                                                    orientation, useLGL,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case QUADRILATERAL:
             standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentQuadSol(nPoly, faceID_Elem,
-                                                                                     orientation,
+                                                                                     orientation, useLGL,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
@@ -2916,21 +2958,21 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceSol[i].short2 ) {
           case TETRAHEDRON:
             standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentTetSol(nPoly, faceID_Elem,
-                                                                                   orientation,
+                                                                                   orientation, useLGL,
                                                                                    gemmTypesFaces[ind1],
                                                                                    gemmTypesFaces[ind2]);
             break;
 
           case PYRAMID:
             standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPyraSol(nPoly, faceID_Elem,
-                                                                                    orientation,
+                                                                                    orientation, useLGL,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case PRISM:
             standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPrismSol(nPoly, faceID_Elem,
-                                                                                     orientation,
+                                                                                     orientation, useLGL,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
@@ -2951,21 +2993,21 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceSol[i].short2 ) {
           case HEXAHEDRON:
             standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentHexSol(nPoly, faceID_Elem,
-                                                                                    orientation,
+                                                                                    orientation, useLGL,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case PYRAMID:
             standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPyraSol(nPoly, faceID_Elem,
-                                                                                     orientation,
+                                                                                     orientation, useLGL,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
 
           case PRISM:
             standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPrismSol(nPoly, faceID_Elem,
-                                                                                      orientation,
+                                                                                      orientation, useLGL,
                                                                                       gemmTypesFaces[ind1],
                                                                                       gemmTypesFaces[ind2]);
             break;
@@ -3151,26 +3193,26 @@ void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedSho
     /*--- Determine the element type and allocate the appropriate object. ---*/
     switch( VTK_Type ) {
       case TRIANGLE:
-        standardVolumeElementsSolution[i] = new CFEMStandardTriVolumeSol(nPoly, orderExact, locGridDOFs);
+        standardVolumeElementsSolution[i] = new CFEMStandardTriVolumeSol(nPoly, orderExact, locGridDOFs, 4);
         break;
       case QUADRILATERAL:
         standardVolumeElementsSolution[i] = new CFEMStandardQuadVolumeSol(nPoly, orderExact, locGridDOFs);
         break;
       case TETRAHEDRON:
-        standardVolumeElementsSolution[i] = new CFEMStandardTetVolumeSol(nPoly, orderExact, locGridDOFs);
+        standardVolumeElementsSolution[i] = new CFEMStandardTetVolumeSol(nPoly, orderExact, locGridDOFs, 5);
         break;
       case PYRAMID:
-        standardVolumeElementsSolution[i] = new CFEMStandardPyraVolumeSol(nPoly, orderExact, locGridDOFs);
+        standardVolumeElementsSolution[i] = new CFEMStandardPyraVolumeSol(nPoly, orderExact, locGridDOFs, 5);
         break;
       case PRISM:
-        standardVolumeElementsSolution[i] = new CFEMStandardPrismVolumeSol(nPoly, orderExact, locGridDOFs);
+        standardVolumeElementsSolution[i] = new CFEMStandardPrismVolumeSol(nPoly, orderExact, locGridDOFs, 5);
         break;
       case HEXAHEDRON:
         standardVolumeElementsSolution[i] = new CFEMStandardHexVolumeSol(nPoly, orderExact, locGridDOFs);
         break;
       default:  /*--- To avoid a compiler warning. ---*/
         SU2_MPI::Error(string("Unknown volume element. This should not happen"),
-                         CURRENT_FUNCTION);
+                       CURRENT_FUNCTION);
     }
   }
 }

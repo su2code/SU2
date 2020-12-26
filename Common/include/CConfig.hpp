@@ -3600,6 +3600,20 @@ public:
   }
 
   /*!
+   * \brief Return true if a high order viscous FEM solver is in use.
+   */
+  bool GetFEMSolver_Viscous(void) const {
+    switch (Kind_Solver) {
+      case FEM_NAVIER_STOKES:     case FEM_RANS:     case FEM_LES:
+      case FEM_INC_NAVIER_STOKES: case FEM_INC_RANS: case FEM_INC_LES:
+      case DISC_ADJ_FEM_NS:       case DISC_ADJ_FEM_RANS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /*!
    * \brief Return true if a NEMO solver is in use.
    */
   bool GetNEMOProblem(void) const {

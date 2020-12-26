@@ -32,6 +32,9 @@
 
 using namespace std;
 
+/*--- Forward declaration. ---*/
+class CVolumeElementFEM_DG;
+
 /*!
  * \class CSurfaceeSurfaceFEM
  * \brief Class to store a surface element for the FEM solver.
@@ -68,4 +71,21 @@ struct CSurfaceElementFEM {
    */
   void GetCornerPointsFace(unsigned short &nPointsPerFace,
                            unsigned long  faceConn[]);
+
+  /*!
+   * \brief Function, which initializes the grid velocities of this face.
+   * \param[in] nDim - Number of spatial dimensions.
+   */
+  void InitGridVelocities(const unsigned short nDim);
+
+  /*!
+   * \brief Function, which computes the metric terms in the integration points.
+   * \param[in] viscousTerms - Whether or not the metric terms for the viscous part
+   *                           must be computed.
+   * \param[in] nDim         - Number of spatial dimensions.
+   * \param[in] volElem      - The volume elements of the grid.
+   */
+  void MetricTermsIntegrationPoints(const bool                         viscousTerms,
+                                    const unsigned short               nDim,
+                                    const vector<CVolumeElementFEM_DG> &volElem);
 };

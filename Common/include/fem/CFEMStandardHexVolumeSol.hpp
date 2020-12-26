@@ -28,7 +28,7 @@
 
 #pragma once 
 
-#include "CFEMStandardHex.hpp"
+#include "CFEMStandardHexBase.hpp"
 
 /*!
  * \class CFEMStandardHexVolumeSol
@@ -37,9 +37,13 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardHexVolumeSol final: public CFEMStandardHex {
+class CFEMStandardHexVolumeSol final: public CFEMStandardHexBase {
 
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -64,15 +68,23 @@ public:
 
 private:
 
+  vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */
+
   ColMajorMatrix<passivedouble> legBasisLineInt;    /*!< \brief The values of the 1D Legendre basis functions
                                                                 in the integration points. */
-
   ColMajorMatrix<passivedouble> derLegBasisLineInt; /*!< \brief The values of the derivatives of the 1D Legendre
                                                                 basis functions in the integration points. */
+  ColMajorMatrix<passivedouble> hesLegBasisLineInt; /*!< \brief The values of the 2nd derivatives of the 1D Legendre
+                                                                basis functions in the integration points. */
 
-  ColMajorMatrix<passivedouble> legBasisLineGridDOFs;    /*!< \brief The values of the 1D Legendre basis functions
-                                                                in the grid DOFs. */
+  ColMajorMatrix<passivedouble> legBasisLineSolDOFs;    /*!< \brief The values of the 1D Legendre basis functions
+                                                                    in the solution DOFs. */
 
-  ColMajorMatrix<passivedouble> derLegBasisLineGridDOFs; /*!< \brief The values of the derivatives of the 1D Legendre
-                                                                basis functions in the grid DOFs. */
+  ColMajorMatrix<passivedouble> derLegBasisLineSolDOFs; /*!< \brief The values of the derivatives of the 1D Legendre
+                                                                    basis functions in the solution DOFs. */
+
+  TPI3D TensorProductDataVolIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume integration points. */
+  TPI3D TensorProductDataVolSolDOFs   = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                             to compute the data in the volume nodal solution DOFs. */
 };

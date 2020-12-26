@@ -34,5 +34,5 @@
 CFEMStandardTriAdjacentTetGrid::CFEMStandardTriAdjacentTetGrid(const unsigned short val_nPoly,
                                                                const unsigned short val_faceID_Elem,
                                                                const unsigned short val_orientation,
-                                                               CGemmBase           *val_gemm) {
-}
+                                                               const bool           val_useLGL,
+                                                               CGemmBase           *val_gemm) {}

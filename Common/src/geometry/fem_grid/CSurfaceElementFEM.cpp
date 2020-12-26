@@ -27,6 +27,7 @@
 
 #include "../../../include/geometry/fem_grid/CSurfaceElementFEM.hpp"
 #include "../../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
+#include "../../../include/geometry/fem_grid/CVolumeElementFEM_DG.hpp"
 
 /*---------------------------------------------------------------------*/
 /*---        Public member functions of CSurfaceElementFEM.         ---*/
@@ -44,4 +45,16 @@ void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
     unsigned long nn = faceConn[j];
     faceConn[j] = nodeIDsGrid[nn];
   }
+}
+
+void CSurfaceElementFEM::InitGridVelocities(const unsigned short nDim) {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+void CSurfaceElementFEM::MetricTermsIntegrationPoints(const bool                         viscousTerms,
+                                                      const unsigned short               nDim,
+                                                      const vector<CVolumeElementFEM_DG> &volElem) {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

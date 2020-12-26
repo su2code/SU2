@@ -33,6 +33,9 @@
 
 using namespace std;
 
+/*--- Forward declaration. ---*/
+class CVolumeElementFEM_DG;
+
 /*!
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
@@ -41,8 +44,8 @@ using namespace std;
  */
 class CInternalFaceFEM_DG final {
 public:
-  unsigned long  elemID0;         /*!< \brief Element ID adjacent to side 0 of the face. */
-  unsigned long  elemID1;         /*!< \brief Element ID adjacent to side 1 of the face. */
+  unsigned long elemID0;         /*!< \brief Element ID adjacent to side 0 of the face. */
+  unsigned long elemID1;         /*!< \brief Element ID adjacent to side 1 of the face. */
 
   ColMajorMatrix<su2double> metricNormalsFace;     /*!< \brief The normals in the integration points of the face.
                                                                The normals point from side 0 to side 1. */
@@ -61,4 +64,21 @@ public:
                                                                         standard flow solution variables. */
   CFEMStandardInternalFaceSol  *standardElemP    = nullptr; /*!< \brief Pointer to the standard element for the
                                                                         pressure for an incompressible flow. */
+
+  /*!
+   * \brief Function, which initializes the grid velocities of this face.
+   * \param[in] nDim - Number of spatial dimensions.
+   */
+  void InitGridVelocities(const unsigned short nDim);
+
+  /*!
+   * \brief Function, which computes the metric terms in the integration points.
+   * \param[in] viscousTerms - Whether or not the metric terms for the viscous part
+   *                           must be computed.
+   * \param[in] nDim         - Number of spatial dimensions.
+   * \param[in] volElem      - The volume elements of the grid.
+   */
+  void MetricTermsIntegrationPoints(const bool                         viscousTerms,
+                                    const unsigned short               nDim,
+                                    const vector<CVolumeElementFEM_DG> &volElem);
 };

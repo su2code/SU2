@@ -34,4 +34,41 @@
 CFEMStandardQuadVolumeSol::CFEMStandardQuadVolumeSol(const unsigned short val_nPoly,
                                                      const unsigned short val_orderExact,
                                                      const unsigned short val_locGridDOFs)
-  : CFEMStandardQuad(val_nPoly, val_orderExact) {}
+  : CFEMStandardQuadBase(val_nPoly, val_orderExact) {
+
+  /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
+        different from grid DOFs when a different polynomial degree is
+        used for the grid and solution. ---*/
+  if(val_locGridDOFs == LGL) Location1DGridDOFsLGL(nPoly, rLineSolDOFs);
+  else                       Location1DGridDOFsEquidistant(nPoly, rLineSolDOFs);
+
+  /*--- Compute the 1D Legendre basis functions and its first
+        and second derivatives in the integration points. ---*/
+  const unsigned short nInt1DPad = ((nInt1D+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  legBasisLineInt.resize(nInt1DPad, nDOFs1D);     legBasisLineInt.setConstant(0.0);
+  derLegBasisLineInt.resize(nInt1DPad, nDOFs1D);  derLegBasisLineInt.setConstant(0.0);
+  hesLegBasisLineInt.resize(nInt1DPad, nDOFs1D);  hesLegBasisLineInt.setConstant(0.0);
+
+  Vandermonde1D(nPoly, rLineInt, legBasisLineInt);
+  GradVandermonde1D(nPoly, rLineInt, derLegBasisLineInt);
+  HesVandermonde1D(nPoly, rLineInt, hesLegBasisLineInt);
+
+  /*--- Compute the 1D Legendre basis functions and its first
+        derivatives in the solution DOFs. ---*/
+  const unsigned short nDOFs1DPad = ((nDOFs1D+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  legBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);    legBasisLineSolDOFs.setConstant(0.0);
+  derLegBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D); derLegBasisLineSolDOFs.setConstant(0.0);
+
+  Vandermonde1D(nPoly, rLineSolDOFs, legBasisLineSolDOFs);
+  GradVandermonde1D(nPoly, rLineSolDOFs, derLegBasisLineSolDOFs);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardQuadBase::SubConnLinearElements();
+
+  /*--- Set the function pointers for the tensor product multiplications to
+        determine the data in the volume integration points and volume
+        nodal solution DOFs. ---*/
+  SetFunctionPointerVolumeDataQuad(nDOFs1D, nInt1D, TensorProductDataVolIntPoints);
+  SetFunctionPointerVolumeDataQuad(nDOFs1D, nDOFs1D, TensorProductDataVolSolDOFs);
+}

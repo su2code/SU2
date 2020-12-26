@@ -33,8 +33,7 @@
 /*---      Public member functions of CVolumeElementFEM_Base.       ---*/
 /*---------------------------------------------------------------------*/
 
-void CVolumeElementFEM_Base::DerMetricTermsIntegrationPoints(const bool           LGLDistribution,
-                                                             const unsigned short nDim) {
+void CVolumeElementFEM_Base::DerMetricTermsIntegrationPoints(const unsigned short nDim) {
 
   /*--- Allocate the memory for the metric terms to compute the second derivatives
         in the integration points. ---*/
@@ -47,9 +46,8 @@ void CVolumeElementFEM_Base::DerMetricTermsIntegrationPoints(const bool         
 
   /*--- Compute the metric terms for the 2nd derivatives in
         the volume integration points. ---*/
-  standardElemGrid->MetricTerms2ndDerVolumeIntPoints(LGLDistribution, coorGridDOFs,
-                                                     metricTermsInt, JacobiansInt,
-                                                     metricTerms2ndDerInt);
+  standardElemGrid->MetricTerms2ndDerVolumeIntPoints(coorGridDOFs, metricTermsInt,
+                                                     JacobiansInt, metricTerms2ndDerInt);
 }
 
 void CVolumeElementFEM_Base::GetCornerPointsAllFaces(unsigned short &numFaces,

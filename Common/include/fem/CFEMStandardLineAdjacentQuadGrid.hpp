@@ -29,7 +29,7 @@
 
 #pragma once 
 
-#include "CFEMStandardElementBase.hpp"
+#include "CFEMStandardLineBase.hpp"
 #include "CGemmBase.hpp"
 
 /*!
@@ -39,7 +39,7 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardLineAdjacentQuadGrid final: public CFEMStandardElementBase {
+class CFEMStandardLineAdjacentQuadGrid final: public CFEMStandardLineBase {
 
 public:
   /*!
@@ -55,12 +55,15 @@ public:
    *                              to which this surface element corresponds.
    * \param[in] val_orientation - Orientation of this surface element relative to
    *                              the adjacent volume element.
+   * \param[in] val_useLGL      - Whether or not the LGL point distribution is used
+   *                              for the DOFs.
    * \param[in] val_gemm        - Pointer to the gemm type used to carry out
    *                              the gemm functionality for this standard face.
    */
   CFEMStandardLineAdjacentQuadGrid(const unsigned short val_nPoly,
                                    const unsigned short val_faceID_Elem,
                                    const unsigned short val_orientation,
+                                   const bool           val_useLGL,
                                    CGemmBase           *val_gemm);
 
   /*!

@@ -78,8 +78,8 @@ void CSquareMatrixCM::Invert() {
 }
 
 void CSquareMatrixCM::MatMatMult(const char                          side,
-                                        const ColMajorMatrix<passivedouble> &mat_in,
-                                        ColMajorMatrix<passivedouble>       &mat_out) const {
+                                 const ColMajorMatrix<passivedouble> &mat_in,
+                                 ColMajorMatrix<passivedouble>       &mat_out) const {
 
   /*--- Check the type of multiplication to be carried out. ---*/
   if (side == 'L' || side == 'l') {

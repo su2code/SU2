@@ -33,5 +33,82 @@
 
 CFEMStandardPyraVolumeSol::CFEMStandardPyraVolumeSol(const unsigned short val_nPoly,
                                                      const unsigned short val_orderExact,
-                                                     const unsigned short val_locGridDOFs)
-  : CFEMStandardPyra(val_nPoly, val_orderExact) {}
+                                                     const unsigned short val_locGridDOFs,
+                                                     const unsigned short val_nVar)
+  : CFEMStandardPyraBase(val_nPoly, val_orderExact) {
+
+  /*--- Determine the location of the nodal solution DOFs. ---*/
+  if(val_locGridDOFs == LGL)
+    LocationPyramidGridDOFsLGL(nPoly, rPyraSolDOFs, sPyraSolDOFs, tPyraSolDOFs);
+  else
+    LocationPyramidGridDOFsEquidistant(nPoly, rPyraSolDOFs, sPyraSolDOFs, tPyraSolDOFs);
+
+  /*--- Determine the location of all integration points of the pyramid. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  LocationAllIntegrationPoints(rInt, sInt, tInt);
+
+  /*--- Allocate the memory for the Legendre basis functions and its
+        1st and 2nd derivatives in the integration points. ---*/
+  legBasisInt.resize(nIntegrationPad, nDOFs); legBasisInt.setConstant(0.0);
+
+  derLegBasisInt.resize(3);
+  derLegBasisInt[0].resize(nIntegrationPad, nDOFs); derLegBasisInt[0].setConstant(0.0);
+  derLegBasisInt[1].resize(nIntegrationPad, nDOFs); derLegBasisInt[1].setConstant(0.0);
+  derLegBasisInt[2].resize(nIntegrationPad, nDOFs); derLegBasisInt[2].setConstant(0.0);
+
+  hesLegBasisInt.resize(6);
+  hesLegBasisInt[0].resize(nIntegrationPad, nDOFs); hesLegBasisInt[0].setConstant(0.0);
+  hesLegBasisInt[1].resize(nIntegrationPad, nDOFs); hesLegBasisInt[1].setConstant(0.0);
+  hesLegBasisInt[2].resize(nIntegrationPad, nDOFs); hesLegBasisInt[2].setConstant(0.0);
+  hesLegBasisInt[3].resize(nIntegrationPad, nDOFs); hesLegBasisInt[3].setConstant(0.0);
+  hesLegBasisInt[4].resize(nIntegrationPad, nDOFs); hesLegBasisInt[4].setConstant(0.0);
+  hesLegBasisInt[5].resize(nIntegrationPad, nDOFs); hesLegBasisInt[5].setConstant(0.0);
+
+  /*--- Compute the Legendre basis functions and its first
+        and second derivatives in the integration points. ---*/
+  VandermondePyramid(nPoly, rInt, sInt, tInt, legBasisInt);
+  GradVandermondePyramid(nPoly, rInt, sInt, tInt, derLegBasisInt[0],
+                         derLegBasisInt[1], derLegBasisInt[2]);
+  HesVandermondePyramid(nPoly, rInt, sInt, tInt, hesLegBasisInt[0],
+                        hesLegBasisInt[1], hesLegBasisInt[2], hesLegBasisInt[3],
+                        hesLegBasisInt[4], hesLegBasisInt[5]);
+
+  /*--- Allocate the memory for the Legendre basis functions and its
+        1st derivatives in the solution DOFs. ---*/
+  legBasisSolDOFs.resize(nDOFs, nDOFs); legBasisSolDOFs.setConstant(0.0);
+
+  derLegBasisSolDOFs.resize(3);
+  derLegBasisSolDOFs[0].resize(nDOFs, nDOFs); derLegBasisSolDOFs[0].setConstant(0.0);
+  derLegBasisSolDOFs[1].resize(nDOFs, nDOFs); derLegBasisSolDOFs[1].setConstant(0.0);
+  derLegBasisSolDOFs[2].resize(nDOFs, nDOFs); derLegBasisSolDOFs[2].setConstant(0.0);
+
+  /*--- Compute the Legendre basis functions and its first
+        derivatives in the solution DOFs. ---*/
+  VandermondePyramid(nPoly, rPyraSolDOFs, sPyraSolDOFs, tPyraSolDOFs, legBasisSolDOFs);
+  GradVandermondePyramid(nPoly, rPyraSolDOFs, sPyraSolDOFs, tPyraSolDOFs,
+                         derLegBasisSolDOFs[0], derLegBasisSolDOFs[1],
+                         derLegBasisSolDOFs[2]);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardPyraBase::SubConnLinearElements();
+
+  /*--- Set up the jitted gemm calls, if supported. ---*/
+  SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, jitterDOFs2Int, gemmDOFs2Int);
+  SetUpJittedGEMM(nDOFs, val_nVar, nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+}
+
+CFEMStandardPyraVolumeSol::~CFEMStandardPyraVolumeSol() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+if( jitterDOFs2Int ) {
+    mkl_jit_destroy(jitterDOFs2Int);
+    jitterDOFs2Int = nullptr;
+  }
+
+  if( jitterDOFs2SolDOFs ) {
+    mkl_jit_destroy(jitterDOFs2SolDOFs);
+    jitterDOFs2SolDOFs = nullptr;
+  }
+#endif
+}
