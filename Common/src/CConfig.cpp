@@ -3431,14 +3431,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((TimeMarching == TIME_STEPPING ||
        TimeMarching == DT_STEPPING_1ST ||
        TimeMarching == DT_STEPPING_2ND) && !Time_Domain){
-    SU2_MPI::Error("TIME_DOMAIN must be set to YES if UNSTEADY_SIMULATION is "
+    SU2_MPI::Error("TIME_DOMAIN must be set to YES if TIME_MARCHING is "
                    "TIME_STEPPING, DUAL_TIME_STEPPING-1ST_ORDER or DUAL_TIME_STEPPING-2ND_ORDER", CURRENT_FUNCTION);
   }
 
   if (Time_Domain){
-    if (TimeMarching == TIME_STEPPING){
-      InnerIter = 1;
-    }
     if (!OptionIsSet("OUTPUT_WRT_FREQ"))
       VolumeWrtFreq = 1;
     if (Restart == NO){
@@ -6398,7 +6395,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (TimeMarching == DT_STEPPING_2ND) cout << "Unsteady simulation, dual time stepping strategy (second order in time)."<< endl;
       if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
       else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
-      cout << "Total number of internal Dual Time iterations: "<< InnerIter <<"." << endl;
       break;
     }
   }
