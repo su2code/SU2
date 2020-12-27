@@ -45,13 +45,13 @@ CFEMStandardHexBase::CFEMStandardHexBase(const unsigned short val_nPoly,
         Also determine the padded value of the latter. ---*/
   nDOFs1D  = nPoly + 1;
   nDOFs    = nDOFs1D*nDOFs1D*nDOFs1D;
-  nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nDOFsPad = PaddedValue(nDOFs);
 
   /*--- Determine the number of integration points in 1D as well as the total number
         of integration points. Also determine the padded value of the latter. ---*/
   nInt1D          = orderExact/2 + 1;
   nIntegration    = nInt1D*nInt1D*nInt1D;
-  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nIntegrationPad = PaddedValue(nIntegration);
 
   /*--- Determine the location and the weights of the 1D integration points.
         The 3D integration points are obtained via a tensor product. ---*/

@@ -43,12 +43,12 @@ CFEMStandardLineBase::CFEMStandardLineBase(const unsigned short val_nPoly,
 
   /*--- Determine the total number of DOFs and its padded version. ---*/
   nDOFs    = (nPoly+1);
-  nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nDOFsPad = PaddedValue(nDOFs);
 
   /*--- Determine the total number of integration points
         and its padded version. ---*/
   nIntegration    = orderExact/2 + 1;
-  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nIntegrationPad = PaddedValue(nIntegration);
 
   /*--- Determine the location and the weights of the 1D integration points. ---*/
   rLineInt.resize(nIntegration);
@@ -79,7 +79,7 @@ void CFEMStandardLineBase::DerLagBasisIntPointsLine(const vector<passivedouble> 
   /*--- Determine the number of integration points along the line
         and its padded value. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntPadLine = PaddedValue(nIntLine);
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -111,7 +111,7 @@ void CFEMStandardLineBase::HesLagBasisIntPointsLine(const vector<passivedouble> 
   /*--- Determine the number of integration points along the line
         and its padded value. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntPadLine = PaddedValue(nIntLine);
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -143,7 +143,7 @@ void CFEMStandardLineBase::LagBasisIntPointsLine(const vector<passivedouble>   &
   /*--- Determine the number of integration points along the line
         and its padded value. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = ((nIntLine+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntPadLine = PaddedValue(nIntLine);
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());

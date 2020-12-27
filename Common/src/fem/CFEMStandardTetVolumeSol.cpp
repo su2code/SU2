@@ -71,12 +71,12 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
 
   /*--- Allocate the memory for the Legendre basis functions and its
         1st derivatives in the solution DOFs. ---*/
-  legBasisSolDOFs.resize(nDOFs, nDOFs); legBasisSolDOFs.setConstant(0.0);
+  legBasisSolDOFs.resize(nDOFsPad, nDOFs); legBasisSolDOFs.setConstant(0.0);
 
   derLegBasisSolDOFs.resize(3);
-  derLegBasisSolDOFs[0].resize(nDOFs, nDOFs); derLegBasisSolDOFs[0].setConstant(0.0);
-  derLegBasisSolDOFs[1].resize(nDOFs, nDOFs); derLegBasisSolDOFs[1].setConstant(0.0);
-  derLegBasisSolDOFs[2].resize(nDOFs, nDOFs); derLegBasisSolDOFs[2].setConstant(0.0);
+  derLegBasisSolDOFs[0].resize(nDOFsPad, nDOFs); derLegBasisSolDOFs[0].setConstant(0.0);
+  derLegBasisSolDOFs[1].resize(nDOFsPad, nDOFs); derLegBasisSolDOFs[1].setConstant(0.0);
+  derLegBasisSolDOFs[2].resize(nDOFsPad, nDOFs); derLegBasisSolDOFs[2].setConstant(0.0);
 
   /*--- Compute the Legendre basis functions and its first
         derivatives in the solution DOFs. ---*/
@@ -91,7 +91,7 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
 
   /*--- Set up the jitted gemm calls, if supported. ---*/
   SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, jitterDOFs2Int, gemmDOFs2Int);
-  SetUpJittedGEMM(nDOFs, val_nVar, nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+  SetUpJittedGEMM(nDOFsPad, val_nVar, nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
 }
 
 CFEMStandardTetVolumeSol::~CFEMStandardTetVolumeSol() {

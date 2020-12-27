@@ -81,6 +81,16 @@ public:
     return nSol1D*nSol1D*nSol1D;
   }
 
+  /*!
+   * \brief Function, that returns the padded number of solution DOFs.
+   * \return The padded number of solution DOFs of the volume element.
+   */
+  inline unsigned short GetNSolDOFsPad(void) const override {
+    const unsigned short nSol1D = rLineSolDOFs.size();
+    const unsigned short nSol   = nSol1D*nSol1D*nSol1D;
+    return PaddedValue(nSol);
+  }
+
   /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/
   /*-----------------------------------------------------------------------------------*/

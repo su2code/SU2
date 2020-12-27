@@ -49,7 +49,7 @@ CFEMStandardPrismBase::CFEMStandardPrismBase(const unsigned short val_nPoly,
   nDOFs1D       = nPoly + 1;
   nDOFsTriangle = nDOFs1D*(nDOFs1D+1)/2;
   nDOFs         = nDOFs1D*nDOFsTriangle;
-  nDOFsPad      = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nDOFsPad      = PaddedValue(nDOFs);
 
   /*--- Determine the 1D integration points of a line, which corresponds to the
         direction normal to the base triangle of the prism. ---*/
@@ -69,7 +69,7 @@ CFEMStandardPrismBase::CFEMStandardPrismBase(const unsigned short val_nPoly,
         quadrature rule and the integration rule of the triangle. Determine
         the total number of integration points and its padded value. ---*/
   nIntegration    = nInt1D*nIntTriangle;
-  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nIntegrationPad = PaddedValue(nIntegration);
 
   /*--- Allocate the memory for the padded number of integration points and
         initialize the weights to zero. This is done such that the padded
@@ -107,7 +107,7 @@ void CFEMStandardPrismBase::DerLagBasisIntPointsPrism(const unsigned short      
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntTotPad = PaddedValue(nIntTot);
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -166,7 +166,7 @@ void CFEMStandardPrismBase::HesLagBasisIntPointsPrism(const unsigned short      
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntTotPad = PaddedValue(nIntTot);
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -241,7 +241,7 @@ void CFEMStandardPrismBase::LagBasisIntPointsPrism(const unsigned short         
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntTotPad = PaddedValue(nIntTot);
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());

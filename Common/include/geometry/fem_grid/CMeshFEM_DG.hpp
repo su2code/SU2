@@ -175,6 +175,6 @@ private:
    * \param[in] elemTypes   - Information about the element types to be created.
    * \param[in] locGridDOFs - Location of the grid DOFs, either LGL or equidistant.
    */
-  void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort3T> &elemTypes,
+  void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort4T> &elemTypes,
                                             const unsigned short           locGridDOFs);
 };

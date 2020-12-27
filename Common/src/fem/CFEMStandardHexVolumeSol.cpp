@@ -33,7 +33,8 @@
 
 CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPoly,
                                                    const unsigned short val_orderExact,
-                                                   const unsigned short val_locGridDOFs)
+                                                   const unsigned short val_locGridDOFs,
+                                                   const unsigned short val_nVar)
   : CFEMStandardHexBase(val_nPoly,val_orderExact) {
 
   /*--- Compute the 1D parametric coordinates of the solution DOFs. Only
@@ -44,7 +45,7 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
 
   /*--- Compute the 1D Legendre basis functions and its first
         and second derivatives in the integration points. ---*/
-  const unsigned short nInt1DPad = ((nInt1D+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nInt1DPad = PaddedValue(nInt1D);
   legBasisLineInt.resize(nInt1DPad, nDOFs1D);     legBasisLineInt.setConstant(0.0);
   derLegBasisLineInt.resize(nInt1DPad, nDOFs1D);  derLegBasisLineInt.setConstant(0.0);
   hesLegBasisLineInt.resize(nInt1DPad, nDOFs1D);  hesLegBasisLineInt.setConstant(0.0);
@@ -55,7 +56,7 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
 
   /*--- Compute the 1D Legendre basis functions and its first
         derivatives in the solution DOFs. ---*/
-  const unsigned short nDOFs1DPad = ((nDOFs1D+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
   legBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);    legBasisLineSolDOFs.setConstant(0.0);
   derLegBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D); derLegBasisLineSolDOFs.setConstant(0.0);
 

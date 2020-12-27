@@ -72,15 +72,15 @@ void CVolumeElementFEM_Base::InitGridVelocities(const unsigned short nDim) {
 
   /*--- Determine the number of integration points and solution DOFs.
         The first number is padded for performance reasons. ---*/
-  const unsigned short nIntPad  = standardElemGrid->GetNIntegrationPad();
-  const unsigned short nDOFsSol = standardElemGrid->GetNSolDOFs();
+  const unsigned short nIntPad     = standardElemGrid->GetNIntegrationPad();
+  const unsigned short nDOFsSolPad = standardElemGrid->GetNSolDOFsPad();
 
   /*--- Allocate the memory for the grid velocities and initialize
         them to zero. ---*/
   gridVelocitiesInt.resize(nIntPad, nDim);
   gridVelocitiesInt.setConstant(0.0);
 
-  gridVelocitiesSolDOFs.resize(nDOFsSol, nDim);
+  gridVelocitiesSolDOFs.resize(nDOFsSolPad, nDim);
   gridVelocitiesSolDOFs.setConstant(0.0);
 }
 
@@ -122,13 +122,14 @@ bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           L
 bool CVolumeElementFEM_Base::MetricTermsSolDOFs(const unsigned short nDim) {
 
   /*--- Allocate the memory for the metric terms of the solution DOFs. ---*/
-  const unsigned short nDOFsSol = standardElemGrid->GetNSolDOFs();
+  const unsigned short nDOFsSol    = standardElemGrid->GetNSolDOFs();
+  const unsigned short nDOFsSolPad = standardElemGrid->GetNSolDOFsPad();
 
-  JacobiansSolDOFs.resize(nDOFsSol);
+  JacobiansSolDOFs.resize(nDOFsSolPad);
 
   metricTermsSolDOFs.resize(nDim);
   for(unsigned short k=0; k<nDim; ++k)
-    metricTermsSolDOFs[k].resize(nDOFsSol, nDim);
+    metricTermsSolDOFs[k].resize(nDOFsSolPad, nDim);
 
   /*--- Compute the metric terms in the solution DOFs. ---*/
   standardElemGrid->MetricTermsSolDOFs(coorGridDOFs, metricTermsSolDOFs,
@@ -138,6 +139,10 @@ bool CVolumeElementFEM_Base::MetricTermsSolDOFs(const unsigned short nDim) {
   bool elemIsGood = true;
   for(unsigned short i=0; i<nDOFsSol; ++i)
     if(JacobiansSolDOFs(i) <= 0.0) elemIsGood = false;
+
+  /*--- Make sure that the Jacobian for the padded data is
+        not zero, to avoid problems later on. ---*/
+  for(unsigned short i=nDOFsSol; i<nDOFsSolPad; ++i) JacobiansSolDOFs(i) = 1.0;
 
   /*--- Return the value of elemIsGood. ---*/
   return elemIsGood;

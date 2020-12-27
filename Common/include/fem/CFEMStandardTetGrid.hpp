@@ -76,7 +76,15 @@ public:
    * \brief Function, that returns the number of solution DOFs.
    * \return The number of solution DOFs of the volume element.
    */
-  unsigned short GetNSolDOFs(void) const override {return rTetSolDOFs.size();}
+  inline unsigned short GetNSolDOFs(void) const override {return rTetSolDOFs.size();}
+
+  /*!
+   * \brief Function, that returns the padded number of solution DOFs.
+   * \return The padded number of solution DOFs of the volume element.
+   */
+  inline unsigned short GetNSolDOFsPad(void) const override {
+    return PaddedValue(rTetSolDOFs.size());
+  }
 
   /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/

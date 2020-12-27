@@ -43,7 +43,7 @@ CFEMStandardTriBase::CFEMStandardTriBase(const unsigned short val_nPoly,
 
   /*--- Determine the total number of DOFs and its padded version. ---*/
   nDOFs    = (nPoly+1)*(nPoly+2)/2;
-  nDOFsPad = ((nDOFs+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nDOFsPad = PaddedValue(nDOFs);
 
   /*--- Determine the parametric location and weights of the
         integration rule of the triangle. ---*/
@@ -52,7 +52,7 @@ CFEMStandardTriBase::CFEMStandardTriBase(const unsigned short val_nPoly,
   /*--- Determine the total number of integration points
         and its padded version. ---*/
   nIntegration    = rTriangleInt.size();
-  nIntegrationPad = ((nIntegration+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  nIntegrationPad = PaddedValue(nIntegration);
 
   /*--- Allocate the memory for the padded number of integration points and
         initialize the weights to zero. This is done such that the padded
@@ -200,7 +200,7 @@ void CFEMStandardTriBase::DerLagBasisIntPointsTriangle(const unsigned short     
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntTotPad = PaddedValue(nIntTot);
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -244,7 +244,7 @@ void CFEMStandardTriBase::HesLagBasisIntPointsTriangle(const unsigned short     
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntTotPad = PaddedValue(nIntTot);
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -293,7 +293,7 @@ void CFEMStandardTriBase::LagBasisIntPointsTriangle(const unsigned short        
 
   /*--- Determine the padded number of the total number of integration points. ---*/
   const unsigned short nIntTot    = rInt.size();
-  const unsigned short nIntTotPad = ((nIntTot+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  const unsigned short nIntTotPad = PaddedValue(nIntTot);
 
   /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());

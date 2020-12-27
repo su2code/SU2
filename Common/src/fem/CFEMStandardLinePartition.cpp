@@ -35,6 +35,10 @@ CFEMStandardLinePartition::CFEMStandardLinePartition(const unsigned short val_nP
                                                      const unsigned short val_orderExact)
   : CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
+  /*--- Determine the 1D parametric locations of the grid DOFs. ---*/
+  Location1DGridDOFsEquidistant(nPoly, rLineDOFsEqui);
+  Location1DGridDOFsLGL(nPoly, rLineDOFsLGL);
+
   /*--- Compute the values of the 1D Lagrangian basis functions in the integration
         points for both the equidistant and LGL point distribution. ---*/
   LagBasisIntPointsLine(rLineDOFsEqui, rLineInt, lagBasisLineIntEqui);

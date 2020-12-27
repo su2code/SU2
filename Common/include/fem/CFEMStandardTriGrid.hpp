@@ -78,6 +78,14 @@ public:
    */
   inline unsigned short GetNSolDOFs(void) const override {return rTriangleSolDOFs.size();}
 
+  /*!
+   * \brief Function, that returns the padded number of solution DOFs.
+   * \return The padded number of solution DOFs of the volume element.
+   */
+  inline unsigned short GetNSolDOFsPad(void) const override {
+    return PaddedValue(rTriangleSolDOFs.size());
+  }
+
   /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/
   /*-----------------------------------------------------------------------------------*/

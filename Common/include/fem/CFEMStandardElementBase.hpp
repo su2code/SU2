@@ -125,6 +125,15 @@ public:
   static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
                                        unsigned short nPoly);
 
+  /*!
+   * \brief Static function, which computes the padded value of the given input value.
+   * \param[in] val - Value to be padded.
+   * \return          The padded value of val.
+   */
+  static size_t PaddedValue(size_t val) {
+    return ((val+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
+  }
+
   /*-----------------------------------------------------------------------------------*/
   /*--- Virtual functions that must be overwritten by the derived classs when used. ---*/
   /*-----------------------------------------------------------------------------------*/
@@ -196,6 +205,16 @@ public:
    * \return The number of solution DOFs of the volume element.
    */
   virtual unsigned short GetNSolDOFs(void) const {
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return The padded number of solution DOFs of the volume element.
+   */
+  virtual unsigned short GetNSolDOFsPad(void) const {
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
     return 0;
@@ -544,12 +563,13 @@ public:
                        su2activevector                    &Jacobians);
 
 protected:
+
   /*-----------------------------------------------------------------------------------*/
   /*---                         Protected member functions.                         ---*/
   /*-----------------------------------------------------------------------------------*/
 
   /*!
-   * \brief Static function, which computes the value of the gradient of the
+   * \brief Function, which computes the value of the gradient of the
    *        Jacobi polynomial for the given x-coordinate.
    * \param[in] n     - Order of the Jacobi polynomial.
    * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
@@ -592,10 +612,6 @@ protected:
                            unsigned short alpha,
                            unsigned short beta,
                            passivedouble  x);
-
-  /*-----------------------------------------------------------------------------------*/
-  /*---                        Protected member functions.                          ---*/
-  /*-----------------------------------------------------------------------------------*/
 
   /*!
    * \brief Function, which is an interface to the actual gemm functionality.

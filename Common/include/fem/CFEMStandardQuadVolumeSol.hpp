@@ -52,10 +52,12 @@ public:
    * \param[in] val_orderExact  - Polynomial order that must be integrated exactly
    *                              by the integration rule.
    * \param[in] val_locGridDOFs - Location of the grid DOFs (LGL or Equidistant).
+   * \param[in] val_nVar        - Number of variables in the jitted gemm calls (not used).
    */
   CFEMStandardQuadVolumeSol(const unsigned short val_nPoly,
                             const unsigned short val_orderExact,
-                            const unsigned short val_locGridDOFs);
+                            const unsigned short val_locGridDOFs,
+                            const unsigned short val_nVar);
 
   /*!
    * \brief Destructor. Nothing to be done.
