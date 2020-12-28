@@ -55,10 +55,12 @@ public:
   virtual ~CGridMovement(void);
 
   /*!
-   * \brief A pure virtual member.
+   * \brief Set the surface/boundary deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  inline virtual void SetSurface_Deformation(CGeometry *geometry, CConfig *config) { }
-
+  inline virtual vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
+    return vector<vector<su2double> >();
+  }
 };

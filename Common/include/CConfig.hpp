@@ -108,8 +108,14 @@ private:
   unsigned short FFD_Blending;    /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order;   /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;              /*!< \brief Tolerance in the point inversion problem. */
-  su2double Opt_RelaxFactor;      /*!< \brief Scale factor for the line search. */
-  su2double Opt_LineSearch_Bound; /*!< \brief Bounds for the line search. */
+  bool FFD_IntPrev;                       /*!< \brief Enables self-intersection prevention procedure within the FFD box. */
+  unsigned short FFD_IntPrev_MaxIter;     /*!< \brief Amount of iterations for FFD box self-intersection prevention procedure. */
+  unsigned short FFD_IntPrev_MaxDepth;    /*!< \brief Maximum recursion depth for FFD box self-intersection procedure. */
+  bool ConvexityCheck;                    /*!< \brief Enables convexity check on all mesh elements. */
+  unsigned short ConvexityCheck_MaxIter;  /*!< \brief Amount of iterations for convexity check in deformations. */
+  unsigned short ConvexityCheck_MaxDepth; /*!< \brief Maximum recursion depth for convexity check in deformations.*/
+  su2double Opt_RelaxFactor;              /*!< \brief Scale factor for the line search. */
+  su2double Opt_LineSearch_Bound;         /*!< \brief Bounds for the line search. */
   su2double StartTime;
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
@@ -8114,6 +8120,27 @@ public:
    * \return Tolerance of the point inversion algorithm.
    */
   su2double GetFFD_Tol(void) const { return FFD_Tol; }
+
+  /*!
+   * \brief Get information about whether to do a check on self-intersections within
+      the FFD box based on value on the Jacobian determinant.
+   * \param[out] FFD_IntPrev: <code>TRUE</code> if FFD intersection prevention is active; otherwise <code>FALSE</code>.
+   * \param[out] FFD_IntPrev_MaxIter: Maximum number of iterations in the intersection prevention procedure.
+   * \param[out] FFD_IntPrev_MaxDepth: Maximum recursion depth in the intersection prevention procedure.
+   */
+  tuple<bool, unsigned short, unsigned short> GetFFD_IntPrev(void) const {
+    return make_tuple(FFD_IntPrev, FFD_IntPrev_MaxIter, FFD_IntPrev_MaxDepth);
+  }
+
+  /*!
+   * \brief Get information about whether to do a check on convexity of the mesh elements.
+   * \param[out] ConvexityCheck: <code>TRUE</code> if convexity check is active; otherwise <code>FALSE</code>.
+   * \param[out] ConvexityCheck_MaxIter: Maximum number of iterations in the convexity check.
+   * \param[out] ConvexityCheck_MaxDepth: Maximum recursion depth in the convexity check.
+   */
+  tuple<bool, unsigned short, unsigned short> GetConvexityCheck(void) const {
+    return make_tuple(ConvexityCheck, ConvexityCheck_MaxIter, ConvexityCheck_MaxDepth);
+  }
 
   /*!
    * \brief Get the scale factor for the line search.
