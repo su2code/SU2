@@ -90,13 +90,13 @@ void CFEMStandardPrismPartition::CoorIntPoints(const bool                LGLDist
 
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -109,17 +109,17 @@ void CFEMStandardPrismPartition::DerivativesCoorIntPoints(const bool            
 
     /*--- LGL distribution. Call the function OwnGemm 3 times to compute the derivatives
           of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[2], matCoor, matDerCoor[2], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntLGL[2], matCoor, matDerCoor[2], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm 3 times to compute the derivatives
           of the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[2], matCoor, matDerCoor[2], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisIntEqui[2], matCoor, matDerCoor[2], nullptr);
   }
 }
 

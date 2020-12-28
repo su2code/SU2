@@ -130,7 +130,7 @@ public:
    * \param[in] val - Value to be padded.
    * \return          The padded value of val.
    */
-  static size_t PaddedValue(size_t val) {
+  static constexpr size_t PaddedValue(size_t val) {
     return ((val+baseVectorLen-1)/baseVectorLen)*baseVectorLen;
   }
 
@@ -616,6 +616,7 @@ protected:
   /*!
    * \brief Function, which is an interface to the actual gemm functionality.
    * \param[in]  gemm   - MKL jitted gemm kernel, if used.
+   * \param[in]  jitter - Pointer with internal data for the MKL jitted gemm kernel.
    * \param[in]  M      - First matrix dimension of A and C in the gemm call.
    * \param[in]  N      - Second matrix dimension of B and C in the gemm call.
    * \param[in]  K      - First matrix dimension of B and second matrix dimension
@@ -626,6 +627,7 @@ protected:
    * \param[out] config - Object used for the timing of the gemm call.
    */
   void OwnGemm(dgemm_jit_kernel_t            &gemm,
+               void                          *&jitter,
                const int                     M,
                const int                     N,
                const int                     K,
@@ -636,10 +638,12 @@ protected:
 
   /*!
    * \brief Function, which sets up the jitted GEMM call when MKL is used.
-   * \param[in] M - First matrix dimension of A and C in the gemm call.
-   * \param[in] N - Second matrix dimension of B and C in the gemm call.
-   * \param[in] K - First matrix dimension of B and second matrix dimension
-   *                of A in the gemm call.
+   * \param[in] M           - First matrix dimension of A and C in the gemm call.
+   * \param[in] N           - Second matrix dimension of B and C in the gemm call.
+   * \param[in] K           - First matrix dimension of B and second matrix dimension
+   *                          of A in the gemm call.
+   * \param[out] val_jitter - Pointer with internal data for the MKL jitted gemm kernel.
+   * \param[out] val_gemm   - MKL jitted gemm kernel to be created.
    */
   void SetUpJittedGEMM(const int          M,
                        const int          N,

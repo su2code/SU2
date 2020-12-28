@@ -93,7 +93,7 @@ void CFEMStandardTriGrid::CoorIntPoints(const bool                notUsed,
                                         ColMajorMatrix<su2double> &matCoorInt) {
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, lagBasisInt, matCoorDOF, matCoorInt, nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs, lagBasisInt, matCoorDOF, matCoorInt, nullptr);
 }
 
 void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                         notUsed,
@@ -101,17 +101,17 @@ void CFEMStandardTriGrid::DerivativesCoorIntPoints(const bool                   
                                                    vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisInt[0], matCoor, matDerCoor[0], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisInt[1], matCoor, matDerCoor[1], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisInt[0], matCoor, matDerCoor[0], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisInt[1], matCoor, matDerCoor[1], nullptr);
 }
 
 void CFEMStandardTriGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>          &matCoor,
                                                       vector<ColMajorMatrix<su2double> > &matDer2ndCoor) {
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, hesLagBasisInt[0], matCoor, matDer2ndCoor[0], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, hesLagBasisInt[1], matCoor, matDer2ndCoor[1], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, hesLagBasisInt[2], matCoor, matDer2ndCoor[2], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs, hesLagBasisInt[0], matCoor, matDer2ndCoor[0], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs, hesLagBasisInt[1], matCoor, matDer2ndCoor[1], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs, hesLagBasisInt[2], matCoor, matDer2ndCoor[2], nullptr);
 }
 
 void CFEMStandardTriGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
@@ -119,6 +119,6 @@ void CFEMStandardTriGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>      
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
   const unsigned short nSolDOFs = lagBasisSolDOFs.rows();
-  OwnGemm(gemmDOFs2SolDOFs, nSolDOFs, 2, nDOFs, derLagBasisSolDOFs[0], matCoor, matDerCoor[0], nullptr);
-  OwnGemm(gemmDOFs2SolDOFs, nSolDOFs, 2, nDOFs, derLagBasisSolDOFs[1], matCoor, matDerCoor[1], nullptr);
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 2, nDOFs, derLagBasisSolDOFs[0], matCoor, matDerCoor[0], nullptr);
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 2, nDOFs, derLagBasisSolDOFs[1], matCoor, matDerCoor[1], nullptr);
 }

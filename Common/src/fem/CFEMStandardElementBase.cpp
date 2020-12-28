@@ -794,6 +794,7 @@ passivedouble CFEMStandardElementBase::NormJacobi(unsigned short n,
 }
 
 void CFEMStandardElementBase::OwnGemm(dgemm_jit_kernel_t            &gemm,
+                                      void                          *&jitter,
                                       const int                     M,
                                       const int                     N,
                                       const int                     K,

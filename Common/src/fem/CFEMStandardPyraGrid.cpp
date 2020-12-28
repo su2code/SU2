@@ -80,7 +80,7 @@ CFEMStandardPyraGrid::CFEMStandardPyraGrid(const unsigned short val_nPolyGrid,
 CFEMStandardPyraGrid::~CFEMStandardPyraGrid() {
 
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
-if( jitterDOFs2Int ) {
+  if( jitterDOFs2Int ) {
     mkl_jit_destroy(jitterDOFs2Int);
     jitterDOFs2Int = nullptr;
   }
@@ -97,7 +97,7 @@ void CFEMStandardPyraGrid::CoorIntPoints(const bool                notUsed,
                                          ColMajorMatrix<su2double> &matCoorInt) {
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, lagBasisInt, matCoorDOF, matCoorInt, nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, lagBasisInt, matCoorDOF, matCoorInt, nullptr);
 }
 
 void CFEMStandardPyraGrid::DerivativesCoorIntPoints(const bool                         notUsed,
@@ -105,9 +105,9 @@ void CFEMStandardPyraGrid::DerivativesCoorIntPoints(const bool                  
                                                     vector<ColMajorMatrix<su2double> > &matDerCoor) {
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisInt[0], matCoor, matDerCoor[0], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisInt[1], matCoor, matDerCoor[1], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisInt[2], matCoor, matDerCoor[2], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisInt[0], matCoor, matDerCoor[0], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisInt[1], matCoor, matDerCoor[1], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, derLagBasisInt[2], matCoor, matDerCoor[2], nullptr);
 }
 
 void CFEMStandardPyraGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>          &matCoor,
@@ -115,12 +115,12 @@ void CFEMStandardPyraGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>
 
   /*--- Call the function OwnGemm 6 times to compute the 2nd derivatives of
         the Cartesian coordinates w.r.t. the three parametric coordinates. ---*/
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[0], matCoor, matDer2ndCoor[0], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[1], matCoor, matDer2ndCoor[1], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[2], matCoor, matDer2ndCoor[2], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[3], matCoor, matDer2ndCoor[3], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[4], matCoor, matDer2ndCoor[4], nullptr);
-  OwnGemm(gemmDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[5], matCoor, matDer2ndCoor[5], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[0], matCoor, matDer2ndCoor[0], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[1], matCoor, matDer2ndCoor[1], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[2], matCoor, matDer2ndCoor[2], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[3], matCoor, matDer2ndCoor[3], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[4], matCoor, matDer2ndCoor[4], nullptr);
+  OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 3, nDOFs, hesLagBasisInt[5], matCoor, matDer2ndCoor[5], nullptr);
 }
 
 void CFEMStandardPyraGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
@@ -128,7 +128,7 @@ void CFEMStandardPyraGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>     
 
   /*--- Call OwnGemm with the appropriate arguments to compute the data. ---*/
   const unsigned short nSolDOFs = lagBasisSolDOFs.rows();
-  OwnGemm(gemmDOFs2Int, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[0], matCoor, matDerCoor[0], nullptr);
-  OwnGemm(gemmDOFs2Int, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[1], matCoor, matDerCoor[1], nullptr);
-  OwnGemm(gemmDOFs2Int, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[2], matCoor, matDerCoor[2], nullptr);
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[0], matCoor, matDerCoor[0], nullptr);
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[1], matCoor, matDerCoor[1], nullptr);
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nSolDOFs, 3, nDOFs, derLagBasisSolDOFs[2], matCoor, matDerCoor[2], nullptr);
 }

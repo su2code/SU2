@@ -89,18 +89,18 @@ void CFEMStandardTriPartition::CoorIntPoints(const bool                LGLDistri
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function OwnGemm to compute the Cartesian
-          coordinates in the integration points. The third argument in the
+          coordinates in the integration points. The fourth argument in the
           function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, nDim, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the Cartesian
-          coordinates in the integration points. The third argument in the
+          coordinates in the integration points. The fourth argument in the
           function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, nDim, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -112,20 +112,20 @@ void CFEMStandardTriPartition::DerivativesCoorIntPoints(const bool              
   if( LGLDistribution ) {
 
     /*--- LGL distribution. Call the function OwnGemm 2 times to compute the derivatives
-          of the Cartesian coordinates w.r.t. the two parametric coordinates. The third
+          of the Cartesian coordinates w.r.t. the two parametric coordinates. The fourth
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm 2 times to compute the derivatives
-          of the Cartesian coordinates w.r.t. the two parametric coordinates. The third
+          of the Cartesian coordinates w.r.t. the two parametric coordinates. The fourth
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
   }
 }
 

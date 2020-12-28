@@ -37,8 +37,7 @@ void TensorProductVolumeIntPoints2D_5_7(const int           N,
                                         su2double           *C) {
 
   /*--- Compute the padded value of the number of integration points. ---*/
-  const size_t baseVectorLen = CFEMStandardElementBase::baseVectorLen;
-  const int MP = ((6+baseVectorLen)/baseVectorLen)*baseVectorLen;
+  const int MP = CFEMStandardElementBase::PaddedValue(7);
 
   /*--- Cast the one dimensional input arrays for the A-tensor to 2D arrays.
         Note that C++ stores multi-dimensional arrays in row major order,
@@ -49,9 +48,6 @@ void TensorProductVolumeIntPoints2D_5_7(const int           N,
 
   /*--- Define the variables to store the intermediate results. ---*/
   su2double tmpJ[5][MP];
-#if MP > 7
-  su2double tmpI[7][MP];
-#endif
 
   /*--- Outer loop over N. ---*/
   for(int l=0; l<N; ++l) {
@@ -72,34 +68,46 @@ void TensorProductVolumeIntPoints2D_5_7(const int           N,
       }
     }
 
+    /*--- Check if the padded number MP is larger than the
+          number the integration points. In this case the
+          result cannot be stored directly in c. ---*/
+    if(MP > 7) {
+
     /*--- Tensor product in i-direction to obtain the solution
           in the integration points in i-direction. This is
-          the final result of the tensor product. ---*/
-    for(int j=0; j<7; ++j) {
-#if MP > 7
-      SU2_OMP_SIMD
-      for(int i=0; i<MP; ++i) tmpI[j][i] = 0.0;
-      for(int ii=0; ii<5; ++ii) {
-        SU2_OMP_SIMD_IF_NOT_AD
-        for(int i=0; i<MP; ++i)
-          tmpI[j][i] += ai[ii][i] * tmpJ[ii][j];
-#else
-      SU2_OMP_SIMD
-      for(int i=0; i<MP; ++i) c[j][i] = 0.0;
-      for(int ii=0; ii<5; ++ii) {
-        SU2_OMP_SIMD_IF_NOT_AD
-        for(int i=0; i<MP; ++i)
-          c[j][i] += ai[ii][i] * tmpJ[ii][j];
-#endif
+          the final result of the tensor product, which is
+          in tmpI for performance reasons. ---*/
+      su2double tmpI[MP];
+      for(int j=0; j<7; ++j) {
+        SU2_OMP_SIMD
+        for(int i=0; i<MP; ++i) tmpI[i] = 0.0;
+        for(int ii=0; ii<5; ++ii) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(int i=0; i<MP; ++i)
+            tmpI[i] += ai[ii][i] * tmpJ[ii][j];
+        }
+
+        /*--- Copy the values to the appropriate location in c. ---*/
+        for(int i=0; i<7; ++i)
+          c[j][i] = tmpI[i];
       }
     }
+    else {
 
-#if MP > 7
-    /*--- Copy the values to the appropriate location in c. ---*/
-    for(int j=0; j<7; ++j)
-      for(int i=0; i<7; ++i)
-        c[j][i] = tmpI[j][i];
-#endif
+      /*--- The padded number equals the number of integration
+            points. The result of the tensor product in
+            i-direction to obtain the solution in the integration
+            points in i-direction can be stored in c directly. ---*/
+      for(int j=0; j<7; ++j) {
+        SU2_OMP_SIMD
+        for(int i=0; i<MP; ++i) c[j][i] = 0.0;
+        for(int ii=0; ii<5; ++ii) {
+          SU2_OMP_SIMD_IF_NOT_AD
+          for(int i=0; i<MP; ++i)
+            c[j][i] += ai[ii][i] * tmpJ[ii][j];
+        }
+      }
+    }
 
   } /*--- End of the loop over N. ---*/
 }

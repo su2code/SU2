@@ -79,15 +79,15 @@ void CFEMStandardLinePartition::CoorIntPoints(const bool                LGLDistr
 
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, lagBasisLineIntLGL,
-            matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            lagBasisLineIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, lagBasisLineIntEqui,
-            matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            lagBasisLineIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -100,15 +100,15 @@ void CFEMStandardLinePartition::DerivativesCoorIntPoints(const bool             
 
     /*--- LGL distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisLineIntLGL,
-            matCoor, matDerCoor[0], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            derLagBasisLineIntLGL, matCoor, matDerCoor[0], nullptr);
   }
   else {
 
     /*--- Equidistant distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    OwnGemm(gemmDOFs2Int, nIntegrationPad, 2, nDOFs, derLagBasisLineIntEqui,
-            matCoor, matDerCoor[0], nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            derLagBasisLineIntEqui, matCoor, matDerCoor[0], nullptr);
   }
 }
 
