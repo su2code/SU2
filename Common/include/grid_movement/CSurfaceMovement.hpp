@@ -211,7 +211,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
+  void SetSurface_Deformation(CGeometry *geometry, CConfig *config, su2double** totaldeformation = nullptr);
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
@@ -267,6 +267,15 @@ public:
    * \param[in] FFDBoxChild - Array with child FFDBoxes of the computation.
    */
   void GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
+
+  /*!
+   * \brief Apply the design variables to the control point position
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - Index of FFD box.
+   */
+  void ApplyDesignVariables(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, unsigned short iFFDBox);
 
   /*!
    * \brief Recompute the cartesian coordinates using the control points position.
@@ -484,4 +493,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Calculate the determinant of the Jacobian matrix for the FFD problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Free form deformation box.
+   * \return Number of points with negative Jacobian determinant.
+   */
+  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox);
 };
