@@ -325,7 +325,7 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
       for (iNodes = 0; iNodes < nNodes; iNodes ++) {
 
         /*--- Calculate minimum and maximum angle between edge vectors adjacent to each node ---*/
-        su2double edgeVector_i[nDim], edgeVector_j[nDim];
+        su2double edgeVector_i[3], edgeVector_j[3];
 
         for (iDim = 0; iDim < nDim; iDim ++) {
           if (iNodes == 0) {
@@ -385,12 +385,12 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
           const auto Coords_k = geometry->nodes->GetCoord(face_point_k);
 
           /*--- Get edge vectors from point k to i and point j to i ---*/
-          su2double edgeVector_i[nDim], edgeVector_j[nDim];
+          su2double edgeVector_i[3], edgeVector_j[3];
           GeometryToolbox::Distance(nDim, Coords_k, Coords_i, edgeVector_i);
           GeometryToolbox::Distance(nDim, Coords_j, Coords_i, edgeVector_j);
 
           /*--- Calculate cross product of edge vectors and its length---*/
-          su2double crossProduct[nDim];
+          su2double crossProduct[3];
           GeometryToolbox::CrossProduct(edgeVector_i, edgeVector_j, crossProduct);
           crossProductLength = GeometryToolbox::Norm(nDim, crossProduct);
 
