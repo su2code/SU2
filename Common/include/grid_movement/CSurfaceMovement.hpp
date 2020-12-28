@@ -210,8 +210,9 @@ public:
    * \brief Set the surface/boundary deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config, su2double** totaldeformation = nullptr);
+  vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
@@ -501,5 +502,5 @@ public:
    * \param[in] FFDBox - Free form deformation box.
    * \return Number of points with negative Jacobian determinant.
    */
-  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox);
+  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox) const;
 };

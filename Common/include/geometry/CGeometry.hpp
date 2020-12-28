@@ -1710,6 +1710,6 @@ public:
    * \brief Get the amount of nonconvex elements in the mesh.
    * \param[out] nNonconvexElements- amount of nonconvex elements in the mesh
    */
-  unsigned long GetnNonconvexElements(void) {return nNonconvexElements;}
+  unsigned long GetnNonconvexElements() const {return nNonconvexElements;}
 };
 
