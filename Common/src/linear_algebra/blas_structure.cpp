@@ -26,8 +26,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/CConfig.hpp"
-#include "../include/blas_structure.hpp"
+#include "../../include/CConfig.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 #include <cstring>
 
 /* MKL or BLAS, if supported. */

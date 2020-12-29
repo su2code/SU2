@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/mpi_structure.hpp"
+#include "mpi_structure.hpp"
 
 int CBaseMPIWrapper::Rank = 0;
 int CBaseMPIWrapper::Size = 1;

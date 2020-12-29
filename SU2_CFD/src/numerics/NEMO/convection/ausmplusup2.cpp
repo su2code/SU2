@@ -1,7 +1,7 @@
 /*!
  * \file ausmplusup2.cpp
  * \brief Implementations of the AUSM-family of schemes - AUSM+UP2.
- * \author Walter Maier, A. Sachedeva, C. Garbacz
+ * \author W. Maier, A. Sachedeva, C. Garbacz
  * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/ausmplusup2.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwAUSMPLUSUP2_NEMO::CUpwAUSMPLUSUP2_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                                            unsigned short val_nPrimVar,
@@ -109,17 +110,13 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi, sq_veli, sq_velj;
 
   /*--- Face area ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*-- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   Minf  = config->GetMach();
-  Gamma = config->GetGamma();
 
   /*--- Extracting primitive variables ---*/
   // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
@@ -130,22 +127,25 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
 
   sq_veli = 0.0; sq_velj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    u_i[iDim] = V_i[VEL_INDEX+iDim];
-    u_j[iDim] = V_j[VEL_INDEX+iDim];
+    u_i[iDim]  = V_i[VEL_INDEX+iDim];
+    u_j[iDim]  = V_j[VEL_INDEX+iDim];
     sq_veli   += u_i[iDim]*u_i[iDim];
     sq_velj   += u_j[iDim]*u_j[iDim];
   }
 
-  P_i       = V_i[P_INDEX];
-  P_j       = V_j[P_INDEX];
-  h_i       = V_i[H_INDEX];
-  h_j       = V_j[H_INDEX];
-  a_i       = V_i[A_INDEX];
-  a_j       = V_j[A_INDEX];
-  rho_i     = V_i[RHO_INDEX];
-  rho_j     = V_j[RHO_INDEX];
-  e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
-  e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
+  P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
+  h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
+  a_i   = V_i[A_INDEX];   a_j   = V_j[A_INDEX];
+  rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
+  
+  rhoCvtr_i = V_i[RHOCVTR_INDEX]; rhoCvtr_j = V_j[RHOCVTR_INDEX];
+  rhoCvve_i = V_i[RHOCVVE_INDEX]; rhoCvve_j = V_j[RHOCVVE_INDEX];
+
+  e_ve_i = 0; e_ve_j = 0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
+    e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
+  }
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -155,8 +155,8 @@ CNumerics::ResidualType<> CUpwAUSMPLUSUP2_NEMO::ComputeResidual(const CConfig *c
   }
 
   /*--- Compute C*  ---*/
-  CstarL = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*h_i);
-  CstarR = sqrt(2.0*(Gamma-1.0)/(Gamma+1.0)*h_j);
+  CstarL = sqrt(2.0*(Gamma_i-1.0)/(Gamma_i+1.0)*h_i);
+  CstarR = sqrt(2.0*(Gamma_j-1.0)/(Gamma_j+1.0)*h_j);
 
   /*--- Compute C^ ---*/
   ChatL = CstarL*CstarL/max(CstarL,ProjVel_i);
