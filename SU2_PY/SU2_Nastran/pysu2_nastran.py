@@ -29,7 +29,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os, shutil, copy
 import numpy as np
 import scipy as sp
 import scipy.linalg as linalg
@@ -60,7 +60,7 @@ class ImposedMotionFunction:
                 self.omega0 = 1/2*self.kmax
                 break
             if case():
-                sys.exit('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
+                raise Exception('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
                 break
 
 
@@ -359,7 +359,7 @@ class Solver:
             break
 
           if case():
-            sys.exit('{} is an invalid option !'.format(this_param))
+            raise Exception('{} is an invalid option !'.format(this_param))
             break
 
 
@@ -403,7 +403,7 @@ class Solver:
                 if self.refsystems[iRefSys].GetCID()==CP:
                   break
               if self.refsystems[iRefSys].GetCID()!=CP:
-                sys.exit('Definition reference {} system not found'.format(CP))
+                raise Exception('Definition reference {} system not found'.format(CP))
               DeltaPos = self.refsystems[iRefSys].GetOrigin()
               RotatedPos = self.refsystems[iRefSys].GetRotMatrix().dot(np.array([[x],[y],[z]]))
               x = RotatedPos[0]+DeltaPos[0]
@@ -428,8 +428,7 @@ class Solver:
             self.refsystems[self.nRefSys].SetCID(CID)
             RID = int(line[16:24])
             if RID!=0:
-              print('ERROR: Reference system {} must be defined with respect to global reference system'.format(CID))
-              sys.exit()
+              raise Exception('ERROR: Reference system {} must be defined with respect to global reference system'.format(CID))
             self.refsystems[self.nRefSys].SetRID(RID)
             AX = nastran_float(line[24:32])
             AY = nastran_float(line[32:40])
@@ -541,7 +540,7 @@ class Solver:
                   if self.refsystems[iRefSys].GetCID()==self.node[iPoint].GetCD():
                     break
                 if self.refsystems[iRefSys].GetCID()!=self.node[iPoint].GetCD():
-                  sys.exit('Output reference {} system not found'.format(self.node[iPoint].GetCD()))
+                  raise Exception('Output reference {} system not found'.format(self.node[iPoint].GetCD()))
                 RotatedOutput = self.refsystems[iRefSys].GetRotMatrix().dot(np.array([[ux],[uy],[uz]]))
                 ux = RotatedOutput[0]
                 uy = RotatedOutput[1]
@@ -564,8 +563,7 @@ class Solver:
     self.UzT = self.Uz.transpose()
 
     if n<self.nDof:
-        print('ERROR: available {} degrees of freedom instead of {} as requested'.format(n,self.nDof))
-        sys.exit()
+        raise Exception('ERROR: available {} degrees of freedom instead of {} as requested'.format(n,self.nDof))
     else:
         print('Using {} degrees of freedom'.format(n))
 
@@ -585,9 +583,9 @@ class Solver:
     elif (not K_updated) and (not M_updated):
       print('Modal stiffness and mass matrices are diagonal')
     elif (not K_updated) and M_updated:
-      sys.exit('Non-Diagonal stiffness matrix is missing')
+      raise Exception('Non-Diagonal stiffness matrix is missing')
     elif (not M_updated) and K_updated:
-      sys.exit('Non-Diagonal mass matrix is missing')
+      raise Exception('Non-Diagonal mass matrix is missing')
 
   def __readNonDiagonalMatrix(self,keyword):
     """
