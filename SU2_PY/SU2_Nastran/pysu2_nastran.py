@@ -251,7 +251,8 @@ class Solver:
     self.Config_file = config_fileName
     self.Config = {}
 
-    print("\n---------- Configuring the structural tester solver for FSI simulation ----------")
+    print("\n")
+    print(" Configuring the structural tester solver for FSI simulation ".center(80,"-"))
     self.__readConfig()
 
     self.Mesh_file = self.Config['MESH_FILE']
@@ -286,13 +287,16 @@ class Solver:
     self.ImposedMotionToSet = True
     self.ImposedMotionFunction = []
 
-    print("\n------------------------------- Reading the mesh -------------------------------")
+    print("\n")
+    print(" Reading the mesh ".center(80,"-"))
     self.__readNastranMesh()
 
-    print("\n------------------------- Creating the structural model ------------------------")
+    print("\n")
+    print(" Creating the structural model ".center(80,"-"))
     self.__setStructuralMatrices()
 
-    print("\n---------------------- Setting the integration parameters ----------------------")
+    print("\n")
+    print(" Setting the integration parameters ".center(80,"-"))
     self.__setIntegrationParameters()
     self.__setInitialConditions()
 

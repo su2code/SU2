@@ -1956,7 +1956,8 @@ class Interface:
 
                 if TimeIter > TimeIterTreshold:
                   NbFSIIter = NbFSIIterMax
-                  self.MPIPrint('\n*************** Enter Block Gauss Seidel (BGS) method for strong coupling FSI on time iteration {} ***************'.format(TimeIter))
+                  self.MPIPrint("\n")
+                  self.MPIPrint(" Enter Block Gauss Seidel (BGS) method for strong coupling FSI on time iteration {} ".format(TimeIter).center(80,"*"))
                 else:
                   NbFSIIter = 1
 
@@ -2069,7 +2070,8 @@ class Interface:
           self.MPIPrint('\n********************************')
           self.MPIPrint('* Begin steady FSI computation *')
           self.MPIPrint('********************************\n')
-          self.MPIPrint('\n*************** Enter Block Gauss Seidel (BGS) method for strong coupling FSI ***************')
+          self.MPIPrint("\n")
+          self.MPIPrint(" Enter Block Gauss Seidel (BGS) method for strong coupling FSI ".center(80,"*"))
 
           self.MPIPrint('Setting initial deformed mesh')
           if myid in self.solidSolverProcessors:
