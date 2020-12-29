@@ -321,7 +321,6 @@ CNumerics::ResidualType<> CCentPB_Flow::ComputeResidual(const CConfig *config) {
 CAvgGradPBInc_Flow::CAvgGradPBInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  energy   = config->GetEnergy_Equation();
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
@@ -440,7 +439,6 @@ CNumerics::ResidualType<> CAvgGradPBInc_Flow::ComputeResidual(const CConfig *con
 CAvgGradCorrectedPBInc_Flow::CAvgGradCorrectedPBInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  energy   = config->GetEnergy_Equation();
 
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
@@ -487,11 +485,8 @@ CAvgGradCorrectedPBInc_Flow::~CAvgGradCorrectedPBInc_Flow(void) {
 
 CNumerics::ResidualType<> CAvgGradCorrectedPBInc_Flow::ComputeResidual(const CConfig *config) {
 
- su2double  Mean_GradVar_Edge[5], GradEdge[5];
- su2double  Mean_GradVar_Face[5][3], Mean_GradVar[5][3];
  unsigned short nPrimVarGrad = nDim+2, nPrimVar = nDim+4;
- 
- 
+
  /*--- Normalized normal vector ---*/
 
   Area = 0.0;
@@ -528,41 +523,13 @@ CNumerics::ResidualType<> CAvgGradCorrectedPBInc_Flow::ComputeResidual(const CCo
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
-  
-  /*--- Correct the face gradient for odd-even decoupling ---*/
-  /*--- Steps are 
-   * 1. Interpolate the gradient at the face -> du/ds|_in
-   * 2. Find the projection of the interpolated gradient on the edge vector -> (du/ds|_in) . e
-   * 3. Find the gradient as the difference between the neighboring nodes -> (u_j - u_i)/ds
-   * 4. Correct the gradient at the face using du/ds = du/ds|_in + ( (u_j - u_i)/ds - (du/ds|_in . e) ) . e ---*/
-  
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-	  Mean_GradVar_Edge[iVar] = 0.0;	  
-	  
-	  GradEdge[iVar] = (PrimVar_j[iVar] - PrimVar_i[iVar])/sqrt(dist_ij_2);
-	  
-	  for (iDim = 0; iDim < nDim; iDim++) {
-		  Mean_GradVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);  
-		  
-		  Mean_GradVar_Edge[iVar] += Mean_GradVar[iVar][iDim]*Edge_Vector[iDim]/sqrt(dist_ij_2);
-       }
-   }
-   
-   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-	   for (iDim = 0; iDim < nDim; iDim++) {
-		   Mean_GradVar_Face[iVar][iDim] = Mean_GradVar[iVar][iDim] + 
-                                        (GradEdge[iVar] - Mean_GradVar_Edge[iVar])*Edge_Vector[iDim]/sqrt(dist_ij_2); 
-       }
-   }
-  
-  
+
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar+1][iDim] + PrimVar_Grad_j[iVar+1][iDim]);
-      //Mean_GradPrimVar[iVar][iDim] = Mean_GradVar_Face[iVar+1][iDim];
       Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
     }
     if (dist_ij_2 != 0.0) {

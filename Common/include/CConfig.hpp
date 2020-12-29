@@ -222,6 +222,7 @@ private:
   nMarker_Load_Sine,              /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_FlowLoad,               /*!< \brief Number of load surface markers. */
   nMarker_Internal,               /*!< \brief Number of internal flow markers. */
+  nMarker_Empty,                  /*!< \brief Number of empty flow markers. */
   nMarker_All,                    /*!< \brief Total number of markers using the grid information. */
   nMarker_Max,                    /*!< \brief Max number of number of markers using the grid information. */
   nMarker_CfgFile;                /*!< \brief Total number of markers using the config file (note that in
@@ -270,6 +271,7 @@ private:
   *Marker_Load_Sine,              /*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
   *Marker_FlowLoad,               /*!< \brief Flow Load markers. */
   *Marker_Internal,               /*!< \brief Internal flow markers. */
+  *Marker_Empty,                  /*!< \brief Empty markers. */
   *Marker_All_TagBound;           /*!< \brief Global index for markers using grid information. */
 
   su2double *Exhaust_Temperature_Target;     /*!< \brief Specified total temperatures for nacelle boundaries. */

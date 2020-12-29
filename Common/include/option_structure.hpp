@@ -1199,6 +1199,7 @@ enum BC_TYPE {
   FLUID_INTERFACE = 39,       /*!< \brief Domain interface definition. */
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
+  EMPTY_BOUNDARY = 42,        /*!< \brief Empty boundary for dummy faces. */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */

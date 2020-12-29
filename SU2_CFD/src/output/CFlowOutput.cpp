@@ -1441,43 +1441,39 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
     /*--- Compressible version of console output ---*/
 
     if (compressible) {
-
-
-    if (compressible) {
       Breakdown_file << "Mach number: " << config->GetMach() <<"."<< "\n";
       Breakdown_file << "Angle of attack (AoA): " << config->GetAoA() <<" deg, and angle of sideslip (AoS): " << config->GetAoS() <<" deg."<< "\n";
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == INC_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == INC_RANS))
         Breakdown_file << "Reynolds number: " << config->GetReynolds() <<"."<< "\n";
-    }
 
-    if (fixed_cl) {
-      Breakdown_file << "Simulation at a cte. CL: " << config->GetTarget_CL() << ".\n";
-      Breakdown_file << "Approx. Delta CL / Delta AoA: " << config->GetdCL_dAlpha() << " (1/deg).\n";
-      Breakdown_file << "Approx. Delta CD / Delta CL: " << config->GetdCD_dCL() << ".\n";
-      if (nDim == 3 ) {
-        Breakdown_file << "Approx. Delta CMx / Delta CL: " << config->GetdCMx_dCL() << ".\n";
-        Breakdown_file << "Approx. Delta CMy / Delta CL: " << config->GetdCMy_dCL() << ".\n";
+
+      if (fixed_cl) {
+        Breakdown_file << "Simulation at a cte. CL: " << config->GetTarget_CL() << ".\n";
+        Breakdown_file << "Approx. Delta CL / Delta AoA: " << config->GetdCL_dAlpha() << " (1/deg).\n";
+        Breakdown_file << "Approx. Delta CD / Delta CL: " << config->GetdCD_dCL() << ".\n";
+        if (nDim == 3 ) {
+          Breakdown_file << "Approx. Delta CMx / Delta CL: " << config->GetdCMx_dCL() << ".\n";
+          Breakdown_file << "Approx. Delta CMy / Delta CL: " << config->GetdCMy_dCL() << ".\n";
+        }
+        Breakdown_file << "Approx. Delta CMz / Delta CL: " << config->GetdCMz_dCL() << ".\n";
       }
-      Breakdown_file << "Approx. Delta CMz / Delta CL: " << config->GetdCMz_dCL() << ".\n";
-    }
 
-    if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
-    else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { Breakdown_file << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
-    else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+      if (Ref_NonDim == DIMENSIONAL) { Breakdown_file << "Dimensional simulation." << "\n"; }
+      else if (Ref_NonDim == FREESTREAM_PRESS_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (P=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+      else if (Ref_NonDim == FREESTREAM_VEL_EQ_MACH) { Breakdown_file << "Non-Dimensional simulation (V=Mach, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
+      else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { Breakdown_file << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << "\n"; }
 
-    if (config->GetSystemMeasurements() == SI) {
-      Breakdown_file << "The reference area is " << config->GetRefArea() << " m^2." << "\n";
-      Breakdown_file << "The reference length is " << config->GetRefLength() << " m." << "\n";
-    }
+      if (config->GetSystemMeasurements() == SI) {
+        Breakdown_file << "The reference area is " << config->GetRefArea() << " m^2." << "\n";
+        Breakdown_file << "The reference length is " << config->GetRefLength() << " m." << "\n";
+      }
 
-    if (config->GetSystemMeasurements() == US) {
-      Breakdown_file << "The reference area is " << config->GetRefArea()*12.0*12.0 << " in^2." << "\n";
-      Breakdown_file << "The reference length is " << config->GetRefLength()*12.0 << " in." << "\n";
-    }
-    Breakdown_file << "\n" << "\n" <<"Problem definition:" << "\n" << "\n";
-    if (compressible) {
+      if (config->GetSystemMeasurements() == US) {
+        Breakdown_file << "The reference area is " << config->GetRefArea()*12.0*12.0 << " in^2." << "\n";
+        Breakdown_file << "The reference length is " << config->GetRefLength()*12.0 << " in." << "\n";
+      }
+      Breakdown_file << "\n" << "\n" <<"Problem definition:" << "\n" << "\n";
       if (viscous) {
         Breakdown_file << "Viscous flow: Computing pressure using the ideal gas law" << "\n";
         Breakdown_file << "based on the free-stream temperature and a density computed" << "\n";
@@ -1486,12 +1482,11 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file << "Inviscid flow: Computing density based on free-stream" << "\n";
         Breakdown_file << "temperature and pressure using the ideal gas law." << "\n";
       }
-    }
 
-    if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
-    else Breakdown_file << "Force coefficients computed using free-stream values." << "\n";
+      if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+      else Breakdown_file << "Force coefficients computed using free-stream values." << "\n";
 
-    if (incompressible) {
+    /*if (incompressible) {
       Breakdown_file << "Viscous and Inviscid flow: rho_ref, and vel_ref" << "\n";
       Breakdown_file << "are based on the free-stream values, p_ref = rho_ref*vel_ref^2." << "\n";
       Breakdown_file << "The free-stream value of the pressure is 0." << "\n";
@@ -1500,11 +1495,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the the free-stream velocity." << "\n";
       if (viscous) Breakdown_file << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<< "\n";
       Breakdown_file << "Only dimensional computation, the grid should be dimensional." << "\n";
-    }
+    }*/
 
-    Breakdown_file <<"-- Input conditions:"<< "\n";
+      Breakdown_file <<"-- Input conditions:"<< "\n";
 
-    if (compressible) {
       switch (config->GetKind_FluidModel()) {
 
         case STANDARD_AIR:
@@ -1590,7 +1584,7 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
         }
 
-        if ((Kind_Solver == RANS) || (Kind_Solver == INC_RANS)) {
+        if (Kind_Solver == RANS) {
           switch (config->GetKind_ConductivityModel_Turb()) {
             case CONSTANT_PRANDTL_TURB:
               Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
@@ -1602,28 +1596,26 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
               break;
           }
         }
-
       }
-    }
 
-    if (incompressible) {
-      Breakdown_file << "Bulk modulus: " << config->GetBulk_Modulus();
+
+      /*if (incompressible) {
+        Breakdown_file << "Bulk modulus: " << config->GetBulk_Modulus();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+        Breakdown_file << "Epsilon^2 multiplier of Beta for incompressible preconditioner: " << config->GetBeta_Factor();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+      }*/
+
+      Breakdown_file << "Free-stream static pressure: " << config->GetPressure_FreeStream();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-      Breakdown_file << "Epsilon^2 multiplier of Beta for incompressible preconditioner: " << config->GetBeta_Factor();
+
+      Breakdown_file << "Free-stream total pressure: " << config->GetPressure_FreeStream() * pow( 1.0+config->GetMach()*config->GetMach()*0.5*(config->GetGamma()-1.0), config->GetGamma()/(config->GetGamma()-1.0) );
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-    }
 
-    Breakdown_file << "Free-stream static pressure: " << config->GetPressure_FreeStream();
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-
-    Breakdown_file << "Free-stream total pressure: " << config->GetPressure_FreeStream() * pow( 1.0+config->GetMach()*config->GetMach()*0.5*(config->GetGamma()-1.0), config->GetGamma()/(config->GetGamma()-1.0) );
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-
-    if (compressible) {
       Breakdown_file << "Free-stream temperature: " << config->GetTemperature_FreeStream();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
@@ -1631,390 +1623,17 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "Free-stream total temperature: " << config->GetTemperature_FreeStream() * (1.0 + config->GetMach() * config->GetMach() * 0.5 * (config->GetGamma() - 1.0));
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-    }
 
-    Breakdown_file << "Free-stream density: " << config->GetDensity_FreeStream();
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
-
-    if (nDim == 2) {
-      Breakdown_file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      Breakdown_file << config->GetVelocity_FreeStream()[1] << ")";
-    }
-    if (nDim == 3) {
-      Breakdown_file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      Breakdown_file << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
-    }
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s. ";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s. ";
-
-    Breakdown_file << "Magnitude: "  << config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
-
-    if (compressible) {
-      Breakdown_file << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
-    }
-
-    if (viscous) {
-      Breakdown_file << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-      if (turbulent) {
-        Breakdown_file << "Free-stream turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
-        Breakdown_file << "Free-stream specific dissipation: " << config->GetOmega_FreeStream();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " 1/s." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " 1/s." << "\n";
-      }
-    }
-
-    if (unsteady) { Breakdown_file << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << "\n"; }
-
-    /*--- Print out reference values. ---*/
-
-    Breakdown_file <<"-- Reference values:"<< "\n";
-
-    if (compressible) {
-      Breakdown_file << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
-    }
-
-    Breakdown_file << "Reference pressure: " << config->GetPressure_Ref();
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-
-    if (compressible) {
-      Breakdown_file << "Reference temperature: " << config->GetTemperature_Ref();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-    }
-
-    Breakdown_file << "Reference density: " << config->GetDensity_Ref();
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
-
-    Breakdown_file << "Reference velocity: " << config->GetVelocity_Ref();
-    if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
-    else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
-
-    if (compressible) {
-      Breakdown_file << "Reference energy per unit mass: " << config->GetEnergy_Ref();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
-    }
-
-    if (incompressible) {
-      Breakdown_file << "Reference length: " << config->GetLength_Ref();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
-    }
-
-    if (viscous) {
-      Breakdown_file << "Reference viscosity: " << config->GetViscosity_Ref();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-      if (compressible){
-        Breakdown_file << "Reference conductivity: " << config->GetConductivity_Ref();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
-      }
-    }
-
-
-    if (unsteady) Breakdown_file << "Reference time: " << config->GetTime_Ref() <<" s." << "\n";
-
-    /*--- Print out resulting non-dim values here. ---*/
-
-    Breakdown_file << "-- Resulting non-dimensional state:" << "\n";
-    Breakdown_file << "Mach number (non-dim): " << config->GetMach() << "\n";
-    if (viscous) {
-      Breakdown_file << "Reynolds number (non-dim): " << config->GetReynolds() <<". Re length: " << config->GetLength_Reynolds();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft." << "\n";
-    }
-    if (gravity) {
-      Breakdown_file << "Froude number (non-dim): " << config->GetFroude() << "\n";
-      Breakdown_file << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*config->GetFroude()*config->GetFroude() << "\n";
-    }
-
-    if (compressible) {
-      Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
-      Breakdown_file << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << "\n";
-    }
-
-    Breakdown_file << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
-
-    Breakdown_file << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
-
-    if (nDim == 2) {
-      Breakdown_file << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      Breakdown_file << config->GetVelocity_FreeStreamND()[1] << "). ";
-    } else {
-      Breakdown_file << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      Breakdown_file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
-    }
-    Breakdown_file << "Magnitude: "   << config->GetModVel_FreeStreamND() << "\n";
-
-    if (compressible)
-      Breakdown_file << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << "\n";
-
-    if (viscous) {
-      Breakdown_file << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
-      if (turbulent) {
-        Breakdown_file << "Free-stream turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << "\n";
-        Breakdown_file << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << "\n";
-      }
-    }
-
-    if (unsteady) {
-      Breakdown_file << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << "\n";
-      Breakdown_file << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << "\n";
-    }
-
-    } else {
-
-    /*--- Incompressible version of the console output ---*/
-
-      bool energy     = config->GetEnergy_Equation();
-      bool boussinesq = (config->GetKind_DensityModel() == BOUSSINESQ);
-
-      if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
-        Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
-        Breakdown_file << "are set to 1.0 in order to perform a dimensional calculation." << "\n";
-        if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
-        else Breakdown_file << "Force coefficients computed using initial values." << "\n";
-      }
-      else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
-        Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
-        Breakdown_file << "are based on the initial values, p_ref = rho_ref*vel_ref^2." << "\n";
-        if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
-        else Breakdown_file << "Force coefficients computed using initial values." << "\n";
-      }
-      else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-        Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
-        Breakdown_file << "are user-provided reference values, p_ref = rho_ref*vel_ref^2." << "\n";
-        if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
-        else Breakdown_file << "Force coefficients computed using reference values." << "\n";
-      }
-      Breakdown_file << "The reference area for force coeffs. is " << config->GetRefArea() << " m^2." << "\n";
-      Breakdown_file << "The reference length for force coeffs. is " << config->GetRefLength() << " m." << "\n";
-
-      Breakdown_file << "The pressure is decomposed into thermodynamic and dynamic components." << "\n";
-      Breakdown_file << "The initial value of the dynamic pressure is 0." << "\n";
-
-      Breakdown_file << "Mach number: "<< config->GetMach();
-      if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
-        Breakdown_file << ", computed using the Bulk modulus." << "\n";
-      } else {
-        Breakdown_file << ", computed using fluid speed of sound." << "\n";
-      }
-
-      Breakdown_file << "For external flows, the initial state is imposed at the far-field." << "\n";
-      Breakdown_file << "Angle of attack (deg): "<< config->GetAoA() << ", computed using the initial velocity." << "\n";
-      Breakdown_file << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the initial velocity." << "\n";
-
-      if (viscous) {
-        Breakdown_file << "Reynolds number per meter: " << config->GetReynolds() << ", computed using initial values."<< "\n";
-        Breakdown_file << "Reynolds number is a byproduct of inputs only (not used internally)." << "\n";
-      }
-      Breakdown_file << "SI units only. The grid should be dimensional (meters)." << "\n";
-
-      switch (config->GetKind_DensityModel()) {
-
-        case CONSTANT:
-          if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
-          else Breakdown_file << "No energy equation." << "\n";
-          break;
-
-        case BOUSSINESQ:
-          if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
-          break;
-
-        case VARIABLE:
-          if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
-          break;
-
-      }
-
-      Breakdown_file <<"-- Input conditions:"<< "\n";
-
-      switch (config->GetKind_FluidModel()) {
-
-        case CONSTANT_DENSITY:
-          Breakdown_file << "Fluid Model: CONSTANT_DENSITY "<< "\n";
-          if (energy) {
-            Breakdown_file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << "\n";
-          }
-          if (boussinesq) Breakdown_file << "Thermal expansion coefficient: " << config->GetThermal_Expansion_Coeff() << " K^-1." << "\n";
-          Breakdown_file << "Thermodynamic pressure not required." << "\n";
-          break;
-
-        case INC_IDEAL_GAS:
-          Breakdown_file << "Fluid Model: INC_IDEAL_GAS "<< endl;
-          Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
-          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-          Breakdown_file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-          Breakdown_file << "Molecular weight : "<< config->GetMolecular_Weight() << " g/mol" << endl;
-          Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-          Breakdown_file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-          if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
-          else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
-          break;
-
-        case INC_IDEAL_GAS_POLY:
-          Breakdown_file << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
-          Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
-          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-          Breakdown_file << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol." << endl;
-          Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-          Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
-          Breakdown_file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-          if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
-          else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
-          Breakdown_file << "Cp(T) polynomial coefficients: \n  (";
-          for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-            Breakdown_file << config->GetCp_PolyCoeff(iVar);
-            if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
-          }
-          Breakdown_file << ")." << endl;
-          Breakdown_file << "Cp(T) polynomial coefficients (non-dim.): \n  (";
-          for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-            Breakdown_file << config->GetCp_PolyCoeffND(iVar);
-            if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
-          }
-          Breakdown_file << ")." << endl;
-          break;
-
-      }
-      if (viscous) {
-        switch (config->GetKind_ViscosityModel()) {
-
-          case CONSTANT_VISCOSITY:
-            Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
-            Breakdown_file << "Constant Laminar Viscosity: " << config->GetMu_Constant();
-            if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
-            else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-            Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
-            break;
-
-          case SUTHERLAND:
-            Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
-            Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
-            if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
-            else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-            Breakdown_file << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
-            if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
-            else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-            Breakdown_file << "Sutherland Constant: "<< config->GetMu_S();
-            if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
-            else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-            Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
-            Breakdown_file << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< "\n";
-            Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
-            break;
-
-          case POLYNOMIAL_VISCOSITY:
-            Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
-            Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
-            for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-              Breakdown_file << config->GetMu_PolyCoeff(iVar);
-              if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
-            }
-            Breakdown_file << ")." << endl;
-            Breakdown_file << "Mu(T) polynomial coefficients (non-dim.): \n  (";
-            for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-              Breakdown_file << config->GetMu_PolyCoeffND(iVar);
-              if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
-            }
-            Breakdown_file << ")." << endl;
-            break;
-
-        }
-
-        if (energy) {
-          switch (config->GetKind_ConductivityModel()) {
-
-            case CONSTANT_PRANDTL:
-              Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
-              Breakdown_file << "Prandtl (Laminar): " << config->GetPrandtl_Lam()<< "\n";
-              break;
-
-            case CONSTANT_CONDUCTIVITY:
-              Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
-              Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
-              Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
-              break;
-
-            case POLYNOMIAL_CONDUCTIVITY:
-              Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
-              Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
-              for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-                Breakdown_file << config->GetKt_PolyCoeff(iVar);
-                if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
-              }
-              Breakdown_file << ")." << endl;
-              Breakdown_file << "Kt(T) polynomial coefficients (non-dim.): \n  (";
-              for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-                Breakdown_file << config->GetKt_PolyCoeffND(iVar);
-                if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
-              }
-              Breakdown_file << ")." << endl;
-              break;
-
-          }
-
-          if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
-            switch (config->GetKind_ConductivityModel_Turb()) {
-              case CONSTANT_PRANDTL_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
-                Breakdown_file << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
-                break;
-              case NO_CONDUCTIVITY_TURB:
-                Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
-                Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
-                break;
-            }
-          }
-
-        }
-
-      }
-
-      if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
-        Breakdown_file << "Bulk modulus: " << config->GetBulk_Modulus();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-      }
-
-      Breakdown_file << "Initial dynamic pressure: " << config->GetPressure_FreeStream();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-
-      Breakdown_file << "Initial total pressure: " << config->GetPressure_FreeStream() + 0.5*config->GetDensity_FreeStream()*config->GetModVel_FreeStream()*config->GetModVel_FreeStream();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-
-      if (energy) {
-        Breakdown_file << "Initial temperature: " << config->GetTemperature_FreeStream();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-      }
-
-      Breakdown_file << "Initial density: " << config->GetDensity_FreeStream();
+      Breakdown_file << "Free-stream density: " << config->GetDensity_FreeStream();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
 
       if (nDim == 2) {
-        Breakdown_file << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
+        Breakdown_file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
         Breakdown_file << config->GetVelocity_FreeStream()[1] << ")";
       }
       if (nDim == 3) {
-        Breakdown_file << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
+        Breakdown_file << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
         Breakdown_file << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
       }
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s. ";
@@ -2024,15 +1643,19 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
 
+      Breakdown_file << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
+      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
+      else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
+
       if (viscous) {
-        Breakdown_file << "Initial laminar viscosity: " << config->GetViscosity_FreeStream();
+        Breakdown_file << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
         if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
         else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
         if (turbulent) {
-          Breakdown_file << "Initial turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
+          Breakdown_file << "Free-stream turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
           if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
           else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
-          Breakdown_file << "Initial specific dissipation: " << config->GetOmega_FreeStream();
+          Breakdown_file << "Free-stream specific dissipation: " << config->GetOmega_FreeStream();
           if (config->GetSystemMeasurements() == SI) Breakdown_file << " 1/s." << "\n";
           else if (config->GetSystemMeasurements() == US) Breakdown_file << " 1/s." << "\n";
         }
@@ -2044,27 +1667,17 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
       Breakdown_file <<"-- Reference values:"<< "\n";
 
-      if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-        Breakdown_file << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
-      } else {
-        if (energy) {
-          Breakdown_file << "Reference specific heat: " << config->GetGas_Constant_Ref();
-          if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
-          else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
-        }
-      }
+      Breakdown_file << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
+      if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
+      else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
 
       Breakdown_file << "Reference pressure: " << config->GetPressure_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
 
-      if (energy) {
-        Breakdown_file << "Reference temperature: " << config->GetTemperature_Ref();
-        if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
-        else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
-      }
+      Breakdown_file << "Reference temperature: " << config->GetTemperature_Ref();
+      if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+      else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
 
       Breakdown_file << "Reference density: " << config->GetDensity_Ref();
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
@@ -2074,14 +1687,25 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
       else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
 
-      Breakdown_file << "Reference length: " << config->GetLength_Ref();
-      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
-      else if (config->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
+      Breakdown_file << "Reference energy per unit mass: " << config->GetEnergy_Ref();
+      if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
+      else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
+
+      /*if (incompressible) {
+        Breakdown_file << "Reference length: " << config->GetLength_Ref();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
+      }*/
 
       if (viscous) {
         Breakdown_file << "Reference viscosity: " << config->GetViscosity_Ref();
         if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
         else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+        if (compressible){
+          Breakdown_file << "Reference conductivity: " << config->GetConductivity_Ref();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
+        }
       }
 
       if (unsteady) Breakdown_file << "Reference time: " << config->GetTime_Ref() <<" s." << "\n";
@@ -2091,37 +1715,38 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
       Breakdown_file << "-- Resulting non-dimensional state:" << "\n";
       Breakdown_file << "Mach number (non-dim): " << config->GetMach() << "\n";
       if (viscous) {
-        Breakdown_file << "Reynolds number (per m): " << config->GetReynolds() << "\n";
+        Breakdown_file << "Reynolds number (non-dim): " << config->GetReynolds() <<". Re length: " << config->GetLength_Reynolds();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft." << "\n";
+      }
+      if (gravity) {
+        Breakdown_file << "Froude number (non-dim): " << config->GetFroude() << "\n";
+        Breakdown_file << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*config->GetFroude()*config->GetFroude() << "\n";
       }
 
-      if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-        Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
-        Breakdown_file << "Initial thermodynamic pressure (non-dim): " << config->GetPressure_ThermodynamicND() << "\n";
-      } else {
-        if (energy) {
-          Breakdown_file << "Specific heat at constant pressure (non-dim): " << config->GetSpecific_Heat_CpND() << "\n";
-          if (boussinesq) Breakdown_file << "Thermal expansion coefficient (non-dim.): " << config->GetThermal_Expansion_CoeffND() << " K^-1." << "\n";
-        }
-      }
+      Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
+      Breakdown_file << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << "\n";
 
-      if (energy) Breakdown_file << "Initial temperature (non-dim): " << config->GetTemperature_FreeStreamND() << "\n";
-      Breakdown_file << "Initial pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
-      Breakdown_file << "Initial density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
+      Breakdown_file << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
+
+      Breakdown_file << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
 
       if (nDim == 2) {
-        Breakdown_file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
+        Breakdown_file << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
         Breakdown_file << config->GetVelocity_FreeStreamND()[1] << "). ";
       } else {
-        Breakdown_file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
+        Breakdown_file << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
         Breakdown_file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
       }
       Breakdown_file << "Magnitude: "   << config->GetModVel_FreeStreamND() << "\n";
 
+      Breakdown_file << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << "\n";
+
       if (viscous) {
-        Breakdown_file << "Initial viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
+        Breakdown_file << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
         if (turbulent) {
-          Breakdown_file << "Initial turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << "\n";
-          Breakdown_file << "Initial specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << "\n";
+          Breakdown_file << "Free-stream turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << "\n";
+          Breakdown_file << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << "\n";
         }
       }
 
@@ -2130,7 +1755,358 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
         Breakdown_file << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << "\n";
       }
 
-    }
+      } else {
+
+        /*--- Incompressible version of the console output ---*/
+
+        bool energy     = config->GetEnergy_Equation();
+        bool boussinesq = (config->GetKind_DensityModel() == BOUSSINESQ);
+
+        if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
+          Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, temp_ref, p_ref" << "\n";
+          Breakdown_file << "are set to 1.0 in order to perform a dimensional calculation." << "\n";
+          if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+          else Breakdown_file << "Force coefficients computed using initial values." << "\n";
+        }
+        else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
+          Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
+          Breakdown_file << "are based on the initial values, p_ref = rho_ref*vel_ref^2." << "\n";
+          if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+          else Breakdown_file << "Force coefficients computed using initial values." << "\n";
+        }
+        else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
+          Breakdown_file << "Viscous and Inviscid flow: rho_ref, vel_ref, and temp_ref" << "\n";
+          Breakdown_file << "are user-provided reference values, p_ref = rho_ref*vel_ref^2." << "\n";
+          if (dynamic_grid) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
+          else Breakdown_file << "Force coefficients computed using reference values." << "\n";
+        }
+        Breakdown_file << "The reference area for force coeffs. is " << config->GetRefArea() << " m^2." << "\n";
+        Breakdown_file << "The reference length for force coeffs. is " << config->GetRefLength() << " m." << "\n";
+
+        Breakdown_file << "The pressure is decomposed into thermodynamic and dynamic components." << "\n";
+        Breakdown_file << "The initial value of the dynamic pressure is 0." << "\n";
+
+        Breakdown_file << "Mach number: "<< config->GetMach();
+        if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
+          Breakdown_file << ", computed using the Bulk modulus." << "\n";
+        } else {
+          Breakdown_file << ", computed using fluid speed of sound." << "\n";
+        }
+
+        Breakdown_file << "For external flows, the initial state is imposed at the far-field." << "\n";
+        Breakdown_file << "Angle of attack (deg): "<< config->GetAoA() << ", computed using the initial velocity." << "\n";
+        Breakdown_file << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the initial velocity." << "\n";
+
+        if (viscous) {
+          Breakdown_file << "Reynolds number per meter: " << config->GetReynolds() << ", computed using initial values."<< "\n";
+          Breakdown_file << "Reynolds number is a byproduct of inputs only (not used internally)." << "\n";
+        }
+        Breakdown_file << "SI units only. The grid should be dimensional (meters)." << "\n";
+
+        switch (config->GetKind_DensityModel()) {
+
+          case CONSTANT:
+            if (energy) Breakdown_file << "Energy equation is active and decoupled." << "\n";
+            else Breakdown_file << "No energy equation." << "\n";
+            break;
+
+          case BOUSSINESQ:
+            if (energy) Breakdown_file << "Energy equation is active and coupled through Boussinesq approx." << "\n";
+            break;
+
+          case VARIABLE:
+            if (energy) Breakdown_file << "Energy equation is active and coupled for variable density." << "\n";
+            break;
+
+        }
+
+        Breakdown_file <<"-- Input conditions:"<< "\n";
+
+        switch (config->GetKind_FluidModel()) {
+
+          case CONSTANT_DENSITY:
+            Breakdown_file << "Fluid Model: CONSTANT_DENSITY "<< "\n";
+            if (energy) {
+              Breakdown_file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << "\n";
+            }
+            if (boussinesq) Breakdown_file << "Thermal expansion coefficient: " << config->GetThermal_Expansion_Coeff() << " K^-1." << "\n";
+            Breakdown_file << "Thermodynamic pressure not required." << "\n";
+            break;
+
+          case INC_IDEAL_GAS:
+            Breakdown_file << "Fluid Model: INC_IDEAL_GAS "<< endl;
+            Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
+            Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+            Breakdown_file << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
+            Breakdown_file << "Molecular weight : "<< config->GetMolecular_Weight() << " g/mol" << endl;
+            Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+            Breakdown_file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
+            if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+            else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+            break;
+
+          case INC_IDEAL_GAS_POLY:
+            Breakdown_file << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
+            Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
+            Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+            Breakdown_file << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol." << endl;
+            Breakdown_file << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+            Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
+            Breakdown_file << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
+            if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+            else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
+            Breakdown_file << "Cp(T) polynomial coefficients: \n  (";
+            for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+              Breakdown_file << config->GetCp_PolyCoeff(iVar);
+              if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+            }
+            Breakdown_file << ")." << endl;
+            Breakdown_file << "Cp(T) polynomial coefficients (non-dim.): \n  (";
+            for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+              Breakdown_file << config->GetCp_PolyCoeffND(iVar);
+              if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+            }
+            Breakdown_file << ")." << endl;
+            break;
+
+        }
+        if (viscous) {
+          switch (config->GetKind_ViscosityModel()) {
+
+            case CONSTANT_VISCOSITY:
+              Breakdown_file << "Viscosity Model: CONSTANT_VISCOSITY  "<< "\n";
+              Breakdown_file << "Constant Laminar Viscosity: " << config->GetMu_Constant();
+              if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+              else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+              Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
+              break;
+
+            case SUTHERLAND:
+              Breakdown_file << "Viscosity Model: SUTHERLAND "<< "\n";
+              Breakdown_file << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
+              if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+              else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+              Breakdown_file << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
+              if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+              else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+              Breakdown_file << "Sutherland Constant: "<< config->GetMu_S();
+              if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+              else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+              Breakdown_file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< "\n";
+              Breakdown_file << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< "\n";
+              Breakdown_file << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< "\n";
+              break;
+
+            case POLYNOMIAL_VISCOSITY:
+              Breakdown_file << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
+              Breakdown_file << "Mu(T) polynomial coefficients: \n  (";
+              for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+                Breakdown_file << config->GetMu_PolyCoeff(iVar);
+                if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+              }
+              Breakdown_file << ")." << endl;
+              Breakdown_file << "Mu(T) polynomial coefficients (non-dim.): \n  (";
+              for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+                Breakdown_file << config->GetMu_PolyCoeffND(iVar);
+                if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+              }
+              Breakdown_file << ")." << endl;
+              break;
+
+          }
+
+          if (energy) {
+            switch (config->GetKind_ConductivityModel()) {
+
+              case CONSTANT_PRANDTL:
+                Breakdown_file << "Conductivity Model: CONSTANT_PRANDTL  "<< "\n";
+                Breakdown_file << "Prandtl (Laminar): " << config->GetPrandtl_Lam()<< "\n";
+                break;
+
+              case CONSTANT_CONDUCTIVITY:
+                Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< "\n";
+                Breakdown_file << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << "\n";
+                Breakdown_file << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< "\n";
+                break;
+
+              case POLYNOMIAL_CONDUCTIVITY:
+                Breakdown_file << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+                Breakdown_file << "Kt(T) polynomial coefficients: \n  (";
+                for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+                  Breakdown_file << config->GetKt_PolyCoeff(iVar);
+                  if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+                }
+                Breakdown_file << ")." << endl;
+                Breakdown_file << "Kt(T) polynomial coefficients (non-dim.): \n  (";
+                for (unsigned short iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+                  Breakdown_file << config->GetKt_PolyCoeffND(iVar);
+                  if (iVar < config->GetnPolyCoeffs()-1) Breakdown_file << ", ";
+                }
+                Breakdown_file << ")." << endl;
+                break;
+
+            }
+
+            if ((Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
+              switch (config->GetKind_ConductivityModel_Turb()) {
+                case CONSTANT_PRANDTL_TURB:
+                  Breakdown_file << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+                  Breakdown_file << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
+                  break;
+                case NO_CONDUCTIVITY_TURB:
+                  Breakdown_file << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+                  Breakdown_file << "No turbulent component in effective thermal conductivity." << "\n";
+                  break;
+              }
+            }
+          }
+        }
+
+        if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
+          Breakdown_file << "Bulk modulus: " << config->GetBulk_Modulus();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+        }
+
+        Breakdown_file << "Initial dynamic pressure: " << config->GetPressure_FreeStream();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+
+        Breakdown_file << "Initial total pressure: " << config->GetPressure_FreeStream() + 0.5*config->GetDensity_FreeStream()*config->GetModVel_FreeStream()*config->GetModVel_FreeStream();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+
+        if (energy) {
+          Breakdown_file << "Initial temperature: " << config->GetTemperature_FreeStream();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+        }
+
+        Breakdown_file << "Initial density: " << config->GetDensity_FreeStream();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
+
+        if (nDim == 2) {
+          Breakdown_file << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
+          Breakdown_file << config->GetVelocity_FreeStream()[1] << ")";
+        }
+        if (nDim == 3) {
+          Breakdown_file << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
+          Breakdown_file << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
+        }
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s. ";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s. ";
+
+        Breakdown_file << "Magnitude: "  << config->GetModVel_FreeStream();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
+
+        if (viscous) {
+          Breakdown_file << "Initial laminar viscosity: " << config->GetViscosity_FreeStream();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+          if (turbulent) {
+            Breakdown_file << "Initial turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
+            if (config->GetSystemMeasurements() == SI) Breakdown_file << " m^2/s^2." << "\n";
+            else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
+            Breakdown_file << "Initial specific dissipation: " << config->GetOmega_FreeStream();
+            if (config->GetSystemMeasurements() == SI) Breakdown_file << " 1/s." << "\n";
+            else if (config->GetSystemMeasurements() == US) Breakdown_file << " 1/s." << "\n";
+          }
+        }
+
+        if (unsteady) { Breakdown_file << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << "\n"; }
+
+        /*--- Print out reference values. ---*/
+
+        Breakdown_file <<"-- Reference values:"<< "\n";
+
+        if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
+          Breakdown_file << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
+        } else {
+          if (energy) {
+            Breakdown_file << "Reference specific heat: " << config->GetGas_Constant_Ref();
+            if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.m/kg.K." << "\n";
+            else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.ft/slug.R." << "\n";
+          }
+        }
+
+        Breakdown_file << "Reference pressure: " << config->GetPressure_Ref();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+
+        if (energy) {
+          Breakdown_file << "Reference temperature: " << config->GetTemperature_Ref();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+        }
+
+        Breakdown_file << "Reference density: " << config->GetDensity_Ref();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " kg/m^3." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " slug/ft^3." << "\n";
+
+        Breakdown_file << "Reference velocity: " << config->GetVelocity_Ref();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m/s." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " ft/s." << "\n";
+
+        Breakdown_file << "Reference length: " << config->GetLength_Ref();
+        if (config->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
+        else if (config->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
+
+        if (viscous) {
+          Breakdown_file << "Reference viscosity: " << config->GetViscosity_Ref();
+          if (config->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
+          else if (config->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
+        }
+
+        if (unsteady) Breakdown_file << "Reference time: " << config->GetTime_Ref() <<" s." << "\n";
+
+        /*--- Print out resulting non-dim values here. ---*/
+
+        Breakdown_file << "-- Resulting non-dimensional state:" << "\n";
+        Breakdown_file << "Mach number (non-dim): " << config->GetMach() << "\n";
+        if (viscous) {
+          Breakdown_file << "Reynolds number (per m): " << config->GetReynolds() << "\n";
+        }
+
+        if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
+          Breakdown_file << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << "\n";
+          Breakdown_file << "Initial thermodynamic pressure (non-dim): " << config->GetPressure_ThermodynamicND() << "\n";
+        } else {
+          if (energy) {
+            Breakdown_file << "Specific heat at constant pressure (non-dim): " << config->GetSpecific_Heat_CpND() << "\n";
+            if (boussinesq) Breakdown_file << "Thermal expansion coefficient (non-dim.): " << config->GetThermal_Expansion_CoeffND() << " K^-1." << "\n";
+          }
+        }
+
+        if (energy) Breakdown_file << "Initial temperature (non-dim): " << config->GetTemperature_FreeStreamND() << "\n";
+        Breakdown_file << "Initial pressure (non-dim): " << config->GetPressure_FreeStreamND() << "\n";
+        Breakdown_file << "Initial density (non-dim): " << config->GetDensity_FreeStreamND() << "\n";
+
+        if (nDim == 2) {
+          Breakdown_file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
+          Breakdown_file << config->GetVelocity_FreeStreamND()[1] << "). ";
+        } else {
+          Breakdown_file << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
+          Breakdown_file << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
+        }
+        Breakdown_file << "Magnitude: "   << config->GetModVel_FreeStreamND() << "\n";
+
+        if (viscous) {
+          Breakdown_file << "Initial viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << "\n";
+          if (turbulent) {
+            Breakdown_file << "Initial turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << "\n";
+            Breakdown_file << "Initial specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << "\n";
+          }
+        }
+
+        if (unsteady) {
+          Breakdown_file << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << "\n";
+          Breakdown_file << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << "\n";
+        }
+     }
 
     /*--- Begin forces breakdown info. ---*/
 

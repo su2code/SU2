@@ -823,7 +823,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Load                 = nullptr;    Marker_Disp_Dir         = nullptr;    Marker_RoughWall      = nullptr;
   Marker_EngineExhaust        = nullptr;    Marker_Displacement     = nullptr;    Marker_Load           = nullptr;
   Marker_Load_Dir             = nullptr;    Marker_Load_Sine        = nullptr;    Marker_Clamped        = nullptr;
-  Marker_FlowLoad             = nullptr;    Marker_Internal         = nullptr;
+  Marker_FlowLoad             = nullptr;    Marker_Internal         = nullptr;    Marker_Empty          = nullptr;
   Marker_All_TagBound         = nullptr;    Marker_CfgFile_TagBound = nullptr;    Marker_All_KindBC     = nullptr;
   Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv     = nullptr;    Marker_All_PerBound   = nullptr;
   Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface= nullptr;    Marker_Riemann        = nullptr;
@@ -1400,6 +1400,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_CHT_INTERFACE", nMarker_CHTInterface, Marker_CHTInterface);
   /* DESCRIPTION: Internal boundary marker(s) */
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
+  /* DESCRIPTION: Internal boundary marker(s) */
+  addStringListOption("MARKER_Empty", nMarker_Empty, Marker_Empty);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
@@ -5049,7 +5051,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Smoluchowski_Maxwell,
   iMarker_Isothermal,iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
-  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal,
+  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Empty,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
@@ -5071,7 +5073,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
   nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
   nMarker_HeatFlux +
-  nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
+  nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal + nMarker_Empty +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
@@ -5327,6 +5329,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Empty = 0; iMarker_Empty < nMarker_Empty; iMarker_Empty++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Empty[iMarker_Empty];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = EMPTY_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Custom[iMarker_Custom];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = CUSTOM_BOUNDARY;
@@ -5546,7 +5554,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Deform_Mesh, iMarker_Fluid_Load, iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
-  iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring,
+  iMarker_Load, iMarker_FlowLoad, iMarker_Internal, iMarker_Monitoring, iMarker_Empty,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
@@ -6871,6 +6879,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_Empty != 0) {
+    BoundaryTable << "Empty boundary";
+    for (iMarker_Empty = 0; iMarker_Empty < nMarker_Empty; iMarker_Empty++) {
+      BoundaryTable << Marker_Empty[iMarker_Empty];
+      if (iMarker_Empty < nMarker_Empty-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_Inlet != 0) {
     BoundaryTable << "Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
@@ -7812,6 +7829,7 @@ CConfig::~CConfig(void) {
                 delete[] Marker_Load_Sine;
             delete[] Marker_FlowLoad;
              delete[] Marker_Internal;
+             delete[] Marker_Empty;
                 delete[] Marker_HeatFlux;
           delete[] Marker_Emissivity;
 
