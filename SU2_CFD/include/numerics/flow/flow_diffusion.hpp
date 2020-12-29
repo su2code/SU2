@@ -168,14 +168,6 @@ protected:
    */
   void SetReynoldsStressMatrix(su2double turb_ke);
 
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
-   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
-   */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-
 public:
 
   /*!

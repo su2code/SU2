@@ -328,15 +328,9 @@ private:
   void SetReynoldsStressMatrix(su2double turb_ke);
 
   /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] config: config file
+   * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+   * \param[in] turb_ke: turbulent kinetic energy of the node
    */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-  /*!
-     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
-     * \param[in] turb_ke: turbulent kinetic energy of the node
-     */
   void SetPerturbedStrainMag(su2double turb_ke);
 
 public:

@@ -63,10 +63,8 @@ protected:
   su2double
   **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes. */
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
-  su2double
-  **tau,      /*!< \brief Viscous stress tensor. */
-  **delta,    /*!< \brief Identity matrix. */
-  **delta3;   /*!< \brief 3 row Identity matrix. */
+  su2double **tau;    /*!< \brief Viscous stress tensor. */
+  const su2double delta [3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}; /*!< \brief Identity matrix. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
@@ -225,9 +223,12 @@ protected:
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
-  /* Supporting data structures for the eigenspace perturbation for UQ methodology */
-  su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
-  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] config: config file
+   */
+  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
 
 public:
   /*!
@@ -1461,24 +1462,6 @@ public:
    * \param[in] val_radvar_source - Source term (and jacobian term) of the radiative heat transfer.
    */
   inline void SetRadVarSource(const su2double *val_radvar_source) { RadVar_Source = val_radvar_source; }
-
-  /*!
-   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
-   * \param[in] A_i: symmetric matrix to be decomposed
-   * \param[in] Eig_Vec: strores the eigenvectors
-   * \param[in] Eig_Val: stores the eigenvalues
-   * \param[in] n: order of matrix A_ij
-   */
-  static void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
-
-  /*!
-   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
-   * \param[in] A_ij: recomposed matrix
-   * \param[in] Eig_Vec: eigenvectors
-   * \param[in] Eig_Val: eigenvalues
-   * \param[in] n: order of matrix A_ij
-   */
-  static void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, const su2double *Eig_Val, unsigned short n);
 
   /*!
    * \brief Set the pressure derivatives.

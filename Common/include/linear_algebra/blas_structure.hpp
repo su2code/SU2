@@ -175,11 +175,11 @@ public:
    *
    * \param[in,out] V: matrix that needs to be decomposed
    * \param[in,out] d: holds eigenvalues
-   * \param[in,out] e: supplemental data structure
+   * \param[in,out] e: work vector
    * \param[in] n: order of matrix V
    */
-  template<class Mat, class Vec>
-  static void tred2(Mat& V, Vec& d, Vec& e, int n) {
+  template<class Mat, class Vec, class W>
+  static void tred2(Mat& V, Vec& d, W& e, int n) {
     using Scalar = typename std::decay<decltype(e[0])>::type;
 
     int i,j,k;
@@ -325,11 +325,11 @@ public:
    *
    * \param[in,out] V: matrix that will hold the eigenvectors
    * \param[in,out] d: array that will hold the ordered eigenvalues
-   * \param[in,out] e: supplemental data structure
+   * \param[in,out] e: work vector
    * \param[in] n: order of matrix V
    */
-  template<class Mat, class Vec>
-  static void tql2(Mat& V, Vec& d, Vec& e, int n) {
+  template<class Mat, class Vec, class W>
+  static void tql2(Mat& V, Vec& d, W& e, int n) {
     using Scalar = typename std::decay<decltype(e[0])>::type;
 
     int i,j,k,l;
@@ -440,6 +440,44 @@ public:
           V[j][i] = V[j][k];
           V[j][k] = p;
         }
+      }
+    }
+  }
+
+  /*!
+   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
+   * \param[in] A_i: symmetric matrix to be decomposed
+   * \param[in,out] Eig_Vec: stores the eigenvectors
+   * \param[in,out] Eig_Val: stores the eigenvalues
+   * \param[in] n: order of matrix A_ij
+   * \param[in,out] e: work vector
+   */
+  template<class Mat, class Vec, class W>
+  static void EigenDecomposition(const Mat& A_ij, Mat& Eig_Vec, Vec& Eig_Val, int n, W& e) {
+    for (int iDim = 0; iDim < n; iDim++){
+      e[iDim] = 0;
+      for (int jDim = 0; jDim < n; jDim++){
+        Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+      }
+    }
+    tred2(Eig_Vec, Eig_Val, e, n);
+    tql2(Eig_Vec, Eig_Val, e, n);
+  }
+
+  /*!
+   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
+   * \param[out] A_ij: recomposed matrix
+   * \param[in] Eig_Vec: eigenvectors
+   * \param[in] Eig_Val: eigenvalues
+   * \param[in] n: order of matrix A_ij
+   */
+  template<class Mat, class Vec>
+  static void EigenRecomposition(Mat& A_ij, const Mat& Eig_Vec, const Vec& Eig_Val, int n) {
+    for (int i = 0; i < n; i++){
+      for (int j = 0; j < n; j++){
+        A_ij[i][j] = 0.0;
+        for (int k = 0; k < n; k++)
+          A_ij[i][j] += Eig_Vec[i][k] * Eig_Val[k] * Eig_Vec[j][k];
       }
     }
   }
