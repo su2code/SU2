@@ -436,9 +436,9 @@ public:
         d[k] = d[i];
         d[i] = p;
         for (j = 0; j < n; j++) {
-            p = V[j][i];
-            V[j][i] = V[j][k];
-            V[j][k] = p;
+          p = V[j][i];
+          V[j][i] = V[j][k];
+          V[j][k] = p;
         }
       }
     }
