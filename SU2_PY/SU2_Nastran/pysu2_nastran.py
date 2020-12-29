@@ -42,10 +42,10 @@ from FSI_tools.switch import switch
 
 class ImposedMotionFunction:
 
-    def __init__(self,time0,type,parameters):
+    def __init__(self,time0,tipo,parameters):
         self.time0 = time0
-        self.type = type
-        for case in switch(self.type):
+        self.tipo = tipo
+        for case in switch(self.tipo):
             if case("SINUSOIDAL"):
                 self.bias = parameters[0]
                 self.amplitude = parameters[1]
@@ -60,13 +60,13 @@ class ImposedMotionFunction:
                 self.omega0 = 1/2*self.kmax
                 break
             if case():
-                sys.exit('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.type))
+                sys.exit('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
                 break
 
 
     def GetDispl(self,time):
         time = time - self.time0
-        for case in switch(self.type):
+        for case in switch(self.tipo):
             if case("SINUSOIDAL"):
                 return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
                 break
@@ -78,7 +78,7 @@ class ImposedMotionFunction:
 
     def GetVel(self,time):
         time = time - self.time0
-        for case in switch(self.type):
+        for case in switch(self.tipo):
             if case("SINUSOIDAL"):
                 return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
                 break
@@ -90,7 +90,7 @@ class ImposedMotionFunction:
 
     def GetAcc(self,time):
         time = time - self.time0
-        for case in switch(self.type):
+        for case in switch(self.tipo):
             if case("SINUSOIDAL"):
                 return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
                 break

@@ -40,7 +40,7 @@ def main():
     HOME = os.getcwd()
     FluidCfg = HOME+"/fluid.cfg"
     SolidCfg = HOME+"/solid.cfg"
-    FsiCfg = HOME+"/fsi"
+    FsiCfg = HOME+"/fsi.cfg"
     MeshFile = HOME+"/airfoil.su2"
     PchFile = HOME+"/modal.pch"
     MeshFileNastran = HOME+"/modal.f06"
