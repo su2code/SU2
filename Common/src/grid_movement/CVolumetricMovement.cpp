@@ -197,12 +197,15 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     else { UpdateGridCoord_Derivatives(geometry, config); }
     if (UpdateGeo) { UpdateDualGrid(geometry, config); }
 
-    /*--- Check for failed deformation (negative volumes). ---*/
+    if (!Derivative) {
+      /*--- Check for failed deformation (negative volumes). ---*/
 
-    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+      ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
 
-    /*--- Calculate amount of nonconvex elements ---*/
-    ComputenNonconvexElements(geometry, Screen_Output);
+      /*--- Calculate amount of nonconvex elements ---*/
+
+      ComputenNonconvexElements(geometry, Screen_Output);
+    }
 
     /*--- Set number of iterations in the mesh update. ---*/
 
@@ -215,7 +218,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     }
 
   }
-
 
 }
 
@@ -299,7 +301,7 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
 
 void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Screen_Output) {
   unsigned long iElem;
-  unsigned short iDim, nNodes;
+  unsigned short iDim;
   unsigned long nNonconvexElements = 0;
 
   /*--- Load up each tetrahedron to check for convex properties. ---*/
@@ -307,26 +309,23 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
     for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       su2double minCrossProduct = 1.e6, maxCrossProduct = -1.e6;
 
-      if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nNodes = 3;
-      if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nNodes = 4;
-    
+      const auto nNodes = geometry->elem[iElem]->GetnNodes();
+
       /*--- Get coordinates of corner points ---*/
       unsigned short iNodes;
       unsigned long PointCorners[8];
-      su2double CoordCorners[8][3];
+      const su2double* CoordCorners[8];
 
       for (iNodes = 0; iNodes < nNodes; iNodes++) {
         PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          CoordCorners[iNodes][iDim] = geometry->nodes->GetCoord(PointCorners[iNodes], iDim);
-        }
+        CoordCorners[iNodes] = geometry->nodes->GetCoord(PointCorners[iNodes]);
       }
 
       /*--- Determine whether element is convex ---*/
       for (iNodes = 0; iNodes < nNodes; iNodes ++) {
 
         /*--- Calculate minimum and maximum angle between edge vectors adjacent to each node ---*/
-        su2double edgeVector_i[nDim], edgeVector_j[nDim];
+        su2double edgeVector_i[3], edgeVector_j[3];
 
         for (iDim = 0; iDim < nDim; iDim ++) {
           if (iNodes == 0) {
@@ -349,7 +348,7 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
         if (crossProduct < minCrossProduct) minCrossProduct = crossProduct;
         if (crossProduct > maxCrossProduct) maxCrossProduct = crossProduct;
       }
-      
+
       /*--- Element is nonconvex if cross product of at least one set of adjacent edges is negative ---*/
       if (minCrossProduct < 0 && maxCrossProduct > 0){
         nNonconvexElements++;
@@ -367,7 +366,7 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
         su2double minCrossProductLength = 1.e6, maxCrossProductLength = -1.e6;
         for (iNode = 0; iNode < nFaceNodes; iNode++) {
           su2double crossProductLength = 0.0;
-          
+
           /*--- Get coords of node face_point_i and its adjacent nodes in the face ---*/
           unsigned long face_point_i, face_point_j, face_point_k;
 
@@ -380,23 +379,18 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
             face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode-1));
             face_point_k = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, 0));
           }
-          
-          su2double *Coords_i, *Coords_j, *Coords_k;
 
-          Coords_i = geometry->nodes->GetCoord(face_point_i);
-          Coords_j = geometry->nodes->GetCoord(face_point_j);
-          Coords_k = geometry->nodes->GetCoord(face_point_k);
+          const auto Coords_i = geometry->nodes->GetCoord(face_point_i);
+          const auto Coords_j = geometry->nodes->GetCoord(face_point_j);
+          const auto Coords_k = geometry->nodes->GetCoord(face_point_k);
 
           /*--- Get edge vectors from point k to i and point j to i ---*/
-          su2double edgeVector_i[nDim], edgeVector_j[nDim], normalVector[nDim];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            edgeVector_i[iDim] = Coords_k[iDim] - Coords_i[iDim];
-            edgeVector_j[iDim] = Coords_j[iDim] - Coords_i[iDim];
-          }
+          su2double edgeVector_i[3], edgeVector_j[3];
+          GeometryToolbox::Distance(nDim, Coords_k, Coords_i, edgeVector_i);
+          GeometryToolbox::Distance(nDim, Coords_j, Coords_i, edgeVector_j);
 
           /*--- Calculate cross product of edge vectors and its length---*/
-          su2double crossProduct[nDim];
+          su2double crossProduct[3];
           GeometryToolbox::CrossProduct(edgeVector_i, edgeVector_j, crossProduct);
           crossProductLength = GeometryToolbox::Norm(nDim, crossProduct);
 
@@ -408,7 +402,7 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
           }
         }
 
-      /*--- If minimum cross product length is smaller than 0, 
+      /*--- If minimum cross product length is smaller than 0,
       face (and therefore element) is not convex ---*/
       if (minCrossProductLength < 0) {
         nNonconvexElements++;

@@ -230,34 +230,14 @@ int main(int argc, char *argv[]) {
 
   for (iZone = 0; iZone < nZone; iZone++){
 
-    /*--- Initialize total deformation of design variables to zero ---*/
-    su2double **TotalDeformation;
-    unsigned short iDV, iDV_Value;
-    TotalDeformation = new su2double*[config_container[iZone]->GetnDV()];
-
-    for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
-      TotalDeformation[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)];
-      for (iDV_Value = 0; iDV_Value < config_container[iZone]->GetnDV_Value(iDV); iDV_Value++){
-        TotalDeformation[iDV][iDV_Value] = 0.0;
-      }
-    }
-
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
 
       /*--- Definition of the Class for grid movement ---*/
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
 
       /*--- Save original coordinates to be reused in convexity checking procedure ---*/
-      unsigned long iPoint, nPoint = geometry_container[iZone]->GetnPoint();
-      unsigned short iDim, nDim = geometry_container[iZone]->GetnDim();
-      su2double OriginalCoordinates[nPoint][nDim];
+      auto OriginalCoordinates = geometry_container[iZone]->nodes->GetCoord();
 
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          OriginalCoordinates[iPoint][iDim] = geometry_container[iZone]->nodes->GetCoord(iPoint, iDim);
-        }
-      }
- 
       /*--- First check for volumetric grid deformation/transformations ---*/
 
       if (config_container[iZone]->GetDesign_Variable(0) == SCALE_GRID) {
@@ -297,7 +277,7 @@ int main(int argc, char *argv[]) {
         /*--- Surface grid deformation ---*/
 
         if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
-        surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone], TotalDeformation);
+        auto TotalDeformation = surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
 
         if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
 
@@ -323,21 +303,13 @@ int main(int argc, char *argv[]) {
             }
 
             /*--- Load initial deformation values ---*/
-            su2double** InitialDeformation;
-
-            InitialDeformation = new su2double*[config_container[iZone]->GetnDV()];
-            for (iDV = 0; iDV < config_container[iZone]->GetnDV(); iDV++) {
-              InitialDeformation[iDV] = new su2double[config_container[iZone]->GetnDV_Value(iDV)];
-              for (iDV_Value = 0; iDV_Value < config_container[iZone]->GetnDV_Value(iDV); iDV_Value++) {
-                InitialDeformation[iDV][iDV_Value] = TotalDeformation[iDV][iDV_Value];
-              }
-            }
+            auto InitialDeformation = TotalDeformation;
 
             unsigned short ConvexityCheckIter, RecursionDepth = 0;
             su2double DeformationFactor = 1.0, DeformationDifference = 1.0;
             for (ConvexityCheckIter = 1; ConvexityCheckIter <= ConvexityCheck_MaxIter; ConvexityCheckIter++) {
 
-              /*--- Recursively change deformation magnitude: 
+              /*--- Recursively change deformation magnitude:
               decrease if there are nonconvex elements, increase otherwise ---*/
               DeformationDifference /= 2.0;
 
@@ -355,19 +327,19 @@ int main(int argc, char *argv[]) {
                   break;
                 }
 
-                DeformationFactor += DeformationDifference;              
+                DeformationFactor += DeformationDifference;
               }
 
               /*--- Load mesh to start every iteration with an undeformed grid ---*/
-              for (iPoint = 0; iPoint < nPoint; iPoint++) {
-                for (iDim = 0; iDim < nDim; iDim++) {
-                  geometry_container[iZone]->nodes->SetCoord(iPoint, iDim, OriginalCoordinates[iPoint][iDim]);
+              for (auto iPoint = 0ul; iPoint < OriginalCoordinates.rows(); iPoint++) {
+                for (auto iDim = 0ul; iDim < OriginalCoordinates.cols(); iDim++) {
+                  geometry_container[iZone]->nodes->SetCoord(iPoint, iDim, OriginalCoordinates(iPoint,iDim));
                 }
               }
 
               /*--- Set deformation magnitude as percentage of initial deformation ---*/
-              for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-                for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
+              for (auto iDV = 0u; iDV < config->GetnDV(); iDV++) {
+                for (auto iDV_Value = 0u; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
                   config_container[iZone]->SetDV_Value(iDV, iDV_Value, InitialDeformation[iDV][iDV_Value]*DeformationFactor);
                 }
               }
@@ -375,7 +347,7 @@ int main(int argc, char *argv[]) {
               /*--- Surface grid deformation ---*/
               if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
 
-              surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone], TotalDeformation);
+              TotalDeformation = surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
 
               if (rank == MASTER_NODE)
                 cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;
@@ -393,22 +365,12 @@ int main(int argc, char *argv[]) {
 
             }
 
-            for (iDV = 0; iDV < config_container[iZone]->GetnDV(); iDV++) {
-              delete InitialDeformation[iDV];
-            }
-            delete [] InitialDeformation;
-
           }
 
         }
 
       }
 
-    for (iDV = 0; iDV  < config_container[iZone]->GetnDV(); iDV++){
-      delete TotalDeformation[iDV];
-    }
-    delete [] TotalDeformation;
- 
     }
 
   }

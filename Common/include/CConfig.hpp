@@ -8093,13 +8093,13 @@ public:
   su2double GetFFD_Tol(void) const { return FFD_Tol; }
 
   /*!
-   * \brief Get information about whether to do a check on self-intersections within 
+   * \brief Get information about whether to do a check on self-intersections within
       the FFD box based on value on the Jacobian determinant.
    * \param[out] FFD_IntPrev: <code>TRUE</code> if FFD intersection prevention is active; otherwise <code>FALSE</code>.
    * \param[out] FFD_IntPrev_MaxIter: Maximum number of iterations in the intersection prevention procedure.
    * \param[out] FFD_IntPrev_MaxDepth: Maximum recursion depth in the intersection prevention procedure.
    */
-  tuple<bool, unsigned short, unsigned short> GetFFD_IntPrev(void) {
+  tuple<bool, unsigned short, unsigned short> GetFFD_IntPrev(void) const {
     return make_tuple(FFD_IntPrev, FFD_IntPrev_MaxIter, FFD_IntPrev_MaxDepth);
   }
 
@@ -8109,7 +8109,7 @@ public:
    * \param[out] ConvexityCheck_MaxIter: Maximum number of iterations in the convexity check.
    * \param[out] ConvexityCheck_MaxDepth: Maximum recursion depth in the convexity check.
    */
-  tuple<bool, unsigned short, unsigned short> GetConvexityCheck(void) {
+  tuple<bool, unsigned short, unsigned short> GetConvexityCheck(void) const {
     return make_tuple(ConvexityCheck, ConvexityCheck_MaxIter, ConvexityCheck_MaxDepth);
   }
 
