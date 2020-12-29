@@ -367,19 +367,6 @@ public:
   */
   bool CheckNonPhys(su2double *V);
 
-  /*!
-   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
-   *        in a more thermodynamically consistent way.
-   * \param[in] V - primitve variables.
-   * \param[out] d*dU - reconstructed secondaryvariables.
-   * \param[out] val_eves - reconstructed eve per species.
-   * \param[out] val_cvves - reconstructed cvve per species.
-   * \param[out] Gamma - reconstructed gamma.
-   */
-  su2double ComputeConsistentExtrapolation(su2double *V, su2double* dPdU,
-                                           su2double* dTdU, su2double* dTvedU,
-                                           su2double* val_eves,su2double* val_cvves);
-
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/
   /*---------------------------------------*/
