@@ -1,0 +1,830 @@
+1
+ 
+ 
+ 
+ 
+                      Warning: This computer program is protected by copyright law and international treaties.       
+                  Unauthorized use, reproduction or distribution of this computer program, or any portion of it, may 
+                                          result in severe civil and criminal penalties.                             
+                         Copyright (C) 2018 MSC Software Corporation and its licensors. All rights reserved.         
+ 
+ 
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * *                                 * *
+                                              * *           MSC Software          * *
+                                              * *               CORP              * *
+                                              * *                                 * *
+                                              * *      M S C   N a s t r a n      * *
+                                              * *                                 * *
+                                              * *  S T U D E N T   E D I T I O N  * *
+                                              * *                                 * *
+                                              * *     Version 2019.0.0-CL621679   * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *          DEC 18, 2018           * *
+                                              * *                                 * *
+                                              * *              Intel              * *
+                                              * *MODEL Xeon/2257 (DESKTOP-1VDF0SS * *
+                                              * *    Windows 10 Home 6.2 9200     * *
+                                              * * Compiled for 8664 (SINGLE Mode) * *
+                                              * *                                 * *
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * * * * * * * * * * * * * * * * * * * *
+
+ 
+ 
+                                                 This Student Edition version is  
+                                                    valid until NOV 30, 2020.     
+ 
+ 
+                  This program is being distributed as part of the MSC Software Student Edition. Use of this program 
+                     or its results at a commercial installation, for commercial purposes, or for production work    
+                                             I S   S T R I C T L Y  P R O H I B I T E D.                             
+                  ==================================== FOR EDUCATIONAL USE ONLY =====================================
+ 
+ 
+1News file - (November 7, 2018)
+  
+               Welcome to MSC Nastran 2019.0
+  
+  
+   MSC Nastran brings powerful new features and enhancements for engineering
+   solutions.
+  
+     Dynamics
+     -  RFORCE and GRAV loads can now be optionally applied to a subset of
+        the model
+  
+     SOL 128 (Nonlinear Harmonics) Rotordynamics Enhancements
+     -  Option to reset initial conditions
+     -  Nonlinear load output
+     -  Output for multiple harmonics
+     -  Support for continuation procedure for frequency-independent analysis
+  
+     Pyramid Element
+     -  The linear and quadratic pyramid element is available in linear
+        solutions: statics, modes, buckling, frequency and transient dynamics,
+        linear contact, acoustics, fatigue, rotordynamics, aeroelasticity and
+        design optimization
+     -  The element is also available in SOL 400 for linear, nlstatics,
+        nltransient and linear perturbation solutions
+  
+     Assembly
+     -  Module Instantiation:  Allow copy of a primary Module to create
+        a secondary Module at a new position by translation, rotation and mirror
+  
+     Contact
+     -  Support geometry adjustment of initial stress free in S2S Contact
+     -  Support model check output in S2S Contact
+     -  Allow user input minimum angle between segments on BCPARA
+  
+     SOL 400 Implicit Nonlinear Analysis
+     -  Support Automatic SGLUE setup for permanent glued contact with large
+        deformation
+     -  Reduce the debug output when using "NLOPRM NLDBG(N3DSUM)"
+     -  Support MONPNT1, MONPNT3, MONSUM, MONSUM1, and MONSUMT in NLSTAT
+        and NLTRAN
+  
+     SOL 700 Explicit Nonlinear Analysis
+     -  Support failure of ACS surface and DMP of ACS algorithm
+     -  Support Occupant Safety, including Articulated Total Body (ATB),
+        Initial Metric Method (IMM) and Air bag fabric material model (MATFAB)
+     -  Support Viscoelastic Material (MATVE), Localized Cohesive friction, and
+        User Defined Services (UDS)
+  
+     High Performance Computing (HPC)
+1    -  Improved performance and scalability of acoustic coupling reduction
+        with ACMS for large models
+     -  Improved performance for ACMS Phase 1 for large solid models
+     -  Improved performance (up to 10X) in the RANDOM module
+     -  New DMP implementation for Panel Participation factor calculation
+        (PFCALC) with linear parallel scaling
+     -  Performance enhancements for FASTFR through shared-memory
+        parallelization (SMP) of frequency processing
+  
+  
+     Results HDF5 Database
+     -  Support outputs of Aerodynamic solution SOL144, 145 and 146 results
+     -  Support Modal effective  mass, Modules,  Contact Check and
+        Global contact body data
+     -  Support Bar/Beam end loads under the shear stress effect of 2D elements
+  
+  
+     Documentation
+     The complete documentation set is provided in a separate installer and
+     when installed is available at: MSC_DOC_DIR/doc/pdf_nastran directory.
+     Where MSC_DOC_DIR is the directory where documentation was installed
+     This help set has cross references between documents, links to how-to
+     videos, and example files.
+  
+     Individual MSC Nastran documents are available for download from the
+       Simcompanion Website at:
+       http://simcompanion.mscsoftware.com/
+  
+     These documents were updated for the MSC Nastran 2019 Release
+  
+         1.  MSC Nastran 2019.0 Installation and Operations Guide
+         2.  MSC Nastran 2019.0 Quick Reference Guide
+         3.  MSC Nastran 2019.0 Release Guide
+         4.  MSC Nastran 2019.0 Linear Statics Analysis User's Guide
+         5.  MSC Nastran 2019.0 Dynamic Analysis User's Guide
+         6.  MSC Nastran 2019.0 Superelements User's Guide
+         7.  MSC Nastran 2019.0 Rotordynamics User's Guide
+         8.  MSC Nastran 2019.0 Demonstration Problems Manual
+         9.  MSC Nastran 2019.0 Nastran Embedded Fatigue User's Guide
+        10.  MSC Nastran 2019.0 Design Sensitivity and Optimization
+        11.  MSC Nastran 2019.0 Nonlinear User's Guide SOL 400
+        12.  MSC Nastran 2019.0 DMAP Programmer's Guide
+        13.  MSC Nastran 2019.0 High Performance Computing User's Guide
+        14.  MSC Nastran 2019.0 DEMATD Guide
+        15.  MSC Nastran 2019.0 Explicit Nonlinear (SOL 700) User's Guide
+  
+   Please refer to  MSC_DOC_DIR/doc/pdf_nastran/nastran_library.pdf
+   for the complete document set:
+  
+  
+1  Additional information about the release can be found at the MSC Nastran
+   Product Support page: http://simcompanion.mscsoftware.com
+  
+   The support page provides links to these valuable information:
+      * A searchable Knowledge Base containing examples and answers to thousands
+        of frequently asked questions written by MSC Software subject-matter
+        experts.
+      * Peer-to-peer Discussion Forums enabling you to post questions for your
+        MSC Software products and receive answers from other users worldwide.
+      * A list of known issues with the product and any workarounds.
+      * Instructions on how to contact technical support
+      * A mechanism for sending us product feedback or enhancement requests.
+      * Hardware and software requirements.
+      * Examples and Tutorials
+      * and much more.
+  
+   For information on training, please visit our Training web site
+  
+      http://www.mscsoftware.com/Contents/Services/Training/
+  
+1                                                       **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     1
+                                                                                                                                    
+0        N A S T R A N    F I L E    A N D    S Y S T E M    P A R A M E T E R    E C H O                                           
+0                                                                                                                                   
+                                                                                                                                    
+                                                                                                                                    
+     NASTRAN BUFFSIZE=8193 $(C:/MSC.SOFTWARE/MSC_NASTRAN_AND_PATRAN_STUDENT_EDITIONS/
+     INIT MASTER(S)                                                                  
+     NASTRAN SYSTEM(319)=1                                                           
+1                                                       **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     2
+                                                                                                                                    
+0        N A S T R A N    E X E C U T I V E    C O N T R O L    E C H O                                                             
+0                                                                                                                                   
+                                                                                                                                    
+                                                                                                                                    
+     ID MODEL,FEMAP                                                                          
+     SOL SEMODES                                                                             
+     CEND                                                                                    
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     3
+                                                                                                                                    
+0                                                                                                                                   
+0                                        C A S E    C O N T R O L    E C H O                                                        
+                 COMMAND                                                                                                            
+                 COUNT                                                                                                              
+                  1        TITLE = MSC/MD NASTRAN MODES ANALYSIS SET                                             
+                  2        ECHO = SORT                                                                           
+                  3        DISPLACEMENT(PRINT,PUNCH) = ALL                                                       
+                  4        METHOD = 1                                                                            
+                  5        SPC = 1                                                                               
+                  6      BEGIN BULK                                                                              
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     4
+                                                                                                                                    
+0                                                                                                                                   
+                                                  S O R T E D   B U L K   D A T A   E C H O                                         
+                 ENTRY                                                                                                              
+                 COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  .                      
+                    1-        CELAS2  2       33422.341000    2                       0.
+                    2-        CELAS2  3       20591.971000    6                       0.
+                    3-        CONM2   1       16      0       162.702 0.      0.      0.              +
+                    4-        +       0.      0.      0.      0.      0.      7.626657
+                    5-        CORD2C  1       0       0.      0.      0.      0.      0.      1.      +
+                    6-        +       1.      0.      1.
+                    7-        CORD2S  2       0       0.      0.      0.      0.      0.      1.      +
+                    8-        +       1.      0.      1.
+                    9-        EIGRL   1                       10      0                       MASS
+                   10-        GRID    1       0       0.      0.      0.      0
+                   11-        GRID    2       0       .025    0.      0.      0
+                   12-        GRID    3       0       .05     0.      0.      0
+                   13-        GRID    4       0       .075    0.      0.      0
+                   14-        GRID    5       0       .1      0.      0.      0
+                   15-        GRID    6       0       .125    0.      0.      0
+                   16-        GRID    7       0       .15     0.      0.      0
+                   17-        GRID    8       0       .175    0.      0.      0
+                   18-        GRID    9       0       .2      0.      0.      0
+                   19-        GRID    10      0       .225    0.      0.      0
+                   20-        GRID    11      0       .25     0.      0.      0
+                   21-        GRID    12      0       .275    0.      0.      0
+                   22-        GRID    13      0       .3      0.      0.      0
+                   23-        GRID    14      0       .325    0.      0.      0
+                   24-        GRID    15      0       .35     0.      0.      0
+                   25-        GRID    16      0       .375    0.      0.      0
+                   26-        GRID    17      0       .4      0.      0.      0
+                   27-        GRID    18      0       .425    0.      0.      0
+                   28-        GRID    19      0       .45     0.      0.      0
+                   29-        GRID    20      0       .475    0.      0.      0
+                   30-        GRID    21      0       .5      0.      0.      0
+                   31-        GRID    22      0       .525    0.      0.      0
+                   32-        GRID    23      0       .55     0.      0.      0
+                   33-        GRID    24      0       .575    0.      0.      0
+                   34-        GRID    25      0       .6      0.      0.      0
+                   35-        GRID    26      0       .625    0.      0.      0
+                   36-        GRID    27      0       .65     0.      0.      0
+                   37-        GRID    28      0       .675    0.      0.      0
+                   38-        GRID    29      0       .7      0.      0.      0
+                   39-        GRID    30      0       .725    0.      0.      0
+                   40-        GRID    31      0       .75     0.      0.      0
+                   41-        GRID    32      0       .775    0.      0.      0
+                   42-        GRID    33      0       .8      0.      0.      0
+                   43-        GRID    34      0       .825    0.      0.      0
+                   44-        GRID    35      0       .85     0.      0.      0
+                   45-        GRID    36      0       .875    0.      0.      0
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     5
+                                                                                                                                    
+0                                                                                                                                   
+                                                  S O R T E D   B U L K   D A T A   E C H O                                         
+                 ENTRY                                                                                                              
+                 COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  .                      
+                   46-        GRID    37      0       .9      0.      0.      0
+                   47-        GRID    38      0       .925    0.      0.      0
+                   48-        GRID    39      0       .95     0.      0.      0
+                   49-        GRID    40      0       .975    0.      0.      0
+                   50-        GRID    41      0       1.      0.      0.      0
+                   51-        GRID    42      0       0.      .06     0.      0
+                   52-        GRID    43      0       .025    .06     0.      0
+                   53-        GRID    44      0       .05     .06     0.      0
+                   54-        GRID    45      0       .075    .06     0.      0
+                   55-        GRID    46      0       .1      .06     0.      0
+                   56-        GRID    47      0       .125    .06     0.      0
+                   57-        GRID    48      0       .15     .06     0.      0
+                   58-        GRID    49      0       .175    .06     0.      0
+                   59-        GRID    50      0       .2      .06     0.      0
+                   60-        GRID    51      0       .225    .06     0.      0
+                   61-        GRID    52      0       .25     .06     0.      0
+                   62-        GRID    53      0       .275    .06     0.      0
+                   63-        GRID    54      0       .3      .06     0.      0
+                   64-        GRID    55      0       .325    .06     0.      0
+                   65-        GRID    56      0       .35     .06     0.      0
+                   66-        GRID    57      0       .375    .06     0.      0
+                   67-        GRID    58      0       .4      .06     0.      0
+                   68-        GRID    59      0       .425    .06     0.      0
+                   69-        GRID    60      0       .45     .06     0.      0
+                   70-        GRID    61      0       .475    .06     0.      0
+                   71-        GRID    62      0       .5      .06     0.      0
+                   72-        GRID    63      0       .525    .06     0.      0
+                   73-        GRID    64      0       .55     .06     0.      0
+                   74-        GRID    65      0       .575    .06     0.      0
+                   75-        GRID    66      0       .6      .06     0.      0
+                   76-        GRID    67      0       .625    .06     0.      0
+                   77-        GRID    68      0       .65     .06     0.      0
+                   78-        GRID    69      0       .675    .06     0.      0
+                   79-        GRID    70      0       .7      .06     0.      0
+                   80-        GRID    71      0       .725    .06     0.      0
+                   81-        GRID    72      0       .75     .06     0.      0
+                   82-        GRID    73      0       .775    .06     0.      0
+                   83-        GRID    74      0       .8      .06     0.      0
+                   84-        GRID    75      0       .825    .06     0.      0
+                   85-        GRID    76      0       .85     .06     0.      0
+                   86-        GRID    77      0       .875    .06     0.      0
+                   87-        GRID    78      0       .9      .06     0.      0
+                   88-        GRID    79      0       .925    .06     0.      0
+                   89-        GRID    80      0       .95     .06     0.      0
+                   90-        GRID    81      0       .975    .06     0.      0
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     6
+                                                                                                                                    
+0                                                                                                                                   
+                                                  S O R T E D   B U L K   D A T A   E C H O                                         
+                 ENTRY                                                                                                              
+                 COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  .                      
+                   91-        GRID    82      0       1.      .06     0.      0
+                   92-        GRID    83      0       0.      -.06    0.      0
+                   93-        GRID    84      0       .025    -.06    0.      0
+                   94-        GRID    85      0       .05     -.06    0.      0
+                   95-        GRID    86      0       .075    -.06    0.      0
+                   96-        GRID    87      0       .1      -.06    0.      0
+                   97-        GRID    88      0       .125    -.06    0.      0
+                   98-        GRID    89      0       .15     -.06    0.      0
+                   99-        GRID    90      0       .175    -.06    0.      0
+                  100-        GRID    91      0       .2      -.06    0.      0
+                  101-        GRID    92      0       .225    -.06    0.      0
+                  102-        GRID    93      0       .25     -.06    0.      0
+                  103-        GRID    94      0       .275    -.06    0.      0
+                  104-        GRID    95      0       .3      -.06    0.      0
+                  105-        GRID    96      0       .325    -.06    0.      0
+                  106-        GRID    97      0       .35     -.06    0.      0
+                  107-        GRID    98      0       .375    -.06    0.      0
+                  108-        GRID    99      0       .4      -.06    0.      0
+                  109-        GRID    100     0       .425    -.06    0.      0
+                  110-        GRID    101     0       .45     -.06    0.      0
+                  111-        GRID    102     0       .475    -.06    0.      0
+                  112-        GRID    103     0       .5      -.06    0.      0
+                  113-        GRID    104     0       .525    -.06    0.      0
+                  114-        GRID    105     0       .55     -.06    0.      0
+                  115-        GRID    106     0       .575    -.06    0.      0
+                  116-        GRID    107     0       .6      -.06    0.      0
+                  117-        GRID    108     0       .625    -.06    0.      0
+                  118-        GRID    109     0       .65     -.06    0.      0
+                  119-        GRID    110     0       .675    -.06    0.      0
+                  120-        GRID    111     0       .7      -.06    0.      0
+                  121-        GRID    112     0       .725    -.06    0.      0
+                  122-        GRID    113     0       .75     -.06    0.      0
+                  123-        GRID    114     0       .775    -.06    0.      0
+                  124-        GRID    115     0       .8      -.06    0.      0
+                  125-        GRID    116     0       .825    -.06    0.      0
+                  126-        GRID    117     0       .85     -.06    0.      0
+                  127-        GRID    118     0       .875    -.06    0.      0
+                  128-        GRID    119     0       .9      -.06    0.      0
+                  129-        GRID    120     0       .925    -.06    0.      0
+                  130-        GRID    121     0       .95     -.06    0.      0
+                  131-        GRID    122     0       .975    -.06    0.      0
+                  132-        GRID    123     0       1.      -.06    0.      0
+                  133-        GRID    1000    0       .25     0.      0.      0
+                  134-        PARAM   AUTOSPC NO
+                  135-        PARAM   GRDPNT  0
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     7
+                                                                                                                                    
+0                                                                                                                                   
+                                                  S O R T E D   B U L K   D A T A   E C H O                                         
+                 ENTRY                                                                                                              
+                 COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  .                      
+                  136-        PARAM   OGEOM   NO
+                  137-        PARAM   POST    -1
+                  138-        PARAM   PRGPST  YES
+                  139-        RBE2    4       1000    123456  1       2       3       4       5       +
+                  140-        +       6       7       8       9       10      12      13      14      +
+                  141-        +       15      16      17      18      19      20      21      22      +
+                  142-        +       23      24      25      26      27      28      29      30      +
+                  143-        +       31      32      33      34      35      36      37      38      +
+                  144-        +       39      40      41      42      43      44      45      46      +
+                  145-        +       47      48      49      50      51      52      53      54      +
+                  146-        +       55      56      57      58      59      60      61      62      +
+                  147-        +       63      64      65      66      67      68      69      70      +
+                  148-        +       71      72      73      74      75      76      77      78      +
+                  149-        +       79      80      81      82      83      84      85      86      +
+                  150-        +       87      88      89      90      91      92      93      94      +
+                  151-        +       95      96      97      98      99      100     101     102     +
+                  152-        +       103     104     105     106     107     108     109     110     +
+                  153-        +       111     112     113     114     115     116     117     118     +
+                  154-        +       119     120     121     122     123     11
+                  155-        SET1    1       1       2       3       4       5       6       7       +
+                  156-        +       8       9       10      11      12      13      14      15      +
+                  157-        +       16      17      18      19      20      21      22      23      +
+                  158-        +       24      25      26      27      28      29      30      31      +
+                  159-        +       32      33      34      35      36      37      38      39      +
+                  160-        +       40      41      42      43      44      45      46      47      +
+                  161-        +       48      49      50      51      52      53      54      55      +
+                  162-        +       56      57      58      59      60      61      62      63      +
+                  163-        +       64      65      66      67      68      69      70      71      +
+                  164-        +       72      73      74      75      76      77      78      79      +
+                  165-        +       80      81      82      83      84      85      86      87      +
+                  166-        +       88      89      90      91      92      93      94      95      +
+                  167-        +       96      97      98      99      100     101     102     103     +
+                  168-        +       104     105     106     107     108     109     110     111     +
+                  169-        +       112     113     114     115     116     117     118     119     +
+                  170-        +       120     121     122     123
+                  171-        SPC1    1       1345    1000
+                              ENDDATA
+                        TOTAL COUNT= 172
+                              INPUT BULK DATA ENTRY COUNT = 177
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     8
+                                                                                                                                    
+0                                                                                                                                   
+                                        M O D E L   S U M M A R Y          BULK = 0
+                                   ENTRY NAME        NUMBER OF ENTRIES
+                                   ----------        -----------------
+                                       CELAS2                        2
+                                        CONM2                        1
+                                       CORD2C                        1
+                                       CORD2S                        1
+                                        EIGRL                        1
+                                         GRID                      124
+                                        PARAM                        5
+                                         RBE2                        1
+                                         SET1                        1
+                                         SPC1                        1
+
+ ^^^     
+ ^^^ >>> IFP OPERATIONS COMPLETE <<< 
+ ^^^     
+ *** USER INFORMATION MESSAGE 4109 (OUTPX2)
+     THE LABEL IS XXXXXXXX FOR FORTRAN UNIT 12
+     (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =          7 WORDS.)
+           (NUMBER OF FORTRAN RECORDS WRITTEN =          8 RECORDS.)
+                (TOTAL DATA WRITTEN FOR LABEL =         17 WORDS.)
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE     9
+                                                                                                                                    
+0                                                                                                                                   
+                           O U T P U T   F R O M   G R I D   P O I N T   W E I G H T   G E N E R A T O R
+0                                                     REFERENCE POINT =        0
+                                                                M O
+                      *  1.627020E+02  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00 *
+                      *  0.000000E+00  1.627020E+02  0.000000E+00  0.000000E+00  0.000000E+00  6.101325E+01 *
+                      *  0.000000E+00  0.000000E+00  1.627020E+02  0.000000E+00 -6.101325E+01  0.000000E+00 *
+                      *  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00 *
+                      *  0.000000E+00  0.000000E+00 -6.101325E+01  0.000000E+00  2.287997E+01  0.000000E+00 *
+                      *  0.000000E+00  6.101325E+01  0.000000E+00  0.000000E+00  0.000000E+00  3.050663E+01 *
+                                                                 S
+                                           *  1.000000E+00  0.000000E+00  0.000000E+00 *
+                                           *  0.000000E+00  1.000000E+00  0.000000E+00 *
+                                           *  0.000000E+00  0.000000E+00  1.000000E+00 *
+                               DIRECTION
+                          MASS AXIS SYSTEM (S)     MASS              X-C.G.        Y-C.G.        Z-C.G.
+                                  X            1.627020E+02      0.000000E+00  0.000000E+00  0.000000E+00
+                                  Y            1.627020E+02      3.750000E-01  0.000000E+00  0.000000E+00
+                                  Z            1.627020E+02      3.750000E-01  0.000000E+00  0.000000E+00
+                                                                I(S)
+                                           *  0.000000E+00  0.000000E+00  0.000000E+00 *
+                                           *  0.000000E+00  0.000000E+00  0.000000E+00 *
+                                           *  0.000000E+00  0.000000E+00  7.626657E+00 *
+                                                                I(Q)
+                                           *  0.000000E+00                             *
+                                           *                0.000000E+00               *
+                                           *                              7.626657E+00 *
+                                                                 Q
+                                           *  1.000000E+00  0.000000E+00  0.000000E+00 *
+                                           *  0.000000E+00  1.000000E+00  0.000000E+00 *
+                                           *  0.000000E+00  0.000000E+00  1.000000E+00 *
+
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    10
+                                                                                                                                    
+0                                                                                                                                   
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    11
+                                                                                                                                    
+0                                                                                                                                   
+0 RESULTANTS ABOUT ORIGIN OF SUPERELEMENT BASIC COORDINATE SYSTEM IN SUPERELEMENT BASIC SYSTEM COORDINATES.
+
+0                                                  OLOAD    RESULTANT       
+  SUBCASE/    LOAD
+  DAREA ID    TYPE       T1            T2            T3            R1            R2            R3
+0        1     FX    0.000000E+00     ----          ----          ----       0.000000E+00  0.000000E+00                             
+               FY       ----       0.000000E+00     ----       0.000000E+00     ----       0.000000E+00                             
+               FZ       ----          ----       0.000000E+00  0.000000E+00  0.000000E+00     ----                                  
+               MX       ----          ----          ----       0.000000E+00     ----          ----                                  
+               MY       ----          ----          ----          ----       0.000000E+00     ----                                  
+               MZ       ----          ----          ----          ----          ----       0.000000E+00                             
+             TOTALS  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
+ *** USER INFORMATION MESSAGE 5458 (REIG)
+     QL HOUSEHOLDER METHOD IS AUTOMATICALLY SELECTED .
+     User information:
+     Based upon automatic selection criteria the eigensolution was changed
+     to this method. To turn off this automatic selection, please set
+     system cell 359 to 0. In the case of an original Lanczos method
+     selection, setting the NE field to zero on the READ DMAP line will
+     also turn off this automatic option.
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    12
+                                                                                                                                    
+0                                                                                                                                   
+ 
+                                              R E A L   E I G E N V A L U E S
+   MODE    EXTRACTION      EIGENVALUE            RADIANS             CYCLES            GENERALIZED         GENERALIZED
+    NO.       ORDER                                                                       MASS              STIFFNESS
+        1         1        1.999443E+02        1.414017E+01        2.250478E+00        1.000000E+00        1.999443E+02
+        2         2        2.773949E+03        5.266829E+01        8.382419E+00        1.000000E+00        2.773949E+03
+*** User Information: Select OptionX for OUTPUT2 Datablock OUG1    
+ *** USER INFORMATION MESSAGE 4114 (OUTPX2)
+     DATA BLOCK OUG1     WRITTEN ON FORTRAN UNIT  12 IN BINARY (LTLEND) FORMAT USING NDDL DESCRIPTION FOR OUG1, TRL =
+                    101                 0              1984                 0                 0                 0                 5
+     NAME OF DATA BLOCK WRITTEN ON FORTRAN UNIT IS OUG1    
+        (MAXIMUM POSSIBLE FORTRAN RECORD SIZE =       16386 WORDS.)
+     (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =         992 WORDS.)
+           (NUMBER OF FORTRAN RECORDS WRITTEN =          30 RECORDS.)
+           (TOTAL DATA WRITTEN FOR DATA BLOCK =        2317 WORDS.)
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    13
+                                                                                                                                    
+0                                                                                                                                   
+      EIGENVALUE =  1.999443E+02
+          CYCLES =  2.250478E+00         R E A L   E I G E N V E C T O R   N O .          1
+ 
+      POINT ID.   TYPE          T1             T2             T3             R1             R2             R3
+             1      G      0.0           -7.205104E-02   0.0            0.0            0.0           -1.670203E-02
+             2      G      0.0           -7.246859E-02   0.0            0.0            0.0           -1.670203E-02
+             3      G      0.0           -7.288614E-02   0.0            0.0            0.0           -1.670203E-02
+             4      G      0.0           -7.330369E-02   0.0            0.0            0.0           -1.670203E-02
+             5      G      0.0           -7.372124E-02   0.0            0.0            0.0           -1.670203E-02
+             6      G      0.0           -7.413879E-02   0.0            0.0            0.0           -1.670203E-02
+             7      G      0.0           -7.455634E-02   0.0            0.0            0.0           -1.670203E-02
+             8      G      0.0           -7.497389E-02   0.0            0.0            0.0           -1.670203E-02
+             9      G      0.0           -7.539145E-02   0.0            0.0            0.0           -1.670203E-02
+            10      G      0.0           -7.580900E-02   0.0            0.0            0.0           -1.670203E-02
+            11      G      0.0           -7.622655E-02   0.0            0.0            0.0           -1.670203E-02
+            12      G      0.0           -7.664410E-02   0.0            0.0            0.0           -1.670203E-02
+            13      G      0.0           -7.706165E-02   0.0            0.0            0.0           -1.670203E-02
+            14      G      0.0           -7.747920E-02   0.0            0.0            0.0           -1.670203E-02
+            15      G      0.0           -7.789675E-02   0.0            0.0            0.0           -1.670203E-02
+            16      G      0.0           -7.831430E-02   0.0            0.0            0.0           -1.670203E-02
+            17      G      0.0           -7.873185E-02   0.0            0.0            0.0           -1.670203E-02
+            18      G      0.0           -7.914940E-02   0.0            0.0            0.0           -1.670203E-02
+            19      G      0.0           -7.956695E-02   0.0            0.0            0.0           -1.670203E-02
+            20      G      0.0           -7.998450E-02   0.0            0.0            0.0           -1.670203E-02
+            21      G      0.0           -8.040206E-02   0.0            0.0            0.0           -1.670203E-02
+            22      G      0.0           -8.081961E-02   0.0            0.0            0.0           -1.670203E-02
+            23      G      0.0           -8.123716E-02   0.0            0.0            0.0           -1.670203E-02
+            24      G      0.0           -8.165471E-02   0.0            0.0            0.0           -1.670203E-02
+            25      G      0.0           -8.207226E-02   0.0            0.0            0.0           -1.670203E-02
+            26      G      0.0           -8.248981E-02   0.0            0.0            0.0           -1.670203E-02
+            27      G      0.0           -8.290736E-02   0.0            0.0            0.0           -1.670203E-02
+            28      G      0.0           -8.332491E-02   0.0            0.0            0.0           -1.670203E-02
+            29      G      0.0           -8.374246E-02   0.0            0.0            0.0           -1.670203E-02
+            30      G      0.0           -8.416001E-02   0.0            0.0            0.0           -1.670203E-02
+            31      G      0.0           -8.457756E-02   0.0            0.0            0.0           -1.670203E-02
+            32      G      0.0           -8.499511E-02   0.0            0.0            0.0           -1.670203E-02
+            33      G      0.0           -8.541266E-02   0.0            0.0            0.0           -1.670203E-02
+            34      G      0.0           -8.583022E-02   0.0            0.0            0.0           -1.670203E-02
+            35      G      0.0           -8.624777E-02   0.0            0.0            0.0           -1.670203E-02
+            36      G      0.0           -8.666532E-02   0.0            0.0            0.0           -1.670203E-02
+            37      G      0.0           -8.708287E-02   0.0            0.0            0.0           -1.670203E-02
+            38      G      0.0           -8.750042E-02   0.0            0.0            0.0           -1.670203E-02
+            39      G      0.0           -8.791797E-02   0.0            0.0            0.0           -1.670203E-02
+            40      G      0.0           -8.833552E-02   0.0            0.0            0.0           -1.670203E-02
+            41      G      0.0           -8.875307E-02   0.0            0.0            0.0           -1.670203E-02
+            42      G      1.002122E-03  -7.205104E-02   0.0            0.0            0.0           -1.670203E-02
+            43      G      1.002122E-03  -7.246859E-02   0.0            0.0            0.0           -1.670203E-02
+            44      G      1.002122E-03  -7.288614E-02   0.0            0.0            0.0           -1.670203E-02
+            45      G      1.002122E-03  -7.330369E-02   0.0            0.0            0.0           -1.670203E-02
+            46      G      1.002122E-03  -7.372124E-02   0.0            0.0            0.0           -1.670203E-02
+            47      G      1.002122E-03  -7.413879E-02   0.0            0.0            0.0           -1.670203E-02
+            48      G      1.002122E-03  -7.455634E-02   0.0            0.0            0.0           -1.670203E-02
+            49      G      1.002122E-03  -7.497389E-02   0.0            0.0            0.0           -1.670203E-02
+            50      G      1.002122E-03  -7.539145E-02   0.0            0.0            0.0           -1.670203E-02
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    14
+                                                                                                                                    
+0                                                                                                                                   
+      EIGENVALUE =  1.999443E+02
+          CYCLES =  2.250478E+00         R E A L   E I G E N V E C T O R   N O .          1
+ 
+      POINT ID.   TYPE          T1             T2             T3             R1             R2             R3
+            51      G      1.002122E-03  -7.580900E-02   0.0            0.0            0.0           -1.670203E-02
+            52      G      1.002122E-03  -7.622655E-02   0.0            0.0            0.0           -1.670203E-02
+            53      G      1.002122E-03  -7.664410E-02   0.0            0.0            0.0           -1.670203E-02
+            54      G      1.002122E-03  -7.706165E-02   0.0            0.0            0.0           -1.670203E-02
+            55      G      1.002122E-03  -7.747920E-02   0.0            0.0            0.0           -1.670203E-02
+            56      G      1.002122E-03  -7.789675E-02   0.0            0.0            0.0           -1.670203E-02
+            57      G      1.002122E-03  -7.831430E-02   0.0            0.0            0.0           -1.670203E-02
+            58      G      1.002122E-03  -7.873185E-02   0.0            0.0            0.0           -1.670203E-02
+            59      G      1.002122E-03  -7.914940E-02   0.0            0.0            0.0           -1.670203E-02
+            60      G      1.002122E-03  -7.956695E-02   0.0            0.0            0.0           -1.670203E-02
+            61      G      1.002122E-03  -7.998450E-02   0.0            0.0            0.0           -1.670203E-02
+            62      G      1.002122E-03  -8.040206E-02   0.0            0.0            0.0           -1.670203E-02
+            63      G      1.002122E-03  -8.081961E-02   0.0            0.0            0.0           -1.670203E-02
+            64      G      1.002122E-03  -8.123716E-02   0.0            0.0            0.0           -1.670203E-02
+            65      G      1.002122E-03  -8.165471E-02   0.0            0.0            0.0           -1.670203E-02
+            66      G      1.002122E-03  -8.207226E-02   0.0            0.0            0.0           -1.670203E-02
+            67      G      1.002122E-03  -8.248981E-02   0.0            0.0            0.0           -1.670203E-02
+            68      G      1.002122E-03  -8.290736E-02   0.0            0.0            0.0           -1.670203E-02
+            69      G      1.002122E-03  -8.332491E-02   0.0            0.0            0.0           -1.670203E-02
+            70      G      1.002122E-03  -8.374246E-02   0.0            0.0            0.0           -1.670203E-02
+            71      G      1.002122E-03  -8.416001E-02   0.0            0.0            0.0           -1.670203E-02
+            72      G      1.002122E-03  -8.457756E-02   0.0            0.0            0.0           -1.670203E-02
+            73      G      1.002122E-03  -8.499511E-02   0.0            0.0            0.0           -1.670203E-02
+            74      G      1.002122E-03  -8.541266E-02   0.0            0.0            0.0           -1.670203E-02
+            75      G      1.002122E-03  -8.583022E-02   0.0            0.0            0.0           -1.670203E-02
+            76      G      1.002122E-03  -8.624777E-02   0.0            0.0            0.0           -1.670203E-02
+            77      G      1.002122E-03  -8.666532E-02   0.0            0.0            0.0           -1.670203E-02
+            78      G      1.002122E-03  -8.708287E-02   0.0            0.0            0.0           -1.670203E-02
+            79      G      1.002122E-03  -8.750042E-02   0.0            0.0            0.0           -1.670203E-02
+            80      G      1.002122E-03  -8.791797E-02   0.0            0.0            0.0           -1.670203E-02
+            81      G      1.002122E-03  -8.833552E-02   0.0            0.0            0.0           -1.670203E-02
+            82      G      1.002122E-03  -8.875307E-02   0.0            0.0            0.0           -1.670203E-02
+            83      G     -1.002122E-03  -7.205104E-02   0.0            0.0            0.0           -1.670203E-02
+            84      G     -1.002122E-03  -7.246859E-02   0.0            0.0            0.0           -1.670203E-02
+            85      G     -1.002122E-03  -7.288614E-02   0.0            0.0            0.0           -1.670203E-02
+            86      G     -1.002122E-03  -7.330369E-02   0.0            0.0            0.0           -1.670203E-02
+            87      G     -1.002122E-03  -7.372124E-02   0.0            0.0            0.0           -1.670203E-02
+            88      G     -1.002122E-03  -7.413879E-02   0.0            0.0            0.0           -1.670203E-02
+            89      G     -1.002122E-03  -7.455634E-02   0.0            0.0            0.0           -1.670203E-02
+            90      G     -1.002122E-03  -7.497389E-02   0.0            0.0            0.0           -1.670203E-02
+            91      G     -1.002122E-03  -7.539145E-02   0.0            0.0            0.0           -1.670203E-02
+            92      G     -1.002122E-03  -7.580900E-02   0.0            0.0            0.0           -1.670203E-02
+            93      G     -1.002122E-03  -7.622655E-02   0.0            0.0            0.0           -1.670203E-02
+            94      G     -1.002122E-03  -7.664410E-02   0.0            0.0            0.0           -1.670203E-02
+            95      G     -1.002122E-03  -7.706165E-02   0.0            0.0            0.0           -1.670203E-02
+            96      G     -1.002122E-03  -7.747920E-02   0.0            0.0            0.0           -1.670203E-02
+            97      G     -1.002122E-03  -7.789675E-02   0.0            0.0            0.0           -1.670203E-02
+            98      G     -1.002122E-03  -7.831430E-02   0.0            0.0            0.0           -1.670203E-02
+            99      G     -1.002122E-03  -7.873185E-02   0.0            0.0            0.0           -1.670203E-02
+           100      G     -1.002122E-03  -7.914940E-02   0.0            0.0            0.0           -1.670203E-02
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    15
+                                                                                                                                    
+0                                                                                                                                   
+      EIGENVALUE =  1.999443E+02
+          CYCLES =  2.250478E+00         R E A L   E I G E N V E C T O R   N O .          1
+ 
+      POINT ID.   TYPE          T1             T2             T3             R1             R2             R3
+           101      G     -1.002122E-03  -7.956695E-02   0.0            0.0            0.0           -1.670203E-02
+           102      G     -1.002122E-03  -7.998450E-02   0.0            0.0            0.0           -1.670203E-02
+           103      G     -1.002122E-03  -8.040206E-02   0.0            0.0            0.0           -1.670203E-02
+           104      G     -1.002122E-03  -8.081961E-02   0.0            0.0            0.0           -1.670203E-02
+           105      G     -1.002122E-03  -8.123716E-02   0.0            0.0            0.0           -1.670203E-02
+           106      G     -1.002122E-03  -8.165471E-02   0.0            0.0            0.0           -1.670203E-02
+           107      G     -1.002122E-03  -8.207226E-02   0.0            0.0            0.0           -1.670203E-02
+           108      G     -1.002122E-03  -8.248981E-02   0.0            0.0            0.0           -1.670203E-02
+           109      G     -1.002122E-03  -8.290736E-02   0.0            0.0            0.0           -1.670203E-02
+           110      G     -1.002122E-03  -8.332491E-02   0.0            0.0            0.0           -1.670203E-02
+           111      G     -1.002122E-03  -8.374246E-02   0.0            0.0            0.0           -1.670203E-02
+           112      G     -1.002122E-03  -8.416001E-02   0.0            0.0            0.0           -1.670203E-02
+           113      G     -1.002122E-03  -8.457756E-02   0.0            0.0            0.0           -1.670203E-02
+           114      G     -1.002122E-03  -8.499511E-02   0.0            0.0            0.0           -1.670203E-02
+           115      G     -1.002122E-03  -8.541266E-02   0.0            0.0            0.0           -1.670203E-02
+           116      G     -1.002122E-03  -8.583022E-02   0.0            0.0            0.0           -1.670203E-02
+           117      G     -1.002122E-03  -8.624777E-02   0.0            0.0            0.0           -1.670203E-02
+           118      G     -1.002122E-03  -8.666532E-02   0.0            0.0            0.0           -1.670203E-02
+           119      G     -1.002122E-03  -8.708287E-02   0.0            0.0            0.0           -1.670203E-02
+           120      G     -1.002122E-03  -8.750042E-02   0.0            0.0            0.0           -1.670203E-02
+           121      G     -1.002122E-03  -8.791797E-02   0.0            0.0            0.0           -1.670203E-02
+           122      G     -1.002122E-03  -8.833552E-02   0.0            0.0            0.0           -1.670203E-02
+           123      G     -1.002122E-03  -8.875307E-02   0.0            0.0            0.0           -1.670203E-02
+          1000      G      0.0           -7.622655E-02   0.0            0.0            0.0           -1.670203E-02
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    16
+                                                                                                                                    
+0                                                                                                                                   
+      EIGENVALUE =  2.773949E+03
+          CYCLES =  8.382419E+00         R E A L   E I G E N V E C T O R   N O .          2
+ 
+      POINT ID.   TYPE          T1             T2             T3             R1             R2             R3
+             1      G      0.0            1.392604E-01   0.0            0.0            0.0           -3.617182E-01
+             2      G      0.0            1.302175E-01   0.0            0.0            0.0           -3.617182E-01
+             3      G      0.0            1.211745E-01   0.0            0.0            0.0           -3.617182E-01
+             4      G      0.0            1.121316E-01   0.0            0.0            0.0           -3.617182E-01
+             5      G      0.0            1.030886E-01   0.0            0.0            0.0           -3.617182E-01
+             6      G      0.0            9.404566E-02   0.0            0.0            0.0           -3.617182E-01
+             7      G      0.0            8.500270E-02   0.0            0.0            0.0           -3.617182E-01
+             8      G      0.0            7.595975E-02   0.0            0.0            0.0           -3.617182E-01
+             9      G      0.0            6.691679E-02   0.0            0.0            0.0           -3.617182E-01
+            10      G      0.0            5.787383E-02   0.0            0.0            0.0           -3.617182E-01
+            11      G      0.0            4.883088E-02   0.0            0.0            0.0           -3.617182E-01
+            12      G      0.0            3.978792E-02   0.0            0.0            0.0           -3.617182E-01
+            13      G      0.0            3.074496E-02   0.0            0.0            0.0           -3.617182E-01
+            14      G      0.0            2.170201E-02   0.0            0.0            0.0           -3.617182E-01
+            15      G      0.0            1.265905E-02   0.0            0.0            0.0           -3.617182E-01
+            16      G      0.0            3.616096E-03   0.0            0.0            0.0           -3.617182E-01
+            17      G      0.0           -5.426860E-03   0.0            0.0            0.0           -3.617182E-01
+            18      G      0.0           -1.446982E-02   0.0            0.0            0.0           -3.617182E-01
+            19      G      0.0           -2.351277E-02   0.0            0.0            0.0           -3.617182E-01
+            20      G      0.0           -3.255573E-02   0.0            0.0            0.0           -3.617182E-01
+            21      G      0.0           -4.159868E-02   0.0            0.0            0.0           -3.617182E-01
+            22      G      0.0           -5.064164E-02   0.0            0.0            0.0           -3.617182E-01
+            23      G      0.0           -5.968460E-02   0.0            0.0            0.0           -3.617182E-01
+            24      G      0.0           -6.872755E-02   0.0            0.0            0.0           -3.617182E-01
+            25      G      0.0           -7.777051E-02   0.0            0.0            0.0           -3.617182E-01
+            26      G      0.0           -8.681347E-02   0.0            0.0            0.0           -3.617182E-01
+            27      G      0.0           -9.585642E-02   0.0            0.0            0.0           -3.617182E-01
+            28      G      0.0           -1.048994E-01   0.0            0.0            0.0           -3.617182E-01
+            29      G      0.0           -1.139423E-01   0.0            0.0            0.0           -3.617182E-01
+            30      G      0.0           -1.229853E-01   0.0            0.0            0.0           -3.617182E-01
+            31      G      0.0           -1.320282E-01   0.0            0.0            0.0           -3.617182E-01
+            32      G      0.0           -1.410712E-01   0.0            0.0            0.0           -3.617182E-01
+            33      G      0.0           -1.501142E-01   0.0            0.0            0.0           -3.617182E-01
+            34      G      0.0           -1.591571E-01   0.0            0.0            0.0           -3.617182E-01
+            35      G      0.0           -1.682001E-01   0.0            0.0            0.0           -3.617182E-01
+            36      G      0.0           -1.772430E-01   0.0            0.0            0.0           -3.617182E-01
+            37      G      0.0           -1.862860E-01   0.0            0.0            0.0           -3.617182E-01
+            38      G      0.0           -1.953289E-01   0.0            0.0            0.0           -3.617182E-01
+            39      G      0.0           -2.043719E-01   0.0            0.0            0.0           -3.617182E-01
+            40      G      0.0           -2.134149E-01   0.0            0.0            0.0           -3.617182E-01
+            41      G      0.0           -2.224578E-01   0.0            0.0            0.0           -3.617182E-01
+            42      G      2.170309E-02   1.392604E-01   0.0            0.0            0.0           -3.617182E-01
+            43      G      2.170309E-02   1.302175E-01   0.0            0.0            0.0           -3.617182E-01
+            44      G      2.170309E-02   1.211745E-01   0.0            0.0            0.0           -3.617182E-01
+            45      G      2.170309E-02   1.121316E-01   0.0            0.0            0.0           -3.617182E-01
+            46      G      2.170309E-02   1.030886E-01   0.0            0.0            0.0           -3.617182E-01
+            47      G      2.170309E-02   9.404566E-02   0.0            0.0            0.0           -3.617182E-01
+            48      G      2.170309E-02   8.500270E-02   0.0            0.0            0.0           -3.617182E-01
+            49      G      2.170309E-02   7.595975E-02   0.0            0.0            0.0           -3.617182E-01
+            50      G      2.170309E-02   6.691679E-02   0.0            0.0            0.0           -3.617182E-01
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    17
+                                                                                                                                    
+0                                                                                                                                   
+      EIGENVALUE =  2.773949E+03
+          CYCLES =  8.382419E+00         R E A L   E I G E N V E C T O R   N O .          2
+ 
+      POINT ID.   TYPE          T1             T2             T3             R1             R2             R3
+            51      G      2.170309E-02   5.787383E-02   0.0            0.0            0.0           -3.617182E-01
+            52      G      2.170309E-02   4.883088E-02   0.0            0.0            0.0           -3.617182E-01
+            53      G      2.170309E-02   3.978792E-02   0.0            0.0            0.0           -3.617182E-01
+            54      G      2.170309E-02   3.074496E-02   0.0            0.0            0.0           -3.617182E-01
+            55      G      2.170309E-02   2.170201E-02   0.0            0.0            0.0           -3.617182E-01
+            56      G      2.170309E-02   1.265905E-02   0.0            0.0            0.0           -3.617182E-01
+            57      G      2.170309E-02   3.616096E-03   0.0            0.0            0.0           -3.617182E-01
+            58      G      2.170309E-02  -5.426860E-03   0.0            0.0            0.0           -3.617182E-01
+            59      G      2.170309E-02  -1.446982E-02   0.0            0.0            0.0           -3.617182E-01
+            60      G      2.170309E-02  -2.351277E-02   0.0            0.0            0.0           -3.617182E-01
+            61      G      2.170309E-02  -3.255573E-02   0.0            0.0            0.0           -3.617182E-01
+            62      G      2.170309E-02  -4.159868E-02   0.0            0.0            0.0           -3.617182E-01
+            63      G      2.170309E-02  -5.064164E-02   0.0            0.0            0.0           -3.617182E-01
+            64      G      2.170309E-02  -5.968460E-02   0.0            0.0            0.0           -3.617182E-01
+            65      G      2.170309E-02  -6.872755E-02   0.0            0.0            0.0           -3.617182E-01
+            66      G      2.170309E-02  -7.777051E-02   0.0            0.0            0.0           -3.617182E-01
+            67      G      2.170309E-02  -8.681347E-02   0.0            0.0            0.0           -3.617182E-01
+            68      G      2.170309E-02  -9.585642E-02   0.0            0.0            0.0           -3.617182E-01
+            69      G      2.170309E-02  -1.048994E-01   0.0            0.0            0.0           -3.617182E-01
+            70      G      2.170309E-02  -1.139423E-01   0.0            0.0            0.0           -3.617182E-01
+            71      G      2.170309E-02  -1.229853E-01   0.0            0.0            0.0           -3.617182E-01
+            72      G      2.170309E-02  -1.320282E-01   0.0            0.0            0.0           -3.617182E-01
+            73      G      2.170309E-02  -1.410712E-01   0.0            0.0            0.0           -3.617182E-01
+            74      G      2.170309E-02  -1.501142E-01   0.0            0.0            0.0           -3.617182E-01
+            75      G      2.170309E-02  -1.591571E-01   0.0            0.0            0.0           -3.617182E-01
+            76      G      2.170309E-02  -1.682001E-01   0.0            0.0            0.0           -3.617182E-01
+            77      G      2.170309E-02  -1.772430E-01   0.0            0.0            0.0           -3.617182E-01
+            78      G      2.170309E-02  -1.862860E-01   0.0            0.0            0.0           -3.617182E-01
+            79      G      2.170309E-02  -1.953289E-01   0.0            0.0            0.0           -3.617182E-01
+            80      G      2.170309E-02  -2.043719E-01   0.0            0.0            0.0           -3.617182E-01
+            81      G      2.170309E-02  -2.134149E-01   0.0            0.0            0.0           -3.617182E-01
+            82      G      2.170309E-02  -2.224578E-01   0.0            0.0            0.0           -3.617182E-01
+            83      G     -2.170309E-02   1.392604E-01   0.0            0.0            0.0           -3.617182E-01
+            84      G     -2.170309E-02   1.302175E-01   0.0            0.0            0.0           -3.617182E-01
+            85      G     -2.170309E-02   1.211745E-01   0.0            0.0            0.0           -3.617182E-01
+            86      G     -2.170309E-02   1.121316E-01   0.0            0.0            0.0           -3.617182E-01
+            87      G     -2.170309E-02   1.030886E-01   0.0            0.0            0.0           -3.617182E-01
+            88      G     -2.170309E-02   9.404566E-02   0.0            0.0            0.0           -3.617182E-01
+            89      G     -2.170309E-02   8.500270E-02   0.0            0.0            0.0           -3.617182E-01
+            90      G     -2.170309E-02   7.595975E-02   0.0            0.0            0.0           -3.617182E-01
+            91      G     -2.170309E-02   6.691679E-02   0.0            0.0            0.0           -3.617182E-01
+            92      G     -2.170309E-02   5.787383E-02   0.0            0.0            0.0           -3.617182E-01
+            93      G     -2.170309E-02   4.883088E-02   0.0            0.0            0.0           -3.617182E-01
+            94      G     -2.170309E-02   3.978792E-02   0.0            0.0            0.0           -3.617182E-01
+            95      G     -2.170309E-02   3.074496E-02   0.0            0.0            0.0           -3.617182E-01
+            96      G     -2.170309E-02   2.170201E-02   0.0            0.0            0.0           -3.617182E-01
+            97      G     -2.170309E-02   1.265905E-02   0.0            0.0            0.0           -3.617182E-01
+            98      G     -2.170309E-02   3.616096E-03   0.0            0.0            0.0           -3.617182E-01
+            99      G     -2.170309E-02  -5.426860E-03   0.0            0.0            0.0           -3.617182E-01
+           100      G     -2.170309E-02  -1.446982E-02   0.0            0.0            0.0           -3.617182E-01
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    18
+                                                                                                                                    
+0                                                                                                                                   
+      EIGENVALUE =  2.773949E+03
+          CYCLES =  8.382419E+00         R E A L   E I G E N V E C T O R   N O .          2
+ 
+      POINT ID.   TYPE          T1             T2             T3             R1             R2             R3
+           101      G     -2.170309E-02  -2.351277E-02   0.0            0.0            0.0           -3.617182E-01
+           102      G     -2.170309E-02  -3.255573E-02   0.0            0.0            0.0           -3.617182E-01
+           103      G     -2.170309E-02  -4.159868E-02   0.0            0.0            0.0           -3.617182E-01
+           104      G     -2.170309E-02  -5.064164E-02   0.0            0.0            0.0           -3.617182E-01
+           105      G     -2.170309E-02  -5.968460E-02   0.0            0.0            0.0           -3.617182E-01
+           106      G     -2.170309E-02  -6.872755E-02   0.0            0.0            0.0           -3.617182E-01
+           107      G     -2.170309E-02  -7.777051E-02   0.0            0.0            0.0           -3.617182E-01
+           108      G     -2.170309E-02  -8.681347E-02   0.0            0.0            0.0           -3.617182E-01
+           109      G     -2.170309E-02  -9.585642E-02   0.0            0.0            0.0           -3.617182E-01
+           110      G     -2.170309E-02  -1.048994E-01   0.0            0.0            0.0           -3.617182E-01
+           111      G     -2.170309E-02  -1.139423E-01   0.0            0.0            0.0           -3.617182E-01
+           112      G     -2.170309E-02  -1.229853E-01   0.0            0.0            0.0           -3.617182E-01
+           113      G     -2.170309E-02  -1.320282E-01   0.0            0.0            0.0           -3.617182E-01
+           114      G     -2.170309E-02  -1.410712E-01   0.0            0.0            0.0           -3.617182E-01
+           115      G     -2.170309E-02  -1.501142E-01   0.0            0.0            0.0           -3.617182E-01
+           116      G     -2.170309E-02  -1.591571E-01   0.0            0.0            0.0           -3.617182E-01
+           117      G     -2.170309E-02  -1.682001E-01   0.0            0.0            0.0           -3.617182E-01
+           118      G     -2.170309E-02  -1.772430E-01   0.0            0.0            0.0           -3.617182E-01
+           119      G     -2.170309E-02  -1.862860E-01   0.0            0.0            0.0           -3.617182E-01
+           120      G     -2.170309E-02  -1.953289E-01   0.0            0.0            0.0           -3.617182E-01
+           121      G     -2.170309E-02  -2.043719E-01   0.0            0.0            0.0           -3.617182E-01
+           122      G     -2.170309E-02  -2.134149E-01   0.0            0.0            0.0           -3.617182E-01
+           123      G     -2.170309E-02  -2.224578E-01   0.0            0.0            0.0           -3.617182E-01
+          1000      G      0.0            4.883088E-02   0.0            0.0            0.0           -3.617182E-01
+ *** USER INFORMATION MESSAGE 4110 (OUTPX2)
+                                 END-OF-DATA SIMULATION ON FORTRAN UNIT 12
+                                 (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =      1 WORDS.)
+                                       (NUMBER OF FORTRAN RECORDS WRITTEN =      1 RECORDS.)
+                                       (TOTAL DATA WRITTEN FOR EOF MARKER =      1 WORDS.)
+1    MSC/MD NASTRAN MODES ANALYSIS SET                  **STUDENT EDITION*  OCTOBER   9, 2020  MSC Nastran 12/18/18   PAGE    19
+                                                                                                                                    
+0                                                                                                                                   
+ * * * *  D B D I C T   P R I N T  * * * *      SUBDMAP = PRTSUM  ,  DMAP STATEMENT NO.     71
+
+
+
+0                                   * * * *  A N A L Y S I S  S U M M A R Y  T A B L E  * * * *
+0 SEID  PEID PROJ VERS APRCH      SEMG SEMR SEKR SELG SELR MODES DYNRED SOLLIN PVALID SOLNL LOOPID DESIGN CYCLE SENSITIVITY
+ --------------------------------------------------------------------------------------------------------------------------
+     0     0    1    1 '        '    T    T    T    T    T     T      F      T      0     F     -1            0           F
+0SEID = SUPERELEMENT ID.
+ PEID = PRIMARY SUPERELEMENT ID OF IMAGE SUPERELEMENT.
+ PROJ = PROJECT ID NUMBER.
+ VERS = VERSION ID.
+ APRCH = BLANK FOR STRUCTURAL ANALYSIS.  HEAT FOR HEAT TRANSFER ANALYSIS.
+ SEMG = STIFFNESS AND MASS MATRIX GENERATION STEP.
+ SEMR = MASS MATRIX REDUCTION STEP (INCLUDES EIGENVALUE SOLUTION FOR MODES).
+ SEKR = STIFFNESS MATRIX REDUCTION STEP.
+ SELG = LOAD MATRIX GENERATION STEP.
+ SELR = LOAD MATRIX REDUCTION STEP. 
+ MODES = T (TRUE) IF NORMAL MODES OR BUCKLING MODES CALCULATED.
+ DYNRED = T (TRUE) MEANS GENERALIZED DYNAMIC AND/OR COMPONENT MODE REDUCTION PERFORMED.
+ SOLLIN = T (TRUE) IF LINEAR SOLUTION EXISTS IN DATABASE.
+ PVALID = P-DISTRIBUTION ID OF P-VALUE FOR P-ELEMENTS
+ LOOPID = THE LAST LOOPID VALUE USED IN THE NONLINEAR ANALYSIS.  USEFUL FOR RESTARTS.
+ SOLNL = T (TRUE) IF NONLINEAR SOLUTION EXISTS IN DATABASE.
+ DESIGN CYCLE = THE LAST DESIGN CYCLE (ONLY VALID IN OPTIMIZATION).
+ SENSITIVITY = SENSITIVITY MATRIX GENERATION FLAG.
+ 
+ No PARAM values were set in the Control File.
+ 
+1                                        * * * END OF JOB * * *
+ 
+ 
+ No Symbolic Replacement variables or values were specified.
+
