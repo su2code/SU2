@@ -44,6 +44,10 @@ private:
   CFEMStandardElementBase *elem1;  /*!< \brief Standard element on side 1 of the internal matching face. */
 
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.

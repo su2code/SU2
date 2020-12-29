@@ -44,6 +44,10 @@ private:
   CFEMStandardElementBase *elem1;  /*!< \brief Standard element on side 1 of the internal matching face. */
 
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -62,6 +66,22 @@ public:
    * \brief Destructor. Nothing to be done.
    */
   ~CFEMStandardInternalFaceGrid() = default;
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which makes available the number of total integration points of the element.
+   * \return  The number of total integration points.
+   */
+  inline unsigned short GetNIntegration(void) const {return elem0->GetNIntegration();}
+
+  /*!
+   * \brief Function, which makes available the padded number of total integration points of the element.
+   * \return  The padded number of total integration points.
+   */
+  inline unsigned short GetNIntegrationPad(void) const {return elem0->GetNIntegrationPad();}
 
 private:
 

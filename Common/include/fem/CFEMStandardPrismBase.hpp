@@ -38,18 +38,17 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardPrismBase: public CFEMStandardQuadBase,
-                             public CFEMStandardTriBase  {
+class CFEMStandardPrismBase: public virtual CFEMStandardQuadBase,
+                             public virtual CFEMStandardTriBase  {
 public:
   /*-----------------------------------------------------------------------------------*/
   /*---                     Constructors and destructors.                           ---*/
   /*-----------------------------------------------------------------------------------*/
 
   /*!
-   * \brief Default constructor of the class, deleted to make sure the
-   *        overloaded constructor is always used.
+   * \brief Default constructor of the class.
    */
-  CFEMStandardPrismBase() = delete;
+  CFEMStandardPrismBase() = default;
 
   /*!
    * \overload

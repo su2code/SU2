@@ -2428,9 +2428,9 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Determine the types of surface standard elements needed    ---*/
   /*---         for the handling of the boundary conditions. This data is  ---*/
-  /*---         stored in a vector of the class CUnsignedShort7T, which    ---*/
-  /*---         can store 7 short integers as one entity. Find below the   ---*/
-  /*---         explanation of the 7 parameters that define a surface.     ---*/
+  /*---         stored in a vector of the class CUnsignedShort8T, which    ---*/
+  /*---         can store 8 short integers as one entity. Find below the   ---*/
+  /*---         explanation of the 8 parameters that define a surface.     ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Every standard face for a boundary surface is determined by 7
@@ -2445,9 +2445,10 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
            this is always 0, but not for internally matching faces, for which
            standard faces are also used.
         7: The number of variables per point.
+        8: Polynomial degree that must be integrated exactly.
         Define the variables to store this information for both the grid
         and solution. ---*/
-  vector<CUnsignedShort7T> surfaceTypesGrid, surfaceTypesSol;
+  vector<CUnsignedShort8T> surfaceTypesGrid, surfaceTypesSol;
 
   /*--- Loop over all faces and select the boundary faces. ---*/
   for(unsigned long i=0; i<localFaces.size(); ++i) {
@@ -2470,51 +2471,58 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
             in one direction is determined. ---*/
       const unsigned short nInt = CFEMStandardElementBase::GetNIntStatic(VTK_Type, orderExact);
 
+      /*--- Set the number of grid and solution variables. If the volume element is a
+            hexahedron or a quadrilateral, these numbers do not matter and are therefore
+            set to 1. ---*/
+      unsigned short mGridVar = nGridVar, mSolVar = nSolVar;
+      if((localFaces[i].elemType0 == HEXAHEDRON) || (localFaces[i].elemType0 == QUADRILATERAL))
+        mGridVar = mSolVar = 1;
+
       /*--- Store this face in surfaceTypesGrid and surfaceTypesSol. For an
             incompressible solver two solution types must be added, one for
             the regular velocities and one for the pressure. ---*/
-      surfaceTypesGrid.push_back(CUnsignedShort7T(VTK_Type, nInt, localFaces[i].elemType0,
+      surfaceTypesGrid.push_back(CUnsignedShort8T(VTK_Type, nInt, localFaces[i].elemType0,
                                                   localFaces[i].nPolyGrid0, localFaces[i].faceID0,
-                                                  0, nGridVar));
+                                                  0, mGridVar, orderExact));
 
-      surfaceTypesSol.push_back(CUnsignedShort7T(VTK_Type, nInt, localFaces[i].elemType0,
+      surfaceTypesSol.push_back(CUnsignedShort8T(VTK_Type, nInt, localFaces[i].elemType0,
                                                  localFaces[i].nPolySol0, localFaces[i].faceID0,
-                                                 0, nSolVar));
+                                                 0, mSolVar, orderExact));
       if( incompressible )
-        surfaceTypesSol.push_back(CUnsignedShort7T(VTK_Type, nInt, localFaces[i].elemType0,
+        surfaceTypesSol.push_back(CUnsignedShort8T(VTK_Type, nInt, localFaces[i].elemType0,
                                                    localFaces[i].nPolySol0-1, localFaces[i].faceID0,
-                                                   0, 1));
+                                                   0, 1, orderExact));
     }
   }
 
   /*--- Copy the face types for the grid, sort them and remove the
         double entities. ---*/
-  vector<CUnsignedShort7T> typesSurfaceGrid = surfaceTypesGrid;
-  vector<CUnsignedShort7T>::iterator lastEntry7T;
+  vector<CUnsignedShort8T> typesSurfaceGrid = surfaceTypesGrid;
+  vector<CUnsignedShort8T>::iterator lastEntry8T;
   sort(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
-  lastEntry7T = unique(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
-  typesSurfaceGrid.erase(lastEntry7T, typesSurfaceGrid.end());
+  lastEntry8T = unique(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
+  typesSurfaceGrid.erase(lastEntry8T, typesSurfaceGrid.end());
 
   /*--- Copy the face types for the solution, sort them and remove the
         double entities. ---*/
-  vector<CUnsignedShort7T> typesSurfaceSol = surfaceTypesSol;
+  vector<CUnsignedShort8T> typesSurfaceSol = surfaceTypesSol;
   sort(typesSurfaceSol.begin(), typesSurfaceSol.end());
-  lastEntry7T = unique(typesSurfaceSol.begin(), typesSurfaceSol.end());
-  typesSurfaceSol.erase(lastEntry7T, typesSurfaceSol.end());
+  lastEntry8T = unique(typesSurfaceSol.begin(), typesSurfaceSol.end());
+  typesSurfaceSol.erase(lastEntry8T, typesSurfaceSol.end());
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2: Determine the types of the standard elements for internal  ---*/
   /*---         matching faces. This data is stored in a vector of the     ---*/
-  /*---         the class CUnsignedShort10T, which can store 10 short      ---*/
+  /*---         the class CUnsignedShort11T, which can store 11 short      ---*/
   /*---         integers as one entity. Find below the explanation of the  ---*/
-  /*---         10 parameters that define an internal matching face.       ---*/
+  /*---         11 parameters that define an internal matching face.       ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- For the internally matching faces every situation gets its own standard
         element to avoid copying and indirect addressing during the residual
         computation. This means that quite a few standard internal faces may be
         present.  The standard element for internal matching faces is defined by
-        10 parameters, which are
+        11 parameters, which are
         1:  VTK type of the face. Although this is not an independent parameter,
             it is taken into account for convenience.
         2:  Number of integration points of the face.
@@ -2529,9 +2537,10 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
             because the face has been constructed to match this orientation,
             see the call to localFaces[i].MatchOrientationElemSide0.
         10: The number of variables per point.
+        11: Polynomial degree that must be integrated exactly.
         Define the variables to store this information for both the grid
         and solution. ---*/
-  vector<CUnsignedShort10T> faceTypesGrid, faceTypesSol;
+  vector<CUnsignedShort11T> faceTypesGrid, faceTypesSol;
 
   /*--- Loop over all faces and select the matching internal faces. ---*/
   for(unsigned long i=0; i<localFaces.size(); ++i) {
@@ -2550,18 +2559,27 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
       else if(localFaces[i].nCornerPoints == 3) VTK_Type = TRIANGLE;
       else                                      VTK_Type = QUADRILATERAL;
 
+      /*--- Set the number of grid and solution variables. If both adjacent volume elements
+            are hexahedra or quadrilaterals, these number do not matter and are therefore
+            set to 1. ---*/
+      unsigned short mGridVar = nGridVar, mSolVar = nSolVar;
+      if(((localFaces[i].elemType0 == HEXAHEDRON)    && (localFaces[i].elemType1 == HEXAHEDRON)) ||
+         ((localFaces[i].elemType0 == QUADRILATERAL) && (localFaces[i].elemType1 == QUADRILATERAL)))
+        mGridVar = mSolVar = 1;
+
       /*--- Store the grid data for this face. ---*/
-      CUnsignedShort10T thisFace;
-      thisFace.short0 = VTK_Type;
-      thisFace.short1 = CFEMStandardElementBase::GetNIntStatic(VTK_Type, orderExact);
-      thisFace.short2 = localFaces[i].elemType0;
-      thisFace.short3 = localFaces[i].nPolyGrid0;
-      thisFace.short4 = localFaces[i].faceID0;
-      thisFace.short5 = localFaces[i].elemType1;
-      thisFace.short6 = localFaces[i].nPolyGrid1;
-      thisFace.short7 = localFaces[i].faceID1;
-      thisFace.short8 = localFaces[i].DetermineOrientationElemSide1(volElem);
-      thisFace.short9 = nGridVar;
+      CUnsignedShort11T thisFace;
+      thisFace.short0  = VTK_Type;
+      thisFace.short1  = CFEMStandardElementBase::GetNIntStatic(VTK_Type, orderExact);
+      thisFace.short2  = localFaces[i].elemType0;
+      thisFace.short3  = localFaces[i].nPolyGrid0;
+      thisFace.short4  = localFaces[i].faceID0;
+      thisFace.short5  = localFaces[i].elemType1;
+      thisFace.short6  = localFaces[i].nPolyGrid1;
+      thisFace.short7  = localFaces[i].faceID1;
+      thisFace.short8  = localFaces[i].DetermineOrientationElemSide1(volElem);
+      thisFace.short9  = mGridVar;
+      thisFace.short10 = orderExact;
 
       /*--- Store this face in faceTypesGrid. ---*/
       faceTypesGrid.push_back(thisFace);
@@ -2569,7 +2587,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
       /*--- Adapt this face for the solution and add it to faceTypesSol. ---*/
       thisFace.short3 = localFaces[i].nPolySol0;
       thisFace.short6 = localFaces[i].nPolySol1;
-      thisFace.short9 = nSolVar;
+      thisFace.short9 = mSolVar;
 
       faceTypesSol.push_back(thisFace);
 
@@ -2588,18 +2606,18 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
   /*--- Copy the face types for the grid, sort them and remove the
         double entities. ---*/
-  vector<CUnsignedShort10T> typesFaceGrid = faceTypesGrid;
-  vector<CUnsignedShort10T>::iterator lastEntry10T;
+  vector<CUnsignedShort11T> typesFaceGrid = faceTypesGrid;
+  vector<CUnsignedShort11T>::iterator lastEntry11T;
   sort(typesFaceGrid.begin(), typesFaceGrid.end());
-  lastEntry10T = unique(typesFaceGrid.begin(), typesFaceGrid.end());
-  typesFaceGrid.erase(lastEntry10T, typesFaceGrid.end());
+  lastEntry11T = unique(typesFaceGrid.begin(), typesFaceGrid.end());
+  typesFaceGrid.erase(lastEntry11T, typesFaceGrid.end());
 
   /*--- Copy the face types for the solution, sort them and remove the
         double entities. ---*/
-  vector<CUnsignedShort10T> typesFaceSol = faceTypesSol;
+  vector<CUnsignedShort11T> typesFaceSol = faceTypesSol;
   sort(typesFaceSol.begin(), typesFaceSol.end());
-  lastEntry10T = unique(typesFaceSol.begin(), typesFaceSol.end());
-  typesFaceSol.erase(lastEntry10T, typesFaceSol.end());
+  lastEntry11T = unique(typesFaceSol.begin(), typesFaceSol.end());
+  typesFaceSol.erase(lastEntry11T, typesFaceSol.end());
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Every standard face for an internal matching face is a     ---*/
@@ -2615,39 +2633,70 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         add the two surfaces to typesSurfaceGrid. Note that the element
         on side 0 has an orientation of 0 per definition. ---*/
   for(unsigned int i=0; i<typesFaceGrid.size(); ++i) {
-    typesSurfaceGrid.push_back(CUnsignedShort7T(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+
+    /*--- Correct the number of variables for side 0 if the adjacent element
+          is a hexahedron or quadrilateral. Add the surface standard element
+          to typesSurfaceGrid afterwards. ---*/
+    unsigned short mGridVar = typesFaceGrid[i].short9;
+    if((typesFaceGrid[i].short2 == HEXAHEDRON) || (typesFaceGrid[i].short2 == QUADRILATERAL))
+      mGridVar = 1;
+
+    typesSurfaceGrid.push_back(CUnsignedShort8T(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
                                                 typesFaceGrid[i].short2, typesFaceGrid[i].short3,
                                                 typesFaceGrid[i].short4, 0,
-                                                typesFaceGrid[i].short9));
-    typesSurfaceGrid.push_back(CUnsignedShort7T(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+                                                mGridVar,                typesFaceGrid[i].short10));
+
+    /*--- Correct the number of variables for side 1 if the adjacent element
+          is a hexahedron or quadrilateral. Add the surface standard element
+          to typesSurfaceGrid afterwards. ---*/
+    mGridVar = typesFaceGrid[i].short9;
+    if((typesFaceGrid[i].short5 == HEXAHEDRON) || (typesFaceGrid[i].short5 == QUADRILATERAL))
+      mGridVar = 1;
+
+    typesSurfaceGrid.push_back(CUnsignedShort8T(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
                                                 typesFaceGrid[i].short5, typesFaceGrid[i].short6,
                                                 typesFaceGrid[i].short7, typesFaceGrid[i].short8,
-                                                typesFaceGrid[i].short9));
+                                                mGridVar,                typesFaceGrid[i].short10));
   }
 
   /*--- Sort typesSurfaceGrid and remove the double entities. ---*/
   sort(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
-  lastEntry7T = unique(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
-  typesSurfaceGrid.erase(lastEntry7T, typesSurfaceGrid.end());
+  lastEntry8T = unique(typesSurfaceGrid.begin(), typesSurfaceGrid.end());
+  typesSurfaceGrid.erase(lastEntry8T, typesSurfaceGrid.end());
 
   /*--- Loop over the standard internal matching faces for the solution and
         add the two surfaces to typesSurfaceSol. Note that the element
         on side 0 has an orientation of 0 per definition. ---*/
   for(unsigned int i=0; i<typesFaceSol.size(); ++i) {
-    typesSurfaceSol.push_back(CUnsignedShort7T(typesFaceSol[i].short0, typesFaceSol[i].short1,
+
+    /*--- Correct the number of variables for side 0 if the adjacent element
+          is a hexahedron or quadrilateral. Add the surface standard element
+          to typesSurfaceSol afterwards. ---*/
+    unsigned short mSolVar = typesFaceGrid[i].short9;
+    if((typesFaceSol[i].short2 == HEXAHEDRON) || (typesFaceSol[i].short2 == QUADRILATERAL))
+      mSolVar = 1;
+
+    typesSurfaceSol.push_back(CUnsignedShort8T(typesFaceSol[i].short0, typesFaceSol[i].short1,
                                                typesFaceSol[i].short2, typesFaceSol[i].short3,
                                                typesFaceSol[i].short4, 0,
-                                               typesFaceSol[i].short9));
-    typesSurfaceSol.push_back(CUnsignedShort7T(typesFaceSol[i].short0, typesFaceSol[i].short1,
+                                               mSolVar,                typesFaceSol[i].short10));
+
+    /*--- Correct the number of variables for side 1 if the adjacent element
+          is a hexahedron or quadrilateral. Add the surface standard element
+          to typesSurfaceSol afterwards. ---*/
+    mSolVar = typesFaceGrid[i].short9;
+    if((typesFaceSol[i].short5 == HEXAHEDRON) || (typesFaceSol[i].short5 == QUADRILATERAL))
+      mSolVar = 1;
+    typesSurfaceSol.push_back(CUnsignedShort8T(typesFaceSol[i].short0, typesFaceSol[i].short1,
                                                typesFaceSol[i].short5, typesFaceSol[i].short6,
                                                typesFaceSol[i].short7, typesFaceSol[i].short8,
-                                               typesFaceSol[i].short9));
+                                               mSolVar,                typesFaceSol[i].short10));
   }
 
   /*--- Sort typesSurfaceSol and remove the double entities. ---*/
   sort(typesSurfaceSol.begin(), typesSurfaceSol.end());
-  lastEntry7T = unique(typesSurfaceSol.begin(), typesSurfaceSol.end());
-  typesSurfaceSol.erase(lastEntry7T, typesSurfaceSol.end());
+  lastEntry8T = unique(typesSurfaceSol.begin(), typesSurfaceSol.end());
+  typesSurfaceSol.erase(lastEntry8T, typesSurfaceSol.end());
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 4: Determine the different GEMM calls present in the standard ---*/
@@ -2677,13 +2726,13 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
     unsigned short VTK_Type_Elem = typesSurfaceGrid[i].short2;
     unsigned short nDOFs;
-    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
       nDOFs = typesSurfaceGrid[i].short3+1;
     }
     else {
-      VTK_Type_Elem = LINE;
-      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(typesSurfaceGrid[i].short2,
+      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem,
                                                       typesSurfaceGrid[i].short3);
+      VTK_Type_Elem = LINE;
     }
 
     gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, typesSurfaceGrid[i].short1,
@@ -2700,7 +2749,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
     unsigned short VTK_Type_Elem = typesSurfaceSol[i].short2;
     unsigned short nDOFs;
-    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
       nDOFs = typesSurfaceSol[i].short3+1;
     }
     else {
@@ -2769,15 +2818,18 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     unsigned short faceID_Elem   = typesSurfaceGrid[i].short4;
     unsigned short orientation   = typesSurfaceGrid[i].short5;
     unsigned short nVarPerPoint  = typesSurfaceGrid[i].short6;
+    unsigned short orderExact    = typesSurfaceGrid[i].short7;
 
     /*--- Correct the VTK type of the element if no tensor product
-          is used. Also determine the number of DOFs. ---*/
+          is used and correct nVarPerPoint if a tensor product is
+          used. Also determine the number of DOFs. Again the number
+          of DOFs in 1D for tensor product elements. ---*/
     unsigned short nDOFs;
-    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
-      nDOFs = typesSurfaceGrid[i].short3+1;
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
+      nDOFs        = typesSurfaceGrid[i].short3+1;
+      nVarPerPoint = 1;
     }
     else {
-      VTK_Type_Elem = LINE;
       nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
       VTK_Type_Elem = LINE;
     }
@@ -2800,13 +2852,15 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
               Note that typesSurfaceGrid[i].short2 must be used. ---*/
         switch( typesSurfaceGrid[i].short2 ) {
           case TRIANGLE:
-            standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentTriGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentTriGrid(nPoly, orderExact, 
+                                                                                 faceID_Elem,
                                                                                  orientation, useLGL,
                                                                                  gemmTypesFaces[ind]);
             break;
 
           case QUADRILATERAL:
-            standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentQuadGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardLineAdjacentQuadGrid(nPoly, orderExact,
+                                                                                  faceID_Elem,
                                                                                   orientation, useLGL,
                                                                                   gemmTypesFaces[ind]);
             break;
@@ -2826,19 +2880,22 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
               Note that typesSurfaceGrid[i].short2 must be used. ---*/
         switch( typesSurfaceGrid[i].short2 ) {
           case TETRAHEDRON:
-            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentTetGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentTetGrid(nPoly, orderExact,
+                                                                                faceID_Elem,
                                                                                 orientation, useLGL,
                                                                                 gemmTypesFaces[ind]);
             break;
 
           case PYRAMID:
-            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPyraGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPyraGrid(nPoly, orderExact,
+                                                                                 faceID_Elem,
                                                                                  orientation, useLGL,
                                                                                  gemmTypesFaces[ind]);
             break;
 
           case PRISM:
-            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPrismGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardTriAdjacentPrismGrid(nPoly, orderExact,
+                                                                                  faceID_Elem,
                                                                                   orientation, useLGL,
                                                                                   gemmTypesFaces[ind]);
             break;
@@ -2858,19 +2915,22 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
               Note that typesSurfaceGrid[i].short2 must be used. ---*/
         switch( typesSurfaceGrid[i].short2 ) {
           case HEXAHEDRON:
-            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentHexGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentHexGrid(nPoly, orderExact,
+                                                                                 faceID_Elem,
                                                                                  orientation, useLGL,
                                                                                  gemmTypesFaces[ind]);
             break;
 
           case PYRAMID:
-            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPyraGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPyraGrid(nPoly, orderExact,
+                                                                                  faceID_Elem,
                                                                                   orientation, useLGL,
                                                                                   gemmTypesFaces[ind]);
             break;
 
           case PRISM:
-            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPrismGrid(nPoly, faceID_Elem,
+            standardSurfaceElementsGrid[i] = new CFEMStandardQuadAdjacentPrismGrid(nPoly, orderExact,
+                                                                                   faceID_Elem,
                                                                                    orientation, useLGL,
                                                                                    gemmTypesFaces[ind]);
             break;
@@ -2901,15 +2961,18 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     unsigned short faceID_Elem   = typesSurfaceSol[i].short4;
     unsigned short orientation   = typesSurfaceSol[i].short5;
     unsigned short nVarPerPoint  = typesSurfaceSol[i].short6;
+    unsigned short orderExact    = typesSurfaceSol[i].short7;
 
     /*--- Correct the VTK type of the element if no tensor product
-          is used. Also determine the number of DOFs. ---*/
+          is used and correct nVarPerPoint if a tensor product is
+          used. Also determine the number of DOFs. Again the number
+          of DOFs in 1D for tensor product elements. ---*/
     unsigned short nDOFs;
-    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem != QUADRILATERAL)) {
-      nDOFs = typesSurfaceSol[i].short3+1;
+    if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
+      nDOFs        = typesSurfaceSol[i].short3+1;
+      nVarPerPoint = 1;
     }
     else {
-      VTK_Type_Elem = LINE;
       nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
       VTK_Type_Elem = LINE;
     }
@@ -2938,14 +3001,16 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
               Note that typesSurfaceSol[i].short2 must be used. ---*/
         switch( typesSurfaceSol[i].short2 ) {
           case TRIANGLE:
-            standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentTriSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentTriSol(nPoly, orderExact,
+                                                                                    faceID_Elem,
                                                                                     orientation, useLGL,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case QUADRILATERAL:
-            standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentQuadSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentQuadSol(nPoly, orderExact,
+                                                                                     faceID_Elem,
                                                                                      orientation, useLGL,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
@@ -2966,21 +3031,24 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
               Note that typesSurfaceSol[i].short2 must be used. ---*/
         switch( typesSurfaceSol[i].short2 ) {
           case TETRAHEDRON:
-            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentTetSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentTetSol(nPoly, orderExact,
+                                                                                   faceID_Elem,
                                                                                    orientation, useLGL,
                                                                                    gemmTypesFaces[ind1],
                                                                                    gemmTypesFaces[ind2]);
             break;
 
           case PYRAMID:
-            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPyraSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPyraSol(nPoly, orderExact,
+                                                                                    faceID_Elem,
                                                                                     orientation, useLGL,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case PRISM:
-            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPrismSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPrismSol(nPoly, orderExact,
+                                                                                     faceID_Elem,
                                                                                      orientation, useLGL,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
@@ -3001,21 +3069,24 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
               Note that typesSurfaceSol[i].short2 must be used. ---*/
         switch( typesSurfaceSol[i].short2 ) {
           case HEXAHEDRON:
-            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentHexSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentHexSol(nPoly, orderExact,
+                                                                                    faceID_Elem,
                                                                                     orientation, useLGL,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case PYRAMID:
-            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPyraSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPyraSol(nPoly, orderExact,
+                                                                                     faceID_Elem,
                                                                                      orientation, useLGL,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
 
           case PRISM:
-            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPrismSol(nPoly, faceID_Elem,
+            standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPrismSol(nPoly, orderExact,
+                                                                                      faceID_Elem,
                                                                                       orientation, useLGL,
                                                                                       gemmTypesFaces[ind1],
                                                                                       gemmTypesFaces[ind2]);
@@ -3051,7 +3122,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
         /*--- Determine the index in the standard element for the grid that corresponds
               to this surface element and set the pointer accordingly. ---*/
-        vector<CUnsignedShort7T>::const_iterator low;
+        vector<CUnsignedShort8T>::const_iterator low;
         low = lower_bound(typesSurfaceGrid.begin(), typesSurfaceGrid.end(),
                           surfaceTypesGrid[indGrid++]);
         unsigned long ind = low - typesSurfaceGrid.begin();
@@ -3090,19 +3161,19 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
     /*--- Create the data for the standard surface elements on side 0
           and side 1 of the internal matching face. ---*/
-    CUnsignedShort7T surf0(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+    CUnsignedShort8T surf0(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
                            typesFaceGrid[i].short2, typesFaceGrid[i].short3,
                            typesFaceGrid[i].short4, 0,
-                           typesFaceGrid[i].short9);
-    CUnsignedShort7T surf1(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
+                           typesFaceGrid[i].short9, typesFaceGrid[i].short10);
+    CUnsignedShort8T surf1(typesFaceGrid[i].short0, typesFaceGrid[i].short1,
                            typesFaceGrid[i].short5, typesFaceGrid[i].short6,
                            typesFaceGrid[i].short7, typesFaceGrid[i].short8,
-                           typesFaceGrid[i].short9);
+                           typesFaceGrid[i].short9, typesFaceGrid[i].short10);
 
     /*--- Determine the indices of surf0 and surf1 in the vector of standard
           elements for the surfaces, which are the same indices as in the
           vector typesSurfaceGrid. ---*/
-    vector<CUnsignedShort7T>::const_iterator low;
+    vector<CUnsignedShort8T>::const_iterator low;
     low = lower_bound(typesSurfaceGrid.begin(), typesSurfaceGrid.end(), surf0);
     const unsigned long ind0 = low - typesSurfaceGrid.begin();
 
@@ -3121,19 +3192,19 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 
     /*--- Create the data for the standard surface elements on side 0
           and side 1 of the internal matching face. ---*/
-    CUnsignedShort7T surf0(typesFaceSol[i].short0, typesFaceSol[i].short1,
+    CUnsignedShort8T surf0(typesFaceSol[i].short0, typesFaceSol[i].short1,
                            typesFaceSol[i].short2, typesFaceSol[i].short3,
                            typesFaceSol[i].short4, 0,
-                           typesFaceSol[i].short9);
-    CUnsignedShort7T surf1(typesFaceSol[i].short0, typesFaceSol[i].short1,
+                           typesFaceSol[i].short9, typesFaceSol[i].short10);
+    CUnsignedShort8T surf1(typesFaceSol[i].short0, typesFaceSol[i].short1,
                            typesFaceSol[i].short5, typesFaceSol[i].short6,
                            typesFaceSol[i].short7, typesFaceSol[i].short8,
-                           typesFaceSol[i].short9);
+                           typesFaceSol[i].short9, typesFaceSol[i].short10);
 
     /*--- Determine the indices of surf0 and surf1 in the vector of standard
           elements for the surfaces, which are the same indices as in the
           vector typesSurfaceSol. ---*/
-    vector<CUnsignedShort7T>::const_iterator low;
+    vector<CUnsignedShort8T>::const_iterator low;
     low = lower_bound(typesSurfaceSol.begin(), typesSurfaceSol.end(), surf0);
     const unsigned long ind0 = low - typesSurfaceSol.begin();
 
@@ -3157,7 +3228,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     /*--- Determine the index of faceTypesGrid in typesFaceGrid, which is also
           the index of the matching face in the standard matching faces.
           Set the pointer afterwards. ---*/
-    vector<CUnsignedShort10T>::const_iterator low;
+    vector<CUnsignedShort11T>::const_iterator low;
     low = lower_bound(typesFaceGrid.begin(), typesFaceGrid.end(), faceTypesGrid[i]);
     unsigned long ind = low - typesFaceGrid.begin();
 

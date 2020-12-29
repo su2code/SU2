@@ -341,13 +341,13 @@ public:
   inline unsigned short GetNDOFsPad(void) const {return nDOFsPad;}
 
   /*!
-   * \brief Function, which makes available the number of total integratin points of the element.
+   * \brief Function, which makes available the number of total integration points of the element.
    * \return  The number of total integration points.
    */
   inline unsigned short GetNIntegration(void) const {return nIntegration;}
 
   /*!
-   * \brief Function, which makes available the padded number of total integratin points of the element.
+   * \brief Function, which makes available the padded number of total integration points of the element.
    * \return  The padded number of total integration points.
    */
   inline unsigned short GetNIntegrationPad(void) const {return nIntegrationPad;}

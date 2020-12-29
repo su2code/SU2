@@ -37,7 +37,7 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardTetBase: public CFEMStandardTriBase {
+class CFEMStandardTetBase: public virtual CFEMStandardTriBase {
 
 public:
   /*-----------------------------------------------------------------------------------*/
@@ -45,10 +45,9 @@ public:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
-   * \brief Default constructor of the class, deleted to make sure the
-   *        overloaded constructor is always used.
+   * \brief Default constructor of the class.
    */
-  CFEMStandardTetBase() = delete;
+  CFEMStandardTetBase() = default;
 
   /*!
    * \overload

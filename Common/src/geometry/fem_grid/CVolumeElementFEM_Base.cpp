@@ -70,8 +70,7 @@ void CVolumeElementFEM_Base::GetCornerPointsAllFaces(unsigned short &numFaces,
 
 void CVolumeElementFEM_Base::InitGridVelocities(const unsigned short nDim) {
 
-  /*--- Determine the number of integration points and solution DOFs.
-        The first number is padded for performance reasons. ---*/
+  /*--- Determine the padded number of integration points and solution DOFs. ---*/
   const unsigned short nIntPad     = standardElemGrid->GetNIntegrationPad();
   const unsigned short nDOFsSolPad = standardElemGrid->GetNSolDOFsPad();
 

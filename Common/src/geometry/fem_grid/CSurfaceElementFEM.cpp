@@ -49,7 +49,13 @@ void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
 
 void CSurfaceElementFEM::InitGridVelocities(const unsigned short nDim) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Determine the padded number of integration points. ---*/
+  const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+
+  /*--- Allocate the memory for the grid velocities and initialize
+        them to zero. ---*/
+  gridVelocities.resize(nIntPad, nDim);
+  gridVelocities.setConstant(0.0);
 }
 
 void CSurfaceElementFEM::MetricTermsIntegrationPoints(const bool                         viscousTerms,

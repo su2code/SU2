@@ -29,7 +29,7 @@
 
 #pragma once 
 
-#include "CFEMStandardLineBase.hpp"
+#include "CFEMStandardTriBase.hpp"
 #include "CGemmBase.hpp"
 
 /*!
@@ -39,7 +39,7 @@
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-class CFEMStandardLineAdjacentTriSol final: public CFEMStandardLineBase {
+class CFEMStandardLineAdjacentTriSol final: public CFEMStandardTriBase {
 
 public:
   /*!
@@ -51,6 +51,7 @@ public:
   /*!
    * \overload
    * \param[in] val_nPoly       - Polynomial degree of the grid for this element.
+   * \param[in] val_orderExact  - Polynomial degree that must be integrated exactly.
    * \param[in] val_faceID_Elem - This is the face ID of the adjacent volume element
    *                              to which this surface element corresponds.
    * \param[in] val_orientation - Orientation of this surface element relative to
@@ -63,6 +64,7 @@ public:
    *                              second gemm functionality for this standard face.
    */
   CFEMStandardLineAdjacentTriSol(const unsigned short val_nPoly,
+                                 const unsigned short val_orderExact,
                                  const unsigned short val_faceID_Elem,
                                  const unsigned short val_orientation,
                                  const bool           val_useLGL,

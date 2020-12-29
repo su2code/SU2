@@ -32,8 +32,13 @@
 /*----------------------------------------------------------------------------------*/
 
 CFEMStandardQuadAdjacentPrismSol::CFEMStandardQuadAdjacentPrismSol(const unsigned short val_nPoly,
+                                                                   const unsigned short val_orderExact,
                                                                    const unsigned short val_faceID_Elem,
                                                                    const unsigned short val_orientation,
                                                                    const bool           val_useLGL,
                                                                    CGemmBase           *val_gemm_1,
-                                                                   CGemmBase           *val_gemm_2) {}
+                                                                   CGemmBase           *val_gemm_2)
+  : CFEMStandardPrismBase(),
+    CFEMStandardQuadBase(val_nPoly, val_orderExact) {
+
+}

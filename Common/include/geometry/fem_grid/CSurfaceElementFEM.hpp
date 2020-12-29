@@ -41,7 +41,8 @@ class CVolumeElementFEM_DG;
  * \author E. van der Weide
  * \version 7.0.8 "Blackbird"
  */
-struct CSurfaceElementFEM {
+class CSurfaceElementFEM final {
+public:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
@@ -51,6 +52,11 @@ struct CSurfaceElementFEM {
                                                the boundary to which it belongs. */
 
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
+
+  ColMajorMatrix<su2double> coorIntegrationPoints;  /*!< \brief Coordinates of the integration points of this face. */
+  ColMajorMatrix<su2double> gridVelocities;         /*!< \brief Grid velocities of the integration points of this face. */
+  ColMajorMatrix<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
+                                                                the integration points of this face. */
 
   CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
   CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the

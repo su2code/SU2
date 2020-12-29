@@ -231,11 +231,11 @@ struct CUnsignedShort4T {
 };
 
 /*!
- * \struct CUnsignedShort7T
- * \brief Help struct used to store seven unsigned shorts as one entity.
+ * \struct CUnsignedShort8T
+ * \brief Help struct used to store eight unsigned shorts as one entity.
  * \version 7.0.8 "Blackbird"
  */
-struct CUnsignedShort7T {
+struct CUnsignedShort8T {
   unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
   unsigned short short1 = 0;  /*!< \brief Second short to store in this class. */
   unsigned short short2 = 0;  /*!< \brief Third short to store in this class. */
@@ -243,6 +243,7 @@ struct CUnsignedShort7T {
   unsigned short short4 = 0;  /*!< \brief Fifth short to store in this class. */
   unsigned short short5 = 0;  /*!< \brief Sixth short to store in this class. */
   unsigned short short6 = 0;  /*!< \brief Seventh short to store in this class. */
+  unsigned short short7 = 0;  /*!< \brief Eighth short to store in this class. */
 
   /*!
    * \overload
@@ -253,69 +254,25 @@ struct CUnsignedShort7T {
    * \param[in] e - Fifth element of the object.
    * \param[in] f - Sixth element of the object.
    * \param[in] g - Seventh element of the object.
+   * \param[in] h - Eighth element of the object.
    */
-  CUnsignedShort7T(const unsigned short a = 0,
+  CUnsignedShort8T(const unsigned short a = 0,
                    const unsigned short b = 0,
                    const unsigned short c = 0,
                    const unsigned short d = 0,
                    const unsigned short e = 0,
                    const unsigned short f = 0,
-                   const unsigned short g = 0)
-    : short0(a), short1(b), short2(c), short3(d), short4(e), short5(f), short6(g) {}
+                   const unsigned short g = 0,
+                   const unsigned short h = 0)
+    : short0(a), short1(b), short2(c), short3(d),
+      short4(e), short5(f), short6(g), short7(h) {}
 
   /*!
    * \brief Less than operator. Needed for the sorting and searching.
    * \param[in] - other   Object to be compared to
    * \return    - True if considered less and false otherwise.
    */
-  inline bool operator<(const CUnsignedShort7T &other) const {
-    if(short0 != other.short0) return (short0 < other.short0);
-    if(short1 != other.short1) return (short1 < other.short1);
-    if(short2 != other.short2) return (short2 < other.short2);
-    if(short3 != other.short3) return (short3 < other.short3);
-    if(short4 != other.short4) return (short4 < other.short4);
-    if(short5 != other.short5) return (short5 < other.short5);
-    if(short6 != other.short6) return (short6 < other.short6);
-
-    return false;
-  }
-
-  /*!
-   * \brief Equal operator. Needed for the searching.
-   * \param[in] - other   Object to be compared to
-   * \return    - True if considered equal and false otherwise.
-   */
-  inline bool operator==(const CUnsignedShort7T &other) const {
-    return (short0 == other.short0) && (short1 == other.short1) &&
-           (short2 == other.short2) && (short3 == other.short3) &&
-           (short4 == other.short4) && (short5 == other.short5) &&
-           (short6 == other.short6);
-  }
-};
-
-/*!
- * \struct CUnsignedShort10T
- * \brief Help struct used to store ten unsigned shorts as one entity.
- * \version 7.0.8 "Blackbird"
- */
-struct CUnsignedShort10T {
-  unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
-  unsigned short short1 = 0;  /*!< \brief Second short to store in this class. */
-  unsigned short short2 = 0;  /*!< \brief Third short to store in this class. */
-  unsigned short short3 = 0;  /*!< \brief Fourth short to store in this class. */
-  unsigned short short4 = 0;  /*!< \brief Fifth short to store in this class. */
-  unsigned short short5 = 0;  /*!< \brief Sixth short to store in this class. */
-  unsigned short short6 = 0;  /*!< \brief Seventh short to store in this class. */
-  unsigned short short7 = 0;  /*!< \brief Eighth short to store in this class. */
-  unsigned short short8 = 0;  /*!< \brief Nineth short to store in this class. */
-  unsigned short short9 = 0;  /*!< \brief Tenth short to store in this class. */
-
-  /*!
-   * \brief Less than operator. Needed for the sorting and searching.
-   * \param[in] - other   Object to be compared to
-   * \return    - True if considered less and false otherwise.
-   */
-  inline bool operator<(const CUnsignedShort10T &other) const {
+  inline bool operator<(const CUnsignedShort8T &other) const {
     if(short0 != other.short0) return (short0 < other.short0);
     if(short1 != other.short1) return (short1 < other.short1);
     if(short2 != other.short2) return (short2 < other.short2);
@@ -324,8 +281,6 @@ struct CUnsignedShort10T {
     if(short5 != other.short5) return (short5 < other.short5);
     if(short6 != other.short6) return (short6 < other.short6);
     if(short7 != other.short7) return (short7 < other.short7);
-    if(short8 != other.short8) return (short8 < other.short8);
-    if(short9 != other.short9) return (short9 < other.short9);
 
     return false;
   }
@@ -335,11 +290,64 @@ struct CUnsignedShort10T {
    * \param[in] - other   Object to be compared to
    * \return    - True if considered equal and false otherwise.
    */
-  inline bool operator==(const CUnsignedShort10T &other) const {
+  inline bool operator==(const CUnsignedShort8T &other) const {
     return (short0 == other.short0) && (short1 == other.short1) &&
            (short2 == other.short2) && (short3 == other.short3) &&
            (short4 == other.short4) && (short5 == other.short5) &&
-           (short6 == other.short6) && (short7 == other.short7) &&
-           (short8 == other.short8) && (short9 == other.short9);
+           (short6 == other.short6) && (short7 == other.short7);
+  }
+};
+
+/*!
+ * \struct CUnsignedShort11T
+ * \brief Help struct used to store eleven unsigned shorts as one entity.
+ * \version 7.0.8 "Blackbird"
+ */
+struct CUnsignedShort11T {
+  unsigned short short0  = 0;  /*!< \brief First short to store in this class. */
+  unsigned short short1  = 0;  /*!< \brief Second short to store in this class. */
+  unsigned short short2  = 0;  /*!< \brief Third short to store in this class. */
+  unsigned short short3  = 0;  /*!< \brief Fourth short to store in this class. */
+  unsigned short short4  = 0;  /*!< \brief Fifth short to store in this class. */
+  unsigned short short5  = 0;  /*!< \brief Sixth short to store in this class. */
+  unsigned short short6  = 0;  /*!< \brief Seventh short to store in this class. */
+  unsigned short short7  = 0;  /*!< \brief Eighth short to store in this class. */
+  unsigned short short8  = 0;  /*!< \brief Nineth short to store in this class. */
+  unsigned short short9  = 0;  /*!< \brief Tenth short to store in this class. */
+  unsigned short short10 = 0;  /*!< \brief Eleventh short to store in this class. */
+
+  /*!
+   * \brief Less than operator. Needed for the sorting and searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered less and false otherwise.
+   */
+  inline bool operator<(const CUnsignedShort11T &other) const {
+    if(short0  != other.short0)  return (short0  < other.short0);
+    if(short1  != other.short1)  return (short1  < other.short1);
+    if(short2  != other.short2)  return (short2  < other.short2);
+    if(short3  != other.short3)  return (short3  < other.short3);
+    if(short4  != other.short4)  return (short4  < other.short4);
+    if(short5  != other.short5)  return (short5  < other.short5);
+    if(short6  != other.short6)  return (short6  < other.short6);
+    if(short7  != other.short7)  return (short7  < other.short7);
+    if(short8  != other.short8)  return (short8  < other.short8);
+    if(short9  != other.short9)  return (short9  < other.short9);
+    if(short10 != other.short10) return (short10 < other.short10);
+
+    return false;
+  }
+
+  /*!
+   * \brief Equal operator. Needed for the searching.
+   * \param[in] - other   Object to be compared to
+   * \return    - True if considered equal and false otherwise.
+   */
+  inline bool operator==(const CUnsignedShort11T &other) const {
+    return (short0  == other.short0) && (short1 == other.short1) &&
+           (short2  == other.short2) && (short3 == other.short3) &&
+           (short4  == other.short4) && (short5 == other.short5) &&
+           (short6  == other.short6) && (short7 == other.short7) &&
+           (short8  == other.short8) && (short9 == other.short9) &&
+           (short10 == other.short10);
   }
 };
