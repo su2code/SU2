@@ -293,7 +293,7 @@ unsigned short CFaceOfElement::DetermineOrientationElemSide1(
       const unsigned long n0 = faceConn[faceID1][0], n1 = faceConn[faceID1][1];
 
       /*--- Determine the situation and set orientation accordingly. ---*/
-      if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0])) orientation = 0;
+      if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0])) orientation = 1;
       else wrongOrientation = true;
 
       break;
@@ -307,11 +307,11 @@ unsigned short CFaceOfElement::DetermineOrientationElemSide1(
 
       /*--- Determine the situation and set orientation accordingly. ---*/
       if(     (n0 == cornerPoints[0]) && (n1 == cornerPoints[2]) &&
-              (n2 == cornerPoints[1])) orientation = 0;
+              (n2 == cornerPoints[1])) orientation = 1;
       else if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0]) &&
-              (n2 == cornerPoints[2])) orientation = 1;
+              (n2 == cornerPoints[2])) orientation = 2;
       else if((n0 == cornerPoints[2]) && (n1 == cornerPoints[1]) &&
-              (n2 == cornerPoints[0])) orientation = 2;
+              (n2 == cornerPoints[0])) orientation = 3;
       else wrongOrientation = true;
 
       break;
@@ -325,13 +325,13 @@ unsigned short CFaceOfElement::DetermineOrientationElemSide1(
 
       /*--- Determine the situation and set orientation accordingly. ---*/
       if(     (n0 == cornerPoints[0]) && (n1 == cornerPoints[3]) &&
-              (n2 == cornerPoints[2]) && (n3 == cornerPoints[1])) orientation = 0;
+              (n2 == cornerPoints[2]) && (n3 == cornerPoints[1])) orientation = 1;
       else if((n0 == cornerPoints[1]) && (n1 == cornerPoints[0]) &&
-              (n2 == cornerPoints[3]) && (n3 == cornerPoints[2])) orientation = 1;
+              (n2 == cornerPoints[3]) && (n3 == cornerPoints[2])) orientation = 2;
       else if((n0 == cornerPoints[2]) && (n1 == cornerPoints[1]) &&
-              (n2 == cornerPoints[0]) && (n3 == cornerPoints[3])) orientation = 2;
+              (n2 == cornerPoints[0]) && (n3 == cornerPoints[3])) orientation = 3;
       else if((n0 == cornerPoints[3]) && (n1 == cornerPoints[2]) &&
-              (n2 == cornerPoints[1]) && (n3 == cornerPoints[0])) orientation = 3;
+              (n2 == cornerPoints[1]) && (n3 == cornerPoints[0])) orientation = 4;
       else wrongOrientation = true;
 
       break;

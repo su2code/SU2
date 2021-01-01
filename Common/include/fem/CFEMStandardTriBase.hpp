@@ -120,6 +120,23 @@ protected:
                                    const unsigned short   vert2);
 
   /*!
+   * \brief Function, which converts the 1D parametric coordinates of a face of
+   *        the triangle to the 2D parametric coordinates of the actual triangle.
+   * \param[in]  rLine       - 1D parametric coordinates of the face of the triangle.
+   * \param[in]  faceID      - The corresponding faceID of the adjacent triangle.
+   * \param[in]  orientation - Orientation of the line element relative to the triangle.
+   * \param[out] rTriangle   - The parametric r-coordinates of the triangle
+   *                           corresponding to rLine.
+   * \param[out] sTriangle   - The parametric s-coordinates of the triangle
+   *                           corresponding to rLine.
+   */
+  void ConvertCoor1DFaceTo2DTriangle(const vector<passivedouble> rLine,
+                                     const unsigned short        faceID,
+                                     const unsigned short        orientation,
+                                     vector<passivedouble>       rTriangle,
+                                     vector<passivedouble>       sTriangle);
+
+  /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian
    *        basis functions of a triangle in the integration points for the given
    *        location of the DOFs.

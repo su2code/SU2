@@ -35,10 +35,31 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
                                                                const unsigned short val_orderExact,
                                                                const unsigned short val_faceID_Elem,
                                                                const unsigned short val_orientation,
-                                                               const bool           val_useLGL,
                                                                CGemmBase           *val_gemm_1,
                                                                CGemmBase           *val_gemm_2)
   : CFEMStandardTriBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointers for the gemm functionalities. ---*/
+  gemmDOFs2Int = val_gemm_1;
+  gemmInt2DOFs = val_gemm_2;
+
+  /*--- Convert the 1D parametric coordinates of the integration points of the
+        face to the 2D parametric coordinates of the adjacent triangle. ---*/
+  ConvertCoor1DFaceTo2DTriangle(rLineInt, val_faceID_Elem, val_orientation,
+                                rTriangleInt, sTriangleInt);
+
+  /*--- Allocate the memory for the Legendre basis functions and its
+        1st and 2nd derivatives in the integration points. ---*/
+  nDOFs = (nPoly+1)*(nPoly+2)/2;
+  legBasisInt.resize(nIntegrationPad, nDOFs); legBasisInt.setConstant(0.0);
+
+  derLegBasisInt.resize(2);
+  derLegBasisInt[0].resize(nIntegrationPad, nDOFs); derLegBasisInt[0].setConstant(0.0);
+  derLegBasisInt[1].resize(nIntegrationPad, nDOFs); derLegBasisInt[1].setConstant(0.0);
+
+  /*--- Compute the Legendre basis functions and its first
+        derivatives in the integration points. ---*/
+  VandermondeTriangle(nPoly, rTriangleInt, sTriangleInt, legBasisInt);
+  GradVandermondeTriangle(nPoly, rTriangleInt, sTriangleInt, derLegBasisInt[0], derLegBasisInt[1]);
 }

@@ -333,7 +333,7 @@ void CreateMesonBuildFile(const std::vector<int> &nDOFs1D,
 void CreateTensorProductSourceFile(const int nDOFs1D,
                                    const int nInt1D) {
 
-  /* Determine the name of this function and the corresponding file name. */
+  /* Determine the name of this function and open the corresponding file name. */
   std::ostringstream functionName;
   functionName << "TensorProductVolumeIntPoints3D_"
                << nDOFs1D << "_" << nInt1D;

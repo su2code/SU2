@@ -111,16 +111,20 @@ inline void omp_destroy_lock(omp_lock_t*){}
 #if _OPENMP >= 201307
 #define HAVE_OMP_SIMD
 #define SU2_OMP_SIMD PRAGMIZE(omp simd)
+#define SU2_OMP_SIMD_(ARGS) PRAGMIZE(omp simd ARGS)
 #endif
 #endif
 #ifndef SU2_OMP_SIMD
 #define SU2_OMP_SIMD
+#define SU2_OMP_SIMD_(ARGS)
 #endif
 
 #if !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define SU2_OMP_SIMD_IF_NOT_AD SU2_OMP_SIMD
+#define SU2_OMP_SIMD_IF_NOT_AD_(ARGS) SU2_OMP_SIMD_(ARGS)
 #else
 #define SU2_OMP_SIMD_IF_NOT_AD
+#define SU2_OMP_SIMD_IF_NOT_AD_(ARGS)
 #endif
 
 /*--- Convenience macros (do not use excessive nesting). ---*/

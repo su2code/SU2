@@ -75,4 +75,8 @@ public:
 
 private:
 
+  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 integration points of the face from the volume DOFs. */
+
+  vector<passivedouble> rLineDOFs;    /*!< \brief 1D parametric coordinates of the grid DOFs. */
 };

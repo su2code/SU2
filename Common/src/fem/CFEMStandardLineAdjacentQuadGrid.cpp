@@ -40,4 +40,11 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
   : CFEMStandardQuadBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = val_gemm;
+
+  /*--- Determine the 1D parametric locations of the grid DOFs. 1D is enough,
+        because a tensor product is used to obtain the 2D coordinates. ---*/
+  if( val_useLGL) Location1DGridDOFsLGL(nPoly, rLineDOFs);
+  else            Location1DGridDOFsEquidistant(nPoly, rLineDOFs);
 }

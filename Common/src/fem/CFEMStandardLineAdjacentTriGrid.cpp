@@ -40,4 +40,22 @@ CFEMStandardLineAdjacentTriGrid::CFEMStandardLineAdjacentTriGrid(const unsigned 
   : CFEMStandardTriBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = val_gemm;
+
+  /*--- Determine the location of the grid DOFs. ---*/
+  if( val_useLGL ) LocationTriangleGridDOFsLGL(nPoly, rTriangleDOFs, sTriangleDOFs);
+  else             LocationTriangleGridDOFsEquidistant(nPoly, rTriangleDOFs, sTriangleDOFs);
+
+  /*--- Convert the 1D parametric coordinates of the integration points of the
+        face to the 2D parametric coordinates of the adjacent triangle. ---*/
+  ConvertCoor1DFaceTo2DTriangle(rLineInt, val_faceID_Elem, val_orientation,
+                                rTriangleInt, sTriangleInt);
+
+  /*--- Compute the corresponding Lagrangian basis functions and
+        its first derivatives in the integration points. ---*/
+  LagBasisIntPointsTriangle(nPoly, rTriangleDOFs,  sTriangleDOFs,
+                            rTriangleInt, sTriangleInt, lagBasisInt);
+  DerLagBasisIntPointsTriangle(nPoly, rTriangleDOFs, sTriangleDOFs,
+                               rTriangleInt, sTriangleInt, derLagBasisInt);
 }

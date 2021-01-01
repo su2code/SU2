@@ -56,8 +56,6 @@ public:
    *                              to which this surface element corresponds.
    * \param[in] val_orientation - Orientation of this surface element relative to
    *                              the adjacent volume element.
-   * \param[in] val_useLGL      - Whether or not the LGL point distribution is used
-   *                              for the DOFs.
    * \param[in] val_gemm_1      - Pointer to the gemm type used to carry out the
    *                              first gemm functionality for this standard face.
    * \param[in] val_gemm_2      - Pointer to the gemm type used to carry out the
@@ -67,7 +65,6 @@ public:
                                  const unsigned short val_orderExact,
                                  const unsigned short val_faceID_Elem,
                                  const unsigned short val_orientation,
-                                 const bool           val_useLGL,
                                  CGemmBase           *val_gemm_1,
                                  CGemmBase           *val_gemm_2);
 
@@ -78,4 +75,15 @@ public:
 
 private:
 
+  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 integration points of the face from the volume DOFs. */
+  CGemmBase *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 volume DOFs from the integration points of the face. */
+
+  ColMajorMatrix<passivedouble> legBasisInt;             /*!< \brief The values of the Legendre basis functions
+                                                                     in the integration points. */
+  vector<ColMajorMatrix<passivedouble> > derLegBasisInt; /*!< \brief The values of the derivatives of the Legendre
+                                                                     basis functions in the integration points.
+                                                                     It is a vector, because there are derivatives
+                                                                     in two directions. */
 };

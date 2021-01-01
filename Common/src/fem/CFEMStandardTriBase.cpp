@@ -191,6 +191,58 @@ void CFEMStandardTriBase::ChangeDirectionTriangleConn(vector<unsigned short> &co
   }
 }
 
+void CFEMStandardTriBase::ConvertCoor1DFaceTo2DTriangle(const vector<passivedouble> rLine,
+                                                        const unsigned short        faceID,
+                                                        const unsigned short        orientation,
+                                                        vector<passivedouble>       rTriangle,
+                                                        vector<passivedouble>       sTriangle) {
+
+  /*--- Easier storage of the number of points and allocate the memory for
+        rTriangle and sTriangle. ---*/
+  const unsigned short nPoints = rLine.size();
+  rTriangle.resize(nPoints);
+  sTriangle.resize(nPoints);
+
+  /*--- Determine the face ID and set the values of rTriangle and sTriangle for an
+        orientation of 0, i.e. assuming that the element is on side 0 of the face. ---*/
+  switch( faceID ) {
+    case 0: {
+      for(unsigned short i=0; i<nPoints; ++i) {
+        rTriangle[i] =  rLine[i];
+        sTriangle[i] = -1.0;
+      }
+      break;
+    }
+
+    case 1: {
+      for(unsigned short i=0; i<nPoints; ++i) {
+        rTriangle[i] = -rLine[i];
+        sTriangle[i] =  rLine[i];
+      }
+      break;
+    }
+
+    case 2: {
+      for(unsigned short i=0; i<nPoints; ++i) {
+        rTriangle[i] = -1.0;
+        sTriangle[i] = -rLine[i];
+      }
+      break;
+    }
+
+    default:
+      SU2_MPI::Error("This should not happen.", CURRENT_FUNCTION); 
+  }
+
+  /*--- If this is an element on side 1 of the face, indicated by
+        orientation == 1, the sequence of rTriangle and sTriangle
+        should be reversed. ---*/
+  if(orientation == 1) {
+    reverse(rTriangle.begin(), rTriangle.end());
+    reverse(sTriangle.begin(), sTriangle.end());
+  }
+}
+
 void CFEMStandardTriBase::DerLagBasisIntPointsTriangle(const unsigned short                   mPoly,
                                                        const vector<passivedouble>            &rDOFs,
                                                        const vector<passivedouble>            &sDOFs,

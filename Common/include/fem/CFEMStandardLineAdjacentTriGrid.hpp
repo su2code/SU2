@@ -69,10 +69,21 @@ public:
                                   CGemmBase           *val_gemm);
 
   /*!
-   * \brief Destructor. Nothing to be done.
+   * \brief Destructor, nothing to be done.
    */
   ~CFEMStandardLineAdjacentTriGrid() = default;
 
 private:
 
+  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 integration points of the face from the volume DOFs. */
+
+  vector<passivedouble> rTriangleDOFs; /*!< \brief Parametric r-coordinates of the triangle grid DOFs. */
+  vector<passivedouble> sTriangleDOFs; /*!< \brief Parametric s-coordinates of the triangle grid DOFs. */
+
+  ColMajorMatrix<passivedouble> lagBasisInt;             /*!< \brief The values of the Lagrangian basis functions
+                                                                     in the integration points. */
+  vector<ColMajorMatrix<passivedouble> > derLagBasisInt; /*!< \brief The values of the derivatives of the Lagrangian basis
+                                                                     functions in the integration points. It is a vector,
+                                                                     because there are derivatives in two directions. */
 };

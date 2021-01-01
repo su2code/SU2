@@ -3002,16 +3002,14 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceSol[i].short2 ) {
           case TRIANGLE:
             standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentTriSol(nPoly, orderExact,
-                                                                                    faceID_Elem,
-                                                                                    orientation, useLGL,
+                                                                                    faceID_Elem, orientation,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case QUADRILATERAL:
             standardSurfaceElementsSolution[i] = new CFEMStandardLineAdjacentQuadSol(nPoly, orderExact,
-                                                                                     faceID_Elem,
-                                                                                     orientation, useLGL,
+                                                                                     faceID_Elem, orientation,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
@@ -3032,24 +3030,21 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceSol[i].short2 ) {
           case TETRAHEDRON:
             standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentTetSol(nPoly, orderExact,
-                                                                                   faceID_Elem,
-                                                                                   orientation, useLGL,
+                                                                                   faceID_Elem, orientation,
                                                                                    gemmTypesFaces[ind1],
                                                                                    gemmTypesFaces[ind2]);
             break;
 
           case PYRAMID:
             standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPyraSol(nPoly, orderExact,
-                                                                                    faceID_Elem,
-                                                                                    orientation, useLGL,
+                                                                                    faceID_Elem, orientation,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case PRISM:
             standardSurfaceElementsSolution[i] = new CFEMStandardTriAdjacentPrismSol(nPoly, orderExact,
-                                                                                     faceID_Elem,
-                                                                                     orientation, useLGL,
+                                                                                     faceID_Elem, orientation,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
@@ -3070,24 +3065,21 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         switch( typesSurfaceSol[i].short2 ) {
           case HEXAHEDRON:
             standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentHexSol(nPoly, orderExact,
-                                                                                    faceID_Elem,
-                                                                                    orientation, useLGL,
+                                                                                    faceID_Elem, orientation,
                                                                                     gemmTypesFaces[ind1],
                                                                                     gemmTypesFaces[ind2]);
             break;
 
           case PYRAMID:
             standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPyraSol(nPoly, orderExact,
-                                                                                     faceID_Elem,
-                                                                                     orientation, useLGL,
+                                                                                     faceID_Elem, orientation,
                                                                                      gemmTypesFaces[ind1],
                                                                                      gemmTypesFaces[ind2]);
             break;
 
           case PRISM:
             standardSurfaceElementsSolution[i] = new CFEMStandardQuadAdjacentPrismSol(nPoly, orderExact,
-                                                                                      faceID_Elem,
-                                                                                      orientation, useLGL,
+                                                                                      faceID_Elem, orientation,
                                                                                       gemmTypesFaces[ind1],
                                                                                       gemmTypesFaces[ind2]);
             break;
