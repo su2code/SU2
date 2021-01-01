@@ -37,6 +37,7 @@
 #include "../fluid/CNEMOGas.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
 using namespace std;
 
@@ -213,22 +214,15 @@ protected:
 
   su2double *l, *m;
 
-  su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
-  su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
-  bool using_uq,                  /*!< \brief Flag for UQ methodology  */
-  nemo;                           /*!< \brief Flag for NEMO problems  */
+  su2double MeanPerturbedRSM[3][3];/*!< \brief Perturbed Reynolds stress tensor  */
+  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] config: config file
-   */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
+  bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
 public:
   /*!
@@ -503,57 +497,52 @@ public:
    * \param[in] density - Density
    * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
    * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
-   * \tparam TWOINDICES_1 - any type that supports the [][] interface
-   * \tparam TWOINDICES_2 - any type that supports the [][] interface
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
    */
-  template<class TWOINDICES_1, class TWOINDICES_2>
-  inline static void ComputeStressTensor(unsigned short nDim, TWOINDICES_1& stress, const TWOINDICES_2& velgrad,
-                                      su2double viscosity, su2double density=0.0, su2double turb_ke=0.0, bool reynolds3x3=false){
-    su2double divVel = 0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++){
+  template<class Mat1, class Mat2, class Scalar>
+  FORCEINLINE static void ComputeStressTensor(int nDim, Mat1& stress, const Mat2& velgrad,
+                                              Scalar viscosity, Scalar density=0.0,
+                                              Scalar turb_ke=0.0, bool reynolds3x3=false){
+    Scalar divVel = 0.0;
+    for (int iDim = 0; iDim < nDim; iDim++) {
       divVel += velgrad[iDim][iDim];
     }
-    su2double pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
+    Scalar pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
 
-    for (unsigned short iDim = 0; iDim < nDim; iDim++){
-      for (unsigned short jDim = 0; jDim < nDim; jDim++){
+    for (int iDim = 0; iDim < nDim; iDim++){
+      for (int jDim = 0; jDim < nDim; jDim++){
         stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]);
       }
       stress[iDim][iDim] -= pTerm;
     }
 
-    if(reynolds3x3 && nDim==2){ // fill the third row and column of Reynolds stress matrix
+    if(reynolds3x3 && nDim==2) { // fill the third row and column of Reynolds stress matrix
       stress[0][2] = stress[1][2] = stress[2][0] = stress[2][1] = 0.0;
       stress[2][2] = -pTerm;
     }
-
   }
 
   /*!
-   * \brief Add a correction using a Quadratic Constitutive Relation
+   * \brief Add a correction using a Quadratic Constitutive Relation to the stress tensor.
    *
-   * This function requires that the stress tensor already be
-   * computed using \ref GetStressTensor
-   *
-   * See: Spalart, P. R., "Strategies for Turbulence Modelling and
-   * Simulation," International Journal of Heat and Fluid Flow, Vol. 21,
-   * 2000, pp. 252-263
+   * See: Spalart, P. R., "Strategies for Turbulence Modelling and Simulation",
+   * International Journal of Heat and Fluid Flow, Vol. 21, 2000, pp. 252-263
    *
    * \param[in] nDim: 2D or 3D.
    * \param[in] gradvel: Velocity gradients.
    * \param[in,out] tau: Shear stress tensor.
    */
-  template <class U, class V>
-  inline static void AddQCR(unsigned short nDim, const U& gradvel, V& tau) {
+  template <class Mat1, class Mat2>
+  FORCEINLINE static void AddQCR(int nDim, const Mat1& gradvel, Mat2& tau) {
 
     const su2double c_cr1= 0.3;
-    unsigned short iDim, jDim, kDim;
 
     /*--- Denominator Antisymmetric normalized rotation tensor ---*/
 
     su2double den_aux = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      for (jDim = 0; jDim < nDim; jDim++)
+    for (int iDim = 0; iDim < nDim; iDim++)
+      for (int jDim = 0; jDim < nDim; jDim++)
         den_aux += gradvel[iDim][jDim] * gradvel[iDim][jDim];
     den_aux = sqrt(max(den_aux,1E-10));
 
@@ -561,9 +550,9 @@ public:
 
     su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
 
-    for (iDim = 0; iDim < nDim; iDim++){
-      for (jDim = 0; jDim < nDim; jDim++){
-        for (kDim = 0; kDim < nDim; kDim++){
+    for (int iDim = 0; iDim < nDim; iDim++){
+      for (int jDim = 0; jDim < nDim; jDim++){
+        for (int kDim = 0; kDim < nDim; kDim++){
           su2double O_ik = (gradvel[iDim][kDim] - gradvel[kDim][iDim])/ den_aux;
           su2double O_jk = (gradvel[jDim][kDim] - gradvel[kDim][jDim])/ den_aux;
           tauQCR[iDim][jDim] = c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
@@ -571,9 +560,104 @@ public:
       }
     }
 
-    for (iDim = 0; iDim < nDim; iDim++)
-      for (jDim = 0; jDim < nDim; jDim++)
+    for (int iDim = 0; iDim < nDim; iDim++)
+      for (int jDim = 0; jDim < nDim; jDim++)
         tau[iDim][jDim] -= tauQCR[iDim][jDim];
+  }
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3.
+   * \param[in] uq_eigval_comp - Component 1C 2C 3C.
+   * \param[in] uq_permute - Whether to swap order of eigen values.
+   * \param[in] uq_delta_b - Delta_b parameter.
+   * \param[in] uq_urlx - Relaxation factor.
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \param[in] density - Density.
+   * \param[in] viscosity - Eddy viscosity.
+   * \param[in] turb_ke: Turbulent kinetic energy.
+   * \param[out] MeanPerturbedRSM - Perturbed stress tensor.
+   */
+  template<class Mat1, class Mat2, class Scalar>
+  FORCEINLINE static void ComputePerturbedRSM(int nDim, int uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
+                                              su2double uq_urlx, const Mat1& velgrad, Scalar density,
+                                              Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
+    Scalar MeanReynoldsStress[3][3];
+    ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
+    for (int iDim = 0; iDim < 3; iDim++)
+      for (int jDim = 0; jDim < 3; jDim++)
+        MeanReynoldsStress[iDim][jDim] /= -density;
+
+    /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
+
+    Scalar A_ij[3][3];
+    for (int iDim = 0; iDim < 3; iDim++) {
+      for (int jDim = 0; jDim < 3; jDim++) {
+        A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke;
+      }
+      A_ij[iDim][iDim] -= 1.0/3.0;
+    }
+
+    /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
+
+    Scalar work[3], Eig_Vec[3][3], Eig_Val[3];
+    CBlasStructure::EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3, work);
+
+    /* compute convex combination coefficients */
+    Scalar c1c = Eig_Val[2] - Eig_Val[1];
+    Scalar c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+    Scalar c3c = 3.0 * Eig_Val[0] + 1.0;
+
+    /* define barycentric traingle corner points */
+    Scalar Corners[3][2];
+    Corners[0][0] = 1.0;
+    Corners[0][1] = 0.0;
+    Corners[1][0] = 0.0;
+    Corners[1][1] = 0.0;
+    Corners[2][0] = 0.5;
+    Corners[2][1] = 0.866025;
+
+    /* define barycentric coordinates */
+    Scalar Barycentric_Coord[2];
+    Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+    Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+    /* component 1C, 2C, 3C, converted to index of the "corners" */
+    Scalar New_Coord[2];
+    New_Coord[0] = Corners[uq_eigval_comp-1][0];
+    New_Coord[1] = Corners[uq_eigval_comp-1][1];
+
+    /* calculate perturbed barycentric coordinates */
+    Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+    Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+
+    /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
+    c3c = Barycentric_Coord[1] / Corners[2][1];
+    c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+    c2c = 1 - c1c - c3c;
+
+    /* build new anisotropy eigenvalues */
+    Eig_Val[0] = (c3c - 1) / 3.0;
+    Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+    Eig_Val[2] = c1c + Eig_Val[1];
+
+    /* permute eigenvectors if required */
+    if (uq_permute) {
+      for (int jDim=0; jDim<3; jDim++)
+        swap(Eig_Vec[0][jDim], Eig_Vec[2][jDim]);
+    }
+
+    CBlasStructure::EigenRecomposition(A_ij, Eig_Vec, Eig_Val, 3);
+
+    /* compute perturbed Reynolds stress matrix; using under-relaxation factor (uq_urlx)*/
+    for (int iDim = 0; iDim < 3; iDim++) {
+      for (int jDim = 0; jDim < 3; jDim++) {
+        auto delta_ij = (jDim==iDim)? 1.0 : 0.0;
+        MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (A_ij[iDim][jDim] + 1.0/3.0 * delta_ij);
+        MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+        uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      }
+    }
   }
 
   /*!

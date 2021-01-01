@@ -849,8 +849,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
-     SetReynoldsStressMatrix(TurbVar_i[0]);
-     SetPerturbedRSM(TurbVar_i[0], config);
+     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                         PrimVar_Grad_i+1, Density_i, Eddy_Viscosity_i,
+                         TurbVar_i[0], MeanPerturbedRSM);
      SetPerturbedStrainMag(TurbVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
@@ -919,53 +920,19 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
 
 }
 
-void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
-  ComputeStressTensor(nDim, MeanReynoldsStress, PrimVar_Grad_i+1, Eddy_Viscosity_i, Density_i, turb_ke, true);
-  for(unsigned short iDim=0; iDim<3; iDim++){
-    for(unsigned short jDim=0; jDim<3; jDim++){
-      MeanReynoldsStress[iDim][jDim] /= (-Density_i);
-    }
-  }
-}
-
 void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
-  unsigned short iDim, jDim;
+
+  /*--- Compute norm of perturbed strain rate tensor. ---*/
+
   PerturbedStrainMag = 0;
-  su2double **StrainRate = new su2double* [nDim];
-  for (iDim= 0; iDim< nDim; iDim++){
-    StrainRate[iDim] = new su2double [nDim];
-  }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short jDim = 0; jDim < nDim; jDim++){
+      su2double StrainRate_ij = MeanPerturbedRSM[iDim][jDim] - TWO3 * turb_ke * delta[iDim][jDim];
+      StrainRate_ij = - StrainRate_ij * Density_i / (2 * Eddy_Viscosity_i);
 
-  /* compute perturbed strain rate tensor */
-
-  for (iDim = 0; iDim < nDim; iDim++){
-    for (jDim =0; jDim < nDim; jDim++){
-      StrainRate[iDim][jDim] = MeanPerturbedRSM[iDim][jDim]
-      - TWO3 * turb_ke * delta[iDim][jDim];
-      StrainRate[iDim][jDim] = - StrainRate[iDim][jDim] * Density_i / (2 * Eddy_Viscosity_i);
+      PerturbedStrainMag += pow(StrainRate_ij, 2.0);
     }
   }
-
-  /*--- Add diagonal part ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    PerturbedStrainMag += pow(StrainRate[iDim][iDim], 2.0);
-  }
-
-  /*--- Add off diagonals ---*/
-
-  PerturbedStrainMag += 2.0*pow(StrainRate[1][0], 2.0);
-
-  if (nDim == 3) {
-    PerturbedStrainMag += 2.0*pow(StrainRate[0][2], 2.0);
-    PerturbedStrainMag += 2.0*pow(StrainRate[1][2], 2.0);
-  }
-
   PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
 
-  for (iDim= 0; iDim< nDim; iDim++){
-    delete [] StrainRate[iDim];
-  }
-
-  delete [] StrainRate;
 }

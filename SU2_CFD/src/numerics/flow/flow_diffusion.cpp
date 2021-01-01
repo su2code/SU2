@@ -183,16 +183,6 @@ void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
 }
 
-void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
-  su2double meandensity = Mean_PrimVar[nDim+2];
-  ComputeStressTensor(nDim, MeanReynoldsStress, Mean_GradPrimVar+1, Mean_Eddy_Viscosity, meandensity, turb_ke, true);
-  for(unsigned short iDim=0; iDim<3; iDim++){
-    for(unsigned short jDim=0; jDim<3; jDim++){
-      MeanReynoldsStress[iDim][jDim] /= (-meandensity);
-    }
-  }
-}
-
 void CAvgGrad_Base::SetTauJacobian(const su2double *val_Mean_PrimVar,
                                    const su2double val_laminar_viscosity,
                                    const su2double val_eddy_viscosity,
@@ -456,8 +446,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
-    SetReynoldsStressMatrix(Mean_turb_ke);
-    SetPerturbedRSM(Mean_turb_ke, config);
+    ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                        Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
@@ -945,8 +936,9 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
-    SetReynoldsStressMatrix(Mean_turb_ke);
-    SetPerturbedRSM(Mean_turb_ke, config);
+    ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                        Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/

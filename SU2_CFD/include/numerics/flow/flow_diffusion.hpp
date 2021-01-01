@@ -162,12 +162,6 @@ protected:
                        su2double val_dist_ij_2,
                        const unsigned short val_nPrimVar);
 
-  /*!
-   * \brief Initialize the Reynolds Stress Matrix
-   * \param[in] turb_ke turbulent kinetic energy of node
-   */
-  void SetReynoldsStressMatrix(su2double turb_ke);
-
 public:
 
   /*!

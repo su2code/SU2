@@ -30,7 +30,6 @@
 
 #include "../../include/numerics/CNumerics.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
-#include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
 CNumerics::CNumerics(void) {
 
@@ -95,18 +94,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   /* --- Initializing variables for the UQ methodology --- */
   using_uq = config->GetUsing_UQ();
-  if (using_uq){
-    MeanReynoldsStress  = new su2double* [3];
-    MeanPerturbedRSM    = new su2double* [3];
-    for (iDim = 0; iDim < 3; iDim++){
-      MeanReynoldsStress[iDim]  = new su2double [3];
-      MeanPerturbedRSM[iDim]    = new su2double [3];
-    }
-    Eig_Val_Comp = config->GetEig_Val_Comp();
-    uq_delta_b = config->GetUQ_Delta_B();
-    uq_urlx = config->GetUQ_URLX();
-    uq_permute = config->GetUQ_Permute();
-  }
+  Eig_Val_Comp = config->GetEig_Val_Comp();
+  uq_delta_b = config->GetUQ_Delta_B();
+  uq_urlx = config->GetUQ_URLX();
+  uq_permute = config->GetUQ_Permute();
 
 }
 
@@ -134,15 +125,6 @@ CNumerics::~CNumerics(void) {
 
   delete [] l;
   delete [] m;
-
-  if (using_uq) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++){
-      delete [] MeanReynoldsStress[iDim];
-      delete [] MeanPerturbedRSM[iDim];
-    }
-    delete [] MeanReynoldsStress;
-    delete [] MeanPerturbedRSM;
-  }
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, const su2double *val_velocity,
@@ -1819,109 +1801,4 @@ su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
 
   }
   return Dissipation_ij;
-}
-
-void CNumerics::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
-
-  unsigned short iDim,jDim;
-
-  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
-
-  su2double A_ij[3][3];
-  for (iDim = 0; iDim < 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta[iDim][jDim] / 3.0;
-    }
-  }
-
-  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
-
-  su2double work[3], Eig_Vec[3][3], Eig_Val[3];
-  CBlasStructure::EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3, work);
-
-  /* compute convex combination coefficients */
-  su2double c1c = Eig_Val[2] - Eig_Val[1];
-  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
-  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
-
-  /* define barycentric traingle corner points */
-  su2double Corners[3][2];
-  Corners[0][0] = 1.0;
-  Corners[0][1] = 0.0;
-  Corners[1][0] = 0.0;
-  Corners[1][1] = 0.0;
-  Corners[2][0] = 0.5;
-  Corners[2][1] = 0.866025;
-
-  /* define barycentric coordinates */
-  su2double Barycentric_Coord[2];
-  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
-  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
-
-  su2double New_Coord[2];
-  if (Eig_Val_Comp == 1) {
-    /* 1C turbulence */
-    New_Coord[0] = Corners[0][0];
-    New_Coord[1] = Corners[0][1];
-  }
-  else if (Eig_Val_Comp== 2) {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-  else if (Eig_Val_Comp == 3) {
-    /* 3C turbulence */
-    New_Coord[0] = Corners[2][0];
-    New_Coord[1] = Corners[2][1];
-  }
-  else {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-
-  /* calculate perturbed barycentric coordinates */
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
-
-  /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
-  c3c = Barycentric_Coord[1] / Corners[2][1];
-  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
-  c2c = 1 - c1c - c3c;
-
-  /* build new anisotropy eigenvalues */
-  Eig_Val[0] = (c3c - 1) / 3.0;
-  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
-  Eig_Val[2] = c1c + Eig_Val[1];
-
-  /* permute eigenvectors if required */
-  su2double New_Eig_Vec[3][3];
-  if (uq_permute) {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
-      }
-    }
-  }
-
-  else {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
-      }
-    }
-  }
-
-  su2double newA_ij[3][3];
-  CBlasStructure::EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
-
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
-      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
-    }
-  }
-
 }
