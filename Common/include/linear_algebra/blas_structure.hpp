@@ -455,7 +455,7 @@ public:
   template<class Mat, class Vec, class W>
   static void EigenDecomposition(const Mat& A_ij, Mat& Eig_Vec, Vec& Eig_Val, int n, W& e) {
     for (int iDim = 0; iDim < n; iDim++){
-      e[iDim] = 0;
+      e[iDim] = 0.0;
       for (int jDim = 0; jDim < n; jDim++){
         Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
       }

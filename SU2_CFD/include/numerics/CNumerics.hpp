@@ -449,15 +449,15 @@ public:
    * \param[in] nDim - 2 or 3
    * \param[out] rateofstrain - Rate of strain matrix
    * \param[in] velgrad - A velocity gradient matrix.
-   * \tparam TWOINDICES_1 - any type that supports the [][] interface
-   * \tparam TWOINDICES_2 - any type that supports the [][] interface
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
    */
-  template<class TWOINDICES_1, class TWOINDICES_2>
-  inline static void ComputeMeanRateOfStrainMatrix(unsigned short nDim, TWOINDICES_1& rateofstrain, const TWOINDICES_2& velgrad){
+  template<class Mat1, class Mat2>
+  FORCEINLINE static void ComputeMeanRateOfStrainMatrix(size_t nDim, Mat1& rateofstrain, const Mat2& velgrad){
 
     /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
 
-    if (nDim == 3){
+    if (nDim == 3) {
       rateofstrain[0][0] = velgrad[0][0];
       rateofstrain[1][1] = velgrad[1][1];
       rateofstrain[2][2] = velgrad[2][2];
@@ -501,17 +501,17 @@ public:
    * \tparam Mat2 - any type that supports the [][] interface
    */
   template<class Mat1, class Mat2, class Scalar>
-  FORCEINLINE static void ComputeStressTensor(int nDim, Mat1& stress, const Mat2& velgrad,
+  FORCEINLINE static void ComputeStressTensor(size_t nDim, Mat1& stress, const Mat2& velgrad,
                                               Scalar viscosity, Scalar density=0.0,
                                               Scalar turb_ke=0.0, bool reynolds3x3=false){
     Scalar divVel = 0.0;
-    for (int iDim = 0; iDim < nDim; iDim++) {
+    for (size_t iDim = 0; iDim < nDim; iDim++) {
       divVel += velgrad[iDim][iDim];
     }
     Scalar pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
 
-    for (int iDim = 0; iDim < nDim; iDim++){
-      for (int jDim = 0; jDim < nDim; jDim++){
+    for (size_t iDim = 0; iDim < nDim; iDim++){
+      for (size_t jDim = 0; jDim < nDim; jDim++){
         stress[iDim][jDim] = viscosity * (velgrad[iDim][jDim]+velgrad[jDim][iDim]);
       }
       stress[iDim][iDim] -= pTerm;
@@ -534,42 +534,43 @@ public:
    * \param[in,out] tau: Shear stress tensor.
    */
   template <class Mat1, class Mat2>
-  FORCEINLINE static void AddQCR(int nDim, const Mat1& gradvel, Mat2& tau) {
+  FORCEINLINE static void AddQCR(size_t nDim, const Mat1& gradvel, Mat2& tau) {
+    using Scalar = typename std::decay<decltype(gradvel[0][0])>::type;
 
-    const su2double c_cr1= 0.3;
+    const Scalar c_cr1 = 0.3;
 
     /*--- Denominator Antisymmetric normalized rotation tensor ---*/
 
-    su2double den_aux = 0.0;
-    for (int iDim = 0; iDim < nDim; iDim++)
-      for (int jDim = 0; jDim < nDim; jDim++)
-        den_aux += gradvel[iDim][jDim] * gradvel[iDim][jDim];
-    den_aux = sqrt(max(den_aux,1E-10));
+    Scalar factor = 0.0;
+    for (size_t iDim = 0; iDim < nDim; iDim++)
+      for (size_t jDim = 0; jDim < nDim; jDim++)
+        factor += gradvel[iDim][jDim] * gradvel[iDim][jDim];
+    factor = 1.0 / sqrt(max(factor,1E-10));
 
     /*--- Adding the QCR contribution ---*/
 
-    su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
+    Scalar tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
 
-    for (int iDim = 0; iDim < nDim; iDim++){
-      for (int jDim = 0; jDim < nDim; jDim++){
-        for (int kDim = 0; kDim < nDim; kDim++){
-          su2double O_ik = (gradvel[iDim][kDim] - gradvel[kDim][iDim])/ den_aux;
-          su2double O_jk = (gradvel[jDim][kDim] - gradvel[kDim][jDim])/ den_aux;
-          tauQCR[iDim][jDim] = c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
+    for (size_t iDim = 0; iDim < nDim; iDim++){
+      for (size_t jDim = 0; jDim < nDim; jDim++){
+        for (size_t kDim = 0; kDim < nDim; kDim++){
+          Scalar O_ik = (gradvel[iDim][kDim] - gradvel[kDim][iDim]) * factor;
+          Scalar O_jk = (gradvel[jDim][kDim] - gradvel[kDim][jDim]) * factor;
+          tauQCR[iDim][jDim] += O_ik * tau[jDim][kDim] + O_jk * tau[iDim][kDim];
         }
       }
     }
 
-    for (int iDim = 0; iDim < nDim; iDim++)
-      for (int jDim = 0; jDim < nDim; jDim++)
-        tau[iDim][jDim] -= tauQCR[iDim][jDim];
+    for (size_t iDim = 0; iDim < nDim; iDim++)
+      for (size_t jDim = 0; jDim < nDim; jDim++)
+        tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
   }
 
   /*!
    * \brief Perturb the Reynolds stress tensor based on parameters.
    * \param[in] nDim - Dimension of the flow problem, 2 or 3.
    * \param[in] uq_eigval_comp - Component 1C 2C 3C.
-   * \param[in] uq_permute - Whether to swap order of eigen values.
+   * \param[in] uq_permute - Whether to swap order of eigen vectors.
    * \param[in] uq_delta_b - Delta_b parameter.
    * \param[in] uq_urlx - Relaxation factor.
    * \param[in] velgrad - A velocity gradient matrix.
@@ -579,20 +580,20 @@ public:
    * \param[out] MeanPerturbedRSM - Perturbed stress tensor.
    */
   template<class Mat1, class Mat2, class Scalar>
-  FORCEINLINE static void ComputePerturbedRSM(int nDim, int uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
+  NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
                                               Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
     Scalar MeanReynoldsStress[3][3];
     ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
-    for (int iDim = 0; iDim < 3; iDim++)
-      for (int jDim = 0; jDim < 3; jDim++)
+    for (size_t iDim = 0; iDim < 3; iDim++)
+      for (size_t jDim = 0; jDim < 3; jDim++)
         MeanReynoldsStress[iDim][jDim] /= -density;
 
     /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
 
     Scalar A_ij[3][3];
-    for (int iDim = 0; iDim < 3; iDim++) {
-      for (int jDim = 0; jDim < 3; jDim++) {
+    for (size_t iDim = 0; iDim < 3; iDim++) {
+      for (size_t jDim = 0; jDim < 3; jDim++) {
         A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke;
       }
       A_ij[iDim][iDim] -= 1.0/3.0;
@@ -643,19 +644,19 @@ public:
 
     /* permute eigenvectors if required */
     if (uq_permute) {
-      for (int jDim=0; jDim<3; jDim++)
+      for (size_t jDim = 0; jDim < 3; jDim++)
         swap(Eig_Vec[0][jDim], Eig_Vec[2][jDim]);
     }
 
     CBlasStructure::EigenRecomposition(A_ij, Eig_Vec, Eig_Val, 3);
 
     /* compute perturbed Reynolds stress matrix; using under-relaxation factor (uq_urlx)*/
-    for (int iDim = 0; iDim < 3; iDim++) {
-      for (int jDim = 0; jDim < 3; jDim++) {
+    for (size_t iDim = 0; iDim < 3; iDim++) {
+      for (size_t jDim = 0; jDim < 3; jDim++) {
         auto delta_ij = (jDim==iDim)? 1.0 : 0.0;
         MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (A_ij[iDim][jDim] + 1.0/3.0 * delta_ij);
         MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-        uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+          uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
       }
     }
   }
