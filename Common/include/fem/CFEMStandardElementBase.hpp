@@ -621,6 +621,9 @@ protected:
    * \param[in]  N      - Second matrix dimension of B and C in the gemm call.
    * \param[in]  K      - First matrix dimension of B and second matrix dimension
    *                      of A in the gemm call.
+   * \param[in]  LDA    - Leading dimension of A.
+   * \param[in]  LDB    - Leading dimension of B.
+   * \param[in]  LDC    - Leading dimension of C.
    * \param[in]  A      - Matrix A in the gemm call.
    * \param[in]  B      - Matrix B in the gemm call.
    * \param[out] C      - Matrix C in the gemm call.
@@ -631,6 +634,9 @@ protected:
                const int                     M,
                const int                     N,
                const int                     K,
+               const int                     LDA,
+               const int                     LDB,
+               const int                     LDC,
                ColMajorMatrix<passivedouble> &A,
                ColMajorMatrix<su2double>     &B,
                ColMajorMatrix<su2double>     &C,
@@ -638,16 +644,22 @@ protected:
 
   /*!
    * \brief Function, which sets up the jitted GEMM call when MKL is used.
-   * \param[in] M           - First matrix dimension of A and C in the gemm call.
-   * \param[in] N           - Second matrix dimension of B and C in the gemm call.
-   * \param[in] K           - First matrix dimension of B and second matrix dimension
+   * \param[in]  M          - First matrix dimension of A and C in the gemm call.
+   * \param[in]  N          - Second matrix dimension of B and C in the gemm call.
+   * \param[in]  K          - First matrix dimension of B and second matrix dimension
    *                          of A in the gemm call.
+   * \param[in]  LDA        - Leading dimension of A.
+   * \param[in]  LDB        - Leading dimension of B.
+   * \param[in]  LDC        - Leading dimension of C.
    * \param[out] val_jitter - Pointer with internal data for the MKL jitted gemm kernel.
    * \param[out] val_gemm   - MKL jitted gemm kernel to be created.
    */
   void SetUpJittedGEMM(const int          M,
                        const int          N,
                        const int          K,
+                       const int          LDA,
+                       const int          LDB,
+                       const int          LDC,
                        void               *&val_jitter,
                        dgemm_jit_kernel_t &val_gemm);
 };

@@ -44,14 +44,11 @@ using namespace std;
  */
 class CGemmFaceHex final : public CGemmBase {
 
-private:
-
-  int M;   /*!< \brief First tensor dimensions of A and C in the gemm call. */
-  int N;   /*!< \brief Last tensor dimension of B and C in the gemm call. */
-  int K;   /*!< \brief First tensor dimensions of B and last tensor dimensions
-                       of A in the gemm call. */
-
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -60,15 +57,24 @@ public:
 
   /*!
    * \overload
-   * \param[in] val_M - First tensor dimensions of A and C in the gemm call.
-   * \param[in] val_N - Last tensor dimension of B and C in the gemm call.
-   * \param[in] val_K - First tensor dimensions of B and last tensor dimensions
-   *                    of A in the gemm call.
+   * \param[in] val_M    - First tensor dimensions of A and C in the gemm call.
+   * \param[in] val_Type - The type of tensor product to be carried out.
+   * \param[in] val_K    - First tensor dimensions of B and last tensor dimensions
+   *                       of A in the gemm call.
    */
-  CGemmFaceHex(const int val_M, const int val_N, const int val_K);
+  CGemmFaceHex(const int val_M, const int val_Type, const int val_K);
 
   /*!
    * \brief Destructor, nothing to be done.
    */
   ~CGemmFaceHex() = default;
+
+private:
+
+  int M;   /*!< \brief First tensor dimensions of A and C in the gemm call. */
+  int K;   /*!< \brief First tensor dimensions of B and last tensor dimensions
+                       of A in the gemm call. */
+
+  int TypeTensorProduct; /*!< \brief Indicates the type of tensor product to be
+                                     carried out, DOFS_TO_INT or INT_TO_DOFS. */
 };

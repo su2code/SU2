@@ -55,12 +55,16 @@ public:
    * \param[in]  M      - Number of rows of A and C.
    * \param[in]  N      - Number of columns of B and C.
    * \param[in]  K      - Number of columns of A and number of rows of B.
+   * \param[in]  LDA    - Leading dimension of A.
+   * \param[in]  LDB    - Leading dimension of B.
+   * \param[in]  LDC    - Leading dimension of C.
    * \param[in]  A      - Input matrix in the multiplication.
    * \param[in]  B      - Input matrix in the multiplication.
    * \param[out] C      - Result of the matrix product A*B.
    * \param[out] config - Object used for the timing of the gemm call.
    */
   void gemm(const int M,            const int N,        const int K,
+            const int LDA,          const int LDB,      const int LDC,
             const passivedouble *A, const su2double *B, su2double *C,
             const CConfig *config) const;
 
@@ -151,14 +155,18 @@ private:
 
   /*!
    * \brief Function, which performs the implementation of the gemm functionality.
-   * \param[in]  m  - Number of rows of a and c.
-   * \param[in]  n  - Number of columns of b and c.
-   * \param[in]  k  - Number of columns of a and number of rows of b.
-   * \param[in]  a  - Input matrix in the multiplication.
-   * \param[in]  b  - Input matrix in the multiplication.
-   * \param[out] c  - Result of the matrix product a*b.
+   * \param[in]  m   - Number of rows of a and c.
+   * \param[in]  n   - Number of columns of b and c.
+   * \param[in]  k   - Number of columns of a and number of rows of b.
+   * \param[in]  lda - Leading dimension of the matrix a.
+   * \param[in]  ldb - Leading dimension of the matrix b.
+   * \param[in]  ldc - Leading dimension of the matrix c.
+   * \param[in]  a   - Input matrix in the multiplication.
+   * \param[in]  b   - Input matrix in the multiplication.
+   * \param[out] c   - Result of the matrix product a*b.
    */
   void gemm_imp(const int m,            const int n,        const int k,
+                const int lda,          const int ldb,      const int ldc,
                 const passivedouble *a, const su2double *b, su2double *c) const;
 
   /*!

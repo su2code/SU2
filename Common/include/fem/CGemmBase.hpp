@@ -40,6 +40,10 @@ using namespace std;
 class CGemmBase {
 
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class.
    */
@@ -49,4 +53,16 @@ public:
    * \brief Destructor.
    */
   virtual ~CGemmBase() = default;
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                        Public enumerated types.                             ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Types of GEMMs that are present. Needed for the tensor products.
+   */
+  enum ENUM_GEMM_TYPE {
+    DOFS_TO_INT = 0,    /*!< \brief Create data in the integration points from the DOFs. */
+    INT_TO_DOFS = 1     /*!< \brief Create data in the DOFs from the integration points. */
+  };
 };

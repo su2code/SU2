@@ -194,8 +194,8 @@ void CFEMStandardTriBase::ChangeDirectionTriangleConn(vector<unsigned short> &co
 void CFEMStandardTriBase::ConvertCoor1DFaceTo2DTriangle(const vector<passivedouble> rLine,
                                                         const unsigned short        faceID,
                                                         const unsigned short        orientation,
-                                                        vector<passivedouble>       rTriangle,
-                                                        vector<passivedouble>       sTriangle) {
+                                                        vector<passivedouble>       &rTriangle,
+                                                        vector<passivedouble>       &sTriangle) {
 
   /*--- Easier storage of the number of points and allocate the memory for
         rTriangle and sTriangle. ---*/

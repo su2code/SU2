@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CGemmStandard.hpp"
+#include "../../include/fem/CFEMStandardElementBase.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*                  Public member functions of CGemmStandard.                       */
@@ -38,6 +39,9 @@ CGemmStandard::CGemmStandard(const int val_M, const int val_N, const int val_K)
   M = val_M;
   N = val_N;
   K = val_K;
+
+  /*--- Create the padded value of M. ---*/
+  MP = CFEMStandardElementBase::PaddedValue(M);
 }
 
 CGemmStandard::~CGemmStandard(){}

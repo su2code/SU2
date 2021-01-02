@@ -31,11 +31,12 @@
 /*                  Public member functions of CGemmFaceHex.                        */
 /*----------------------------------------------------------------------------------*/
 
-CGemmFaceHex::CGemmFaceHex(const int val_M, const int val_N, const int val_K)
+CGemmFaceHex::CGemmFaceHex(const int val_M, const int val_Type, const int val_K)
   : CGemmBase() {
 
   /*--- Copy the arguments into the member variables. ---*/
   M = val_M;
-  N = val_N;
   K = val_K;
+
+  TypeTensorProduct = val_Type;
 }

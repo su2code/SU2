@@ -2715,28 +2715,35 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
            of A. When a tensor product is used these are the first dimensions
            of tensor B and the last of tensor A.
         4: N, the last dimension of B and C in the gemm call. This is the
-           number of variables per point, if relevant.
+           number of variables per point, if relevant. For a tensor product
+           GEMM call it contains the information whether it is DOF2Int
+           or Int2DOF. The latter is only relevant for the solution
+           GEMM's, because it is needed to compute the residual.
         Define the variable to store this information. ---*/
   vector<CUnsignedShort4T> gemmTypes;
 
   /*--- Loop over the entries of typesSurfaceGrid to fill gemmTypes.
         Note that when no tensor product is used, the element type
-        is not relevant and it is set to a LINE. ---*/
+        is not relevant and it is set to a LINE. When a tensor product
+        is used, the last variable of gemmTypes indicates this is a
+        gemm call from DOFS_TO_INT. ---*/ 
   for(unsigned long i=0; i<typesSurfaceGrid.size(); ++i) {
 
     unsigned short VTK_Type_Elem = typesSurfaceGrid[i].short2;
-    unsigned short nDOFs;
+    unsigned short nDOFs, short3;
     if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
-      nDOFs = typesSurfaceGrid[i].short3+1;
+      nDOFs  = typesSurfaceGrid[i].short3+1;
+      short3 = CGemmBase::DOFS_TO_INT;
     }
     else {
-      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem,
-                                                      typesSurfaceGrid[i].short3);
+      nDOFs  = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem,
+                                                       typesSurfaceGrid[i].short3);
+      short3 = typesSurfaceSol[i].short6;
       VTK_Type_Elem = LINE;
     }
 
     gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, typesSurfaceGrid[i].short1,
-                                         nDOFs, typesSurfaceGrid[i].short6));
+                                         nDOFs, short3));
   }
 
   /*--- Loop over the entries of typesSurfaceSol to fill gemmTypes.
@@ -2744,13 +2751,21 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
         the interpolation to the integration points from the DOFs
         of the element and vice versa to obtain the residual
         contribution from the surface integral. Also here, when no
-        tensor product is used, the element type is not relevant. ---*/
+        tensor product is used, the element type is not relevant.
+        When a tensor product is used, the last variable of gemmTypes
+        indicates whether it is a gemm call from DOFS_TO_INT or from
+        INT_TO_DOFS. ---*/ 
   for(unsigned long i=0; i<typesSurfaceSol.size(); ++i) {
+
+    unsigned short short3_0 = typesSurfaceSol[i].short6;
+    unsigned short short3_1 = typesSurfaceSol[i].short6;
 
     unsigned short VTK_Type_Elem = typesSurfaceSol[i].short2;
     unsigned short nDOFs;
     if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
-      nDOFs = typesSurfaceSol[i].short3+1;
+      nDOFs    = typesSurfaceSol[i].short3+1;
+      short3_0 = CGemmBase::DOFS_TO_INT;
+      short3_1 = CGemmBase::INT_TO_DOFS;
     }
     else {
       VTK_Type_Elem = LINE;
@@ -2759,10 +2774,9 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     }
 
     gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, typesSurfaceSol[i].short1,
-                                         nDOFs, typesSurfaceSol[i].short6));
+                                         nDOFs, short3_0));
     gemmTypes.push_back(CUnsignedShort4T(VTK_Type_Elem, nDOFs,
-                                         typesSurfaceSol[i].short1,
-                                         typesSurfaceSol[i].short6));
+                                         typesSurfaceSol[i].short1, short3_1));
   }
 
   /*--- Sort gemmTypes and remove the double entities. ---*/
@@ -2821,22 +2835,25 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     unsigned short orderExact    = typesSurfaceGrid[i].short7;
 
     /*--- Correct the VTK type of the element if no tensor product
-          is used and correct nVarPerPoint if a tensor product is
-          used. Also determine the number of DOFs. Again the number
+          is used, because that is not relevant. If a tensor product
+          is used, nVarPerPoint is not used. Instead this entry
+          indicates the tensor product is from DOFS_TO_INT for the
+          grid. Also determine the number of DOFs. Again the number
           of DOFs in 1D for tensor product elements. ---*/
-    unsigned short nDOFs;
+    unsigned short nDOFs, short3;
     if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
-      nDOFs        = typesSurfaceGrid[i].short3+1;
-      nVarPerPoint = 1;
+      nDOFs  = typesSurfaceGrid[i].short3+1;
+      short3 = CGemmBase::DOFS_TO_INT;
     }
     else {
-      nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
+      nDOFs  = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
+      short3 = nVarPerPoint;
       VTK_Type_Elem = LINE;
     }
 
     /*--- Create the data for the gemm type used in this standard
           surface element. ---*/
-    CUnsignedShort4T thisGemmType(VTK_Type_Elem, nInt, nDOFs, nVarPerPoint);
+    CUnsignedShort4T thisGemmType(VTK_Type_Elem, nInt, nDOFs, short3);
 
     /*--- Find this gemm type in gemmTypes. ---*/
     vector<CUnsignedShort4T>::const_iterator low;
@@ -2964,22 +2981,26 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     unsigned short orderExact    = typesSurfaceSol[i].short7;
 
     /*--- Correct the VTK type of the element if no tensor product
-          is used and correct nVarPerPoint if a tensor product is
-          used. Also determine the number of DOFs. Again the number
-          of DOFs in 1D for tensor product elements. ---*/
-    unsigned short nDOFs;
+          is used, because that is not relevant. If a tensor product
+          is used, nVarPerPoint is not used. Instead this entry
+          indicates whether the tensor product is from DOFS_TO_INT
+          or from INT_TO_DOFS. Also determine the number of DOFs.
+          Again the number of DOFs in 1D for tensor product elements. ---*/
+    unsigned short nDOFs, short3_0, short3_1;
     if((VTK_Type_Elem == HEXAHEDRON) || (VTK_Type_Elem == QUADRILATERAL)) {
-      nDOFs        = typesSurfaceSol[i].short3+1;
-      nVarPerPoint = 1;
+      nDOFs    = typesSurfaceSol[i].short3+1;
+      short3_0 = CGemmBase::DOFS_TO_INT;
+      short3_1 = CGemmBase::INT_TO_DOFS;
     }
     else {
       nDOFs = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type_Elem, nPoly);
       VTK_Type_Elem = LINE;
+      short3_0 = short3_1 = nVarPerPoint;
     }
 
     /*--- Create the data for the gemm type used in this standard
           surface element. ---*/
-    CUnsignedShort4T thisGemmType(VTK_Type_Elem, nInt, nDOFs, nVarPerPoint);
+    CUnsignedShort4T thisGemmType(VTK_Type_Elem, nInt, nDOFs, short3_0);
 
     /*--- Find this gemm type in gemmTypes. ---*/
     vector<CUnsignedShort4T>::const_iterator low;
@@ -2989,6 +3010,7 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
     /*--- Also search  for the gemm type with the number of integration points
           and number of DOFs swapped. ---*/
     swap(thisGemmType.short1, thisGemmType.short2);
+    thisGemmType.short3 = short3_1;
     low = lower_bound(gemmTypes.begin(), gemmTypes.end(), thisGemmType);
     const unsigned long ind2 = low - gemmTypes.begin();
 

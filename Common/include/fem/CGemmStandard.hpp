@@ -47,21 +47,11 @@ using namespace std;
  */
 class CGemmStandard final : public CGemmBase {
 
-private:
-
-  int M;   /*!< \brief First matrix dimension of A and C in the gemm call. */
-  int N;   /*!< \brief Second matrix dimension of B and C in the gemm call. */
-  int K;   /*!< \brief First matrix dimension of B and second matrix dimension
-                       of A in the gemm call. */
-
-#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
-  void *jitter;                 /*!< \brief Pointer to the data for the jitted gemm function. */
-  dgemm_jit_kernel_t my_dgemm;  /*!< \brief Pointer to the function to carry out the jitted gemm call. */
-#else
-  CBlasStructure blasFunctions; /*!< \brief  The object to carry out the BLAS functionalities. */
-#endif
-
 public:
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -81,4 +71,21 @@ public:
    * \brief Destructor.
    */
   ~CGemmStandard();
+
+private:
+
+  int M;   /*!< \brief First matrix dimension of A and C in the gemm call. */
+  int N;   /*!< \brief Second matrix dimension of B and C in the gemm call. */
+  int K;   /*!< \brief First matrix dimension of B and second matrix dimension
+                       of A in the gemm call. */
+
+  int MP;  /*!< \brief Padded value of M. */
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  void *jitterFace;             /*!< \brief Pointer to the data for the jitted gemm function. */
+  dgemm_jit_kernel_t gemmFace;  /*!< \brief Pointer to the function to carry out the jitted gemm call. */
+#else
+  CBlasStructure blasFunctions; /*!< \brief  The object to carry out the BLAS functionalities. */
+#endif
+
 };

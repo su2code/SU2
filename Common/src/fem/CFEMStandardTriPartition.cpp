@@ -68,7 +68,8 @@ CFEMStandardTriPartition::CFEMStandardTriPartition(const unsigned short val_nPol
 
   /*--- Set up the jitted gemm call, if supported. For this particular standard
         element the derivatives of the coordinates are computed, which is nDim. ---*/
-  SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs, jitterDOFs2Int, gemmDOFs2Int);
+  SetUpJittedGEMM(nIntegrationPad, nDim, nDOFs, nIntegrationPad, nDOFs,
+                  nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
 }
 
 CFEMStandardTriPartition::~CFEMStandardTriPartition() {
@@ -92,7 +93,9 @@ void CFEMStandardTriPartition::CoorIntPoints(const bool                LGLDistri
           coordinates in the integration points. The fourth argument in the
           function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
+            lagBasisIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
 
@@ -100,7 +103,9 @@ void CFEMStandardTriPartition::CoorIntPoints(const bool                LGLDistri
           coordinates in the integration points. The fourth argument in the
           function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
+    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
+            lagBasisIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
 
@@ -115,8 +120,10 @@ void CFEMStandardTriPartition::DerivativesCoorIntPoints(const bool              
           of the Cartesian coordinates w.r.t. the two parametric coordinates. The fourth
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntLGL[1], matCoor, matDerCoor[1], nullptr);
+    for(unsigned short nn=0; nn<2; ++nn)
+      OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs,
+              nIntegrationPad, nDOFs, nIntegrationPad,
+              derLagBasisIntLGL[nn], matCoor, matDerCoor[nn], nullptr);
   }
   else {
 
@@ -124,8 +131,10 @@ void CFEMStandardTriPartition::DerivativesCoorIntPoints(const bool              
           of the Cartesian coordinates w.r.t. the two parametric coordinates. The fourth
           argument in the function call is nDim, which corresponds to the number of Cartesian
           coordinates (3 for a surface element and 2 for a volume element). ---*/
-    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[0], matCoor, matDerCoor[0], nullptr);
-    OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs, derLagBasisIntEqui[1], matCoor, matDerCoor[1], nullptr);
+    for(unsigned short nn=0; nn<2; ++nn)
+      OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, nDim, nDOFs,
+              nIntegrationPad, nDOFs, nIntegrationPad,
+              derLagBasisIntEqui[nn], matCoor, matDerCoor[nn], nullptr);
   }
 }
 

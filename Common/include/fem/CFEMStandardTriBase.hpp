@@ -133,8 +133,8 @@ protected:
   void ConvertCoor1DFaceTo2DTriangle(const vector<passivedouble> rLine,
                                      const unsigned short        faceID,
                                      const unsigned short        orientation,
-                                     vector<passivedouble>       rTriangle,
-                                     vector<passivedouble>       sTriangle);
+                                     vector<passivedouble>       &rTriangle,
+                                     vector<passivedouble>       &sTriangle);
 
   /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian

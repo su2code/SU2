@@ -6319,6 +6319,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
       }
 
+      if((Mesh_FileFormat == RECTANGLE) || (Mesh_FileFormat == BOX))  /*--- Overrule, because there are no   ---*/
+        Quadrature_Factor_Curved = Quadrature_Factor_Straight;        /*--- curved elements for these grids. ---*/
+
       cout << "Quadrature factor for elements with constant Jacobian:     " << Quadrature_Factor_Straight << endl;
       cout << "Quadrature factor for elements with non-constant Jacobian: " << Quadrature_Factor_Curved << endl;
     }

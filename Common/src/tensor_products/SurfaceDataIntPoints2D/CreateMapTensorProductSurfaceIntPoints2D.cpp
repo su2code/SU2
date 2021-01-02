@@ -48,6 +48,9 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
   nDOFsAndInt.short0 = 1; nDOFsAndInt.short1 = 5;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_1_5);
 
+  nDOFsAndInt.short0 = 2; nDOFsAndInt.short1 = 2;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_2_2);
+
   nDOFsAndInt.short0 = 2; nDOFsAndInt.short1 = 3;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_2_3);
 
@@ -56,6 +59,9 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
 
   nDOFsAndInt.short0 = 2; nDOFsAndInt.short1 = 5;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_2_5);
+
+  nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 3;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_3_3);
 
   nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 4;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_3_4);
@@ -72,6 +78,9 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
   nDOFsAndInt.short0 = 3; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_3_8);
 
+  nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 4;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_4_4);
+
   nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 5;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_4_5);
 
@@ -84,6 +93,9 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
   nDOFsAndInt.short0 = 4; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_4_8);
 
+  nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 5;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_5_5);
+
   nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 6;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_5_6);
 
@@ -92,6 +104,9 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
 
   nDOFsAndInt.short0 = 5; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_5_8);
+
+  nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 6;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_6_6);
 
   nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 7;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_6_7);
@@ -102,23 +117,35 @@ void CreateMapTensorProductSurfaceIntPoints2D(map<CUnsignedShort2T, TPIS2D> &map
   nDOFsAndInt.short0 = 6; nDOFsAndInt.short1 = 9;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_6_9);
 
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 7;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_7_7);
+
   nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 8;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_7_8);
 
   nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 9;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_7_9);
 
-  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 12;
-  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_7_12);
+  nDOFsAndInt.short0 = 7; nDOFsAndInt.short1 = 8;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_7_8);
+
+  nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 12;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_8_12);
 
   nDOFsAndInt.short0 = 8; nDOFsAndInt.short1 = 13;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_8_13);
+
+  nDOFsAndInt.short0 = 9; nDOFsAndInt.short1 = 9;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_9_9);
 
   nDOFsAndInt.short0 = 9; nDOFsAndInt.short1 = 13;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_9_13);
 
   nDOFsAndInt.short0 = 9; nDOFsAndInt.short1 = 14;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_9_14);
+
+  nDOFsAndInt.short0 = 10; nDOFsAndInt.short1 = 10;
+  mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_10_10);
 
   nDOFsAndInt.short0 = 10; nDOFsAndInt.short1 = 14;
   mapFunctions.emplace(nDOFsAndInt, &TensorProductSurfaceIntPoints2D_10_14);

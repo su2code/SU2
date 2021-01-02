@@ -82,8 +82,10 @@ CFEMStandardTriVolumeSol::CFEMStandardTriVolumeSol(const unsigned short val_nPol
   CFEMStandardTriBase::SubConnLinearElements();
 
   /*--- Set up the jitted gemm calls, if supported. ---*/
-  SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, jitterDOFs2Int, gemmDOFs2Int);
-  SetUpJittedGEMM(nDOFsPad, val_nVar, nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+  SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, nIntegrationPad,
+                  nDOFs, nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
+  SetUpJittedGEMM(nDOFsPad, val_nVar, nDOFs, nDOFsPad, nDOFs,
+                  nDOFsPad, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
 }
 
 CFEMStandardTriVolumeSol::~CFEMStandardTriVolumeSol() {

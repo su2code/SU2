@@ -798,6 +798,9 @@ void CFEMStandardElementBase::OwnGemm(dgemm_jit_kernel_t            &gemm,
                                       const int                     M,
                                       const int                     N,
                                       const int                     K,
+                                      const int                     LDA,
+                                      const int                     LDB,
+                                      const int                     LDC,
                                       ColMajorMatrix<passivedouble> &A,
                                       ColMajorMatrix<su2double>     &B,
                                       ColMajorMatrix<su2double>     &C,
@@ -821,7 +824,7 @@ void CFEMStandardElementBase::OwnGemm(dgemm_jit_kernel_t            &gemm,
 #else
 
   /*--- Use the interface to the more standard BLAS functionality. ---*/
-  blasFunctions.gemm(M, N, K, A.data(), B.data(), C.data(), config);
+  blasFunctions.gemm(M, N, K, LDA, LDB, LDC, A.data(), B.data(), C.data(), config);
 
 #endif
 }
@@ -829,6 +832,9 @@ void CFEMStandardElementBase::OwnGemm(dgemm_jit_kernel_t            &gemm,
 void CFEMStandardElementBase::SetUpJittedGEMM(const int          M,
                                               const int          N,
                                               const int          K,
+                                              const int          LDA,
+                                              const int          LDB,
+                                              const int          LDC,
                                               void               *&val_jitter,
                                               dgemm_jit_kernel_t &val_gemm) {
 
@@ -839,7 +845,7 @@ void CFEMStandardElementBase::SetUpJittedGEMM(const int          M,
   passivedouble alpha = 1.0;
   passivedouble beta  = 0.0;
   mkl_jit_status_t status = mkl_jit_create_dgemm(&val_jitter, MKL_COL_MAJOR, MKL_NOTRANS,
-                                                 MKL_NOTRANS, M, N, K, alpha, M, K, beta, M);
+                                                 MKL_NOTRANS, M, N, K, alpha, LDA, LDB, beta, LDC);
 
   if(status == MKL_JIT_ERROR)
     SU2_MPI::Error(string("Jitted gemm kernel could not be created"), CURRENT_FUNCTION);

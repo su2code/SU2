@@ -57,7 +57,8 @@ CFEMStandardLinePartition::CFEMStandardLinePartition(const unsigned short val_nP
         element the the coordinates and derivatives are computed, which is 2,
         because the line element is only present as a surface element in a
         2D simulation. ---*/
-  SetUpJittedGEMM(nIntegrationPad, 2, nDOFs, jitterDOFs2Int, gemmDOFs2Int);
+  SetUpJittedGEMM(nIntegrationPad, 2, nDOFs, nIntegrationPad, nDOFs,
+                  nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
 }
 
 CFEMStandardLinePartition::~CFEMStandardLinePartition() {
@@ -80,6 +81,7 @@ void CFEMStandardLinePartition::CoorIntPoints(const bool                LGLDistr
     /*--- LGL distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
             lagBasisLineIntLGL, matCoorDOF, matCoorInt, nullptr);
   }
   else {
@@ -87,6 +89,7 @@ void CFEMStandardLinePartition::CoorIntPoints(const bool                LGLDistr
     /*--- Equidistant distribution. Call the function OwnGemm to compute the
           Cartesian coordinates in the integration points. ---*/
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
             lagBasisLineIntEqui, matCoorDOF, matCoorInt, nullptr);
   }
 }
@@ -101,6 +104,7 @@ void CFEMStandardLinePartition::DerivativesCoorIntPoints(const bool             
     /*--- LGL distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
             derLagBasisLineIntLGL, matCoor, matDerCoor[0], nullptr);
   }
   else {
@@ -108,6 +112,7 @@ void CFEMStandardLinePartition::DerivativesCoorIntPoints(const bool             
     /*--- Equidistant distribution. Call the function OwnGemm to compute the derivatives
           of the Cartesian coordinates w.r.t. the parametric coordinate. ---*/
     OwnGemm(gemmDOFs2Int, jitterDOFs2Int, nIntegrationPad, 2, nDOFs,
+            nIntegrationPad, nDOFs, nIntegrationPad,
             derLagBasisLineIntEqui, matCoor, matDerCoor[0], nullptr);
   }
 }

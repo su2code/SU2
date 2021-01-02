@@ -57,6 +57,7 @@ CBlasStructure::~CBlasStructure(void) {}
 
 /* Dense matrix multiplication, gemm functionality. */
 void CBlasStructure::gemm(const int M,            const int N,        const int K,
+                          const int LDA,          const int LDB,      const int LDC,
                           const passivedouble *A, const su2double *B, su2double *C,
                           const CConfig *config) const {
 
@@ -69,7 +70,7 @@ void CBlasStructure::gemm(const int M,            const int N,        const int 
 #if !defined(PRIMAL_SOLVER) || !(defined(HAVE_MKL) || defined(HAVE_BLAS))
   /* Native implementation of the matrix product. This implementation is based
      on https://github.com/flame/how-to-optimize-gemm. */
-  gemm_imp(M, N, K, A, B, C);
+  gemm_imp(M, N, K, LDA, LDB, LDC, A, B, C);
 
 #else // MKL and BLAS
 
@@ -78,7 +79,7 @@ void CBlasStructure::gemm(const int M,            const int N,        const int 
   passivedouble beta  = 0.0;
   char trans = 'N';
 
-  dgemm_(&trans, &trans, &M, &N, &K, &alpha, A, &M, B, &K, &beta, C, &M);
+  dgemm_(&trans, &trans, &M, &N, &K, &alpha, A, &LDA, B, &LDB, &beta, C, &LDC);
 
 #endif
 
@@ -130,16 +131,12 @@ void CBlasStructure::gemv(const int M,        const int N,   const passivedouble
 
 /* Function, which performs the implementation of the gemm functionality.  */
 void CBlasStructure::gemm_imp(const int m,            const int n,        const int k,
+                              const int lda,          const int ldb,      const int ldc,
                               const passivedouble *a, const su2double *b, su2double *c) const {
 
   /* Initialize the elements of c to zero. */
   SU2_OMP_SIMD
   for(int i=0; i<(m*n); ++i) c[i] = 0.0;
-
-  /* Set the leading dimensions of the three matrices. */
-  const int lda = m;
-  const int ldb = k;
-  const int ldc = m;
 
   /* The full matrix multiplication is split in several blocks.
      Loop over these blocks. */
