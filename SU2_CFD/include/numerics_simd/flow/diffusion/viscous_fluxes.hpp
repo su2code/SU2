@@ -79,19 +79,33 @@ protected:
   const su2double cp;
   const bool correct;
   const bool useSA_QCR;
+  const bool uq;
+  const bool uq_permute;
+  const size_t uq_eigval_comp;
+  const su2double uq_delta_b;
+  const su2double uq_urlx;
+
+  const CVariable* turbVars;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
    */
   template<class... Ts>
-  CCompressibleViscousFlux(const CConfig& config, int iMesh, Ts&...) :
+  CCompressibleViscousFlux(const CConfig& config, int iMesh,
+                           const CVariable* turbVars_ = nullptr, Ts&...) :
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlLam(config.GetPrandtl_Lam()),
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
     correct(iMesh == MESH_0),
-    useSA_QCR(config.GetQCR()) {
+    useSA_QCR(config.GetQCR()),
+    uq(config.GetUsing_UQ()),
+    uq_permute(config.GetUQ_Permute()),
+    uq_eigval_comp(config.GetEig_Val_Comp()),
+    uq_delta_b(config.GetUQ_Delta_B()),
+    uq_urlx(config.GetUQ_URLX()),
+    turbVars(turbVars_) {
   }
 
   /*!
@@ -130,12 +144,16 @@ protected:
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
     if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
 
-    /// TODO: Uncertainty quantification (needs a way to access tke, maybe in ctor).
-
     /*--- Stress and heat flux tensors. ---*/
 
-    auto tau = stressTensor(avgV, avgGrad);
+    auto tau = stressTensor(avgV.laminarVisc() + (uq? Double(0.0) : avgV.eddyVisc()), avgGrad);
     if(useSA_QCR) addQCR(avgGrad, tau);
+    if(uq) {
+      Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                            gatherVariables(jPoint, turbVars->GetSolution()));
+      addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
+                      uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
+    }
 
     Double cond = cp * (avgV.laminarVisc()/prandtlLam + avgV.eddyVisc()/prandtlTurb);
     VectorDbl<nDim> heatFlux;

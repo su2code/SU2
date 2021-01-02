@@ -36,13 +36,13 @@
  * \brief Generic factory implementation.
  */
 template<class ViscousDecorator>
-CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
+CNumericsSIMD* createNumerics(const CConfig& config, int iMesh, const CVariable* turbVars) {
   CNumericsSIMD* obj = nullptr;
   switch (config.GetKind_ConvNumScheme_Flow()) {
     case SPACE_UPWIND:
       switch (config.GetKind_Upwind_Flow()) {
         case ROE:
-          obj = new CRoeScheme<ViscousDecorator>(config, iMesh);
+          obj = new CRoeScheme<ViscousDecorator>(config, iMesh, turbVars);
           break;
       }
       break;
@@ -52,16 +52,16 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
         case NO_CENTERED:
           break;
         case LAX:
-          obj = new CLaxScheme<ViscousDecorator>(config, iMesh);
+          obj = new CLaxScheme<ViscousDecorator>(config, iMesh, turbVars);
           break;
         case JST:
-          obj = new CJSTScheme<ViscousDecorator>(config, iMesh);
+          obj = new CJSTScheme<ViscousDecorator>(config, iMesh, turbVars);
           break;
         case JST_KE:
-          obj = new CJSTkeScheme<ViscousDecorator>(config, iMesh);
+          obj = new CJSTkeScheme<ViscousDecorator>(config, iMesh, turbVars);
           break;
         case JST_MAT:
-          obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh);
+          obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh, turbVars);
           break;
       }
       break;
@@ -74,17 +74,17 @@ CNumericsSIMD* createNumerics(const CConfig& config, int iMesh) {
  * createNumerics, which in turn instantiates the class templates of the different
  * numerical methods.
  */
-CNumericsSIMD* CNumericsSIMD::CreateNumerics(const CConfig& config, int nDim, int iMesh) {
+CNumericsSIMD* CNumericsSIMD::CreateNumerics(const CConfig& config, int nDim, int iMesh, const CVariable* turbVars) {
   if ((Double::Size < 4) && (SU2_MPI::GetRank() == MASTER_NODE)) {
     cout << "WARNING: SU2 was not compiled for an AVX-capable architecture." << endl;
   }
   CNumericsSIMD* obj = nullptr;
   if (config.GetViscous()) {
-    if (nDim == 2) obj = createNumerics<CCompressibleViscousFlux<2> >(config, iMesh);
-    if (nDim == 3) obj = createNumerics<CCompressibleViscousFlux<3> >(config, iMesh);
+    if (nDim == 2) obj = createNumerics<CCompressibleViscousFlux<2> >(config, iMesh, turbVars);
+    if (nDim == 3) obj = createNumerics<CCompressibleViscousFlux<3> >(config, iMesh, turbVars);
   } else {
-    if (nDim == 2) obj = createNumerics<CNoViscousFlux<2> >(config, iMesh);
-    if (nDim == 3) obj = createNumerics<CNoViscousFlux<3> >(config, iMesh);
+    if (nDim == 2) obj = createNumerics<CNoViscousFlux<2> >(config, iMesh, turbVars);
+    if (nDim == 3) obj = createNumerics<CNoViscousFlux<3> >(config, iMesh, turbVars);
   }
   return obj;
 }

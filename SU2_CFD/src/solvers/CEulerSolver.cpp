@@ -349,26 +349,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Add the solver name (max 8 characters). ---*/
   SolverName = "C.FLOW";
 
-  /*--- Vectorized numerics. ---*/
-  if (config->GetUseVectorization()) {
-    const bool uncertain = config->GetUsing_UQ();
-    const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                           (config->GetKind_FluidModel() == IDEAL_GAS);
-    const bool low_mach_corr = config->Low_Mach_Correction();
-
-    if (uncertain || !ideal_gas || low_mach_corr) {
-      SU2_MPI::Error("Some of the requested features are not yet "
-                     "supported with vectorization.", CURRENT_FUNCTION);
-    }
-
-    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, iMesh);
-
-    if (!edgeNumerics) {
-      SU2_MPI::Error("The numerical scheme in use does not "
-                     "support vectorization.", CURRENT_FUNCTION);
-    }
-  }
-
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
@@ -686,6 +666,31 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CkOutflow2;
   }
 
+}
+
+void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
+
+  SU2_OMP_MASTER {
+
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const bool low_mach_corr = config->Low_Mach_Correction();
+
+  if (!ideal_gas || low_mach_corr)
+    SU2_MPI::Error("Some of the requested features are not yet "
+                   "supported with vectorization.", CURRENT_FUNCTION);
+
+  if (solver_container[TURB_SOL])
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[TURB_SOL]->GetNodes());
+  else
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel);
+
+  if (!edgeNumerics)
+    SU2_MPI::Error("The numerical scheme in use does not "
+                   "support vectorization.", CURRENT_FUNCTION);
+
+  }
+  SU2_OMP_BARRIER
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
@@ -2645,8 +2650,10 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  /*--- If possible use the vectorized numerics instead. ---*/
-  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+  if (config->GetUseVectorization()) {
+    EdgeFluxResidual(geometry, solver_container, config);
+    return;
+  }
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
@@ -2732,8 +2739,10 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  /*--- If possible use the vectorized numerics instead. ---*/
-  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+  if (config->GetUseVectorization()) {
+    EdgeFluxResidual(geometry, solver_container, config);
+    return;
+  }
 
   const auto InnerIter        = config->GetInnerIter();
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
