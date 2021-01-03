@@ -280,7 +280,6 @@
 /* Begin PBXFileReference section */
 		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
 		354900EA2537E0050095B597 /* wall_model.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = wall_model.hpp; sourceTree = "<group>"; };
-		354900ED2537E0050095B597 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mpi_structure.inl; sourceTree = "<group>"; };
 		354900EE2537E0050095B597 /* CConfig.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CConfig.hpp; sourceTree = "<group>"; };
 		354900FC2537E0050095B597 /* CNearestNeighbor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CNearestNeighbor.hpp; sourceTree = "<group>"; };
 		354900FD2537E0050095B597 /* CRadialBasisFunction.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CRadialBasisFunction.hpp; sourceTree = "<group>"; };
@@ -531,7 +530,6 @@
 		354902932537E0280095B597 /* roe.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = roe.hpp; sourceTree = "<group>"; };
 		354902942537E0280095B597 /* ausm_slau.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ausm_slau.hpp; sourceTree = "<group>"; };
 		354902952537E0280095B597 /* flow_diffusion.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = flow_diffusion.hpp; sourceTree = "<group>"; };
-		354902962537E0280095B597 /* fluid_model.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = fluid_model.hpp; sourceTree = "<group>"; };
 		354902972537E0280095B597 /* task_definition.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = task_definition.hpp; sourceTree = "<group>"; };
 		354902992537E0280095B597 /* CFEABoundVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CFEABoundVariable.hpp; sourceTree = "<group>"; };
 		3549029A2537E0280095B597 /* CNSVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CNSVariable.hpp; sourceTree = "<group>"; };
@@ -559,13 +557,10 @@
 		354902B02537E0280095B597 /* CDiscAdjVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CDiscAdjVariable.hpp; sourceTree = "<group>"; };
 		354902B12537E0280095B597 /* CIncEulerVariable.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CIncEulerVariable.hpp; sourceTree = "<group>"; };
 		354902B22537E0280095B597 /* SU2_CFD.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SU2_CFD.hpp; sourceTree = "<group>"; };
-		354902B32537E0280095B597 /* transport_model.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = transport_model.inl; sourceTree = "<group>"; };
 		354902B42537E0280095B597 /* CMarkerProfileReaderFVM.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMarkerProfileReaderFVM.hpp; sourceTree = "<group>"; };
 		354902B52537E0280095B597 /* task_definition.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = task_definition.inl; sourceTree = "<group>"; };
-		354902B62537E0280095B597 /* transport_model.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = transport_model.hpp; sourceTree = "<group>"; };
 		354902B82537E0280095B597 /* computeGradientsLeastSquares.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = computeGradientsLeastSquares.hpp; sourceTree = "<group>"; };
 		354902B92537E0280095B597 /* computeGradientsGreenGauss.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = computeGradientsGreenGauss.hpp; sourceTree = "<group>"; };
-		354902BA2537E0280095B597 /* fluid_model.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fluid_model.inl; sourceTree = "<group>"; };
 		354902BD2537E0280095B597 /* CConjugateHeatInterface.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CConjugateHeatInterface.hpp; sourceTree = "<group>"; };
 		354902BE2537E0280095B597 /* CInterface.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CInterface.hpp; sourceTree = "<group>"; };
 		354902C02537E0280095B597 /* CMixingPlaneInterface.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMixingPlaneInterface.hpp; sourceTree = "<group>"; };
@@ -574,7 +569,6 @@
 		354902C42537E0280095B597 /* CFlowTractionInterface.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CFlowTractionInterface.hpp; sourceTree = "<group>"; };
 		354902C52537E0280095B597 /* CDisplacementsInterface.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CDisplacementsInterface.hpp; sourceTree = "<group>"; };
 		354902C62537E0280095B597 /* CDiscAdjFlowTractionInterface.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CDiscAdjFlowTractionInterface.hpp; sourceTree = "<group>"; };
-		354902C72537E0280095B597 /* iteration_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = iteration_structure.hpp; sourceTree = "<group>"; };
 		354902C92537E0280095B597 /* CMarkerProfileReaderFVM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMarkerProfileReaderFVM.cpp; sourceTree = "<group>"; };
 		354902CA2537E0280095B597 /* python_wrapper_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = python_wrapper_structure.cpp; sourceTree = "<group>"; };
 		354902CF2537E0280095B597 /* CSinglezoneDriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CSinglezoneDriver.cpp; sourceTree = "<group>"; };
@@ -912,7 +906,6 @@
 				357BEE7A256D6F7500423D14 /* fem */,
 				357BEE8C256D6F7500423D14 /* grid_movement */,
 				354900EA2537E0050095B597 /* wall_model.hpp */,
-				354900ED2537E0050095B597 /* mpi_structure.inl */,
 				354900EE2537E0050095B597 /* CConfig.hpp */,
 				354900FB2537E0050095B597 /* interface_interpolation */,
 				354901032537E0050095B597 /* toolboxes */,
@@ -1260,18 +1253,13 @@
 				3549025C2537E0280095B597 /* solvers */,
 				354902772537E0280095B597 /* sgs_model.hpp */,
 				354902782537E0280095B597 /* numerics */,
-				354902962537E0280095B597 /* fluid_model.hpp */,
 				354902972537E0280095B597 /* task_definition.hpp */,
 				354902982537E0280095B597 /* variables */,
 				354902B22537E0280095B597 /* SU2_CFD.hpp */,
-				354902B32537E0280095B597 /* transport_model.inl */,
 				354902B42537E0280095B597 /* CMarkerProfileReaderFVM.hpp */,
 				354902B52537E0280095B597 /* task_definition.inl */,
-				354902B62537E0280095B597 /* transport_model.hpp */,
 				354902B72537E0280095B597 /* gradients */,
-				354902BA2537E0280095B597 /* fluid_model.inl */,
 				354902BB2537E0280095B597 /* interfaces */,
-				354902C72537E0280095B597 /* iteration_structure.hpp */,
 			);
 			path = include;
 			sourceTree = "<group>";
