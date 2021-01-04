@@ -370,6 +370,7 @@ void CNumerics::GetInviscidProjJac(const su2double *v, const su2double *e, const
   J[nDim+1][nDim+1] = scale*Gamma*proj_vel;
 
   if (tkeNeeded) {
+    J[0][nDim+2] = 0.0;
     for (auto iDim = 0; iDim < nDim; iDim++)
       J[iDim+1][nDim+2] = -scale*a2*n[iDim];
     J[nDim+1][nDim+2] = -scale*a2*proj_vel;
@@ -546,7 +547,7 @@ void CNumerics::GetPreconditionedProjJac(su2double *val_density, su2double *val_
 void CNumerics::GetPMatrix(const su2double *r, const su2double *v, const su2double *k,
                            const su2double *c, const su2double *n, su2double **P) {
 
-  const su2double c2    = pow(*c,2);
+  const su2double c2    = pow(*c,2.0);
   const su2double alpha = 0.5/c2;
     
   su2double q2 = 0.0, theta = 0.0;
@@ -713,7 +714,7 @@ void CNumerics::GetPMatrix_inv(const su2double *r, const su2double *v, const su2
                                const su2double *c, const su2double *n, su2double **PInv) {
 
   const su2double alpha = pow(*c,-2.0);
-  const su2double beta  = Gamma_Minus_One*alpha;;
+  const su2double beta  = Gamma_Minus_One*alpha;
 
   su2double phi2 = 0.0, theta = 0.0;
   for (auto iDim = 0; iDim < nDim; iDim++) {
