@@ -26,7 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/lax.hpp"
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
