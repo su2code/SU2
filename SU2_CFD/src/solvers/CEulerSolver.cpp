@@ -672,13 +672,8 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
 
   SU2_OMP_MASTER {
 
-  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                         (config->GetKind_FluidModel() == IDEAL_GAS);
-  const bool low_mach_corr = config->Low_Mach_Correction();
-
-  if (!ideal_gas || low_mach_corr)
-    SU2_MPI::Error("Some of the requested features are not yet "
-                   "supported with vectorization.", CURRENT_FUNCTION);
+  if (config->Low_Mach_Correction())
+    SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
 
   if (solver_container[TURB_SOL])
     edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[TURB_SOL]->GetNodes());
@@ -686,7 +681,7 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
     edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel);
 
   if (!edgeNumerics)
-    SU2_MPI::Error("The numerical scheme in use does not "
+    SU2_MPI::Error("The numerical scheme + gas model in use do not "
                    "support vectorization.", CURRENT_FUNCTION);
 
   }
@@ -2650,10 +2645,8 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  if (config->GetUseVectorization()) {
-    EdgeFluxResidual(geometry, solver_container, config);
-    return;
-  }
+  EdgeFluxResidual(geometry, solver_container, config);
+  return;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);

@@ -933,6 +933,13 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                     dist_ij_2, nDim+1);
   }
 
+  /*--- Wall shear stress values (wall functions) ---*/
+
+  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+  else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
+  else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
+  else Mean_TauWall = -1.0;
+
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
@@ -945,6 +952,8 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  if (config->GetQCR()) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
