@@ -569,6 +569,19 @@ protected:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
+   * \brief Function, which checks the sum of the elements of a row of a matrix
+   *        in column major order.
+   * \param[in] nRows          - Number of rows of the matrix.
+   * \param[in] nCols          - Number of columns of the matrix.
+   * \param[in] sumRowElements - Required value of the sum of the row elements.
+   * \param[in] mat            - Matrix for which the row sums must be determined.
+   */
+  void CheckRowSum(const unsigned short                nRows,
+                   const unsigned short                nCols,
+                   const passivedouble                 sumRowElements,
+                   const ColMajorMatrix<passivedouble> &mat);
+
+  /*!
    * \brief Function, which computes the value of the gradient of the
    *        Jacobi polynomial for the given x-coordinate.
    * \param[in] n     - Order of the Jacobi polynomial.

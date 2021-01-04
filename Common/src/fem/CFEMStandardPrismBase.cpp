@@ -88,6 +88,199 @@ CFEMStandardPrismBase::CFEMStandardPrismBase(const unsigned short val_nPoly,
 /*             Protected member functions of CFEMStandardPrismBase.                 */
 /*----------------------------------------------------------------------------------*/
 
+void CFEMStandardPrismBase::ConvertCoor2DQuadFaceTo3DPrism(const vector<passivedouble> &rLine,
+                                                           const unsigned short        faceID_Elem,
+                                                           const unsigned short        orientation,
+                                                           vector<passivedouble>       &rPrism,
+                                                           vector<passivedouble>       &sPrism,
+                                                           vector<passivedouble>       &tPrism) {
+
+  /*--- Determine the number of points on the quadrilateral face, which is a tensor
+        product of rLine in two dimensions. Afterwards, allocate the memory for
+        rPrism, sPrism and tPrism. ---*/
+  const unsigned short nPoints1D = rLine.size();
+  const unsigned short nPoints   = nPoints1D*nPoints1D;
+
+  rPrism.resize(nPoints);
+  sPrism.resize(nPoints);
+  tPrism.resize(nPoints);
+
+  /*--- Create the parametric coordinates in the frame of the face via a tensor product. ---*/
+  vector<passivedouble> rF(nPoints), sF(nPoints);
+
+  unsigned short k = 0;
+  for(unsigned short j=0; j<nPoints1D; ++j) {
+    for(unsigned short i=0; i<nPoints1D; ++i, ++k) {
+      rF[k] = rLine[i];
+      sF[k] = rLine[j];
+    }
+  }
+
+  /*--- Make a distinction between face ID of the prism on which the current face resides. ---*/
+  switch( faceID_Elem ) {
+
+    case 2: {
+
+      /*--- Face 2 of the prism, which corresponds to s == -1. Set this value. ---*/
+      for(k=0; k<nPoints; ++k) sPrism[k] = -1.0;
+
+      /*--- The r- and t-coordinates depend on the orientation of the face. ---*/
+      switch( orientation ) {
+
+        case 0: for(k=0; k<nPoints; ++k){rPrism[k] =  sF[k]; tPrism[k] =  rF[k];} break;
+        case 1: for(k=0; k<nPoints; ++k){rPrism[k] =  rF[k]; tPrism[k] =  sF[k];} break;
+        case 2: for(k=0; k<nPoints; ++k){rPrism[k] =  sF[k]; tPrism[k] = -rF[k];} break;
+        case 3: for(k=0; k<nPoints; ++k){rPrism[k] = -rF[k]; tPrism[k] = -sF[k];} break;
+        case 4: for(k=0; k<nPoints; ++k){rPrism[k] = -sF[k]; tPrism[k] =  rF[k];} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 2. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 3: {
+
+      /*--- Face 3 of the prism, which corresponds to r == -1. Set this value. ---*/
+      for(k=0; k<nPoints; ++k) rPrism[k] = -1.0;
+
+      /*--- The s- and t-coordinates depend on the orientation of the face. ---*/
+      switch( orientation ) {
+        case 0: for(k=0; k<nPoints; ++k){sPrism[k] =  rF[k]; tPrism[k] =  sF[k];} break;
+        case 1: for(k=0; k<nPoints; ++k){sPrism[k] =  sF[k]; tPrism[k] =  rF[k];} break;
+        case 2: for(k=0; k<nPoints; ++k){sPrism[k] = -rF[k]; tPrism[k] =  sF[k];} break;
+        case 3: for(k=0; k<nPoints; ++k){sPrism[k] = -sF[k]; tPrism[k] = -rF[k];} break;
+        case 4: for(k=0; k<nPoints; ++k){sPrism[k] =  rF[k]; tPrism[k] = -sF[k];} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 3. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 4: {
+
+      /*--- Face 4 of the prism, which corresponds to r+s == 0.
+            Set the parametric coordinates s and t, depending on the
+            orientation of the face. ---*/
+      switch( orientation ) {
+        case 0: for(k=0; k<nPoints; ++k){sPrism[k] =  sF[k]; tPrism[k] =  rF[k];} break;
+        case 1: for(k=0; k<nPoints; ++k){sPrism[k] =  rF[k]; tPrism[k] =  sF[k];} break;
+        case 2: for(k=0; k<nPoints; ++k){sPrism[k] =  sF[k]; tPrism[k] = -rF[k];} break;
+        case 3: for(k=0; k<nPoints; ++k){sPrism[k] = -rF[k]; tPrism[k] = -sF[k];} break;
+        case 4: for(k=0; k<nPoints; ++k){sPrism[k] = -sF[k]; tPrism[k] =  rF[k];} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 4. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+
+      /*--- Set the value of rPrism = -sPrism. ---*/
+      for(k=0; k<nPoints; ++k) rPrism[k] = -sPrism[k];
+      break;
+    }
+
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+  }
+}
+
+void CFEMStandardPrismBase::ConvertCoor2DTriFaceTo3DPrism(const vector<passivedouble> &rTriangleFace,
+                                                          const vector<passivedouble> &sTriangleFace,
+                                                          const unsigned short        faceID_Elem,
+                                                          const unsigned short        orientation,
+                                                          vector<passivedouble>       &rTrianglePrism,
+                                                          vector<passivedouble>       &sTrianglePrism,
+                                                          vector<passivedouble>       &rLinePrism) {
+
+  /*--- Determine the value of rLinePrism, depending on the face of the prism. ---*/
+  rLinePrism.resize(1);
+
+  switch( faceID_Elem ) {
+    case 0: rLinePrism[0] = -1.0; break;
+    case 1: rLinePrism[0] =  1.0; break;
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+  }
+
+  /*--- Allocate the memory for rTrianglePrism and sTrianglePrism. ---*/
+  rTrianglePrism.resize(rTriangleFace.size());
+  sTrianglePrism.resize(rTriangleFace.size());
+
+  /*--- The values of rTrianglePrism and sTrianglePrism depend on both the face ID in the
+        numbering of the prism as well as the orientation of the face w.r.t. the prism.
+        Make this distinction and set the values accordingly. ---*/
+  if(faceID_Elem == 0) {
+    switch( orientation ) {
+      case 0:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] = rTriangleFace[i];
+          sTrianglePrism[i] = sTriangleFace[i];
+        }
+        break;
+
+      case 1:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] = sTriangleFace[i];
+          sTrianglePrism[i] = rTriangleFace[i];
+        }
+        break;
+
+      case 2:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] = -rTriangleFace[i];
+          sTrianglePrism[i] =  sTriangleFace[i];
+        }
+        break;
+
+      case 3:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] =  rTriangleFace[i];
+          sTrianglePrism[i] = -sTriangleFace[i];
+        }
+        break;
+
+      default:
+        SU2_MPI::Error(string("Invalid orientation for face 0. This should not happen."),
+                       CURRENT_FUNCTION);
+    }
+  }
+  else if(faceID_Elem == 1) {
+    switch( orientation ) {
+      case 0:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] = sTriangleFace[i];
+          sTrianglePrism[i] = rTriangleFace[i];
+        }
+        break;
+
+      case 1:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] = rTriangleFace[i];
+          sTrianglePrism[i] = sTriangleFace[i];
+        }
+        break;
+
+      case 2:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] =  sTriangleFace[i];
+          sTrianglePrism[i] = -rTriangleFace[i];
+        }
+        break;
+
+      case 3:
+        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
+          rTrianglePrism[i] = -sTriangleFace[i];
+          sTrianglePrism[i] =  rTriangleFace[i];
+        }
+        break;
+
+      default:
+        SU2_MPI::Error(string("Invalid orientation for face 1. This should not happen."),
+                       CURRENT_FUNCTION);
+    }
+  }
+}
+
 void CFEMStandardPrismBase::DerLagBasisIntPointsPrism(const unsigned short                   mPoly,
                                                       const vector<passivedouble>            &rTriangleDOFs,
                                                       const vector<passivedouble>            &sTriangleDOFs,
@@ -133,18 +326,9 @@ void CFEMStandardPrismBase::DerLagBasisIntPointsPrism(const unsigned short      
   VInv.MatMatMult('R', VDt, derLag[2]);
 
   /*--- Check if the sum of the elements of the relevant rows of derLag is 0. ---*/
-  for(unsigned short i=0; i<nIntTot; ++i) {
-    passivedouble rowSumDr = 0.0, rowSumDs = 0.0, rowSumDt = 0.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) {
-      rowSumDr += derLag[0](i,j);
-      rowSumDs += derLag[1](i,j);
-      rowSumDt += derLag[2](i,j);
-    }
-
-    assert(fabs(rowSumDr) < 1.e-6);
-    assert(fabs(rowSumDs) < 1.e-6);
-    assert(fabs(rowSumDt) < 1.e-6);
-  }
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, derLag[0]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, derLag[1]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, derLag[2]);
 }
 
 void CFEMStandardPrismBase::HesLagBasisIntPointsPrism(const unsigned short                   mPoly,
@@ -201,25 +385,12 @@ void CFEMStandardPrismBase::HesLagBasisIntPointsPrism(const unsigned short      
   VInv.MatMatMult('R', VDst, hesLag[5]);
 
   /*--- Check if the sum of the elements of the relevant rows of hesLagBasisInt is 0. ---*/
-  for(unsigned short i=0; i<nIntTot; ++i) {
-    passivedouble rowSumDr2 = 0.0, rowSumDs2 = 0.0, rowSumDt2 = 0.0;
-    passivedouble rowSumDrs = 0.0, rowSumDrt = 0.0, rowSumDst = 0.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) {
-      rowSumDr2 += hesLag[0](i,j);
-      rowSumDs2 += hesLag[1](i,j);
-      rowSumDt2 += hesLag[2](i,j);
-      rowSumDrs += hesLag[3](i,j);
-      rowSumDrt += hesLag[4](i,j);
-      rowSumDst += hesLag[5](i,j);
-    }
-
-    assert(fabs(rowSumDr2) < 1.e-6);
-    assert(fabs(rowSumDs2) < 1.e-6);
-    assert(fabs(rowSumDt2) < 1.e-6);
-    assert(fabs(rowSumDrs) < 1.e-6);
-    assert(fabs(rowSumDrt) < 1.e-6);
-    assert(fabs(rowSumDst) < 1.e-6);
-  }
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[0]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[1]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[2]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[3]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[4]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[5]);
 }
 
 void CFEMStandardPrismBase::LagBasisIntPointsPrism(const unsigned short          mPoly,
@@ -259,11 +430,7 @@ void CFEMStandardPrismBase::LagBasisIntPointsPrism(const unsigned short         
   VInv.MatMatMult('R', V, lag);
 
   /*--- Check if the sum of the elements of the relevant rows of lag is 1. ---*/
-  for(unsigned short i=0; i<nIntTot; ++i) {
-    passivedouble rowSum = -1.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) rowSum += lag(i,j);
-    assert(fabs(rowSum) < 1.e-6);
-  }
+  CheckRowSum(nIntTot, rDOFs.size(), 1.0, lag);
 }
 
 void CFEMStandardPrismBase::GradVandermondePrism(const unsigned short          mPoly,

@@ -40,4 +40,33 @@ CFEMStandardTriAdjacentPrismSol::CFEMStandardTriAdjacentPrismSol(const unsigned 
   : CFEMStandardPrismBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointers for the gemm functionalities. ---*/
+  gemmDOFs2Int = val_gemm_1;
+  gemmInt2DOFs = val_gemm_2;
+
+  /*--- Convert the 2D parametric coordinates of the integration points of the
+        triangular face to the 3D parametric coordinates of the adjacent prism. ---*/
+  vector<passivedouble> rTrianglePrism, sTrianglePrism, rLinePrism;
+  ConvertCoor2DTriFaceTo3DPrism(rTriangleInt, sTriangleInt, val_faceID_Elem, val_orientation,
+                                rTrianglePrism, sTrianglePrism, rLinePrism);
+
+  /*--- Create the vector to store all parametric t-coordinates of the integration
+        points of the triangular face. ---*/
+  vector<passivedouble> tTrianglePrism(rTrianglePrism.size(), rLinePrism[0]);
+
+  /*--- Allocate the memory for the Legendre basis functions and its
+        1st derivatives in the integration points. ---*/
+  nDOFs = (nPoly+1)*(nPoly+1)*(nPoly+2)/2;
+  legBasisInt.resize(nIntegrationPad, nDOFs); legBasisInt.setConstant(0.0);
+
+  derLegBasisInt.resize(3);
+  derLegBasisInt[0].resize(nIntegrationPad, nDOFs); derLegBasisInt[0].setConstant(0.0);
+  derLegBasisInt[1].resize(nIntegrationPad, nDOFs); derLegBasisInt[1].setConstant(0.0);
+  derLegBasisInt[2].resize(nIntegrationPad, nDOFs); derLegBasisInt[2].setConstant(0.0);
+
+  /*--- Compute the Legendre basis functions and its first
+        derivatives in the integration points. ---*/
+  VandermondePrism(nPoly, rTrianglePrism, sTrianglePrism, tTrianglePrism, legBasisInt);
+  GradVandermondePrism(nPoly, rTrianglePrism, sTrianglePrism, tTrianglePrism,
+                       derLegBasisInt[0], derLegBasisInt[1], derLegBasisInt[2]);
 }

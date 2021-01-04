@@ -697,6 +697,24 @@ void CFEMStandardElementBase::UnitFaceNormals(const bool                        
 /*          Protected member functions of CFEMStandardElementBase.                  */
 /*----------------------------------------------------------------------------------*/
 
+void CFEMStandardElementBase::CheckRowSum(const unsigned short                nRows,
+                                          const unsigned short                nCols,
+                                          const passivedouble                 sumRowElements,
+                                          const ColMajorMatrix<passivedouble> &mat) {
+
+  /*--- Loop over the number of rows. ---*/
+  for(unsigned short i=0; i<nRows; ++i) {
+
+    /*--- Initialize the sum of the row elements to minus the specified value. ---*/
+    passivedouble rowSum = -sumRowElements;
+
+    /*--- Loop over the number of colums to determine the sum of the row elements.
+          Assert if the deviation is too much. ---*/
+    for(unsigned short j=0; j<nCols; ++j) rowSum += mat(i,j);
+    assert(fabs(rowSum) < 1.e-6);
+  }
+}
+
 passivedouble CFEMStandardElementBase::GradNormJacobi(unsigned short n,
                                                       unsigned short alpha,
                                                       unsigned short beta,

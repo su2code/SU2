@@ -97,11 +97,7 @@ void CFEMStandardLineBase::DerLagBasisIntPointsLine(const vector<passivedouble> 
   VInv.MatMatMult('R', gradV, derLag);
 
   /*--- Check if the sum of the elements of the relevant rows of derLag is 0. ---*/
-  for(unsigned short i=0; i<nIntLine; ++i) {
-    passivedouble rowsum = 0.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) rowsum += derLag(i,j);
-    assert(fabs(rowsum) < 1.e-6);
-  }
+  CheckRowSum(nIntLine, rDOFs.size(), 0.0, derLag);
 }
 
 void CFEMStandardLineBase::HesLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
@@ -129,11 +125,7 @@ void CFEMStandardLineBase::HesLagBasisIntPointsLine(const vector<passivedouble> 
   VInv.MatMatMult('R', hesV, hesLag);
 
   /*--- Check if the sum of the elements of the relevant rows of hesLag is 0. ---*/
-  for(unsigned short i=0; i<nIntLine; ++i) {
-    passivedouble rowsum = 0.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) rowsum += hesLag(i,j);
-    assert(fabs(rowsum) < 1.e-6);
-  }
+  CheckRowSum(nIntLine, rDOFs.size(), 0.0, hesLag);
 }
 
 void CFEMStandardLineBase::LagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
@@ -161,11 +153,7 @@ void CFEMStandardLineBase::LagBasisIntPointsLine(const vector<passivedouble>   &
   VInv.MatMatMult('R', V, lag);
 
   /*--- Check if the sum of the elements of the relevant rows of lag is 1. ---*/
-  for(unsigned short i=0; i<nIntLine; ++i) {
-    passivedouble rowsum = -1.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) rowsum += lag(i,j);
-    assert(fabs(rowsum) < 1.e-6);
-  }
+  CheckRowSum(nIntLine, rDOFs.size(), 1.0, lag);
 }
 
 void CFEMStandardLineBase::Location1DGridDOFsEquidistant(const unsigned short  mPoly,

@@ -94,6 +94,43 @@ protected:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
+   * \brief Function, which converts the 2D parametric coordinates of a quadrilateral face
+   *        of the prism to the 3D parametric coordinates of the actual prism.
+   * \param[in]  rLine       - Parametric coordinates of the 1D reference line element.
+   * \param[in]  faceID_Elem - The face ID of the element on which the face resides.
+   * \param[in]  orientation - Orientation of the face w.r.t. the prism element.
+   * \param[out] rPrism - Parametric r-coordinates of the face points in the prism.
+   * \param[out] sPrism - Parametric s-coordinates of the face points in the prism.
+   * \param[out] tPrism - Parametric t-coordinates of the face points in the prism.
+   */
+  void ConvertCoor2DQuadFaceTo3DPrism(const vector<passivedouble> &rLine,
+                                      const unsigned short        faceID_Elem,
+                                      const unsigned short        orientation,
+                                      vector<passivedouble>       &rPrism,
+                                      vector<passivedouble>       &sPrism,
+                                      vector<passivedouble>       &tPrism);
+
+  /*!
+   * \brief Function, which converts the 2D parametric coordinates of a triangular face
+   *        of the prism to the 3D parametric coordinates of the actual prism.
+   * \param[in]  rTriangleFace  - Parametric r-coordinates of the triangular face.
+   * \param[in]  sTriangleFace  - Parametric s-coordinates of the triangular face. 
+   * \param[in]  faceID_Elem    - The face ID of the element on which the face resides.
+   * \param[in]  orientation    - Orientation of the face w.r.t. the prism element.
+   * \param[out] rTrianglePrism - Parametric r-coordinates of the face points in the prism.
+   * \param[out] sTrianglePrism - Parametric s-coordinates of the face points in the prism.
+   * \param[out] rLinePrism     - Parametric coordinate in the structured direction
+   *                              for the face in the actual prism.
+   */
+  void ConvertCoor2DTriFaceTo3DPrism(const vector<passivedouble> &rTriangleFace,
+                                     const vector<passivedouble> &sTriangleFace,
+                                     const unsigned short        faceID_Elem,
+                                     const unsigned short        orientation,
+                                     vector<passivedouble>       &rTrianglePrism,
+                                     vector<passivedouble>       &sTrianglePrism,
+                                     vector<passivedouble>       &rLinePrism);
+
+  /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian
    *        basis functions of a prism in the integration points for the given
    *        location of the DOFs.

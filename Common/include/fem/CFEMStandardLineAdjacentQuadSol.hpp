@@ -75,4 +75,17 @@ public:
 
 private:
 
+  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 integration points of the face from the volume DOFs. */
+  CGemmBase *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 volume DOFs from the integration points of the face. */
+
+  vector<ColMajorMatrix<passivedouble> > tensorSol;     /*!< \brief The two 1D components of the tensor to compute
+                                                                    the solution on the face of the quad. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDr;  /*!< \brief The two 1D components of the tensor to compute
+                                                                    the derivative in r-direction of the solution
+                                                                    on the face of the quad. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDs;  /*!< \brief The two 1D components of the tensor to compute
+                                                                    the derivative in s-direction of the solution
+                                                                    on the face of the quad. */
 };

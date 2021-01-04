@@ -107,6 +107,41 @@ protected:
                                const unsigned short   vert3);
 
   /*!
+   * \brief Function, which creates the components of the tensor to compute the data
+   *        and derivatives on points on a line adjacent to a quad for the given
+   *        face ID and orientation of the quadrilateral.
+   * \param[in]  mPointsLine  - Number of points on the line.
+   * \param[in]  mDOFs1D      - Number of DOFs in 1D of the quadrilateral.
+   * \param[in]  faceID_Elem  - The face ID of the line in the adjacent quadrilateral.
+   * \param[in]  orientation  - Orientation of the line w.r.t. the quadrilateral.
+   * \param[in]  b1DPoints    - 1D basis functions of a line evaluated in the points.
+   * \param[in]  derB1DPoints - Derivatives of bPoints1D.
+   * \param[in]  b1DM1        - 1D basis functions of a line evaluated at r == -1.
+   * \param[in]  b1DP1        - 1D basis functions of a line evaluated at r ==  1.
+   * \param[in]  derB1DM1     - Derivatives of b1DM1.
+   * \param[in]  derB1DP1     - Derivatives of b1DP1.
+   * \param[out] tensorSol    - The two 1D components of the tensor to compute
+   *                            the solution on the face of the quad.
+   * \param[out] tensorDSolDr - The two 1D components of the tensor to compute the derivative
+   *                            in r-direction of the solution on the face of the quad.
+   * \param[out] tensorDSolDs - The two 1D components of the tensor to compute the derivative
+   *                            in s-direction of the solution on the face of the quad.
+   */
+  void CreateTensorContributionsLineAdjQuad(const unsigned short                   mPointsLine,
+                                            const unsigned short                   mDOFs1D,
+                                            const unsigned short                   faceID_Elem,
+                                            const unsigned short                   orientation,
+                                            const ColMajorMatrix<passivedouble>    &b1DPoints,
+                                            const ColMajorMatrix<passivedouble>    &derB1DPoints,
+                                            const ColMajorMatrix<passivedouble>    &b1DM1,
+                                            const ColMajorMatrix<passivedouble>    &b1DP1,
+                                            const ColMajorMatrix<passivedouble>    &derB1DM1,
+                                            const ColMajorMatrix<passivedouble>    &derB1DP1,
+                                            vector<ColMajorMatrix<passivedouble> > &tensorSol,
+                                            vector<ColMajorMatrix<passivedouble> > &tensorDSolDr,
+                                            vector<ColMajorMatrix<passivedouble> > &tensorDSolDs);
+
+  /*!
    * \brief Function, which sets the function pointer to carry out the tensor
    *        product to obtain the data in volume points.
    * \param[in]  K         - First dimensions of the input tensor.

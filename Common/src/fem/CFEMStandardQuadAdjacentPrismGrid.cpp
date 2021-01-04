@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardQuadAdjacentPrismGrid.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*            Public member functions of CFEMStandardQuadAdjacentPrismGrid.         */
@@ -40,4 +41,59 @@ CFEMStandardQuadAdjacentPrismGrid::CFEMStandardQuadAdjacentPrismGrid(const unsig
   : CFEMStandardPrismBase(),
     CFEMStandardQuadBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = val_gemm;
+
+  /*--- Determine the location of the grid DOFs. ---*/
+  vector<passivedouble> rTriangleDOFs, sTriangleDOFs, rLineDOFs;
+  if( val_useLGL ) {
+    Location1DGridDOFsLGL(nPoly, rLineDOFs);
+    LocationTriangleGridDOFsLGL(nPoly, rTriangleDOFs, sTriangleDOFs);
+  }
+  else {
+    Location1DGridDOFsEquidistant(nPoly, rLineDOFs);
+    LocationTriangleGridDOFsEquidistant(nPoly, rTriangleDOFs, sTriangleDOFs);
+  }
+
+  /*--- Determine the parametric coordinates of all DOFs of the prism. ---*/
+  vector<passivedouble> rDOFs, sDOFs, tDOFs;
+  LocationAllPointsPrism(rTriangleDOFs, sTriangleDOFs, rLineDOFs, rDOFs, sDOFs, tDOFs);
+
+  /*--- Determine the inverse of the Vandermonde matrix of the DOFs. ---*/
+  CSquareMatrixCM VInv(rDOFs.size());
+  VandermondePrism(nPoly, rDOFs, sDOFs, tDOFs, VInv.GetMat());
+  VInv.Invert();
+
+  /*--- Convert the 2D parametric coordinates of the integration points of the
+        quadrilateral face to the 3D parametric coordinates of the adjacent prism. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  ConvertCoor2DQuadFaceTo3DPrism(rLineInt, val_faceID_Elem, val_orientation, rInt, sInt, tInt);
+
+  /*--- Determine the Vandermonde matrix and its derivatives of the integration points.
+        Make sure to allocate the number of rows to nIntTotPad and initialize them to zero. ---*/
+  ColMajorMatrix<passivedouble> V(nIntegrationPad,  rDOFs.size()), VDr(nIntegrationPad,rDOFs.size()),
+                                VDs(nIntegrationPad,rDOFs.size()), VDt(nIntegrationPad,rDOFs.size());
+  V.setConstant(0.0);
+  VDr.setConstant(0.0);
+  VDs.setConstant(0.0);
+  VDt.setConstant(0.0);
+
+  VandermondePrism(nPoly, rInt, sInt, tInt, V);
+  GradVandermondePrism(nPoly, rInt, sInt, tInt, VDr, VDs, VDt);
+
+  /*--- The Lagrangian basis functions and its gradients can be obtained by
+        multiplying V, VDr, VDs, VDt and VInv. ---*/
+  derLagBasisInt.resize(3);
+
+  VInv.MatMatMult('R', V,   lagBasisInt);
+  VInv.MatMatMult('R', VDr, derLagBasisInt[0]);
+  VInv.MatMatMult('R', VDs, derLagBasisInt[1]);
+  VInv.MatMatMult('R', VDt, derLagBasisInt[2]);
+
+  /*--- Check if the sum of the elements of the relevant rows of lagBasisInt
+        is 1 and derLagBasisInt is 0. ---*/
+  CheckRowSum(nIntegration, rDOFs.size(), 1.0, lagBasisInt);
+  CheckRowSum(nIntegration, rDOFs.size(), 0.0, derLagBasisInt[0]);
+  CheckRowSum(nIntegration, rDOFs.size(), 0.0, derLagBasisInt[1]);
+  CheckRowSum(nIntegration, rDOFs.size(), 0.0, derLagBasisInt[2]);
 }

@@ -47,4 +47,26 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
         because a tensor product is used to obtain the 2D coordinates. ---*/
   if( val_useLGL) Location1DGridDOFsLGL(nPoly, rLineDOFs);
   else            Location1DGridDOFsEquidistant(nPoly, rLineDOFs);
+
+  /*--- Create the standard 1D Lagrangian basis functions. ---*/
+  ColMajorMatrix<passivedouble> lagInt1D, derLagInt1D;
+  ColMajorMatrix<passivedouble> lagM1, lagP1, derLagM1, derLagP1;
+
+  LagBasisIntPointsLine(rLineDOFs, rLineInt, lagInt1D);
+  DerLagBasisIntPointsLine(rLineDOFs, rLineInt, derLagInt1D);
+
+  vector<passivedouble> rBound(1, -1.0);
+  LagBasisIntPointsLine(rLineDOFs, rBound, lagM1);
+  DerLagBasisIntPointsLine(rLineDOFs, rBound, derLagM1);
+
+  rBound[0] = 1.0;
+  LagBasisIntPointsLine(rLineDOFs, rBound, lagP1);
+  DerLagBasisIntPointsLine(rLineDOFs, rBound, derLagP1);
+
+  /*--- Create the tensor components of the Lagrangian basis functions for the
+        current situation from the standard basis functions created above. ---*/
+  CreateTensorContributionsLineAdjQuad(nIntegration, nPoly+1, val_faceID_Elem, val_orientation,
+                                       lagInt1D, derLagInt1D, lagM1, lagP1, derLagM1, derLagP1,
+                                       tensorSol, tensorDSolDr, tensorDSolDs);
+
 }

@@ -170,18 +170,9 @@ void CFEMStandardPyraBase::DerLagBasisIntPointsPyra(const unsigned short        
   VInv.MatMatMult('R', VDt, derLag[2]);
 
   /*--- Check if the sum of the elements of the relevant rows of derLag is 0. ---*/
-  for(unsigned short i=0; i<nIntTot; ++i) {
-    passivedouble rowSumDr = 0.0, rowSumDs = 0.0, rowSumDt = 0.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) {
-      rowSumDr += derLag[0](i,j);
-      rowSumDs += derLag[1](i,j);
-      rowSumDt += derLag[2](i,j);
-    }
-
-    assert(fabs(rowSumDr) < 1.e-6);
-    assert(fabs(rowSumDs) < 1.e-6);
-    assert(fabs(rowSumDt) < 1.e-6);
-  }
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, derLag[0]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, derLag[1]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, derLag[2]);
 }
 
 void CFEMStandardPyraBase::HesLagBasisIntPointsPyra(const unsigned short                   mPoly,
@@ -298,25 +289,12 @@ void CFEMStandardPyraBase::HesLagBasisIntPointsPyra(const unsigned short        
   VInv.MatMatMult('R', VDst, hesLag[5]);
 
   /*--- Check if the sum of the elements of the relevant rows of hesLag is 0. ---*/
-  for(unsigned short i=0; i<nIntTot; ++i) {
-    passivedouble rowSumDr2 = 0.0, rowSumDs2 = 0.0, rowSumDt2 = 0.0;
-    passivedouble rowSumDrs = 0.0, rowSumDrt = 0.0, rowSumDst = 0.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) {
-      rowSumDr2 += hesLag[0](i,j);
-      rowSumDs2 += hesLag[1](i,j);
-      rowSumDt2 += hesLag[2](i,j);
-      rowSumDrs += hesLag[3](i,j);
-      rowSumDrt += hesLag[4](i,j);
-      rowSumDst += hesLag[5](i,j);
-    }
-
-    assert(fabs(rowSumDr2) < 1.e-6);
-    assert(fabs(rowSumDs2) < 1.e-6);
-    assert(fabs(rowSumDt2) < 1.e-6);
-    assert(fabs(rowSumDrs) < 1.e-6);
-    assert(fabs(rowSumDrt) < 1.e-6);
-    assert(fabs(rowSumDst) < 1.e-6);
-  }
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[0]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[1]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[2]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[3]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[4]);
+  CheckRowSum(nIntTot, rDOFs.size(), 0.0, hesLag[5]);
 }
 
 void CFEMStandardPyraBase::LagBasisIntPointsPyra(const unsigned short          mPoly,
@@ -348,11 +326,7 @@ void CFEMStandardPyraBase::LagBasisIntPointsPyra(const unsigned short          m
   VInv.MatMatMult('R', V, lag);
 
   /*--- Check if the sum of the elements of the relevant rows of lag is 1. ---*/
-  for(unsigned short i=0; i<nIntTot; ++i) {
-    passivedouble rowSum = -1.0;
-    for(unsigned short j=0; j<rDOFs.size(); ++j) rowSum += lag(i,j);
-    assert(fabs(rowSum) < 1.e-6);
-  }
+  CheckRowSum(nIntTot, rDOFs.size(), 1.0, lag);
 }
 
 void CFEMStandardPyraBase::GradVandermondePyramid(const unsigned short          mPoly,

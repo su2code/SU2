@@ -40,4 +40,28 @@ CFEMStandardQuadAdjacentPrismSol::CFEMStandardQuadAdjacentPrismSol(const unsigne
   : CFEMStandardPrismBase(),
     CFEMStandardQuadBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointers for the gemm functionalities. ---*/
+  gemmDOFs2Int = val_gemm_1;
+  gemmInt2DOFs = val_gemm_2;
+
+  /*--- Convert the 2D parametric coordinates of the integration points of the
+        quadrilateral face to the 3D parametric coordinates of the adjacent prism. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  ConvertCoor2DQuadFaceTo3DPrism(rLineInt, val_faceID_Elem, val_orientation, rInt, sInt, tInt);
+
+  /*--- Allocate the memory for the Legendre basis functions and its
+        1st derivatives in the integration points. ---*/
+  nDOFs = (nPoly+1)*(nPoly+1)*(nPoly+2)/2;
+  legBasisInt.resize(nIntegrationPad, nDOFs); legBasisInt.setConstant(0.0);
+
+  derLegBasisInt.resize(3);
+  derLegBasisInt[0].resize(nIntegrationPad, nDOFs); derLegBasisInt[0].setConstant(0.0);
+  derLegBasisInt[1].resize(nIntegrationPad, nDOFs); derLegBasisInt[1].setConstant(0.0);
+  derLegBasisInt[2].resize(nIntegrationPad, nDOFs); derLegBasisInt[2].setConstant(0.0);
+
+  /*--- Compute the Legendre basis functions and its first
+        derivatives in the integration points. ---*/
+  VandermondePrism(nPoly, rInt, sInt, tInt, legBasisInt);
+  GradVandermondePrism(nPoly, rInt, sInt, tInt, derLegBasisInt[0],
+                       derLegBasisInt[1], derLegBasisInt[2]);
 }

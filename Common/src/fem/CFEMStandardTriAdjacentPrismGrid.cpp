@@ -40,4 +40,30 @@ CFEMStandardTriAdjacentPrismGrid::CFEMStandardTriAdjacentPrismGrid(const unsigne
   : CFEMStandardPrismBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = val_gemm;
+
+  /*--- Determine the location of the grid DOFs. ---*/
+  vector<passivedouble> rTriangleDOFs, sTriangleDOFs, rLineDOFs;
+  if( val_useLGL ) {
+    Location1DGridDOFsLGL(nPoly, rLineDOFs);
+    LocationTriangleGridDOFsLGL(nPoly, rTriangleDOFs, sTriangleDOFs);
+  }
+  else {
+    Location1DGridDOFsEquidistant(nPoly, rLineDOFs);
+    LocationTriangleGridDOFsEquidistant(nPoly, rTriangleDOFs, sTriangleDOFs);
+  }
+
+  /*--- Convert the 2D parametric coordinates of the integration points of the
+        triangular face to the 3D parametric coordinates of the adjacent prism. ---*/
+  vector<passivedouble> rTrianglePrism, sTrianglePrism, rLinePrism;
+  ConvertCoor2DTriFaceTo3DPrism(rTriangleInt, sTriangleInt, val_faceID_Elem, val_orientation,
+                                rTrianglePrism, sTrianglePrism, rLinePrism);
+
+  /*--- Compute the corresponding Lagrangian basis functions and
+        its first derivatives in the integration points. ---*/
+  LagBasisIntPointsPrism(nPoly, rTriangleDOFs, sTriangleDOFs, rLineDOFs,
+                         rTrianglePrism, sTrianglePrism, rLinePrism, lagBasisInt);
+  DerLagBasisIntPointsPrism(nPoly, rTriangleDOFs, sTriangleDOFs, rLineDOFs,
+                            rTrianglePrism, sTrianglePrism, rLinePrism, derLagBasisInt);
 }

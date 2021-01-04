@@ -79,4 +79,13 @@ private:
                                                  integration points of the face from the volume DOFs. */
 
   vector<passivedouble> rLineDOFs;    /*!< \brief 1D parametric coordinates of the grid DOFs. */
+
+  vector<ColMajorMatrix<passivedouble> > tensorSol;     /*!< \brief The two 1D components of the tensor to compute
+                                                                    the solution on the face of the quad. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDr;  /*!< \brief The two 1D components of the tensor to compute
+                                                                    the derivative in r-direction of the solution
+                                                                    on the face of the quad. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDs;  /*!< \brief The two 1D components of the tensor to compute
+                                                                    the derivative in s-direction of the solution
+                                                                    on the face of the quad. */
 };

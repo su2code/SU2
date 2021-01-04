@@ -50,7 +50,7 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
                                 rTriangleInt, sTriangleInt);
 
   /*--- Allocate the memory for the Legendre basis functions and its
-        1st and 2nd derivatives in the integration points. ---*/
+        1st derivatives in the integration points. ---*/
   nDOFs = (nPoly+1)*(nPoly+2)/2;
   legBasisInt.resize(nIntegrationPad, nDOFs); legBasisInt.setConstant(0.0);
 

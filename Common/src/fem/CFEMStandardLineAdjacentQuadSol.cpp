@@ -40,4 +40,36 @@ CFEMStandardLineAdjacentQuadSol::CFEMStandardLineAdjacentQuadSol(const unsigned 
   : CFEMStandardQuadBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointers for the gemm functionalities. ---*/
+  gemmDOFs2Int = val_gemm_1;
+  gemmInt2DOFs = val_gemm_2;
+
+  /*--- Create the standard 1D Legendre basis functions in the integration points. ---*/
+  ColMajorMatrix<passivedouble> legInt1D, derLegInt1D;
+  legInt1D.resize(nIntegrationPad, nPoly+1);    legInt1D.setConstant(0.0);
+  derLegInt1D.resize(nIntegrationPad, nPoly+1); derLegInt1D.setConstant(0.0);
+
+  Vandermonde1D(nPoly, rLineInt, legInt1D);
+  GradVandermonde1D(nPoly, rLineInt, derLegInt1D);
+
+  /*--- Create the standard 1D Legendre basis function on the left end (r == -1). ---*/
+  vector<passivedouble> rBound(1, -1.0);
+  ColMajorMatrix<passivedouble> legM1(1, nPoly+1), derLegM1(1, nPoly+1);
+
+  Vandermonde1D(nPoly, rBound, legM1);
+  GradVandermonde1D(nPoly, rBound, derLegM1);
+
+  /*--- Create the standard 1D Legendre basis function on the right end (r == 1). ---*/
+  rBound[0] = 1.0;
+  ColMajorMatrix<passivedouble> legP1(1, nPoly+1), derLegP1(1, nPoly+1);
+
+  Vandermonde1D(nPoly, rBound, legP1);
+  GradVandermonde1D(nPoly, rBound, derLegP1);
+
+  /*--- Create the tensor components of the Legendre basis functions for the
+        current situation from the standard basis functions created above. ---*/
+  CreateTensorContributionsLineAdjQuad(nIntegration, nPoly+1, val_faceID_Elem, val_orientation,
+                                       legInt1D, derLegInt1D, legM1, legP1, derLegM1, derLegP1,
+                                       tensorSol, tensorDSolDr, tensorDSolDs);
+
 }
