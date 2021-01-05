@@ -126,7 +126,6 @@ void CFEMStandardPrismBase::ConvertCoor2DQuadFaceTo3DPrism(const vector<passived
 
       /*--- The r- and t-coordinates depend on the orientation of the face. ---*/
       switch( orientation ) {
-
         case 0: for(k=0; k<nPoints; ++k){rPrism[k] =  sF[k]; tPrism[k] =  rF[k];} break;
         case 1: for(k=0; k<nPoints; ++k){rPrism[k] =  rF[k]; tPrism[k] =  sF[k];} break;
         case 2: for(k=0; k<nPoints; ++k){rPrism[k] =  sF[k]; tPrism[k] = -rF[k];} break;
@@ -184,8 +183,8 @@ void CFEMStandardPrismBase::ConvertCoor2DQuadFaceTo3DPrism(const vector<passived
   }
 }
 
-void CFEMStandardPrismBase::ConvertCoor2DTriFaceTo3DPrism(const vector<passivedouble> &rTriangleFace,
-                                                          const vector<passivedouble> &sTriangleFace,
+void CFEMStandardPrismBase::ConvertCoor2DTriFaceTo3DPrism(const vector<passivedouble> &rF,
+                                                          const vector<passivedouble> &sF,
                                                           const unsigned short        faceID_Elem,
                                                           const unsigned short        orientation,
                                                           vector<passivedouble>       &rTrianglePrism,
@@ -203,42 +202,20 @@ void CFEMStandardPrismBase::ConvertCoor2DTriFaceTo3DPrism(const vector<passivedo
   }
 
   /*--- Allocate the memory for rTrianglePrism and sTrianglePrism. ---*/
-  rTrianglePrism.resize(rTriangleFace.size());
-  sTrianglePrism.resize(rTriangleFace.size());
+  const unsigned short nPoints = rF.size();
+  rTrianglePrism.resize(nPoints);
+  sTrianglePrism.resize(nPoints);
 
   /*--- The values of rTrianglePrism and sTrianglePrism depend on both the face ID in the
         numbering of the prism as well as the orientation of the face w.r.t. the prism.
         Make this distinction and set the values accordingly. ---*/
+  unsigned short i;
   if(faceID_Elem == 0) {
     switch( orientation ) {
-      case 0:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] = rTriangleFace[i];
-          sTrianglePrism[i] = sTriangleFace[i];
-        }
-        break;
-
-      case 1:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] = sTriangleFace[i];
-          sTrianglePrism[i] = rTriangleFace[i];
-        }
-        break;
-
-      case 2:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] = -rTriangleFace[i];
-          sTrianglePrism[i] =  sTriangleFace[i];
-        }
-        break;
-
-      case 3:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] =  rTriangleFace[i];
-          sTrianglePrism[i] = -sTriangleFace[i];
-        }
-        break;
-
+      case 0: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] =  rF[i]; sTrianglePrism[i] =  sF[i];} break;
+      case 1: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] =  sF[i]; sTrianglePrism[i] =  rF[i];} break;
+      case 2: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] = -rF[i]; sTrianglePrism[i] =  sF[i];} break;
+      case 3: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] =  rF[i]; sTrianglePrism[i] = -sF[i];} break;
       default:
         SU2_MPI::Error(string("Invalid orientation for face 0. This should not happen."),
                        CURRENT_FUNCTION);
@@ -246,34 +223,10 @@ void CFEMStandardPrismBase::ConvertCoor2DTriFaceTo3DPrism(const vector<passivedo
   }
   else if(faceID_Elem == 1) {
     switch( orientation ) {
-      case 0:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] = sTriangleFace[i];
-          sTrianglePrism[i] = rTriangleFace[i];
-        }
-        break;
-
-      case 1:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] = rTriangleFace[i];
-          sTrianglePrism[i] = sTriangleFace[i];
-        }
-        break;
-
-      case 2:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] =  sTriangleFace[i];
-          sTrianglePrism[i] = -rTriangleFace[i];
-        }
-        break;
-
-      case 3:
-        for(unsigned short i=0; i<rTriangleFace.size(); ++i) {
-          rTrianglePrism[i] = -sTriangleFace[i];
-          sTrianglePrism[i] =  rTriangleFace[i];
-        }
-        break;
-
+      case 0: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] =  sF[i]; sTrianglePrism[i] =  rF[i];} break;
+      case 1: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] =  rF[i]; sTrianglePrism[i] =  sF[i];} break;
+      case 2: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] =  sF[i]; sTrianglePrism[i] = -rF[i];} break;
+      case 3: for(i=0; i<nPoints; ++i) {rTrianglePrism[i] = -sF[i]; sTrianglePrism[i] =  rF[i];} break;
       default:
         SU2_MPI::Error(string("Invalid orientation for face 1. This should not happen."),
                        CURRENT_FUNCTION);

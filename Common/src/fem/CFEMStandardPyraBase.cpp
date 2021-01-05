@@ -96,6 +96,140 @@ CFEMStandardPyraBase::CFEMStandardPyraBase(const unsigned short val_nPoly,
 /*            Protected member functions of CFEMStandardPyraBase.                   */
 /*----------------------------------------------------------------------------------*/
 
+void CFEMStandardPyraBase::ConvertCoor2DQuadFaceTo3DPyra(const vector<passivedouble> &rLine,
+                                                         const unsigned short        faceID_Elem,
+                                                         const unsigned short        orientation,
+                                                         vector<passivedouble>       &rPyra,
+                                                         vector<passivedouble>       &sPyra,
+                                                         vector<passivedouble>       &tPyra) {
+
+  /*--- A pyramid has one quadrilateral face, which should have a faceID == 0.
+        Check this. ---*/
+  if(faceID_Elem != 0)
+    SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+
+  /*--- Determine the number of points on the quadrilateral face, which is a tensor
+        product of rLine in two dimensions. Afterwards, allocate the memory for
+        rPyra, sPyra and tPyra. ---*/
+  const unsigned short nPoints1D = rLine.size();
+  const unsigned short nPoints   = nPoints1D*nPoints1D;
+
+  rPyra.resize(nPoints);
+  sPyra.resize(nPoints);
+  tPyra.resize(nPoints);
+
+  /*--- Create the parametric coordinates in the frame of the face via a tensor product. ---*/
+  vector<passivedouble> rF(nPoints), sF(nPoints);
+
+  unsigned short k = 0;
+  for(unsigned short j=0; j<nPoints1D; ++j) {
+    for(unsigned short i=0; i<nPoints1D; ++i, ++k) {
+      rF[k] = rLine[i];
+      sF[k] = rLine[j];
+    }
+  }
+
+  /*--- The quadrilateral face corresponds to parametri coordinate t == -1.
+        Set this value. ---*/
+  for(k=0; k<nPoints; ++k) tPyra[k] = -1.0;
+
+  /*--- The r- and s-coordinates depend on the orientation of the face. ---*/
+  switch( orientation ) {
+
+    case 0: for(k=0; k<nPoints; ++k){rPyra[k] =  rF[k]; sPyra[k] =  sF[k];} break;
+    case 1: for(k=0; k<nPoints; ++k){rPyra[k] =  sF[k]; sPyra[k] =  rF[k];} break;
+    case 2: for(k=0; k<nPoints; ++k){rPyra[k] = -rF[k]; sPyra[k] =  sF[k];} break;
+    case 3: for(k=0; k<nPoints; ++k){rPyra[k] = -sF[k]; sPyra[k] = -rF[k];} break;
+    case 4: for(k=0; k<nPoints; ++k){rPyra[k] =  rF[k]; sPyra[k] = -sF[k];} break;
+    default:
+      SU2_MPI::Error(string("Invalid orientation for face 0. This should not happen."),
+                     CURRENT_FUNCTION);
+  }
+}
+
+void CFEMStandardPyraBase::ConvertCoor2DTriFaceTo3DPyra(const vector<passivedouble> &rF,
+                                                        const vector<passivedouble> &sF,
+                                                        const unsigned short        faceID_Elem,
+                                                        const unsigned short        orientation,
+                                                        vector<passivedouble>       &rPyra,
+                                                        vector<passivedouble>       &sPyra,
+                                                        vector<passivedouble>       &tPyra) {
+
+  /*--- Determine the number of points on the triangular face. Afterwards, allocate
+        the memory for rPyra, sPyra and tPyra. ---*/
+  const unsigned short nP = rF.size();
+
+  rPyra.resize(nP);
+  sPyra.resize(nP);
+  tPyra.resize(nP);
+
+  /*--- Abbreviate rPyra, sPyra and tPyra, such that the different cases
+        can be put on one line. ---*/
+  vector<passivedouble> &r = rPyra, &s = sPyra, &t = tPyra;
+
+  /*--- The values of rPyra, sPyra and tPyra depend on both the face ID in the numbering
+        of the pyramid as well as the orientation of the face w.r.t. the pyramid.
+        Make this distinction and set the values accordingly. ---*/
+  unsigned short k;
+  switch( faceID_Elem ) {
+
+    case 1: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]= 0.5*rF[k]+    sF[k]+0.5; s[k]= 0.5*rF[k]          -0.5; t[k]= rF[k];}           break;
+        case 1: for(k=0; k<nP; ++k) {r[k]=     rF[k]+0.5*sF[k]-0.5; s[k]=           0.5*sF[k]-0.5; t[k]=       sF[k];}     break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=-0.5*rF[k]+0.5*sF[k];     s[k]=-0.5*rF[k]-0.5*sF[k]-1.0; t[k]=-rF[k]-sF[k]-1.0;} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=-0.5*rF[k]-    sF[k]-0.5; s[k]= 0.5*rF[k]          -0.5; t[k]= rF[k];}           break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 1. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 2: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]=     rF[k]+0.5*sF[k]+0.5; s[k]=          -0.5*sF[k]+0.5; t[k]=       sF[k];}     break;
+        case 1: for(k=0; k<nP; ++k) {r[k]= 0.5*rF[k]+    sF[k]+0.5; s[k]=-0.5*rF[k]          +0.5; t[k]= rF[k];}           break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=    -rF[k]-0.5*sF[k]+0.5; s[k]=          -0.5*sF[k]+0.5; t[k]=       sF[k];}     break;
+        case 3: for(k=0; k<nP; ++k) {r[k]= 0.5*rF[k]-0.5*sF[k];     s[k]= 0.5*rF[k]+0.5*sF[k]+1.0; t[k]=-rF[k]-sF[k]-1.0;} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 2. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 3: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]=           0.5*sF[k]-0.5; s[k]=     rF[k]+0.5*sF[k]+0.5; t[k]=       sF[k];}     break;
+        case 1: for(k=0; k<nP; ++k) {r[k]= 0.5*rF[k]          -0.5; s[k]= 0.5*rF[k]+    sF[k]+0.5; t[k]= rF[k];}           break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=           0.5*sF[k]-0.5; s[k]=    -rF[k]-0.5*sF[k]-0.5; t[k]=       sF[k];}     break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=-0.5*rF[k]-0.5*sF[k]-1.0; s[k]= 0.5*rF[k]-0.5*sF[k];     t[k]=-rF[k]-sF[k]-1.0;} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 3. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 4: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]=-0.5*rF[k]          +0.5; s[k]= 0.5*rF[k]+    sF[k]+0.5; t[k]= rF[k];}           break;
+        case 1: for(k=0; k<nP; ++k) {r[k]=          -0.5*sF[k]+0.5; s[k]=     rF[k]+0.5*sF[k]+0.5; t[k]=       sF[k];}     break;
+        case 2: for(k=0; k<nP; ++k) {r[k]= 0.5*rF[k]+0.5*sF[k]+1.0; s[k]=-0.5*rF[k]+0.5*sF[k];     t[k]=-rF[k]-sF[k]-1.0;} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=-0.5*rF[k]          +0.5; s[k]=-0.5*rF[k]-    sF[k]-0.5; t[k]= rF[k];}           break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 4. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+  }
+}
+
 void CFEMStandardPyraBase::DerLagBasisIntPointsPyra(const unsigned short                   mPoly,
                                                     const vector<passivedouble>            &rDOFs,
                                                     const vector<passivedouble>            &sDOFs,

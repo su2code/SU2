@@ -101,6 +101,43 @@ protected:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
+   * \brief Function, which converts the 2D parametric coordinates of a quadrilateral face
+   *        of the pyramid to the 3D parametric coordinates of the actual pyramid.
+   * \param[in]  rLine       - Parametric coordinates of the 1D reference line element.
+   * \param[in]  faceID_Elem - The face ID of the element on which the face resides.
+   * \param[in]  orientation - Orientation of the face w.r.t. the prism element.
+   * \param[out] rPyra       - Parametric r-coordinates of the face points in the pyramid.
+   * \param[out] sPyra       - Parametric s-coordinates of the face points in the pyramid.
+   * \param[out] tPyra       - Parametric t-coordinates of the face points in the pyramid.
+   */
+  void ConvertCoor2DQuadFaceTo3DPyra(const vector<passivedouble> &rLine,
+                                     const unsigned short        faceID_Elem,
+                                     const unsigned short        orientation,
+                                     vector<passivedouble>       &rPyra,
+                                     vector<passivedouble>       &sPyra,
+                                     vector<passivedouble>       &tPyra);
+
+  /*!
+   * \brief Function, which converts the 2D parametric coordinates of a triangular face
+   *        of the prism to the 3D parametric coordinates of the actual prism.
+   * \param[in]  rF          - Parametric r-coordinates of the triangular face.
+   * \param[in]  sF          - Parametric s-coordinates of the triangular face. 
+   * \param[in]  faceID_Elem - The face ID of the element on which the face resides.
+   * \param[in]  orientation - Orientation of the face w.r.t. the prism element.
+   * \param[out] rPyra       - Parametric r-coordinates of the face points in the pyramid.
+   * \param[out] sPyra       - Parametric s-coordinates of the face points in the pyramid.
+   * \param[out] tPyra       - Parametric t-coordinates of the face points in the pyramid.
+   *                           for the face in the actual prism.
+   */
+  void ConvertCoor2DTriFaceTo3DPyra(const vector<passivedouble> &rF,
+                                    const vector<passivedouble> &sF,
+                                    const unsigned short        faceID_Elem,
+                                    const unsigned short        orientation,
+                                    vector<passivedouble>       &rPyra,
+                                    vector<passivedouble>       &sPyra,
+                                    vector<passivedouble>       &tPyra);
+
+  /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian
    *        basis functions of a pyramid in the integration points for the given
    *        location of the DOFs.

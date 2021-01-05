@@ -40,4 +40,24 @@ CFEMStandardTriAdjacentPyraGrid::CFEMStandardTriAdjacentPyraGrid(const unsigned 
   : CFEMStandardPyraBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = val_gemm;
+
+  /*--- Determine the location of the grid DOFs. ---*/
+  vector<passivedouble> rPyraDOFs, sPyraDOFs, tPyraDOFs;
+  if( val_useLGL ) LocationPyramidGridDOFsLGL(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs);
+  else             LocationPyramidGridDOFsEquidistant(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs);
+
+  /*--- Convert the 2D parametric coordinates of the integration points of the
+        triangular face to the 3D parametric coordinates of the adjacent pyramid. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  ConvertCoor2DTriFaceTo3DPyra(rTriangleInt, sTriangleInt, val_faceID_Elem,
+                               val_orientation, rInt, sInt, tInt);
+
+  /*--- Compute the corresponding Lagrangian basis functions and
+        its first derivatives in the integration points. ---*/
+  LagBasisIntPointsPyra(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs,
+                        rInt, sInt, tInt, lagBasisInt);
+  DerLagBasisIntPointsPyra(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs,
+                           rInt, sInt, tInt, derLagBasisInt);
 }

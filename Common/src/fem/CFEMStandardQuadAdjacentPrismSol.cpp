@@ -51,7 +51,7 @@ CFEMStandardQuadAdjacentPrismSol::CFEMStandardQuadAdjacentPrismSol(const unsigne
 
   /*--- Allocate the memory for the Legendre basis functions and its
         1st derivatives in the integration points. ---*/
-  nDOFs = (nPoly+1)*(nPoly+1)*(nPoly+2)/2;
+  nDOFs = nDOFs1D*nDOFs1D*(nDOFs1D+1)/2;
   legBasisInt.resize(nIntegrationPad, nDOFs); legBasisInt.setConstant(0.0);
 
   derLegBasisInt.resize(3);
