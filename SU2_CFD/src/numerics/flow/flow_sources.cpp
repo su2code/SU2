@@ -467,7 +467,7 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
   /*--- Primitive variables plus momentum at the node (point i) ---*/
 
   if (config->GetKind_Incomp_System()==PRESSURE_BASED)
-    DensityInc_i  = 1.0;
+    DensityInc_i  = V_i[nDim+1];
   else
     DensityInc_i  = V_i[nDim+2];
 

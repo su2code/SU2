@@ -121,9 +121,6 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
 
 CPoissonSolverFVM::~CPoissonSolverFVM(void) {
   
-  unsigned int iVar;
-  iVar = 1;
-  
   if (nodes != nullptr) delete nodes;
 }
 
@@ -136,16 +133,11 @@ void CPoissonSolverFVM::Source_Template(CGeometry *geometry, CSolver **solver_co
 void CPoissonSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    /*--- Initialize the residual vector ---*/
+  /*--- Initialize the residual vector ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint ++)
     LinSysRes.SetBlock_Zero(iPoint);
-    
-  }
   
   /*--- Initialize the Jacobian matrices ---*/
-
   Jacobian.SetValZero();
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
@@ -159,15 +151,11 @@ void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_con
                         unsigned short iMesh){
 							
  /*--- Compute gradients so we can use it to find the velocity corrections ---*/
-  
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) 
     SetSolution_Gradient_GG(geometry, config,false);
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) 
     SetSolution_Gradient_LS(geometry, config,false);
-  
-  
-  	
 }
 
 void CPoissonSolverFVM:: LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo){
@@ -176,109 +164,95 @@ void CPoissonSolverFVM:: LoadRestart(CGeometry **geometry, CSolver ***solver, CC
 
 void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-										 
-   CNumerics* numerics = numerics_container[VISC_TERM];
-   
-   su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j,Normal[3];
-   su2double Mom_Coeff_i[3],Mom_Coeff_j[3], Vol_i, delT_i, Vol_j, delT_j;
-   unsigned long iEdge, iPoint, jPoint;
-   unsigned short iDim;
-   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-   
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
-		iPoint = geometry->edges->GetNode(iEdge,0);
-		jPoint = geometry->edges->GetNode(iEdge,1);
-		
-		/*--- Points coordinates, and normal vector ---*/
-		numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-						geometry->nodes->GetCoord(jPoint));
-		numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-		
-		numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-		numerics->SetVolume(geometry->nodes->GetVolume(jPoint));
-		
-		/*--- Primitive variables w/o reconstruction ---*/
-		Poissonval_i = nodes->GetSolution(iPoint, 0);
-		Poissonval_j = nodes->GetSolution(jPoint, 0);
-			
-		numerics->SetPoissonval(Poissonval_i,Poissonval_j);
-			
-		Sol_i_Grad = nodes->GetGradient(iPoint);
-		Sol_j_Grad = nodes->GetGradient(jPoint);
-    
-		numerics->SetConsVarGradient(Sol_i_Grad, Sol_j_Grad);
+  CNumerics* numerics = numerics_container[VISC_TERM];
 
-		if (config->GetKind_Incomp_System()!=PRESSURE_BASED) {
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Mom_Coeff_i[iDim] = 1.0;
-			    Mom_Coeff_j[iDim] = 1.0;
-			}
-			numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
-		}
-		else {	
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(iPoint, iDim) ;
-			    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(jPoint, iDim) ;
-			}
-			numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
-		}
+  su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j,Normal[MAXNDIM];
+  su2double Mom_Coeff_i[MAXNDIM],Mom_Coeff_j[MAXNDIM];
+  unsigned long iEdge, iPoint, jPoint;
+  unsigned short iDim;
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-		/*--- Compute and update residual ---*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    iPoint = geometry->edges->GetNode(iEdge,0);
+    jPoint = geometry->edges->GetNode(iEdge,1);
 
+    /*--- Points coordinates, and normal vector ---*/
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+    numerics->SetVolume(geometry->nodes->GetVolume(jPoint));
+
+    /*--- Primitive variables w/o reconstruction ---*/
+    Poissonval_i = nodes->GetSolution(iPoint, 0);
+    Poissonval_j = nodes->GetSolution(jPoint, 0);
+
+    numerics->SetPoissonval(Poissonval_i,Poissonval_j);
+
+    Sol_i_Grad = nodes->GetGradient(iPoint);
+    Sol_j_Grad = nodes->GetGradient(jPoint);
+
+	numerics->SetConsVarGradient(Sol_i_Grad, Sol_j_Grad);
+
+    if (config->GetKind_Incomp_System()!=PRESSURE_BASED) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Mom_Coeff_i[iDim] = 1.0;
+        Mom_Coeff_j[iDim] = 1.0;
+      }
+      numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
+	} else {	
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(iPoint, iDim) ;
+        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(jPoint, iDim) ;
+      }
+      numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
+    }
+
+    /*--- Compute and update residual ---*/
     auto residual = numerics->ComputeResidual(config);
 
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
 
     /*--- Implicit part ---*/
-
-    if (implicit) {
+    if (implicit)
       Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    }
   }
 }
 
 void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh) {
-
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
-  
+
   unsigned short iVar;
   unsigned long iPoint;
   su2double Src_Term;
 
   /*--- Initialize the source residual to zero ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for (iVar = 0; iVar < nVar; iVar++)
 	  Residual[iVar] = 0.0;
-  }
-    
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Load the volume of the dual mesh cell ---*/
-
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
     /*--- Compute the source term ---*/
-        
     if ((config->GetKind_Incomp_System() == PRESSURE_BASED)) {
-		
 		Src_Term = solver_container[FLOW_SOL]->GetNodes()->GetMassFlux(iPoint) ;
-		
 		if (Src_Term != Src_Term)Src_Term = 0.0;
-	
 		nodes->SetSourceTerm(iPoint, Src_Term);
     }
     numerics->SetSourcePoisson(nodes->GetSourceTerm(iPoint));
     
     /*--- Compute the source residual ---*/
-   
     numerics->ComputeResidual(Residual, Jacobian_i, config);
 
     /*--- Add the source residual to the total ---*/
-
     LinSysRes.AddBlock(iPoint, Residual);
-
+    
+    /*--- No jacobian contribution from mass flux/constant source term. ---*/
   }
 }
 
@@ -292,20 +266,16 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   unsigned short iVar;
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   
-  /*--- Build implicit system ---*/
-
+  /*--- Set max linear solver iter which can be different from flow iterations ---*/
   config->SetLinear_Solver_Iter(config->GetLinear_Solver_Iter_Poisson());
 
   /*--- Set maximum residual to zero ---*/
-
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
   /*--- Initialize residual and solution at the ghost points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  
-
 /*--- Workaround to deal with nodes that are part of multiple boundaries and where
  *    one face might be strong BC and another weak BC (mostly for farfield boundary 
  *    where the boundary face is strong or weak depending on local flux. ---*/
@@ -316,13 +286,13 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       }
       LinSysRes.SetBlock_Zero(iPoint);
     }
-  
+
     /*--- Read the residual ---*/
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
 	/*--- Read the volume ---*/
     Vol = geometry->nodes->GetVolume(iPoint);
-    
+
     /*--- Possible under-relaxation if needed goes here. ---*/
     /*--- Currently, nothing changes. ---*/
     /*su2double *diag = Jacobian.GetBlock(iPoint, iPoint);
@@ -340,7 +310,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
-  
+
   /*--- Initialize residual and solution at the ghost points ---*/
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -349,32 +319,26 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       LinSysSol[total_index] = 0.0;
     }
   }
-  
+
   /*--- Solve or smooth the linear system ---*/
-  
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
      }
   }
-  
-  /*-- Note here that there is an assumption that solution[0] is pressure/density and velocities start from 1 ---*/
+
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-
   /*--- MPI solution ---*/
-
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
-
   SetResidual_RMS(geometry, config);
-  
 }
 
 
@@ -388,9 +352,9 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
                         unsigned short iMesh, unsigned long Iteration){
 
   /*--- Set a value for periodic communication routines. Is not used during any computations. ---*/
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  /*for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     nodes->SetDelta_Time(iPoint, 0.0);
-  }
+  }*/
    
 }
 

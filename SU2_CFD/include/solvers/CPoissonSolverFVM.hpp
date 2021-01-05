@@ -36,6 +36,7 @@
  */
 class CPoissonSolverFVM : public CSolver {
 protected:
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   su2double **CoeffMatrix_Node;  /*!< \brief Auxiliary matrices for storing point to point coefficient matrices. */
   
   CPoissonVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */

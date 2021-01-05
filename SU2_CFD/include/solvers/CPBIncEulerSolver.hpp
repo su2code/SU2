@@ -43,8 +43,7 @@ su2double
 
   su2double ResMassFlux;
 
-  su2double **FaceVelocity;
-  su2double **FaceVelocityCorrec;
+  su2activematrix FaceVelocity, FaceVelocityCorrec;
 
   unsigned long PRef_Point = 1;    /*!< \brief Store the index of reference cell for pressure */
   bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
