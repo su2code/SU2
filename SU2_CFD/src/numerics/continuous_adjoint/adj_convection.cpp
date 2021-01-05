@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/numerics/continuous_adjoint/adj_convection.hpp"
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentLax_AdjFlow::CCentLax_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 

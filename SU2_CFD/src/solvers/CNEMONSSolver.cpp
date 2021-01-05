@@ -1093,7 +1093,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       su2double  tmp1, scl, Cptr;
       su2double *Vi = nodes->GetPrimitive(iPoint);
 
-      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
         Mass += Vi[iSpecies]*Ms[iSpecies];
       Cptr = Vi[RHOCVTR_INDEX]+Ru/Mass;
       tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
