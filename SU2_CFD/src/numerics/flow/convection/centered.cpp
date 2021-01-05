@@ -26,7 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/centered.hpp"
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
