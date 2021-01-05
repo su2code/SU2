@@ -286,6 +286,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   if (correct_jacobian) CorrectJacobian(config);
   if (!correct_gradient) {
     Jacobian_i[0][0] = Jacobian_i[1][1] = 0.0;
+    Jacobian_j[0][0] = Jacobian_j[1][1] = 0.0;
   }
   
   /*--- Jacobian wrt eddy viscosity ---*/
