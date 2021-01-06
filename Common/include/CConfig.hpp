@@ -1098,6 +1098,7 @@ private:
   unsigned short nScalar_Init;
   su2double *ffd_bounds;
   bool enable_remeshing;
+  bool use_weak_scalar_bc;
   su2double *flame_offset;
   su2double flame_thickness;
   su2double burnt_thickness;
@@ -1178,9 +1179,9 @@ private:
   unsigned short n_lookups;
   unsigned short n_table_sources;       /* the number of transported scalars for combustion */
   
-  string* table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
-  string* table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
-  string* table_lookup_names;    /*!< \brief vector to store names of look up variables.   */
+  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
+  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
+  string* table_lookup_names;           /*!< \brief vector to store names of look up variables.   */
 
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -2100,6 +2101,8 @@ public:
   bool GetScalar_Clipping(void) { return Scalar_Clipping; }
   
   bool GetEnableRemeshing(void) { return enable_remeshing; }
+
+  bool GetUseWeakScalarBC(void) { return use_weak_scalar_bc; }
 
   
 
@@ -9488,34 +9491,28 @@ public:
    * \brief Store the names of scalar variables that are being solved
    * \param[out] stores the names in vector table_scalar_names
    */
-  inline void SetScalarNames(string* table_scalar_names) {this->table_scalar_names = table_scalar_names;}
+  inline void SetScalarNames(vector<string> &table_scalar_names) {this->table_scalar_names = table_scalar_names;}
 
   /*!
-   * \brief Get the scalar name iField
+   * \brief Get the scalar name i_scalar
    */
-  string GetScalarName(unsigned short iField) const { return table_scalar_names[iField]; }
+  string GetScalarName(unsigned short i_scalar) const { return table_scalar_names.at(i_scalar); }
 
   /*!
-   * \brief Store the names of scalar variables that are being solved
-   * \param[out] stores the names in vector table_scalar_names
+   * \brief Get the look up variable name i_lookup
    */
-  inline void SetLookupNames(string* table_lookup_names) {this->table_lookup_names = table_lookup_names;}
+  string GetLookupName(unsigned short i_lookup) const { return table_lookup_names[i_lookup]; }
 
   /*!
-   * \brief Get the scalar name iField
+   * \brief Store the names of scalar source term variables
+   * \param[out] stores the names in vector table_source_names
    */
-  string GetLookupName(unsigned short iField) const { return table_lookup_names[iField]; }
+  inline void SetTableSourceNames(vector<string> &table_source_names) {this->table_source_names = table_source_names;}
 
   /*!
-   * \brief Store the names of scalar variables that are being solved
-   * \param[out] stores the names in vector table_scalar_names
+   * \brief Get the scalar source term name i_source
    */
-  inline void SetTableSourceNames(string* table_source_names) {this->table_source_names = table_source_names;}
-
-  /*!
-   * \brief Get the scalar name iField
-   */
-  string GetTableSourceName(unsigned short iField) const { return table_source_names[iField]; }
+  string GetTableSourceName(unsigned short i_source) const { return table_source_names.at(i_source); }
   
   /*!
    * \brief Get the maximum bound for scalar transport clipping

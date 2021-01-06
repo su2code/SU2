@@ -522,7 +522,7 @@ public:
 };
 
 class COptionStringList : public COptionBase {
-  string * & field; // Reference to the feildname
+  string * & field; // Reference to the fieldname
   string name; // identifier for the option
   unsigned short & size;
 
@@ -1305,6 +1305,7 @@ public:
   }
 
   ~COptionInletScalar() {};
+  
   string SetValue(vector<string> option_value) {
     COptionBase::SetValue(option_value);
     unsigned short option_size = option_value.size();

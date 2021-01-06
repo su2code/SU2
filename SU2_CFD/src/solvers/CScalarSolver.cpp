@@ -70,12 +70,12 @@ CScalarSolver::CScalarSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nVertex = new unsigned long[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
-  
+
   /*--- The turbulence models are always solved implicitly, so set the
    implicit flag in case we have periodic BCs. ---*/
-  
+
   SetImplicitPeriodic(true);
-  
+
 }
 
 CScalarSolver::~CScalarSolver(void) {
@@ -91,7 +91,7 @@ CScalarSolver::~CScalarSolver(void) {
     }
     delete [] Inlet_ScalarVars;
   }
-  
+
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL)    delete [] lowerlimit;

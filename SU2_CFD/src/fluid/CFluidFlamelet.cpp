@@ -11,31 +11,31 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
     n_scalars = 4;
     config->SetNScalars(n_scalars);
 
-    table_scalar_names             = new string[n_scalars];
-    table_scalar_names[I_ENTHALPY] = "Enthalpy";
-    table_scalar_names[I_PROG_VAR] = "ProgVar";
-    table_scalar_names[I_CO]       = "Y-CO";
-    table_scalar_names[I_NOX]      = "Y-NOx";
+    table_scalar_names.resize(n_scalars);
+    table_scalar_names.at(I_ENTHALPY) = "Enthalpy";
+    table_scalar_names.at(I_PROG_VAR) = "ProgVar";
+    table_scalar_names.at(I_CO)       = "Y-CO";
+    table_scalar_names.at(I_NOX)      = "Y-NOx";
 
     config->SetScalarNames(table_scalar_names);
 
     n_table_sources = 3;
     config->SetNTableSources(n_table_sources);
 
-    table_source_names = new string[n_table_sources];
-    table_source_names[I_SRC_TOT_PROG_VAR] = "ProdRateTot-PV";
-    table_source_names[I_SRC_TOT_CO]       = "ProdRateTot-CO";
-    table_source_names[I_SRC_TOT_NOX]      = "ProdRateTot-NOx";
+    table_source_names.resize(n_table_sources);
+    table_source_names.at(I_SRC_TOT_PROG_VAR) = "ProdRateTot-PV";
+    table_source_names.at(I_SRC_TOT_CO)       = "ProdRateTot-CO";
+    table_source_names.at(I_SRC_TOT_NOX)      = "ProdRateTot-NOx";
 
 
     config->SetTableSourceNames(table_source_names);
 
-    look_up_table = new CLookUpTable(config->GetFileNameLUT(),table_scalar_names[I_PROG_VAR],table_scalar_names[I_ENTHALPY]);
+    look_up_table = new CLookUpTable(config->GetFileNameLUT(),table_scalar_names.at(I_PROG_VAR),table_scalar_names.at(I_ENTHALPY));
 
     n_lookups = config->GetNLookups();
-    table_lookup_names = new string[n_lookups];
+    table_lookup_names.resize(n_lookups);
     for (int i_lookup=0; i_lookup < n_lookups; ++i_lookup) {
-      table_lookup_names[i_lookup] = config->GetLookupName(i_lookup);
+      table_lookup_names.at(i_lookup) = config->GetLookupName(i_lookup);
     }
 
     source_scalar = new su2double[n_scalars];
@@ -46,11 +46,9 @@ CFluidFlamelet::CFluidFlamelet(CConfig *config, su2double value_pressure_operati
 
 CFluidFlamelet::~CFluidFlamelet() {
 
-  if (look_up_table!=NULL) delete look_up_table;
-
-  if (source_scalar!=NULL) delete [] source_scalar;
-
-  if (lookupScalar != NULL) delete [] lookupScalar;
+  if (look_up_table!=NULL) delete   look_up_table;
+  if (source_scalar!=NULL) delete[] source_scalar;
+  if (lookupScalar !=NULL) delete[] lookupScalar;
 
 }
 
@@ -65,11 +63,11 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
   su2double y_co   = val_scalars[I_CO];
   su2double y_nox  = val_scalars[I_NOX];
 
-  string name_enth = table_scalar_names[I_ENTHALPY];
-  string name_prog = table_scalar_names[I_PROG_VAR];
+  string name_enth = table_scalar_names.at(I_ENTHALPY);
+  string name_prog = table_scalar_names.at(I_PROG_VAR);
 
   for (int i_source=0; i_source < n_table_sources; ++i_source) {
-    look_up_tags.push_back(table_source_names[i_source]);
+    look_up_tags.push_back(table_source_names.at(i_source));
     look_up_data.push_back(&table_sources[i_source]);
   }
 
@@ -83,6 +81,8 @@ unsigned long CFluidFlamelet::SetScalarSources(su2double *val_scalars){
 
   /* calculate derivatives for jacobian preconditioner*/
   su2double delta_pv = 1e-6;
+  
+  delete [] table_sources;
 
   return exit_code;
 }
@@ -92,8 +92,8 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
   su2double val_enth = val_scalars[I_ENTHALPY];
   su2double val_prog = val_scalars[I_PROG_VAR];
 
-  string name_enth = table_scalar_names[I_ENTHALPY];
-  string name_prog = table_scalar_names[I_PROG_VAR];
+  string name_enth = table_scalar_names.at(I_ENTHALPY);
+  string name_prog = table_scalar_names.at(I_PROG_VAR);
 
   vector<string>     look_up_tags;
   vector<su2double*> look_up_data;
@@ -120,7 +120,7 @@ unsigned long CFluidFlamelet::SetTDState_T(su2double val_temperature, su2double 
 
 /* passive lookup variables, for visualization */
 for (int i_lookup=0; i_lookup < n_lookups; ++i_lookup) {
-    look_up_tags.push_back(table_lookup_names[i_lookup]);
+    look_up_tags.push_back(table_lookup_names.at(i_lookup));
     look_up_data.push_back(&lookupScalar[i_lookup]);
   }
 
@@ -146,8 +146,8 @@ unsigned long CFluidFlamelet::GetEnthFromTemp(su2double *val_enth, su2double val
   vector<string>     look_up_tags;
   vector<su2double*> look_up_data;
   int                counter_limit    = 50 ;
-  string name_prog = table_scalar_names[I_PROG_VAR];
-  string name_enth = table_scalar_names[I_ENTHALPY];
+  string name_prog = table_scalar_names.at(I_PROG_VAR);
+  string name_enth = table_scalar_names.at(I_ENTHALPY);
 
   /* set up look up vectors */
   su2double  temp_iter;

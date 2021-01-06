@@ -14,9 +14,9 @@ protected:
   unsigned short n_lookups;
   unsigned short n_table_sources; 
 
-  string* table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
-  string* table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
-  string* table_lookup_names;    /*!< \brief vector to store names of look up variables.   */
+  vector<string> table_scalar_names;    /*!< \brief vector to store names of scalar variables.   */
+  vector<string> table_source_names;    /*!< \brief vector to store names of scalar source variables.   */
+  vector<string> table_lookup_names;    /*!< \brief vector to store names of look up variables.   */
 
   su2double mass_diffusivity;
   su2double source_energy;
@@ -63,6 +63,8 @@ protected:
   inline su2double GetdDensitydEnth() { return dDensitydEnth; }
 
   inline su2double GetSourceScalar(int i_scalar) { return source_scalar[i_scalar]; }
+
+  inline unsigned short GetNScalars() { return n_scalars; }
 
   inline su2double GetLookupScalar(int i_scalar) { return lookupScalar[i_scalar]; }
 

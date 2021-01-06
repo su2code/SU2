@@ -120,21 +120,25 @@ def deform ( config, dv_new=None, dv_old=None ):
         #konfig['MESH_OUT_FILENAME'] = mesh_name_suffixed
         konfig['MESH_OUT_FILENAME'] = mesh_name
 
-    # setup DV_* flags to export deformation boxes
-    dv_kind_before = konfig['DV_KIND']
-    dv_value_before = konfig['DV_VALUE']
-    dv_param_before = konfig['DV_PARAM']
-    konfig['DV_KIND'] = 'FFD_SETTING'
-    konfig['DV_PARAM'] = {'FFDTAG': ['1'], 'PARAM': [[0.0, 0.5]], 'SIZE': [1]}
-    konfig['DV_VALUE'] = '0.0'
-    konfig['DV_VALUE_NEW'] = '0.0'
-    # run Deformation
-    SU2_DEF(konfig)
-    # set DV_KIND back
-    konfig['DV_KIND'] = dv_kind_before
-    konfig['DV_PARAM'] = dv_param_before
-    konfig['DV_VALUE'] = dv_value_before
-    konfig['DV_VALUE_NEW'] = dv_value_before
+        # setup pseudo DV_* flags for adding deformation boxes to mesh file
+        dv_kind_before = konfig['DV_KIND']
+        dv_param_before = konfig['DV_PARAM']
+        dv_value_before = konfig['DV_VALUE']
+        dv_value_new_before = konfig['DV_VALUE_NEW']
+
+        konfig['DV_KIND'] = 'FFD_SETTING'
+        konfig['DV_PARAM'] = {'FFDTAG': ['1'], 'PARAM': [[0.0, 0.5]], 'SIZE': [1]}
+        konfig['DV_VALUE'] = '0.0'
+        konfig['DV_VALUE_NEW'] = '0.0'
+
+        # run pseudo deformation to add deformation boxes to mesh file
+        SU2_DEF(konfig)
+
+        # set DV_* flags back
+        konfig['DV_KIND'] = dv_kind_before
+        konfig['DV_PARAM'] = dv_param_before
+        konfig['DV_VALUE'] = dv_value_before
+        konfig['DV_VALUE_NEW'] = dv_value_new_before
     
     # update super config
     config.update({ 'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 

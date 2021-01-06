@@ -64,8 +64,8 @@ CFlameletVariable::CFlameletVariable(su2double     *val_scalar_inf,
   /* Allocate space for the source and scalars for visualization */
   
 
-  source_scalar.resize(nPoint,  config->GetNTableSources()) = su2double(0.0);
-  lookup_scalar.resize(nPoint,config->GetNLookups()) = su2double(0.0);
+  source_scalar.resize(nPoint, config->GetNScalars()) = su2double(0.0);
+  lookup_scalar.resize(nPoint, config->GetNLookups()) = su2double(0.0);
   
   
 }

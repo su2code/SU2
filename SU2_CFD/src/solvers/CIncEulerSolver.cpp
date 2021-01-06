@@ -286,7 +286,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Depending on the density model chosen, select a fluid model. ---*/
 
-  su2double dummy_scalar[6] = {0,0,0,0,0,0};
+  su2double *dummy_scalar;
+  unsigned short n_scalars;
 
   switch (config->GetKind_FluidModel()) {
 
@@ -327,7 +328,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       FluidModel = new CFluidFlamelet(config,Pressure_Thermodynamic);
-      FluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
+      n_scalars = FluidModel->GetNScalars();
+      dummy_scalar = new su2double[n_scalars]();
+      FluidModel->SetTDState_T(Temperature_FreeStream, dummy_scalar);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
@@ -492,6 +495,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       FluidModel->SetTDState_T(Temperature_FreeStream,dummy_scalar);
       break;
   }
+
+  delete[] dummy_scalar;
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
@@ -841,8 +846,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     cout << ModelTableOut.str();
     cout << NonDimTableOut.str();
   }
-
-
 
 }
 

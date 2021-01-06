@@ -79,8 +79,8 @@ public:
    * \param[in] val_ivar        - eqn. index to the .
    */
   inline void SetSourceScalar(unsigned long  iPoint,
-                            su2double      val_source_scalar,
-                            unsigned short val_ivar) override {
+                              su2double      val_source_scalar,
+                              unsigned short val_ivar) override {
     source_scalar(iPoint,val_ivar) = val_source_scalar;
   }
   

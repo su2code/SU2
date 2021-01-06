@@ -134,6 +134,11 @@ class CFluidModel {
    * \brief Get the source term of the transported scalar
    */
   virtual inline su2double GetSourceScalar(int){ return 37; }
+  
+  /*!
+  * \brief Get the number of transported scalars
+  */
+  virtual inline unsigned short GetNScalars() {return 73; }
 
   /*!
    * \brief Get the looked up scalar field for combustion

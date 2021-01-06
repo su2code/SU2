@@ -917,7 +917,7 @@ def update_mesh(config,state=None):
     # redundancy check
     deform_set  = config['DV_KIND'] == config['DEFINITION_DV']['KIND']
     deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
-    do_remesh   = config['ENABLE_REMESHING']
+    do_remesh   = config['ENABLE_REMESHING'] == 'YES'
     if deform_set and deform_todo:
     
         # files to pull

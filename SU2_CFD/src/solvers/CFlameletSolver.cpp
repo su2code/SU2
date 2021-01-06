@@ -375,18 +375,17 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
     if (rank == MASTER_NODE)
       cout << "Initializing progress variable and temperature (initial condition)." << endl;
 
-    su2double *scalar_init    = new su2double[nVar];
+    su2double *scalar_init  = new su2double[nVar];
+    su2double *flame_offset = config->GetFlameOffset();
+    su2double *flame_normal = config->GetFlameNormal();
+
     su2double prog_unburnt    = 0.0;
     su2double prog_burnt      = 0.2; // 2.09379237374982e-01;
-    su2double *flame_offset=new su2double[3];
-    flame_offset    = config->GetFlameOffset();
     su2double flame_thickness = config->GetFlameThickness();
     su2double burnt_thickness = config->GetBurntThickness();
-    su2double *flame_normal=new su2double[3];
-    flame_normal =  config->GetFlameNormal();
-    su2double flamenorm = sqrt(flame_normal[0]*flame_normal[0]
-                              +flame_normal[1]*flame_normal[1]
-                              +flame_normal[2]*flame_normal[2]);
+    su2double flamenorm       = sqrt( flame_normal[0]*flame_normal[0]
+                                     +flame_normal[1]*flame_normal[1]
+                                     +flame_normal[2]*flame_normal[2]);
 
     su2double temp_inlet = 300.;
     su2double prog_inlet = 0.0;
@@ -417,20 +416,26 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
           Solution[i_var] = 0.0;
         
         coords = geometry[i_mesh]->nodes->GetCoord(i_point);
+
         /* determine if our location is above or below the plane, assuming the normal 
            is pointing towards the burned region*/ 
         point_loc = flame_normal[0]*(coords[0]-flame_offset[0]) 
                   + flame_normal[1]*(coords[1]-flame_offset[1]) 
                   + flame_normal[2]*(coords[2]-flame_offset[2]);
+
         /* compute the exact distance from point to plane */          
         point_loc = point_loc/flamenorm;
+
         if (point_loc <= 0){ /* unburnt region */
           scalar_init[I_PROG_VAR] = prog_unburnt;
-        } else if ((point_loc>0) && (point_loc <= flame_thickness)){ /* flame zone */
+
+        } else if ( (point_loc > 0) && (point_loc <= flame_thickness) ){ /* flame zone */
           scalar_init[I_PROG_VAR] = 0.5*(prog_unburnt + prog_burnt);
-        } else if ((point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness)){ /* burnt region */
+
+        } else if ( (point_loc > flame_thickness) && (point_loc <= flame_thickness + burnt_thickness) ){ /* burnt region */
           scalar_init[I_PROG_VAR] = prog_burnt;
-        } else {
+
+        } else { /* unburnt region */
           scalar_init[I_PROG_VAR] = prog_unburnt;
         }
 
@@ -462,6 +467,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
       solver_container[i_mesh][FLOW_SOL]->Preprocessing( geometry[i_mesh], solver_container[i_mesh], config, i_mesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       
     }
+
     delete[] scalar_init;
 
     if (rank == MASTER_NODE && (n_not_in_domain > 0 || n_not_iterated > 0))
@@ -695,6 +701,10 @@ void CFlameletSolver::Source_Residual(CGeometry       *geometry,
       
     }
   }
+
+  delete[] scalars;
+  delete[] sources;
+  
 }
 
 void CFlameletSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
@@ -704,17 +714,13 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint, total_index, not_used;
-  su2double *V_inlet, *V_domain, *Normal, *inlet_scalar;
   su2double *Coords;
   su2double enth_inlet;
-  
-  Normal = new su2double[nDim];
-  inlet_scalar = new su2double[nVar];
-  
+
   bool        grid_movement = config->GetGrid_Movement      (          );
   string      Marker_Tag    = config->GetMarker_All_TagBound(val_marker);
   su2double   temp_inlet    = config->GetInlet_Ttotal       (Marker_Tag);
-              inlet_scalar  = config->GetInlet_ScalarVal    (Marker_Tag);
+  su2double  *inlet_scalar  = config->GetInlet_ScalarVal    (Marker_Tag);
  
   CFluidModel  *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
 
@@ -748,9 +754,6 @@ void CFlameletSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         }      
     }
   }
-
-  /*--- Free locally allocated memory ---*/
-  delete[] Normal;
 }
 
 void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -760,7 +763,7 @@ void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   unsigned long iPoint, iVertex, Point_Normal, total_index;
   unsigned short iVar, iDim;
-  su2double *V_outlet, *V_domain, *Normal;
+  su2double *Normal;
   
   bool grid_movement  = config->GetGrid_Movement();
   CFluidModel *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();  
@@ -818,22 +821,15 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
   su2double enth_wall, prog_wall;
   unsigned long n_not_iterated    = 0;
 
-  // temperature ramp for wall temp
-  if (config->GetMesh_FileName() == "wb7_xs_3d_voxel_4.1M.su2") {
-    
-    bool Restart               = (config->GetRestart() || config->GetRestart_Flow());
-    unsigned long delta_iter_l = 5000;
-    su2double temp_wall_0      = 1800;
-    unsigned long current_iter = config->GetInnerIter();
-
-    if ( (current_iter < delta_iter_l) && !Restart ) {
-      
-      su2double delta_iter = (su2double)delta_iter_l;
-      su2double delta_temp = temp_wall - temp_wall_0;
-
-      temp_wall = temp_wall_0 + delta_temp / delta_iter * current_iter;
-    }
-  }
+  bool use_weak_bc                = config->GetUseWeakScalarBC();
+  su2double *normal;
+  su2double *coord_i, *coord_j;
+  unsigned long point_normal;
+  su2double area;
+  su2double dist_ij;
+  su2double dEnth_dn;
+  su2double dT_dn;
+  su2double mass_diffusivity;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -846,7 +842,6 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
-      
       for (iVar = 0; iVar < nVar; iVar++) {
         Res_Conv[iVar] = 0.0;
         Res_Visc[iVar] = 0.0;
@@ -855,28 +850,68 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
         }
       }
 
-      /*--- Set enthalpy on the wall ---*/
-            
-      prog_wall       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint)[I_PROG_VAR];
-      n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall,temp_wall);      
+      if (use_weak_bc){
 
-      /*--- Impose the value of the enthalpy as a strong boundary
-       condition (Dirichlet) and remove any 
-       contribution to the residual at this node. ---*/
+        point_normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);  
-          
+        normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
-      
-      nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTHALPY);
+        area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) area += normal[iDim]*normal[iDim];
+        area = sqrt(area);
 
-      if (implicit) {
+        coord_i = geometry->nodes->GetCoord(iPoint);
+        coord_j = geometry->nodes->GetCoord(point_normal);
+        dist_ij = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist_ij += (coord_j[iDim]-coord_i[iDim])*(coord_j[iDim]-coord_i[iDim]);
+        dist_ij = sqrt(dist_ij);
 
-        total_index = iPoint*nVar+I_ENTHALPY;
+        prog_wall       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint)[I_PROG_VAR];
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
 
-        Jacobian.DeleteValsRowi(total_index);
-      }    
+        dT_dn    = -(fluid_model_local->GetTemperature() - temp_wall)/dist_ij;
+
+        dEnth_dn = -(solver_container[SCALAR_SOL]->GetNodes()->GetSolution(point_normal)[I_ENTHALPY]
+                     - enth_wall)/dist_ij;
+
+        mass_diffusivity = fluid_model_local->GetMassDiffusivity();
+
+        Res_Visc[I_ENTHALPY] = mass_diffusivity*dEnth_dn*area;
+
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+        if(implicit) {
+
+          Jacobian_i[I_ENTHALPY][I_ENTHALPY] = -mass_diffusivity * area;
+          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+
+        }
+
+      } else {
+
+        /*--- Set enthalpy on the wall ---*/
+
+        prog_wall       = solver_container[SCALAR_SOL]->GetNodes()->GetSolution(iPoint)[I_PROG_VAR];
+        n_not_iterated += fluid_model_local->GetEnthFromTemp(&enth_wall, prog_wall, temp_wall);
+
+        /*--- Impose the value of the enthalpy as a strong boundary
+        condition (Dirichlet) and remove any 
+        contribution to the residual at this node. ---*/
+
+        nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);  
+
+        LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
+
+        nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTHALPY);
+
+        if (implicit) {
+
+          total_index = iPoint*nVar+I_ENTHALPY;
+
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }
     }
 
   }

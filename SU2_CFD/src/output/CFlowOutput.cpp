@@ -131,13 +131,13 @@ void CFlowOutput::SetAnalyzeSurface(CSolver **solver, CGeometry *geometry, CConf
   unsigned short nDim         = geometry->GetnDim();
   unsigned short Kind_Average = config->GetKind_Average();
 
-  bool compressible   = config->GetKind_Regime() == COMPRESSIBLE;
-  bool incompressible = config->GetKind_Regime() == INCOMPRESSIBLE;
-  bool energy         = config->GetEnergy_Equation();
-  bool flamelet_model = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
-  unsigned short n_scalars = config->GetNScalars(); 
-  bool axisymmetric               = config->GetAxisymmetric();
-  unsigned short nMarker_Analyze  = config->GetnMarker_Analyze();
+  bool compressible              = config->GetKind_Regime() == COMPRESSIBLE;
+  bool incompressible            = config->GetKind_Regime() == INCOMPRESSIBLE;
+  bool flamelet_model            = config->GetKind_Scalar_Model() == PROGRESS_VARIABLE;
+  bool energy                    = config->GetEnergy_Equation();
+  bool axisymmetric              = config->GetAxisymmetric();
+  unsigned short n_scalars       = config->GetNScalars();
+  unsigned short nMarker_Analyze = config->GetnMarker_Analyze();
   
   CSolver* flow_solver   = solver[FLOW_SOL];
   CSolver* scalar_solver = solver[SCALAR_SOL];

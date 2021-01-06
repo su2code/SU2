@@ -1309,6 +1309,8 @@ void CConfig::SetConfig_Options() {
 
   addBoolOption("ENABLE_REMESHING", enable_remeshing, false);
 
+  addBoolOption("USE_WEAK_SCALAR_BC", use_weak_scalar_bc, false);
+
   /*!\brief SCALAR_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
   // FIXME daniel: this looks dirty (dont use scalar_init to set defaults for clipping_max!)
   addDoubleListOption("SCALAR_CLIPPING_MAX", nScalar_Clipping_Max, Scalar_Clipping_Max);
