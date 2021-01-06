@@ -119,11 +119,11 @@ protected:
 
   /*!
    * \brief Function, which converts the 2D parametric coordinates of a triangular face
-   *        of the prism to the 3D parametric coordinates of the actual prism.
+   *        of the pyramid to the 3D parametric coordinates of the actual pyramid.
    * \param[in]  rF          - Parametric r-coordinates of the triangular face.
    * \param[in]  sF          - Parametric s-coordinates of the triangular face. 
    * \param[in]  faceID_Elem - The face ID of the element on which the face resides.
-   * \param[in]  orientation - Orientation of the face w.r.t. the prism element.
+   * \param[in]  orientation - Orientation of the face w.r.t. the pyramid element.
    * \param[out] rPyra       - Parametric r-coordinates of the face points in the pyramid.
    * \param[out] sPyra       - Parametric s-coordinates of the face points in the pyramid.
    * \param[out] tPyra       - Parametric t-coordinates of the face points in the pyramid.

@@ -108,6 +108,26 @@ protected:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
+   * \brief Function, which converts the 2D parametric coordinates of a triangular face
+   *        of the tetrahedron to the 3D parametric coordinates of the actual tetrahedron.
+   * \param[in]  rF          - Parametric r-coordinates of the triangular face.
+   * \param[in]  sF          - Parametric s-coordinates of the triangular face. 
+   * \param[in]  faceID_Elem - The face ID of the element on which the face resides.
+   * \param[in]  orientation - Orientation of the face w.r.t. the tetrahedron element.
+   * \param[out] rTet        - Parametric r-coordinates of the face points in the pyramid.
+   * \param[out] sTet        - Parametric s-coordinates of the face points in the pyramid.
+   * \param[out] tTet        - Parametric t-coordinates of the face points in the pyramid.
+   *                           for the face in the actual prism.
+   */
+  void ConvertCoor2DTriFaceTo3DTet(const vector<passivedouble> &rF,
+                                   const vector<passivedouble> &sF,
+                                   const unsigned short        faceID_Elem,
+                                   const unsigned short        orientation,
+                                   vector<passivedouble>       &rTet,
+                                   vector<passivedouble>       &sTet,
+                                   vector<passivedouble>       &tTet);
+
+  /*!
    * \brief Function, which computes the values of the derivatives of the Lagrangian
    *        basis functions of a tetrahedron in the integration points for the given
    *        location of the DOFs.

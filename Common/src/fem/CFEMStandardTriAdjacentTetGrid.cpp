@@ -40,4 +40,24 @@ CFEMStandardTriAdjacentTetGrid::CFEMStandardTriAdjacentTetGrid(const unsigned sh
   : CFEMStandardTetBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = val_gemm;
+
+  /*--- Determine the location of the grid DOFs. ---*/
+  vector<passivedouble> rTetDOFs, sTetDOFs, tTetDOFs;
+  if( val_useLGL) LocationTetGridDOFsLGL(nPoly, rTetDOFs, sTetDOFs, tTetDOFs);
+  else            LocationTetGridDOFsEquidistant(nPoly, rTetDOFs, sTetDOFs, tTetDOFs);
+
+  /*--- Convert the 2D parametric coordinates of the integration points of the
+        triangular face to the 3D parametric coordinates of the adjacent tetrahedron. ---*/
+  vector<passivedouble> rInt, sInt, tInt;
+  ConvertCoor2DTriFaceTo3DTet(rTriangleInt, sTriangleInt, val_faceID_Elem,
+                              val_orientation, rInt, sInt, tInt);
+
+  /*--- Compute the corresponding Lagrangian basis functions and
+        its first derivatives in the integration points. ---*/
+  LagBasisIntPointsTet(nPoly, rTetDOFs, sTetDOFs, tTetDOFs,
+                       rInt, sInt, tInt, lagBasisInt);
+  DerLagBasisIntPointsTet(nPoly, rTetDOFs, sTetDOFs, tTetDOFs, 
+                          rInt, sInt, tInt, derLagBasisInt);
 }

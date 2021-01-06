@@ -69,6 +69,89 @@ CFEMStandardTetBase::CFEMStandardTetBase(const unsigned short val_nPoly,
 /*                Protected member functions of CFEMStandardTetBase.                */
 /*----------------------------------------------------------------------------------*/
 
+void CFEMStandardTetBase::ConvertCoor2DTriFaceTo3DTet(const vector<passivedouble> &rF,
+                                                      const vector<passivedouble> &sF,
+                                                      const unsigned short        faceID_Elem,
+                                                      const unsigned short        orientation,
+                                                      vector<passivedouble>       &rTet,
+                                                      vector<passivedouble>       &sTet,
+                                                      vector<passivedouble>       &tTet) {
+
+  /*--- Determine the number of points on the triangular face. Afterwards, allocate
+        the memory for rTet, sTet and tTet. ---*/
+  const unsigned short nP = rF.size();
+
+  rTet.resize(nP);
+  sTet.resize(nP);
+  tTet.resize(nP);
+
+  /*--- Abbreviate rTet, sTet and tTet, such that the different cases
+        can be put on one line. ---*/
+  vector<passivedouble> &r = rTet, &s = sTet, &t = tTet;
+
+  /*--- The values of rTet, sTet and tTet depend on both the face ID in the numbering
+        of the tetrahedron as well as the orientation of the face w.r.t. the tetrahedron.
+        Make this distinction and set the values accordingly. ---*/
+  unsigned short k;
+  switch( faceID_Elem ) {
+
+    case 0: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]= sF[k]; t[k]=-1.0;} break; 
+        case 1: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]= rF[k]; t[k]=-1.0;} break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=-rF[k]; s[k]= sF[k]; t[k]=-1.0;} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]=-sF[k]; t[k]=-1.0;} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 0. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 1: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]=-1.0; t[k]= rF[k];} break;
+        case 1: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]=-1.0; t[k]= sF[k];} break;
+        case 2: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]=-1.0; t[k]=-rF[k];} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=-sF[k]; s[k]=-1.0; t[k]= rF[k];} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 1. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 2: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= rF[k]; t[k]= sF[k];} break;
+        case 1: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= sF[k]; t[k]= rF[k];} break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]=-rF[k]; t[k]= sF[k];} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= rF[k]; t[k]=-sF[k];} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 2. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    case 3: {
+      switch( orientation ) {
+        case 0: for(k=0; k<nP; ++k) {s[k]=sF[k]; t[k]=rF[k]; r[k]=-1.0-rF[k]-sF[k];} break;
+        case 1: for(k=0; k<nP; ++k) {s[k]=rF[k]; t[k]=sF[k]; r[k]=-1.0-rF[k]-sF[k];} break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=rF[k]; s[k]=sF[k]; t[k]=-1.0-rF[k]-sF[k];} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=sF[k]; t[k]=rF[k]; s[k]=-1.0-rF[k]-sF[k];} break;
+        default:
+          SU2_MPI::Error(string("Invalid orientation for face 3. This should not happen."),
+                         CURRENT_FUNCTION);
+      }
+      break;
+    }
+
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+  }
+}
+
 void CFEMStandardTetBase::DerLagBasisIntPointsTet(const unsigned short                   mPoly,
                                                   const vector<passivedouble>            &rDOFs,
                                                   const vector<passivedouble>            &sDOFs,

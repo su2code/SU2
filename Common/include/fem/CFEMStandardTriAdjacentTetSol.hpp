@@ -75,4 +75,14 @@ public:
 
 private:
 
+  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 integration points of the face from the volume DOFs. */
+  CGemmBase *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 volume DOFs from the integration points of the face. */
+
+  ColMajorMatrix<passivedouble> legBasisInt;             /*!< \brief The values of the Legendre basis functions
+                                                                     in the integration points of the face. */
+  vector<ColMajorMatrix<passivedouble> > derLegBasisInt; /*!< \brief The values of the derivatives of the Legendre
+                                                                     basis functions in the integration points. It is a vector,
+                                                                     because there are derivatives in three directions. */
 };
