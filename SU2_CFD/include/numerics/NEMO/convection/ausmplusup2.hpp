@@ -45,7 +45,6 @@ private:
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
   su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
   su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
-  su2double Gamma_i, Gamma_j;
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
 
   /*--- Roe Only ---*/

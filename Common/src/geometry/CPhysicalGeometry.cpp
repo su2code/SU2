@@ -4590,8 +4590,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*nodes->GetCoord(iPoint, 1);
           else AxiFactor = 1.0;
 
-          if (nDim == 2) WettedArea += AxiFactor * sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1]);
-          if (nDim == 3) WettedArea += sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+          if (nDim == 2) WettedArea = AxiFactor * GeometryToolbox::Norm(nDim, Normal);
+          if (nDim == 3) WettedArea = GeometryToolbox::Norm(nDim, Normal);
 
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
@@ -5088,7 +5088,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
   if (nDim == 2){
     nSpanWiseSections[marker_flag-1] = 1;
     //TODO (turbo) make it more genral
-    if(marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
+    if(marker_flag == OUTFLOW) config->SetnSpanWiseSections(1);
 
     /*---Initilize the vector of span-wise values that will be ordered ---*/
     SpanWiseValue[marker_flag -1] = new su2double[1];
@@ -5154,7 +5154,7 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
                 for (jMarker = 0; jMarker < nMarker; jMarker++){
                   if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
                     PeriodicBoundary = config->GetMarker_All_PerBound(jMarker);
-                  	jVertex = nodes->GetVertex(iPoint, jMarker);
+                    jVertex = nodes->GetVertex(iPoint, jMarker);
                     if ((jVertex != -1) && (PeriodicBoundary == (val_iZone + 1))){
                       coord = nodes->GetCoord(iPoint);
                       switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -5234,9 +5234,9 @@ unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan = 0;
       // check if the value are gathered correctly
       //
       //  for (iSpan = 0; iSpan < nSpan; iSpan++){
-      //  	if(rank == MASTER_NODE){
-      //  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
-      //  	}
+      //    if(rank == MASTER_NODE){
+      //      cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
+      //    }
       //  }
 
 
@@ -5633,10 +5633,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
               /*--- compute the face area associated with the vertex ---*/
               vertex[iMarker][iVertex]->GetNormal(NormalArea);
               for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] = -NormalArea[iDim];
-              Area = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                Area += NormalArea[iDim]*NormalArea[iDim];
-              Area = sqrt(Area);
+              Area = GeometryToolbox::Norm(nDim, NormalArea);
+
               for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] /= Area;
               /*--- store all the all the info into the auxiliary containers ---*/
               disordered[jSpan][nVertexSpanHalo[jSpan]]  = iPoint;
@@ -6814,8 +6812,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
@@ -7849,7 +7846,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iPoint_Viz));
   strcat(cstr, buffer);
 
-  Tecplot_File.open(cstr, ios::out);
+  Tecplot_File.open(cstr);
   Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
 
   if (nDim == 2) {
@@ -7898,95 +7895,6 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
 
 #endif
 
-}
-
-void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
-  unsigned long iElem, iPoint, iElem_Bound;
-  unsigned short iMarker, iNodes, iDim;
-  ofstream output_file;
-  string Grid_Marker;
-  char *cstr;
-
-  cstr = new char [val_mesh_out_filename.size()+1];
-  strcpy (cstr, val_mesh_out_filename.c_str());
-
-  /*--- Open .su2 grid file ---*/
-
-  output_file.precision(15);
-  output_file.open(cstr, ios::out);
-
-  /*--- Write dimension, number of elements and number of points ---*/
-
-  output_file << "NDIME= " << nDim << endl;
-  output_file << "NELEM= " << nElem << endl;
-  for (iElem = 0; iElem < nElem; iElem++) {
-    output_file << elem[iElem]->GetVTK_Type();
-    for (iNodes = 0; iNodes < elem[iElem]->GetnNodes(); iNodes++)
-      output_file << "\t" << elem[iElem]->GetNode(iNodes);
-    output_file << "\t"<<iElem<< endl;
-  }
-
-  /*--- Write the node coordinates ---*/
-
-  output_file << "NPOIN= " << nPoint << "\t" << nPointDomain << endl;
-  output_file.precision(15);
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      output_file << scientific << "\t" << nodes->GetCoord(iPoint, iDim) ;
-#ifndef HAVE_MPI
-    output_file << "\t" << iPoint << endl;
-#else
-    output_file << "\t" << iPoint << "\t" << nodes->GetGlobalIndex(iPoint) << endl;
-#endif
-
-  }
-
-  /*--- Loop through and write the boundary info ---*/
-
-  output_file << "NMARK= " << nMarker << endl;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    /*--- Ignore SEND_RECEIVE for the moment ---*/
-    if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
-
-      Grid_Marker = config->GetMarker_All_TagBound(iMarker);
-      output_file << "MARKER_TAG= " << Grid_Marker << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-
-      if (nDim == 2) {
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file << iElem_Bound << endl;
-        }
-      }
-
-      if (nDim == 3) {
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-          output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-          for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
-            output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file << iElem_Bound << endl;
-        }
-      }
-
-    } else if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-      output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-      output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-      if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-      if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-
-      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-        output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" <<
-        bound[iMarker][iElem_Bound]->GetNode(0) << "\t" <<
-        bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
-      }
-
-    }
-  }
-
-  output_file.close();
 }
 
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
@@ -8958,7 +8866,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Error check for opening the file. ---*/
 
     if (!fhw) {
-      SU2_MPI::Error(string("Unable to open SU2 restart file ") + fname, CURRENT_FUNCTION);
+      SU2_MPI::Error(string("Unable to open SU2 restart file ") + string(fname), CURRENT_FUNCTION);
     }
 
     /*--- First, read the number of variables and points. ---*/

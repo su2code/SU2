@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/ausm.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar, 
                              unsigned short val_nPrimVar,
@@ -70,10 +71,7 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
   e_ve_i, e_ve_j, mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
   /*--- Compute geometric quantities ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -89,16 +87,16 @@ CNumerics::ResidualType<> CUpwAUSM_NEMO::ComputeResidual(const CConfig *config) 
     u_j[iDim] = V_j[VEL_INDEX+iDim];
   }
 
-  P_i       = V_i[P_INDEX];
-  P_j       = V_j[P_INDEX];
-  h_i       = V_i[H_INDEX];
-  h_j       = V_j[H_INDEX];
-  a_i       = V_i[A_INDEX];
-  a_j       = V_j[A_INDEX];
-  rho_i     = V_i[RHO_INDEX];
-  rho_j     = V_j[RHO_INDEX];
-  e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
-  e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
+  P_i   = V_i[P_INDEX];   P_j   = V_j[P_INDEX];
+  h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
+  a_i   = V_i[A_INDEX];   a_j   = V_j[A_INDEX];
+  rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
+  
+  e_ve_i  = 0; e_ve_j  = 0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    e_ve_i += (V_i[RHOS_INDEX+iSpecies]*eve_i[iSpecies])/rho_i;
+    e_ve_j += (V_j[RHOS_INDEX+iSpecies]*eve_j[iSpecies])/rho_j;
+  }
 
   /*--- Projected velocities ---*/
   ProjVel_i = 0.0; ProjVel_j = 0.0;

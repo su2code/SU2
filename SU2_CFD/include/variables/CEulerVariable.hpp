@@ -53,7 +53,7 @@ protected:
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
-  MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Secondary;        /*!< \brief Secondary variables (dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho) in compressible (Euler: 2, NS: 8) flows. */
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
 

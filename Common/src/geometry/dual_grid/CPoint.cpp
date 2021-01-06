@@ -27,7 +27,7 @@
 
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
-#include "../../../include/omp_structure.hpp"
+#include "../../../include/parallelization/omp_structure.hpp"
 
 CPoint::CPoint(unsigned long npoint, unsigned long ndim) : nDim(ndim) {
 

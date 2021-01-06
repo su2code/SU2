@@ -181,8 +181,8 @@ protected:
   **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
   **TurbPsi_Grad_j;  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   su2double
-  *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
-  *AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
+  **AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
+  **AuxVar_Grad_j;    /*!< \brief Gradient of an auxiliary variable at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
@@ -540,6 +540,53 @@ public:
   }
 
   /*!
+   * \brief Add a correction using a Quadratic Constitutive Relation
+   *
+   * This function requires that the stress tensor already be
+   * computed using \ref GetStressTensor
+   *
+   * See: Spalart, P. R., "Strategies for Turbulence Modelling and
+   * Simulation," International Journal of Heat and Fluid Flow, Vol. 21,
+   * 2000, pp. 252-263
+   *
+   * \param[in] nDim: 2D or 3D.
+   * \param[in] gradvel: Velocity gradients.
+   * \param[in,out] tau: Shear stress tensor.
+   */
+  template <class U, class V>
+  inline static void AddQCR(unsigned short nDim, const U& gradvel, V& tau) {
+
+    const su2double c_cr1= 0.3;
+    unsigned short iDim, jDim, kDim;
+
+    /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+
+    su2double den_aux = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        den_aux += gradvel[iDim][jDim] * gradvel[iDim][jDim];
+    den_aux = sqrt(max(den_aux,1E-10));
+
+    /*--- Adding the QCR contribution ---*/
+
+    su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
+
+    for (iDim = 0; iDim < nDim; iDim++){
+      for (jDim = 0; jDim < nDim; jDim++){
+        for (kDim = 0; kDim < nDim; kDim++){
+          su2double O_ik = (gradvel[iDim][kDim] - gradvel[kDim][iDim])/ den_aux;
+          su2double O_jk = (gradvel[jDim][kDim] - gradvel[kDim][jDim])/ den_aux;
+          tauQCR[iDim][jDim] = c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
+        }
+      }
+    }
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        tau[iDim][jDim] -= tauQCR[iDim][jDim];
+  }
+
+  /*!
    * \brief Set the value of the first blending function.
    * \param[in] val_F1_i - Value of the first Menter blending function at point i.
    * \param[in] val_F1_j - Value of the first Menter blending function at point j.
@@ -562,12 +609,13 @@ public:
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
-   * \param[in] val_auxvargrad_i - Gradient of the auxiliary variable at point i.
-   * \param[in] val_auxvargrad_j - Gradient of the auxiliary variable at point j.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
    */
-  inline void SetAuxVarGrad(su2double *val_auxvargrad_i, su2double *val_auxvargrad_j) {
-    AuxVar_Grad_i = val_auxvargrad_i;
-    AuxVar_Grad_j = val_auxvargrad_j;
+  inline void SetAuxVarGrad(su2double **val_auxvar_grad_i,
+                            su2double **val_auxvar_grad_j) {
+    AuxVar_Grad_i = val_auxvar_grad_i;
+    AuxVar_Grad_j = val_auxvar_grad_j;
   }
 
   /*!
@@ -1461,15 +1509,47 @@ public:
    */
   static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
 
+  /*!
+   * \brief Set the pressure derivatives.
+   * \param[in] val_dPdU_i - pressure derivatives at i. 
+   * \param[in] val_dPdU_j - pressure derivatives at j.
+   */
   virtual inline void SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j)       { }
 
+  /*!
+   * \brief Set the temperature derivatives.
+   * \param[in] val_dTdU_i - temperature derivatives at i. 
+   * \param[in] val_dTdU_j - temperature derivatives at j.
+   */
   virtual inline void SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j)       { }
 
+  /*!
+   * \brief Set the vib-el temperture derivatives.
+   * \param[in] val_dTvedU_i - t_ve derivatives at i. 
+   * \param[in] val_dTvedU_j - t_ve derivatives at j.
+   */
   virtual inline void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { }
 
+  /*!
+   * \brief Set the vib-elec energy.
+   * \param[in] val_Eve_i - vib-el energy at i. 
+   * \param[in] val_Eve_j - vib-el energy at j.
+   */
   virtual inline void SetEve(su2double *val_Eve_i, su2double *val_Eve_j)          { }
 
+  /*!
+   * \brief Set the vib-elec specific heat.
+   * \param[in] val_Cvve_i - Cvve at i. 
+   * \param[in] val_Cvve_j - Cvve at j.
+   */
   virtual inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       { }
+
+  /*!
+   * \brief Set the ratio of specific heats.
+   * \param[in] val_Gamma_i - Gamma at i.
+   * \param[in] val_Gamma_j - Gamma at j.
+   */
+  virtual inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)       { }
 
 };
 

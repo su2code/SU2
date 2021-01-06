@@ -360,7 +360,7 @@ void COutputLegacy::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *conf
 
   bool output_surface = (config->GetnMarker_Analyze() != 0);
   bool output_comboObj = (config->GetnObj() > 1);
-  bool output_per_surface = config->GetWrt_Surface();
+  bool output_per_surface = true;
   bool turbo = config->GetBoolTurbomachinery();
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -630,7 +630,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
 
-    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
+    if (((iExtIter % (config[val_iZone]->GetVolume_Wrt_Freq())) == 0) ||
         (!fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-1))) ||
         /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
         (fixed_cl && (iExtIter == (config[val_iZone]->GetnInner_Iter()-2) ||
@@ -773,7 +773,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
 
-    bool output_per_surface = config[val_iZone]->GetWrt_Surface();
+    bool output_per_surface = true;
 
     unsigned short direct_diff = config[val_iZone]->GetDirectDiff();
 
@@ -1249,34 +1249,33 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
     bool Unsteady = ((config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
                      (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND));
-    bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
+    bool In_NoDualTime = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
+    bool In_DualTime_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetScreen_Wrt_Freq(0) == 0));
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
-    bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
+    bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
+    bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
 
     /*--- Header frequency: analogy for dynamic structural analysis ---*/
     /*--- DualTime_Iteration is a bool we receive, which is true if it comes from FEM_StructuralIteration and false from SU2_CFD ---*/
     /*--- We maintain the name, as it is an input of the function ---*/
-    /*--- The function GetWrt_Con_Freq_DualTime should be modified to be able to define different frequencies ---*/
     /*--- dynamic determines if the problem is, or not, time dependent ---*/
     bool dynamic = (config[val_iZone]->GetTime_Domain());              // Dynamic simulations.
-    bool In_NoDynamic = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool In_Dynamic_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetWrt_Con_Freq_DualTime() == 0));
+    bool In_NoDynamic = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
+    bool In_Dynamic_0 = (DualTime_Iteration && (iIntIter % config[val_iZone]->GetScreen_Wrt_Freq(0) == 0));
     bool In_Dynamic_1 = (!DualTime_Iteration && nonlinear_analysis);
-    bool In_Dynamic_2 = (nonlinear_analysis && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    bool In_Dynamic_3 = (nonlinear_analysis && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
+    bool In_Dynamic_2 = (nonlinear_analysis && DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
+    bool In_Dynamic_3 = (nonlinear_analysis && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetScreen_Wrt_Freq(2) == 0));
 
     bool write_heads;
     if (Unsteady) write_heads = (iIntIter == 0);
-    else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
+    else write_heads = (((iExtIter % (config[val_iZone]->GetScreen_Wrt_Freq(2)*40)) == 0));
 
-    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnInner_Iter() -1)));
+    bool write_turbo = (((iExtIter % (config[val_iZone]->GetScreen_Wrt_Freq(2)*40)) == 0) || (iExtIter == (config[val_iZone]->GetnInner_Iter() -1)));
 
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
     if (nonlinear_analysis) write_heads_FEM = (iIntIter == 0);
-    else write_heads_FEM = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
+    else write_heads_FEM = (((iExtIter % (config[val_iZone]->GetScreen_Wrt_Freq(2)*40)) == 0));
 
     if (  (!fem && ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3))) ||
         (fem  && ( (In_NoDynamic || In_Dynamic_0 || In_Dynamic_1) && (In_NoDynamic || In_Dynamic_2 || In_Dynamic_3)))
@@ -1395,34 +1394,33 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
                   strcat(turbo_coeff, surface_coeff);
                 }
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", MassFlowIn[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", MassFlowOut[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", sqrt(MachIn[iMarker_Monitoring][nSpanWiseSections][1]*MachIn[iMarker_Monitoring][nSpanWiseSections][1] + MachIn[iMarker_Monitoring][nSpanWiseSections][0]*MachIn[iMarker_Monitoring][nSpanWiseSections][0]));
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", sqrt(MachOut[iMarker_Monitoring][nSpanWiseSections][1]*MachOut[iMarker_Monitoring][nSpanWiseSections][1] + MachOut[iMarker_Monitoring][nSpanWiseSections][0]*MachOut[iMarker_Monitoring][nSpanWiseSections][0]));
-								strcat(turbo_coeff, surface_coeff);
-								//
+                strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
+                strcat(turbo_coeff, surface_coeff);
 
               }
             }
@@ -1639,7 +1637,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
                 cout << endl;
                 cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
-                cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetWrt_Sol_Freq() << " iterations): ";
+                cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetVolume_Wrt_Freq() << " iterations): ";
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
                 cout << Total_Sens_Geo;
@@ -1779,7 +1777,7 @@ void COutputLegacy::SetConvHistory_Body(ofstream *ConvHist_file,
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
-              case SST:	case SST_SUST: cout << "     Res[kine]" << "     Res[omega]"; break;
+              case SST:	case SST_SUST: cout << "     Res[kine]" << "    Res[omega]"; break;
             }
 
             if (weakly_coupled_heat) {
@@ -2777,7 +2775,7 @@ void COutputLegacy::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry
 
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 7.0.7  \"Blackbird\"                        |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 7.0.8  \"Blackbird\"                        |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -4586,9 +4584,9 @@ void COutputLegacy::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry,
           ForceInviscid[1] += Force[1];
           ForceInviscid[2] += Force[2];
 
-          MomentDist[0] = 0.5 	* (Xcoord_Airfoil[iVertex] + Xcoord_Airfoil[iVertex + 1]) - Origin[0];
+          MomentDist[0] = 0.5 * (Xcoord_Airfoil[iVertex] + Xcoord_Airfoil[iVertex + 1]) - Origin[0];
           MomentDist[1] = 0.5 * (Ycoord_Airfoil[iVertex] + Ycoord_Airfoil[iVertex + 1]) - Origin[1];
-          MomentDist[2] = 0.5 	* (Zcoord_Airfoil[iVertex] + Zcoord_Airfoil[iVertex + 1]) - Origin[3];
+          MomentDist[2] = 0.5 * (Zcoord_Airfoil[iVertex] + Zcoord_Airfoil[iVertex + 1]) - Origin[3];
 
           MomentInviscid[1] += (Force[0] * MomentDist[2] - Force[2] * MomentDist[0]) / RefLength;
 

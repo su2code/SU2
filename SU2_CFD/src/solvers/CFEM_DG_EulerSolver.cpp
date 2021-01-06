@@ -6699,7 +6699,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array workArray as temporary storage. */
-      for(unsigned long mm=0; mm<nVar*volElem[l].nDOFsSol; ++mm)
+      for(unsigned short mm=0; mm<nVar*volElem[l].nDOFsSol; ++mm)
         workArray[mm] = res[mm];
 
       blasFunctions->gemm(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
@@ -7323,7 +7323,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
 
-  bool write_heads = ((((config->GetTimeIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetTimeIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetTimeIter()!= 0))
                       || (config->GetTimeIter() == 1));
   if( !write_heads ) return;

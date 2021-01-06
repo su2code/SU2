@@ -34,7 +34,7 @@
 #include "fem_cgns_elements.hpp"
 #endif
 #include "../wall_model.hpp"
-#include "../blas_structure.hpp"
+#include "../linear_algebra/blas_structure.hpp"
 
 using namespace std;
 

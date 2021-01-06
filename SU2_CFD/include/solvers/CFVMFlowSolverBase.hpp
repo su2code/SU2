@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
 

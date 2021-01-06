@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -120,7 +120,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  COutputLegacy(CConfig *congig);
+  COutputLegacy(CConfig *config);
 
   /*!
    * \brief Destructor of the class.

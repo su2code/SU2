@@ -1053,9 +1053,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
     Normal = geometry->edges->GetNormal(iEdge);
 
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Mean Values ---*/
 
@@ -1096,9 +1094,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -1479,7 +1475,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the body force source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -1510,7 +1506,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the boussinesq source residual ---*/
 
       auto residual = numerics->ComputeResidual(config);
 
@@ -1572,7 +1568,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         /*--- Set the auxilairy variable for this node. ---*/
 
-        nodes->SetAuxVar(iPoint, AuxVar);
+        nodes->SetAuxVar(iPoint, 0, AuxVar);
 
       }
 
@@ -1753,9 +1749,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
     jPoint = geometry->edges->GetNode(iEdge,1);
 
     Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Mean Values ---*/
 
@@ -1795,9 +1789,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -2539,9 +2531,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Both types of inlets may use the prescribed flow direction.
        Ensure that the flow direction is a unit vector. ---*/
@@ -2752,7 +2742,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area;
   su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
   su2double Damping = config->GetInc_Outlet_Damping();
@@ -2788,10 +2777,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
 
       /*--- Current solution at this boundary node ---*/
 
@@ -3293,7 +3278,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   bool axisymmetric = config->GetAxisymmetric();
 
-  bool write_heads = ((((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)
                        && (config->GetInnerIter()!= 0))
                       || (config->GetInnerIter() == 1));
 

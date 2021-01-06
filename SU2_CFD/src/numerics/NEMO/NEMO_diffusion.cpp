@@ -27,13 +27,15 @@
  */
 
 #include "../../../include/numerics/NEMO/NEMO_diffusion.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
                              unsigned short val_nPrimVar,
                              unsigned short val_nPrimVarGrad,
-                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                          config) {
+                             CConfig *config) : CNEMONumerics(val_nDim, val_nVar,
+                                                              val_nPrimVar, val_nPrimVarGrad,
+                                                              config) {
 
   /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
   PrimVar_i    = new su2double [nPrimVar];
@@ -89,10 +91,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   unsigned short iSpecies, iVar, iDim;
 
   /*--- Normalized normal vector ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -237,10 +236,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   su2double dist_ij_2;
 
   /*--- Normalized normal vector ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -283,7 +279,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   }
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Mean_Eve[iSpecies] = 0.5*(eve_i[iSpecies] + eve_j[iSpecies]);
+    Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
