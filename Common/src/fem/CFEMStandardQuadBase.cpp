@@ -240,98 +240,35 @@ void CFEMStandardQuadBase::ChangeDirectionQuadConn(vector<unsigned short> &connQ
   }
 }
 
-void CFEMStandardQuadBase::CreateTensorContributionsLineAdjQuad(const unsigned short                   mPointsLine,
-                                                                const unsigned short                   mDOFs1D,
-                                                                const unsigned short                   faceID_Elem,
-                                                                const unsigned short                   orientation,
-                                                                const ColMajorMatrix<passivedouble>    &b1DPoints,
-                                                                const ColMajorMatrix<passivedouble>    &derB1DPoints,
-                                                                const ColMajorMatrix<passivedouble>    &b1DM1,
-                                                                const ColMajorMatrix<passivedouble>    &b1DP1,
-                                                                const ColMajorMatrix<passivedouble>    &derB1DM1,
-                                                                const ColMajorMatrix<passivedouble>    &derB1DP1,
-                                                                vector<ColMajorMatrix<passivedouble> > &tensorSol,
-                                                                vector<ColMajorMatrix<passivedouble> > &tensorDSolDr,
-                                                                vector<ColMajorMatrix<passivedouble> > &tensorDSolDs) {
+void CFEMStandardQuadBase::ConvertCoor1DFaceTo2DQuad(const vector<passivedouble> rLine,
+                                                     const unsigned short        faceID,
+                                                     const unsigned short        orientation,
+                                                     vector<passivedouble>       &rNormal,
+                                                     vector<passivedouble>       &rTangential) {
 
-  /*--- Allocate the memory for the first index of tensorSol, etc. As this
-        function is only called for 2D simulations, there are two
-        contributions to the tensor products. ---*/
-  tensorSol.resize(2);
-  tensorDSolDr.resize(2);
-  tensorDSolDs.resize(2);
-
-  /*--- Step 1. Set the contribution to the tensor product for orientation == 0,
-                depending on the face ID of the element. Flag the tangential
-                component, stored in the second entry, for reversing, but do
-                not carry this out yet. It may overruled when orientation == 1. ---*/
-  bool reverseTangential = false;
-  switch( faceID_Elem ) {
-
-    case 0: {
-
-      /*--- Face ID 0 of the quadrilateral. Set the components of the
-            tensor product accordingly. ---*/
-      tensorSol[0]    = b1DM1;    tensorSol[1]    = b1DPoints;
-      tensorDSolDr[0] = b1DM1;    tensorDSolDr[1] = derB1DPoints;
-      tensorDSolDs[0] = derB1DM1; tensorDSolDs[1] = b1DPoints;
-      break;
-    }
-
-    case 1: {
-
-      /*--- Face ID 1 of the quadrilateral. Set the components of the
-            tensor product accordingly. ---*/
-      tensorSol[0]    = b1DP1;    tensorSol[1]    = b1DPoints;
-      tensorDSolDr[0] = derB1DP1; tensorDSolDr[1] = b1DPoints;
-      tensorDSolDs[0] = b1DP1;    tensorDSolDs[1] = derB1DPoints;
-      break;
-    }
-
-    case 2: {
-
-      /*--- Face ID 2 of the quadrilateral. Set the components of the
-            tensor product accordingly. ---*/
-      tensorSol[0]    = b1DP1;    tensorSol[1]    = b1DPoints;
-      tensorDSolDr[0] = b1DP1;    tensorDSolDr[1] = derB1DPoints;
-      tensorDSolDs[0] = derB1DP1; tensorDSolDs[1] = b1DPoints;
-      reverseTangential = true;
-      break;
-    }
-
-    case 3: {
-
-      /*--- Face ID 3 of the quadrilateral. Set the components of the
-            tensor product accordingly. ---*/
-      tensorSol[0]    = b1DM1;    tensorSol[1]    = b1DPoints;
-      tensorDSolDr[0] = derB1DM1; tensorDSolDr[1] = b1DPoints;
-      tensorDSolDs[0] = b1DM1;    tensorDSolDs[1] = derB1DPoints;
-      reverseTangential = true;
-      break;
-    }
-
+  /*--- Determine the value of the coordinate in normal direction. This is
+        either -1 or 1, depending on the face. ---*/
+  rNormal.resize(1);
+  switch( faceID ) {
+    case 0: case 3: rNormal[0] = -1.0; break;
+    case 1: case 2: rNormal[0] =  1.0; break;
     default:
       SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
   }
 
-  /*--- Step 2. Reverse the tangential component, if needed. As the direction of
-                the tangential component is opposite when the orientation == 1,
-                first negate reverseTangential when this is the case.
-                Note that for the reversing mPointsLine and mDOFs1D must be
-                used and not the dimension of the contribution to the tensor
-                product, because these contributions may be padded. ---*/
-  if(orientation == 1) reverseTangential = !reverseTangential;
+  /*--- Copy rLine into rTangential. ---*/
+  rTangential = rLine;
 
-  if( reverseTangential ) {
-    const unsigned short mPointsHalf = mPointsLine/2;
-    unsigned short jj = mPointsLine-1;
-    for(unsigned short j=0; j<mPointsHalf; ++j, --jj) {
-      for(unsigned short i=0; i<mDOFs1D; ++i) {
-        swap(tensorSol[1](j,i),    tensorSol[1](jj,i)); 
-        swap(tensorDSolDr[1](j,i), tensorDSolDr[1](jj,i));
-        swap(tensorDSolDs[1](j,i), tensorDSolDs[1](jj,i));
-      }
-    }
+  /*--- Reverse the values of rTangential, if needed. ---*/
+  switch( faceID ) {
+    case 0: case 1:
+      if(orientation == 1) reverse(rTangential.begin(), rTangential.end());
+      break;
+    case 2: case 3:
+      if(orientation == 0) reverse(rTangential.begin(), rTangential.end());
+      break;
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
   }
 }
 

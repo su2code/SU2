@@ -40,7 +40,10 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
   : CFEMStandardQuadBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
-  /*--- Store the pointer for the gemm functionality. ---*/
+  /*--- Store the faceID of the element, the orientation and the
+        pointer for the gemm functionality. ---*/
+  faceID_Elem  = val_faceID_Elem;
+  orientation  = val_orientation;
   gemmDOFs2Int = val_gemm;
 
   /*--- Determine the 1D parametric locations of the grid DOFs. 1D is enough,
@@ -48,25 +51,44 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
   if( val_useLGL) Location1DGridDOFsLGL(nPoly, rLineDOFs);
   else            Location1DGridDOFsEquidistant(nPoly, rLineDOFs);
 
-  /*--- Create the standard 1D Lagrangian basis functions. ---*/
-  ColMajorMatrix<passivedouble> lagInt1D, derLagInt1D;
-  ColMajorMatrix<passivedouble> lagM1, lagP1, derLagM1, derLagP1;
+  /*--- Convert the 1D coordinates of the standard line to the parametric 
+        coordinates in normal and tangential direction of the adjacent
+        quadrilateral. ---*/
+  vector<passivedouble> rNormal, rTangential;
+  ConvertCoor1DFaceTo2DQuad(rLineInt, faceID_Elem, orientation, rNormal, rTangential);
 
-  LagBasisIntPointsLine(rLineDOFs, rLineInt, lagInt1D);
-  DerLagBasisIntPointsLine(rLineDOFs, rLineInt, derLagInt1D);
+  /*--- Create the 1D Lagrangian basis functions for the parametric
+        coordinates in normal direction. ---*/
+  ColMajorMatrix<passivedouble> lagN, derLagN;
 
-  vector<passivedouble> rBound(1, -1.0);
-  LagBasisIntPointsLine(rLineDOFs, rBound, lagM1);
-  DerLagBasisIntPointsLine(rLineDOFs, rBound, derLagM1);
+  LagBasisIntPointsLine(rLineDOFs, rNormal, lagN);
+  DerLagBasisIntPointsLine(rLineDOFs, rNormal, derLagN);
 
-  rBound[0] = 1.0;
-  LagBasisIntPointsLine(rLineDOFs, rBound, lagP1);
-  DerLagBasisIntPointsLine(rLineDOFs, rBound, derLagP1);
+  /*--- Create the 1D Lagrangian basis functions for the parametric
+        coordinates in tangential direction. ---*/
+  ColMajorMatrix<passivedouble> lagT, derLagT;
 
-  /*--- Create the tensor components of the Lagrangian basis functions for the
-        current situation from the standard basis functions created above. ---*/
-  CreateTensorContributionsLineAdjQuad(nIntegration, nPoly+1, val_faceID_Elem, val_orientation,
-                                       lagInt1D, derLagInt1D, lagM1, lagP1, derLagM1, derLagP1,
-                                       tensorSol, tensorDSolDr, tensorDSolDs);
+  LagBasisIntPointsLine(rLineDOFs, rTangential, lagT);
+  DerLagBasisIntPointsLine(rLineDOFs, rTangential, derLagT);
 
+  /*--- Allocate the memory for the first index of tensorSol, etc. As this
+        function is only called for 2D simulations, there are two
+        contributions to the tensor products. ---*/
+  tensorSol.resize(2);
+  tensorDSolDr.resize(2);
+  tensorDSolDs.resize(2);
+
+  /*--- Set the components of the tensors. For the derivatives this
+        depend on the faceID in the element. ---*/
+  tensorSol[0] = lagN;
+  tensorSol[1] = lagT;
+
+  if((faceID_Elem == 0) || (faceID_Elem == 2)) {
+    tensorDSolDr[0] = lagN;    tensorDSolDr[1] = derLagT;
+    tensorDSolDs[0] = derLagN; tensorDSolDs[1] = lagT;
+  }
+  else {
+    tensorDSolDr[0] = derLagN; tensorDSolDr[1] = lagT;
+    tensorDSolDs[0] = lagN;    tensorDSolDs[1] = derLagT;
+  }
 }
