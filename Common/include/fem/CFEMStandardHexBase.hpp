@@ -88,6 +88,27 @@ protected:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
+   * \brief Function, which converts the 2D parametric coordinates of a face of
+   *        the quad to the tangential and normal components of the actual quad.
+   * \param[in]  rLine            - 1D parametric coordinates of a standard line element.
+   * \param[in]  faceID           - The corresponding faceID of the adjacent hex.
+   * \param[in]  orientation      - Orientation of the quad element relative to the hex.
+   * \param[out] swapTangInTensor - Whether or not the two tangential directions must be
+   *                                swapped in result of the tensor product.
+   * \param[out] rNorm            - The parametric coordinate in the direction normal to
+   *                                the face. This value is either -1 or 1.
+   * \param[out] rTang0           - First parametric coordinate tangential to the face.
+   * \param[out] rTang1           - Second parametric coordinate tangential to the face.
+   */
+  void ConvertCoor2DQuadFaceTo3DHex(const vector<passivedouble> rLine,
+                                    const unsigned short        faceID,
+                                    const unsigned short        orientation,
+                                    bool                        &swapTangInTensor,
+                                    vector<passivedouble>       &rNorm,
+                                    vector<passivedouble>       &rTang0,
+                                    vector<passivedouble>       &rTang1);
+
+  /*!
    * \brief Function, which sets the function pointer to carry out the tensor
    *        product to obtain the data in volume points.
    * \param[in]  K         - First dimensions of the input tensor.

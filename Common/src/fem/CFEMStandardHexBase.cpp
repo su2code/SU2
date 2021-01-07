@@ -79,6 +79,63 @@ CFEMStandardHexBase::CFEMStandardHexBase(const unsigned short val_nPoly,
 /*                Protected member functions of CFEMStandardHex.                    */
 /*----------------------------------------------------------------------------------*/
 
+void CFEMStandardHexBase::ConvertCoor2DQuadFaceTo3DHex(const vector<passivedouble> rLine,
+                                                       const unsigned short        faceID,
+                                                       const unsigned short        orientation,
+                                                       bool                        &swapTangInTensor,
+                                                       vector<passivedouble>       &rNorm,
+                                                       vector<passivedouble>       &rTang0,
+                                                       vector<passivedouble>       &rTang1) {
+
+  /*--- Determine the value of the coordinate in normal direction. This is
+        either -1 or 1, depending on the face. ---*/
+  rNorm.resize(1);
+  switch( faceID ) {
+    case 0: case 2: case 4: rNorm[0] = -1.0; break;
+    case 1: case 3: case 5: rNorm[0] =  1.0; break;
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+  }
+
+  /*--- Copy rLine into rTang0 and rTang1 as initialization. ---*/
+  rTang0 = rLine;
+  rTang1 = rLine;
+
+  /*--- Initialize swapTangInTensor, revT0 and revT1 to false. swapTangInTensor indicates
+        whether or not the two tangential directions in the quad must be swapped when
+        the tensor product is carried out, while revT0 and revT1 indicate whether or not
+        the tangential directions in the reference frame of the quad are reversed
+        compared to the frame of the hex. ---*/
+  swapTangInTensor = false;
+  bool revT0       = false;
+  bool revT1       = false;
+
+  /*--- Set the above booleans to true if this is the case for the given
+        face ID and orientation. ---*/
+  switch( faceID ) {
+    case 0: case 3: case 4: {
+      if((orientation == 1) || (orientation == 3)) swapTangInTensor = true;
+      if((orientation == 2) || (orientation == 3)) revT0 = true;
+      if((orientation == 3) || (orientation == 4)) revT1 = true;
+      break;
+    }
+
+    case 1: case 2: case 5: {
+      if((orientation == 0) || (orientation == 2) || (orientation == 4)) swapTangInTensor = true;
+      if((orientation == 3) || (orientation == 4)) revT0 = true;
+      if((orientation == 2) || (orientation == 3)) revT1 = true;
+      break;
+    }
+
+    default:
+      SU2_MPI::Error(string("Invalid faceID. This should not happen."), CURRENT_FUNCTION);
+  }
+
+  /*--- Reverse the tangential contributions, if needed. ---*/
+  if( revT0 ) reverse(rTang0.begin(), rTang0.end());
+  if( revT1 ) reverse(rTang1.begin(), rTang1.end());
+}
+
 void CFEMStandardHexBase::SubConnLinearElements(void) {
 
   /*--- The hexahedron is split into several linear hexahedra.

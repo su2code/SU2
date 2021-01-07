@@ -79,7 +79,7 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
   tensorDSolDs.resize(2);
 
   /*--- Set the components of the tensors. For the derivatives this
-        depend on the faceID in the element. ---*/
+        depends on the faceID in the element. ---*/
   tensorSol[0] = lagN;
   tensorSol[1] = lagT;
 

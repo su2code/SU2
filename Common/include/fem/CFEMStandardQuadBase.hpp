@@ -109,7 +109,7 @@ protected:
   /*!
    * \brief Function, which converts the 1D parametric coordinates of a face of
    *        the quad to the tangential and normal components of the actual quad.
-   * \param[in]  rLine       - 1D parametric coordinates of the face of the quad.
+   * \param[in]  rLine       - 1D parametric coordinates of a standard line element.
    * \param[in]  faceID      - The corresponding faceID of the adjacent quad.
    * \param[in]  orientation - Orientation of the line element relative to the quad.
    * \param[out] rNormal     - The parametric coordinate in the direction normal to

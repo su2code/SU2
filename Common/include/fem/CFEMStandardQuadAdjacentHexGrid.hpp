@@ -75,4 +75,25 @@ public:
 
 private:
 
+  unsigned short faceID_Elem;       /*!< \brief Face ID of the adjacent hex, which corresponds to this face. */
+  unsigned short orientation;       /*!< \brief Orientation of this face relative to the adjacent hex. */
+  bool           swapTangInTensor;  /*!< \brief Whether or not the tangential directions of the face, created
+                                                in the the tensor product, must be swapped. */
+
+  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                 integration points of the face from the volume DOFs. */
+
+  vector<passivedouble> rLineDOFs;    /*!< \brief 1D parametric coordinates of the grid DOFs. */
+
+  vector<ColMajorMatrix<passivedouble> > tensorSol;     /*!< \brief The three 1D components of the tensor to compute
+                                                                    the solution on the face of the hexahedron. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDr;  /*!< \brief The three 1D components of the tensor to compute
+                                                                    the derivative in r-direction of the solution
+                                                                    on the face of the hexahedron. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDs;  /*!< \brief The three 1D components of the tensor to compute
+                                                                    the derivative in s-direction of the solution
+                                                                    on the face of the hexahedron. */
+  vector<ColMajorMatrix<passivedouble> > tensorDSolDt;  /*!< \brief The three 1D components of the tensor to compute
+                                                                    the derivative in t-direction of the solution
+                                                                    on the face of the hexahedron. */
 };
