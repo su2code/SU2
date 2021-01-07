@@ -121,7 +121,7 @@ def main():
     tutorial_trans_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate"
     tutorial_trans_flatplate.cfg_file   = "transitional_BC_model_ConfigFile.cfg"
     tutorial_trans_flatplate.test_iter  = 0
-    tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330906, 0.000000, 0.023952] #last 4 columns
+    tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_trans_flatplate.timeout    = 1600
     tutorial_trans_flatplate.tol        = 0.00001
