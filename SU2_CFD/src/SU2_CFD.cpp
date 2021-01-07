@@ -39,6 +39,8 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
+  cout << "HELLO" << endl;
+
   char config_file_name[MAX_STRING_SIZE];
   bool dry_run = false;
   int num_threads = omp_get_max_threads();

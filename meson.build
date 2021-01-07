@@ -165,6 +165,14 @@ endforeach
 
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
+if get_option('enable-mpp')
+  cmake = import('cmake')
+  mpp_subproj = cmake.subproject('Mutationpp')
+  mpp_dep = mpp_subproj.dependency('mutation++')
+  su2_deps     += mpp_dep
+  su2_cpp_args += '-DHAVE_MPP'
+endif
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable

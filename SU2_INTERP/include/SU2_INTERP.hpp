@@ -42,7 +42,7 @@
 
 #include <ctime>
 
-#include "../../SU2_INTERP/include/fem_interpolation_structure.hpp"
+#include "../../SU2_CFD/include/fem_interpolation_structure.hpp"
 #include "../../SU2_CFD/include/solvers/CSolver.hpp"
 #include "../../SU2_CFD/include/output/COutput.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"

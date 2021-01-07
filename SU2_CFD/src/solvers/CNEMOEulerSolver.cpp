@@ -1587,11 +1587,20 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     ModelTable << config->GetGasModel();
 
+    switch(config->GetKind_FluidModel()){
+    case USER_DEFINED_NONEQ:
+      ModelTable << "User defined";
+      break;
+    case MUTATIONPP:
+      ModelTable << "Mutation++ Library";
+      break;
+    }
+
     if (viscous) {
 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
-      ModelTable << "Wilke-Blottner-Eucken";
+        ModelTable << "Wilke-Blottner-Eucken";
         NonDimTable.PrintFooter();
         break;
 
@@ -1605,15 +1614,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       }
     } else {
       ModelTable << "-" ;
-    }
-
-    switch(config->GetKind_FluidModel()){
-    case USER_DEFINED_NONEQ:
-      ModelTable << "User defined";
-      break;
-    case MUTATIONPP:
-      ModelTable << "Mutation++ Library";
-      break;
     }
 
     NonDimTable.PrintFooter();
