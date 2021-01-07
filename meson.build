@@ -231,3 +231,13 @@ message('''---------------------------------------------------------------------
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
 
+if get_option('enable-mpp')
+  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+          export MPP_DIRECTORY=$SU2_HOME/subprojects/Mutationpp
+          export MPP_DATA_DIRECTORY=$MPP_DIRECTORY/data
+          export PATH=$MPP_DIRECTORY/install/bin:$PATH
+          export LD_LIBRARY_PATH=$MPP_DIRECTORY/install/<LIBDIR>  # Change <LIBDIR> with `lib` or `lib64` according to your system
+
+          ''')
+endif
