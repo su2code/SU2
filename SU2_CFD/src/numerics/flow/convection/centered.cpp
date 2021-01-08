@@ -2,7 +2,7 @@
  * \file centered.cpp
  * \brief Implementations of centered schemes.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/flow/convection/centered.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CCentBase_Flow::CCentBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                 CNumerics(val_nDim, val_nVar, config) {
@@ -146,13 +147,12 @@ CNumerics::ResidualType<> CCentBase_Flow::ComputeResidual(const CConfig* config)
 
   /*--- Compute the local spectral radius and the stretching factor ---*/
 
-  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
+  ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
-    Area += Normal[iDim]*Normal[iDim];
   }
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Adjustment due to mesh motion ---*/
 
@@ -347,6 +347,8 @@ CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_n
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
+  energy           = config->GetEnergy_Equation();
 
   /*--- Artificial dissipation part ---*/
 
@@ -533,8 +535,8 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
     for (jVar = 0; jVar < nVar; jVar++) {
       ProjFlux[iVar] += Precon[iVar][jVar]*Epsilon_0*Diff_V[jVar]*StretchingFactor*MeanLambda;
       if (implicit) {
-        Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
-        Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
+        Jacobian_i[iVar][jVar] += fix_factor*Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
+        Jacobian_j[iVar][jVar] -= fix_factor*Precon[iVar][jVar]*Epsilon_0*StretchingFactor*MeanLambda;
       }
     }
   }
@@ -568,6 +570,7 @@ CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_n
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
+  fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
 
   /*--- Artifical dissipation part ---*/
 
@@ -763,8 +766,8 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
     for (jVar = 0; jVar < nVar; jVar++) {
       ProjFlux[iVar] += Precon[iVar][jVar]*(Epsilon_2*Diff_V[jVar] - Epsilon_4*Diff_Lapl[jVar])*StretchingFactor*MeanLambda;
       if (implicit) {
-        Jacobian_i[iVar][jVar] += Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
-        Jacobian_j[iVar][jVar] -= Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
+        Jacobian_i[iVar][jVar] += fix_factor*Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_i+1))*StretchingFactor*MeanLambda;
+        Jacobian_j[iVar][jVar] -= fix_factor*Precon[iVar][jVar]*(Epsilon_2 + Epsilon_4*su2double(Neighbor_j+1))*StretchingFactor*MeanLambda;
       }
     }
   }

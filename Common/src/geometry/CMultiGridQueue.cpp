@@ -2,7 +2,7 @@
  * \file CMultiGridQueue.cpp
  * \brief Implementation of the multigrid queue class for the FVM solver.
  * \author F. Palacios
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,7 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/CMultiGridQueue.hpp"
+#include "../../include/geometry/CMultiGridQueue.hpp"
 #include <numeric>
 
 CMultiGridQueue::CMultiGridQueue(unsigned long npoint) :

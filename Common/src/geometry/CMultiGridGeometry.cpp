@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,9 +26,9 @@
  */
 
 #include "../../include/geometry/CMultiGridGeometry.hpp"
-#include "../../include/CMultiGridQueue.hpp"
+#include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
-
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
 
@@ -1084,7 +1084,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   unsigned long iFinePoint, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
-  unsigned short iChildren, iDim;
+  unsigned short iChildren;
   bool change_face_orientation;
   su2double Coarse_Volume, Area;
 
@@ -1135,8 +1135,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     const auto NormalFace = edges->GetNormal(iEdge);
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-    Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, NormalFace);
     if (Area == 0.0) {
       su2double DefaultNormal[3] = {EPS*EPS};
       edges->SetNormal(iEdge, DefaultNormal);
@@ -1181,8 +1180,7 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 

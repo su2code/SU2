@@ -2,7 +2,7 @@
  * \file CSymmetricMatrix.hpp
  * \brief Dense symmetric matrix, used for example in RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,6 @@ private:
   // Not optimized dense matrix factorization and inversion for portability.
   void CalcInv(bool is_spd);
   void CholeskyDecompose();
-  void LUDecompose(su2passivematrix& decomp, std::vector<int>& perm) const;
   // Matrix inversion using LAPACK routines (LDLT and LLT factorization).
   void CalcInv_sytri();
   void CalcInv_potri();

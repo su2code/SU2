@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -100,7 +100,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeChemistry(const CConfig *config) 
   /*--- Set mixture state ---*/
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  ws = fluidmodel->GetNetProductionRates();
+  ws = fluidmodel->ComputeNetProductionRates();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
     residual[iSpecies] = ws[iSpecies] *Volume;
@@ -261,7 +261,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 
   fluidmodel->SetTDStateRhosTTv(rhos, T, Tve);
 
-  residual[nSpecies+nDim+1] = fluidmodel->GetEveSourceTerm() * Volume;
+  residual[nSpecies+nDim+1] = fluidmodel->ComputeEveSourceTerm() * Volume;
 
   //  if (implicit) {
 //    for (iVar = 0; iVar < nVar; iVar++)
@@ -272,7 +272,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //  if (implicit) {
 //
 //    fluidmodel->SetTve(T);
-//    Cvvsst = fluidmodel->GetSpeciesCvVibEle();
+//    Cvvsst = fluidmodel->ComputeSpeciesCvVibEle();
 //
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 //
@@ -285,8 +285,10 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeVibRelaxation(const CConfig *conf
 //      val_Jacobian_i[nSpecies+nDim+1][iSpecies] += (estar[iSpecies]-eve_i[iSpecies])/taus[iSpecies]*Volume;
 //  }
 
-  if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max;
-  if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
+  if(config->GetVTTransferResidualLimiting()){
+    if(residual[nSpecies+nDim+1]>res_max) residual[nSpecies+nDim+1]=res_max; 
+    if(residual[nSpecies+nDim+1]<res_min) residual[nSpecies+nDim+1]=res_min;
+  } 
 
   return ResidualType<>(residual, nullptr, nullptr);
 }
@@ -296,7 +298,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   unsigned short iDim, iSpecies, iVar;
   su2double rho, rhov, vel2, H, yinv;
 
-    /*--- Initialize residual and Jacobian arrays ---*/
+  /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     residual[iVar] = 0.0;
   }

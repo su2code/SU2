@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,10 +27,10 @@
  */
 
 #include "../../../include/interfaces/fsi/CFlowTractionInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
-#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <unordered_set>
 
 CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
@@ -188,22 +188,15 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
     su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
-    const su2double* const* GradVel = &flow_nodes->GetGradient_Primitive(Point_Flow)[1];
-
-    // Divergence of the velocity
-    su2double DivVel = 0.0;
-    for (auto iVar = 0u; iVar < nVar; iVar++) DivVel += GradVel[iVar][iVar];
-
+    su2double tau[3][3];
+    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetGradient_Primitive(Point_Flow)+1,Viscosity);
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
-        // Viscous stress
-        su2double delta_ij = (iVar == jVar);
-        su2double tau_ij = Viscosity*(GradVel[jVar][iVar] + GradVel[iVar][jVar] - TWO3*DivVel*delta_ij);
-
         // Viscous component in the tn vector --> Units of force (non-dimensional).
-        Donor_Variable[iVar] += tau_ij * Normal_Flow[jVar];
+        Donor_Variable[iVar] += tau[iVar][jVar] * Normal_Flow[jVar];
       }
     }
+
   }
 
   // Redimensionalize and take into account ramp transfer of the loads

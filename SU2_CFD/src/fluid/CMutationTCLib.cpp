@@ -2,7 +2,7 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,8 +27,8 @@
 
 #include "../../include/fluid/CMutationTCLib.hpp"
 
-CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
-  
+CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
+
   //CGarbacz: if wilke - transportmodel = 'wilke' and so on;
 
   //CGarbacz: nEl = mix.getnumberelectrons; nHeavy = nSpecies-nEl;
@@ -37,25 +37,27 @@ CMutationTCLib::CMutationTCLib(const CConfig* config): CNEMOGas(config){
 
 }
 
-//CGarbacz returning random things to avoid warnings. This will be properly implemented once NEMO is in develop
+//CGarbacz returning random things to avoid warnings. This will be properly implemented once Mutation++ is in develop
 
 CMutationTCLib::~CMutationTCLib(){}
   
 void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){}
 
+vector<su2double>& CMutationTCLib::GetSpeciesMolarMass(){return MassFrac;}
+
 vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetMixtureEnergies(){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetNetProductionRates(){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeNetProductionRates(){return MassFrac;}
 
-su2double CMutationTCLib::GetEveSourceTerm(){return 0;}
+su2double CMutationTCLib::ComputeEveSourceTerm(){return 0;}
 
-vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double *val_eves){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){return MassFrac;}
 
 vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){return MassFrac;}
 
@@ -63,11 +65,8 @@ su2double CMutationTCLib::GetViscosity(){return 0;}
 
 vector<su2double>& CMutationTCLib::GetThermalConductivities(){return MassFrac;}
 
-vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){return MassFrac;}
+vector<su2double>& CMutationTCLib::ComputeTemperatures(vector<su2double>& rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel){return MassFrac;}
 
-void CMutationTCLib::GetdPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU){}
+vector<su2double>& CMutationTCLib::GetRefTemperature() {return MassFrac;}
 
-void CMutationTCLib::GetdTdU(su2double *V, su2double *val_dTdU){}
- 
-void CMutationTCLib::GetdTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU){}
-
+vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {return MassFrac;}

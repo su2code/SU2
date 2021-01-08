@@ -4,7 +4,7 @@
  *        with high order elements.
  *        The functions are in the <i>cgns_elements.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "../mpi_structure.hpp"
+#include "../parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -47,7 +47,7 @@ class CBoundaryFace;
  * \class CCGNSElementType
  * \brief Class which stores the CGNS element type info for a connectivity
           section.
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 
 class CCGNSElementType {

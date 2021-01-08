@@ -2,7 +2,7 @@
  * \file CFileWriter.hpp
  * \brief Headers fo the file writer class.
  * \author T. Albring
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #pragma once
-#include "../../../../Common/include/mpi_structure.hpp"
+#include "../../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../../Common/include/option_structure.hpp"
 #include <sys/stat.h>
 #include <vector>

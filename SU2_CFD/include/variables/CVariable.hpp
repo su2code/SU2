@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -77,8 +77,8 @@ protected:
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
   MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
-  VectorType AuxVar;       /*!< \brief Auxiliar variable for gradient computation. */
-  MatrixType Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
+  MatrixType AuxVar;             /*!< \brief Auxiliar variable for gradient computation. */
+  CVectorOfMatrix Grad_AuxVar;   /*!< \brief Gradient of the auxilliary variables  of the problem. */
 
   VectorType Max_Lambda_Inv;   /*!< \brief Maximun inviscid eingenvalue. */
   VectorType Max_Lambda_Visc;  /*!< \brief Maximun viscous eingenvalue. */
@@ -105,6 +105,7 @@ protected:
   unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
+  unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
 
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
@@ -136,6 +137,11 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CVariable() = default;
+
+  /*!
+   * \brief Get the number of auxiliary variables.
+   */
+  inline unsigned long GetnAuxVar() const { return nAuxVar; }
 
   /*!
    * \brief Set the value of the solution, all variables.
@@ -564,65 +570,62 @@ public:
   inline su2double GetLocalCFL(unsigned long iPoint) const { return LocalCFL(iPoint); }
 
   /*!
-   * \brief Set auxiliar variables, we are looking for the gradient of that variable.
+   * \brief Get the entire Aux matrix of the problem.
+   * \return Reference to the aux var  matrix.
+   */
+  inline const MatrixType& GetAuxVar(void) const { return AuxVar; }
+
+  /*!
+   * \brief Get the Aux var value at Point i, variable j.
+   */
+  inline su2double GetAuxVar(unsigned long iPoint, unsigned long iVar = 0) const { return AuxVar(iPoint,iVar); }
+
+  /*!
+   * \brief Set auxiliary variables.
    * \param[in] iPoint - Point index.
+   * \param[in] iVar - Varriable indexs
    * \param[in] val_auxvar - Value of the auxiliar variable.
    */
-  inline void SetAuxVar(unsigned long iPoint, su2double val_auxvar) { AuxVar(iPoint) = val_auxvar; }
-
-  /*!
-   * \brief Get the value of the auxiliary variable.
-   * \param[in] iPoint - Point index.
-   * \return Value of the auxiliary variable.
-   */
-  inline su2double GetAuxVar(unsigned long iPoint) const { return AuxVar(iPoint); }
-
-  /*!
-   * \brief Get the auxiliary variable.
-   * \return 2D view of the auxiliary variable.
-   */
-  inline C2DDummyLastView<const VectorType> GetAuxVar(void) const {
-    return C2DDummyLastView<const VectorType>(AuxVar);
+  inline void SetAuxVar(unsigned long iPoint, unsigned long iVar, const su2double auxvar) {
+    AuxVar(iPoint,iVar) = auxvar;
   }
 
   /*!
-   * \brief Set the value of the auxiliary variable gradient.
+   * \brief Set value of auxillary gradients.
    * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
-   * \param[in] val_gradient - Value of the gradient for the index <i>iDim</i>.
+   * \param[in] value - Value of the gradient.
    */
-  inline void SetAuxVarGradient(unsigned long iPoint, unsigned long iDim, su2double val_gradient) { Grad_AuxVar(iPoint,iDim) = val_gradient; }
-
-  /*!
-   * \brief Add a value to the auxiliary variable gradient.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient to be added for the index <i>iDim</i>.
-   */
-  inline void AddAuxVarGradient(unsigned long iPoint, unsigned long iDim, su2double val_value) { Grad_AuxVar(iPoint,iDim) += val_value;}
-
-  /*!
-   * \brief Get the gradient of the auxiliary variable.
-   * \param[in] iPoint - Point index.
-   * \return Value of the gradient of the auxiliary variable.
-   */
-  inline su2double *GetAuxVarGradient(unsigned long iPoint) { return Grad_AuxVar[iPoint]; }
-
-  /*!
-   * \brief Get the gradient of the auxiliary variable.
-   * \return 3D view of the gradient of the auxiliary variable.
-   */
-  inline C3DDummyMiddleView<MatrixType> GetAuxVarGradient() {
-    return C3DDummyMiddleView<MatrixType>(Grad_AuxVar);
+  inline void SetAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {
+    Grad_AuxVar(iPoint,iVar,iDim) = value;
   }
 
   /*!
-   * \brief Get the gradient of the auxiliary variable.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Index of the dimension.
-   * \return Value of the gradient of the auxiliary variable for the dimension <i>iDim</i>.
+   * \brief Get the gradient of the auxilary variables.
+   * \return Reference to gradient.
    */
-  inline su2double GetAuxVarGradient(unsigned long iPoint, unsigned long iDim) const { return Grad_AuxVar(iPoint,iDim); }
+  inline CVectorOfMatrix& GetAuxVarGradient(void) { return Grad_AuxVar; }
+
+  /*!
+   * \brief Get the value of the auxilliary gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the solution gradient.
+   */
+  inline su2double GetAuxVarGradient(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const {
+    return Grad_AuxVar(iPoint,iVar,iDim);
+  }
+
+  /*!
+   * \brief Get the value of the auxilliary gradient.
+   * \param[in] iPoint - Point index.
+   * \return Value of the solution gradient.
+   */
+  inline su2double** GetAuxVarGradient(unsigned long iPoint) {
+    return Grad_AuxVar[iPoint];
+  }
 
   /*!
    * \brief Add a value to the truncation error.
