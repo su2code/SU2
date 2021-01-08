@@ -69,10 +69,10 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [  -0.954130,   -1.478893,  -16.737310,  -17.063693,  -17.010416,    2.374072,    1.733626,    5.401966,    0.955538] #last 4 columns
+    invwedge.test_vals = [-0.956173,-1.480936,-16.738781,-17.063703,-17.011887,2.371977,1.732488, 5.399642,0.953492]
     invwedge.su2_exec  = "SU2_CFD"
     invwedge.timeout   = 1600
-    invwedge.new_output = False
+    invwedge.new_output = True
     invwedge.tol       = 0.00001
     test_list.append(invwedge)
 
@@ -81,10 +81,10 @@ def main():
     viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.204061,   -5.728824,  -20.259919,  -20.213137,  -20.252642,   -1.781679,   -2.150885,    1.724447,   -2.861733]
+    viscwedge.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
     viscwedge.su2_exec  = "SU2_CFD"
     viscwedge.timeout   = 1600
-    viscwedge.new_output = False
+    viscwedge.new_output = True
     viscwedge.tol       = 0.00001
     test_list.append(viscwedge)    
     
@@ -250,7 +250,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.494705, -7.711759, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals = [-12.494720, -7.711373, -0.000000, 2.085796] #last 4 columns
     poiseuille_profile.su2_exec  = "SU2_CFD"
     poiseuille_profile.new_output = True
     poiseuille_profile.timeout   = 1600
@@ -374,18 +374,6 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
-
-    # PROPELLER VARIBLE LOAD
-    propeller_var_load            = TestCase('propeller_variable_load')
-    propeller_var_load.cfg_dir    = "rans/actuatordisk_variable_load"
-    propeller_var_load.cfg_file   = "propeller_variable_load.cfg"
-    propeller_var_load.test_iter  = 20
-    propeller_var_load.test_vals  = [-1.824944, -4.535272, -0.000008, 0.172071] #last 4 columns
-    propeller_var_load.su2_exec   = "SU2_CFD"
-    propeller_var_load.new_output = True
-    propeller_var_load.timeout    = 3200
-    propeller_var_load.tol        = 0.00001
-    test_list.append(propeller_var_load)
 
     #################################
     ## Compressible RANS Restart  ###
@@ -818,7 +806,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.978069, 1.139128, 0.807062, 0.064726] #last 4 columns
+    turb_naca0012_1c.test_vals = [-4.978068, 1.139123, 0.806952, 0.064685] #last 4 columns
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600
@@ -830,7 +818,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484279, 0.967025, 0.823201, 0.070866] #last 4 columns
+    turb_naca0012_2c.test_vals = [-5.484282, 0.967023, 0.823129, 0.070840] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.new_output = True
     turb_naca0012_2c.timeout   = 1600
@@ -854,7 +842,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.126796, 1.076577, 0.783116, 0.055988] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [ -5.126540, 1.076620, 0.783153, 0.056001] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
     turb_naca0012_p1c1.timeout   = 1600
@@ -866,7 +854,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556585, 0.941677, 0.796006, 0.060817] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.556554, 0.941694, 0.795964, 0.060801] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
     turb_naca0012_p1c2.timeout   = 1600
@@ -1001,7 +989,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [-2.994996, -6.869781, 1.434864, 0.416626] #last 4 columns
+    unst_inc_turb_naca0015_sa.test_vals = [-3.007635, -6.879789, 1.445300, 0.419281] #last 4 columns
     unst_inc_turb_naca0015_sa.su2_exec  = "SU2_CFD"
     unst_inc_turb_naca0015_sa.timeout   = 1600
     unst_inc_turb_naca0015_sa.tol       = 0.00001
@@ -1395,7 +1383,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.132187, -0.579649, -0.579649, -0.579649] #last 4 columns
+    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True
@@ -1407,7 +1395,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "coupled_cht/incomp_2d_unsteady"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-1.356091, -0.080383, -0.080387, -0.080384] #last 4 columns
+    cht_incompressible_unsteady.test_vals = [-1.303588, -0.080377, -0.080380, -0.080377] #last 4 columns
     cht_incompressible_unsteady.su2_exec  = "SU2_CFD"
     cht_incompressible_unsteady.timeout   = 1600
     cht_incompressible_unsteady.multizone = True
@@ -1420,7 +1408,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/comp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-4.257607, -0.526125, -0.526125, -0.526125] #last 4 columns
+    cht_incompressible.test_vals = [-4.256303, -0.532538, -0.532538, -0.532537] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.multizone = True

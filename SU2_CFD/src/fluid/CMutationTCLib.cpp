@@ -107,7 +107,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
 }
 
 
-vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){
+vector<su2double>& CMutationTCLib::ComputeSpeciesCvVibEle(){
 
    mix->getCvsMass(Cv_ks.data());
 
@@ -116,7 +116,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvVibEle(){
    return Cvves;
 }
 
-vector<su2double>& CMutationTCLib::GetMixtureEnergies(){
+vector<su2double>& CMutationTCLib::ComputeMixtureEnergies(){
 
   SetTDStateRhosTTv(rhos, T, Tve);
 
@@ -125,7 +125,7 @@ vector<su2double>& CMutationTCLib::GetMixtureEnergies(){
   return energies; 
 }
 
-vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){
+vector<su2double>& CMutationTCLib::ComputeSpeciesEve(su2double val_T){
 
   SetTDStateRhosTTv(rhos, T, val_T);
 
@@ -136,14 +136,14 @@ vector<su2double>& CMutationTCLib::GetSpeciesEve(su2double val_T){
   return eves; 
 }
 
-vector<su2double>& CMutationTCLib::GetNetProductionRates(){
+vector<su2double>& CMutationTCLib::ComputeNetProductionRates(){
 
   mix->netProductionRates(ws.data());
 
   return ws;
 }
 
-su2double CMutationTCLib::GetEveSourceTerm(){
+su2double CMutationTCLib::ComputeEveSourceTerm(){
 
   mix->energyTransferSource(omega_vec.data());
 
@@ -152,7 +152,7 @@ su2double CMutationTCLib::GetEveSourceTerm(){
   return omega;
 }
 
-vector<su2double>& CMutationTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
+vector<su2double>& CMutationTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   su2double RuSI = UNIVERSAL_GAS_CONSTANT;
   su2double Ru   = 1000.0*RuSI;
@@ -185,7 +185,7 @@ vector<su2double>& CMutationTCLib::GetThermalConductivities(){
   return ThermalConductivities;  
 }
 
-vector<su2double>& CMutationTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CMutationTCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   rhos = val_rhos;
   

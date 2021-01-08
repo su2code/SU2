@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNEMONSSolver.hpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
@@ -38,7 +38,8 @@
  * \brief Main class for defining the NEMO Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 6.1
+ * \version 7.0.8
+ *
  */
 class CNEMONSSolver final : public CNEMOEulerSolver {
 private:
@@ -207,7 +208,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
   */
-  void BC_Smoluchowski_Maxwell(CGeometry *geometry, CSolver **solver_container,
+  void BC_Smoluchowski_Maxwell(CGeometry *geometry,
+                               CSolver **solver_container,
                                CNumerics *conv_numerics,
                                CNumerics *visc_numerics,
                                CConfig *config,
@@ -224,4 +226,5 @@ public:
    */
   void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) override;
+
 };

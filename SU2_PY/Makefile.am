@@ -98,13 +98,6 @@ nobase_dist_mypkg_DATA= \
     SU2/util/polarSweepLib.py \
     SU2/util/switch.py \
     SU2/util/which.py \
-    SU2/util/__init__.py \
-    FSI/__init__.py \
-    FSI/FSIInterface.py \
-    FSI/PitchPlungeAirfoilStructuralTester.py \
-    FSI/io/__init__.py \
-    FSI/io/FSI_config.py \
-    FSI/util/__init__.py \
-    FSI/util/switch.py
+    SU2/util/__init__.py
 
 EXTRA_DIST = $(bin_SCRIPTS)

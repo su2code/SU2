@@ -27,7 +27,7 @@
 
 #include "../../include/solvers/CTurbSASolver.hpp"
 #include "../../include/variables/CTurbSAVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
@@ -464,9 +464,9 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
     SU2_OMP_BARRIER
     return;
   }
-  
+
   bool rough_wall = false;
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker); 
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   unsigned short WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
   if (WallType == ROUGH ) rough_wall = true;
@@ -502,7 +502,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
          su2double Normal[MAXNDIM] = {0.0};
          for (auto iDim = 0u; iDim < nDim; iDim++)
            Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-          
+
          su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
          /*--- Get laminar_viscosity and density ---*/
@@ -1603,11 +1603,11 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
-
     const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+    if (!geometry->nodes->GetDomain(Point_Normal)) continue;
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Compute dual-grid area and boundary normal ---*/
 
@@ -1925,7 +1925,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           const CConfig *config) const {
   /*--- Local variables ---*/
 
-  unsigned short iMarker, iDim;
+  unsigned short iMarker;
   unsigned long iPoint, iVertex;
   su2double Area = 0.0;
   su2double Normal[3] = {0.0,0.0,0.0};
@@ -1949,10 +1949,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
             /*-- Compute boundary face area for this vertex. ---*/
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
+            Area = GeometryToolbox::Norm(nDim, Normal);
 
             /*--- Access and store the inlet variables for this vertex. ---*/
 

@@ -38,8 +38,6 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
-
 #include <ctime>
 
 #include "../../SU2_INTERP/include/fem_interpolation_structure.hpp"

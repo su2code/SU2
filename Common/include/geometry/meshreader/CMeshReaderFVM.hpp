@@ -31,7 +31,7 @@
 
 #include <string.h>
 
-#include "../../mpi_structure.hpp"
+#include "../../parallelization/mpi_structure.hpp"
 #include "../../CConfig.hpp"
 
 /*!

@@ -35,7 +35,7 @@
  * \brief Main class for defining the variables of the NEMO Euler's solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.0.6
+ * \version 7.0.8
  */
 class CNEMOEulerVariable : public CVariable {
 public:
@@ -44,20 +44,22 @@ public:
 protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
-  VectorType Velocity2;   /*!< \brief Square of the velocity vector. */
+  bool monoatomic = false;  /*!< \brief Presence of single species gas. */
+  
+  VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   
   /*--- Primitive variable definition ---*/
-  MatrixType Primitive;               /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
-  MatrixType Primitive_Aux;           /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
+  MatrixType Primitive;                /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
+  MatrixType Primitive_Aux;            /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
   CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (rhos_s, T, Tve, ...). */
   MatrixType Limiter_Primitive;        /*!< \brief Limiter of the primitive variables  (rhos_s, T, Tve, ...). */
   
   /*--- Secondary variable definition ---*/
-  MatrixType Secondary;               /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Secondary;                /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   CVectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   
   /*--- New solution container for Classical RK4 ---*/
@@ -69,16 +71,16 @@ protected:
   MatrixType dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
-
+  VectorType Gamma;  /*!< \brief Ratio of specific heats. */
+  
   CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
   unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
-  bool monoatomic = false;
 
-  su2double Tve_Freestream;
+  su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
 
 public:
 
@@ -170,7 +172,7 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
-  
+
   /*!
    * \brief Set the gradient of the primitive variables.
    * \param[in] iVar - Index of the variable.
@@ -348,19 +350,22 @@ public:
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
  /*!
-  * \brief Set all the conserved variables.
+  * \brief Set all the primitive and secondary variables from the conserved vector.
   */
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
                     su2double *val_Cvves);
 
  /*!
+  * \brief Set all the conserved variables from the primitive vector..
+  */
+  void Prim2ConsVar(su2double *U, su2double *V);
+
+ /*!
   * \brief Check for unphysical points.
   * \return Boolean value of physical point 
   */
-  bool CheckNonPhys(su2double *U, su2double *V, su2double *dPdU,
-                    su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                    su2double *val_Cvves);
+  bool CheckNonPhys(su2double *V);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/
@@ -532,6 +537,11 @@ public:
   inline su2double GetMassFraction(unsigned long iPoint, unsigned short val_Species) const {
     return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
   }
+
+  /*!
+   * \brief Returns the stored value of Gamma at the specified node
+   */
+  inline su2double GetGamma(unsigned long iPoint) { return Gamma(iPoint); }
 
   /*---------------------------------------*/
   /*---           NEMO indices          ---*/

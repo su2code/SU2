@@ -27,7 +27,7 @@
 
 #include "../../include/fem/fem_standard_element.hpp"
 #include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
-#include "../../include/blas_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardElementBase.                     */

@@ -27,7 +27,7 @@
 
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/option_structure.hpp"
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
@@ -246,7 +246,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
     norm_r = r.norm();
     norm0  = b.norm();
     if ((norm_r < tol*norm0) || (norm_r < eps)) {
-      if (master) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+      if (master && !mesh_deform) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
       return 0;
     }
 

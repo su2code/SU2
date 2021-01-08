@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/solvers/CHeatSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CHeatSolver::CHeatSolver(void) : CSolver() {
 
@@ -709,7 +709,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
-  unsigned short iMarker, iMarker_HeatFlux, Monitoring, iDim;
+  unsigned short iMarker, iMarker_HeatFlux, Monitoring;
   unsigned long iPoint, iVertex;
   string HeatFlux_Tag, Marker_Tag;
 
@@ -741,9 +741,7 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
           if(geometry->nodes->GetDomain(iPoint)) {
 
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
+            Area = GeometryToolbox::Norm(nDim, Normal);
 
             Local_Surface_Areas[iMarker_HeatFlux] += Area;
 
@@ -800,9 +798,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         Coord_i = geometry->nodes->GetCoord(iPoint);
         Coord_j = geometry->nodes->GetCoord(Point_Normal);
@@ -835,7 +831,6 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                                      unsigned short val_marker) {
 
-  unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double Wall_HeatFlux, Area, *Normal;
 
@@ -869,10 +864,7 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contain
     if (geometry->nodes->GetDomain(iPoint)) {
 
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       Res_Visc[0] = 0.0;
 
@@ -970,9 +962,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
         geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         Coord_i = geometry->nodes->GetCoord(iPoint);
         Coord_j = geometry->nodes->GetCoord(Point_Normal);
@@ -1075,8 +1065,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned long iVertex, iPoint, total_index;
-  unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint;
 
   su2double thermal_diffusivity, rho_cp_solid, Temperature_Ref, T_Conjugate, Tinterface,
       Tnormal_Conjugate, HeatFluxDensity, HeatFlux, Area;
@@ -1101,9 +1090,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
       if (geometry->nodes->GetDomain(iPoint)) {
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         T_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
 
@@ -1111,12 +1098,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         LinSysRes(iPoint, 0) = 0.0;
         nodes->SetRes_TruncErrorZero(iPoint);
 
-        if (implicit) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint*nVar+iVar;
-            Jacobian.DeleteValsRowi(total_index);
-          }
-        }
+        if (implicit) Jacobian.DeleteValsRowi(iPoint);
       }
     }
   }
@@ -1129,9 +1111,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
       if (geometry->nodes->GetDomain(iPoint)) {
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2)/rho_cp_solid;
 
@@ -1143,6 +1123,12 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
           HeatFluxDensity   = thermal_diffusivity*(Tinterface - Tnormal_Conjugate);
           HeatFlux          = HeatFluxDensity * Area;
+
+          if (implicit) {
+
+            Jacobian_i[0][0] = -thermal_diffusivity*Area;
+            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
+          }
         }
         else {
 
@@ -1152,12 +1138,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
         Res_Visc[0] = -HeatFlux;
         LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-        if (implicit) {
-
-          Jacobian_i[0][0] = thermal_diffusivity*Area;
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-        }
       }
     }
   }
@@ -1207,9 +1187,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           dist = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
@@ -1247,9 +1225,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           dist = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
@@ -1305,7 +1281,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
-  unsigned short iDim, iMarker;
+  unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
@@ -1347,7 +1323,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
     /*--- get the edge's normal vector to compute the edge's area ---*/
     Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Inviscid contribution ---*/
 
@@ -1388,7 +1364,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Inviscid contribution ---*/
 
@@ -1642,7 +1618,9 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- Solve or smooth the linear system ---*/
 
-  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  SetIterLinSolver(iter);
+  SetResLinSolver(System.GetResidual());
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {

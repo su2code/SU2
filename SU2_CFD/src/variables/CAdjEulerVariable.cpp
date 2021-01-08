@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -52,7 +52,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nVar,nDim,0.0);
   }
-  
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
@@ -84,8 +84,9 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   }
 
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
-  AuxVar.resize(nPoint);
-  Grad_AuxVar.resize(nPoint,nDim);
+  nAuxVar = 1;
+  AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+  Grad_AuxVar.resize(nPoint, nAuxVar, nDim);
 
   /*--- Allocate and initializate projection vector for wall boundary condition ---*/
   ForceProj_Vector.resize(nPoint,nDim) = su2double(0.0);
@@ -101,11 +102,11 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
     Set_BGSSolution_k();
 
   Sensor.resize(nPoint);
-  
+
   /* Non-physical point (first-order) initialization. */
   Non_Physical.resize(nPoint) = false;
   Non_Physical_Counter.resize(nPoint) = 0;
-  
+
 }
 
 bool CAdjEulerVariable::SetPrimVar(unsigned long iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) {

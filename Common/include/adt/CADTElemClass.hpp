@@ -29,7 +29,7 @@
 
 #include "./CADTBaseClass.hpp"
 #include "./CBBoxTargetClass.hpp"
-#include "../omp_structure.hpp"
+#include "../parallelization/omp_structure.hpp"
 
 /*!
  * \class CADTElemClass

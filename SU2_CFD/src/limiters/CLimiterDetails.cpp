@@ -27,7 +27,7 @@
  */
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
 /*--- Definition of the static members of the Venkatakrishnan-Wang

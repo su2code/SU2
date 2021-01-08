@@ -34,18 +34,16 @@
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios, W.Maier, C. Garbacz
- * \version 7.0.6 "Falcon"
+ * \version 7.0.8 "Falcon"
  */
 class CUpwAUSMPWplus_NEMO : public CNEMONumerics {
 private:
+
   su2double *FcL, *FcR;
-  su2double *dmLdL, *dmLdR, *dmRdL, *dmRdR;
-  su2double *dmLPdL, *dmLPdR, *dmRMdL, *dmRMdR;
-  su2double *dmbLPdL, *dmbLPdR, *dmbRMdL, *dmbRMdR;
-  su2double *dpLPdL, *dpLPdR, *dpRMdL, *dpRMdR;
-  su2double *dHnL, *dHnR;
-  su2double *daL, *daR;
-  su2double *dPdU_i, *dPdU_j;
+
+  su2double ProjVel_i, ProjVel_j;
+  su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+
  
 public:
 

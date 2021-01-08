@@ -286,7 +286,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.381658, -3.099873, -3.099844, -3.099841] #last 4 columns
+    discadj_cht.test_vals = [-2.364405, -3.085551, -3.085518, -3.085513] #last 4 columns
     discadj_cht.su2_exec  = "SU2_CFD_AD"
     discadj_cht.timeout   = 1600
     discadj_cht.tol       = 0.00001

@@ -12,7 +12,7 @@
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
- * modify it under the terMolarMass of the GNU Lesser General Public
+ * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
@@ -107,9 +107,8 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     ElDegeneracy(0,4) = 3;
     ElDegeneracy(0,5) = 5;
     ElDegeneracy(0,6) = 15;
-  }
 
-  if (gas_model == "N2"){
+  } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -255,6 +254,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
  
   } else if (gas_model == "AIR-5"){
+
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -625,19 +625,20 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density += rhos[iSpecies];
 
-  Pressure = GetPressure();
+  Pressure = ComputePressure();
 
 }
 
 vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
 
+  // NOTE: This will be non-const with future models.
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
     Cvtrs[iSpecies] = (3.0/2.0 + RotationModes[iSpecies]/2.0) * Ru/MolarMass[iSpecies];
 
   return Cvtrs;
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
+vector<su2double>& CUserDefinedTCLib::ComputeSpeciesCvVibEle(){
 
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
@@ -689,7 +690,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvVibEle(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
+vector<su2double>& CUserDefinedTCLib::ComputeMixtureEnergies(){
 
   su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
 
@@ -741,7 +742,7 @@ vector<su2double>& CUserDefinedTCLib::GetMixtureEnergies(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
+vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEve(su2double val_T){
 
   su2double Ev, Eel, Ef, num, denom;
   unsigned short iElectron = nSpecies-1;
@@ -781,7 +782,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesEve(su2double val_T){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
+vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
@@ -814,7 +815,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
     Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
 
     /*--- Get the Keq & Arrhenius coefficients ---*/
-    GetKeqConstants(iReaction);
+    ComputeKeqConstants(iReaction);
 
     /*--- Calculate Keq ---*/
     Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
@@ -861,7 +862,7 @@ vector<su2double>& CUserDefinedTCLib::GetNetProductionRates(){
   return ws;
 }
 
-void CUserDefinedTCLib::GetKeqConstants(unsigned short val_Reaction) {
+void CUserDefinedTCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii, iIndex, tbl_offset, pwr;
   su2double N, tmp1, tmp2;
@@ -911,7 +912,7 @@ void CUserDefinedTCLib::GetKeqConstants(unsigned short val_Reaction) {
   }
 }
 
-su2double CUserDefinedTCLib::GetEveSourceTerm(){
+su2double CUserDefinedTCLib::ComputeEveSourceTerm(){
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
@@ -939,8 +940,8 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     MolarFrac[iSpecies] = (rhos[iSpecies] / MolarMass[iSpecies]) / conc;
 
-  eve_eq = GetSpeciesEve(T);
-  eve    = GetSpeciesEve(Tve);
+  eve_eq = ComputeSpeciesEve(T);
+  eve    = ComputeSpeciesEve(Tve);
 
   /*--- Loop over species to calculate source term --*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -985,7 +986,7 @@ su2double CUserDefinedTCLib::GetEveSourceTerm(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
+vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
 
@@ -1082,6 +1083,7 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
         denom += MolarFracWBE[jSpecies]/Dij(iSpecies,jSpecies);
       }
     }
+
     if (nSpecies==1) DiffusionCoeff[0] = 0;
     else DiffusionCoeff[iSpecies] = (1-MolarFracWBE[iSpecies])/denom;
   }    
@@ -1102,8 +1104,9 @@ void CUserDefinedTCLib::ViscosityWBE(){
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     mus[iSpecies] = 0.1*exp((Blottner[iSpecies][0]*log(T)  +
-                            Blottner[iSpecies][1])*log(T) +
-                            Blottner[iSpecies][2]);
+                             Blottner[iSpecies][1])*log(T) +
+                             Blottner[iSpecies][2]);
+
   /*--- Determine species 'phi' value for Blottner model ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     phis[iSpecies] = 0.0;
@@ -1129,7 +1132,7 @@ void CUserDefinedTCLib::ThermalConductivitiesWBE(){
   kves.resize(nSpecies,0.0);
 
 
-  Cvves = GetSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle();
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     ks[iSpecies] = mus[iSpecies]*(15.0/4.0 + RotationModes[iSpecies]/2.0)*Ru/MolarMass[iSpecies];
@@ -1187,21 +1190,26 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
       jSpecies = nSpecies-1;
       Mj       = MolarMass[jSpecies];
       gam_j    = rhos[iSpecies] / (Density*Mj);
+      
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
           * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
           + Omega00(iSpecies,jSpecies,1)*log(Tve)
           + Omega00(iSpecies,jSpecies,2));
+      
       /*--- Calculate "delta1_ij" ---*/
       d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
     }
+    
     /*--- Assign species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
   if (ionization) {
     iSpecies = nSpecies-1;
+    
     /*--- Initialize the species diffusion coefficient ---*/
     DiffusionCoeff[iSpecies] = 0.0;
+    
     /*--- Calculate molar concentration ---*/
     Mi      = MolarMass[iSpecies];
     gam_i   = rhos[iSpecies] / (Density*Mi);
@@ -1210,13 +1218,16 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
       if (iSpecies != jSpecies) {
         Mj    = MolarMass[jSpecies];
         gam_j = rhos[iSpecies] / (Density*Mj);
+        
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
         Omega_ij = 1E-20 * Omega00(iSpecies,jSpecies,3)
             * pow(Tve, Omega00(iSpecies,jSpecies,0)*log(Tve)*log(Tve)
             + Omega00(iSpecies,jSpecies,1)*log(Tve)
             + Omega00(iSpecies,jSpecies,2));
+        
         /*--- Calculate "delta1_ij" ---*/
         d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+        
         /*--- Calculate heavy-particle binary diffusion coefficient ---*/
         D_ij = kb*Tve/(Pressure*d1_ij);
         denom += gam_j/D_ij;
@@ -1302,7 +1313,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
   }
 
   /*--- Mixture vibrational-electronic specific heat ---*/
-  Cvves = GetSpeciesCvVibEle();
+  Cvves = ComputeSpeciesCvVibEle();
   rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhoCvve += rhos[iSpecies]*Cvves[iSpecies];
@@ -1359,7 +1370,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CUserDefinedTCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
   su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tmin, Tmax;
@@ -1401,7 +1412,7 @@ vector<su2double>& CUserDefinedTCLib::GetTemperatures(vector<su2double>& val_rho
 
   for (iIter = 0; iIter < maxBIter; iIter++) {
     Tve      = (Tve_o+Tve2)/2.0;
-    val_eves = GetSpeciesEve(Tve);
+    val_eves = ComputeSpeciesEve(Tve);
     rhoEve_t = 0.0;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) rhoEve_t += rhos[iSpecies] * val_eves[iSpecies];
     if (fabs(rhoEve_t - rhoEve) < Btol) {
@@ -1571,6 +1582,3 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     }
   }
 }
-
-
-
