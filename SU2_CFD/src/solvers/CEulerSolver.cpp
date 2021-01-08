@@ -3836,9 +3836,9 @@ void CEulerSolver::StressTensorJacobian(CSolver             **solver,
 
   /*--- TODO: Correction with wall function ---*/
   su2double WF_Factor = 1.0;
-  if (nodes->GetTauWall(iPoint) > 0.0 && nodes->GetTauWall(jPoint) > 0.0) WF_Factor = 0.5*(nodes->GetTauWall(iPoint) + nodes->GetTauWall(jPoint));
-  else if (nodes->GetTauWall(iPoint) > 0.0) WF_Factor = nodes->GetTauWall(iPoint);
-  else if (nodes->GetTauWall(jPoint) > 0.0) WF_Factor = nodes->GetTauWall(jPoint);
+  if (nodes->GetTauWall(iPoint) > 0.0 && nodes->GetTauWall(jPoint) > 0.0) WF_Factor = 0.5*(nodes->GetTauWallFactor(iPoint) + nodes->GetTauWallFactor(jPoint));
+  else if (nodes->GetTauWall(iPoint) > 0.0) WF_Factor = nodes->GetTauWallFactor(iPoint);
+  else if (nodes->GetTauWall(jPoint) > 0.0) WF_Factor = nodes->GetTauWallFactor(jPoint);
 
   const su2double Density_i = nodes->GetDensity(iPoint);
   const su2double Xi_i = WF_Factor*Mean_Viscosity/Density_i;

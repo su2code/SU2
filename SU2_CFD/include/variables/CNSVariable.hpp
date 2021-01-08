@@ -301,6 +301,16 @@ public:
     WallTemp(WallMap(iPoint),jNode) = temp;
   }
 
+  inline bool GetUseWallFunction(unsigned long iPoint) override {
+    bool UseWallFunction = true;
+    for (auto iNode = 0; iNode < 4; iNode++) {
+      if (WallUTau(iPoint, iNode) < 0) {
+        UseWallFunction = false;
+        break;
+      }
+    }
+    return UseWallFunction;
+
   /*!
    * \brief Get the density at a DOF of the nearest wall element.
    */

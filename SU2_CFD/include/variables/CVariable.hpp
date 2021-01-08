@@ -523,6 +523,8 @@ public:
   
   virtual inline su2double GetWallTemp(unsigned long iPoint, unsigned short jNode) { return 0.; }
 
+  inline virtual bool GetUseWallFunction(unsigned long iPoint) { return false; }
+
   /*!
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.

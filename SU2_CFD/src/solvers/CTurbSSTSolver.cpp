@@ -1772,7 +1772,7 @@ void CTurbSSTSolver::ComputeNicholsWallFunction(CGeometry *geometry, CSolver **s
 
     const auto node_i = geometry->node[iPoint];
 
-    if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
+    if (node_i->GetBool_Wall_Neighbor() && flowNodes->GetUseWallFunction(iPoint)) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
       su2double Density_Wall  = 0.;
@@ -1858,7 +1858,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
 
     const auto node_i = geometry->node[iPoint];
 
-    if (node_i->GetBool_Wall_Neighbor() && nodes->GetTauWall(iPoint) > 0) {
+    if (node_i->GetBool_Wall_Neighbor() && flowNodes->GetUseWallFunction(iPoint)) {
       
       /*--- Properties at the wall from CNSSolver::ComputeWallFunction() ---*/
       su2double Density_Wall  = 0.;
