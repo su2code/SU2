@@ -1,3 +1,4 @@
 subdir('SurfaceDataIntPoints2D')
+subdir('SurfaceDataIntPoints3D')
 subdir('VolumeDataIntPoints2D')
 subdir('VolumeDataIntPoints3D')

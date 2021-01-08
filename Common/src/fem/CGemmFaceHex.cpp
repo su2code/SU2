@@ -39,4 +39,46 @@ CGemmFaceHex::CGemmFaceHex(const int val_M, const int val_Type, const int val_K)
   K = val_K;
 
   TypeTensorProduct = val_Type;
+
+  /*--- Determine the type of tensor product to be carried out. ---*/
+  switch( TypeTensorProduct ) {
+
+    case CGemmBase::DOFS_TO_INT: {
+
+      /*--- Tensor product to create the data in the integration points of the
+            quad from the DOFs of the adjacent hexahedron. Create the map
+            with function pointers for this tensor product. ---*/
+      map<CUnsignedShort2T, TPIS3D> mapFunctions;
+      CreateMapTensorProductSurfaceIntPoints3D(mapFunctions);
+
+      /*--- Try to find the combination of K and M in mapFunctions. If not found,
+            write a clear error message that this tensor product is not supported. ---*/
+      CUnsignedShort2T KM(K, M);
+      auto MI = mapFunctions.find(KM);
+      if(MI == mapFunctions.end()) {
+        std::ostringstream message;
+        message << "The tensor product TensorProductSurfaceIntPoints3D_" << K
+                << "_" << M << " not created by the automatic source code "
+                << "generator. Modify this automatic source code creator";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+
+      /*--- Set the function pointer to carry out tensor product. ---*/
+      TensorProductDataSurfIntPoints = MI->second;
+
+      break;
+    }
+
+    case CGemmBase::INT_TO_DOFS: {
+      cout << endl;
+      cout << "Tensor product INT_TO_DOFS, M: " << M << ", K: " << K
+           << " not implemented yet in " << CURRENT_FUNCTION << endl;
+      cout << endl;
+      break;
+    }
+
+    default:
+      SU2_MPI::Error(string("Invalid value of TypeTensorProduct"), CURRENT_FUNCTION);
+
+  }
 }

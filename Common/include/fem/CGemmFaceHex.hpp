@@ -32,6 +32,7 @@
 
 #include "CGemmBase.hpp"
 #include "../CConfig.hpp"
+#include "../tensor_products/TensorProductSurfaceIntPoints3D.hpp"
 
 using namespace std;
 
@@ -77,4 +78,7 @@ private:
 
   int TypeTensorProduct; /*!< \brief Indicates the type of tensor product to be
                                      carried out, DOFS_TO_INT or INT_TO_DOFS. */
+
+  TPIS3D TensorProductDataSurfIntPoints = nullptr; /*!< \brief Function pointer to carry out the tensor product
+                                                               to compute the data in the surface integration points. */
 };
