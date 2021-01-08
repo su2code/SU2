@@ -126,6 +126,16 @@ void CFEMStandardHexGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double> 
                              matCoor, matDer2ndCoor[5], nullptr);
 }
 
+void CFEMStandardHexGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
+                                      ColMajorMatrix<su2double> &matCoorSolDOF) {
+
+  /*--- Call the function TensorProductVolumeDataHex to compute
+        the Cartesian coordinates in the solution DOFs. ---*/
+  TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, 3, nDOFs1D, rLineSolDOFs.size(),
+                             lagBasisLineSolDOFs, lagBasisLineSolDOFs, lagBasisLineSolDOFs,
+                             matCoorDOF, matCoorSolDOF, nullptr);
+}
+
 void CFEMStandardHexGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                                                  vector<ColMajorMatrix<su2double> > &matDerCoor) {
 

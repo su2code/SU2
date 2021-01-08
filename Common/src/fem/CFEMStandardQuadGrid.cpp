@@ -106,6 +106,15 @@ void CFEMStandardQuadGrid::Derivatives2ndCoorIntPoints(ColMajorMatrix<su2double>
                               derLagBasisLineInt, matCoor, matDer2ndCoor[2], nullptr);
 }
 
+void CFEMStandardQuadGrid::CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
+                                       ColMajorMatrix<su2double> &matCoorSolDOF) {
+
+  /*--- Call the function TensorProductVolumeDataQuad to compute
+        the Cartesian coordinates in the solution DOFs. ---*/
+  TensorProductVolumeDataQuad(TensorProductDataVolSolDOFs, 2, nDOFs1D, rLineSolDOFs.size(),
+                              lagBasisLineSolDOFs, lagBasisLineSolDOFs, matCoorDOF, matCoorSolDOF, nullptr);
+}
+
 void CFEMStandardQuadGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                                                   vector<ColMajorMatrix<su2double> > &matDerCoor) {
 

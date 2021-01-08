@@ -1004,16 +1004,6 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
   DGMesh->LengthScaleVolumeElements();
 
-  /*--- Compute the coordinates of the integration points. ---*/
-  if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
-  DGMesh->CoordinatesIntegrationPoints();
-
-  /*--- Compute the coordinates of the location of the solution DOFs. This is different
-            from the grid points when a different polynomial degree is used to represent the
-            geometry and solution. ---*/
-  if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
-  DGMesh->CoordinatesSolDOFs();
-
   /*--- Perform the preprocessing tasks when wall functions are used. ---*/
   if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
   DGMesh->WallFunctionPreprocessing(config);
@@ -1022,9 +1012,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
   geometry[MESH_0]->SetGlobal_to_Local_Point();
 
-
   /*--- Loop to create the coarser grid levels. ---*/
-
   for(unsigned short iMGlevel=1; iMGlevel<=config->GetnMGLevels(); iMGlevel++) {
 
     SU2_MPI::Error("Geometrical_Preprocessing_DGFEM: Coarse grid levels not implemented yet.",

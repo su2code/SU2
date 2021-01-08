@@ -106,6 +106,16 @@ public:
                      ColMajorMatrix<su2double> &matCoorInt) override;
 
   /*!
+   * \brief Function, which computes the coordinates of the solution DOFs. These are
+   *        only different from the grid DOFs when different polynomials degrees
+   *        are used for the grid and solution.
+   * \param[in]  matCoorDOF    - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matCoorSolDOF - Matrix that contains the coordinates of the solution DOFs.
+   */
+  void CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
+                   ColMajorMatrix<su2double> &matCoorSolDOF) override;
+
+  /*!
    * \brief Function, which computes the derivatives of the coordinates in the
    *        integration points.
    * \param[in]  notUsed    - Argument present to be consistent with the base class

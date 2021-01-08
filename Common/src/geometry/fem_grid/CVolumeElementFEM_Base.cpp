@@ -86,8 +86,15 @@ void CVolumeElementFEM_Base::InitGridVelocities(const unsigned short nDim) {
 bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           LGLDistribution,
                                                           const unsigned short nDim) {
 
-  /*--- Allocate the memory for the metric terms. ---*/
+  /*--- Allocate the memory for the coordinates of the integration
+        points and determine them. ---*/
   const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+  coorIntegrationPoints.resize(nIntPad, nDim);
+
+  standardElemGrid->CoorIntPoints(LGLDistribution, coorGridDOFs,
+                                  coorIntegrationPoints);
+
+  /*--- Allocate the memory for the metric terms. ---*/
   JacobiansInt.resize(nIntPad);
 
   metricTermsInt.resize(nDim);
@@ -120,10 +127,16 @@ bool CVolumeElementFEM_Base::MetricTermsIntegrationPoints(const bool           L
 
 bool CVolumeElementFEM_Base::MetricTermsSolDOFs(const unsigned short nDim) {
 
-  /*--- Allocate the memory for the metric terms of the solution DOFs. ---*/
+  /*--- Allocate the memory for the coordinates of the solution DOFs
+        and determine them. ---*/
   const unsigned short nDOFsSol    = standardElemGrid->GetNSolDOFs();
   const unsigned short nDOFsSolPad = standardElemGrid->GetNSolDOFsPad();
 
+  coorSolDOFs.resize(nDOFsSolPad, nDim);
+
+  standardElemGrid->CoorSolDOFs(coorGridDOFs, coorSolDOFs);
+
+  /*--- Allocate the memory for the metric terms of the solution DOFs. ---*/
   JacobiansSolDOFs.resize(nDOFsSolPad);
 
   metricTermsSolDOFs.resize(nDim);

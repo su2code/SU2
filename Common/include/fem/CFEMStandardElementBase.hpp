@@ -155,6 +155,18 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matCoorDOF    - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matCoorSolDOF - Matrix that contains the coordinates of the solution DOFs.
+   */
+  virtual void CoorSolDOFs(ColMajorMatrix<su2double> &matCoorDOF,
+                           ColMajorMatrix<su2double> &matCoorSolDOF) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in]  matCoor         - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matDerCoor      - Vector of matrices to store the derivatives of the coordinates.

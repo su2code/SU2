@@ -1818,16 +1818,6 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
     nVolElemHaloPerTimeLevel[i+1] += nVolElemHaloPerTimeLevel[i];
 }
 
-void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
-
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
-void CMeshFEM_DG::CoordinatesSolDOFs(void) {
-
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
 void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
   /*---------------------------------------------------------------------------*/

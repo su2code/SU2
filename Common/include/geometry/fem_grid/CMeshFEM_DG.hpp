@@ -98,16 +98,6 @@ public:
   ~CMeshFEM_DG(void);
 
   /*!
-   * \brief Function to compute the coordinates of the integration points.
-   */
-  void CoordinatesIntegrationPoints(void);
-
-  /*!
-   * \brief Function to compute the coordinates of solution DOFs.
-   */
-  void CoordinatesSolDOFs(void);
-
-  /*!
    * \brief Function to create the faces used in the DG formulation.
    * \param[in] config - Definition of the particular problem.
    */
