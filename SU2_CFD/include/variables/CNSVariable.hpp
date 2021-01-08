@@ -304,7 +304,7 @@ public:
   inline bool GetUseWallFunction(unsigned long iPoint) override {
     bool UseWallFunction = true;
     for (auto iNode = 0; iNode < 4; iNode++) {
-      if (WallUTau(iPoint, iNode) < 0) {
+      if (WallUTau(WallMap(iPoint), iNode) < 0) {
         UseWallFunction = false;
         break;
       }
