@@ -310,6 +310,7 @@ public:
       }
     }
     return UseWallFunction;
+  }
 
   /*!
    * \brief Get the density at a DOF of the nearest wall element.
