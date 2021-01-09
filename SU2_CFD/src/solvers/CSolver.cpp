@@ -2344,6 +2344,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case WALL_FUNCTION:
             base_nodes->SetSolution(iPoint, 0, bufDRecv[buf_offset+0]);
+            base_nodes->SetDensity(iPoint);
             base_nodes->SetTauWall(iPoint, bufDRecv[buf_offset+1]);
             base_nodes->SetTauWallFactor(iPoint, bufDRecv[buf_offset+2]);
             break;
