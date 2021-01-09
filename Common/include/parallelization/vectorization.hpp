@@ -78,7 +78,7 @@ public:
   static constexpr bool StoreAsRef = true;
 
 private:
-  alignas(Align) Scalar x_[N];
+  alignas(Size*sizeof(Scalar)) Scalar x_[N];
 
 public:
 #define ARRAY_BOILERPLATE                                                     \

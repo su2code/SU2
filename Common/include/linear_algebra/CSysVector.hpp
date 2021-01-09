@@ -101,7 +101,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Default constructor of the class.
    */
-  CSysVector() = default;
+  CSysVector() {}
 
   /*!
    * \brief Destructor

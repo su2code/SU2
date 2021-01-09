@@ -97,11 +97,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
    */
-  void SetTime_Step(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned long Iteration) final;
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container,
+                    CConfig *config, unsigned short iMesh, unsigned long Iteration) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -141,11 +138,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) final;
+  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
@@ -168,11 +162,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) final;
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -213,6 +204,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
+
+ /*!
+  * \brief Set all the conserved variables from the primitive vector..
+  */
+  void RecomputeConservativeVector(su2double *U, const su2double *V);
+
+ /*!
+  * \brief Check for unphysical points.
+  * \return Boolean value of physical point
+  */
+  bool CheckNonPhys(const su2double *V);
 
     /*!
    * \brief Compute the pressure at the infinity.
