@@ -6736,14 +6736,12 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 
 }
 
-void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
+void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned short action) {
 
   SU2_OMP_MASTER {
 
-  unsigned short Neighbor_Node, iMarker, iNode, iNeighbor_Nodes, iDim;
-  unsigned long Neighbor_Point, iVertex, iPoint, iElem;
-  long iEdge;
-  su2double Area, *NormalFace = nullptr;
+  unsigned short iMarker, iNode, iNeighbor_Nodes, iDim;
+  unsigned long iElem, iVertex;
 
   /*--- Update values of faces of the edge ---*/
 
@@ -6751,10 +6749,6 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         vertex[iMarker][iVertex]->SetZeroValues();
-
-  su2double *Coord_Edge_CG = new su2double [nDim];
-  su2double *Coord_Elem_CG = new su2double [nDim];
-  su2double *Coord_Vertex = new su2double [nDim];
 
   /*--- Loop over all the markers ---*/
 
@@ -6767,52 +6761,46 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
     /*--- Loop over all the nodes of the boundary ---*/
 
       for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        iVertex = nodes->GetVertex(iPoint, iMarker);
+        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
 
         /*--- Loop over the neighbor nodes, there is a face for each one ---*/
 
         for (iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-          Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
-          Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
+          const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
+          const auto Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
 
           /*--- Shared edge by the Neighbor Point and the point ---*/
 
-          iEdge = FindEdge(iPoint, Neighbor_Point);
+          const auto iEdge = FindEdge(iPoint, Neighbor_Point);
+
+          su2double Coord_Edge_CG[MAXNDIM], Coord_Elem_CG[MAXNDIM];
+
           for (iDim = 0; iDim < nDim; iDim++) {
             Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
             Coord_Elem_CG[iDim] = bound[iMarker][iElem]->GetCG(iDim);
-            Coord_Vertex[iDim] = nodes->GetCoord(iPoint, iDim);
           }
-          switch (nDim) {
-            case 2:
+          const su2double* Coord_Vertex = nodes->GetCoord(iPoint);
 
-              /*--- Store the 2D face ---*/
-
-              if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
-              if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
-              break;
-            case 3:
-
-              /*--- Store the 3D face ---*/
-
-              if (iNeighbor_Nodes == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
-              if (iNeighbor_Nodes == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
-              break;
+          if (nDim == 2) {
+            /*--- Store the 2D face ---*/
+            if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
+            if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
+          }
+          else {
+            /*--- Store the 3D face ---*/
+            if (iNeighbor_Nodes == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
+            if (iNeighbor_Nodes == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
           }
         }
       }
-
-  delete[] Coord_Edge_CG;
-  delete[] Coord_Elem_CG;
-  delete[] Coord_Vertex;
 
   /*--- Check if there is a normal with null area ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, NormalFace);
+      auto NormalFace = vertex[iMarker][iVertex]->GetNormal();
+      auto Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 
@@ -7742,41 +7730,22 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   } SU2_OMP_BARRIER
 }
 
-void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {
-
-  /*--- This routine is only meant for visualization in serial currently ---*/
-#ifndef HAVE_MPI
-
-  unsigned long face_iPoint = 0, face_jPoint = 0, iElem, iPoint_Viz;
-  long iEdge;
-  unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint,
-  *Coord_FacejPoint;
-  int counter = 0;
-  char cstr[MAX_STRING_SIZE], buffer[50];
-  ofstream Tecplot_File;
-  string mesh_filename;
-  vector<su2double> X, Y, Z, X_n, Y_n, Z_n;
-  su2double r1[3], r2[3], CrossProduct[3];
+void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {
 
   /*--- Access the point number for control volume we want to vizualize ---*/
 
-  iPoint_Viz = config->GetVisualize_CV();
+  auto iPoint = GetGlobal_to_Local_Point(config->GetVisualize_CV());
+  if (iPoint < 0) return;
+  const unsigned long iPoint_Viz = iPoint;
 
-  /*--- Allocate some structures for building the dual CVs ---*/
-
-  Coord_Edge_CG     = new su2double [nDim];
-  Coord_FaceElem_CG = new su2double [nDim];
-  Coord_Elem_CG     = new su2double [nDim];
-  Coord_FaceiPoint  = new su2double [nDim];
-  Coord_FacejPoint  = new su2double [nDim];
+  unsigned long face_iPoint = 0, face_jPoint = 0, iElem;
+  unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
+  int counter = 0;
+  vector<su2double> X, Y, Z;
 
   /*--- Loop over each face of each element ---*/
 
-  CrossProduct[0] = 0.0; CrossProduct[1] = 0.0; CrossProduct[2] = 0.0;
-
   for (iElem = 0; iElem < nElem; iElem++) {
-
     for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
 
       /*--- In 2D all the faces have only one edge ---*/
@@ -7802,37 +7771,29 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
             face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
         }
 
-        /*--- We define a direction (from the smallest index to the greatest) --*/
-        iEdge = FindEdge(face_iPoint, face_jPoint);
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
-          Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
-          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim] = nodes->GetCoord(face_iPoint, iDim);
-          Coord_FacejPoint[iDim] = nodes->GetCoord(face_jPoint, iDim);
-        }
-
         /*--- Print out the coordinates for a set of triangles making
          up a single dual control volume for visualization. ---*/
 
         if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
 
+          /*--- We define a direction (from the smallest index to the greatest) --*/
+          const auto iEdge = FindEdge(face_iPoint, face_jPoint);
+
+          su2double Coord_Edge_CG[MAXNDIM], Coord_FaceElem_CG[MAXNDIM], Coord_Elem_CG[MAXNDIM];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Coord_Edge_CG[iDim] = edges->GetCG(iEdge, iDim);
+            Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
+            Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
+          }
+
           if (nDim == 2) {
             X.push_back(Coord_Elem_CG[0]); X.push_back(Coord_Edge_CG[0]);
             Y.push_back(Coord_Elem_CG[1]); Y.push_back(Coord_Edge_CG[1]);
-          } else if (nDim == 3) {
+          } else {
             X.push_back(Coord_FaceElem_CG[0]); X.push_back(Coord_Edge_CG[0]); X.push_back(Coord_Elem_CG[0]);
             Y.push_back(Coord_FaceElem_CG[1]); Y.push_back(Coord_Edge_CG[1]); Y.push_back(Coord_Elem_CG[1]);
             Z.push_back(Coord_FaceElem_CG[2]); Z.push_back(Coord_Edge_CG[2]); Z.push_back(Coord_Elem_CG[2]);
-
-            for (iDim = 0; iDim < nDim; iDim++) {
-              r1[iDim] = Coord_FaceElem_CG[iDim]-Coord_Elem_CG[iDim];
-              r2[iDim] = Coord_Edge_CG[iDim]-Coord_Elem_CG[iDim];
-            }
-            CrossProduct[0] += 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
-            CrossProduct[1] += 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
-            CrossProduct[2] += 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
           }
           counter++;
         }
@@ -7842,10 +7803,9 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
 
   /*--- Write a Tecplot file to visualize the CV ---*/
 
-  strcpy(cstr,"dual_cv");
-  SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iPoint_Viz));
-  strcat(cstr, buffer);
-
+  ofstream Tecplot_File;
+  char cstr[MAX_STRING_SIZE];
+  SPRINTF(cstr, "dual_cv_%d.dat", config->GetVisualize_CV());
   Tecplot_File.open(cstr);
   Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
 
@@ -7853,7 +7813,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
     Tecplot_File << "ZONE NODES= "<< counter*2 <<", ELEMENTS= ";
     Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-  } if (nDim == 3) {
+  } else {
     Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
     Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
     Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
@@ -7862,7 +7822,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   /*--- Write coordinates for the nodes in the order that they were found
    for each of the edges/triangles making up a dual control volume. ---*/
 
-  for (vector<su2double>::size_type i = 0; i != X.size(); i++) {
+  for (size_t i = 0; i != X.size(); i++) {
     Tecplot_File << X[i] << "\t" << Y[i];
     if (nDim == 3) Tecplot_File << "\t" << Z[i];
     Tecplot_File << "\n";
@@ -7870,31 +7830,16 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
 
   /*--- Create a new connectivity table in the order the faces were found ---*/
 
-  int j;
-  for (int i= 0; i < counter; i++) {
+  for (int i = 0, j; i < counter; i++) {
     if (nDim == 2) {
       j = i*2;
       Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
-    } if (nDim == 3) {
+    } else {
       j = i*3;
       Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t";
       Tecplot_File << j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
     }
   }
-
-  Tecplot_File.close();
-  X.clear();
-  Y.clear();
-  Z.clear();
-
-  delete[] Coord_Edge_CG;
-  delete[] Coord_FaceElem_CG;
-  delete[] Coord_Elem_CG;
-  delete[] Coord_FaceiPoint;
-  delete[] Coord_FacejPoint;
-
-#endif
-
 }
 
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {

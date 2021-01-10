@@ -705,9 +705,8 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void VisualizeControlVolume(CConfig *config, unsigned short action) {}
+  inline virtual void VisualizeControlVolume(const CConfig *config) const {}
 
   /*!
    * \brief A virtual member.
@@ -732,7 +731,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(CConfig *config, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CConfig *config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.

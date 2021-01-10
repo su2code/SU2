@@ -26,40 +26,45 @@
  */
 
 #include "../../../include/geometry/dual_grid/CVertex.hpp"
+#include "../../../include/toolboxes/geometry_toolbox.hpp"
+
+using namespace GeometryToolbox;
 
 CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) :
   CDualGrid(val_nDim) {
   Nodes[0] = val_point;
 }
 
-void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) {
+void CVertex::SetNodes_Coord(const su2double *coord_Edge_CG,
+                             const su2double *coord_FaceElem_CG,
+                             const su2double *coord_Elem_CG) {
 
-  su2double vec_a[3] = {0.0,0.0,0.0}, vec_b[3] = {0.0,0.0,0.0};
-  unsigned short iDim;
-
-  assert(nDim == 3);
+  constexpr unsigned long nDim = 3;
+  su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, Dim_Normal[nDim];
 
   AD::StartPreacc();
-  AD::SetPreaccIn(val_coord_Edge_CG, nDim);
-  AD::SetPreaccIn(val_coord_Elem_CG, nDim);
-  AD::SetPreaccIn(val_coord_FaceElem_CG, nDim);
+  AD::SetPreaccIn(coord_Edge_CG, nDim);
+  AD::SetPreaccIn(coord_Elem_CG, nDim);
+  AD::SetPreaccIn(coord_FaceElem_CG, nDim);
   AD::SetPreaccIn(Normal, nDim);
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    vec_a[iDim] = val_coord_Elem_CG[iDim]-val_coord_Edge_CG[iDim];
-    vec_b[iDim] = val_coord_FaceElem_CG[iDim]-val_coord_Edge_CG[iDim];
-  }
+  Distance(nDim, coord_Elem_CG, coord_Edge_CG, vec_a);
+  Distance(nDim, coord_FaceElem_CG, coord_Edge_CG, vec_b);
 
-  Normal[0] += 0.5 * ( vec_a[1] * vec_b[2] - vec_a[2] * vec_b[1]);
-  Normal[1] -= 0.5 * ( vec_a[0] * vec_b[2] - vec_a[2] * vec_b[0]);
-  Normal[2] += 0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
+  CrossProduct(vec_a, vec_b, Dim_Normal);
+
+  for (auto iDim = 0ul; iDim < nDim; ++iDim)
+    Normal[iDim] += 0.5 * Dim_Normal[iDim];
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();
 
 }
 
-void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) {
+void CVertex::SetNodes_Coord(const su2double *val_coord_Edge_CG,
+                             const su2double *val_coord_Elem_CG) {
+
+  constexpr unsigned long nDim = 2;
 
   AD::StartPreacc();
   AD::SetPreaccIn(val_coord_Elem_CG, nDim);
@@ -67,7 +72,7 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
   AD::SetPreaccIn(Normal, nDim);
 
   Normal[0] += val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
-  Normal[1] -= (val_coord_Elem_CG[0]-val_coord_Edge_CG[0]);
+  Normal[1] -= val_coord_Elem_CG[0]-val_coord_Edge_CG[0];
 
   AD::SetPreaccOut(Normal, nDim);
   AD::EndPreacc();

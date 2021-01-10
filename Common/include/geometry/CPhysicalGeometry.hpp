@@ -459,9 +459,8 @@ public:
   /*!
    * \brief Visualize the structure of the control volume(s).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  void VisualizeControlVolume(CConfig *config, unsigned short action) override;
+  void VisualizeControlVolume(const CConfig *config) const override;
 
   /*!
    * \brief Mach the near field boundary condition.
@@ -487,7 +486,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(CConfig *config, unsigned short action) override;
+  void SetBoundControlVolume(const CConfig *config, unsigned short action) override;
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.
