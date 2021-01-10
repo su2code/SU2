@@ -1022,18 +1022,19 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
 
   /*---Compute the secondary values ---*/
+  // This block of code copies a vector to corresponding pointer.
   auto it = val_eves;
   auto& ref = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
   for (auto v : ref) {
     *it = v;  ++it;
   }
-  val_eves  = it;
+
   val_gamma = fluidmodel->ComputeGamma();
 
   return val_gamma;
 }
 
-void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double *V) {
+void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double *V) const {
 
   /*---Useful variables ---*/
   vector<su2double> rhos;
@@ -1070,7 +1071,7 @@ void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double
 
 }
 
-bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) {
+bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
 
   su2double Tmin, Tmax, Tvemin, Tvemax;
 

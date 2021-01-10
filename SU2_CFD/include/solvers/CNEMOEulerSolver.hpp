@@ -208,13 +208,13 @@ public:
  /*!
   * \brief Set all the conserved variables from the primitive vector..
   */
-  void RecomputeConservativeVector(su2double *U, const su2double *V);
+  void RecomputeConservativeVector(su2double *U, const su2double *V) const;
 
  /*!
   * \brief Check for unphysical points.
   * \return Boolean value of physical point
   */
-  bool CheckNonPhys(const su2double *V);
+  bool CheckNonPhys(const su2double *V) const;
 
     /*!
    * \brief Compute the pressure at the infinity.
