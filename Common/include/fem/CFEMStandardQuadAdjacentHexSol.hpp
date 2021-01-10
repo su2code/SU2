@@ -30,7 +30,7 @@
 #pragma once 
 
 #include "CFEMStandardHexBase.hpp"
-#include "CGemmBase.hpp"
+#include "CGemmFaceHex.hpp"
 
 /*!
  * \class CFEMStandardQuadAdjacentHexSol.
@@ -42,6 +42,11 @@
 class CFEMStandardQuadAdjacentHexSol final: public CFEMStandardHexBase {
 
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -80,10 +85,10 @@ private:
   bool           swapTangInTensor;  /*!< \brief Whether or not the tangential directions of the face, created
                                                 in the the tensor product, must be swapped. */
 
-  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 integration points of the face from the volume DOFs. */
-  CGemmBase *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 volume DOFs from the integration points of the face. */
+  CGemmFaceHex *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                    integration points of the face from the volume DOFs. */
+  CGemmFaceHex *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                    volume DOFs from the integration points of the face. */
 
   vector<ColMajorMatrix<passivedouble> > tensorSol;     /*!< \brief The three 1D components of the tensor to compute
                                                                     the solution on the face of the hexahedron. */

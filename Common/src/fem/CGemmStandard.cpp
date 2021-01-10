@@ -42,6 +42,68 @@ CGemmStandard::CGemmStandard(const int val_M, const int val_N, const int val_K)
 
   /*--- Create the padded value of M. ---*/
   MP = CFEMStandardElementBase::PaddedValue(M);
+
+  /*--- Check if the jitted GEMM call must be created. ---*/
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+
+  /*--- Create the GEMM Kernel and check if it went okay. ---*/
+  passivedouble alpha = 1.0;
+  passivedouble beta  = 0.0;
+  mkl_jit_status_t status = mkl_jit_create_dgemm(&jitterFace, MKL_COL_MAJOR, MKL_NOTRANS,
+                                                 MKL_NOTRANS, MP, N, K, alpha, MP, K, beta, MP);
+
+  if(status == MKL_JIT_ERROR)
+    SU2_MPI::Error(string("Jitted gemm kernel could not be created"), CURRENT_FUNCTION);
+
+  /*--- Retrieve the function pointer to the DGEMM kernel
+        void gemmFace(void*, double*, double*, double*). ---*/
+  gemmFace = mkl_jit_get_dgemm_ptr(jitterFace);
+
+#endif
 }
 
-CGemmStandard::~CGemmStandard(){}
+CGemmStandard::~CGemmStandard() {
+
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+  if( jitterFace ) {
+    mkl_jit_destroy(jitterFace);
+    jitterFace = nullptr;
+  }
+#endif
+}
+
+void CGemmStandard::DOFs2Int(ColMajorMatrix<passivedouble> &basis,
+                             const int                     nVar,
+                             ColMajorMatrix<su2double>     &dataDOFs,
+                             ColMajorMatrix<su2double>     &dataInt,
+                             const CConfig                 *config) {
+
+  /*--- Check if the jitted gemm call can be used. ---*/
+#if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
+
+  /*--- A couple of checks to see if the jitted gemm call is
+        used correctly. ---*/
+  assert(nVar != N);
+  assert(MP   != basis.rows());
+  assert(MP   != dataInt.rows());
+  assert(K    != dataDOFs.rows());
+
+/*--- Carry out the timing, if desired and call the jitted gemm function. ---*/
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->GEMM_Tick(&timeGemm);
+#endif
+
+  gemmFace(jitterFace, basis.data(), dataDOFs.data(), dataInt.data());
+
+#ifdef PROFILE
+  if( config ) config->GEMM_Tock(timeGemm, M, N, K);
+#endif
+
+#else
+
+  /*--- Use the interface to the more standard BLAS functionality. ---*/
+  blasFunctions.gemm(MP, nVar, K, basis.rows(), dataDOFs.rows(), dataInt.rows(),
+                     basis.data(), dataDOFs.data(), dataInt.data(), config);
+#endif
+}

@@ -378,38 +378,48 @@ void CFaceOfElement::SwapSidesIfNeeded(const unsigned long nVolElemOwned,
   /*--- Check if this is an internal matching face. ---*/
   if(elemID0 < nVolElemTot && elemID1 < nVolElemTot) {
 
-    /*--- Internal matching face. The criteria for swapping are such that
-          the least amount of standard elements for matching faces need
-          to be created. ---*/
-    if(elemType0 == elemType1) {
-
-      /*--- Elements are of the same type. The elements are swapped if the
-            face ID of element 1 is lower. In this way the element with the
-            lowest face ID is always on side 0 of the face. If the face ID's
-            are the same, look at the polynomial degree. ---*/
-      if(faceID0 != faceID1) swapElements = faceID1 < faceID0;
-      else                   swapElements = nPolySol1 > nPolySol0;
+    /*--- Internal matching face. Make sure that the element with
+          the highest polynomial degree of the grid is on side 0.
+          In this way the coordinates and the normals can be
+          computed from the info from the element on side 0. ---*/
+    if(nPolyGrid0 != nPolyGrid1) {
+      swapElements = nPolyGrid1 > nPolyGrid0;
     }
     else {
 
-      /*--- Adjacent elements are of a different type. Below follow some criteria
-            to swap the elements. ---*/
-      if(nCornerPoints == 2) {
+      /*--- The polynomial degree of the grid is the same. The following
+            criteria for swapping are such that the least amount of
+            standard elements for matching faces need to be created. ---*/
+      if(elemType0 == elemType1) {
 
-        /*--- 2D simulation. The quadrilateral is always on side 0. ---*/
-        swapElements = elemType1 == QUADRILATERAL;
-      }
-      else if(nCornerPoints == 3) {
-
-        /*--- Triangular face. The prism is always on side 0 and
-              the tetrahedron never. ---*/
-        swapElements = (elemType0 == TETRAHEDRON) || (elemType1 == PRISM);
+        /*--- Elements are of the same type. The elements are swapped if the
+              face ID of element 1 is lower. In this way the element with the
+              lowest face ID is always on side 0 of the face. If the face ID's
+              are the same, look at the polynomial degree. ---*/
+        if(faceID0 != faceID1) swapElements = faceID1 < faceID0;
+        else                   swapElements = nPolySol1 > nPolySol0;
       }
       else {
 
-        /*--- Quadrilateral face. The pyramid is always on side 0 and
-              the prism never. ---*/
-        swapElements = (elemType0 == PRISM) || (elemType1 == PYRAMID);
+        /*--- Adjacent elements are of a different type. Below follow some criteria
+              to swap the elements. ---*/
+        if(nCornerPoints == 2) {
+
+          /*--- 2D simulation. The quadrilateral is always on side 0. ---*/
+          swapElements = elemType1 == QUADRILATERAL;
+        }
+        else if(nCornerPoints == 3) {
+
+          /*--- Triangular face. The prism is always on side 0 and
+                the tetrahedron never. ---*/
+          swapElements = (elemType0 == TETRAHEDRON) || (elemType1 == PRISM);
+        }
+        else {
+
+          /*--- Quadrilateral face. The pyramid is always on side 0 and
+                the prism never. ---*/
+          swapElements = (elemType0 == PRISM) || (elemType1 == PYRAMID);
+        }
       }
     }
   }

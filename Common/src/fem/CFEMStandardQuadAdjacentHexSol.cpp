@@ -40,12 +40,16 @@ CFEMStandardQuadAdjacentHexSol::CFEMStandardQuadAdjacentHexSol(const unsigned sh
   : CFEMStandardHexBase(),
     CFEMStandardQuadBase(val_nPoly, val_orderExact) {
 
-  /*--- Store the faceID of the element, the orientation and the
-        pointers for the gemm functionalities. ---*/
-  faceID_Elem  = val_faceID_Elem;
-  orientation  = val_orientation;
-  gemmDOFs2Int = val_gemm_1;
-  gemmInt2DOFs = val_gemm_2;
+  /*--- Store the faceID of the element and the orientation. ---*/
+  faceID_Elem = val_faceID_Elem;
+  orientation = val_orientation;
+
+  /*--- Convert the pointers for the gemm functionalities. ---*/
+  gemmDOFs2Int = dynamic_cast<CGemmFaceHex *> (val_gemm_1);
+  gemmInt2DOFs = dynamic_cast<CGemmFaceHex *> (val_gemm_2);
+  if(!gemmDOFs2Int || !gemmInt2DOFs)
+    SU2_MPI::Error(string("Dynamic cast failure. This should not happen"), CURRENT_FUNCTION);
+
 
   /*--- Convert the 2D coordinates of the standard quadrilateral to the parametric 
         coordinates in normal and two tangential directions of the adjacent

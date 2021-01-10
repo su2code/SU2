@@ -43,9 +43,22 @@ void CInternalFaceFEM_DG::InitGridVelocities(const unsigned short nDim) {
   gridVelocities.setConstant(0.0);
 }
 
-void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const bool                         viscousTerms,
-                                                       const unsigned short               nDim,
-                                                       const vector<CVolumeElementFEM_DG> &volElem) {
+void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const bool                   viscousTerms,
+                                                       const unsigned short         nDim,
+                                                       vector<CVolumeElementFEM_DG> &volElem) {
+
+  /*--- Determine the padded number of integration points. ---*/
+  const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+
+  /*--- Allocate the memory for the coordinates of the integration
+        points and determine them. Note that if the polynomial order
+        of the grid of both elements differ, the element with the
+        highest polynomial order is always on side 0. Hence, it
+        suffices to determine the coordinates from the data of the
+        element on side 0 of the face.  ---*/
+  coorIntegrationPoints.resize(nIntPad, nDim);
+
+  standardElemGrid->CoorIntPoints(volElem[elemID0].coorGridDOFs, coorIntegrationPoints);
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

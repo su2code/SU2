@@ -30,7 +30,7 @@
 #pragma once 
 
 #include "CFEMStandardQuadBase.hpp"
-#include "CGemmBase.hpp"
+#include "CGemmFaceQuad.hpp"
 
 /*!
  * \class CFEMStandardLineAdjacentQuadSol.
@@ -42,6 +42,11 @@
 class CFEMStandardLineAdjacentQuadSol final: public CFEMStandardQuadBase {
 
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -78,10 +83,10 @@ private:
   unsigned short faceID_Elem;   /*!< \brief Face ID of the adjacent quad, which corresponds to this face. */
   unsigned short orientation;   /*!< \brief Orientation of this face relative to the adjacent quad. */
 
-  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 integration points of the face from the volume DOFs. */
-  CGemmBase *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 volume DOFs from the integration points of the face. */
+  CGemmFaceQuad *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                     integration points of the face from the volume DOFs. */
+  CGemmFaceQuad *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                     volume DOFs from the integration points of the face. */
 
   vector<ColMajorMatrix<passivedouble> > tensorSol;     /*!< \brief The two 1D components of the tensor to compute
                                                                     the solution on the face of the quad. */

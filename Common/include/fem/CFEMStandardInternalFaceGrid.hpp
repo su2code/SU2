@@ -83,6 +83,20 @@ public:
    */
   inline unsigned short GetNIntegrationPad(void) const {return elem0->GetNIntegrationPad();}
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Public member functions.                                ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which determines the coordinates of the integration points of the
+   *        face from the coordinates of the element on side 0. This is OK, because the
+   *        the polynomial order of the grid of the element on side 1 is not higher than
+   *        the polynomial order of the grid of the element  on side 0, 
+   * \param[in]  coorGridDOFsVol   - The coordinates of the grid DOFs of the element on side 0.
+   * \param[out] coorIntPointsFace - The coordinates of the integration points on the face.
+   */
+  void CoorIntPoints(ColMajorMatrix<su2double> &coorGridDOFsVol,
+                     ColMajorMatrix<su2double> &coorIntPointsFace);
 private:
 
 };

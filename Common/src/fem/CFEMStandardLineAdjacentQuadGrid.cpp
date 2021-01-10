@@ -40,11 +40,14 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
   : CFEMStandardQuadBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
-  /*--- Store the faceID of the element, the orientation and the
-        pointer for the gemm functionality. ---*/
-  faceID_Elem  = val_faceID_Elem;
-  orientation  = val_orientation;
-  gemmDOFs2Int = val_gemm;
+  /*--- Store the faceID of the element and the orientation. ---*/
+  faceID_Elem = val_faceID_Elem;
+  orientation = val_orientation;
+
+  /*--- Convert the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = dynamic_cast<CGemmFaceQuad *> (val_gemm);
+  if( !gemmDOFs2Int )
+    SU2_MPI::Error(string("Dynamic cast failure. This should not happen"), CURRENT_FUNCTION);
 
   /*--- Determine the 1D parametric locations of the grid DOFs. 1D is enough,
         because a tensor product is used to obtain the 2D coordinates. ---*/
@@ -91,4 +94,14 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
     tensorDSolDr[0] = derLagN; tensorDSolDr[1] = lagT;
     tensorDSolDs[0] = lagN;    tensorDSolDs[1] = derLagT;
   }
+}
+
+void CFEMStandardLineAdjacentQuadGrid::CoorIntPoints(const bool                notUsed,
+                                                     ColMajorMatrix<su2double> &matCoorDOF,
+                                                     ColMajorMatrix<su2double> &matCoorInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the coordinates in the integration points
+        of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, 2, matCoorDOF, matCoorInt);
 }

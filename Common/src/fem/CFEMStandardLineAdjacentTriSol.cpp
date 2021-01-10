@@ -40,9 +40,11 @@ CFEMStandardLineAdjacentTriSol::CFEMStandardLineAdjacentTriSol(const unsigned sh
   : CFEMStandardTriBase(),
     CFEMStandardLineBase(val_nPoly, val_orderExact) {
 
-  /*--- Store the pointers for the gemm functionalities. ---*/
-  gemmDOFs2Int = val_gemm_1;
-  gemmInt2DOFs = val_gemm_2;
+  /*--- Convert the pointers for the gemm functionalities. ---*/
+  gemmDOFs2Int = dynamic_cast<CGemmStandard *> (val_gemm_1);
+  gemmInt2DOFs = dynamic_cast<CGemmStandard *> (val_gemm_2);
+  if(!gemmDOFs2Int || !gemmInt2DOFs)
+    SU2_MPI::Error(string("Dynamic cast failure. This should not happen"), CURRENT_FUNCTION);
 
   /*--- Convert the 1D parametric coordinates of the integration points of the
         face to the 2D parametric coordinates of the adjacent triangle. ---*/

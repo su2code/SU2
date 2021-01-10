@@ -82,3 +82,14 @@ CGemmFaceQuad::CGemmFaceQuad(const int val_M, const int val_Type, const int val_
 
   }
 }
+
+void CGemmFaceQuad::DOFs2Int(vector<ColMajorMatrix<passivedouble> > &tensor,
+                             const int                              faceID_Elem,
+                             const int                              N,
+                             ColMajorMatrix<su2double>              &dataDOFs,
+                             ColMajorMatrix<su2double>              &dataInt) {
+
+  TensorProductDataSurfIntPoints(N, faceID_Elem, dataDOFs.rows(), dataInt.rows(),
+                                 tensor[0].data(), tensor[1].data(), dataDOFs.data(),
+                                 dataInt.data());
+}

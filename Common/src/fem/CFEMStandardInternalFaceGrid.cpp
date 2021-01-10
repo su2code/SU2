@@ -36,3 +36,13 @@ CFEMStandardInternalFaceGrid::CFEMStandardInternalFaceGrid(CFEMStandardElementBa
   elem0 = val_elem0;
   elem1 = val_elem1;
 }
+
+void CFEMStandardInternalFaceGrid::CoorIntPoints(ColMajorMatrix<su2double> &coorGridDOFsVol,
+                                                 ColMajorMatrix<su2double> &coorIntPointsFace) {
+
+  /*--- Per definition the polynomial degree of the element on side 0 is higher or equal
+        to the polynomial degree of the element on side 1. Hence the element on side 0
+        is used to compute the coordinates of the integration points. The first argument
+        is a dummy to be consistent with other classes. ---*/
+  elem0->CoorIntPoints(true, coorGridDOFsVol, coorIntPointsFace);
+}

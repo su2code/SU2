@@ -82,3 +82,15 @@ CGemmFaceHex::CGemmFaceHex(const int val_M, const int val_Type, const int val_K)
 
   }
 }
+
+void CGemmFaceHex::DOFs2Int(vector<ColMajorMatrix<passivedouble> > &tensor,
+                            const int                              faceID_Elem,
+                            const bool                             swapTangInTensor,
+                            const int                              N,
+                            ColMajorMatrix<su2double>              &dataDOFs,
+                            ColMajorMatrix<su2double>              &dataInt) {
+
+  TensorProductDataSurfIntPoints(N, faceID_Elem, dataDOFs.rows(), dataInt.rows(),
+                                 swapTangInTensor, tensor[0].data(), tensor[1].data(),
+                                 tensor[2].data(), dataDOFs.data(), dataInt.data());
+}

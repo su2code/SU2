@@ -30,7 +30,7 @@
 #pragma once 
 
 #include "CFEMStandardPyraBase.hpp"
-#include "CGemmBase.hpp"
+#include "CGemmStandard.hpp"
 
 /*!
  * \class CFEMStandardTriAdjacentPyraGrid.
@@ -42,6 +42,11 @@
 class CFEMStandardTriAdjacentPyraGrid final: public CFEMStandardPyraBase {
 
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -73,10 +78,26 @@ public:
    */
   ~CFEMStandardTriAdjacentPyraGrid() = default;
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Public member functions.                                ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which computes the coordinates in the integration points.
+   * \param[in]  notUsed    - Argument present to be consistent with the base class
+   *                          function, which is overwritten.
+   * \param[in]  matCoorDOF - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matCoorInt - Matrix that contains the coordinates of the integration
+   *                          points.
+   */
+  void CoorIntPoints(const bool                notUsed,
+                     ColMajorMatrix<su2double> &matCoorDOF,
+                     ColMajorMatrix<su2double> &matCoorInt) override;
+
 private:
 
-  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 integration points of the face from the volume DOFs. */
+  CGemmStandard *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                     integration points of the face from the volume DOFs. */
 
   ColMajorMatrix<passivedouble> lagBasisInt;             /*!< \brief The values of the Lagrangian basis functions
                                                                      in the integration points of the face. */

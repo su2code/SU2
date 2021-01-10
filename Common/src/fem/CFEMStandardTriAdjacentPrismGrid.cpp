@@ -40,8 +40,10 @@ CFEMStandardTriAdjacentPrismGrid::CFEMStandardTriAdjacentPrismGrid(const unsigne
   : CFEMStandardPrismBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
-  /*--- Store the pointer for the gemm functionality. ---*/
-  gemmDOFs2Int = val_gemm;
+  /*--- Convert the pointer for the gemm functionality. ---*/
+  gemmDOFs2Int = dynamic_cast<CGemmStandard *> (val_gemm);
+  if( !gemmDOFs2Int )
+    SU2_MPI::Error(string("Dynamic cast failure. This should not happen"), CURRENT_FUNCTION);
 
   /*--- Determine the location of the grid DOFs. ---*/
   vector<passivedouble> rTriangleDOFs, sTriangleDOFs, rLineDOFs;
@@ -66,4 +68,14 @@ CFEMStandardTriAdjacentPrismGrid::CFEMStandardTriAdjacentPrismGrid(const unsigne
                          rTrianglePrism, sTrianglePrism, rLinePrism, lagBasisInt);
   DerLagBasisIntPointsPrism(nPoly, rTriangleDOFs, sTriangleDOFs, rLineDOFs,
                             rTrianglePrism, sTrianglePrism, rLinePrism, derLagBasisInt);
+}
+
+void CFEMStandardTriAdjacentPrismGrid::CoorIntPoints(const bool                notUsed,
+                                                     ColMajorMatrix<su2double> &matCoorDOF,
+                                                     ColMajorMatrix<su2double> &matCoorInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the coordinates in the integration points
+        of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
 }

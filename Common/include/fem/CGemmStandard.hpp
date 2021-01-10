@@ -72,6 +72,26 @@ public:
    */
   ~CGemmStandard();
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                          Public member functions.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which carries out the gemm product to obtain the data
+   *        in the integration points of the face from the DOFs of the volume.
+   * \param[in]  basis    - Tensor to create the required data.
+   * \param[in]  nVar     - Number of items to be created per integration point.
+   *                        When a jitted gemm call is used, this must be equal to N.
+   * \param[in]  dataDOFs - The data in the DOFs.
+   * \param[out] dataInt  - The to be created data in the integration points.
+   * \param[out] config   - Object used for the timing of the gemm call.
+   */
+  void DOFs2Int(ColMajorMatrix<passivedouble> &basis,
+                const int                     nVar,
+                ColMajorMatrix<su2double>     &dataDOFs,
+                ColMajorMatrix<su2double>     &dataInt,
+                const CConfig                 *config);
+
 private:
 
   int M;   /*!< \brief First matrix dimension of A and C in the gemm call. */

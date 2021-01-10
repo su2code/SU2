@@ -78,7 +78,7 @@ public:
    * \param[in] nDim         - Number of spatial dimensions.
    * \param[in] volElem      - The volume elements of the grid.
    */
-  void MetricTermsIntegrationPoints(const bool                         viscousTerms,
-                                    const unsigned short               nDim,
-                                    const vector<CVolumeElementFEM_DG> &volElem);
+  void MetricTermsIntegrationPoints(const bool                   viscousTerms,
+                                    const unsigned short         nDim,
+                                    vector<CVolumeElementFEM_DG> &volElem);
 };

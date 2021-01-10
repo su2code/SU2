@@ -30,7 +30,7 @@
 #pragma once 
 
 #include "CFEMStandardHexBase.hpp"
-#include "CGemmBase.hpp"
+#include "CGemmFaceHex.hpp"
 
 /*!
  * \class CFEMStandardQuadAdjacentHexGrid.
@@ -42,6 +42,11 @@
 class CFEMStandardQuadAdjacentHexGrid final: public CFEMStandardHexBase {
 
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -73,6 +78,22 @@ public:
    */
   ~CFEMStandardQuadAdjacentHexGrid() = default;
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Public member functions.                                ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which computes the coordinates in the integration points.
+   * \param[in]  notUsed    - Argument present to be consistent with the base class
+   *                          function, which is overwritten.
+   * \param[in]  matCoorDOF - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matCoorInt - Matrix that contains the coordinates of the integration
+   *                          points.
+   */
+  void CoorIntPoints(const bool                notUsed,
+                     ColMajorMatrix<su2double> &matCoorDOF,
+                     ColMajorMatrix<su2double> &matCoorInt) override;
+
 private:
 
   unsigned short faceID_Elem;       /*!< \brief Face ID of the adjacent hex, which corresponds to this face. */
@@ -80,8 +101,8 @@ private:
   bool           swapTangInTensor;  /*!< \brief Whether or not the tangential directions of the face, created
                                                 in the the tensor product, must be swapped. */
 
-  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 integration points of the face from the volume DOFs. */
+  CGemmFaceHex *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                    integration points of the face from the volume DOFs. */
 
   vector<passivedouble> rLineDOFs;    /*!< \brief 1D parametric coordinates of the grid DOFs. */
 

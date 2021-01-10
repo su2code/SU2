@@ -30,7 +30,7 @@
 #pragma once 
 
 #include "CFEMStandardPrismBase.hpp"
-#include "CGemmBase.hpp"
+#include "CGemmStandard.hpp"
 
 /*!
  * \class CFEMStandardQuadAdjacentPrismSol.
@@ -42,6 +42,11 @@
 class CFEMStandardQuadAdjacentPrismSol final: public CFEMStandardPrismBase {
 
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Default constructor of the class, deleted to make sure the
    *        overloaded constructor is always used.
@@ -75,10 +80,10 @@ public:
 
 private:
 
-  CGemmBase *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 integration points of the face from the volume DOFs. */
-  CGemmBase *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
-                                                 volume DOFs from the integration points of the face. */
+  CGemmStandard *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                     integration points of the face from the volume DOFs. */
+  CGemmStandard *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
+                                                     volume DOFs from the integration points of the face. */
 
   ColMajorMatrix<passivedouble> legBasisInt;             /*!< \brief The values of the Legendre basis functions
                                                                      in the integration points of the face. */

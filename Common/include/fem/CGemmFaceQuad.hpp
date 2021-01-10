@@ -70,6 +70,25 @@ public:
    */
   ~CGemmFaceQuad() = default;
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                          Public member functions.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which carries out the tensor product to obtain the data
+   *        in the integration points of the face from the DOFs of the volume.
+   * \param[in]  tensor      - Tensor to create the required data.
+   * \param[in]  faceID_Elem - The face ID of the element on which the face resides.
+   * \param[in]  N           - Number of items to be created per integration point.
+   * \param[in]  dataDOFs    - The data in the DOFs.
+   * \param[out] dataInt     - The to be created data in the integration points.
+   */
+  void DOFs2Int(vector<ColMajorMatrix<passivedouble> > &tensor,
+                const int                              faceID_Elem,
+                const int                              N,
+                ColMajorMatrix<su2double>              &dataDOFs,
+                ColMajorMatrix<su2double>              &dataInt);
+
 private:
 
   int M;   /*!< \brief First tensor dimensions of A and C in the gemm call. */
