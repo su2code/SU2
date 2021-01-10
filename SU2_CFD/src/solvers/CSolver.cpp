@@ -2045,7 +2045,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   /* Number of iterations considered to check for stagnation. */
   const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
 
-  static su2double NonLinRes_Value = 0.0;
+  static bool reduceCFL, resetCFL, canIncrease;
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
@@ -2075,17 +2075,17 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Tolerance limited to a "reasonable" value. */
     const su2double linTol = max(0.001, config->GetLinear_Solver_Error());
 
-    /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
-    bool resetCFL = linRes > 1.0;
-    const bool reduceCFL = linRes > 1.2*linTol;
-    const bool canIncrease = linRes < linTol;
-
     /* Check that we are meeting our nonlinear residual reduction target
      over time so that we do not get stuck in limit cycles, this is done
      on the fine grid and applied to all others. */
 
     SU2_OMP_MASTER
     { /* Only the master thread updates the shared variables. */
+
+    /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
+    resetCFL = linRes > 1.0;
+    reduceCFL = linRes > 1.2*linTol;
+    canIncrease = linRes < linTol;
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
@@ -2095,17 +2095,21 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       New_Func = 0.0;
       for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-        New_Func += solverFlow->GetRes_RMS(iVar);
+        New_Func += log10(solverFlow->GetRes_RMS(iVar));
       }
       if ((iMesh == MESH_0) && solverTurb) {
         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-          New_Func += solverTurb->GetRes_RMS(iVar);
+          New_Func += log10(solverTurb->GetRes_RMS(iVar));
         }
       }
 
       /* Compute the difference in the nonlinear residuals between the
-       current and previous iterations. */
+       current and previous iterations, taking care with very low initial
+       residuals (due to initialization). */
 
+      if ((config->GetInnerIter() == 1) && (New_Func - Old_Func > 10)) {
+        Old_Func = New_Func;
+      }
       NonLinRes_Series[NonLinRes_Counter] = New_Func - Old_Func;
 
       /* Increment the counter, if we hit the max size, then start over. */
@@ -2113,32 +2117,29 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       NonLinRes_Counter++;
       if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
 
-      /* Sum the total change in nonlinear residuals over the previous
-       set of all stored iterations. */
+      /* Detect flip-flop convergence to reduce CFL and large increases
+       to reset to minimum value, in that case clear the history. */
 
-      NonLinRes_Value = New_Func;
       if (config->GetInnerIter() >= Res_Count) {
-        NonLinRes_Value = 0.0;
-        for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-          NonLinRes_Value += NonLinRes_Series[iCounter];
-      }
+        unsigned long signChanges = 0;
+        su2double totalChange = 0.0;
+        auto prev = NonLinRes_Series.front();
+        for (auto val : NonLinRes_Series) {
+          totalChange += val;
+          signChanges += (prev > 0) ^ (val > 0);
+          prev = val;
+        }
+        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
 
-      /* If the sum is smaller than a small fraction of the current nonlinear
-       residual, then we are not decreasing the nonlinear residual at a high
-       rate. In this situation, we force a reduction of the CFL in all cells.
-       Reset the array so that we delay the next decrease for some iterations. */
-
-      if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-        NonLinRes_Counter = 0;
-        for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-          NonLinRes_Series[iCounter] = New_Func;
+        if (totalChange > 2.0) { // orders of magnitude
+          resetCFL = true;
+          NonLinRes_Counter = 0;
+          for (auto& val : NonLinRes_Series) val = 0.0;
+        }
       }
     }
-
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
-
-    resetCFL = fabs(NonLinRes_Value) < 0.1*New_Func;
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
