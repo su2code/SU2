@@ -125,9 +125,9 @@ TEST_CASE("Set vertex", "[Geometry]"){
 
 }
 
-TEST_CASE("Set center of gravity", "[Geometry]"){
+TEST_CASE("Set control volume", "[Geometry]"){
 
-  TestCase->geometry->SetCoord_CG();
+  TestCase->geometry->SetControlVolume(TestCase->config.get(), ALLOCATE);
 
   CHECK(TestCase->geometry->elem[42]->GetCG(0) == 0.625);
   CHECK(TestCase->geometry->elem[3]->GetCG(1)  == 0.125);
@@ -136,15 +136,6 @@ TEST_CASE("Set center of gravity", "[Geometry]"){
   CHECK(TestCase->geometry->bound[1][4]->GetCG(0) == 1.0);
   CHECK(TestCase->geometry->bound[3][2]->GetCG(1) == 1.0);
   CHECK(TestCase->geometry->bound[4][3]->GetCG(2) == 0.0);
-
-  CHECK(TestCase->geometry->edges->GetCG(10, 0) == 0.75);
-  CHECK(TestCase->geometry->edges->GetCG(3,  1) == 0.125);
-  CHECK(TestCase->geometry->edges->GetCG(22, 2) == 0.0);
-}
-
-TEST_CASE("Set control volume", "[Geometry]"){
-
-  TestCase->geometry->SetControlVolume(TestCase->config.get(), ALLOCATE);
 
   CHECK(TestCase->geometry->nodes->GetVolume(42) == Approx(0.015625));
 
