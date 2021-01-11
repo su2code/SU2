@@ -2576,6 +2576,24 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Free surface damping coefficient */
   addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
 
+  /* DESCRIPTION: Procedure to prevent self-intersections within the FFD box based on Jacobian determinant */
+  addBoolOption("FFD_INTPREV", FFD_IntPrev, NO);
+
+  /* DESCRIPTION: Number of total iterations in the convexity check procedure */
+  addUnsignedShortOption("FFD_INTPREV_ITER", FFD_IntPrev_MaxIter, 10);
+
+  /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
+  addUnsignedShortOption("FFD_INTPREV_DEPTH", FFD_IntPrev_MaxDepth, 3);
+
+  /* DESCRIPTION: Convexity check on all mesh elements */
+  addBoolOption("CONVEXITY_CHECK", ConvexityCheck, NO);
+
+  /* DESCRIPTION: Number of total iterations in the convexity check procedure */
+  addUnsignedShortOption("CONVEXITY_CHECK_ITER", ConvexityCheck_MaxIter, 10);
+
+  /* DESCRIPTION: Recursion depth in the FFD self-intersection prevention */
+  addUnsignedShortOption("CONVEXITY_CHECK_DEPTH", ConvexityCheck_MaxDepth, 3);
+
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
 
@@ -4375,6 +4393,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("BC transition model currently only available in combination with SA turbulence model!", CURRENT_FUNCTION);
   }
 
+  if (Kind_Trans_Model == LM) {
+    SU2_MPI::Error("The LM transition model is under maintenance.", CURRENT_FUNCTION);
+  }
+
   /*--- Check for constant lift mode. Initialize the update flag for
    the AoA with each iteration to false  ---*/
 
@@ -5555,6 +5577,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
+        if (Kind_Trans_Model == BC) cout << "Using the revised BC transition model (2020)" << endl;
         cout << "Hybrid RANS/LES: ";
         switch (Kind_HybridRANSLES){
           case NO_HYBRIDRANSLES: cout <<  "No Hybrid RANS/LES" << endl; break;

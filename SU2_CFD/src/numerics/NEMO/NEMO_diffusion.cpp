@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/numerics/NEMO/NEMO_diffusion.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
                              unsigned short val_nVar,
@@ -90,10 +91,7 @@ CNumerics::ResidualType<> CAvgGrad_NEMO::ComputeResidual(const CConfig *config) 
   unsigned short iSpecies, iVar, iDim;
 
   /*--- Normalized normal vector ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
@@ -238,10 +236,7 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
   su2double dist_ij_2;
 
   /*--- Normalized normal vector ---*/
-  Area = 0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
