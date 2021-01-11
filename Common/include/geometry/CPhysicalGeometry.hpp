@@ -445,11 +445,6 @@ public:
   void GatherInOutAverageValues(CConfig *config, bool allocate) override;
 
   /*!
-   * \brief Set the center of gravity of the face, elements and edges.
-   */
-  void SetCoord_CG(void) override;
-
-  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.

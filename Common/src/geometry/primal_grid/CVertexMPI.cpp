@@ -38,12 +38,8 @@ unsigned short CVertexMPI::VTK_Type = 1;
 unsigned short CVertexMPI::maxNodesFace = 0;
 
 CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrimalGrid() {
-  unsigned short iDim;
 
-  /*--- Allocate CG coordinates ---*/
   nDim = val_nDim;
-  Coord_CG = new su2double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) Coord_CG[iDim] = 0.0;
 
   /*--- Allocate and define face structure of the element ---*/
   Nodes = new unsigned long[nNodes];
@@ -54,13 +50,6 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrim
 
 }
 
-CVertexMPI::~CVertexMPI() {
-  unsigned short iFaces;
-
-    for (iFaces = 0; iFaces < nFaces; iFaces++)
-      if (Coord_FaceElems_CG[iFaces] != nullptr) delete[] Coord_FaceElems_CG[iFaces];
-    delete[] Coord_FaceElems_CG;
-
-}
+CVertexMPI::~CVertexMPI() {}
 
 void CVertexMPI::Change_Orientation(void) { }

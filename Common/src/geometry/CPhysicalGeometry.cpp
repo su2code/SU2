@@ -6677,65 +6677,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 }
 
-
-void CPhysicalGeometry::SetCoord_CG(void) {
-
-  unsigned short iMarker, iNode;
-  unsigned long elem_poin, edge_poin, iElem, iEdge;
-
-  /*--- Buffer of pointers to node coordinates ---*/
-  array<const su2double*, N_POINTS_MAXIMUM> Coord;
-
-  /*--- Compute the center of gravity for elements ---*/
-
-  SU2_OMP_FOR_STAT(roundUpDiv(nElem,2*omp_get_max_threads()))
-  for (iElem = 0; iElem<nElem; iElem++) {
-    assert(elem[iElem]->GetnNodes() <= N_POINTS_MAXIMUM && "Insufficient N_POINTS_MAXIMUM");
-
-    /*--- Store the coordinates for all the element nodes ---*/
-    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      elem_poin = elem[iElem]->GetNode(iNode);
-      Coord[iNode] = nodes->GetCoord(elem_poin);
-    }
-
-    /*--- Compute the element CG coordinates ---*/
-    elem[iElem]->SetCoord_CG(Coord.data());
-  }
-
-  /*--- Center of gravity for face elements ---*/
-
-  SU2_OMP_FOR_DYN(1)
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-
-      /*--- Store the coordinates for all the element nodes ---*/
-      for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        elem_poin = bound[iMarker][iElem]->GetNode(iNode);
-        Coord[iNode] = nodes->GetCoord(elem_poin);
-      }
-
-      /*--- Compute the element CG coordinates ---*/
-      bound[iMarker][iElem]->SetCoord_CG(Coord.data());
-    }
-  }
-
-  /*--- Center of gravity for edges ---*/
-
-  SU2_OMP_FOR_STAT(roundUpDiv(nEdge,2*omp_get_max_threads()))
-  for (iEdge = 0; iEdge < nEdge; iEdge++) {
-
-    /*--- Store the coordinates for all the element nodes ---*/
-    for (iNode = 0; iNode < edges->GetnNodes(); iNode++) {
-      edge_poin=edges->GetNode(iEdge,iNode);
-      Coord[iNode] = nodes->GetCoord(edge_poin);
-    }
-
-    /*--- Compute the edge CG coordinates ---*/
-    edges->SetCoord_CG(iEdge, Coord.data());
-  }
-
-}
-
 void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned short action) {
 
   SU2_OMP_MASTER {
@@ -6770,17 +6711,13 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
           const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
           const auto Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
 
-          /*--- Shared edge by the Neighbor Point and the point ---*/
-
-          const auto iEdge = FindEdge(iPoint, Neighbor_Point);
-
-          su2double Coord_Edge_CG[MAXNDIM], Coord_Elem_CG[MAXNDIM];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
-            Coord_Elem_CG[iDim] = bound[iMarker][iElem]->GetCG(iDim);
-          }
+          const su2double* Coord_Elem_CG = bound[iMarker][iElem]->GetCG();
           const su2double* Coord_Vertex = nodes->GetCoord(iPoint);
+
+          su2double Coord_Edge_CG[MAXNDIM] = {0.0};
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + nodes->GetCoord(Neighbor_Point, iDim));
+          }
 
           if (nDim == 2) {
             /*--- Store the 2D face ---*/
@@ -7625,58 +7562,114 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
 
-  SU2_OMP_MASTER {
+  /*--- Center of gravity for face elements ---*/
 
-  unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
-  unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
-  su2double Coord_Edge_CG[3] = {0.0}, Coord_FaceElem_CG[3] = {0.0}, Coord_Elem_CG[3] = {0.0};
+  SU2_OMP_FOR_DYN(1)
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+
+      /*--- Get pointers to the coordinates of all the element nodes ---*/
+      array<const su2double*, N_POINTS_MAXIMUM> Coord;
+
+      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        auto elem_poin = bound[iMarker][iElem]->GetNode(iNode);
+        Coord[iNode] = nodes->GetCoord(elem_poin);
+      }
+
+      /*--- Compute the element CG coordinates ---*/
+      bound[iMarker][iElem]->SetCoord_CG(Coord.data());
+    }
+  }
 
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
-    edges->SetZeroValues();
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
+    su2double ZeroArea[MAXNDIM] = {0.0};
+
+    SU2_OMP_FOR_STAT(1024)
+    for (auto iEdge = 0ul; iEdge < nEdge; iEdge++)
+      edges->SetNormal(iEdge, ZeroArea);
+
+    SU2_OMP_FOR_STAT(1024)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       nodes->SetVolume(iPoint, 0.0);
   }
 
+  SU2_OMP_MASTER { /*--- The following is difficult to parallelize with threads. ---*/
+
   su2double my_DomainVolume = 0.0;
-  for (iElem = 0; iElem < nElem; iElem++) {
-    for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+
+    /*--- To make preaccumulation more effective, use as few inputs
+     as possible, recomputing intermediate quantities as needed. ---*/
+    AD::StartPreacc();
+
+    /*--- Get pointers to the coordinates of all the element nodes ---*/
+    array<const su2double*, N_POINTS_MAXIMUM> Coord;
+
+    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      auto iPoint = elem[iElem]->GetNode(iNode);
+      Coord[iNode] = nodes->GetCoord(iPoint);
+#ifdef CODI_REVERSE_TYPE
+      AD::SetPreaccIn(nodes->Volume(iPoint));
+      for (unsigned short jNode = iNode+1; jNode < elem[iElem]->GetnNodes(); jNode++) {
+        auto jPoint = elem[iElem]->GetNode(jNode);
+        auto iEdge = FindEdge(iPoint, jPoint, false);
+        if (iEdge >= 0) AD::SetPreaccIn(edges->Normal[iEdge], nDim);
+      }
+#endif
+    }
+    AD::SetPreaccIn(Coord, elem[iElem]->GetnNodes(), nDim);
+
+    /*--- Compute the element median CG coordinates ---*/
+    auto Coord_Elem_CG = elem[iElem]->SetCoord_CG(Coord);
+    AD::SetPreaccOut(Coord_Elem_CG, nDim);
+
+    for (unsigned short iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
 
       /*--- In 2D all the faces have only one edge ---*/
-      if (nDim == 2) nEdgesFace = 1;
-      /*--- In 3D the number of edges per face is the same as the number of point per face ---*/
-      if (nDim == 3) nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+      unsigned short nEdgesFace = 1;
+
+      /*--- In 3D the number of edges per face is the same as the number of point
+       per face and the median CG of the face is needed. ---*/
+      su2double Coord_FaceElem_CG[MAXNDIM] = {0.0};
+      if (nDim == 3) {
+        nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+
+        for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
+          auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim]/nEdgesFace;
+        }
+      }
 
       /*-- Loop over the edges of a face ---*/
-      for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+      for (unsigned short iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
 
-        /*--- In 2D only one edge (two points) per edge ---*/
+        const auto face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+        unsigned long face_jPoint;
+
         if (nDim == 2) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          /*--- In 2D only one edge (two points) per edge ---*/
           face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
         }
-
-        /*--- In 3D there are several edges in each face ---*/
-        if (nDim == 3) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace));
-          if (iEdgesFace != nEdgesFace-1)
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace+1));
-          else
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+        else {
+          /*--- In 3D we "circle around" the face ---*/
+          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace));
         }
 
         /*--- We define a direction (from the smalest index to the greatest) --*/
         const bool change_face_orientation = (face_iPoint > face_jPoint);
         const auto iEdge = FindEdge(face_iPoint, face_jPoint);
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Coord_Edge_CG[iDim] = edges->GetCG(iEdge,iDim);
-          Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
-          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-        }
-
         const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
         const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
+
+        su2double Coord_Edge_CG[MAXNDIM] = {0.0};
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Coord_Edge_CG[iDim] = 0.5 * (Coord_FaceiPoint[iDim] + Coord_FacejPoint[iDim]);
+        }
+
+//        AD::SetPreaccIn(edges->Normal[iEdge], nDim);
 
         su2double Volume_i, Volume_j;
 
@@ -7704,18 +7697,24 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         nodes->AddVolume(face_iPoint, Volume_i);
         nodes->AddVolume(face_jPoint, Volume_j);
 
+//        AD::SetPreaccOut(edges->Normal[iEdge], nDim);
+
         my_DomainVolume += Volume_i+Volume_j;
       }
     }
-  }
 
-  /*--- Check if there is a normal with null area ---*/
-  for (auto iEdge = 0ul; iEdge < nEdge; iEdge++) {
-    const auto Area2 = GeometryToolbox::SquaredNorm(nDim, edges->GetNormal(iEdge));
-    if (Area2 == 0.0) {
-      su2double DefaultArea[3] = {EPS*EPS};
-      edges->SetNormal(iEdge, DefaultArea);
+#ifdef CODI_REVERSE_TYPE
+    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      auto iPoint = elem[iElem]->GetNode(iNode);
+      AD::SetPreaccOut(nodes->Volume(iPoint));
+      for (unsigned short jNode = iNode+1; jNode < elem[iElem]->GetnNodes(); jNode++) {
+        auto jPoint = elem[iElem]->GetNode(jNode);
+        auto iEdge = FindEdge(iPoint, jPoint, false);
+        if (iEdge >= 0) AD::SetPreaccOut(edges->Normal[iEdge], nDim);
+      }
     }
+#endif
+    AD::EndPreacc();
   }
 
   su2double DomainVolume;
@@ -7728,6 +7727,16 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
 
   } SU2_OMP_BARRIER
+
+  /*--- Check if there is a normal with null area ---*/
+  SU2_OMP_FOR_STAT(1024)
+  for (auto iEdge = 0ul; iEdge < nEdge; iEdge++) {
+    const auto Area2 = GeometryToolbox::SquaredNorm(nDim, edges->GetNormal(iEdge));
+    if (Area2 == 0.0) {
+      su2double DefaultArea[3] = {EPS*EPS};
+      edges->SetNormal(iEdge, DefaultArea);
+    }
+  }
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {
@@ -7738,37 +7747,52 @@ void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {
   if (iPoint < 0) return;
   const unsigned long iPoint_Viz = iPoint;
 
-  unsigned long face_iPoint = 0, face_jPoint = 0, iElem;
-  unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
   int counter = 0;
   vector<su2double> X, Y, Z;
 
   /*--- Loop over each face of each element ---*/
 
-  for (iElem = 0; iElem < nElem; iElem++) {
-    for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+  for (auto iElem = 0ul; iElem < nElem; iElem++) {
+
+    /*--- Get pointers to the coordinates of all the element nodes ---*/
+    array<const su2double*, N_POINTS_MAXIMUM> Coord;
+
+    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      auto elem_poin = elem[iElem]->GetNode(iNode);
+      Coord[iNode] = nodes->GetCoord(elem_poin);
+    }
+
+    for (unsigned short iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
 
       /*--- In 2D all the faces have only one edge ---*/
-      if (nDim == 2) nEdgesFace = 1;
-      /*--- In 3D the number of edges per face is the same as the number of point per face ---*/
-      if (nDim == 3) nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+      unsigned short nEdgesFace = 1;
+
+      /*--- In 3D the number of edges per face is the same as the number of point
+       per face and the median CG of the face is needed. ---*/
+      su2double Coord_FaceElem_CG[MAXNDIM] = {0.0};
+      if (nDim == 3) {
+        nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+
+        for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
+          auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim]/nEdgesFace;
+        }
+      }
 
       /*-- Loop over the edges of a face ---*/
-      for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+      for (unsigned short iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
 
-        /*--- In 2D only one edge (two points) per edge ---*/
+        const auto face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+        unsigned long face_jPoint;
+
         if (nDim == 2) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          /*--- In 2D only one edge (two points) per edge ---*/
           face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
         }
-
-        /*--- In 3D there are several edges in each face ---*/
-        if (nDim == 3) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace));
-          if (iEdgesFace != nEdgesFace-1)
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace+1));
-          else
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+        else {
+          /*--- In 3D we "circle around" the face ---*/
+          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace));
         }
 
         /*--- Print out the coordinates for a set of triangles making
@@ -7776,15 +7800,13 @@ void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {
 
         if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
 
-          /*--- We define a direction (from the smallest index to the greatest) --*/
-          const auto iEdge = FindEdge(face_iPoint, face_jPoint);
+          const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
+          const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
+          const su2double* Coord_Elem_CG = elem[iElem]->GetCG();
 
-          su2double Coord_Edge_CG[MAXNDIM], Coord_FaceElem_CG[MAXNDIM], Coord_Elem_CG[MAXNDIM];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Coord_Edge_CG[iDim] = edges->GetCG(iEdge, iDim);
-            Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
-            Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
+          su2double Coord_Edge_CG[MAXNDIM] = {0.0};
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            Coord_Edge_CG[iDim] = 0.5 * (Coord_FaceiPoint[iDim] + Coord_FacejPoint[iDim]);
           }
 
           if (nDim == 2) {
@@ -8405,60 +8427,57 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
    measure of the volume stretching ratio for the cell. Smaller
    is better (closer to isotropic). ----*/
 
-  unsigned long face_iPoint = 0, face_jPoint = 0;
-  unsigned short nEdgesFace = 1;
+  for (unsigned long iElem = 0; iElem < nElem; iElem++) {
 
-  vector<su2double> Coord_Edge_CG(nDim);
-  vector<su2double> Coord_FaceElem_CG(nDim);
-  vector<su2double> Coord_Elem_CG(nDim);
-  vector<su2double> Coord_FaceiPoint(nDim);
-  vector<su2double> Coord_FacejPoint(nDim);
+    /*--- Get pointers to the coordinates of all the element nodes ---*/
+    array<const su2double*, N_POINTS_MAXIMUM> Coord;
 
-  for (unsigned long iElem = 0; iElem < nElem; iElem++)
+    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      auto elem_poin = elem[iElem]->GetNode(iNode);
+      Coord[iNode] = nodes->GetCoord(elem_poin);
+    }
+
+    const su2double* Coord_Elem_CG = elem[iElem]->GetCG();
+
     for (unsigned short iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
 
       /*--- In 2D all the faces have only one edge ---*/
+      unsigned short nEdgesFace = 1;
 
-      if (nDim == 2) nEdgesFace = 1;
+      /*--- In 3D the number of edges per face is the same as the number of point
+       per face and the median CG of the face is needed. ---*/
+      su2double Coord_FaceElem_CG[MAXNDIM] = {0.0};
+      if (nDim == 3) {
+        nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
 
-      /*--- In 3D the number of edges per face is the same
-       as the number of points per face. ---*/
-
-      if (nDim == 3) nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+        for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
+          auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim]/nEdgesFace;
+        }
+      }
 
       /*-- Loop over the edges of a face ---*/
-
       for (unsigned short iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
 
-        /*--- In 2D only one edge (two points) per edge ---*/
+        const auto face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+        unsigned long face_jPoint;
 
         if (nDim == 2) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          /*--- In 2D only one edge (two points) per edge ---*/
           face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
         }
-
-        /*--- In 3D there are several edges in each face ---*/
-
-        if (nDim == 3) {
-          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace));
-          if (iEdgesFace != nEdgesFace-1)
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, iEdgesFace+1));
-          else
-            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+        else {
+          /*--- In 3D we "circle around" the face ---*/
+          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace));
         }
 
-        /*--- Locate the edge for the two selected points. ---*/
+        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
+        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
 
-        const unsigned long iEdge = FindEdge(face_iPoint, face_jPoint);
-
-        /*--- Collect the CG and coordinates for this sub-element face. ---*/
-
+        su2double Coord_Edge_CG[MAXNDIM] = {0.0};
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Coord_Edge_CG[iDim]     = edges->GetCG(iEdge,iDim);
-          Coord_Elem_CG[iDim]     = elem[iElem]->GetCG(iDim);
-          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace, iDim);
-          Coord_FaceiPoint[iDim]  = nodes->GetCoord(face_iPoint, iDim);
-          Coord_FacejPoint[iDim]  = nodes->GetCoord(face_jPoint, iDim);
+          Coord_Edge_CG[iDim] = 0.5 * (Coord_FaceiPoint[iDim] + Coord_FacejPoint[iDim]);
         }
 
         /*--- Access the sub-volume of the element separately in 2D or 3D. ---*/
@@ -8466,24 +8485,14 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
         su2double Volume_i, Volume_j;
         switch (nDim) {
           case 2:
-            Volume_i = CEdge::GetVolume(Coord_FaceiPoint.data(),
-                                        Coord_Edge_CG.data(),
-                                        Coord_Elem_CG.data());
-
-            Volume_j = CEdge::GetVolume(Coord_FacejPoint.data(),
-                                        Coord_Edge_CG.data(),
-                                        Coord_Elem_CG.data());
+            Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
+            Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
             break;
           case 3:
-            Volume_i = CEdge::GetVolume(Coord_FaceiPoint.data(),
-                                        Coord_Edge_CG.data(),
-                                        Coord_FaceElem_CG.data(),
-                                        Coord_Elem_CG.data());
-
-            Volume_j = CEdge::GetVolume(Coord_FacejPoint.data(),
-                                        Coord_Edge_CG.data(),
-                                        Coord_FaceElem_CG.data(),
-                                        Coord_Elem_CG.data());
+            Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG,
+                                        Coord_FaceElem_CG, Coord_Elem_CG);
+            Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG,
+                                        Coord_FaceElem_CG, Coord_Elem_CG);
             break;
         }
 
@@ -8503,6 +8512,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
 
       }
     }
+  }
 
   /*--- Compute the metrics with a final loop over the vertices. Also
    compute the local min and max values here for reporting. ---*/

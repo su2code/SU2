@@ -492,9 +492,21 @@ public:
    * \brief Get the edge index from using the nodes of the edge.
    * \param[in] first_point - First point of the edge.
    * \param[in] second_point - Second point of the edge.
+   * \param[in] error - Throw error if edge does not exist.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point) const;
+  inline long FindEdge(unsigned long first_point, unsigned long second_point, bool error = true) const {
+    for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+      auto iPoint = nodes->GetPoint(first_point, iNode);
+      if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
+    }
+    if (error) {
+      char buf[100];
+      SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+      SU2_MPI::Error(buf, CURRENT_FUNCTION);
+    }
+    return -1;
+  }
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
@@ -502,7 +514,9 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  bool CheckEdge(unsigned long first_point, unsigned long second_point) const;
+  inline bool CheckEdge(unsigned long first_point, unsigned long second_point) const {
+    return FindEdge(first_point, second_point, false) >= 0;
+  }
 
   /*!
    * \brief Get the distance between a plane (defined by three point) and a point.
@@ -683,11 +697,6 @@ public:
    * \param[in] allocate
    */
   inline virtual void GatherInOutAverageValues(CConfig *config, bool allocate) {}
-
-  /*!
-   * \brief Sets CG coordinates.
-   */
-  inline virtual void SetCoord_CG(void) {}
 
   /*!
    * \brief Set max length.

@@ -804,18 +804,13 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   geometry[MESH_0]->SetEdges();
   geometry[MESH_0]->SetVertex(config);
 
-  /*--- Compute cell center of gravity ---*/
-
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-  SU2_OMP_PARALLEL {
-    geometry[MESH_0]->SetCoord_CG();
-  }
-
   /*--- Create the control volume structures ---*/
 
   if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-  geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
-  geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  SU2_OMP_PARALLEL {
+    geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  }
 
   /*--- Visualize a dual control volume if requested ---*/
 
