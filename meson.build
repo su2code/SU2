@@ -234,10 +234,8 @@ message('''---------------------------------------------------------------------
 if get_option('enable-mpp')
   message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
 
-          export MPP_DIRECTORY=$SU2_HOME/subprojects/Mutationpp
-          export MPP_DATA_DIRECTORY=$MPP_DIRECTORY/data
-          export PATH=$MPP_DIRECTORY/install/bin:$PATH
-          export LD_LIBRARY_PATH=$MPP_DIRECTORY/install/<LIBDIR>  # Change <LIBDIR> with `lib` or `lib64` according to your system
+          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
 
           ''')
 endif
