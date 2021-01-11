@@ -52,12 +52,10 @@ protected:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
    */
-  void GetStreamwise_Periodic_Properties(CGeometry *geometry,
-                                         CConfig *config,
-                                         unsigned short iMesh,
-                                         bool Output);
+  void GetStreamwise_Periodic_Properties(CGeometry      *geometry,
+                                         CConfig        *config,
+                                         unsigned short iMesh);
 
 public:
   /*!

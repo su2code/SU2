@@ -7695,7 +7695,7 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(CConfig *config) {
 
   /*--- Communicate unique nodes to all processes. In case of serial mode nothing happens. ---*/
   SU2_MPI::Allgather(Buffer_Send_RefNode.data(), nDim, MPI_DOUBLE,
-                      Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+                     Buffer_Recv_RefNode.data(), nDim, MPI_DOUBLE, MPI_COMM_WORLD);
 
   /*-------------------------------------------------------------------------------------------*/
   /*--- Step 2: Amongst all local nodes with the smallest distance to the origin, find the  ---*/

@@ -160,7 +160,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
 
     /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
-    GetStreamwise_Periodic_Properties(geometry, config, iMesh, Output);
+    GetStreamwise_Periodic_Properties(geometry, config, iMesh);
   } // if streamwise periodic
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
