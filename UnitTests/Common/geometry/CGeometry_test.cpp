@@ -133,10 +133,6 @@ TEST_CASE("Set control volume", "[Geometry]"){
   CHECK(TestCase->geometry->elem[3]->GetCG(1)  == 0.125);
   CHECK(TestCase->geometry->elem[25]->GetCG(2) == 0.375);
 
-  CHECK(TestCase->geometry->bound[1][4]->GetCG(0) == 1.0);
-  CHECK(TestCase->geometry->bound[3][2]->GetCG(1) == 1.0);
-  CHECK(TestCase->geometry->bound[4][3]->GetCG(2) == 0.0);
-
   CHECK(TestCase->geometry->nodes->GetVolume(42) == Approx(0.015625));
 
   CHECK(TestCase->geometry->edges->GetNormal(32)[0] == 0.03125);
@@ -150,6 +146,10 @@ TEST_CASE("Set control volume", "[Geometry]"){
 TEST_CASE("Set bound control volume", "[Geometry]"){
 
   TestCase->geometry->SetBoundControlVolume(TestCase->config.get(), ALLOCATE);
+
+  CHECK(TestCase->geometry->bound[1][4]->GetCG(0) == 1.0);
+  CHECK(TestCase->geometry->bound[3][2]->GetCG(1) == 1.0);
+  CHECK(TestCase->geometry->bound[4][3]->GetCG(2) == 0.0);
 
   CHECK(TestCase->geometry->vertex[0][4]->GetNormal()[0] == -0.0625);
   CHECK(TestCase->geometry->vertex[3][2]->GetNormal()[1] == -0.0625);
