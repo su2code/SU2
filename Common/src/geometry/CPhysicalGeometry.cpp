@@ -6677,73 +6677,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
 }
 
-void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned short action) {
-
-  SU2_OMP_MASTER {
-
-  unsigned short iMarker, iNode, iNeighbor_Nodes, iDim;
-  unsigned long iElem, iVertex;
-
-  /*--- Update values of faces of the edge ---*/
-
-  if (action != ALLOCATE)
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        vertex[iMarker][iVertex]->SetZeroValues();
-
-  /*--- Loop over all the markers ---*/
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-
-  /*--- Loop over all the boundary elements ---*/
-
-    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++)
-
-    /*--- Loop over all the nodes of the boundary ---*/
-
-      for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
-
-        /*--- Loop over the neighbor nodes, there is a face for each one ---*/
-
-        for (iNeighbor_Nodes = 0; iNeighbor_Nodes < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor_Nodes++) {
-          const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor_Nodes);
-          const auto Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
-
-          const su2double* Coord_Elem_CG = bound[iMarker][iElem]->GetCG();
-          const su2double* Coord_Vertex = nodes->GetCoord(iPoint);
-
-          su2double Coord_Edge_CG[MAXNDIM] = {0.0};
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + nodes->GetCoord(Neighbor_Point, iDim));
-          }
-
-          if (nDim == 2) {
-            /*--- Store the 2D face ---*/
-            if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
-            if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
-          }
-          else {
-            /*--- Store the 3D face ---*/
-            if (iNeighbor_Nodes == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
-            if (iNeighbor_Nodes == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
-          }
-        }
-      }
-
-  /*--- Check if there is a normal with null area ---*/
-
-  for (iMarker = 0; iMarker < nMarker; iMarker ++)
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      auto NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      auto Area = GeometryToolbox::Norm(nDim, NormalFace);
-      if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
-    }
-
-  } SU2_OMP_BARRIER
-}
-
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
   SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,omp_get_max_threads()))
@@ -7562,25 +7495,6 @@ void CPhysicalGeometry::MatchPeriodic(CConfig        *config,
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
 
-  /*--- Center of gravity for face elements ---*/
-
-  SU2_OMP_FOR_DYN(1)
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-
-      /*--- Get pointers to the coordinates of all the element nodes ---*/
-      array<const su2double*, N_POINTS_MAXIMUM> Coord;
-
-      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        auto elem_poin = bound[iMarker][iElem]->GetNode(iNode);
-        Coord[iNode] = nodes->GetCoord(elem_poin);
-      }
-
-      /*--- Compute the element CG coordinates ---*/
-      bound[iMarker][iElem]->SetCoord_CG(Coord.data());
-    }
-  }
-
   /*--- Update values of faces of the edge ---*/
   if (action != ALLOCATE) {
     su2double ZeroArea[MAXNDIM] = {0.0};
@@ -7669,8 +7583,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_Edge_CG[iDim] = 0.5 * (Coord_FaceiPoint[iDim] + Coord_FacejPoint[iDim]);
         }
 
-//        AD::SetPreaccIn(edges->Normal[iEdge], nDim);
-
         su2double Volume_i, Volume_j;
 
         if (nDim == 2) {
@@ -7696,8 +7608,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 
         nodes->AddVolume(face_iPoint, Volume_i);
         nodes->AddVolume(face_jPoint, Volume_j);
-
-//        AD::SetPreaccOut(edges->Normal[iEdge], nDim);
 
         my_DomainVolume += Volume_i+Volume_j;
       }
@@ -7732,11 +7642,82 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   SU2_OMP_FOR_STAT(1024)
   for (auto iEdge = 0ul; iEdge < nEdge; iEdge++) {
     const auto Area2 = GeometryToolbox::SquaredNorm(nDim, edges->GetNormal(iEdge));
-    if (Area2 == 0.0) {
-      su2double DefaultArea[3] = {EPS*EPS};
-      edges->SetNormal(iEdge, DefaultArea);
+    su2double DefaultArea[MAXNDIM] = {EPS*EPS};
+    if (Area2 == 0.0) edges->SetNormal(iEdge, DefaultArea);
+  }
+}
+
+void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned short action) {
+
+  SU2_OMP_MASTER {
+
+  /*--- Update values of faces of the edge ---*/
+
+  if (action != ALLOCATE)
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
+      for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        vertex[iMarker][iVertex]->SetZeroValues();
+
+  /*--- Loop over all the boundary elements ---*/
+
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+
+      /*--- Get pointers to the coordinates of all the element nodes ---*/
+      array<const su2double*, N_POINTS_MAXIMUM> Coord;
+
+      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        auto elem_poin = bound[iMarker][iElem]->GetNode(iNode);
+        Coord[iNode] = nodes->GetCoord(elem_poin);
+      }
+
+      /*--- Compute the element CG coordinates ---*/
+      const su2double* Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(Coord);
+
+      /*--- Loop over all the nodes of the boundary element ---*/
+
+      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+
+        const su2double* Coord_Vertex = nodes->GetCoord(iPoint);
+
+        /*--- Loop over the neighbor nodes, there is a face for each one ---*/
+
+        for (unsigned short iNeighbor = 0; iNeighbor < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+          const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor);
+          const auto Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
+
+          if (nDim == 2) {
+            /*--- Store the 2D face ---*/
+            if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
+            if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
+          }
+          else {
+            /*--- Store the 3D face ---*/
+            su2double Coord_Edge_CG[MAXNDIM] = {0.0};
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + nodes->GetCoord(Neighbor_Point, iDim));
+
+            if (iNeighbor == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
+            if (iNeighbor == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
+          }
+        }
+      }
     }
   }
+
+  /*--- Check if there is a normal with null area ---*/
+
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker ++) {
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      auto Area2 = GeometryToolbox::SquaredNorm(nDim, vertex[iMarker][iVertex]->GetNormal());
+      su2double DefaultArea[MAXNDIM] = {EPS*EPS};
+      if (Area2 == 0.0) vertex[iMarker][iVertex]->SetNormal(DefaultArea);
+    }
+  }
+
+  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {

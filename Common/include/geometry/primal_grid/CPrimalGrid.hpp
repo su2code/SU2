@@ -172,7 +172,7 @@ public:
   inline su2double* SetCoord_CG(const T& val_coord) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       Coord_CG[iDim] = 0.0;
-      for (unsigned short iNode = 0; iNode < GetnNodes();  iNode++)
+      for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
         Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
     }
     return Coord_CG;
