@@ -36,10 +36,10 @@ CUpwAUSM_NEMO::CUpwAUSM_NEMO(unsigned short val_nDim, unsigned short val_nVar,
 
   FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
-  dmLP   = new su2double [nVar];
-  dmRM   = new su2double [nVar];
-  dpLP   = new su2double [nVar];
-  dpRM   = new su2double [nVar];
+  //dmLP   = new su2double [nVar];
+  //dmRM   = new su2double [nVar];
+  //dpLP   = new su2double [nVar];
+  //dpRM   = new su2double [nVar];
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
   u_i    = new su2double [nDim];
@@ -53,10 +53,10 @@ CUpwAUSM_NEMO::~CUpwAUSM_NEMO(void) {
   
   delete [] FcL;
   delete [] FcR;
-  delete [] dmLP;
-  delete [] dmRM;
-  delete [] dpLP;
-  delete [] dpRM;
+  //delete [] dmLP;
+  //delete [] dmRM;
+  //delete [] dpLP;
+  //delete [] dpRM;
   delete [] rhos_i;
   delete [] rhos_j;
   delete [] u_i;
