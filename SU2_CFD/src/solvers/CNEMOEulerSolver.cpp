@@ -1443,7 +1443,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
      CURRENT_FUNCTION);
    #endif    
    break;
-  case USER_DEFINED_NONEQ:
+  case SU2_NONEQ:
    FluidModel = new CSU2TCLib(config, nDim, viscous);
    break;
   }
@@ -1702,7 +1702,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
     ModelTable << config->GetGasModel();
 
     switch(config->GetKind_FluidModel()){
-    case USER_DEFINED_NONEQ:
+    case SU2_NONEQ:
       ModelTable << "SU2 NonEq";
       break;
     case MUTATIONPP:

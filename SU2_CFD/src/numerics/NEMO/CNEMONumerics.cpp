@@ -71,7 +71,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
           CURRENT_FUNCTION);
         #endif    
       break;
-      case USER_DEFINED_NONEQ:
+      case SU2_NONEQ:
         fluidmodel = new CSU2TCLib(config, nDim, false);
       break;
     }

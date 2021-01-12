@@ -3221,7 +3221,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
-                    (Kind_FluidModel == USER_DEFINED_NONEQ));
+                    (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   bool nemo = GetNEMOProblem();
 
@@ -3584,10 +3584,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (SystemMeasurements == US && !standard_air) {
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
-  }
-
-  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
-    SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
   }
 
   if (nemo && Kind_TransCoeffModel != WILKE ) {
@@ -5606,14 +5602,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+        if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+        if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
