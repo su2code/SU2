@@ -1911,6 +1911,7 @@ void CTurbSSTSolver::ComputeKnoppWallFunction(CGeometry *geometry, CSolver **sol
   /*--- MPI solution ---*/
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
+  SetPrimitive_Variables(solver);
   SetEddyViscosity(geometry, solver);
 }
 
