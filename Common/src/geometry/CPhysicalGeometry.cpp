@@ -8461,40 +8461,38 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
       /*-- Loop over the edges of a face ---*/
       for (unsigned short iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
 
-        const auto face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
-        unsigned long face_jPoint;
+        const auto face_iNode = elem[iElem]->GetFaces(iFace,iEdgesFace);
+        unsigned short face_jNode;
 
         if (nDim == 2) {
           /*--- In 2D only one edge (two points) per edge ---*/
-          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
+          face_jNode = elem[iElem]->GetFaces(iFace,1);
         }
         else {
           /*--- In 3D we "circle around" the face ---*/
-          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace));
+          face_jNode = elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace);
         }
 
-        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
-        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
+        const auto face_iPoint = elem[iElem]->GetNode(face_iNode);
+        const auto face_jPoint = elem[iElem]->GetNode(face_jNode);
 
         su2double Coord_Edge_CG[MAXNDIM] = {0.0};
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Coord_Edge_CG[iDim] = 0.5 * (Coord_FaceiPoint[iDim] + Coord_FacejPoint[iDim]);
+          Coord_Edge_CG[iDim] = 0.5 * (Coord[face_iNode][iDim] + Coord[face_jNode][iDim]);
         }
 
         /*--- Access the sub-volume of the element separately in 2D or 3D. ---*/
 
         su2double Volume_i, Volume_j;
-        switch (nDim) {
-          case 2:
-            Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
-            Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
-            break;
-          case 3:
-            Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG,
-                                        Coord_FaceElem_CG, Coord_Elem_CG);
-            Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG,
-                                        Coord_FaceElem_CG, Coord_Elem_CG);
-            break;
+        if (nDim == 2) {
+          Volume_i = CEdge::GetVolume(Coord[face_iNode], Coord_Edge_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord[face_jNode], Coord_Edge_CG, Coord_Elem_CG);
+        }
+        else {
+          Volume_i = CEdge::GetVolume(Coord[face_iNode], Coord_Edge_CG,
+                                      Coord_FaceElem_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord[face_jNode], Coord_Edge_CG,
+                                      Coord_FaceElem_CG, Coord_Elem_CG);
         }
 
         /*--- Check if sub-elem volume is the min or max for iPoint. ---*/
