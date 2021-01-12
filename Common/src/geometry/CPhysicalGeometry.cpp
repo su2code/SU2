@@ -8243,7 +8243,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig *config) {
 
   /*--- Some recommended defaults for the various ParMETIS options. ---*/
 
-  idx_t wgtflag = 2;
+  idx_t wgtflag = 0;
   idx_t numflag = 0;
   idx_t ncon    = 1;
   real_t ubvec  = 1.0 + config->GetParMETIS_Tolerance();
