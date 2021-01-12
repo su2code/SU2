@@ -60,7 +60,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   string filename_ = "flow";
 
   bool nonPhys;
-  vector<su2double> Energies_Inf;
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -238,7 +237,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       for (iDim = 0; iDim < nDim; iDim++){
         sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
       }      
-      Energies_Inf = FluidModel->ComputeMixtureEnergies();
+      const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
   
       /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -925,8 +924,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       /*--- Check for non-physical solutions after reconstruction. If found, use the
        cell-average value of the solution. This is a locally 1st order approximation,
        which is typically only active during the start-up of a calculation. ---*/
-      bool chk_err_i = nodes->CheckNonPhys(Primitive_i);
-      bool chk_err_j = nodes->CheckNonPhys(Primitive_j);
+      bool chk_err_i = CheckNonPhys(Primitive_i);
+      bool chk_err_j = CheckNonPhys(Primitive_j);
 
       nodes->SetNon_Physical(iPoint, chk_err_i);
       nodes->SetNon_Physical(jPoint, chk_err_j);
@@ -943,8 +942,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- Recompute Conserved variables if Roe or MSW scheme ---*/
       if ((config->GetKind_Upwind_Flow() == ROE) || (config->GetKind_Upwind_Flow() == MSW)){
-        if (!chk_err_i) nodes->Prim2ConsVar(Conserved_i,Primitive_i);
-        if (!chk_err_j) nodes->Prim2ConsVar(Conserved_j,Primitive_j);
+        if (!chk_err_i) RecomputeConservativeVector(Conserved_i, Primitive_i);
+        if (!chk_err_j) RecomputeConservativeVector(Conserved_j, Primitive_j);
       }
 
       /*--- If non-physical, revert to first order ---*/
@@ -1026,15 +1025,88 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
   fluidmodel->SetTDStateRhosTTv(rhos, V[T_INDEX], V[TVE_INDEX]);
 
   /*---Compute the secondary values ---*/
+  // This block of code copies a vector to corresponding pointer.
   auto it = val_eves;
   auto& ref = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
   for (auto v : ref) {
     *it = v;  ++it;
   }
-  val_eves  = it;
+
   val_gamma = fluidmodel->ComputeGamma();
 
   return val_gamma;
+}
+
+void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double *V) const {
+
+  /*---Useful variables ---*/
+  vector<su2double> rhos;
+  rhos.resize(nSpecies,0.0);
+
+  /*--- Set Indices ---*/
+  //Make these in a general location
+  unsigned short RHO_INDEX = nodes->GetRhoIndex();
+  unsigned short T_INDEX   = nodes->GetTIndex();
+  unsigned short TVE_INDEX = nodes->GetTveIndex();
+  unsigned short VEL_INDEX = nodes->GetVelIndex();
+  
+  /*--- Set densities and mass fraction ---*/
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    U[iSpecies]    = V[iSpecies];
+    rhos[iSpecies] = V[iSpecies];
+  }
+
+  /*--- Set momentum and compute v^2 ---*/
+  //TODO: geometry toolbox
+  su2double sqvel = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
+    sqvel           += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+  }
+
+  /*--- Set the fluidmodel and recompute energies ---*/
+  FluidModel->SetTDStateRhosTTv( rhos, V[T_INDEX], V[TVE_INDEX]);
+  const auto& Energies = FluidModel->ComputeMixtureEnergies();
+
+  /*--- Set conservative energies ---*/
+  U[nSpecies+nDim]   = V[RHO_INDEX]*(Energies[0]+0.5*sqvel);
+  U[nSpecies+nDim+1] = V[RHO_INDEX]*(Energies[1]);
+
+}
+
+bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
+
+  su2double Tmin, Tmax, Tvemin, Tvemax;
+
+  /*--- Set booleans ---*/
+  bool nonPhys = false;
+
+  /*--- Set Indices ---*/
+  //Make these in a general location
+  unsigned short RHOS_INDEX = nodes->GetRhosIndex();
+  unsigned short T_INDEX    = nodes->GetTIndex();
+  unsigned short TVE_INDEX  = nodes->GetTveIndex();
+  unsigned short P_INDEX    = nodes->GetPIndex();
+  unsigned short A_INDEX    = nodes->GetAIndex();
+
+  /*--- Set temperature clipping values ---*/
+  Tmin   = 50.0; Tmax   = 8E4;
+  Tvemin = 50.0; Tvemax = 8E4;
+
+  /*--- Check whether state makes sense ---*/
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    if (V[RHOS_INDEX+iSpecies] < 0.0) nonPhys = true;
+
+  if (V[P_INDEX] < 0.0) nonPhys = true;
+
+  if (V[T_INDEX] < Tmin || V[T_INDEX] > Tmax) nonPhys = true;
+
+  if (V[TVE_INDEX] < Tvemin || V[TVE_INDEX] > Tvemax) nonPhys = true;
+
+  if (V[A_INDEX] < 0.0 ) nonPhys = true;
+
+  return nonPhys;
+
 }
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
@@ -1209,6 +1281,7 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
+
 }
 
 void CNEMOEulerSolver::ExplicitRK_Iteration(CGeometry *geometry,CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
@@ -1343,7 +1416,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Density_FreeStreamND   = 0.0;
 
   su2double Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0};
-  vector<su2double> energies;
 
   unsigned short iDim;
 
@@ -1418,7 +1490,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
   /*--- Calculate energies ---*/
-  energies = FluidModel->ComputeMixtureEnergies();
+  const auto& energies = FluidModel->ComputeMixtureEnergies();
 
   /*--- Viscous initialization ---*/
   if (viscous) {
@@ -2261,7 +2333,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
   unsigned long iVertex, iPoint;
   su2double Pressure, P_Exit, Velocity[3], Temperature, Tve, Velocity2, Entropy, Density,
   Riemann, Vn, SoundSpeed, Mach_Exit, Vn_Exit, Area, UnitNormal[3];
-  vector<su2double> rhos, energies;
+  vector<su2double> rhos;
 
   rhos.resize(nSpecies,0.0);
 
@@ -2411,7 +2483,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
         V_outlet[RHOCVTR_INDEX] = FluidModel->ComputerhoCvtr();
         V_outlet[RHOCVVE_INDEX] = FluidModel->ComputerhoCvve();
 
-        energies = FluidModel->ComputeMixtureEnergies();
+        const auto& energies = FluidModel->ComputeMixtureEnergies();
 
         /*--- Conservative variables, using the derived quantities ---*/
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies ++){
