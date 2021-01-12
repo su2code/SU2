@@ -33,6 +33,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
+#include "../../include/fluid/CLUTGas.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -1571,6 +1572,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                         config->GetTemperature_Critical(), config->GetAcentric_Factor());
       break;
+      
+    case LUT_GAS:
+
+      auxFluidModel = new CLUTGas();
+      break;
 
     default:
       SU2_MPI::Error("Unknown fluid model.", CURRENT_FUNCTION);
@@ -1802,6 +1808,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
                                                config->GetTemperature_Critical() / config->GetTemperature_Ref(),
                                                config->GetAcentric_Factor());
         break;
+        
+      case LUT_GAS:
+        FluidModel[thread] = new CLUTGas();
+        break;
     }
 
     GetFluidModel()->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
@@ -1940,6 +1950,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
     case PR_GAS:
       ModelTable << "PR_GAS";
+      break;
+    case LUT_GAS:
+      ModelTable << "LUT_GAs";
       break;
     }
 

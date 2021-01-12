@@ -1531,6 +1531,10 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
           Breakdown_file << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << "\n";
           Breakdown_file << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << "\n";
           break;
+          
+        case LUT_GAS:
+          Breakdown_file << "Fluid Model: LUT_GAS "<< "\n";
+          break;
       }
 
       if (viscous) {
