@@ -176,8 +176,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   ProjVelst_i = onemw*ProjVel_i + w*ProjVel_j;
   ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
 
-  vector<su2double> eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
-  vector<su2double> eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);
+  auto& eves_st_i = fluidmodel->ComputeSpeciesEve(Vst_i[TVE_INDEX]);
+  auto& eves_st_j = fluidmodel->ComputeSpeciesEve(Vst_j[TVE_INDEX]);
 
   fluidmodel->ComputedPdU(Vst_i, eves_st_i, dPdUst_i);
   fluidmodel->ComputedPdU(Vst_j, eves_st_j, dPdUst_j);
@@ -199,7 +199,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
   CreateBasis(UnitNormal);
-  GetPMatrix    (Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, P_Tensor   );
+  GetPMatrix(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_i, Vst_i, dPdUst_i, UnitNormal, l, m, invP_Tensor);
 
   /*--- Projected flux (f+) at i ---*/
@@ -233,8 +233,8 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
   CreateBasis(UnitNormal);
-  GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
-  GetPMatrix_inv(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, invP_Tensor);
+  GetPMatrix(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, P_Tensor);
+  GetPMatrix_inv(Ust_j, Vst_j, dPdUst_j, UnitNormal, l, m, invP_Tensor);
 
   /*--- Projected flux (f-) ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

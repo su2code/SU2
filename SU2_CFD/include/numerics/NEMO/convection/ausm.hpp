@@ -38,11 +38,13 @@
  */
 class CUpwAUSM_NEMO : public CNEMONumerics {
 private:
-  su2double *FcL, *FcR, *FcLR;
-  su2double *dmLP, *dmRM, *dpLP, *dpRM;
-  su2double *daL, *daR;
+  su2double *FcL, *FcR;
+  //su2double *FcLR;
+  //su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  //su2double *daL, *daR;
   su2double ProjVel_i, ProjVel_j;
-  su2double sq_vel, Proj_ModJac_Tensor_ij;
+  su2double sq_vel;
+  //su2double  Proj_ModJac_Tensor_ij;
  
 public:
 

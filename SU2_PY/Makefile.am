@@ -72,13 +72,9 @@ nobase_dist_mypkg_DATA= \
     SU2/io/tools.py \
     SU2/io/historyMap.py \
     SU2/io/__init__.py \
-    SU2/mesh/adapt.py \
-    SU2/mesh/tools.py \
-    SU2/mesh/__init__.py \
     SU2/opt/project.py \
     SU2/opt/scipy_tools.py \
     SU2/opt/__init__.py \
-    SU2/run/adaptation.py \
     SU2/run/adjoint.py \
     SU2/run/deform.py \
     SU2/run/direct.py \
