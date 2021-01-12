@@ -297,13 +297,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
   unsigned short iDim, iSpecies, iVar;
   su2double rho, rhov, vel2, H, yinv, T, Tve, qy_ve, Ru, RuSI;
-  su2double *V, *Ds, **GV, mu, ktr, kve, div_vel;
-
-  auto& Ms = fluidmodel->GetSpeciesMolarMass();
-  
-  bool viscous = config->GetViscous();
-  bool rans = (config->GetKind_Turb_Model() != NONE);
-  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, eve_i);
+  su2double *Ds, **GV, ktr, kve;
 
   Ds = Diffusion_Coeff_i;
   ktr = Thermal_Conductivity_i;
@@ -314,6 +308,12 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   GV  = PrimVar_Grad_i;
   RuSI= UNIVERSAL_GAS_CONSTANT;
   Ru  = 1000.0*RuSI;
+
+  auto& Ms = fluidmodel->GetSpeciesMolarMass();
+  
+  bool viscous = config->GetViscous();
+  bool rans = (config->GetKind_Turb_Model() != NONE);
+  hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, eve_i);
 
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
