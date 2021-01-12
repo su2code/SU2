@@ -34,21 +34,18 @@
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 2.0.6
+ * \version 7.0.8
  */
 class CCentLax_NEMO : public CNEMONumerics {
 private:
-  unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+  unsigned short iDim, iVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_U; /*!< \brief Difference of conservative variables. */
   su2double *MeanU, *MeanV;
-  vector<su2double> mean_eves;
-  su2double *MeandPdU;
   su2double *ProjFlux;  /*!< \brief Projected inviscid flux tensor. */
   su2double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */
   su2double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eigenvalues. */
   su2double Phi_i, Phi_j, sc0, StretchingFactor; /*!< \brief Streching parameters. */
-  su2double Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
-  bool stretching;
+  su2double Epsilon_0; /*!< \brief Artificial dissipation values. */
 
 public:
 
