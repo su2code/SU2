@@ -99,8 +99,8 @@ void CFEMStandardTetBase::ConvertCoor2DTriFaceTo3DTet(const vector<passivedouble
       switch( orientation ) {
         case 0: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]= sF[k]; t[k]=-1.0;} break; 
         case 1: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]= rF[k]; t[k]=-1.0;} break;
-        case 2: for(k=0; k<nP; ++k) {r[k]=-rF[k]; s[k]= sF[k]; t[k]=-1.0;} break;
-        case 3: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]=-sF[k]; t[k]=-1.0;} break;
+        case 2: for(k=0; k<nP; ++k) {s[k]= sF[k]; t[k]=-1.0;   r[k]=-1.0-rF[k]-sF[k];} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]= rF[k]; t[k]=-1.0;   s[k]=-1.0-rF[k]-sF[k];} break;
         default:
           SU2_MPI::Error(string("Invalid orientation for face 0. This should not happen."),
                          CURRENT_FUNCTION);
@@ -110,10 +110,10 @@ void CFEMStandardTetBase::ConvertCoor2DTriFaceTo3DTet(const vector<passivedouble
 
     case 1: {
       switch( orientation ) {
-        case 0: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]=-1.0; t[k]= rF[k];} break;
-        case 1: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]=-1.0; t[k]= sF[k];} break;
-        case 2: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]=-1.0; t[k]=-rF[k];} break;
-        case 3: for(k=0; k<nP; ++k) {r[k]=-sF[k]; s[k]=-1.0; t[k]= rF[k];} break;
+        case 0: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]=-1.0;   t[k]= rF[k];} break;
+        case 1: for(k=0; k<nP; ++k) {r[k]= rF[k]; s[k]=-1.0;   t[k]= sF[k];} break;
+        case 2: for(k=0; k<nP; ++k) {r[k]= sF[k]; s[k]=-1.0;   t[k]=-1.0-rF[k]-sF[k];} break;
+        case 3: for(k=0; k<nP; ++k) {s[k]=-1.0;   t[k]= rF[k]; r[k]=-1.0-rF[k]-sF[k];} break;
         default:
           SU2_MPI::Error(string("Invalid orientation for face 1. This should not happen."),
                          CURRENT_FUNCTION);
@@ -125,8 +125,8 @@ void CFEMStandardTetBase::ConvertCoor2DTriFaceTo3DTet(const vector<passivedouble
       switch( orientation ) {
         case 0: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= rF[k]; t[k]= sF[k];} break;
         case 1: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= sF[k]; t[k]= rF[k];} break;
-        case 2: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]=-rF[k]; t[k]= sF[k];} break;
-        case 3: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= rF[k]; t[k]=-sF[k];} break;
+        case 2: for(k=0; k<nP; ++k) {r[k]=-1.0; t[k]= sF[k]; s[k]=-1.0-rF[k]-sF[k];} break;
+        case 3: for(k=0; k<nP; ++k) {r[k]=-1.0; s[k]= rF[k]; t[k]=-1.0-rF[k]-sF[k];} break;
         default:
           SU2_MPI::Error(string("Invalid orientation for face 2. This should not happen."),
                          CURRENT_FUNCTION);

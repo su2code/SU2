@@ -80,6 +80,9 @@ public:
 
 private:
 
+  unsigned short faceID_Elem;   /*!< \brief Face ID of the adjacent prism, which corresponds to this face. */
+  unsigned short orientation;   /*!< \brief Orientation of this face relative to the adjacent prism. */
+
   CGemmStandard *gemmDOFs2Int = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the
                                                      integration points of the face from the volume DOFs. */
   CGemmStandard *gemmInt2DOFs = nullptr; /*!< \brief Pointer to the gemm type used to to compute the data in the

@@ -51,15 +51,15 @@ CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPolyGrid,
 
   /*--- Compute the 1D Lagrangian basis functions and its first
         and second derivatives in the integration points. ---*/
-  LagBasisIntPointsLine(rLineDOFs, rLineInt, lagBasisLineInt);
-  DerLagBasisIntPointsLine(rLineDOFs, rLineInt, derLagBasisLineInt);
-  HesLagBasisIntPointsLine(rLineDOFs, rLineInt, hesLagBasisLineInt);
+  LagBasisIntPointsLine(rLineDOFs, rLineInt, true, lagBasisLineInt);
+  DerLagBasisIntPointsLine(rLineDOFs, rLineInt, true, derLagBasisLineInt);
+  HesLagBasisIntPointsLine(rLineDOFs, rLineInt, true, hesLagBasisLineInt);
 
   /*--- Call LagBasisIntPointsLine and DerLagBasisIntPointsLine with the
         solution DOFs as argument to compute the Lagrangian basis functions
         and its derivatives in the solution DOFs. ---*/
-  LagBasisIntPointsLine(rLineDOFs, rLineSolDOFs, lagBasisLineSolDOFs);
-  DerLagBasisIntPointsLine(rLineDOFs, rLineSolDOFs, derLagBasisLineSolDOFs);
+  LagBasisIntPointsLine(rLineDOFs, rLineSolDOFs, true, lagBasisLineSolDOFs);
+  DerLagBasisIntPointsLine(rLineDOFs, rLineSolDOFs, true, derLagBasisLineSolDOFs);
 
   /*--- Determine the local subconnectivity of this standard element when split
         in several linear elements. Used for a.o. plotting and searcing. ---*/

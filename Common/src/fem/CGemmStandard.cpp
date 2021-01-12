@@ -81,12 +81,14 @@ void CGemmStandard::DOFs2Int(ColMajorMatrix<passivedouble> &basis,
   /*--- Check if the jitted gemm call can be used. ---*/
 #if defined(PRIMAL_SOLVER) && defined(HAVE_MKL)
 
-  /*--- A couple of checks to see if the jitted gemm call is
-        used correctly. ---*/
-  assert(nVar != N);
-  assert(MP   != basis.rows());
-  assert(MP   != dataInt.rows());
-  assert(K    != dataDOFs.rows());
+  /*--- A couple of checks to see if this function is used correctly. ---*/
+  assert(nVar == N);
+  assert(MP   == basis.rows());
+  assert(MP   == dataInt.rows());
+  assert(K    == dataDOFs.rows());
+  assert(K    == basis.cols());
+  assert(nVar == dataInt.cols());
+  assert(nVar == dataDOFs.cols());
 
 /*--- Carry out the timing, if desired and call the jitted gemm function. ---*/
 #ifdef PROFILE

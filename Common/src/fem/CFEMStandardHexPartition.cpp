@@ -42,13 +42,13 @@ CFEMStandardHexPartition::CFEMStandardHexPartition(const unsigned short val_nPol
 
   /*--- Compute the values of the 1D Lagrangian basis functions in the integration
         points for both the equidistant and LGL point distribution. ---*/
-  LagBasisIntPointsLine(rLineDOFsEqui, rLineInt, lagBasisLineIntEqui);
-  LagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, lagBasisLineIntLGL);
+  LagBasisIntPointsLine(rLineDOFsEqui, rLineInt, true, lagBasisLineIntEqui);
+  LagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, true, lagBasisLineIntLGL);
 
   /*--- Compute the values of the derivatives of the 1D Lagrangian basis functions in
         the integration points for both the equidistant and LGL point distribution. ---*/
-  DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, derLagBasisLineIntEqui);
-  DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, derLagBasisLineIntLGL);
+  DerLagBasisIntPointsLine(rLineDOFsEqui, rLineInt, true, derLagBasisLineIntEqui);
+  DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, true, derLagBasisLineIntLGL);
 
   /*--- Create the local grid connectivities of the faces of the volume element. ---*/
   LocalGridConnFaces();

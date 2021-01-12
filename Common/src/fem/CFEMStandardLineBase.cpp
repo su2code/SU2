@@ -74,12 +74,13 @@ CFEMStandardLineBase::CFEMStandardLineBase(const unsigned short val_nPoly,
 
 void CFEMStandardLineBase::DerLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
                                                     const vector<passivedouble>   &rInt,
+                                                    const bool                    usePadding,
                                                     ColMajorMatrix<passivedouble> &derLag) {
 
   /*--- Determine the number of integration points along the line
-        and its padded value. ---*/
+        and its padded value, if necessary. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = PaddedValue(nIntLine);
+  const unsigned short nIntPadLine = usePadding ? PaddedValue(nIntLine) : nIntLine;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -102,12 +103,13 @@ void CFEMStandardLineBase::DerLagBasisIntPointsLine(const vector<passivedouble> 
 
 void CFEMStandardLineBase::HesLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
                                                     const vector<passivedouble>   &rInt,
+                                                    const bool                    usePadding,
                                                     ColMajorMatrix<passivedouble> &hesLag) {
 
   /*--- Determine the number of integration points along the line
-        and its padded value. ---*/
+        and its padded value, if necessary. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = PaddedValue(nIntLine);
+  const unsigned short nIntPadLine = usePadding ? PaddedValue(nIntLine) : nIntLine;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());
@@ -130,12 +132,13 @@ void CFEMStandardLineBase::HesLagBasisIntPointsLine(const vector<passivedouble> 
 
 void CFEMStandardLineBase::LagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
                                                  const vector<passivedouble>   &rInt,
+                                                 const bool                    usePadding,
                                                  ColMajorMatrix<passivedouble> &lag) {
 
   /*--- Determine the number of integration points along the line
-        and its padded value. ---*/
+        and its padded value, if necessary. ---*/
   const unsigned short nIntLine    = rInt.size();
-  const unsigned short nIntPadLine = PaddedValue(nIntLine);
+  const unsigned short nIntPadLine = usePadding ? PaddedValue(nIntLine) : nIntLine;
 
   /*--- Determine the inverse of the Vandermonde matrix of rDOFs. ---*/
   CSquareMatrixCM VInv(rDOFs.size());

@@ -64,15 +64,15 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
         coordinates in normal direction. ---*/
   ColMajorMatrix<passivedouble> lagN, derLagN;
 
-  LagBasisIntPointsLine(rLineDOFs, rNormal, lagN);
-  DerLagBasisIntPointsLine(rLineDOFs, rNormal, derLagN);
+  LagBasisIntPointsLine(rLineDOFs, rNormal, false, lagN);
+  DerLagBasisIntPointsLine(rLineDOFs, rNormal, false, derLagN);
 
   /*--- Create the 1D Lagrangian basis functions for the parametric
         coordinates in tangential direction. ---*/
   ColMajorMatrix<passivedouble> lagT, derLagT;
 
-  LagBasisIntPointsLine(rLineDOFs, rTangential, lagT);
-  DerLagBasisIntPointsLine(rLineDOFs, rTangential, derLagT);
+  LagBasisIntPointsLine(rLineDOFs, rTangential, true, lagT);
+  DerLagBasisIntPointsLine(rLineDOFs, rTangential, true, derLagT);
 
   /*--- Allocate the memory for the first index of tensorSol, etc. As this
         function is only called for 2D simulations, there are two

@@ -97,6 +97,17 @@ public:
    */
   void CoorIntPoints(ColMajorMatrix<su2double> &coorGridDOFsVol,
                      ColMajorMatrix<su2double> &coorIntPointsFace);
+
+  /*!
+   * \brief Function, which determines the coordinates of the integration points of the
+   *        face from the coordinates of the element on side 1. This function is only
+   *        used for debugging purposes.
+   * \param[in]  coorGridDOFsVol   - The coordinates of the grid DOFs of the element on side 0.
+   * \param[out] coorIntPointsFace - The coordinates of the integration points on the face.
+   */
+  void CoorIntPointsFromSide1(ColMajorMatrix<su2double> &coorGridDOFsVol,
+                              ColMajorMatrix<su2double> &coorIntPointsFace);
+
 private:
 
 };

@@ -66,22 +66,22 @@ CFEMStandardQuadAdjacentHexGrid::CFEMStandardQuadAdjacentHexGrid(const unsigned 
         coordinates in normal direction. ---*/
   ColMajorMatrix<passivedouble> lagN, derLagN;
 
-  LagBasisIntPointsLine(rLineDOFs, rNorm, lagN);
-  DerLagBasisIntPointsLine(rLineDOFs, rNorm, derLagN);
+  LagBasisIntPointsLine(rLineDOFs, rNorm, false, lagN);
+  DerLagBasisIntPointsLine(rLineDOFs, rNorm, false, derLagN);
 
   /*--- Create the 1D Lagrangian basis functions for the parametric
         coordinates in first tangential direction. ---*/
   ColMajorMatrix<passivedouble> lagT0, derLagT0;
 
-  LagBasisIntPointsLine(rLineDOFs, rTang0, lagT0);
-  DerLagBasisIntPointsLine(rLineDOFs, rTang0, derLagT0);
+  LagBasisIntPointsLine(rLineDOFs, rTang0, true, lagT0);
+  DerLagBasisIntPointsLine(rLineDOFs, rTang0, true, derLagT0);
 
   /*--- Create the 1D Lagrangian basis functions for the parametric
         coordinates in second tangential direction. ---*/
   ColMajorMatrix<passivedouble> lagT1, derLagT1;
 
-  LagBasisIntPointsLine(rLineDOFs, rTang1, lagT1);
-  DerLagBasisIntPointsLine(rLineDOFs, rTang1, derLagT1);
+  LagBasisIntPointsLine(rLineDOFs, rTang1, true, lagT1);
+  DerLagBasisIntPointsLine(rLineDOFs, rTang1, true, derLagT1);
 
   /*--- Allocate the memory for the first index of tensorSol, etc. As this
         function is only called for 3D simulations, there are three

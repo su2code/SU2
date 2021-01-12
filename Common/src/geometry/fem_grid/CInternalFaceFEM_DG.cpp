@@ -60,5 +60,22 @@ void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const bool               
 
   standardElemGrid->CoorIntPoints(volElem[elemID0].coorGridDOFs, coorIntegrationPoints);
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- DEBUG: COMPUTE THE COORDINATES OF THE INTEGRATION POINTS FROM THE DATA
+               OF THE ELEMENT ON SIDE 1 AND COMPARE THE RESULTS. ---*/
+  ColMajorMatrix<su2double> coorSide1(nIntPad, nDim);
+  standardElemGrid->CoorIntPointsFromSide1(volElem[elemID1].coorGridDOFs, coorSide1);
+
+  for(unsigned short i=0; i<standardElemGrid->GetNIntegration(); ++i) {
+    su2double dist2 = 0.0;
+    for(unsigned short j=0; j<nDim; ++j) {
+      const su2double ds = coorIntegrationPoints(i,j) - coorSide1(i,j);
+      dist2 += ds*ds;
+    }
+    const su2double dist = sqrt(dist2);
+    assert(dist <= 1.e-6);
+  }
+
+  /*--- END DEBUG. ---*/
+
+  //SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

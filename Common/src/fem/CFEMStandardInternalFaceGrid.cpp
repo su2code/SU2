@@ -46,3 +46,12 @@ void CFEMStandardInternalFaceGrid::CoorIntPoints(ColMajorMatrix<su2double> &coor
         is a dummy to be consistent with other classes. ---*/
   elem0->CoorIntPoints(true, coorGridDOFsVol, coorIntPointsFace);
 }
+
+void CFEMStandardInternalFaceGrid::CoorIntPointsFromSide1(ColMajorMatrix<su2double> &coorGridDOFsVol,
+                                                          ColMajorMatrix<su2double> &coorIntPointsFace) {
+
+  /*--- Use the data of the element on side 1 to compute the coordinates
+        of the integration points. This data is only used for debugging.
+        The first argument is a dummy to be consistent with other classes. ---*/
+  elem1->CoorIntPoints(true, coorGridDOFsVol, coorIntPointsFace);
+}

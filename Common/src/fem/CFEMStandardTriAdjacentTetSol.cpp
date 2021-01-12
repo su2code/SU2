@@ -40,6 +40,10 @@ CFEMStandardTriAdjacentTetSol::CFEMStandardTriAdjacentTetSol(const unsigned shor
   : CFEMStandardTetBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the faceID of the element and the orientation. ---*/
+  faceID_Elem = val_faceID_Elem;
+  orientation = val_orientation;
+
   /*--- Convert the pointers for the gemm functionalities. ---*/
   gemmDOFs2Int = dynamic_cast<CGemmStandard *> (val_gemm_1);
   gemmInt2DOFs = dynamic_cast<CGemmStandard *> (val_gemm_2);

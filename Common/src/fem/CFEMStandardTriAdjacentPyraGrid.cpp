@@ -40,6 +40,10 @@ CFEMStandardTriAdjacentPyraGrid::CFEMStandardTriAdjacentPyraGrid(const unsigned 
   : CFEMStandardPyraBase(),
     CFEMStandardTriBase(val_nPoly, val_orderExact) {
 
+  /*--- Store the faceID of the element and the orientation. ---*/
+  faceID_Elem = val_faceID_Elem;
+  orientation = val_orientation;
+
   /*--- Convert the pointer for the gemm functionality. ---*/
   gemmDOFs2Int = dynamic_cast<CGemmStandard *> (val_gemm);
   if( !gemmDOFs2Int )

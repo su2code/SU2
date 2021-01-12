@@ -4245,6 +4245,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- When a rectangular or box grid is used, overrule the quadrature factor
+        of curved element, because there are no curved elements present
+        in these grids. ---*/
+  if((Mesh_FileFormat == RECTANGLE) || (Mesh_FileFormat == BOX))
+    Quadrature_Factor_Curved = Quadrature_Factor_Straight;
+
   if (nIntCoeffs == 0) {
     nIntCoeffs = 2;
     Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
@@ -6323,9 +6329,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Theta symmetrizing terms interior penalty: " << Theta_Interior_Penalty_DGFEM << endl;
         }
       }
-
-      if((Mesh_FileFormat == RECTANGLE) || (Mesh_FileFormat == BOX))  /*--- Overrule, because there are no   ---*/
-        Quadrature_Factor_Curved = Quadrature_Factor_Straight;        /*--- curved elements for these grids. ---*/
 
       cout << "Quadrature factor for elements with constant Jacobian:     " << Quadrature_Factor_Straight << endl;
       cout << "Quadrature factor for elements with non-constant Jacobian: " << Quadrature_Factor_Curved << endl;
