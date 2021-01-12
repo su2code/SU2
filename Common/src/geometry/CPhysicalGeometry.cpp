@@ -8284,7 +8284,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig *config) {
   /*--- Calling ParMETIS ---*/
 
   if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-  auto err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(),
+  auto err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), nullptr,
                                   nullptr, &wgtflag, &numflag, &ncon, &nparts, tpwgts.data(),
                                   &ubvec, options, &edgecut, part.data(), &comm);
   if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
