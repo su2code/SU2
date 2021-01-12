@@ -592,7 +592,7 @@ public:
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMeshQualityStatistics(CConfig *config) override;
+  void ComputeMeshQualityStatistics(const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.

@@ -42,12 +42,6 @@ void CVertex::SetNodes_Coord(const su2double *coord_Edge_CG,
   constexpr unsigned long nDim = 3;
   su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, Dim_Normal[nDim];
 
-  AD::StartPreacc();
-  AD::SetPreaccIn(coord_Edge_CG, nDim);
-  AD::SetPreaccIn(coord_Elem_CG, nDim);
-  AD::SetPreaccIn(coord_FaceElem_CG, nDim);
-  AD::SetPreaccIn(Normal, nDim);
-
   Distance(nDim, coord_Elem_CG, coord_Edge_CG, vec_a);
   Distance(nDim, coord_FaceElem_CG, coord_Edge_CG, vec_b);
 
@@ -55,26 +49,11 @@ void CVertex::SetNodes_Coord(const su2double *coord_Edge_CG,
 
   for (auto iDim = 0ul; iDim < nDim; ++iDim)
     Normal[iDim] += 0.5 * Dim_Normal[iDim];
-
-  AD::SetPreaccOut(Normal, nDim);
-  AD::EndPreacc();
-
 }
 
 void CVertex::SetNodes_Coord(const su2double *val_coord_Edge_CG,
                              const su2double *val_coord_Elem_CG) {
 
-  constexpr unsigned long nDim = 2;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(val_coord_Elem_CG, nDim);
-  AD::SetPreaccIn(val_coord_Edge_CG, nDim);
-  AD::SetPreaccIn(Normal, nDim);
-
   Normal[0] += val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
   Normal[1] -= val_coord_Elem_CG[0]-val_coord_Edge_CG[0];
-
-  AD::SetPreaccOut(Normal, nDim);
-  AD::EndPreacc();
-
 }

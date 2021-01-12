@@ -7513,6 +7513,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   su2double my_DomainVolume = 0.0;
   for (auto iElem = 0ul; iElem < nElem; iElem++) {
 
+    const auto nNodes = elem[iElem]->GetnNodes();
+
     /*--- To make preaccumulation more effective, use as few inputs
      as possible, recomputing intermediate quantities as needed. ---*/
     AD::StartPreacc();
@@ -7520,19 +7522,21 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     /*--- Get pointers to the coordinates of all the element nodes ---*/
     array<const su2double*, N_POINTS_MAXIMUM> Coord;
 
-    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+    for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
       auto iPoint = elem[iElem]->GetNode(iNode);
       Coord[iNode] = nodes->GetCoord(iPoint);
 #ifdef CODI_REVERSE_TYPE
+      /*--- The same points and edges will be referenced multiple times as they are common
+       to many of the element's faces, therefore they are "registered" here only once. ---*/
       AD::SetPreaccIn(nodes->Volume(iPoint));
-      for (unsigned short jNode = iNode+1; jNode < elem[iElem]->GetnNodes(); jNode++) {
+      for (unsigned short jNode = iNode+1; jNode < nNodes; jNode++) {
         auto jPoint = elem[iElem]->GetNode(jNode);
         auto iEdge = FindEdge(iPoint, jPoint, false);
         if (iEdge >= 0) AD::SetPreaccIn(edges->Normal[iEdge], nDim);
       }
 #endif
     }
-    AD::SetPreaccIn(Coord, elem[iElem]->GetnNodes(), nDim);
+    AD::SetPreaccIn(Coord, nNodes, nDim);
 
     /*--- Compute the element median CG coordinates ---*/
     auto Coord_Elem_CG = elem[iElem]->SetCoord_CG(Coord);
@@ -7559,28 +7563,28 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
       /*-- Loop over the edges of a face ---*/
       for (unsigned short iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
 
-        const auto face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
-        unsigned long face_jPoint;
+        const auto face_iNode = elem[iElem]->GetFaces(iFace,iEdgesFace);
+        unsigned short face_jNode;
 
         if (nDim == 2) {
           /*--- In 2D only one edge (two points) per edge ---*/
-          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
+          face_jNode = elem[iElem]->GetFaces(iFace,1);
         }
         else {
           /*--- In 3D we "circle around" the face ---*/
-          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace));
+          face_jNode = elem[iElem]->GetFaces(iFace, (iEdgesFace+1)%nEdgesFace);
         }
+
+        const auto face_iPoint = elem[iElem]->GetNode(face_iNode);
+        const auto face_jPoint = elem[iElem]->GetNode(face_jNode);
 
         /*--- We define a direction (from the smalest index to the greatest) --*/
         const bool change_face_orientation = (face_iPoint > face_jPoint);
         const auto iEdge = FindEdge(face_iPoint, face_jPoint);
 
-        const su2double* Coord_FaceiPoint = nodes->GetCoord(face_iPoint);
-        const su2double* Coord_FacejPoint = nodes->GetCoord(face_jPoint);
-
         su2double Coord_Edge_CG[MAXNDIM] = {0.0};
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Coord_Edge_CG[iDim] = 0.5 * (Coord_FaceiPoint[iDim] + Coord_FacejPoint[iDim]);
+          Coord_Edge_CG[iDim] = 0.5 * (Coord[face_iNode][iDim] + Coord[face_jNode][iDim]);
         }
 
         su2double Volume_i, Volume_j;
@@ -7592,8 +7596,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           else
             edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_Elem_CG);
 
-          Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_Elem_CG);
-          Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_Elem_CG);
+          Volume_i = CEdge::GetVolume(Coord[face_iNode], Coord_Edge_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord[face_jNode], Coord_Edge_CG, Coord_Elem_CG);
         }
         else {
           /*--- Three dimensional problem ---*/
@@ -7602,8 +7606,8 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           else
             edges->SetNodes_Coord(iEdge, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
 
-          Volume_i = CEdge::GetVolume(Coord_FaceiPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
-          Volume_j = CEdge::GetVolume(Coord_FacejPoint, Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+          Volume_i = CEdge::GetVolume(Coord[face_iNode], Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
+          Volume_j = CEdge::GetVolume(Coord[face_jNode], Coord_Edge_CG, Coord_FaceElem_CG, Coord_Elem_CG);
         }
 
         nodes->AddVolume(face_iPoint, Volume_i);
@@ -7614,10 +7618,10 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     }
 
 #ifdef CODI_REVERSE_TYPE
-    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+    for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
       auto iPoint = elem[iElem]->GetNode(iNode);
       AD::SetPreaccOut(nodes->Volume(iPoint));
-      for (unsigned short jNode = iNode+1; jNode < elem[iElem]->GetnNodes(); jNode++) {
+      for (unsigned short jNode = iNode+1; jNode < nNodes; jNode++) {
         auto jPoint = elem[iElem]->GetNode(jNode);
         auto iEdge = FindEdge(iPoint, jPoint, false);
         if (iEdge >= 0) AD::SetPreaccOut(edges->Normal[iEdge], nDim);
@@ -7649,66 +7653,84 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
 
 void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned short action) {
 
-  SU2_OMP_MASTER {
+  /*--- Clear normals ---*/
 
-  /*--- Update values of faces of the edge ---*/
-
-  if (action != ALLOCATE)
+  if (action != ALLOCATE) {
+    SU2_OMP_FOR_DYN(1)
     for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++)
       for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
         vertex[iMarker][iVertex]->SetZeroValues();
+  }
+
+  SU2_OMP_MASTER {
 
   /*--- Loop over all the boundary elements ---*/
 
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
     for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
 
+      const auto nNodes = bound[iMarker][iElem]->GetnNodes();
+
+      AD::StartPreacc();
+
       /*--- Get pointers to the coordinates of all the element nodes ---*/
       array<const su2double*, N_POINTS_MAXIMUM> Coord;
 
-      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-        auto elem_poin = bound[iMarker][iElem]->GetNode(iNode);
-        Coord[iNode] = nodes->GetCoord(elem_poin);
+      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+        Coord[iNode] = nodes->GetCoord(iPoint);
+        AD::SetPreaccIn(vertex[iMarker][iVertex]->GetNormal(), nDim);
       }
+      AD::SetPreaccIn(Coord, nNodes, nDim);
 
       /*--- Compute the element CG coordinates ---*/
-      const su2double* Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(Coord);
+      auto Coord_Elem_CG = bound[iMarker][iElem]->SetCoord_CG(Coord);
+      AD::SetPreaccOut(Coord_Elem_CG, nDim);
 
       /*--- Loop over all the nodes of the boundary element ---*/
 
-      for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
         const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
         const auto iVertex = nodes->GetVertex(iPoint, iMarker);
-
-        const su2double* Coord_Vertex = nodes->GetCoord(iPoint);
+        auto Coord_Vertex = Coord[iNode];
 
         /*--- Loop over the neighbor nodes, there is a face for each one ---*/
 
         for (unsigned short iNeighbor = 0; iNeighbor < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
-          const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor);
-          const auto Neighbor_Point = bound[iMarker][iElem]->GetNode(Neighbor_Node);
-
           if (nDim == 2) {
             /*--- Store the 2D face ---*/
             if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
             if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
           }
           else {
+            const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor);
+            auto Neighbor_Coord = Coord[Neighbor_Node];
+
             /*--- Store the 3D face ---*/
             su2double Coord_Edge_CG[MAXNDIM] = {0.0};
             for (unsigned short iDim = 0; iDim < nDim; iDim++)
-              Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + nodes->GetCoord(Neighbor_Point, iDim));
+              Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + Neighbor_Coord[iDim]);
 
             if (iNeighbor == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
             if (iNeighbor == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
           }
         }
       }
+
+      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+        AD::SetPreaccOut(vertex[iMarker][iVertex]->GetNormal(), nDim);
+      }
+      AD::EndPreacc();
     }
   }
+  } SU2_OMP_BARRIER
 
   /*--- Check if there is a normal with null area ---*/
 
+  SU2_OMP_FOR_DYN(1)
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker ++) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       auto Area2 = GeometryToolbox::SquaredNorm(nDim, vertex[iMarker][iVertex]->GetNormal());
@@ -7716,8 +7738,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
       if (Area2 == 0.0) vertex[iMarker][iVertex]->SetNormal(DefaultArea);
     }
   }
-
-  } SU2_OMP_BARRIER
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig *config) const {
@@ -8256,7 +8276,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig *config) {
 #endif
 }
 
-void CPhysicalGeometry::ComputeMeshQualityStatistics(CConfig *config) {
+void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig *config) {
 
   /*--- Resize our vectors for the 3 metrics: orthogonality, aspect
    ratio, and volume ratio. All are vertex-based for the dual CV. ---*/

@@ -3478,7 +3478,7 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   return finished;
 }
 
-void CGeometry::SetElemVolume(CConfig *config)
+void CGeometry::SetElemVolume()
 {
   SU2_OMP_PARALLEL
   {

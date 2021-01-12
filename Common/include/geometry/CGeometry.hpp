@@ -1597,10 +1597,9 @@ public:
                               const su2double *cg_elem, vector<long> &neighbours, vector<bool> &is_neighbor) const;
 
   /*!
-   * \brief Compute and store the volume of the elements.
-   * \param[in] config - Problem configuration.
+   * \brief Compute and store the volume of the primal elements.
    */
-  void SetElemVolume(CConfig *config);
+  void SetElemVolume();
 
   /*!
    * \brief Set the multigrid index for the current geometry object.
@@ -1618,7 +1617,7 @@ public:
    * \brief A virtual member.
    * \param config - Config
    */
-  inline virtual void ComputeMeshQualityStatistics(CConfig *config) {}
+  inline virtual void ComputeMeshQualityStatistics(const CConfig *config) {}
 
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.
