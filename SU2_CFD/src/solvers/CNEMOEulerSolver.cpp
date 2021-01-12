@@ -1714,7 +1714,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
-      ModelTable << "Wilke-Blottner-Eucken";
+        ModelTable << "Wilke-Blottner-Eucken";
         NonDimTable.PrintFooter();
         break;
 
