@@ -271,8 +271,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Assign temperatures ---*/
   const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
 
-  /*--- Translational-Rotational Temperature ---*/
-  V[T_INDEX] = T[0];
+  /*--- Temperatures ---*/
+  V[T_INDEX]   = T[0];
+  V[TVE_INDEX] = T[1];
   
   // Determine if the temperature lies within the acceptable range
   //TODO: fIX THIS
@@ -304,8 +305,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       nonPhys      = true;
       V[TVE_INDEX] = Tvemax;
       U[nSpecies+nDim+1] = rhoEve_max;
-    } else {
-      V[TVE_INDEX]   = T[1];
     }
   } else {
     //TODO: can e-modes/vibe modes be active?

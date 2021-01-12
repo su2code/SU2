@@ -779,7 +779,6 @@ vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
   }
 
   return eves;
-
 }
 
 vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
