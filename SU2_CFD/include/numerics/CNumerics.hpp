@@ -36,7 +36,7 @@
 #include "../../../Common/include/CConfig.hpp"
 #include "../fluid/CNEMOGas.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../include/fluid/CSU2TCLib.hpp"
 
 using namespace std;
 

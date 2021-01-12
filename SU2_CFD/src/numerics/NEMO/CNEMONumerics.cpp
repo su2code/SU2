@@ -72,7 +72,7 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
         #endif    
       break;
       case USER_DEFINED_NONEQ:
-        fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+        fluidmodel = new CSU2TCLib(config, nDim, false);
       break;
     }
 }

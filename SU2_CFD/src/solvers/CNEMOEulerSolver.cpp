@@ -30,7 +30,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../include/fluid/CSU2TCLib.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -237,7 +237,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       for (iDim = 0; iDim < nDim; iDim++){
         sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
       }      
-      Energies_Inf = FluidModel->ComputeMixtureEnergies();
+      const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
   
       /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1444,7 +1444,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    #endif    
    break;
   case USER_DEFINED_NONEQ:
-   FluidModel = new CUserDefinedTCLib(config, nDim, viscous);
+   FluidModel = new CSU2TCLib(config, nDim, viscous);
    break;
   }
 
