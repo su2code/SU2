@@ -2746,22 +2746,6 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig *
       Normal = geometry->edge[iEdge]->GetNormal();
       Area = 0.0; for (auto iDim = 0; iDim < nDim; iDim++) Area += pow(Normal[iDim],2); Area = sqrt(Area);
 
-      // if (muscl) {
-      //   /*--- Extrapolate the state ---*/
-
-      //   const auto nTurbVarGrad = tkeNeeded? 1 : 0;
-      //   bool good_i = true, good_j = true;
-      //   ExtrapolateState(solver, geometry, config, iPoint, jPoint, Primitive_i, Primitive_j, 
-      //                    &tke_i, &tke_j, good_i, good_j, nPrimVarGrad, nTurbVarGrad);
-
-      //   /*--- Check the extrapolation ---*/
-
-      //   CheckExtrapolatedState(config, Primitive_i, Primitive_j, &tke_i, &tke_j, nTurbVarGrad, good_i, good_j);
-
-      //   if (!good_i) nodes->SetNon_Physical(iPoint, true);
-      //   if (!good_j) nodes->SetNon_Physical(jPoint, true);
-      // }
-
       /*--- Mean Values ---*/
 
       Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
@@ -3347,12 +3331,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto V_i = flowNodes->GetPrimitive(iPoint);
   const auto V_j = flowNodes->GetPrimitive(jPoint);
 
-  su2double *T_i, *T_j;
-  if (turb) {
-    T_i = tkeNeeded? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
-    T_j = tkeNeeded? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
-  }
-
   const auto Coord_i = geometry->node[iPoint]->GetCoord();
   const auto Coord_j = geometry->node[jPoint]->GetCoord();
 
@@ -3412,6 +3390,9 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   /*--- Reconstruct turbulent primitive variables. ---*/
 
   if (turb) {
+
+    const auto T_i = tkeNeeded? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
+    const auto T_j = tkeNeeded? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
 
     const auto& Lim_Turb_i = turbNodes->GetLimiter(iPoint);
     const auto& Lim_Turb_j = turbNodes->GetLimiter(jPoint);
