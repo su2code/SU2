@@ -87,6 +87,18 @@ def main():
     viscwedge.new_output = True
     viscwedge.tol       = 0.00001
     test_list.append(viscwedge)    
+
+    # Viscous single wedge with Mutation++
+    viscwedge_mpp           = TestCase('viscwedge_mpp')
+    viscwedge_mpp.cfg_dir   = "nonequilibrium/viscwedge_mpp"
+    viscwedge_mpp.cfg_file  = "viscwedge_mpp.cfg"
+    viscwedge_mpp.test_iter = 10
+    viscwedge_mpp.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
+    viscwedge_mpp.su2_exec  = "SU2_CFD"
+    viscwedge_mpp.timeout   = 1600
+    viscwedge_mpp.new_output = True
+    viscwedge_mpp.tol       = 0.00001
+    test_list.append(viscwedge_mpp)      
     
     #########################
     ## Compressible Euler ###
