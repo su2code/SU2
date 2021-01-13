@@ -1589,7 +1589,7 @@ private:
                                                                      the residuals of the symmetrizing terms can be computed
                                                                      with a single matrix multiplication. */
 
-  vector<su2double> matVandermondeFaceInv;   /*!< \brief TODO what is this? */
+
   vector<unsigned short> subConnForPlotting; /*!< \brief Local subconnectivity of the high order element.
                                                          Used for plotting. */
 public:
@@ -1704,16 +1704,6 @@ public:
   inline unsigned short GetNDOFsFace(void) const {return nDOFsFace;}
 
   /*!
-  * \brief What is this?
-  */
-  inline const vector<su2double>* GetRDOFsFace(void)  {return &rDOFsFace;}
-  
-  /*!
-  * \brief What is this?
-  */
-  inline const vector<su2double>* GetSDOFsFace(void)  {return &sDOFsFace;}
-
-  /*!
   * \brief Function, which makes available the number of linear subfaces used
            for plotting, among others.
   * \return  The number of linear subfaces of the face.
@@ -1770,12 +1760,6 @@ public:
   */
   su2double WorkEstimateMetisWallFunctions(CConfig              *config,
                                            const unsigned short nPointsWF);
-  /*!
-  * \brief What is this?
-  */
-  void FaceBasisFunctionsAndDerivativesInPoint(const su2double            *parCoor,
-                                               vector<su2double>          &lagBasis,
-                                               vector<vector<su2double> > &dLagBasis);  
 
 private:
   /*!

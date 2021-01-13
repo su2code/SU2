@@ -32,7 +32,7 @@
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
  
   Mutation::MixtureOptions opt(gas_model);
-  string transport_model, state_model;	
+  string transport_model, state_model;
 
   /* Allocating memory*/
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
@@ -52,7 +52,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   if(Kind_TransCoeffModel == WILKE)
     transport_model = "Wilke";
   else if (Kind_TransCoeffModel == GUPTAYOS)
- 	transport_model = "Gupta-Yos";
+    transport_model = "Gupta-Yos";
   
   opt.setStateModel(state_model);
   opt.setViscosityAlgorithm(transport_model);
@@ -84,7 +84,7 @@ void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double va
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density += rhos[iSpecies];
 
-  Pressure = GetPressure();
+  Pressure = ComputePressure();
 
   mix->setState(rhos.data(), temperatures.data(), 1);
 
