@@ -35,18 +35,12 @@ install_data(['SU2/io/config.py',
               'SU2/io/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/io'))
 
-install_data(['SU2/mesh/adapt.py',
-              'SU2/mesh/tools.py',
-              'SU2/mesh/__init__.py'],
-	      install_dir: join_paths(get_option('bindir'), 'SU2/mesh'))
-
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
               'SU2/opt/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 
-install_data(['SU2/run/adaptation.py',
-              'SU2/run/adjoint.py',
+install_data(['SU2/run/adjoint.py',
               'SU2/run/deform.py',
               'SU2/run/direct.py',
               'SU2/run/interface.py',

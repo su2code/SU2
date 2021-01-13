@@ -34,7 +34,7 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.6 "falcon"
+ * \version 7.0.8 "Blackbird"
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
