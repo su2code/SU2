@@ -27,7 +27,7 @@
 
 #include "../../include/fluid/CMutationTCLib.hpp"
 
-#ifdef HAVE_MPP
+#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
  
