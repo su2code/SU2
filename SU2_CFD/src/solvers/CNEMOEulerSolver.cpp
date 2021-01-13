@@ -217,43 +217,38 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
-  
-  bool interp = config->GetSolutionInterpolation();
 
-  /*--- Do not initialize variables for solution interpolation, since it makes the interpolation super slow and is not necessary  ---*/
-  if (!interp) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
   
-      nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
+    nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
   
-      /*--- Set mixture state ---*/
-      FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
+    /*--- Set mixture state ---*/
+    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
   
-      /*--- Compute other freestream quantities ---*/
-      Density_Inf    = FluidModel->GetDensity();
-      Soundspeed_Inf = FluidModel->GetSoundSpeed();
+    /*--- Compute other freestream quantities ---*/
+    Density_Inf    = FluidModel->GetDensity();
+    Soundspeed_Inf = FluidModel->GetSoundSpeed();
   
-      sqvel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
-      }      
-      const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
+    sqvel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
+    }      
+    const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
   
-      /*--- Initialize Solution & Solution_Old vectors ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
-      }
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
-      }
-      Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
-      Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
-      nodes->SetSolution(iPoint,Solution);
-      nodes->SetSolution_Old(iPoint,Solution);
-  
-      if(nonPhys)
-        counter_local++;  
+    /*--- Initialize Solution & Solution_Old vectors ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
     }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
+    }
+    Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
+    Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
+    nodes->SetSolution(iPoint,Solution);
+    nodes->SetSolution_Old(iPoint,Solution);
+  
+    if(nonPhys)
+      counter_local++;  
   }
 
   /*--- Warning message about non-physical points ---*/

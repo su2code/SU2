@@ -109,7 +109,7 @@ public:
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvTraRot() = 0;
+  virtual const vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
    * \brief Compute species V-E specific heats at constant volume.
@@ -234,10 +234,10 @@ public:
   /*!
    * \brief Get reference temperature.
    */
-  virtual vector<su2double>& GetRefTemperature() = 0;
+  virtual const vector<su2double>& GetRefTemperature() = 0;
 
   /*!
    * \brief Get species formation enthalpy.
    */
-  virtual vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
+  virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
 };
