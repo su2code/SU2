@@ -101,7 +101,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
   bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
   bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool wall_functions       = config->GetWall_Functions();
@@ -114,7 +113,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
    turbulence solver) only density and velocity are needed ---*/
 
   const auto nPrimVarGrad_bak = nPrimVarGrad;
-  if (Output) nPrimVarGrad = 1+nDim;
+  if (Output) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    nPrimVarGrad = 1+nDim;
+    SU2_OMP_BARRIER
+  }
 
   if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
@@ -136,12 +140,16 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  nPrimVarGrad = nPrimVarGrad_bak;
+  if (Output) {
+    SU2_OMP_MASTER
+    nPrimVarGrad = nPrimVarGrad_bak;
+    SU2_OMP_BARRIER
+  }
 
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_adjflow) && !Output && !van_albada) {
     SetPrimitive_Limiter(geometry, config);
   }
 
