@@ -100,4 +100,4 @@ public:
    */
   void SetOutputVariables(CGeometry *geometry, CConfig *config);
 
- };
+};

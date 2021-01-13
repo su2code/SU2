@@ -412,7 +412,6 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
                                       const su2double *val_temperature, const su2double *val_dRhodT,
                                       const su2double *val_normal, su2double val_scale,
                                       su2double **val_Proj_Jac_Tensor) const {
-
   const bool wasActive = AD::BeginPassive();
   unsigned short iDim;
   su2double proj_vel;

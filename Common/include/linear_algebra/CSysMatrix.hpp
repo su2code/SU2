@@ -362,19 +362,6 @@ public:
                   const CConfig *config, bool needTranspPtr = false, bool grad_mode = false);
 
   /*!
-   * \brief Initializes sparse matrix system.
-   * \note This uses the connectivity structure of all surface verteces from val_marker. Not the whole volume mesh!
-   * \param[in] nvertex - Number of vertices on the boundary.
-   * \param[in] nVar - Number of variables.
-   * \param[in] nEqn - Number of equations.
-   * \param[in] val_marker - Boundary marker.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void InitOwnConnectivity(unsigned long nvertex, unsigned short nvar, unsigned short neqn, unsigned long val_marker,
-                           CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
   void SetValZero(void);

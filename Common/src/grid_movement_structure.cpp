@@ -226,40 +226,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
-CSysMatrix<su2mixedfloat>& CVolumetricMovement::GetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool Derivative) {
-
-  /*--- Take the first initializing function calls from the SetVolumeDeformation function ---*/
-
-  su2double MinVolume;
-
-  /*--- Initialize vector and sparse matrix ---*/
-  StiffMatrix.SetValZero();
-
-  /*--- Compute the stiffness matrix entries for all nodes/elements in the
-        mesh. FEA uses a finite element method discretization of the linear
-        elasticity equations (transfers element stiffnesses to point-to-point). ---*/
-  MinVolume = SetFEAMethodContributions_Elem(geometry, config);
-
-  /*--- Set the boundary and volume displacements (as prescribed by the
-   design variable perturbations controlling the surface shape)
-   as a Dirichlet BC. ---*/
-
-  SetBoundaryDisplacements(geometry, config);
-
-  /*--- Fix the location of any points in the domain, if requested. ---*/
-
-  SetDomainDisplacements(geometry, config);
-
-  /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
-
-  if (Derivative) { SetBoundaryDerivatives(geometry, config, false); }
-
-  /*--- return a pointer to the matrix ---*/
-
-  return StiffMatrix;
-
-}
-
 void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output) {
 
   unsigned long iElem, ElemCounter = 0, PointCorners[8];

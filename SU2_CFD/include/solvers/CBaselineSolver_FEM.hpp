@@ -93,4 +93,4 @@ public:
    */
   inline su2double* GetVecSolDOFs(void) override { return VecSolDOFs.data(); }
 
- };
+};
