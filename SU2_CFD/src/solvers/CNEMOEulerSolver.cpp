@@ -1249,7 +1249,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         }else
           eAxi_local++;
       }
-
     }
 
     if(!monoatomic){

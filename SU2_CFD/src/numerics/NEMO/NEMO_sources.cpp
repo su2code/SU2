@@ -363,7 +363,7 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
 
     /*--- Enthalpy and vib-el energy transport due to y-direction diffusion---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) { 
-      sumJhs_y += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * hs[iSpecies];
+      sumJhs_y  += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * hs[iSpecies];
       sumJeve_y += (rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][1] - V_i[RHOS_INDEX+iSpecies]*Vector[1]) * eve_i[iSpecies];
     }
 
