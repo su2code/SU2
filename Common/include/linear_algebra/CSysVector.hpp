@@ -67,8 +67,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nElm = 0;          /*!< \brief Total number of elements (or number elements on this processor). */
   unsigned long nElmDomain = 0;    /*!< \brief Total number of elements without Ghost cells. */
   unsigned long nVar = 0;          /*!< \brief Number of elements in a block. */
-  mutable ScalarType dotRes = 0.0; /*!< \brief Result of dot product. to perform a reduction with OpenMP the
-                                               variable needs to be declared outside the parallel region. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -291,8 +289,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class T>
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
+    static ScalarType dotRes;
     /*--- All threads get the same "view" of the vectors and shared variable. ---*/
     SU2_OMP_BARRIER
+    SU2_OMP_MASTER
     dotRes = 0.0;
     SU2_OMP_BARRIER
 

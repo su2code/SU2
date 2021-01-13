@@ -85,10 +85,10 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   if ((muscl && !center) && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetSolution_Gradient_GG(geometry, config, true); break;
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetSolution_Gradient_LS(geometry, config, true); break;
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
   }
@@ -106,7 +106,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
-    SetSolution_Limiter(geometry, config);
+    SetPrimitive_Limiter(geometry, config);
   }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
@@ -989,7 +989,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
 
   unsigned short iDim, jDim, iVar, iSpecies;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX, RHOCVTR_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Mass = 0.0;
   su2double Ti, Tvei, Tj, Tvej;
@@ -1093,9 +1093,9 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       su2double  tmp1, scl, Cptr;
       su2double *Vi = nodes->GetPrimitive(iPoint);
 
-      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
         Mass += Vi[iSpecies]*Ms[iSpecies];
-      Cptr = Vi[RHOCVTR_INDEX]+Ru/Mass;
+      Cptr = rhoCvtr + Ru/Mass;
       tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
       scl  = tmp1/ktr;
       ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
