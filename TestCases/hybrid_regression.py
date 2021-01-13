@@ -232,7 +232,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.979967, 1.140048, 1.215111, 0.195366]
+    turb_naca0012_1c.test_vals = [-4.980749, 1.139261, 0.244629, -0.112860]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
