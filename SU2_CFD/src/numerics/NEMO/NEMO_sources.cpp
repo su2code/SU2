@@ -298,7 +298,8 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
   unsigned short iDim, iSpecies, iVar;
   su2double rho, rhov, vel2, H, yinv, T, Tve, qy_ve, Ru, RuSI;
   su2double *Ds, **GV, ktr, kve;
-
+  
+  /*--- Rename for convenience ---*/
   Ds = Diffusion_Coeff_i;
   ktr = Thermal_Conductivity_i;
   kve = Thermal_Conductivity_ve_i;
