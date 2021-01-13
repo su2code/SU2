@@ -311,12 +311,10 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   /*--- Standard Roe "dissipation" ---*/
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    // for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
-    for (auto jVar = 0; jVar < nVar; jVar++) {
+    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
       su2double Proj_ModJac_Tensor_ij = 0.0;
-      // for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
-      for (auto kVar = 0; kVar < nVar; kVar++)
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       /*--- Update residual and Jacobians ---*/
