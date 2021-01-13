@@ -349,26 +349,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Add the solver name (max 8 characters). ---*/
   SolverName = "C.FLOW";
 
-  /*--- Vectorized numerics. ---*/
-  if (config->GetUseVectorization()) {
-    const bool uncertain = config->GetUsing_UQ();
-    const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
-                           (config->GetKind_FluidModel() == IDEAL_GAS);
-    const bool low_mach_corr = config->Low_Mach_Correction();
-
-    if (uncertain || !ideal_gas || low_mach_corr) {
-      SU2_MPI::Error("Some of the requested features are not yet "
-                     "supported with vectorization.", CURRENT_FUNCTION);
-    }
-
-    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, iMesh);
-
-    if (!edgeNumerics) {
-      SU2_MPI::Error("The numerical scheme in use does not "
-                     "support vectorization.", CURRENT_FUNCTION);
-    }
-  }
-
   /*--- Finally, check that the static arrays will be large enough (keep this
    *    check at the bottom to make sure we consider the "final" values). ---*/
   if((nDim > MAXNDIM) || (nPrimVar > MAXNVAR) || (nSecondaryVar > MAXNVAR))
@@ -686,6 +666,27 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CkOutflow2;
   }
 
+}
+
+void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
+
+  SU2_OMP_BARRIER
+  SU2_OMP_MASTER {
+
+  if (config->Low_Mach_Correction())
+    SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
+
+  if (solver_container[TURB_SOL])
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[TURB_SOL]->GetNodes());
+  else
+    edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel);
+
+  if (!edgeNumerics)
+    SU2_MPI::Error("The numerical scheme + gas model in use do not "
+                   "support vectorization.", CURRENT_FUNCTION);
+
+  }
+  SU2_OMP_BARRIER
 }
 
 void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
@@ -2645,95 +2646,16 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  /*--- If possible use the vectorized numerics instead. ---*/
-  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
-
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool jst_scheme = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
-  const bool jst_ke_scheme = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
-
-  /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
-
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-  for(auto k = 0ul; k < color.size; ++k) {
-
-    auto iEdge = color.indices[k];
-
-    /*--- Points in edge, set normal vectors, and number of neighbors ---*/
-
-    auto iPoint = geometry->edges->GetNode(iEdge,0);
-    auto jPoint = geometry->edges->GetNode(iEdge,1);
-
-    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-    numerics->SetNeighbor(geometry->nodes->GetnNeighbor(iPoint), geometry->nodes->GetnNeighbor(jPoint));
-
-    /*--- Set primitive variables w/o reconstruction ---*/
-
-    numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
-
-    /*--- Set the largest convective eigenvalue ---*/
-
-    numerics->SetLambda(nodes->GetLambda(iPoint), nodes->GetLambda(jPoint));
-
-    /*--- Set undivided laplacian an pressure based sensor ---*/
-
-    if (jst_scheme) {
-      numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint),
-                                       nodes->GetUndivided_Laplacian(jPoint));
-    }
-    if (jst_scheme || jst_ke_scheme) {
-      numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
-    }
-
-    /*--- Grid movement ---*/
-
-    if (dynamic_grid) {
-      numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
-    }
-
-    /*--- Compute residuals, and Jacobians ---*/
-
-    auto residual = numerics->ComputeResidual(config);
-
-    /*--- Update convective and artificial dissipation residuals. ---*/
-
-    if (ReducerStrategy) {
-      EdgeFluxes.SetBlock(iEdge, residual);
-      if (implicit)
-        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
-    }
-    else {
-      LinSysRes.AddBlock(iPoint, residual);
-      LinSysRes.SubtractBlock(jPoint, residual);
-      if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    }
-
-    /*--- Viscous contribution. ---*/
-
-    Viscous_Residual(iEdge, geometry, solver_container,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
-  }
-  } // end color loop
-
-  if (ReducerStrategy) {
-    SumEdgeFluxes(geometry);
-    if (implicit)
-      Jacobian.SetDiagonalAsColumnSum();
-  }
-
+  EdgeFluxResidual(geometry, solver_container, config);
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  /*--- If possible use the vectorized numerics instead. ---*/
-  if (edgeNumerics) { EdgeFluxResidual(geometry, config); return; }
+  if (config->GetUseVectorization()) {
+    EdgeFluxResidual(geometry, solver_container, config);
+    return;
+  }
 
   const auto InnerIter        = config->GetInnerIter();
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);

@@ -47,7 +47,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.559002, -8.926022, -0.000000, 0.005588] #last 4 columns
+    discadj_naca0012.test_vals = [-3.561506, -8.926634, -0.000000, 0.005587]
     discadj_naca0012.su2_exec  = "SU2_CFD_AD"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.759637, -3.864023, -0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.759951, -3.864587, -0.000000, 0.000000]
     discadj_cylinder3D.su2_exec  = "SU2_CFD_AD"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -69,7 +69,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [2.108283, 1.574295, 47250.0, 0.0]#last 4 columns
+    discadj_arina2k.test_vals    = [2.107800, 1.574246, 47250.000000, 0.000000]
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
@@ -95,7 +95,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221232, -0.492215, 0.557480, 0.000027] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-2.221040, -0.492202, 0.557470, 0.000027]
     discadj_rans_naca0012_sst.su2_exec  = "SU2_CFD_AD"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -110,7 +110,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.0, -4.092007, -2.652750, 0.0] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.092007, -2.652750, 0.000000]
     discadj_incomp_NACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -198,7 +198,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.223509, -1.646090, -0.007671, 0.000013] #last 4 columns
+    discadj_pitchingNACA0012.test_vals = [-1.218846, -1.645199, -0.007645, 0.000013]
     discadj_pitchingNACA0012.su2_exec  = "SU2_CFD_AD"
     discadj_pitchingNACA0012.timeout   = 1600
     discadj_pitchingNACA0012.tol       = 0.00001
@@ -210,7 +210,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.867980, -1.741743, 1090.200000, 0.000006] #last 4 columns
+    unst_deforming_naca0012.test_vals = [-1.864178, -1.742176, 1090.300000, 0.000006]
     unst_deforming_naca0012.su2_exec  = "SU2_CFD_AD"
     unst_deforming_naca0012.timeout   = 1600
     unst_deforming_naca0012.tol       = 0.00001

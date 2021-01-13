@@ -50,13 +50,17 @@ struct CCompressiblePrimitives {
   FORCEINLINE const Double& velocity(size_t iDim) const { return all(iDim+1); }
   FORCEINLINE const Double* velocity() const { return &velocity(0); }
 
-  /*--- Un-reconstructed variables (not allocated by default). ---*/
+  /*--- Un-reconstructed variables. ---*/
   FORCEINLINE Double& speedSound() { return all(nDim+4); }
   FORCEINLINE Double& laminarVisc() { return all(nDim+5); }
   FORCEINLINE Double& eddyVisc() { return all(nDim+6); }
+  FORCEINLINE Double& thermalCond() { return all(nDim+7); }
+  FORCEINLINE Double& cp() { return all(nDim+8); }
   FORCEINLINE const Double& speedSound() const { return all(nDim+4); }
   FORCEINLINE const Double& laminarVisc() const { return all(nDim+5); }
   FORCEINLINE const Double& eddyVisc() const { return all(nDim+6); }
+  FORCEINLINE const Double& thermalCond() const { return all(nDim+7); }
+  FORCEINLINE const Double& cp() const { return all(nDim+8); }
 };
 
 /*!
