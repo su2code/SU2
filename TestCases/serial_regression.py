@@ -93,7 +93,7 @@ def main():
     viscwedge_mpp.cfg_dir   = "nonequilibrium/viscwedge_mpp"
     viscwedge_mpp.cfg_file  = "viscwedge_mpp.cfg"
     viscwedge_mpp.test_iter = 10
-    viscwedge_mpp.test_vals = [-5.170894,-5.695657,-20.831064,-20.718963,-23.419767,-1.559591,-2.068445,2.204714,-2.590194]
+    viscwedge_mpp.test_vals = [-20.608474,-20.586446,-20.707524,-5.171304,-5.696067,-1.548350,-2.071211,2.231054,-2.545494]
     viscwedge_mpp.su2_exec  = "SU2_CFD"
     viscwedge_mpp.timeout   = 1600
     viscwedge_mpp.new_output = True
