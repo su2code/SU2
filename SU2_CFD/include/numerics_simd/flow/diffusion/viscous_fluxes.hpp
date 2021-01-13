@@ -91,7 +91,7 @@ protected:
    */
   template<class... Ts>
   CCompressibleViscousFluxBase(const CConfig& config, int iMesh,
-                               const CVariable* turbVars_ = nullptr, Ts&...) :
+                               const CVariable* turbVars_, Ts&...) :
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlLam(config.GetPrandtl_Lam()),

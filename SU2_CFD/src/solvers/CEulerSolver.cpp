@@ -670,6 +670,7 @@ CEulerSolver::~CEulerSolver(void) {
 
 void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_container, const CConfig* config) {
 
+  SU2_OMP_BARRIER
   SU2_OMP_MASTER {
 
   if (config->Low_Mach_Correction())
