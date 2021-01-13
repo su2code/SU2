@@ -41,6 +41,7 @@
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/solvers/CTemplateSolver.hpp"
 #include "../../include/solvers/CDiscAdjSolver.hpp"
+#include "../../include/solvers/COneShotSolver.hpp"
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
@@ -50,6 +51,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/solvers/CGradientSmoothingSolver.hpp"
+#include "../../include/solvers/COneShotSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -235,7 +237,11 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_FLOW:
-      genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
+      if (config->GetOneShot()) {
+        genericSolver = new COneShotSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
+      } else {
+        genericSolver = new CDiscAdjSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
+      }
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::EULER:

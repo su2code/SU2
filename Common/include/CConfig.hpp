@@ -1158,6 +1158,9 @@ private:
   unsigned short Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
 
+  unsigned short OneShotMode;   /*!< \brief Kind of One-Shot mode specified */
+  unsigned long PiggybackSteps;  /*!< \brief The number of Piggyback steps in between 2 linesearches */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9523,5 +9526,23 @@ public:
    * \return -1 if (on this mpi rank) the zone defined by config is not part of the interface.
    */
   short FindInterfaceMarker(unsigned short iInterface) const;
+
+  /*!
+   * \brief Check if a One-Shot modus is specified in the config file.
+   * \return YES if one-shot is enabled.
+   */
+  bool GetOneShot(void) { return (OneShotMode != NO_MODE); }
+
+  /*!
+   * \brief Get the kind of One Shot method from the config file.
+   * \return type of iteration to run.
+   */
+  bool GetOneShotMode(void) { return OneShotMode; }
+
+  /*!
+   * \brief Get the number of Piggyback steps between line searches.
+   * \return number of steps
+   */
+  unsigned long GetPiggybackSteps(void) { return PiggybackSteps; }
 
 };

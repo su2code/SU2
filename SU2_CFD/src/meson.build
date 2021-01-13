@@ -11,6 +11,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
                       'output/CAdjFlowCompOutput.cpp',
+                      'output/COneShotOutput.cpp',
                       'output/CAdjFlowIncOutput.cpp',
                       'output/CAdjHeatOutput.cpp',
                       'output/CBaselineOutput.cpp',
@@ -97,7 +98,8 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CTurbSolver.cpp',
                       'solvers/CTurbSASolver.cpp',
                       'solvers/CTurbSSTSolver.cpp',
-                      'solvers/CGradientSmoothingSolver.cpp'])
+                      'solvers/CGradientSmoothingSolver.cpp',
+                      'solvers/COneShotSolver.cpp'])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/template.cpp',
@@ -139,7 +141,8 @@ su2_cfd_src += files(['drivers/CDriver.cpp',
                       'drivers/CSinglezoneDriver.cpp',
                       'drivers/CDiscAdjMultizoneDriver.cpp',
                       'drivers/CDiscAdjSinglezoneDriver.cpp',
-                      'drivers/CDummyDriver.cpp'])
+                      'drivers/CDummyDriver.cpp',
+                      'drivers/COneShotSinglezoneDriver.cpp'])
 
 su2_cfd_src += files(['integration/CIntegration.cpp',
                       'integration/CIntegrationFactory.cpp',

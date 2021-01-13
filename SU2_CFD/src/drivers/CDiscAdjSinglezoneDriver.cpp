@@ -440,7 +440,9 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Print the direct residual to screen ---*/
 
-  Print_DirectResidual(kind_recording);
+  if (!config->GetOneShot()) {
+    Print_DirectResidual(kind_recording);
+  }
 
 }
 
