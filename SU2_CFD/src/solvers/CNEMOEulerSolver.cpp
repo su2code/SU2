@@ -1196,6 +1196,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- Set primitive variables for viscous terms and/or generalised source ---*/
         numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
+        /*--- If necessary, set variables needed for viscous computation ---*/       
         if (viscous) {
 
           /*--- Set gradient of primitive variables ---*/
@@ -1229,27 +1230,50 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           }
         }
 
-          auto residual = numerics->ComputeAxisymmetric(config);
+        auto residual = numerics->ComputeAxisymmetric(config);
 
-          /*--- Check for errors before applying source to the linear system ---*/
-          err = false;
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = false;
+        for (iVar = 0; iVar < nVar; iVar++)
+          if (residual[iVar] != residual[iVar]) err = true;
+        if (implicit)
           for (iVar = 0; iVar < nVar; iVar++)
-            if (residual[iVar] != residual[iVar]) err = true;
-          if (implicit)
-            for (iVar = 0; iVar < nVar; iVar++)
-              for (jVar = 0; jVar < nVar; jVar++)
-                if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+            for (jVar = 0; jVar < nVar; jVar++)
+              if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
 
-          /*--- Apply the update to the linear system ---*/
-          if (!err) {
-            LinSysRes.AddBlock(iPoint, residual);
-            if (implicit)
-              Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-          }
-          else
-            eAxi_local++;
+        /*--- Apply the update to the linear system ---*/
+        if (!err) {
+          LinSysRes.AddBlock(iPoint, residual);
+          if (implicit)
+            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        }else
+          eAxi_local++;
       }
 
+    }
+
+    if(!monoatomic){
+      if(!frozen){
+        /*--- Compute the non-equilibrium chemistry ---*/
+        auto residual = numerics->ComputeChemistry(config);
+
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = false;
+        for (iVar = 0; iVar < nVar; iVar++)
+          if (residual[iVar] != residual[iVar]) err = true;
+        //if (implicit)
+        //  for (iVar = 0; iVar < nVar; iVar++)
+        //    for (jVar = 0; jVar < nVar; jVar++)
+        //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+
+        /*--- Apply the chemical sources to the linear system ---*/
+        if (!err) {
+          LinSysRes.SubtractBlock(iPoint, residual);
+          //if (implicit)
+          //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        } else
+          eChm_local++;
+      }
     }
 
     /*--- Compute vibrational energy relaxation ---*/
