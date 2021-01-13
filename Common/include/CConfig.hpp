@@ -3662,7 +3662,7 @@ public:
    * \brief Gas model that we are using.
    * \return Gas model that we are using.
    */
-  string GetGasModel (void) const {return GasModel;}
+  string GetGasModel(void) const {return GasModel;}
 
   /*!
    * \brief Get the transport coefficient model.

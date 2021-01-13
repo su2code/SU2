@@ -75,11 +75,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   }
 
   /*--- Allocate & initialize residual vectors ---*/
-
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- Only for residual smoothing (multigrid) ---*/
-
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
       Residual_Sum.resize(nPoint,nVar);

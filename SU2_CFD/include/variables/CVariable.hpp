@@ -1787,12 +1787,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_energy - Pointer to energy.
-   */
-  inline virtual void SetEnergy_Old(unsigned long iPoint, vector<su2double>& val_energy) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] laminarViscosity
    */
   inline virtual void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) {}
