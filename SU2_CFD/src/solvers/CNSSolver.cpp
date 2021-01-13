@@ -110,7 +110,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  /*--- Compute gradient for MUSCL reconstruction. ---*/
+  /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
+   turbulence solver) only density and velocity are needed ---*/
+
+  const auto nPrimVarGrad_bak = nPrimVarGrad;
+  if (Output) nPrimVarGrad = 1+nDim;
 
   if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
@@ -132,6 +136,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
+  nPrimVarGrad = nPrimVarGrad_bak;
+
   /*--- Compute the limiter in case we need it in the turbulence model or to limit the
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
@@ -150,21 +156,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   nodes->SetVorticity_StrainMag();
 
+  /*--- Min and Max are not really differentiable ---*/
+  const bool wasActive = AD::BeginPassive();
+
   su2double strainMax = 0.0, omegaMax = 0.0;
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    su2double StrainMag = nodes->GetStrainMag(iPoint);
-    const su2double* Vorticity = nodes->GetVorticity(iPoint);
-    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
-
-    strainMax = max(strainMax, StrainMag);
-    omegaMax = max(omegaMax, Omega);
-
+    strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
+    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
   }
-  SU2_OMP_CRITICAL
-  {
+  SU2_OMP_CRITICAL {
     StrainMag_Max = max(StrainMag_Max, strainMax);
     Omega_Max = max(Omega_Max, omegaMax);
   }
@@ -181,6 +183,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
     SU2_OMP_BARRIER
   }
+
+  AD::EndPassive(wasActive);
 
   /*--- Compute the TauWall from the wall functions ---*/
 

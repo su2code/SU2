@@ -7662,10 +7662,9 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
         vertex[iMarker][iVertex]->SetZeroValues();
   }
 
-  SU2_OMP_MASTER {
-
   /*--- Loop over all the boundary elements ---*/
 
+  SU2_OMP_FOR_DYN(1)
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
     for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
 
@@ -7726,7 +7725,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig *config, unsigned sh
       AD::EndPreacc();
     }
   }
-  } SU2_OMP_BARRIER
 
   /*--- Check if there is a normal with null area ---*/
 
