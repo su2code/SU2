@@ -13262,7 +13262,7 @@ void CPhysicalGeometry::SetWallDistance(const CConfig *config, CADTElemClass *Wa
   }
 }
 
-CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
+void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
 
   su2double maxWallDist = numeric_limits<su2double>::epsilon();
 
