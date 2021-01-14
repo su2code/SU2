@@ -403,14 +403,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
 
-#ifdef HAVE_MPI
-
   /*--- MPI status and request arrays for non-blocking communications ---*/
 
-  SU2_MPI::Status status, status_;
-
-
-#endif
+  SU2_MPI::Status status;
+  SU2_MPI::Request req;
 
   /*--- Define buffer vector interior domain ---*/
 
@@ -480,13 +476,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
     if (rank != iDomain) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
 
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
-
-#endif
+      SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD, &req);
+      SU2_MPI::Request_free(&req);
 
     } else {
 
@@ -508,14 +501,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
         if (rank != jDomain) {
 
-#ifdef HAVE_MPI
-
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
 
           SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
-
-#endif
 
         }
       }
@@ -525,11 +514,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
 
@@ -578,17 +563,13 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
     if (iDomain != rank) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the coordinates, global index, colors, and element
        date to iDomain with non-blocking sends. ---*/
 
-      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+      SU2_MPI::Isend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
-
-#endif
-
+                     iDomain,  MPI_COMM_WORLD, &req);
+      SU2_MPI::Request_free(&req);
     }
 
     else {
@@ -631,11 +612,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- The next section begins the recv of all data for the interior
    points/elements in the mesh. First, create the domain structures for
@@ -655,7 +632,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       /*--- Receive the buffers with the coords, global index, and colors ---*/
 
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, MPI_COMM_WORLD, &status);
 
       /*--- Loop over all of the points that we have recv'd and store the
        coords, global index vertex and markers ---*/
@@ -687,11 +664,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- Free all of the memory used for communicating points and elements ---*/
 
@@ -712,14 +685,10 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
 
-#ifdef HAVE_MPI
-
   /*--- MPI status and request arrays for non-blocking communications ---*/
 
-  SU2_MPI::Status status, status_;
-
-
-#endif
+  SU2_MPI::Status status;
+  SU2_MPI::Request req;
 
   /*--- Define buffer vector interior domain ---*/
 
@@ -742,11 +711,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   nDomain = size;
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- This loop gets the array sizes of points for each
    rank to send to each other rank. ---*/
@@ -796,13 +761,10 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     if (rank != iDomain) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
 
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
-
-#endif
+      SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD, &req);
+      SU2_MPI::Request_free(&req);
 
     } else {
 
@@ -824,14 +786,10 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
         if (rank != jDomain) {
 
-#ifdef HAVE_MPI
-
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
 
           SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
-
-#endif
 
         }
       }
@@ -841,11 +799,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
 
@@ -893,17 +847,13 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     if (iDomain != rank) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the coordinates, global index, colors, and element
        date to iDomain with non-blocking sends. ---*/
 
-      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+      SU2_MPI::Isend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
-
-#endif
-
+                     iDomain,  MPI_COMM_WORLD, &req);
+      SU2_MPI::Request_free(&req);
     }
 
     else {
@@ -946,11 +896,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- The next section begins the recv of all data for the interior
    points/elements in the mesh. First, create the domain structures for
@@ -970,7 +916,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       /*--- Receive the buffers with the coords, global index, and colors ---*/
 
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, MPI_COMM_WORLD, &status);
 
 
       /*--- Loop over all of the points that we have recv'd and store the
@@ -1003,11 +949,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
   SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
 
   /*--- Free all of the memory used for communicating points and elements ---*/
 
