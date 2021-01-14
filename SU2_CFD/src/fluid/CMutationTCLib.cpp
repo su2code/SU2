@@ -32,7 +32,7 @@
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
  
   Mutation::MixtureOptions opt(gas_model);
-  string transport_model, state_model;
+  string transport_model;
 
   /* Allocating memory*/
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
@@ -42,19 +42,13 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
-  /*--- Define thermochemical nonequilibrium model ---*/
-  if(!frozen)
-    state_model = "ChemNonEqTTv";
-  else 
-    state_model = "NonEqTTv";
-
   /*--- Define transport model ---*/
   if(Kind_TransCoeffModel == WILKE)
     transport_model = "Wilke";
   else if (Kind_TransCoeffModel == GUPTAYOS)
     transport_model = "Gupta-Yos";
   
-  opt.setStateModel(state_model);
+  opt.setStateModel("ChemNonEqTTv");
   opt.setViscosityAlgorithm(transport_model);
   opt.setThermalConductivityAlgorithm(transport_model); 
   

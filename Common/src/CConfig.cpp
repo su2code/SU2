@@ -3561,6 +3561,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("If you're running an argon mixture, set MONOATOMIC= YES in the .cfg file!", CURRENT_FUNCTION);
   }
 
+  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
+      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working the Mutation++ support.", CURRENT_FUNCTION);
+  }
+
   if(GetBoolTurbomachinery()){
     nBlades = new su2double[nZone];
     FreeStreamTurboNormal= new su2double[3];
