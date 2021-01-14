@@ -447,7 +447,7 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) { return Solution; }
+  inline const MatrixType& GetSolution(void) const { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
