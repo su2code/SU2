@@ -362,26 +362,6 @@ public:
   void UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute the determinant of a 3 by 3 matrix.
-   *        3 by 3 matrix elements
-   * \param[in] A00
-   * \param[in] A01
-   * \param[in] A02
-   * \param[in] A10
-   * \param[in] A11
-   * \param[in] A12
-   * \param[in] A20
-   * \param[in] A21
-   * \param[in] A22
-   * \result Determinant of the matrix
-   */
-  inline su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
-    return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
-  }
-
-
-
-  /*!
    * \brief Store the number of iterations when moving the mesh.
    * \param[in] val_nIterMesh - Number of iterations.
    */

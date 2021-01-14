@@ -447,7 +447,7 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) { return Solution; }
+  inline const MatrixType& GetSolution(void) const { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -1784,12 +1784,6 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   inline virtual void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_energy - Pointer to energy.
-   */
-  inline virtual void SetEnergy_Old(unsigned long iPoint, vector<su2double>& val_energy) {}
 
   /*!
    * \brief A virtual member.

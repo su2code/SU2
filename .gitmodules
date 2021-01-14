@@ -12,3 +12,6 @@
 [submodule "externals/meson"]
 	path = externals/meson
 	url = https://github.com/mesonbuild/meson
+[submodule "subprojects/Mutationpp"]
+        path = subprojects/Mutationpp
+        url = https://github.com/mutationpp/Mutationpp.git	

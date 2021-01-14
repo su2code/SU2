@@ -54,7 +54,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/fluid/CNEMOGas.cpp \
-  ../src/fluid/CUserDefinedTCLib.cpp \
+  ../src/fluid/CSU2TCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \

@@ -109,35 +109,35 @@ public:
   /*!
    * \brief Get species T-R specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvTraRot() = 0;
+  virtual const vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
-   * \brief Get species V-E specific heats at constant volume.
+   * \brief Compute species V-E specific heats at constant volume.
    */
   virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
   
   /*!
-   * \brief Get mixture energies (total internal energy and vibrational energy).
+   * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
   virtual vector<su2double>& ComputeMixtureEnergies() = 0;
   
   /*!
-   * \brief Get species net production rates.
+   * \brief Compute species net production rates.
    */
   virtual vector<su2double>& ComputeNetProductionRates() = 0;
   
   /*!
-   * \brief Get vibrational energy source term.
+   * \brief Compute vibrational energy source term.
    */
   virtual su2double ComputeEveSourceTerm() { return 0; }
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute vector of species V-E energy.
    */
   virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
   
   /*!
-   * \brief Get species enthalpies.
+   * \brief Compute species enthalpies.
    */
   virtual vector<su2double>& ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) = 0;
   
@@ -157,7 +157,7 @@ public:
   virtual vector<su2double>& GetThermalConductivities() = 0;
   
   /*!
-   * \brief Get translational and vibrational temperatures vector.
+   * \brief Compute translational and vibrational temperatures vector.
    */
   virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
   
@@ -182,17 +182,17 @@ public:
   su2double ComputeGamma();
 
   /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
+   * \brief Compute derivative of pressure w.r.t. conservative variables.
    */
   void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
   
   /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
+   * \brief Compute derivative of temperature w.r.t. conservative variables.
    */
   void ComputedTdU(su2double *V, su2double *val_dTdU);
   
   /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
+   * \brief Compute derivative of vibrational temperature w.r.t. conservative variables.
    */
   void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 
@@ -229,15 +229,15 @@ public:
   /*!
    * \brief Get species molar mass.
    */
-  virtual vector<su2double>& GetSpeciesMolarMass() = 0;
+  virtual const vector<su2double>& GetSpeciesMolarMass() = 0;
 
   /*!
    * \brief Get reference temperature.
    */
-  virtual vector<su2double>& GetRefTemperature() = 0;
+  virtual const vector<su2double>& GetRefTemperature() = 0;
 
   /*!
    * \brief Get species formation enthalpy.
    */
-  virtual vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
+  virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;  
 };
