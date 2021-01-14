@@ -13303,7 +13303,7 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
   for (auto iNode = 0; iNode < secondWallNeighbors.size(); iNode++)
     node[secondWallNeighbors[iNode]]->SetBool_Wall_Neighbor(true);
 
-  vector<unsigned long>().swap(SecondNeighbors);
+  vector<unsigned long>().swap(secondWallNeighbors);
   
     su2double globalMaxDist = maxWallDist;
 #ifdef HAVE_MPI
