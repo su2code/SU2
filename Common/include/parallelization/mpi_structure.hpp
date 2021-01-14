@@ -144,10 +144,6 @@ class CBaseMPIWrapper {
     winMinRankErrorInUse = true;
   }
 
-  static inline void Buffer_attach(void* buffer, int size) { MPI_Buffer_attach(buffer, size); }
-
-  static inline void Buffer_detach(void* buffer, int* size) { MPI_Buffer_detach(buffer, size); }
-
   static inline void Comm_rank(Comm comm, int* rank) { MPI_Comm_rank(comm, rank); }
 
   static inline void Comm_size(Comm comm, int* size) { MPI_Comm_size(comm, size); }
@@ -176,6 +172,8 @@ class CBaseMPIWrapper {
 
   static inline void Wait(Request* request, Status* status) { MPI_Wait(request, status); }
 
+  static inline int Request_free(Request *request) { return MPI_Request_free(request); }
+
   static inline void Testall(int count, Request* array_of_requests, int* flag, Status* array_of_statuses) {
     MPI_Testall(count, array_of_requests, flag, array_of_statuses);
   }
@@ -196,10 +194,6 @@ class CBaseMPIWrapper {
 
   static inline void Bcast(void* buf, int count, Datatype datatype, int root, Comm comm) {
     MPI_Bcast(buf, count, datatype, root, comm);
-  }
-
-  static inline void Bsend(const void* buf, int count, Datatype datatype, int dest, int tag, Comm comm) {
-    MPI_Bsend(buf, count, datatype, dest, tag, comm);
   }
 
   static inline void Reduce(const void* sendbuf, void* recvbuf, int count, Datatype datatype, Op op, int root,
@@ -351,10 +345,6 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
     }
   }
 
-  static inline void Buffer_attach(void* buffer, int size) { AMPI_Buffer_attach(buffer, size); }
-
-  static inline void Buffer_detach(void* buffer, int* size) { AMPI_Buffer_detach(buffer, size); }
-
   static inline void Comm_rank(Comm comm, int* rank) { AMPI_Comm_rank(convertComm(comm), rank); }
 
   static inline void Comm_size(Comm comm, int* size) { AMPI_Comm_size(convertComm(comm), size); }
@@ -385,6 +375,8 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
   static inline void Wait(SU2_MPI::Request* request, Status* status) { AMPI_Wait(request, status); }
 
+  static inline int Request_free(Request *request) { return AMPI_Request_free(request); }
+
   static inline void Testall(int count, Request* array_of_requests, int* flag, Status* array_of_statuses) {
     AMPI_Testall(count, array_of_requests, flag, array_of_statuses);
   }
@@ -407,10 +399,6 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
 
   static inline void Bcast(void* buf, int count, Datatype datatype, int root, Comm comm) {
     AMPI_Bcast(buf, count, convertDatatype(datatype), root, convertComm(comm));
-  }
-
-  static inline void Bsend(const void* buf, int count, Datatype datatype, int dest, int tag, Comm comm) {
-    AMPI_Bsend(buf, count, convertDatatype(datatype), dest, tag, convertComm(comm));
   }
 
   static inline void Reduce(const void* sendbuf, void* recvbuf, int count, Datatype datatype, Op op, int root,
@@ -574,10 +562,6 @@ class CBaseMPIWrapper {
 
   static inline void Init_thread(int* argc, char*** argv, int required, int* provided) { *provided = required; }
 
-  static inline void Buffer_attach(void* buffer, int size) {}
-
-  static inline void Buffer_detach(void* buffer, int* size) {}
-
   static inline void Barrier(Comm comm) {}
 
   static inline void Abort(Comm comm, int error) { exit(EXIT_FAILURE); }
@@ -595,6 +579,8 @@ class CBaseMPIWrapper {
 
   static inline void Wait(Request* request, Status* status) {}
 
+  static inline int Request_free(Request *request) { return 0; }
+
   static inline void Waitall(int nrequests, Request* request, Status* status) {}
 
   static inline void Waitany(int nrequests, Request* request, int* index, Status* status) {}
@@ -604,8 +590,6 @@ class CBaseMPIWrapper {
   static inline void Recv(void* buf, int count, Datatype datatype, int dest, int tag, Comm comm, Status* status) {}
 
   static inline void Bcast(void* buf, int count, Datatype datatype, int root, Comm comm) {}
-
-  static inline void Bsend(const void* buf, int count, Datatype datatype, int dest, int tag, Comm comm) {}
 
   static inline void Reduce(const void* sendbuf, void* recvbuf, int count, Datatype datatype, Op op, int root,
                             Comm comm) {
