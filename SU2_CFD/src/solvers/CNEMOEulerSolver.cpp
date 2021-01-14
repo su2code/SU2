@@ -1431,10 +1431,10 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
   case MUTATIONPP:
-   #ifdef HAVE_MPP
+   #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
      FluidModel = new CMutationTCLib(config, nDim);
    #else
-     SU2_MPI::Error(string("Mutation++ has not been configured/compiled. Add 1) '-Denable-mpp=true' to your meson string or 2) '-DHAVE_MPP' to the CXX FLAGS of your configure string for cmake compilation, and recompile."),
+     SU2_MPI::Error(string("Either 1) Mutation++ has not been configured/compiled (add '-Denable-mpp=true' to your meson string) or 2) CODI must be deactivated since it is not compatible with Mutation++."),
      CURRENT_FUNCTION);
    #endif    
    break;

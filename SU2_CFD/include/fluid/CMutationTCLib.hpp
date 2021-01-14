@@ -31,7 +31,6 @@
 
 #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 #include "mutation++.h"
-#endif
 
 /*!
  * \derived class CMutationTCLib
@@ -42,9 +41,7 @@ class CMutationTCLib : public CNEMOGas {
 
 private:
 
-  #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
-    std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
-  #endif
+  std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
@@ -145,3 +142,4 @@ public:
   vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };
+#endif

@@ -25,9 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fluid/CMutationTCLib.hpp"
+#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 
-//#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#include "../../include/fluid/CMutationTCLib.hpp"
 
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
  
@@ -223,5 +223,4 @@ vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
 
    return Enthalpy_Formation;  
 }
-
-//#endif
+#endif
