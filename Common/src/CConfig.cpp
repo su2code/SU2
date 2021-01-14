@@ -3556,7 +3556,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
-      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working the Mutation++ support.", CURRENT_FUNCTION);
+      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
