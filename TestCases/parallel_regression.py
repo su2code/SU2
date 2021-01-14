@@ -28,11 +28,8 @@
 # make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
 from __future__ import print_function
 
-#import os
 import sys
 from TestCase import TestCase
-
-#os.environ['LD_LIBRARY_PATH'] = os.getenv('SU2_HOME') + '/build/subprojects/Mutationpp'
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
