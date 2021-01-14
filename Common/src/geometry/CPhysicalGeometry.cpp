@@ -13286,18 +13286,24 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
   }
 
   /*--- Next store neighbors of neighbors ---*/
+  svector<unsigned long> secondWallNeighbors;
   for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
     if ((!node[iPoint]->GetSolidBoundary()) && (iPoint < nPointDomain)) {
       for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
         const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
         if ((node[jPoint]->GetBool_Wall_Neighbor()) && (!node[iPoint]->GetBool_Wall_Neighbor())) {
-          node[iPoint]->SetBool_Wall_Neighbor(true);
+          secondWallNeighbors.push_back(iPoint);
           maxWallDist = max(maxWallDist, node[iPoint]->GetWall_Distance());
           break;
         }// if jPoint WallNeighbor && iPoint !WallNeighbor
       }// iNode
     }// iPoint !SolidBoundary && iPoint in domain
   }
+
+  for (auto iNode = 0; iNode < secondWallNeighbors.size(); iNode++)
+    node[secondWallNeighbors[iNode]]->SetBool_Wall_Neighbor(true);
+
+  vector<unsigned long>().swap(SecondNeighbors);
   
     su2double globalMaxDist = maxWallDist;
 #ifdef HAVE_MPI
