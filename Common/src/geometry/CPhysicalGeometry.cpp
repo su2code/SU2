@@ -13286,7 +13286,7 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
   }
 
   /*--- Next store neighbors of neighbors ---*/
-  svector<unsigned long> secondWallNeighbors;
+  vector<unsigned long> secondWallNeighbors;
   for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
     if ((!node[iPoint]->GetSolidBoundary()) && (iPoint < nPointDomain)) {
       for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
