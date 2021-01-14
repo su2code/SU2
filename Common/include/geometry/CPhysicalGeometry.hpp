@@ -864,4 +864,9 @@ public:
     }
   }
 
+  /*!
+   * \brief Set nodes to be used for wall functions
+   */
+  void SetWallFunctionNodes(const CConfig *config);
+
 };
