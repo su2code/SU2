@@ -806,7 +806,7 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry *geometry, CConfig 
 }
 
 
-CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
+CSysMatrixVectorProduct<su2matvecscalar> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry *geometry, CNumerics **numerics, CConfig *config) {
 
   bool surf = config->GetSmoothOnSurface();
 
@@ -823,7 +823,7 @@ CSysMatrixVectorProduct<su2mixedfloat> CGradientSmoothingSolver::GetStiffnessMat
     Compute_StiffMatrix(geometry, numerics, config);
   }
 
-  return CSysMatrixVectorProduct<su2mixedfloat>(Jacobian, geometry, config);
+  return CSysMatrixVectorProduct<su2matvecscalar>(Jacobian, geometry, config);
 }
 
 
@@ -920,7 +920,7 @@ void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometr
 }
 
 
-void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
+void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2matvecscalar>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
 
   unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
   unsigned int iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
@@ -961,7 +961,7 @@ void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<
 }
 
 
-void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
+void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2matvecscalar>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
 
   /*--- adjoint surface deformation ---*/
 
@@ -1101,7 +1101,7 @@ void CGradientSmoothingSolver::ReadSens2Geometry(CGeometry *geometry, CConfig *c
 }
 
 
-void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
+void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2matvecscalar>& vector) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -1112,7 +1112,7 @@ void CGradientSmoothingSolver::WriteVector2Geometry(CGeometry *geometry, CConfig
 }
 
 
-void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2mixedfloat>& vector) {
+void CGradientSmoothingSolver::ReadVector2Geometry(CGeometry *geometry, CConfig *config, CSysVector<su2matvecscalar> &vector) {
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {

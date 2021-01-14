@@ -30,6 +30,18 @@
 #include "CSolver.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 
+/** Introduction of a new data type to allow compilation with forward mode.
+  *
+  * This is done for compatibility to the treatment of Jacobian and System in CSolver.hpp.
+  * Note that the compuations done dere are always 'passive', i.e. not intended to be differentiated. We only need to define functions depending on this once.
+  * Move to Common/include/basic_types later if possible.
+  */
+#ifndef CODI_FORWARD_TYPE
+  using su2matvecscalar = su2mixedfloat;
+#else
+  using su2matvecscalar = su2double;
+#endif
+
 /*! \class CGradientSmoothingSolver
  *  \brief Main class for defining a gradient smoothing.
  *  \author T. Dick.
@@ -51,15 +63,9 @@ public:
 
   CSysVector<su2double> activeCoord;         /*!< \brief Auxiliar vector to keep the indeces of geometry->vertex->Coord */
 
-  #ifndef CODI_FORWARD_TYPE
-    CSysVector<su2mixedfloat> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
-    CSysVector<su2mixedfloat> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
-    CSysVector<su2mixedfloat> helperVecAux;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
-  #else
-    CSysVector<su2double> helperVecIn;
-    CSysVector<su2double> helperVecOut;
-    CSysVector<su2double> helperVecAux;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
-  #endif
+  CSysVector<su2matvecscalar> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
+  CSysVector<su2matvecscalar> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
+  CSysVector<su2matvecscalar> helperVecAux;     /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
 
   CVariable* nodes = nullptr;                /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -177,7 +183,7 @@ public:
    * \brief Get the matrix vector product with the StiffnessMatrix
    * \note This always applies the stiffness matrix for all dimensions independent of each other!
    */
-  CSysMatrixVectorProduct<su2mixedfloat> GetStiffnessMatrixVectorProduct(CGeometry *geometry,                                                                        CNumerics **numerics,
+  CSysMatrixVectorProduct<su2matvecscalar> GetStiffnessMatrixVectorProduct(CGeometry *geometry,                                                                        CNumerics **numerics,
                                                                          CConfig *config);
 
   /*!
@@ -211,7 +217,7 @@ public:
    */
   void ProjectDVtoMesh(CGeometry *geometry,
                        std::vector<su2double>& seeding,
-                       CSysVector<su2mixedfloat>& result,
+                       CSysVector<su2matvecscalar>& result,
                        CSysVector<su2double>& registeredCoord,
                        CConfig *config);
 
@@ -222,7 +228,7 @@ public:
    * \param surface_movement
    */
   void ProjectMeshToDV(CGeometry *geometry,
-                       CSysVector<su2mixedfloat>& sensitivity,
+                       CSysVector<su2matvecscalar>& sensitivity,
                        std::vector<su2double>& output,
                        CSysVector<su2double> &registeredCoord,
                        CConfig *config);
@@ -276,14 +282,14 @@ public:
    */
   void WriteVector2Geometry(CGeometry *geometry,
                             CConfig *config,
-                            CSysVector<su2mixedfloat> &vector);
+                            CSysVector<su2matvecscalar> &vector);
 
   /*!
    * \brief Copy sensitivities from the geometry into a vector
    */
   void ReadVector2Geometry(CGeometry *geometry,
                            CConfig *config,
-                           CSysVector<su2mixedfloat> &vector);
+                           CSysVector<su2matvecscalar> &vector);
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.

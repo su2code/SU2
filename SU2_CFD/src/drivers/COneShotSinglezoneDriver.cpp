@@ -93,6 +93,14 @@ void COneShotSinglezoneDriver::Run(){
 
 void COneShotSinglezoneDriver::Postprocess() {
 
+  if(config->GetOneShotMode() == PIGGYBACK) {
+
+    /*--- For Piggyback smooth the calculated geometry sensitivities if required. ---*/
+    if (config->GetSmoothGradient()) {
+      DerivativeTreatment();
+    }
+  }
+
 }
 
 void COneShotSinglezoneDriver::RunOneShot(){
