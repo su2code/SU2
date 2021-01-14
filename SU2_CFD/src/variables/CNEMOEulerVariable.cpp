@@ -77,6 +77,13 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Allocate & initialize residual vectors ---*/
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
+  /*--- Size Grad_AuxVar for axiysmmetric ---*/
+  if (config->GetAxisymmetric()){
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+  }
+
   /*--- Only for residual smoothing (multigrid) ---*/
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
