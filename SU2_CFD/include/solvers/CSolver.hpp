@@ -197,6 +197,10 @@ public:
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }
+  inline const CVariable* GetNodes() const {
+    assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return base_nodes;
+  }
 
   /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.
