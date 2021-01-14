@@ -13276,7 +13276,7 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
             const long jVertex = node[jPoint]->GetVertex(iMarker);
             if (jVertex != -1) {
               node[iPoint]->SetBool_Wall_Neighbor(true);
-              maxWallDist = max(maxWallDist, dist);
+              maxWallDist = max(maxWallDist, node[iPoint]->GetWall_Distance());
               break;
             }// if jVertex
           }// iNode
@@ -13290,10 +13290,9 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
     if ((!node[iPoint]->GetSolidBoundary()) && (iPoint < nPointDomain)) {
       for (unsigned short iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
         const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-        const long jVertex = node[jPoint]->GetVertex(iMarker);
         if ((node[jPoint]->GetBool_Wall_Neighbor()) && (!node[iPoint]->GetBool_Wall_Neighbor())) {
           node[iPoint]->SetBool_Wall_Neighbor(true);
-          maxWallDist = max(maxWallDist, dist);
+          maxWallDist = max(maxWallDist, node[iPoint]->GetWall_Distance());
           break;
         }// if jPoint WallNeighbor && iPoint !WallNeighbor
       }// iNode
