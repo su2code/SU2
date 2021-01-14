@@ -278,6 +278,13 @@ protected:
    */
   void SetCoefficient_Gradients(CConfig *config) const;
 
+  /*!
+   * \brief Instantiate a SIMD numerics object.
+   * \param[in] solvers - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) final;
+
 public:
   /*!
    * \brief Constructor of the class.
