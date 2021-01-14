@@ -55,7 +55,7 @@ CFEMStandardLineAdjacentTriGrid::CFEMStandardLineAdjacentTriGrid(const unsigned 
 
   /*--- Convert the 1D parametric coordinates of the integration points of the
         face to the 2D parametric coordinates of the adjacent triangle. ---*/
-  ConvertCoor1DFaceTo2DTriangle(rLineInt, val_faceID_Elem, val_orientation,
+  ConvertCoor1DFaceTo2DTriangle(rLineInt, faceID_Elem, orientation,
                                 rTriangleInt, sTriangleInt);
 
   /*--- Compute the corresponding Lagrangian basis functions and
@@ -74,4 +74,64 @@ void CFEMStandardLineAdjacentTriGrid::CoorIntPoints(const bool                no
         arguments to compute the coordinates in the integration points
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(lagBasisInt, 2, matCoorDOF, matCoorInt, nullptr);
+}
+
+void CFEMStandardLineAdjacentTriGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                               ColMajorMatrix<su2double>          &matCoorDOF,
+                                                               vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 2, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 2, matCoorDOF, matDerCoorInt[1], nullptr);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardLineAdjacentTriGrid.          */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardLineAdjacentTriGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                      vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Check this. ---*/
+  assert(orientation == 0);
+
+  /*--- Allocate the memory for matDerFace. ---*/
+  const unsigned short nRows = matDerVol[0].rows();
+  const unsigned short nCols = matDerVol[0].cols();
+
+  matDerFace.resize(1);
+  matDerFace[0].resize(nRows, nCols);
+
+  /*--- Determine on which face of the element the current surface resides and
+        set the surface gradient accordingly. ---*/
+  switch( faceID_Elem ) {
+    case 0: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD
+        for(unsigned short i=0; i<nRows; ++i)
+          matDerFace[0](i,j) = matDerVol[0](i,j);
+      }
+      break;
+    }
+
+    case 1: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nRows; ++i)
+          matDerFace[0](i,j) = matDerVol[1](i,j) - matDerVol[0](i,j);
+      }
+      break;
+    }
+
+    case 2: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nRows; ++i)
+          matDerFace[0](i,j) = -matDerVol[1](i,j);
+      }
+      break;
+    }
+  }
 }

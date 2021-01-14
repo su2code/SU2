@@ -77,3 +77,55 @@ void CFEMStandardTriAdjacentTetGrid::CoorIntPoints(const bool                not
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
 }
+
+void CFEMStandardTriAdjacentTetGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                              ColMajorMatrix<su2double>          &matCoorDOF,
+                                                              vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 3, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 3, matCoorDOF, matDerCoorInt[1], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[2], 3, matCoorDOF, matDerCoorInt[2], nullptr);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardTriAdjacentTetGrid.           */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardTriAdjacentTetGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                     vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Check this. ---*/
+  assert(orientation == 0);
+
+  /*--- Set the indices of the volume gradients to copy to the surface gradients.
+        Note that for face 3 this is not correct, but is used as a first step. ---*/
+  unsigned short ind0,  ind1;
+
+  switch( faceID_Elem ) {
+    case 0: ind0 = 0; ind1 = 1; break;
+    case 1: ind0 = 2; ind1 = 0; break;
+    case 2: ind0 = 1; ind1 = 2; break;
+    case 3: ind0 = 2; ind1 = 1; break;
+  }
+
+  /*--- Copy the surface gradients from the appropriate volume gradients. ---*/
+  matDerFace.resize(2);
+  matDerFace[0] = matDerVol[ind0];
+  matDerFace[1] = matDerVol[ind1];
+
+  /*--- Correct the surface gradients for face 3. ---*/
+  if(faceID_Elem == 3) {
+    const unsigned short nCols = matDerFace[0].cols();
+    const unsigned short nRows = matDerFace[0].rows();
+    for(unsigned short j=0; j<nCols; ++j) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nRows; ++i) {
+        matDerFace[0](i,j) -= matDerVol[0](i,j);
+        matDerFace[1](i,j) -= matDerVol[0](i,j);
+      }
+    }
+  }
+}

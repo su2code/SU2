@@ -94,6 +94,17 @@ public:
                      ColMajorMatrix<su2double> &matCoorDOF,
                      ColMajorMatrix<su2double> &matCoorInt) override;
 
+  /*!
+   * \brief Function, which computes the derivatives of the coordinates in the
+   *        integration points.
+   * \param[in]  notUsed       - Argument present to be consistent with the base class
+   *                             function, which is overwritten.
+   * \param[in]  matCoorDOF    - Matrix that contains the coordinates of the grid DOFs.
+   * \param[out] matDerCoorInt - Vector of matrices to store the derivatives of the coordinates.
+   */
+  void DerivativesCoorIntPoints(const bool                         notUsed,
+                                ColMajorMatrix<su2double>          &matCoorDOF,
+                                vector<ColMajorMatrix<su2double> > &matDerCoorInt) override;
 private:
 
   unsigned short faceID_Elem;   /*!< \brief Face ID of the adjacent quad, which corresponds to this face. */
@@ -112,4 +123,19 @@ private:
   vector<ColMajorMatrix<passivedouble> > tensorDSolDs;  /*!< \brief The two 1D components of the tensor to compute
                                                                     the derivative in s-direction of the solution
                                                                     on the face of the quad. */
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Private member functions.                               ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which convertes the gradients w.r.t. the parametric volume coordinates
+   *        to the gradients w.r.t. the parametric surface coordinates of the face.
+   * \param[in]  matDerVol  - Vector of matrices that contains the derivatives w.r.t.
+   *                          the parametric volume coordinates.
+   * \param[out] matDerFace - Vector of matrices that contains the derivatives w.r.t.
+   *                          the parametric surface coordinates.
+   */
+  void ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                       vector<ColMajorMatrix<su2double> > &matDerFace) override;
 };

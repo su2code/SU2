@@ -43,8 +43,7 @@ void CInternalFaceFEM_DG::InitGridVelocities(const unsigned short nDim) {
   gridVelocities.setConstant(0.0);
 }
 
-void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const bool                   viscousTerms,
-                                                       const unsigned short         nDim,
+void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const unsigned short         nDim,
                                                        vector<CVolumeElementFEM_DG> &volElem) {
 
   /*--- Determine the padded number of integration points. ---*/
@@ -60,8 +59,9 @@ void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const bool               
 
   standardElemGrid->CoorIntPoints(volElem[elemID0].coorGridDOFs, coorIntegrationPoints);
 
-  /*--- DEBUG: COMPUTE THE COORDINATES OF THE INTEGRATION POINTS FROM THE DATA
-               OF THE ELEMENT ON SIDE 1 AND COMPARE THE RESULTS. ---*/
+#ifndef NDEBUG
+  /*--- DEBUG: Compute the coordinates of the integration points from the data
+               of th elemennt on side 1 and compare the results. ---*/
   ColMajorMatrix<su2double> coorSide1(nIntPad, nDim);
   standardElemGrid->CoorIntPointsFromSide1(volElem[elemID1].coorGridDOFs, coorSide1);
 
@@ -76,6 +76,24 @@ void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const bool               
   }
 
   /*--- END DEBUG. ---*/
+#endif
 
-  //SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Allocate the memory for the metric terms of the internal face. ---*/
+  JacobiansFace.resize(nIntPad);
+  metricNormalsFace.resize(nIntPad, nDim);
+
+  metricCoorDerivFace0.resize(nDim);
+  metricCoorDerivFace1.resize(nDim);
+
+  for(unsigned short k=0; k<nDim; ++k) {
+    metricCoorDerivFace0[k].resize(nIntPad, nDim);
+    metricCoorDerivFace1[k].resize(nIntPad, nDim);
+  }
+
+  /*--- Compute the metric terms in the surface integration points. ---*/
+  standardElemGrid->MetricTermsSurfaceIntPoints(volElem[elemID0].coorGridDOFs,
+                                                volElem[elemID1].coorGridDOFs,
+                                                JacobiansFace, metricNormalsFace,
+                                                metricCoorDerivFace0,
+                                                metricCoorDerivFace1);
 }

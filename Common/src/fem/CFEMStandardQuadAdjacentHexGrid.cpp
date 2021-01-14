@@ -123,3 +123,44 @@ void CFEMStandardQuadAdjacentHexGrid::CoorIntPoints(const bool                no
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, swapTangInTensor, 3, matCoorDOF, matCoorInt);
 }
+
+void CFEMStandardQuadAdjacentHexGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                               ColMajorMatrix<su2double>          &matCoorDOF,
+                                                               vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(tensorDSolDr, faceID_Elem, swapTangInTensor, 3, matCoorDOF, matDerCoorInt[0]);
+  gemmDOFs2Int->DOFs2Int(tensorDSolDs, faceID_Elem, swapTangInTensor, 3, matCoorDOF, matDerCoorInt[1]);
+  gemmDOFs2Int->DOFs2Int(tensorDSolDt, faceID_Elem, swapTangInTensor, 3, matCoorDOF, matDerCoorInt[2]);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardQuadAdjacentHexGrid.          */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardQuadAdjacentHexGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                      vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Check this. ---*/
+  assert(orientation == 0);
+
+  /*--- Set the indices of the volume gradients to copy to the surface gradients. ---*/
+  unsigned short ind0,  ind1;
+
+  switch( faceID_Elem ) {
+    case 0: ind0 = 0; ind1 = 1; break;
+    case 1: ind0 = 1; ind1 = 0; break;
+    case 2: ind0 = 2; ind1 = 0; break;
+    case 3: ind0 = 0; ind1 = 2; break;
+    case 4: ind0 = 1; ind1 = 2; break;
+    case 5: ind0 = 2; ind1 = 1; break;
+  }
+
+  /*--- Copy the surface gradients from the appropriate volume gradients. ---*/
+  matDerFace.resize(2);
+  matDerFace[0] = matDerVol[ind0];
+  matDerFace[1] = matDerVol[ind1];
+}

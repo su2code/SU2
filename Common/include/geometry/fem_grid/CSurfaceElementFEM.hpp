@@ -53,10 +53,18 @@ public:
 
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 
+  su2activevector JacobiansFace;               /*!< \brief The Jacobians in the integration points of the face. */
+  ColMajorMatrix<su2double> metricNormalsFace; /*!< \brief The normals in the integration points of the face.
+                                                           The normals point from side 0 out of the element. */
+
+  vector<ColMajorMatrix<su2double> > metricCoorDerivFace;  /*!< \brief The terms drdx, dsdx, etc. of side 0 in the
+                                                                       integration points of the face. */
+
   ColMajorMatrix<su2double> coorIntegrationPoints;  /*!< \brief Coordinates of the integration points of this face. */
   ColMajorMatrix<su2double> gridVelocities;         /*!< \brief Grid velocities of the integration points of this face. */
-  ColMajorMatrix<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
-                                                                the integration points of this face. */
+
+  su2activevector wallDistance;     /*!< \brief The wall distance to the viscous walls for
+                                                the integration points of this face. */
 
   CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
   CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
@@ -86,12 +94,9 @@ public:
 
   /*!
    * \brief Function, which computes the metric terms in the integration points.
-   * \param[in] viscousTerms - Whether or not the metric terms for the viscous part
-   *                           must be computed.
-   * \param[in] nDim         - Number of spatial dimensions.
-   * \param[in] volElem      - The volume elements of the grid.
+   * \param[in] nDim    - Number of spatial dimensions.
+   * \param[in] volElem - The volume elements of the grid.
    */
-  void MetricTermsIntegrationPoints(const bool                         viscousTerms,
-                                    const unsigned short               nDim,
-                                    const vector<CVolumeElementFEM_DG> &volElem);
+  void MetricTermsIntegrationPoints(const unsigned short         nDim,
+                                    vector<CVolumeElementFEM_DG> &volElem);
 };

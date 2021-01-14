@@ -57,7 +57,7 @@ CFEMStandardQuadAdjacentPyraGrid::CFEMStandardQuadAdjacentPyraGrid(const unsigne
   /*--- Convert the 2D parametric coordinates of the integration points of the
         quadrilateral face to the 3D parametric coordinates of the adjacent pyramid. ---*/
   vector<passivedouble> rInt, sInt, tInt;
-  ConvertCoor2DQuadFaceTo3DPyra(rLineInt, val_faceID_Elem, val_orientation, rInt, sInt, tInt);
+  ConvertCoor2DQuadFaceTo3DPyra(rLineInt, faceID_Elem, orientation, rInt, sInt, tInt);
 
   /*--- Compute the corresponding Lagrangian basis functions and
         its first derivatives in the integration points. ---*/
@@ -75,4 +75,34 @@ void CFEMStandardQuadAdjacentPyraGrid::CoorIntPoints(const bool                n
         arguments to compute the coordinates in the integration points
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
+}
+
+void CFEMStandardQuadAdjacentPyraGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                                ColMajorMatrix<su2double>          &matCoorDOF,
+                                                                vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 3, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 3, matCoorDOF, matDerCoorInt[1], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[2], 3, matCoorDOF, matDerCoorInt[2], nullptr);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardQuadAdjacentPyraGrid.         */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardQuadAdjacentPyraGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                       vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Furthermore, for a pyramid the
+        face ID of the element should 0. Check this. ---*/
+  assert(orientation == 0);
+  assert(faceID_Elem == 0);
+
+  /*--- Copy the appropriate data. ---*/
+  matDerFace.resize(2);
+  matDerFace[0] = matDerVol[0];
+  matDerFace[1] = matDerVol[1];
 }

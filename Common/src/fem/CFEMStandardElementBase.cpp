@@ -143,6 +143,46 @@ unsigned short CFEMStandardElementBase::GetNDOFsPerSubElem(unsigned short val_VT
   return nDOFsSubElem;
 }
 
+void CFEMStandardElementBase::MetricTermsSurfaceIntPoints(ColMajorMatrix<su2double>          &matCoorElem,
+                                                          su2activevector                    &JacobiansFace,
+                                                          ColMajorMatrix<su2double>          &normalsFace,
+                                                          vector<ColMajorMatrix<su2double> > &matMetricTerms) {
+
+  /*--- Compute the derivatives of the coordinates in the surface integration points.
+        The matrix matMetricTerms is used as storage for this data. The first argument
+        is a dummy and is there to be consistent with the functional call. ---*/
+  DerivativesCoorIntPoints(true, matCoorElem, matMetricTerms);
+
+  /*--- Convert the derivatives w.r.t. the parametric volume coordinates to the
+        derivatives w.r.t. the parametric surface coordinates. ---*/
+  vector<ColMajorMatrix<su2double> > matDerCoorFace;
+  ConvertVolumeToSurfaceGradients(matMetricTerms, matDerCoorFace);
+
+  /*--- Call the function MetricTermsVolume to compute the actual data of
+        drdx, drdy, etc. Use JacobiansFace as storage for the Jacobians. ---*/
+  MetricTermsVolume(matMetricTerms, JacobiansFace);
+
+  /*--- Determine the inverse of the Jacobians. First set the added values
+        to 1 to avoid divisions by zero. ---*/
+  for(unsigned short i=nIntegration; i<nIntegrationPad; ++i) JacobiansFace[i] = 1.0;
+
+  SU2_OMP_SIMD_IF_NOT_AD
+  for(unsigned short i=0; i<nIntegrationPad; ++i)
+    JacobiansFace[i] = 1.0/JacobiansFace[i];
+  
+  /*--- Compute the final metric terms. ---*/
+  for(unsigned short k=0; k<matMetricTerms.size(); ++k) {
+    for(unsigned short j=0; j<matMetricTerms[k].cols(); ++j) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nIntegrationPad; ++i)
+        matMetricTerms[k](i,j) *= JacobiansFace[i];
+    }
+  }
+
+  /*--- Compute the face normals. ---*/
+  ComputeUnitFaceNormals(matDerCoorFace, normalsFace, JacobiansFace);
+}
+
 void CFEMStandardElementBase::MetricTermsVolume(vector<ColMajorMatrix<su2double> > &matMetricTerms,
                                                 su2activevector                    &Jacobians) {
 
@@ -624,73 +664,8 @@ void CFEMStandardElementBase::UnitFaceNormals(const bool                        
   /*--- Compute the derivatives of the coordinates in the surface integration points. ---*/
   DerivativesCoorIntPoints(LGLDistribution, matCoor, matDerCoor);
 
-  /*--- Check the dimension of the problem. ---*/
-  if(matDerCoor.size() == 1) {
-
-    /*--- Face of a 2D element. Set the reference for the derivative of the
-          Cartesian coordinates w.r.t. the parametric coordinate. ---*/
-    const ColMajorMatrix<su2double> &dCoorDr = matDerCoor[0];
-
-    /*--- Loop over the padded number of integration points
-          to compute the normals. ---*/
-    SU2_OMP_SIMD_IF_NOT_AD
-    for(unsigned short i=0; i<nIntegrationPad; ++i) {
-
-      /*--- Abbreviate dxdr and dydr for readability. ---*/
-      const su2double dxdr = dCoorDr(i,0);
-      const su2double dydr = dCoorDr(i,1);
-
-      /*--- Determine the Jacobian and its inverse. There is a clipping to
-            avoid a division by zero, but this should not be active. ---*/
-      Jacobians[i]           = sqrt(dxdr*dxdr + dydr*dydr);
-      const su2double invJac = Jacobians[i] < su2double(1.e-35) ? su2double(1.e+35) : 1.0/Jacobians[i];
-
-      /*--- Compute and store the outward pointing unit normal vector. ---*/
-      unitNormals(i,0) =  dydr*invJac;
-      unitNormals(i,1) = -dxdr*invJac;
-    }
-
-  }
-  else {
-
-    /*--- Face of a 3D element. Set the references for the derivatives of the Cartesian
-          coordinates w.r.t. the parametric coordinates. ---*/
-    const ColMajorMatrix<su2double> &dCoorDr = matDerCoor[0];
-    const ColMajorMatrix<su2double> &dCoorDs = matDerCoor[1];
-
-    /*--- Loop over the padded number of integration points
-          to compute the normals. ---*/
-    SU2_OMP_SIMD_IF_NOT_AD
-    for(unsigned short i=0; i<nIntegrationPad; ++i) {
-
-      /*--- Easier storage of the derivatives of the Cartesian coordinates. ---*/
-      const su2double dxdr = dCoorDr(i,0);
-      const su2double dydr = dCoorDr(i,1);
-      const su2double dzdr = dCoorDr(i,2);
-
-      const su2double dxds = dCoorDs(i,0);
-      const su2double dyds = dCoorDs(i,1);
-      const su2double dzds = dCoorDs(i,2);
-
-      /*--- Compute the vector product dxdr X dxds, where x is the coordinate
-            vector (x,y,z). Compute the length of this vector, which is the
-            Jacobian as well as the inverse.  Make sure that a division by zero
-            is avoided, although this is most likely never active. ---*/
-      const su2double nx = dydr*dzds - dyds*dzdr;
-      const su2double ny = dxds*dzdr - dxdr*dzds;
-      const su2double nz = dxdr*dyds - dxds*dydr;
-
-      Jacobians[i]           = sqrt(nx*nx + ny*ny + nz*nz);
-      const su2double invJac = Jacobians[i] < su2double(1.e-35) ? su2double(1.e+35) : 1.0/Jacobians[i];
-
-      /*--- Store the unit normal. Note that the current direction is inward
-            pointing. However, the outward pointing normal is needed, so the
-            direction  must be reversed. ---*/
-      unitNormals(i,0) = -nx*invJac;
-      unitNormals(i,1) = -ny*invJac;
-      unitNormals(i,2) = -nz*invJac;
-    }
-  }
+  /*--- Compute the actual face normals. ---*/
+  ComputeUnitFaceNormals(matDerCoor, unitNormals, Jacobians);
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -873,4 +848,82 @@ void CFEMStandardElementBase::SetUpJittedGEMM(const int          M,
   val_gemm = mkl_jit_get_dgemm_ptr(val_jitter);
 
 #endif
+}
+
+void CFEMStandardElementBase::ComputeUnitFaceNormals(vector<ColMajorMatrix<su2double> > &matDerCoor,
+                                                     ColMajorMatrix<su2double>          &unitNormals,
+                                                     su2activevector                    &Jacobians) {
+  /*--- Check the dimension of the problem. ---*/
+  if(matDerCoor.size() == 1) {
+
+    /*--- Face of a 2D element. Set the reference for the derivative of the
+          Cartesian coordinates w.r.t. the parametric coordinate. ---*/
+    const ColMajorMatrix<su2double> &dCoorDr = matDerCoor[0];
+
+    /*--- Loop over the padded number of integration points
+          to compute the scaled normals and Jacobians. ---*/
+    SU2_OMP_SIMD_IF_NOT_AD
+    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+
+      /*--- Abbreviate dxdr and dydr for readability. ---*/
+      const su2double dxdr = dCoorDr(i,0);
+      const su2double dydr = dCoorDr(i,1);
+
+      /*--- Determine the Jacobian. ---*/
+      Jacobians[i] = sqrt(dxdr*dxdr + dydr*dydr);
+
+      /*--- Compute and store the outward pointing scaled normal vector. ---*/
+      unitNormals(i,0) =  dydr;
+      unitNormals(i,1) = -dxdr;
+    }
+
+  }
+  else {
+
+    /*--- Face of a 3D element. Set the references for the derivatives of the Cartesian
+          coordinates w.r.t. the parametric coordinates. ---*/
+    const ColMajorMatrix<su2double> &dCoorDr = matDerCoor[0];
+    const ColMajorMatrix<su2double> &dCoorDs = matDerCoor[1];
+
+    /*--- Loop over the padded number of integration points
+          to compute the normals. ---*/
+    SU2_OMP_SIMD_IF_NOT_AD
+    for(unsigned short i=0; i<nIntegrationPad; ++i) {
+
+      /*--- Easier storage of the derivatives of the Cartesian coordinates. ---*/
+      const su2double dxdr = dCoorDr(i,0);
+      const su2double dydr = dCoorDr(i,1);
+      const su2double dzdr = dCoorDr(i,2);
+
+      const su2double dxds = dCoorDs(i,0);
+      const su2double dyds = dCoorDs(i,1);
+      const su2double dzds = dCoorDs(i,2);
+
+      /*--- Compute the vector product dxdr X dxds, where x is the coordinate
+            vector (x,y,z). Compute the length of this vector, which is the
+            Jacobian. ---*/
+      const su2double nx = dydr*dzds - dyds*dzdr;
+      const su2double ny = dxds*dzdr - dxdr*dzds;
+      const su2double nz = dxdr*dyds - dxds*dydr;
+
+      Jacobians[i] = sqrt(nx*nx + ny*ny + nz*nz);
+
+      /*--- Store the scaled normal. Note that the current direction is inward
+            pointing. However, the outward pointing normal is needed, so the
+            direction  must be reversed. ---*/
+      unitNormals(i,0) = -nx;
+      unitNormals(i,1) = -ny;
+      unitNormals(i,2) = -nz;
+    }
+  }
+
+  /*--- Set the added values of the Jacobian to 1 to avoid a division by zero. ---*/
+  for(unsigned short i=nIntegration; i<nIntegrationPad; ++i) Jacobians[i] = 1.0;
+
+  /*--- Determine the unit normals. ---*/
+  for(unsigned short j=0; j<unitNormals.cols(); ++j) {
+    SU2_OMP_SIMD_IF_NOT_AD
+    for(unsigned short i=0; i<nIntegrationPad; ++i)
+      unitNormals(i,j) /= Jacobians[i];
+  }
 }

@@ -470,10 +470,24 @@ public:
   unsigned short GetNDOFsPerSubElem(unsigned short val_VTK_Type) const;
 
   /*!
+   * \brief Function, which computes all the surface metric terms for the integration
+   *        points of a face.
+   * \param[in]  matCoorElem    - Matrix that contains the coordinates of the grid DOFs
+   *                              of the adjacent element.
+   * \param[out] Jacobians      - Vector to store the face Jacobians.
+   * \param[out] normalsFace    - Matrix to store the unit outward pointing face normals.
+   * \param[out] matMetricTerms - Vector of matrices to store the metric terms.
+   */
+  void MetricTermsSurfaceIntPoints(ColMajorMatrix<su2double>          &matCoorElem,
+                                   su2activevector                    &JacobiansFace,
+                                   ColMajorMatrix<su2double>          &normalsFace,
+                                   vector<ColMajorMatrix<su2double> > &matMetricTerms);
+
+  /*!
    * \brief Function, which computes the actual volume metric points.
    * \param[in,out] matMetricTerms - On input the derivatives of the coordinates w.r.t.
    *                                 the parametric coordinates. On output the metric terms.
-   * \param[out] Jacobians         - Vector to store the Jacobians of the transformation.
+   * \param[out]    Jacobians      - Vector to store the Jacobians of the transformation.
    */
   void MetricTermsVolume(vector<ColMajorMatrix<su2double> > &matMetricTerms,
                          su2activevector                    &Jacobians);
@@ -575,6 +589,24 @@ public:
                        su2activevector                    &Jacobians);
 
 protected:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*--- Virtual functions that must be overwritten by the derived classs when used. ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matDerVol  - Vector of matrices that contains the derivatives w.r.t.
+   *                          the parametric volume coordinates.
+   * \param[out] matDerFace - Vector of matrices that contains the derivatives w.r.t.
+   *                          the parametric surface coordinates.
+   */
+  virtual void ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                               vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
 
   /*-----------------------------------------------------------------------------------*/
   /*---                         Protected member functions.                         ---*/
@@ -687,4 +719,23 @@ protected:
                        const int          LDC,
                        void               *&val_jitter,
                        dgemm_jit_kernel_t &val_gemm);
+
+private:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                           Private member functions.                         ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which implements the computation of the face normals and the Jacobian.
+   * \param[out] matDerCoor  - Vector of matrices to store the derivatives of
+   *                           the coordinates in the integration point of the face.
+   * \param[out] unitNormals - Matrix to store the unit normals in the integration
+   *                           points of the face.
+   * \param[out] Jacobians   - Vector to store the Jacobians of the transformation
+   *                           in the integration points of the face.
+   */
+  void ComputeUnitFaceNormals(vector<ColMajorMatrix<su2double> > &matDerCoor,
+                              ColMajorMatrix<su2double>          &unitNormals,
+                              su2activevector                    &Jacobians);
 };

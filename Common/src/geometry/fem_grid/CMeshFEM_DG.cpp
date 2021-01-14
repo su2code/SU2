@@ -2260,9 +2260,6 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
-  /*--- Determine whether or not the viscous terms are needed. ---*/
-  const bool viscousTerms = config->GetFEMSolver_Viscous();
-
   /*--- Determine the chunk size for the OMP loop below. ---*/
 #ifdef HAVE_OMP
   const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
@@ -2279,7 +2276,7 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
       matchingFaces[i].InitGridVelocities(nDim);
 
       /*--- Compute the metric terms in the integration points. ---*/
-      matchingFaces[i].MetricTermsIntegrationPoints(viscousTerms, nDim, volElem);
+      matchingFaces[i].MetricTermsIntegrationPoints(nDim, volElem);
     }
 
     /*--- Loop over the physical boundaries. ---*/
@@ -2294,8 +2291,7 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
           boundaries[l].surfElem[i].InitGridVelocities(nDim);
 
           /*--- Compute the metric terms in the integration points. ---*/
-          boundaries[l].surfElem[i].MetricTermsIntegrationPoints(viscousTerms,
-                                                                 nDim, volElem);
+          boundaries[l].surfElem[i].MetricTermsIntegrationPoints(nDim, volElem);
         }        
       }
     }

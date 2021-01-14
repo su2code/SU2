@@ -63,7 +63,7 @@ CFEMStandardTriAdjacentPrismGrid::CFEMStandardTriAdjacentPrismGrid(const unsigne
   /*--- Convert the 2D parametric coordinates of the integration points of the
         triangular face to the 3D parametric coordinates of the adjacent prism. ---*/
   vector<passivedouble> rTrianglePrism, sTrianglePrism, rLinePrism;
-  ConvertCoor2DTriFaceTo3DPrism(rTriangleInt, sTriangleInt, val_faceID_Elem, val_orientation,
+  ConvertCoor2DTriFaceTo3DPrism(rTriangleInt, sTriangleInt, faceID_Elem, orientation,
                                 rTrianglePrism, sTrianglePrism, rLinePrism);
 
   /*--- Compute the corresponding Lagrangian basis functions and
@@ -82,4 +82,33 @@ void CFEMStandardTriAdjacentPrismGrid::CoorIntPoints(const bool                n
         arguments to compute the coordinates in the integration points
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
+}
+
+void CFEMStandardTriAdjacentPrismGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                                ColMajorMatrix<su2double>          &matCoorDOF,
+                                                                vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 3, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 3, matCoorDOF, matDerCoorInt[1], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[2], 3, matCoorDOF, matDerCoorInt[2], nullptr);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Public member functions of CFEMStandardTriAdjacentPrismGrid.          */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardTriAdjacentPrismGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                       vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Check this. ---*/
+  assert(orientation == 0);
+
+  /*--- Determine the face ID of the element on which the surface resides and set
+        the surface gradients accordingly. ---*/
+  matDerFace.resize(2);
+  if(faceID_Elem == 0) {matDerFace[0] = matDerVol[0]; matDerFace[1] = matDerVol[1];}
+  else                 {matDerFace[0] = matDerVol[1]; matDerFace[1] = matDerVol[0];}
 }

@@ -77,3 +77,86 @@ void CFEMStandardTriAdjacentPyraGrid::CoorIntPoints(const bool                no
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(lagBasisInt, 3, matCoorDOF, matCoorInt, nullptr);
 }
+
+void CFEMStandardTriAdjacentPyraGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                               ColMajorMatrix<su2double>          &matCoorDOF,
+                                                               vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[0], 3, matCoorDOF, matDerCoorInt[0], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[1], 3, matCoorDOF, matDerCoorInt[1], nullptr);
+  gemmDOFs2Int->DOFs2Int(derLagBasisInt[2], 3, matCoorDOF, matDerCoorInt[2], nullptr);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardTriAdjacentPyraGrid.          */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardTriAdjacentPyraGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                      vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Check this. ---*/
+  assert(orientation == 0);
+
+  /*--- Allocate the memory for matDerFace. ---*/
+  const unsigned short nRows = matDerVol[0].rows();
+  const unsigned short nCols = matDerVol[0].cols();
+
+  matDerFace.resize(2);
+  matDerFace[0].resize(nRows, nCols);
+  matDerFace[1].resize(nRows, nCols);
+
+  /*--- Determine on which face of the element the current surface resides and
+        set the surface gradients accordingly. ---*/
+  switch( faceID_Elem ) {
+    case 1: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nRows; ++i) {
+          matDerFace[0](i,j) = 0.5*matDerVol[0](i,j) + 0.5*matDerVol[1](i,j)
+                             +     matDerVol[2](i,j);
+          matDerFace[1](i,j) = matDerVol[0](i,j);
+        }
+      }
+      break;
+    }
+
+    case 2: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nRows; ++i) {
+          matDerFace[0](i,j) = matDerVol[0](i,j);
+          matDerFace[1](i,j) = 0.5*matDerVol[0](i,j) - 0.5*matDerVol[1](i,j)
+                             +     matDerVol[2](i,j);
+        }
+      }
+      break;
+    }
+
+    case 3: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nRows; ++i) {
+          matDerFace[0](i,j) = matDerVol[1](i,j);
+          matDerFace[1](i,j) = 0.5*matDerVol[0](i,j) + 0.5*matDerVol[1](i,j)
+                             +     matDerVol[2](i,j);
+        }
+      }
+      break;
+    }
+
+    case 4: {
+      for(unsigned short j=0; j<nCols; ++j) {
+        SU2_OMP_SIMD_IF_NOT_AD
+        for(unsigned short i=0; i<nRows; ++i) {
+          matDerFace[0](i,j) = -0.5*matDerVol[0](i,j) + 0.5*matDerVol[1](i,j)
+                             +      matDerVol[2](i,j);
+          matDerFace[1](i,j) = matDerVol[1](i,j);
+        }
+      }
+      break;
+    }
+  }
+}

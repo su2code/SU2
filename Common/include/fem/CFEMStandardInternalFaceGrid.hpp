@@ -108,6 +108,25 @@ public:
   void CoorIntPointsFromSide1(ColMajorMatrix<su2double> &coorGridDOFsVol,
                               ColMajorMatrix<su2double> &coorIntPointsFace);
 
+  /*!
+   * \brief Function, which computes the metric terms in the surface integration points.
+   * \param[in]  matCoorElem0     - Matrix that contains the coordinates of the grid DOFs
+   *                                of the element on side 0.
+   * \param[in]  matCoorElem1     - Matrix that contains the coordinates of the grid DOFs
+   *                                of the element on side 1.
+   * \param[out] JacobiansFace    - Jacobians of the integration points of the face.
+   * \param[out] normalsFace      - Unit normals in the integration points of the face.
+   * \param[out] metricTermsSide0 - The metric terms drdx, drdy, etc. in the integration
+   *                                points on side 0 of the face.
+   * \param[out] metricTermsSide1 - The metric terms drdx, drdy, etc. in the integration
+   *                                points on side 1 of the face.
+   */
+   void MetricTermsSurfaceIntPoints(ColMajorMatrix<su2double>          &matCoorElem0,
+                                    ColMajorMatrix<su2double>          &matCoorElem1,
+                                    su2activevector                    &JacobiansFace,
+                                    ColMajorMatrix<su2double>          &normalsFace,
+                                    vector<ColMajorMatrix<su2double> > &metricTermsSide0,
+                                    vector<ColMajorMatrix<su2double> > &metricTermsSide1);
 private:
 
 };

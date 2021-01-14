@@ -58,9 +58,29 @@ void CSurfaceElementFEM::InitGridVelocities(const unsigned short nDim) {
   gridVelocities.setConstant(0.0);
 }
 
-void CSurfaceElementFEM::MetricTermsIntegrationPoints(const bool                         viscousTerms,
-                                                      const unsigned short               nDim,
-                                                      const vector<CVolumeElementFEM_DG> &volElem) {
+void CSurfaceElementFEM::MetricTermsIntegrationPoints(const unsigned short         nDim,
+                                                      vector<CVolumeElementFEM_DG> &volElem) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Determine the padded number of integration points. ---*/
+  const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+
+  /*--- Allocate the memory for the coordinates of the integration
+        points and determine them. The first argument in the function
+       CoorIntPoints is a dummy to be consistent with the declaration. ---*/
+  coorIntegrationPoints.resize(nIntPad, nDim);
+
+  standardElemGrid->CoorIntPoints(true, volElem[volElemID].coorGridDOFs, coorIntegrationPoints);
+
+  /*--- Allocate the memory for the metric terms of the boundary face. ---*/
+  JacobiansFace.resize(nIntPad);
+  metricNormalsFace.resize(nIntPad, nDim);
+
+  metricCoorDerivFace.resize(nDim);
+  for(unsigned short k=0; k<nDim; ++k)
+    metricCoorDerivFace[k].resize(nIntPad, nDim);
+
+  /*--- Compute the metric terms in the surface integration points. ---*/
+  standardElemGrid->MetricTermsSurfaceIntPoints(volElem[volElemID].coorGridDOFs,
+                                                JacobiansFace, metricNormalsFace,
+                                                metricCoorDerivFace);
 }

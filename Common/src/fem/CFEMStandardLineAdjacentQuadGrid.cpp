@@ -105,3 +105,47 @@ void CFEMStandardLineAdjacentQuadGrid::CoorIntPoints(const bool                n
         of the face. ---*/
   gemmDOFs2Int->DOFs2Int(tensorSol, faceID_Elem, 2, matCoorDOF, matCoorInt);
 }
+
+void CFEMStandardLineAdjacentQuadGrid::DerivativesCoorIntPoints(const bool                         notUsed,
+                                                                ColMajorMatrix<su2double>          &matCoorDOF,
+                                                                vector<ColMajorMatrix<su2double> > &matDerCoorInt) {
+
+  /*--- Call the general functionality of gemmDOFs2Int with the appropriate
+        arguments to compute the derivatives of the coordinates in the
+        integration points of the face. ---*/
+  gemmDOFs2Int->DOFs2Int(tensorDSolDr, faceID_Elem, 2, matCoorDOF, matDerCoorInt[0]);
+  gemmDOFs2Int->DOFs2Int(tensorDSolDs, faceID_Elem, 2, matCoorDOF, matDerCoorInt[1]);
+}
+
+/*----------------------------------------------------------------------------------*/
+/*            Private member functions of CFEMStandardLineAdjacentQuadGrid.         */
+/*----------------------------------------------------------------------------------*/
+
+void CFEMStandardLineAdjacentQuadGrid::ConvertVolumeToSurfaceGradients(vector<ColMajorMatrix<su2double> > &matDerVol,
+                                                                       vector<ColMajorMatrix<su2double> > &matDerFace) {
+
+  /*--- The conversion of the gradients only takes place for elements on side 0
+        of the element, i.e. orientation == 0. Check this. ---*/
+  assert(orientation == 0);
+
+  /*--- Allocate the memory for matDerFace. ---*/
+  const unsigned short nRows = matDerVol[0].rows();
+  const unsigned short nCols = matDerVol[0].cols();
+
+  matDerFace.resize(1);
+  matDerFace[0].resize(nRows, nCols);
+
+  /*--- Set the index of which volume gradient to copy. ---*/
+  const unsigned short ind = ((faceID_Elem == 0) || (faceID_Elem == 2)) ? 0 : 1;
+
+  /*--- Set the sign of the derivative of the surface gradient compared
+        to the volume gradient. ---*/
+  const su2double fact = (faceID_Elem <= 1) ? 1.0 : -1.0;
+
+  /*--- Copy the surface gradients from the appropriate volume gradients. ---*/
+  for(unsigned short j=0; j<nCols; ++j) {
+    SU2_OMP_SIMD_IF_NOT_AD
+    for(unsigned short i=0; i<nRows; ++i)
+      matDerFace[0](i,j) = fact*matDerVol[ind](i,j);
+  }
+}
