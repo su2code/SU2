@@ -1158,9 +1158,6 @@ private:
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
   
-  bool interpolate_solution;                /*!< \brief Flag for solution interpolation */
-  string Interpolated_Restart_FileName;     /*!< \brief Name of interpolated restart file. */
-
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -5171,11 +5168,6 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
-
-  /*!
-   * \brief Indicates if solution interpolation will be used.
-   */
-  bool GetSolutionInterpolation(void) const { return interpolate_solution; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.

@@ -1162,8 +1162,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("IONIZATION", ionization, false);
   /* DESCRIPTION: Specify if there is VT transfer residual limiting */
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
-  /* DESCRIPTION: Specify if the gas is monoatomic */
-  addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -3557,10 +3555,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
   }
 
-  if (GetGasModel() == "ARGON" && GetMonoatomic() == false){
-      SU2_MPI::Error("If you're running an argon mixture, set MONOATOMIC= YES in the .cfg file!", CURRENT_FUNCTION);
-  }
-
   if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
       SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working the Mutation++ support.", CURRENT_FUNCTION);
   }
@@ -4985,6 +4979,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
+  if (GetGasModel() == "ARGON") monoatomic = true;
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {

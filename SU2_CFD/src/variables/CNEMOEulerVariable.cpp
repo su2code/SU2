@@ -144,7 +144,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
-  
+
     /*--- Reset velocity^2 [m2/s2] to zero ---*/
     sqvel = 0.0;
   
