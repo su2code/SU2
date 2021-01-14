@@ -1118,7 +1118,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   bool frozen     = config->GetFrozen();
   bool monoatomic = config->GetMonoatomic();
   bool viscous    = config->GetViscous();
-  bool ideal_gas  = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
   bool rans       = (config->GetKind_Turb_Model() != NONE);
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
@@ -1195,7 +1194,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- Set primitive variables for viscous terms and/or generalised source ---*/
         numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
-        /*--- If necessary, set variables needed for viscous computation ---*/       
+        /*--- If necessary, set variables needed for viscous computation ---*/
         if (viscous) {
 
           /*--- Set gradient of primitive variables ---*/
@@ -1219,7 +1218,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           /*--- Vib-el. thermal conductivity ---*/
           numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), nodes->GetThermalConductivity_ve(iPoint));
 
-          /*--- Vib-el energy ---*/          
+          /*--- Vib-el energy ---*/
           numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
 
           /*--- Set turbulence kinetic energy ---*/
