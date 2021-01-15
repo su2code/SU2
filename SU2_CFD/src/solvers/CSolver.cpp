@@ -2040,6 +2040,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+  const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
@@ -2069,11 +2070,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     su2double linResTurb = 0.0;
     if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
 
-    /* Max residual and iterations between flow and turbulence. */
+    /* Max linear residual between flow and turbulence. */
     const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
 
-    /* Tolerance limited to a "reasonable" value. */
-    const su2double linTol = max(0.001, config->GetLinear_Solver_Error());
+    /* Tolerance limited to an acceptable value. */
+    const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
 
     /* Check that we are meeting our nonlinear residual reduction target
      over time so that we do not get stuck in limit cycles, this is done
