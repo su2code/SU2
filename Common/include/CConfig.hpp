@@ -759,12 +759,10 @@ private:
   su2double* Mesh_Box_Length;    /*!< \brief Array containing the length in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   su2double* Mesh_Box_Offset;    /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
-  Target_Mesh_FileName,          /*!< \brief Mesh name to be adapted. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
-  Residual_FileName,             /*!< \brief Residual variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
   Restart_FileName,              /*!< \brief Restart file for flow variables. */
@@ -1158,7 +1156,7 @@ private:
   monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
-  
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -5107,11 +5105,6 @@ public:
   bool GetRestart(void) const { return Restart; }
 
   /*!
-   * \brief Sets the restart information.
-   */
-  void SetRestart(bool val_restart) { Restart = val_restart; }
-
-  /*!
    * \brief Flag for whether binary SU2 native restart files are read.
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
@@ -5207,12 +5200,6 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
-
-  /*!
-   * \brief Get the name of the file with the residual of the problem.
-   * \return Name of the file with the residual of the problem.
-   */
-  string GetResidual_FileName(void);
 
   /*!
    * \brief Get the format of the input/output grid.
