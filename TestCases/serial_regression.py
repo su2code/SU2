@@ -321,7 +321,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.388855, -6.689341, 0.230322, 0.157649]#last 4 columns
+    turb_oneram6.test_vals = [-2.388841, -6.689414, 0.230321, 0.157640]#last 4 columns
     turb_oneram6.su2_exec  = "SU2_CFD"
     turb_oneram6.new_output = True
     turb_oneram6.timeout   = 3200
@@ -806,7 +806,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.977752, 1.139722, 0.804826, 0.063918]
+    turb_naca0012_1c.test_vals = [-4.985899, 1.137425, 0.375998, -0.078790]
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.new_output = True
     turb_naca0012_1c.timeout   = 1600
@@ -818,7 +818,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484282, 0.967023, 0.823129, 0.070840] #last 4 columns
+    turb_naca0012_2c.test_vals = [-5.483374, 0.968842, 0.255857, -0.109404] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.new_output = True
     turb_naca0012_2c.timeout   = 1600
@@ -830,7 +830,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.587068, 0.929125, 0.877611, 0.090894] #last 4 columns
+    turb_naca0012_3c.test_vals = [-5.584300, 0.931352, 0.248990, -0.109405] #last 4 columns
     turb_naca0012_3c.su2_exec  = "SU2_CFD"
     turb_naca0012_3c.new_output = True
     turb_naca0012_3c.timeout   = 1600
@@ -842,7 +842,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [ -5.126540, 1.076620, 0.783153, 0.056001] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [-5.127531, 1.077321, 0.543822, -0.018663] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.new_output = True
     turb_naca0012_p1c1.timeout   = 1600
@@ -854,7 +854,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556554, 0.941694, 0.795964, 0.060801] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.554491, 0.943648, 0.320568, -0.091089] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.new_output = True
     turb_naca0012_p1c2.timeout   = 1600
@@ -1058,7 +1058,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280323, 0.379653, 72.207240, 1.277670] #last 4 columns
+    Jones_tc.test_vals = [-5.280323, 0.379653, 72.211730, 1.277473] #last 4 columns
     Jones_tc.su2_exec  = "SU2_CFD"
     Jones_tc.new_output = False
     Jones_tc.timeout   = 1600
@@ -1070,7 +1070,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625264, -1.568823, 33.995150, 10.181610] #last 4 columns
+    Jones_tc_rst.test_vals = [-4.625183, -1.568749, 33.995150, 10.181950] #last 4 columns
     Jones_tc_rst.su2_exec  = "SU2_CFD"
     Jones_tc_rst.new_output = False
     Jones_tc_rst.timeout   = 1600
@@ -1082,7 +1082,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933219, 5.379598, 73.357940, 0.925875] #last 4 columns
+    axial_stage2D.test_vals = [-1.933219, 5.379657, 73.357940, 0.925870] #last 4 columns
     axial_stage2D.su2_exec  = "SU2_CFD"
     axial_stage2D.new_output  = False
     axial_stage2D.timeout   = 1600

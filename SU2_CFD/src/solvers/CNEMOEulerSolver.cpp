@@ -809,8 +809,6 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
 
-  su2double Gamma_i, Gamma_j;
-
   /*--- Set booleans based on config settings ---*/
   const auto InnerIter        = config->GetInnerIter();
   //const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -835,6 +833,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   su2double    dTvedU_i[MAXNVAR] = {0.0},    dTvedU_j[MAXNVAR] = {0.0};
   su2double       Eve_i[MAXNVAR] = {0.0},       Eve_j[MAXNVAR] = {0.0};
   su2double      Cvve_i[MAXNVAR] = {0.0},      Cvve_j[MAXNVAR] = {0.0};
+  su2double Gamma_i = 0.0, Gamma_j = 0.0;
 
   /*--- Loop over edges and calculate convective fluxes ---*/
   for(unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1044,7 +1043,7 @@ void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double
   unsigned short T_INDEX   = nodes->GetTIndex();
   unsigned short TVE_INDEX = nodes->GetTveIndex();
   unsigned short VEL_INDEX = nodes->GetVelIndex();
-  
+
   /*--- Set densities and mass fraction ---*/
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
     U[iSpecies]    = V[iSpecies];
@@ -1117,7 +1116,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   bool frozen     = config->GetFrozen();
   bool monoatomic = config->GetMonoatomic();
   bool viscous    = config->GetViscous();
-  bool ideal_gas  = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
   bool rans       = (config->GetKind_Turb_Model() != NONE);
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
@@ -1194,7 +1192,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- Set primitive variables for viscous terms and/or generalised source ---*/
         numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
-        /*--- If necessary, set variables needed for viscous computation ---*/       
+        /*--- If necessary, set variables needed for viscous computation ---*/
         if (viscous) {
 
           /*--- Set gradient of primitive variables ---*/
@@ -1218,7 +1216,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           /*--- Vib-el. thermal conductivity ---*/
           numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), nodes->GetThermalConductivity_ve(iPoint));
 
-          /*--- Vib-el energy ---*/          
+          /*--- Vib-el energy ---*/
           numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
 
           /*--- Set turbulence kinetic energy ---*/
