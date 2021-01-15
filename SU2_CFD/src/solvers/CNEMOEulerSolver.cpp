@@ -465,12 +465,26 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   }
   SU2_OMP_BARRIER
 
-  const su2double *Normal = nullptr;
+ // const su2double *Normal = nullptr;
+  su2double Normal[3];
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2;
   su2double Mean_ThermalCond, Mean_ThermalCond_ve, cv;
+  su2double Normal_Sym[3], UnitNormal_Sym[3];
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
+
+  /*--- Save Normal if Symmetry plane exists ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+      geometry->vertex[iMarker][0]->GetNormal(Normal_Sym);
+
+      Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+ 
+      for(iDim = 0; iDim < nDim; iDim++)
+        UnitNormal_Sym[iDim] = -Normal_Sym[iDim]/Area;
+    }
+  }
 
   /*--- Loop domain points. ---*/
   SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -488,7 +502,12 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
 
       iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
-      Normal = geometry->edges->GetNormal(iEdge);
+      geometry->edges->GetNormal(iEdge,Normal);
+
+      if(nodes->GetSymmetry(iPoint) && nodes->GetSymmetry(jPoint))
+        for(iDim = 0; iDim < nDim; iDim++)
+          Normal[iDim] += Normal[iDim]*UnitNormal_Sym[iDim];
+
       Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
@@ -554,18 +573,16 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
         if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
 
-        su2double Norm[3];
-        Norm[0]=Normal[0];
-        Norm[1]=Normal[1];
+        if(nodes->GetSymmetry(iPoint)==true && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+          for(iDim = 0; iDim < nDim; iDim++)
+            Normal[iDim] += Normal[iDim]*UnitNormal_Sym[iDim];
+        }
 
-        if(nodes->GetSymmetry(iPoint)==true) {Norm[0]=Normal[0]*2; Norm[1]=0;}
-
-        Area = GeometryToolbox::Norm(nDim, Norm);
-
+        Area = GeometryToolbox::Norm(nDim, Normal);
         /*--- Mean Values ---*/
-        Mean_ProjVel = nodes->GetProjVel(iPoint,Norm);
+        Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
         Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
 
         /*--- Adjustment for grid movement ---*/
@@ -579,6 +596,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         /*--- Inviscid contribution ---*/
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+        
+        if(nodes->GetSymmetry(iPoint)==true) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
         /*--- Viscous contribution ---*/
         if (!viscous) continue;
@@ -592,10 +611,15 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         cv = (nodes->GetRhoCv_tr(iPoint) +
               nodes->GetRhoCv_ve(iPoint)) / Mean_Density;
 
+    //    if(nodes->GetSymmetry(iPoint)==true && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) Area/=2;
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc+Mean_EddyVisc);
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
         nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+
+        if(nodes->GetSymmetry(iPoint)==true)
+            if(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) nodes->AddMax_Lambda_Visc(iPoint,3*Lambda);
+            else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
     }
@@ -1838,20 +1862,33 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
-  su2double Normal[3];
-  
+  unsigned short iDim, iVar;
+  su2double Area, Normal[3], UnitNormal[3];
+  const su2double* Residual_Old;
+
   geometry->vertex[val_marker][0]->GetNormal(Normal);
 
-  cout<<Normal[0]<<" "<<Normal[1]<<endl;
+  Area = GeometryToolbox::Norm(nDim, Normal);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = -Normal[iDim]/Area;
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+ 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    auto residual = LinSysRes.GetBlock(iPoint);
-    residual[6]=0;
-    LinSysRes.AddBlock(iPoint, residual);
+    Residual_Old = LinSysRes.GetBlock(iPoint);
 
+    for(iVar = 0; iVar < nVar; iVar++)
+      Res_Conv[iVar] = Residual_Old[iVar];
+
+    for(iDim = 0; iDim < nDim; iDim++)
+      Res_Conv[nSpecies+iDim]+=2*Residual_Old[nSpecies+iDim]*UnitNormal[iDim];
+
+    LinSysRes.AddBlock(iPoint, Res_Conv);
   }
+
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
