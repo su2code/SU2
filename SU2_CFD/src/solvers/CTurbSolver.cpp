@@ -668,6 +668,22 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
 
   /*--- Build implicit system ---*/
 
+  /*--- Set residual to 0 if turbulent variables are calculated with wall functions ---*/
+
+  if (wall_functions) {
+    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      const auto node_i = geometry->node[iPoint];
+      if (node_i->GetBool_Wall_Neighbor() && flowNodes->GetUseWallFunction(iPoint)) {
+
+        LinSysRes.SetBlock_Zero(iPoint);
+        for (auto iVar = 0; iVar < nVar; iVar++) {
+          const unsigned long total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
+
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
@@ -699,22 +715,6 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
     }
   }
 
-  /*--- Set residual to 0 if turbulent variables are calculated with wall functions ---*/
-
-  if (wall_functions) {
-    for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      const auto node_i = geometry->node[iPoint];
-      if (node_i->GetBool_Wall_Neighbor() && flowNodes->GetUseWallFunction(iPoint)) {
-
-        LinSysRes.SetBlock_Zero(iPoint);
-        for (auto iVar = 0; iVar < nVar; iVar++) {
-          const unsigned long total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      }
-    }
-  }
-  
   SU2_OMP_CRITICAL
   for (auto iVar = 0; iVar < nVar; iVar++) {
     AddRes_RMS(iVar, resRMS[iVar]);
