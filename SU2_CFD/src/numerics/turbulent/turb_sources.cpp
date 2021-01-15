@@ -866,7 +866,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    
   /*--- omega production Jacobian ---*/
 
-  if (!stress_limited && pk > 0) {
+  if (!stress_limited && pw > 0) {
     Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
   }
     
