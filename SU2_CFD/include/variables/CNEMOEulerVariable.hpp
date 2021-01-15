@@ -82,7 +82,7 @@ protected:
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
 
-  VectorType symmetry = false;
+  VectorType symmetry;
 
 public:
 
@@ -588,8 +588,8 @@ public:
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
   
-  inline bool GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
+  inline unsigned short GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
 
-  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] = true;}
+  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1;}
 
 };

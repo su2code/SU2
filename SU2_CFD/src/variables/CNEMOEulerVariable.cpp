@@ -140,7 +140,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   bool interp = config->GetSolutionInterpolation();
 
   /* Boolean to check if nodes are in Symmetry Plane BC */
-  symmetry.resize(nPoint) = false;
+  symmetry.resize(nPoint) = 0;
 
   /*--- Do not initialize variables for solution interpolation, since it makes the interpolation super slow and is not necessary  ---*/
   if (!interp) {
