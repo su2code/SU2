@@ -760,6 +760,7 @@ private:
   su2double* Mesh_Box_Offset;    /*!< \brief Array containing the offset from 0.0 in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   unsigned short Mesh_Box_PSolFEM; /*!< \brief FEM polynomial degree of the solution for the RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
+  Target_Mesh_FileName,          /*!< \brief Mesh name to be adapted. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
@@ -1156,7 +1157,7 @@ private:
   monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
-
+  
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -3667,7 +3668,7 @@ public:
    * \brief Gas model that we are using.
    * \return Gas model that we are using.
    */
-  string GetGasModel (void) const {return GasModel;}
+  string GetGasModel(void) const {return GasModel;}
 
   /*!
    * \brief Get the transport coefficient model.
@@ -5139,6 +5140,11 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void) const { return Restart; }
+
+  /*!
+   * \brief Sets the restart information.
+   */
+  void SetRestart(bool val_restart) { Restart = val_restart; }
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are read.

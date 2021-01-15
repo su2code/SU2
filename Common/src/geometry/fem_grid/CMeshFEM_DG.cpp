@@ -2379,6 +2379,176 @@ void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
+void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
+
+  /*----------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the ranks from which this rank has to receive data ---*/
+  /*---         during the actual communication of halo data, as well as the ---*/
+  /*            data that must be communicated.                              ---*/
+  /*----------------------------------------------------------------------------*/
+
+  /*--- Determine the ranks from which this rank will receive halo data. ---*/
+  vector<int> recvFromRank(size, 0);
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i)
+    recvFromRank[volElem[i].rankOriginal] = 1;
+
+  map<int,int> rankToIndRecvBuf;
+  for(int i=0; i<size; ++i) {
+    if( recvFromRank[i] ) {
+      int ind = (int)rankToIndRecvBuf.size();
+      rankToIndRecvBuf[i] = ind;
+    }
+  }
+
+  ranksRecv.resize(rankToIndRecvBuf.size());
+  map<int,int>::const_iterator MI = rankToIndRecvBuf.begin();
+  for(unsigned long i=0; i<rankToIndRecvBuf.size(); ++i, ++MI)
+    ranksRecv[i] = MI->first;
+
+  /*--- Define and determine the buffers to send the global indices of my halo
+        elements to the appropriate ranks and the vectors which store the
+        elements that I will receive from these ranks. ---*/
+  vector<vector<unsigned long> > longBuf(rankToIndRecvBuf.size(), vector<unsigned long>(0));
+  entitiesRecv.resize(rankToIndRecvBuf.size());
+
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
+    MI = rankToIndRecvBuf.find(volElem[i].rankOriginal);
+    longBuf[MI->second].push_back(volElem[i].elemIDGlobal);
+
+    entitiesRecv[MI->second].push_back(i);
+  }
+
+  /*--- Determine the mapping from global element ID to local owned element ID. ---*/
+  map<unsigned long,unsigned long> globalElemIDToLocalInd;
+  for(unsigned long i=0; i<nVolElemOwned; ++i)
+    globalElemIDToLocalInd[volElem[i].elemIDGlobal] = i;
+
+#ifdef HAVE_MPI
+
+  /*--- Parallel mode. First determine the number of ranks to which this
+        rank has to send halo data during the actual exchange. ---*/
+  int nRankSend;
+  vector<int> sizeReduce(size, 1);
+
+  SU2_MPI::Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
+                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Resize ranksSend and the first index of entitiesSend to the number of
+        ranks to which this rank has to send data. ---*/
+  ranksSend.resize(nRankSend);
+  entitiesSend.resize(nRankSend);
+
+  /*--- Send all the data using non-blocking sends. ---*/
+  vector<SU2_MPI::Request> commReqs(ranksRecv.size());
+
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    int dest = ranksRecv[i];
+    SU2_MPI::Isend(longBuf[i].data(), longBuf[i].size(), MPI_UNSIGNED_LONG,
+                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+  }
+
+  /*--- Loop over the number of ranks from which I receive data about the
+        global element ID's that I must send. ---*/
+  for(int i=0; i<nRankSend; ++i) {
+
+    /*--- Block until a message arrives and determine the source. ---*/
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    ranksSend[i] = status.MPI_SOURCE;
+
+    /*--- Determine the size of the message, allocate the memory for the
+          receive buffer and receive the message. ---*/
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    entitiesSend[i].resize(sizeMess);
+    SU2_MPI::Recv(entitiesSend[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+                  ranksSend[i], rank, MPI_COMM_WORLD, &status);
+
+    /*--- Convert the global indices currently stored in entitiesSend[i]
+          to local indices. ---*/
+    for(int j=0; j<sizeMess; ++j) {
+      map<unsigned long,unsigned long>::const_iterator LMI;
+      LMI = globalElemIDToLocalInd.find(entitiesSend[i][j]);
+
+      if(LMI == globalElemIDToLocalInd.end())
+        SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
+
+      entitiesSend[i][j] = LMI->second;
+    }
+  }
+
+  /*--- Complete the non-blocking sends and synchronize the ranks, because
+        wild cards have been used. ---*/
+  SU2_MPI::Waitall(ranksRecv.size(), commReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+
+#else
+  /*--- Sequential mode. Resize ranksSend and the first index of entitiesSend to
+        the number of ranks to which this rank has to send data. This number is
+        only non-zero when periodic boundaries are present in the grid. ---*/
+  ranksSend.resize(ranksRecv.size());
+  entitiesSend.resize(ranksRecv.size());
+
+  /*--- Convert the global element ID's of longBuf to local indices, which are
+        stored in entitiesSend[0]. Note that an additional test for longBuf.size()
+        is necessary to avoid problems. ---*/
+  if( longBuf.size() ) {
+
+    ranksSend[0] = MASTER_NODE;
+    entitiesSend[0].resize(longBuf[0].size());
+
+    for(unsigned long i=0; i<longBuf[0].size(); ++i) {
+      map<unsigned long,unsigned long>::const_iterator LMI;
+      LMI = globalElemIDToLocalInd.find(longBuf[0][i]);
+
+      if(LMI == globalElemIDToLocalInd.end())
+        SU2_MPI::Error("This should not happen", CURRENT_FUNCTION);
+
+      entitiesSend[0][i] = LMI->second;
+    }
+  }
+
+#endif
+
+  /*----------------------------------------------------------------------------*/
+  /*--- Step 2: Determine the rotational periodic transformations as well as ---*/
+  /*---         the halo elements for which these must be applied.           ---*/
+  /*----------------------------------------------------------------------------*/
+
+  /*--- Loop over the markers and determine the mapping for the rotationally
+        periodic transformations. The mapping is from the marker to the first
+        index in the vectors to store the rotationally periodic halo elements. ---*/
+  map<short,unsigned short> mapRotationalPeriodicToInd;
+
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if(config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+
+      auto angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      if(fabs(angles[0]) > 1.e-5 || fabs(angles[1]) > 1.e-5 || fabs(angles[2]) > 1.e-5) {
+
+        unsigned short curSize = mapRotationalPeriodicToInd.size();
+        mapRotationalPeriodicToInd[iMarker] = curSize;
+      }
+    }
+  }
+
+  /*--- Resize the first index of rotPerHalos to the correct size. ---*/
+  rotPerHalos.resize(mapRotationalPeriodicToInd.size());
+
+  /*--- Loop over the halo volume elements and store the indices of the
+        rotationally periodic halo elements in rotPerHalos.     ---*/
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
+    if(volElem[i].periodIndexToDonor > -1) {
+      map<short,unsigned short>::const_iterator SMI;
+      SMI = mapRotationalPeriodicToInd.find(volElem[i].periodIndexToDonor);
+
+      if(SMI != mapRotationalPeriodicToInd.end())
+        rotPerHalos[SMI->second].push_back(i);
+    }
+  }
+}
+
 void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);

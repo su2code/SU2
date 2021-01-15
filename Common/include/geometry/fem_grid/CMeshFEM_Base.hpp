@@ -57,6 +57,25 @@ protected:
 
   vector<CGemmBase *> gemmTypesFaces;   /*!< \brief Vector of gemm types that occur for the faces. */
 
+  vector<int> ranksRecv;     /*!< \brief Vector of ranks, from which this rank will receive halo
+                                         information. Self communication is included. */
+  vector<int> ranksSend;     /*!< \brief Vector of ranks, to which this rank will send halo
+                                         information. Self communication is included. */
+
+  vector<vector<unsigned long> > entitiesSend; /*!< \brief Vector of vector, which contains the entities that
+                                                           must be sent. Self communication is included. For DG
+                                                           an entitity is an element, for regular FEM an entity
+                                                           is a DOF. */
+  vector<vector<unsigned long> > entitiesRecv; /*!< \brief Vector of vector, which contains the entities that
+                                                           must be received. Self communication is included. For DG
+                                                           an entity is an element, for regular FEM an entity
+                                                           is a DOF. */
+
+  vector<unsigned short> rotPerMarkers; /*!< \brief Vector, which contains the indices of the rotational
+                                                    periodic markers. */
+  vector<vector<unsigned long> > rotPerHalos; /*!< \brief Vector of vector, which contains the indices of
+                                                          the halo elements for which a rotationally periodic
+                                                          correction must be applied. */
 public:
   /*!
    * \brief Constructor of the class.

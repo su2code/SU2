@@ -145,6 +145,12 @@ public:
   void SetGlobal_to_Local_Point() override;
 
   /*!
+   * \brief Set the send receive boundaries of the grid.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSendReceive(const CConfig *config) override;
+
+  /*!
    * \brief Function, which carries out the preprocessing tasks when wall functions are used.
    * \param[in] config - Definition of the particular problem.
    */
