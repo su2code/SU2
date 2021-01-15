@@ -4152,7 +4152,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       else newParam[iCFL] = default_cfl_adapt[iCFL];
     }
     swap(newParam, CFL_AdaptParam);
-    delete newParam;
+    delete [] newParam;
     nCFL_AdaptParam = default_cfl_adapt.size();
   }
 
