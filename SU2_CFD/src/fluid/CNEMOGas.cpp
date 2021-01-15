@@ -49,7 +49,7 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   energies.resize(nEnergyEq,0.0);  
   ThermalConductivities.resize(nEnergyEq,0.0);
 
-  Kind_GasModel        = config->GetGasModel();
+  gas_model            = config->GetGasModel();
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
   frozen               = config->GetFrozen();

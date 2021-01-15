@@ -29,6 +29,9 @@
 
 #include "CNEMOGas.hpp"
 
+#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#include "mutation++.h"
+
 /*!
  * \derived class CMutationTCLib
  * \brief Child class for Mutation++ nonequilibrium gas model.
@@ -37,6 +40,8 @@
 class CMutationTCLib : public CNEMOGas {
 
 private:
+
+  std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
@@ -110,6 +115,7 @@ public:
    */
   su2double GetViscosity() final;
 
+  
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
@@ -136,3 +142,4 @@ public:
   vector<su2double>& GetSpeciesFormationEnthalpy() final;
 
 };
+#endif

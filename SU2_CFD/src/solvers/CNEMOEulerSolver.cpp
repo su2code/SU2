@@ -30,7 +30,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../include/fluid/CSU2TCLib.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -217,25 +217,24 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
+  
     nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
-
+  
     /*--- Set mixture state ---*/
-    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
+    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);  
 
     /*--- Compute other freestream quantities ---*/
-    Density_Inf     = FluidModel->GetDensity();
-    Soundspeed_Inf  = FluidModel->GetSoundSpeed();
-    Gamma           = FluidModel->ComputeGamma();
-    Gamma_Minus_One = Gamma - 1.0;
-
+    Density_Inf    = FluidModel->GetDensity();
+    Soundspeed_Inf = FluidModel->GetSoundSpeed();
+  
     sqvel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
       sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
     }
     const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
-
+  
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
@@ -243,13 +242,13 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution[nSpecies+iDim] = Density_Inf*Mvec_Inf[iDim]*Soundspeed_Inf;
     }
-    Solution[nSpecies+nDim]   = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
-    Solution[nSpecies+nDim+1] = Density_Inf*Energies_Inf[1];
+    Solution[nSpecies+nDim]     = Density_Inf*(Energies_Inf[0] + 0.5*sqvel);
+    Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
     nodes->SetSolution(iPoint,Solution);
     nodes->SetSolution_Old(iPoint,Solution);
-
+  
     if(nonPhys)
-      counter_local++;
+      counter_local++;  
   }
 
   /*--- Warning message about non-physical points ---*/
@@ -996,7 +995,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     }
     SU2_OMP_BARRIER
   }
-
 }
 
 su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
@@ -1511,11 +1509,15 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   /*--- Instatiate the fluid model ---*/
   switch (config->GetKind_FluidModel()) {
   case MUTATIONPP:
-   //FluidModel = new CMutationTCLib(config, nDim);
-   //TODO:Mutation++ coming soon
+   #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+     FluidModel = new CMutationTCLib(config, nDim);
+   #else
+     SU2_MPI::Error(string("Either 1) Mutation++ has not been configured/compiled (add '-Denable-mpp=true' to your meson string) or 2) CODI must be deactivated since it is not compatible with Mutation++."),
+     CURRENT_FUNCTION);
+   #endif    
    break;
-  case USER_DEFINED_NONEQ:
-   FluidModel = new CUserDefinedTCLib(config, nDim, viscous);
+  case SU2_NONEQ:
+   FluidModel = new CSU2TCLib(config, nDim, viscous);
    break;
   }
 
@@ -1772,11 +1774,20 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
     ModelTable << config->GetGasModel();
 
+    switch(config->GetKind_FluidModel()){
+    case SU2_NONEQ:
+      ModelTable << "SU2 NonEq";
+      break;
+    case MUTATIONPP:
+      ModelTable << "Mutation++ NonEq";
+      break;
+    }
+
     if (viscous) {
 
       switch(config->GetKind_TransCoeffModel()){
       case WILKE:
-      ModelTable << "Wilke-Blottner-Eucken";
+        ModelTable << "Wilke-Blottner-Eucken";
         NonDimTable.PrintFooter();
         break;
 
@@ -1790,15 +1801,6 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
       }
     } else {
       ModelTable << "-" ;
-    }
-
-    switch(config->GetKind_FluidModel()){
-    case USER_DEFINED_NONEQ:
-      ModelTable << "SU2 NonEq";
-      break;
-    case MUTATIONPP:
-      ModelTable << "Mutation++ NonEq";
-      break;
     }
 
     NonDimTable.PrintFooter();
@@ -2132,8 +2134,9 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
   unsigned short iVar, iDim, iSpecies, RHO_INDEX, nSpecies;
   unsigned long iVertex, iPoint;
   su2double  T_Total, P_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
-      Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-      alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
+  Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
+  alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
+
   const su2double *Flow_Dir;
 
   bool dynamic_grid         = config->GetGrid_Movement();

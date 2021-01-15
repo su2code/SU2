@@ -86,7 +86,7 @@ def main():
     viscwedge.timeout   = 1600
     viscwedge.new_output = True
     viscwedge.tol       = 0.00001
-    test_list.append(viscwedge)    
+    test_list.append(viscwedge)       
     
     #########################
     ## Compressible Euler ###
