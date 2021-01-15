@@ -146,7 +146,6 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
-
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
   /*--- Get indices of species & mixture density ---*/
