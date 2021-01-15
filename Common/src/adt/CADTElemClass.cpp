@@ -42,6 +42,21 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
                              vector<unsigned long>  &val_elemID,
                              const bool             globalTree) {
 
+
+  /* Call CreateADT to do the actual work. */
+CreateADT(val_nDim, val_coor, val_connElem, val_VTKElem,
+            val_markerID, val_elemID, globalTree);
+}
+
+void CADTElemClass::CreateADT(unsigned short              val_nDim,
+                              vector<su2double>      &val_coor,
+                              vector<unsigned long>  &val_connElem,
+                              vector<unsigned short> &val_VTKElem,
+                              vector<unsigned short> &val_markerID,
+                              vector<unsigned long>  &val_elemID,
+                              const bool             globalTree ) {
+
+
   /* Copy the dimension of the problem into nDim. */
   nDim = val_nDim;
 
