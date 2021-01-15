@@ -826,6 +826,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     
   const su2double zeta = max(TurbVar_i[1], VorticityMag_i*F2_i/a1);
   const bool stress_limited = (TurbVar_i[1] < VorticityMag_i*F2_i/a1);
+  const bool cdkw_positive  = (CDkw_i > CDKW_MIN);
 
   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
@@ -922,9 +923,9 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
   // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited);
-  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*(CDkw_i > CDKW_MIN);
+  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*CDkw_positive;
 
   if (Residual[1] > 1e10) {
     su2double dKdOmega = 0;
