@@ -1607,15 +1607,15 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
       const su2double F1_i = nodes->GetF1blending(iPoint);
       const su2double F1_j = nodes->GetF1blending(jPoint);
 
-      const su2double sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
-      const su2double sigma_k_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
+      const su2double sigma_k_i  = F1_i*sigma_k1  + (1.0 - F1_i)*sigma_k2;
+      const su2double sigma_k_j  = F1_j*sigma_k1  + (1.0 - F1_j)*sigma_k2;
       const su2double sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
       const su2double sigma_om_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
-      const su2double visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-      const su2double visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + sigma_k_j*nodes->GetmuT(jPoint);
-      const su2double visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
-      const su2double visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + sigma_om_j*nodes->GetmuT(jPoint);
+      const su2double visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + nodes->GetmuT(iPoint)*sigma_k_i;
+      const su2double visc_k_j  = flowNodes->GetLaminarViscosity(jPoint) + nodes->GetmuT(jPoint)*sigma_k_j;
+      const su2double visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + nodes->GetmuT(iPoint)*sigma_om_i;
+      const su2double visc_om_j = flowNodes->GetLaminarViscosity(jPoint) + nodes->GetmuT(jPoint)*sigma_om_j;
 
       const su2double Mean_Visc    = 0.5*(visc_k_i+visc_k_j + visc_om_i+visc_om_j);
       const su2double Mean_Density = 0.5*(flowNodes->GetDensity(iPoint) + flowNodes->GetDensity(jPoint));
@@ -1671,11 +1671,11 @@ void CTurbSSTSolver::SetTime_Step(CGeometry *geometry, CSolver **solver, CConfig
 
         const su2double F1_i = nodes->GetF1blending(iPoint);
 
-        const su2double sigma_k_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+        const su2double sigma_k_i  = F1_i*sigma_k1  + (1.0 - F1_i)*sigma_k2;
         const su2double sigma_om_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
 
-        const su2double visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + sigma_k_i*nodes->GetmuT(iPoint);
-        const su2double visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + sigma_om_i*nodes->GetmuT(iPoint);
+        const su2double visc_k_i  = flowNodes->GetLaminarViscosity(iPoint) + nodes->GetmuT(iPoint)*sigma_k_i;
+        const su2double visc_om_i = flowNodes->GetLaminarViscosity(iPoint) + nodes->GetmuT(iPoint)*sigma_om_i;
 
         const su2double Mean_Visc    = (visc_k_i + visc_om_i);
         const su2double Mean_Density = flowNodes->GetDensity(iPoint);
