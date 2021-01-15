@@ -3946,7 +3946,9 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
           kindSolver == DISC_ADJ_RANS ||
           kindSolver == DISC_ADJ_INC_RANS ||
           kindSolver == FEM_LES ||
-          kindSolver == FEM_RANS){
+          kindSolver == FEM_RANS ||
+          kindSolver == FEM_INC_RANS ||
+          kindSolver == FEM_INC_LES){
         wallDistanceNeeded[iZone] = true;
       }
 

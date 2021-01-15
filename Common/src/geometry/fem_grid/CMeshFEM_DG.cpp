@@ -2253,11 +2253,6 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
-void CMeshFEM_DG::LengthScaleVolumeElements(void) {
-
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
   /*--- Determine the chunk size for the OMP loop below. ---*/
@@ -3487,4 +3482,14 @@ void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedSho
                        CURRENT_FUNCTION);
     }
   }
+}
+
+void CMeshFEM_DG::SetWallDistance(su2double val) {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

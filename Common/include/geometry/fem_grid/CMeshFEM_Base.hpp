@@ -104,4 +104,11 @@ protected:
    */
   void CreateStandardVolumeElementsGrid(const vector<CUnsignedShort4T> &elemTypes,
                                         const unsigned short           locGridDOFs);
+
+  /*!
+   * \brief Compute an ADT including the coordinates of all viscous markers
+   * \param[in] config - Definition of the particular problem.
+   * \return pointer to the ADT
+   */
+  std::unique_ptr<CADTElemClass> ComputeViscousWallADT(const CConfig *config) const override;
 };

@@ -115,3 +115,9 @@ void CMeshFEM_Base::CreateStandardVolumeElementsGrid(const vector<CUnsignedShort
     }
   }
 }
+
+std::unique_ptr<CADTElemClass> CMeshFEM_Base::ComputeViscousWallADT(const CConfig *config) const {
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  return nullptr;
+}

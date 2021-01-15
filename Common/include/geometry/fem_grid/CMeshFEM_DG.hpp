@@ -120,12 +120,6 @@ public:
                               const unsigned short iZone);
 
   /*!
-   * \brief Function, which computes a length scale of the volume elements.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void LengthScaleVolumeElements(void);
-
-  /*!
    * \brief Function, which computes the metric terms of the surface
    *        elements, both internal faces and physical boundary faces.
    * \param[in] config - Definition of the particular problem.
@@ -173,4 +167,17 @@ private:
    */
   void CreateStandardVolumeElementsSolution(const vector<CUnsignedShort4T> &elemTypes,
                                             const unsigned short           locGridDOFs);
+
+  /*!
+   * \brief Set wall distances a specific value
+   * \param[in] val - Value to which the wall distance must be set.
+   */
+  void SetWallDistance(su2double val) override;
+
+  /*!
+   * \brief Set the wall distance based on an previously constructed ADT
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] WallADT - The ADT to compute the wall distance
+   */
+  void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
 };

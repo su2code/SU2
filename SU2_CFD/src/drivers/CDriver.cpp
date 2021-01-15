@@ -1000,10 +1000,6 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
   DGMesh->MetricTermsSurfaceElements(config);
 
-  /*--- Compute a length scale of the volume elements. ---*/
-  if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
-  DGMesh->LengthScaleVolumeElements();
-
   /*--- Perform the preprocessing tasks when wall functions are used. ---*/
   if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
   DGMesh->WallFunctionPreprocessing(config);
