@@ -157,10 +157,16 @@ FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V,S>& v)                    \
   RETURNS( EXPR<Bcast<S>,V,S>(Bcast<S>(u), v.derived())                       \
 )                                                                             \
 
-/*--- std::max/min have issues (maybe because they return by reference). ---*/
+/*--- std::max/min have issues (maybe because they return by reference).
+ * For AD codi::max/min need to be used to avoid issues in debug builds. ---*/
 
+#if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)
+#define max_impl math::max
+#define min_impl math::min
+#else
 #define max_impl(a,b) a<b? Scalar(b) : Scalar(a)
 #define min_impl(a,b) b<a? Scalar(b) : Scalar(a)
+#endif
 MAKE_BINARY_FUN(max, max_, max_impl)
 MAKE_BINARY_FUN(min, min_, min_impl)
 MAKE_BINARY_FUN(pow, pow_, math::pow)
