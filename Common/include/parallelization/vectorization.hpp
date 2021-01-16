@@ -75,7 +75,7 @@ public:
   using Scalar = Scalar_t;
   enum : size_t {Size = N};
   enum : size_t {Align = Size*sizeof(Scalar)};
-  static constexpr bool StoreAsRef = true;
+  static constexpr bool StoreAsRef = false;
 
 private:
   alignas(Size*sizeof(Scalar)) Scalar x_[N];
