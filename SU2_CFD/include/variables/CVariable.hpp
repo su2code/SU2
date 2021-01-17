@@ -447,7 +447,7 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) { return Solution; }
+  inline const MatrixType& GetSolution(void) const { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -1429,16 +1429,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool Cons2PrimVar(CConfig *config, unsigned long iPoint, su2double *U, su2double *V, su2double *dPdU,
-                                   su2double *dTdU, su2double *dTvedU) { return false; }
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void Prim2ConsVar(CConfig *config, unsigned long iPoint, su2double *V, su2double *U) { }
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual bool SetPrimVar(unsigned long iPoint, su2double SharpEdge_Distance, bool check, CConfig *config) { return true; }
 
   /*!
@@ -1589,45 +1579,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual bool SetPressure(unsigned long iPoint, su2double Gamma, su2double turb_ke) { return false; }
-
-  /*!
-   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
-   */
-  inline virtual su2double CalcEve(unsigned long iPoint, su2double *V, CConfig *config, unsigned long val_Species) { return 0.0; }
-
-  /*!
-   * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
-   */
-  inline virtual su2double CalcHs(unsigned long iPoint, su2double *V, CConfig *config, unsigned long val_Species) { return 0.0; }
-
-  /*!
-   * \brief Calculates enthalpy per mass, \f$Cv_s\f$, for input species (not including KE)
-   */
-  inline virtual su2double CalcCvve(unsigned long iPoint, su2double val_Tve, CConfig *config, unsigned long val_Species) { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] V
-   * \param[in] config - Configuration settings
-   * \param[in] dPdU
-   */
-  inline virtual void CalcdPdU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dPdU) {}
-
-  /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   * \param[in] V
-   * \param[in] config - Configuration settings
-   * \param[in] dTdU
-   */
-  inline virtual void CalcdTdU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dTdU) {}
-
-  /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   * \param[in] V
-   * \param[in] config - Configuration settings
-   * \param[in] dTdU
-   */
-  inline virtual void CalcdTvedU(unsigned long iPoint, su2double *V, CConfig *config, su2double *dTdU) {}
 
   /*!
    * \brief A virtual member.

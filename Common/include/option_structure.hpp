@@ -74,7 +74,6 @@ enum SU2_COMPONENT {
 
 const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
-const unsigned int BUFSIZE = 3000000;         /*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
@@ -95,7 +94,7 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
 const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
@@ -542,9 +541,9 @@ enum ENUM_FLUIDMODEL {
   PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
   CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6,  /*!< \brief Inc. ideal gas, polynomial gas model. */
+  INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  USER_DEFINED_NONEQ = 8        /*!< \brief User defined gas model for nonequilibrium flow. */
+  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -555,7 +554,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("USER_DEFINED_NONEQ", USER_DEFINED_NONEQ)
+  MakePair("SU2_NONEQ", SU2_NONEQ)
 };
 
 /*!

@@ -45,11 +45,8 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   Diff_U   = new su2double[nVar];
   MeanU    = new su2double[nVar];
   MeanV    = new su2double[nPrimVar];
-  MeandPdU = new su2double[nVar];
   ProjFlux = new su2double[nVar];
   Flux     = new su2double[nVar];
-
-  mean_eves.resize(nSpecies,0.0);
 
 }
 
@@ -58,14 +55,12 @@ CCentLax_NEMO::~CCentLax_NEMO(void) {
   delete [] Diff_U;
   delete [] MeanU;
   delete [] MeanV;
-  delete [] MeandPdU;
   delete [] ProjFlux;
   delete [] Flux;
 }
 
 CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) {
 
-  unsigned short iDim, iVar;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
   su2double ProjVel_i, ProjVel_j;
 
@@ -87,8 +82,8 @@ CNumerics::ResidualType<> CCentLax_NEMO::ComputeResidual(const CConfig *config) 
     MeanV[iVar] = 0.5*(V_i[iVar]+V_j[iVar]);
 
   /*--- Compute NonEq specific variables ---*/
-  vector<su2double> mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
-  fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
+  //vector<su2double> mean_eves = fluidmodel->ComputeSpeciesEve(MeanV[TVE_INDEX]);
+  //fluidmodel->ComputedPdU(MeanV, mean_eves, MeandPdU);
 
   /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);

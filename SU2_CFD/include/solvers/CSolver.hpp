@@ -69,8 +69,6 @@ protected:
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
-  su2double NonLinRes_Value,     /*!< \brief Summed value of the nonlinear residual indicator. */
-  NonLinRes_Func;                /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
   unsigned short NonLinRes_Counter;   /*!< \brief Number of elements of the nonlinear residual indicator series. */
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
@@ -194,6 +192,10 @@ public:
    * \return Nodes of the solver.
    */
   inline CVariable* GetNodes() {
+    assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return base_nodes;
+  }
+  inline const CVariable* GetNodes() const {
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }

@@ -30,6 +30,7 @@
 #include "../../CNumericsSIMD.hpp"
 #include "../../util.hpp"
 #include "../variables.hpp"
+#include "../../../numerics/CNumerics.hpp"
 
 /*!
  * \brief Average gradients at i/j points.
@@ -65,14 +66,12 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
 }
 
 /*!
- * \brief Compute the stress tensor (using the total viscosity).
+ * \brief Compute the stress tensor.
  * \note Second viscosity term ignored.
  */
-template<size_t nVar, size_t nDim, class PrimitiveType>
-FORCEINLINE MatrixDbl<nDim> stressTensor(const PrimitiveType& V,
+template<size_t nVar, size_t nDim>
+FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
                                          const MatrixDbl<nVar,nDim> grad) {
-  Double viscosity = V.laminarVisc() + V.eddyVisc();
-
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
   for (size_t iDim = 0; iDim < nDim; ++iDim) {
@@ -89,6 +88,33 @@ FORCEINLINE MatrixDbl<nDim> stressTensor(const PrimitiveType& V,
     tau(iDim,iDim) -= pTerm;
   }
   return tau;
+}
+
+/*!
+ * \brief Add perturbed stress tensor.
+ * \note Not inlined because it is not easy to vectorize properly, due to tred2 and tql2.
+ */
+template<class PrimitiveType, class MatrixType, size_t nDim, class... Ts>
+NEVERINLINE void addPerturbedRSM(const PrimitiveType& V,
+                                 const MatrixType& grad,
+                                 const Double& turb_ke,
+                                 MatrixDbl<nDim,nDim>& tau,
+                                 Ts... uq_args) {
+  /*--- Handle SIMD dimensions 1 by 1. ---*/
+  for (size_t k = 0; k < Double::Size; ++k) {
+    su2double velgrad[nDim][nDim];
+    for (size_t iVar = 0; iVar < nDim; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        velgrad[iVar][iDim] = grad(iVar+1,iDim)[k];
+
+    su2double rsm[3][3];
+    CNumerics::ComputePerturbedRSM(nDim, uq_args..., velgrad, V.density()[k],
+                                   V.eddyVisc()[k], turb_ke[k], rsm);
+
+    for (size_t iDim = 0; iDim < nDim; ++iDim)
+      for (size_t jDim = 0; jDim < nDim; ++jDim)
+        tau(iDim,jDim)[k] -= V.density()[k] * rsm[iDim][jDim];
+  }
 }
 
 /*!

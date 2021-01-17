@@ -322,21 +322,9 @@ private:
   bool sustaining_terms;
 
   /*!
-   * \brief Initialize the Reynolds Stress Matrix
-   * \param[in] turb_ke turbulent kinetic energy of node
+   * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+   * \param[in] turb_ke: turbulent kinetic energy of the node
    */
-  void SetReynoldsStressMatrix(su2double turb_ke);
-
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] config: config file
-   */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-  /*!
-     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
-     * \param[in] turb_ke: turbulent kinetic energy of the node
-     */
   void SetPerturbedStrainMag(su2double turb_ke);
 
 public:
