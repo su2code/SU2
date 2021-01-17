@@ -445,11 +445,6 @@ public:
   void GatherInOutAverageValues(CConfig *config, bool allocate) override;
 
   /*!
-   * \brief Set the center of gravity of the face, elements and edges.
-   */
-  void SetCoord_CG(void) override;
-
-  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
@@ -459,9 +454,8 @@ public:
   /*!
    * \brief Visualize the structure of the control volume(s).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  void VisualizeControlVolume(CConfig *config, unsigned short action) override;
+  void VisualizeControlVolume(const CConfig *config) const override;
 
   /*!
    * \brief Mach the near field boundary condition.
@@ -487,7 +481,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(CConfig *config, unsigned short action) override;
+  void SetBoundControlVolume(const CConfig *config, unsigned short action) override;
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.
@@ -598,7 +592,7 @@ public:
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMeshQualityStatistics(CConfig *config) override;
+  void ComputeMeshQualityStatistics(const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.
