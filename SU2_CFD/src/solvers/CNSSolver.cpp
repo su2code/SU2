@@ -110,7 +110,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
-   turbulence solver) only density and velocity are needed ---*/
+   turbulence solver, and post) only temperature and velocity are needed ---*/
 
   const auto nPrimVarGrad_bak = nPrimVarGrad;
   if (Output) {
