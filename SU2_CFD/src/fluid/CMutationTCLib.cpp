@@ -49,6 +49,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
     transport_model = "Gupta-Yos";
   
   opt.setStateModel("ChemNonEqTTv");
+  if (frozen) opt.setMechanism("none");
   opt.setViscosityAlgorithm(transport_model);
   opt.setThermalConductivityAlgorithm(transport_model); 
   
