@@ -377,7 +377,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
       }
-      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+      else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
       }
     }
@@ -416,7 +416,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     case TOTAL_HEATFLUX:
       ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
       break;
-    case TOTAL_AVG_TEMPERATURE:
+    case AVG_TEMPERATURE:
       ObjFunc = solver[HEAT_SOL]->GetTotal_AvgTemperature();
       break;
     default:

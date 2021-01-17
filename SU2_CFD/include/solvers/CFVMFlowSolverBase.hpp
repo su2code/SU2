@@ -1465,6 +1465,13 @@ class CFVMFlowSolverBase : public CSolver {
   void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
 
   /*!
+   * \brief Compute the buffet sensor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) { }
+
+  /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it.
    * That number is stored in SlidingStateNodes[val_marker][val_vertex].
    * \param[in] val_marker - marker index

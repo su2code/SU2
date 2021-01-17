@@ -654,9 +654,6 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
 void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
   ObjFunc = 0.0;
-  su2double Weight_ObjFunc;
-
-  unsigned short iMarker_Analyze, nMarker_Analyze;
 
   /*--- Call objective function calculations. ---*/
 
@@ -678,14 +675,16 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
         if(config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
+
+        direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
+
         solvers[FLOW_SOL]->Evaluate_ObjFunc(config);
         break;
+
       case DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         break;
     }
-
-    direct_output[iZone]->SetHistory_Output(geometry, solvers, config);
   }
 
   /*--- Extract objective function values. ---*/
@@ -696,28 +695,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
     auto solvers = solver_container[iZone][INST_0][MESH_0];
     auto geometry = geometry_container[iZone][INST_0][MESH_0];
 
-    nMarker_Analyze = config->GetnMarker_Analyze();
-
-    for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-
-      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Analyze);
-
-      switch (config->GetKind_Solver()) {
-
-        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-          // per-surface output to be added soon
-          break;
-        case HEAT_EQUATION: case DISC_ADJ_HEAT:
-          // per-surface output to be added soon
-          break;
-        default:
-          break;
-      }
-    }
-
     /*--- Not-per-surface objective functions (shall not be included above) ---*/
 
-    Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+    const auto Weight_ObjFunc = config->GetWeight_ObjFunc(0);
 
     bool ObjectiveNotCovered = false;
 
@@ -726,57 +706,20 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
       {
-        string FieldName;
+        auto val = solvers[FLOW_SOL]->GetTotal_ComboObj();
 
-        switch (config->GetKind_ObjFunc()) {
-
-          // Aerodynamic coefficients
-
-          case DRAG_COEFFICIENT:
-          case LIFT_COEFFICIENT:
-          case SIDEFORCE_COEFFICIENT:
-          case EFFICIENCY:
-          case MOMENT_X_COEFFICIENT:
-          case MOMENT_Y_COEFFICIENT:
-          case MOMENT_Z_COEFFICIENT:
-          case FORCE_X_COEFFICIENT:
-          case FORCE_Y_COEFFICIENT:
-          case FORCE_Z_COEFFICIENT:
-            FieldName = config->GetName_ObjFunc();
-            break;
-
-          // Other surface-related output values
-          // The names are different than in CConfig...
-
-          case SURFACE_MASSFLOW:            FieldName = "AVG_MASSFLOW";              break;
-          case SURFACE_MACH:                FieldName = "AVG_MACH";                  break;
-          case SURFACE_UNIFORMITY:          FieldName = "UNIFORMITY";                break;
-          case SURFACE_SECONDARY:           FieldName = "SECONDARY_STRENGTH";        break;
-          case SURFACE_MOM_DISTORTION:      FieldName = "MOMENTUM_DISTORTION";       break;
-          case SURFACE_SECOND_OVER_UNIFORM: FieldName = "SECONDARY_OVER_UNIFORMITY"; break;
-          case TOTAL_AVG_TEMPERATURE:       FieldName = "AVG_TOTALTEMP";             break;
-          case SURFACE_TOTAL_PRESSURE:      FieldName = "AVG_TOTALPRESS";            break;
-
-          // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
-
-          case SURFACE_PRESSURE_DROP:
-            ObjFunc += config->GetSurface_PressureDrop(0)*Weight_ObjFunc;
-            break;
-          case SURFACE_STATIC_PRESSURE:
-            ObjFunc += config->GetSurface_Pressure(0)*Weight_ObjFunc;
-            break;
-          case TOTAL_HEATFLUX:
-            ObjFunc += solvers[FLOW_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
-            break;
-
-          default:
-            ObjectiveNotCovered = true;
-            break;
+        if (config->GetWeakly_Coupled_Heat()) {
+          if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+            val += solvers[HEAT_SOL]->GetTotal_HeatFlux();
+          }
+          else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
+            val += solvers[HEAT_SOL]->GetTotal_AvgTemperature();
+          }
         }
+        ObjFunc += val*Weight_ObjFunc;
 
-        if(!FieldName.empty())
-          ObjFunc += direct_output[iZone]->GetHistoryFieldValue(FieldName)*Weight_ObjFunc;
-
+        /*--- This is not ideal... ---*/
+        ObjectiveNotCovered = (val==0.0);
         break;
       }
       case DISC_ADJ_HEAT:
@@ -788,7 +731,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
           case TOTAL_HEATFLUX:
             ObjFunc += solvers[HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
             break;
-          case TOTAL_AVG_TEMPERATURE:
+          case AVG_TEMPERATURE:
             ObjFunc += solvers[HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
             break;
 

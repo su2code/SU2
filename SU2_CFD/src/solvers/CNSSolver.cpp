@@ -51,13 +51,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Buffet sensor in all the markers and coefficients ---*/
 
-  if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-
-    Alloc2D(nMarker, nVertex, Buffet_Sensor);
-    Buffet_Metric = new su2double[nMarker];
-    Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
-
-  }
+  Alloc2D(nMarker, nVertex, Buffet_Sensor);
+  Buffet_Metric = new su2double[nMarker];
+  Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
 
   /*--- Read farfield conditions from config ---*/
 
@@ -304,14 +300,13 @@ void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolv
 
 }
 
-void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
+void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
 
   unsigned long iVertex;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
-  su2double *Vel_FS = config->GetVelocity_FreeStream();
+  const su2double* Vel_FS = Velocity_Inf;
   su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
-  su2double k   = config->GetBuffet_k(),
-             lam = config->GetBuffet_lambda();
+  su2double k = config->GetBuffet_k(), lam = config->GetBuffet_lambda();
   string Marker_Tag, Monitoring_Tag;
 
   for (iDim = 0; iDim < nDim; iDim++){
@@ -347,7 +342,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
         SkinFrictionMag = 0.0;
         SkinFrictionDot = 0.0;
         for(iDim = 0; iDim < nDim; iDim++){
-          SkinFrictionMag += CSkinFriction[iMarker][iDim][iVertex]*CSkinFriction[iMarker][iDim][iVertex];
+          SkinFrictionMag += pow(CSkinFriction[iMarker][iDim][iVertex], 2);
           SkinFrictionDot += CSkinFriction[iMarker][iDim][iVertex]*Vel_FS[iDim];
         }
         SkinFrictionMag = sqrt(SkinFrictionMag);

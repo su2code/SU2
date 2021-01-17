@@ -1594,8 +1594,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Evaluate a problem with engines */
   addBoolOption("ENGINE", Engine, false);
 
-  /* DESCRIPTION:  Compute buffet sensor */
-  addBoolOption("BUFFET_MONITORING", Buffet_Monitoring, false);
   /* DESCRIPTION:  Sharpness coefficient for the buffet sensor */
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
@@ -3500,10 +3498,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_Solver != EULER && Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (TimeMarching == HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
-  }
-
-  if ((Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Buffet_Monitoring == true)){
-    SU2_MPI::Error("Buffet monitoring incompatible with solvers other than NAVIER_STOKES and RANS", CURRENT_FUNCTION);
   }
 
   /*--- Check for Fluid model consistency ---*/
@@ -7996,9 +7990,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
         case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
-        case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
+        case AVG_TEMPERATURE:             AdjExt = "_avtp";     break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
-        case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
+        case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
@@ -9303,13 +9297,6 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
     if ((tag == sideA) || (tag == sideB)) return iMarker;
   }
   return -1;
-}
-
-string CConfig::GetName_ObjFunc(unsigned short val_obj) const {
-  for (auto item : Objective_Map)
-    if (item.second == static_cast<ENUM_OBJECTIVE>(Kind_ObjFunc[val_obj]))
-      return item.first;
-  return string();
 }
 
 void CConfig::Tick(double *val_start_time) {

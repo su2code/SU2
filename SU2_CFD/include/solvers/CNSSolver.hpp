@@ -203,7 +203,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Buffet_Monitoring(CGeometry *geometry, CConfig *config) override;
+  void Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) override;
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.

@@ -5573,9 +5573,6 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
       break;
-    case TOTAL_AVG_TEMPERATURE:
-      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
-      break;
     default:
       break;
   }
