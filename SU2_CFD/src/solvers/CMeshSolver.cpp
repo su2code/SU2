@@ -513,7 +513,10 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   UpdateDualGrid(geometry[MESH_0], config);
 
   /*--- The Grid Velocity is only computed if the problem is time domain ---*/
-  if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
+  if (time_domain) {
+    if (config->GetFSI_Simulation()) ComputeGridVelocity_FromBoundary(geometry, numerics, config);
+    else ComputeGridVelocity(geometry[MESH_0], config);
+  }
 
   /*--- Update the multigrid structure. ---*/
   UpdateMultiGrid(geometry, config);
@@ -563,6 +566,43 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
   geometry->SetBoundControlVolume(config, UPDATE);
   geometry->SetMaxLength(config);
 
+}
+
+void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+
+  /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
+
+  const bool wasActive = AD::BeginPassive();
+
+  Compute_StiffMatrix(geometry[MESH_0], numerics, config);
+
+  AD::EndPassive(wasActive);
+
+  /*--- Clear residual (loses AD info), we do not want an incremental solution. ---*/
+  SU2_OMP_PARALLEL {
+    LinSysRes.SetValZero();
+    LinSysSol.SetValZero();
+  }
+
+  /*--- Impose boundary conditions including bouundary velocity ---*/
+  SetBoundaryVelocities(geometry[MESH_0], numerics[FEA_TERM], config);
+
+  /*--- Solve the linear system. ---*/
+  Solve_System(geometry[MESH_0], config);
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      su2double val_vel = LinSysSol(iPoint, iDim);
+
+      /*--- Non-dimensionalize velocity ---*/
+      val_vel = val_vel/config->GetVelocity_Ref();
+
+      geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
+    }
+  }
+
+  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 }
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
@@ -708,6 +748,59 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
 }
 
+void CMeshSolver::SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics, CConfig *config){
+
+  unsigned short iMarker;
+
+  /*--- Impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries). ---*/
+  /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Moving(iMarker) == NO) &&
+        (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+      BC_Clamped(geometry, numerics, config, iMarker);
+    }
+  }
+
+  /*--- Symmetry plane is clamped, for now. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Moving(iMarker) == NO) &&
+        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
+
+      BC_Clamped(geometry, numerics, config, iMarker);
+    }
+  }
+
+  /*--- Impose velocity boundary conditions. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
+        (config->GetMarker_All_Moving(iMarker) == YES)) {
+
+      BC_Velocity(geometry, numerics, config, iMarker);
+    }
+  }
+
+  /*--- Clamp far away nodes according to deform limit. ---*/
+  if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) &&
+      (config->GetDeform_Limit() < MaxDistance)) {
+
+    const su2double limit = config->GetDeform_Limit() / MaxDistance;
+
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      if (nodes->GetWallDistance(iPoint) <= limit) continue;
+
+      su2double zeros[MAXNVAR] = {0.0};
+      nodes->SetSolution(iPoint, zeros);
+      LinSysSol.SetBlock(iPoint, zeros);
+      Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+    }
+  }
+}
+
 void CMeshSolver::SetDualTime_Mesh(void){
 
   nodes->Set_Solution_time_n1();
@@ -755,6 +848,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
          minus the coordinates of the reference mesh file ---*/
         su2double displ = curr_coord - nodes->GetMesh_Coord(iPoint_Local, iDim);
         nodes->SetSolution(iPoint_Local, iDim, displ);
+        su2double vel = Restart_Data[index+iDim+6];
+        if (time_domain && config->GetFSI_Simulation()) geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, Restart_Data[index+iDim+6]);
       }
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
@@ -856,11 +951,24 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     if (Unst_RestartIter < 0) {
 
-      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting known solution" << endl;
+      if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting zero displacement" << endl;
 
-      /*--- Set loaded solution into correct previous time containers. ---*/
-      if(iStep==1) nodes->Set_Solution_time_n();
-      else nodes->Set_Solution_time_n1();
+      unsigned long iPoint_Global;
+
+      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+        auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+        if (iPoint_Local >= 0) {
+
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            if(iStep==1)
+              nodes->Set_Solution_time_n(iPoint_Local, iDim, 0.0);
+            else
+              nodes->Set_Solution_time_n1(iPoint_Local, iDim, 0.0);
+          }
+        }
+      }
     }
     else {
       string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
