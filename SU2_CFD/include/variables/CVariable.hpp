@@ -2602,11 +2602,25 @@ public:
   inline virtual void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) {}
 
   /*!
+   * \brief Set the previous time sensitivity at the node
+   * \param[in] iDim - dimension
+   * \param[in] val - value of the Sensitivity
+   */
+  inline virtual void SetSensitivity_Old(unsigned long iPoint, unsigned long iDim, su2double val) {}
+
+  /*!
    * \brief Get the Sensitivity at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
+   * \brief Get the previous time sensitivity at the node
+   * \param[in] iDim - dimension
+   * \return value of the Sensitivity
+   */
+  inline virtual su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   inline virtual void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) {}
 

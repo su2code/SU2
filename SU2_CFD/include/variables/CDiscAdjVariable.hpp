@@ -38,6 +38,7 @@
 class CDiscAdjVariable final : public CVariable {
 private:
   MatrixType Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+  MatrixType Sensitivity_Old; /* Previous time sensitivity holder since inner iterations in FSI problems overwrite sensitivity*/
   MatrixType Solution_Direct;
   MatrixType DualTime_Derivative;
   MatrixType DualTime_Derivative_n;
@@ -72,11 +73,25 @@ public:
   inline void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) override { Sensitivity(iPoint,iDim) = val;}
 
   /*!
+   * \brief Set the previous time sensitivity at the node
+   * \param[in] iDim - dimension
+   * \param[in] val - value of the Sensitivity
+   */
+  inline void SetSensitivity_Old(unsigned long iPoint, unsigned long iDim, su2double val) override { Sensitivity_Old(iPoint,iDim) = val;}
+
+  /*!
    * \brief Get the Sensitivity at the node
    * \param[in] iDim - spacial component
    * \return value of the Sensitivity
    */
   inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const override { return Sensitivity(iPoint,iDim); }
+
+  /*!
+   * \brief Get the previous time sensitivity at the node
+   * \param[in] iDim - dimension
+   * \return value of the Sensitivity
+   */
+  inline su2double GetSensitivity_Old(unsigned long iPoint, unsigned long iDim) const override { return Sensitivity_Old(iPoint,iDim); }
 
   inline void SetDual_Time_Derivative(unsigned long iPoint, unsigned long iVar, su2double der) override { DualTime_Derivative(iPoint,iVar) = der; }
 
