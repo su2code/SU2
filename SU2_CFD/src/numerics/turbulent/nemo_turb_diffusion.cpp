@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes to compute viscous
  *        fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -102,7 +102,6 @@ CNumerics::ResidualType<> CNEMOAvgGrad_Scalar::ComputeResidual(const CConfig* co
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
   /*--- Mean gradient approximation ---*/
-
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradTurbVar_Normal[iVar] = 0.0;
     Proj_Mean_GradTurbVar_Edge[iVar] = 0.0;
@@ -230,18 +229,18 @@ void CNEMOAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
 
   /*--- Compute the blended constant for the viscous terms ---*/
-  sigma_kine_i  = F1_i*sigma_k1  + (1.0 - F1_i)*sigma_k2;
-  sigma_kine_j  = F1_j*sigma_k1  + (1.0 - F1_j)*sigma_k2;
+  sigma_kine_i = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
+  sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
   sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
   sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
 
   /*--- Compute mean effective viscosity ---*/
-  diff_i_kine  = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
-  diff_j_kine  = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
+  diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
+  diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
   diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
   diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
 
-  su2double diff_kine  = 0.5*(diff_i_kine  + diff_j_kine);
+  su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
   su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
 
   Flux[0] = diff_kine*Proj_Mean_GradTurbVar[0];

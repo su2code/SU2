@@ -205,6 +205,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CVariable.cpp \
   ../src/variables/CAdjNSVariable.cpp \
   ../src/variables/CTurbSSTVariable.cpp \
+  ../src/variables/CNEMOTurbSSTVariable.cpp \
   ../src/variables/CAdjTurbVariable.cpp \
   ../src/variables/CTransLMVariable.cpp \
   ../src/variables/CDiscAdjFEABoundVariable.cpp \

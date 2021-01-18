@@ -2,7 +2,7 @@
  * \file CNEMOTurbSASolver.cpp
  * \brief Main subrotuines of CNEMOTurbSASolver class
  * \author F. Palacios, A. Bueno, W. Maier
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../../include/solvers/CSolver.hpp"
+
 #include "../../include/solvers/CNEMOTurbSASolver.hpp"
 #include "../../include/variables/CNEMOTurbSAVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
@@ -244,12 +244,10 @@ CNEMOTurbSASolver::~CNEMOTurbSASolver(void) {
 void CNEMOTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
-                      (config->GetInnerIter() <= config->GetLimiterIter());
-  unsigned short kind_hybridRANSLES = config->GetKind_HybridRANSLES();
-  const su2double* const* PrimGrad_Flow = nullptr;
-  const su2double* Vorticity = nullptr;
-  su2double Laminar_Viscosity = 0.0;
+  const bool muscl = config->GetMUSCL_Turb();
+  const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) &&
+                       (config->GetInnerIter() <= config->GetLimiterIter());
+  const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -275,7 +273,7 @@ void CNEMOTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
     SetSolution_Gradient_LS(geometry, config);
 
-  if (limiter_turb) SetSolution_Limiter(geometry, config);
+  if (limiter && muscl) SetSolution_Limiter(geometry, config);
 
   if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
 
@@ -284,9 +282,9 @@ void CNEMOTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     if (kind_hybridRANSLES == SA_EDDES){
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-        Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
-        PrimGrad_Flow = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
-        Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        auto Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
+        auto PrimGrad_Flow = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+        auto Laminar_Viscosity  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
       }
     }
@@ -313,14 +311,14 @@ void CNEMOTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
     su2double rho = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     su2double mu  = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    su2double nu        = mu/rho;
-    su2double nu_hat    = nodes->GetSolution(iPoint,0);
+    su2double nu  = mu/rho;
+    su2double nu_hat = nodes->GetSolution(iPoint,0);
     su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
-    su2double dist      = geometry->nodes->GetWall_Distance(iPoint);
+    su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     dist += rough_const*roughness;
 
-    su2double Ji   = nu_hat/nu;
+    su2double Ji   = nu_hat/nu ;
     if (roughness > 1.0e-10)
       Ji+= cR1*roughness/(dist+EPS);
 
@@ -388,9 +386,22 @@ void CNEMOTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
 
+    /*--- For the SA model, wall roughness is accounted by modifying the computed wall distance
+       *                              d_new = d + 0.03 k_s
+       *    where k_s is the equivalent sand grain roughness height that is specified in cfg file.
+       *    For smooth walls, wall roughness is zero and computed wall distance remains the same. */
+
+      su2double modifiedWallDistance = geometry->nodes->GetWall_Distance(iPoint);
+
+      modifiedWallDistance += 0.03*geometry->nodes->GetRoughnessHeight(iPoint);
+
       /*--- Set distance to the surface ---*/
 
-      numerics->SetDistance(geometry->nodes->GetWall_Distance(iPoint), 0.0);
+      numerics->SetDistance(modifiedWallDistance, 0.0);
+
+      /*--- Set the roughness of the closest wall. ---*/
+
+      numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), 0.0 );
 
     } else {
 
@@ -452,9 +463,15 @@ void CNEMOTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
     return;
   }
 
+  bool rough_wall = false;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  unsigned short WallType; su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == ROUGH ) rough_wall = true;
+
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
-   first point of the wall. ---*/
+   first point of the wall  ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -464,18 +481,49 @@ void CNEMOTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
+      if (!rough_wall) {
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          nodes->SetSolution_Old(iPoint,iVar,0.0);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        nodes->SetSolution_Old(iPoint,iVar,0.0);
+        LinSysRes.SetBlock_Zero(iPoint);
 
-      LinSysRes.SetBlock_Zero(iPoint);
+        /*--- Includes 1 in the diagonal ---*/
 
-      /*--- Includes 1 in the diagonal ---*/
+        Jacobian.DeleteValsRowi(iPoint);
+       } else {
+         /*--- For rough walls, the boundary condition is given by
+          * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+          * where \nu is the solution variable, $n$ is the wall normal direction
+          * and k_s is the equivalent sand grain roughness specified. ---*/
 
-      Jacobian.DeleteValsRowi(iPoint);
+         /*--- Compute dual-grid area and boundary normal ---*/
+         su2double Normal[MAXNDIM] = {0.0};
+         for (auto iDim = 0u; iDim < nDim; iDim++)
+           Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+
+         su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+         /*--- Get laminar_viscosity and density ---*/
+         su2double sigma = 2.0/3.0;
+         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+
+         su2double nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
+
+         su2double coeff = (nu_total/sigma);
+         su2double RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
+
+         su2double Res_Wall;// = new su2double [nVar];
+         Res_Wall = coeff*RoughWallBC*Area;
+         LinSysRes.SubtractBlock(iPoint, &Res_Wall);
+
+         su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+         Jacobian_i += 2.0*RoughWallBC*Area/sigma;
+         Jacobian_i = -Jacobian_i;
+         Jacobian.AddVal2Diag(iPoint, Jacobian_i);
+      }
     }
   }
-
 }
 
 void CNEMOTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -1571,11 +1619,11 @@ void CNEMOTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_cont
 
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
-
     const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+    if (!geometry->nodes->GetDomain(Point_Normal)) continue;
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Compute dual-grid area and boundary normal ---*/
 
@@ -1917,10 +1965,7 @@ su2double CNEMOTurbSASolver::GetInletAtVertex(su2double *val_inlet,
             /*-- Compute boundary face area for this vertex. ---*/
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
+            Area = GeometryToolbox::Norm(nDim, Normal);
 
             /*--- Access and store the inlet variables for this vertex. ---*/
 

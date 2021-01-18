@@ -1,9 +1,9 @@
 ﻿/*!
- * \file turb_sources.cpp
+ * \file nemo_turb_sources.cpp
  * \brief Implementation of numerics classes for integration of
  *        turbulence source-terms.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,7 @@ CNEMOSourceBase_TurbSA::CNEMOSourceBase_TurbSA(unsigned short val_nDim, unsigned
   cb2   = 0.622;
   cb2_sigma = cb2/sigma;
   cw1 = cb1/k2+(1.0+cb2)/sigma;
+  cr1 = 0.5;
 
   /*--- Setup the Jacobian pointer, we need to return su2double** but
    *    we know the Jacobian is 1x1 so we use this "trick" to avoid
@@ -83,9 +84,8 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
 //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
-//  BC Transition Model variables
-  su2double vmag, rey, re_theta, re_theta_t, re_v;
-  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
+  // Set the boolean here depending on whether the point is closest to a rough wall or not.
+  roughwall = (roughness_i > 0.0);
 
   Density_i = V_i[RHO_INDEX];
   Laminar_Viscosity_i = V_i[LAM_VISC_INDEX];
@@ -97,17 +97,6 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
   Jacobian_i[0]   = 0.0;
 
   gamma_BC = 0.0;
-  vmag = 0.0;
-  tu   = config->GetTurbulenceIntensity_FreeStream();
-  rey  = config->GetReynolds();
-
-  if (nDim==2) {
-    vmag = sqrt(V_i[VEL_INDEX]*V_i[VEL_INDEX]+V_i[VEL_INDEX+1]*V_i[VEL_INDEX+1]);
-  }
-  else {
-    vmag = sqrt(V_i[VEL_INDEX]*V_i[VEL_INDEX]+V_i[VEL_INDEX+1]*V_i[VEL_INDEX+1]+
-                V_i[VEL_INDEX+2]*V_i[VEL_INDEX+2]);
-  }
 
   /*--- Evaluate Omega ---*/
 
@@ -123,11 +112,20 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
 
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
-    Ji = TurbVar_i[0]/nu;
+
+    /*--- Modified values for roughness ---*/
+    /*--- Ref: Aupoix, B. and Spalart, P. R., "Extensions of the Spalart-Allmaras Turbulence Model to Account for Wall Roughness,"
+     * International Journal of Heat and Fluid Flow, Vol. 24, 2003, pp. 454-462. ---*/
+    /* --- See https://turbmodels.larc.nasa.gov/spalart.html#sarough for detailed explanation. ---*/
+
+    Ji = TurbVar_i[0]/nu  + cr1*(roughness_i/(dist_i+EPS)); //roughness_i = 0 for smooth walls and Ji remains the same, changes only if roughness is specified.
     Ji_2 = Ji*Ji;
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+
+    /*--- Using a modified relation so as to not change the Shat that depends on fv2. ---*/
+    fv2 = 1.0 - TurbVar_i[0]/(nu+TurbVar_i[0]*fv1);   // From NASA turb modeling resource and 2003 paper
+
     ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
@@ -141,23 +139,23 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSA::ComputeResidual(const CCo
 
     if (transition) {
 
-//    BC model constants
-      chi_1 = 0.002;
-      chi_2 = 5.0;
+      /*--- BC model constants (2020 revision). ---*/
+      const su2double chi_1 = 0.002;
+      const su2double chi_2 = 50.0;
 
-      nu_t = (TurbVar_i[0]*fv1); //S-A variable
-      nu_cr = chi_2/rey;
-      nu_BC = (nu_t)/(vmag*dist_i);
+      su2double tu = config->GetTurbulenceIntensity_FreeStream();
 
-      re_v   = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
-      re_theta = re_v/2.193;
-      re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
+      su2double nu_t = (TurbVar_i[0]*fv1); //S-A variable
+
+      su2double re_v = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
+      su2double re_theta = re_v/2.193;
+      su2double re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
       //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
 
-      term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
-      term2 = sqrt(max(nu_BC-nu_cr,0.)/(nu_cr));
-      term_exponential = (term1 + term2);
-      gamma_BC = 1.0 - exp(-term_exponential);
+      su2double term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
+      su2double term2 = sqrt(max((nu_t*chi_2)/nu,0.));
+      su2double term_exponential = (term1 + term2);
+      su2double gamma_BC = 1.0 - exp(-term_exponential);
 
       Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
     }
@@ -826,8 +824,9 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSST::ComputeResidual(const CC
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
    if (using_uq){
-     SetReynoldsStressMatrix(TurbVar_i[0]);
-     SetPerturbedRSM(TurbVar_i[0], config);
+     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                         PrimVar_Grad_i+1, Density_i, Eddy_Viscosity_i,
+                         TurbVar_i[0], MeanPerturbedRSM);
      SetPerturbedStrainMag(TurbVar_i[0]);
      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
@@ -896,204 +895,19 @@ CNumerics::ResidualType<> CNEMOSourcePieceWise_TurbSST::ComputeResidual(const CC
 
 }
 
-void CNEMOSourcePieceWise_TurbSST::GetMeanRateOfStrainMatrix(su2double **S_ij)
-{
-    /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
-
-  if (nDim == 3){
-    S_ij[0][0] = PrimVar_Grad_i[VEL_INDEX][0];
-    S_ij[1][1] = PrimVar_Grad_i[VEL_INDEX+1][1];
-    S_ij[2][2] = PrimVar_Grad_i[VEL_INDEX+2][2];
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[VEL_INDEX][1]   + PrimVar_Grad_i[VEL_INDEX+1][0]);
-    S_ij[0][2] = 0.5 * (PrimVar_Grad_i[VEL_INDEX][2]   + PrimVar_Grad_i[VEL_INDEX+2][0]);
-    S_ij[1][2] = 0.5 * (PrimVar_Grad_i[VEL_INDEX+1][2] + PrimVar_Grad_i[VEL_INDEX+2][1]);
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-  }
-  else {
-    S_ij[0][0] = PrimVar_Grad_i[VEL_INDEX][0];
-    S_ij[1][1] = PrimVar_Grad_i[VEL_INDEX+1][1];
-    S_ij[2][2] = 0.0;
-    S_ij[0][1] = 0.5 * (PrimVar_Grad_i[VEL_INDEX][1] + PrimVar_Grad_i[VEL_INDEX+1][0]);
-    S_ij[0][2] = 0.0;
-    S_ij[1][2] = 0.0;
-    S_ij[1][0] = S_ij[0][1];
-    S_ij[2][1] = S_ij[1][2];
-    S_ij[2][0] = S_ij[0][2];
-
-  }
-}
-
-void CNEMOSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
-  unsigned short iDim, jDim;
-  su2double **S_ij = new su2double* [3];
-  su2double divVel = 0;
-  su2double TWO3 = 2.0/3.0;
-
-
-
-  for (iDim = 0; iDim < 3; iDim++){
-    S_ij[iDim] = new su2double [3];
-  }
-
-  GetMeanRateOfStrainMatrix(S_ij);
-
-    /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
-
-  for (iDim = 0; iDim < 3; iDim++){
-    divVel += S_ij[iDim][iDim];
-  }
-
-  for (iDim = 0; iDim < 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
-      - Eddy_Viscosity_i / Density_i * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
-    }
-  }
-
-  for (iDim = 0; iDim < 3; iDim++)
-    delete [] S_ij[iDim];
-  delete [] S_ij;
-}
-
-void CNEMOSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, const CConfig* config){
-
-  unsigned short iDim,jDim;
-
-  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
-
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
-      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
-    }
-  }
-
-  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
-
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
-
-  /* compute convex combination coefficients */
-  su2double c1c = Eig_Val[2] - Eig_Val[1];
-  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
-  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
-
-  /* define barycentric traingle corner points */
-  Corners[0][0] = 1.0;
-  Corners[0][1] = 0.0;
-  Corners[1][0] = 0.0;
-  Corners[1][1] = 0.0;
-  Corners[2][0] = 0.5;
-  Corners[2][1] = 0.866025;
-
-  /* define barycentric coordinates */
-  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
-  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
-
-  if (Eig_Val_Comp == 1) {
-    /* 1C turbulence */
-    New_Coord[0] = Corners[0][0];
-    New_Coord[1] = Corners[0][1];
-  }
-  else if (Eig_Val_Comp == 2) {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-  else if (Eig_Val_Comp == 3) {
-    /* 3C turbulence */
-    New_Coord[0] = Corners[2][0];
-    New_Coord[1] = Corners[2][1];
-  }
-  else {
-    /* 2C turbulence */
-    New_Coord[0] = Corners[1][0];
-    New_Coord[1] = Corners[1][1];
-  }
-  /* calculate perturbed barycentric coordinates */
-
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
-
-  /* rebuild c1c,c2c,c3c based on new barycentric coordinates */
-  c3c = Barycentric_Coord[1] / Corners[2][1];
-  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
-  c2c = 1 - c1c - c3c;
-
-  /* build new anisotropy eigenvalues */
-  Eig_Val[0] = (c3c - 1) / 3.0;
-  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
-  Eig_Val[2] = c1c + Eig_Val[1];
-
-  /* permute eigenvectors if required */
-  if (uq_permute) {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
-      }
-    }
-  }
-
-  else {
-    for (iDim=0; iDim<3; iDim++) {
-      for (jDim=0; jDim<3; jDim++) {
-        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
-      }
-    }
-  }
-
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
-
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
-  for (iDim = 0; iDim< 3; iDim++){
-    for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
-      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
-    }
-  }
-
-}
-
 void CNEMOSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
-  unsigned short iDim, jDim;
+
+  /*--- Compute norm of perturbed strain rate tensor. ---*/
+
   PerturbedStrainMag = 0;
-  su2double **StrainRate = new su2double* [nDim];
-  for (iDim= 0; iDim< nDim; iDim++){
-    StrainRate[iDim] = new su2double [nDim];
-  }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    for (unsigned short jDim = 0; jDim < nDim; jDim++){
+      su2double StrainRate_ij = MeanPerturbedRSM[iDim][jDim] - TWO3 * turb_ke * delta[iDim][jDim];
+      StrainRate_ij = - StrainRate_ij * Density_i / (2 * Eddy_Viscosity_i);
 
-  /* compute perturbed strain rate tensor */
-
-  for (iDim = 0; iDim < nDim; iDim++){
-    for (jDim =0; jDim < nDim; jDim++){
-      StrainRate[iDim][jDim] = MeanPerturbedRSM[iDim][jDim]
-      - TWO3 * turb_ke * delta[iDim][jDim];
-      StrainRate[iDim][jDim] = - StrainRate[iDim][jDim] * Density_i / (2 * Eddy_Viscosity_i);
+      PerturbedStrainMag += pow(StrainRate_ij, 2.0);
     }
   }
-
-  /*--- Add diagonal part ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    PerturbedStrainMag += pow(StrainRate[iDim][iDim], 2.0);
-  }
-
-  /*--- Add off diagonals ---*/
-
-  PerturbedStrainMag += 2.0*pow(StrainRate[1][0], 2.0);
-
-  if (nDim == 3) {
-    PerturbedStrainMag += 2.0*pow(StrainRate[0][2], 2.0);
-    PerturbedStrainMag += 2.0*pow(StrainRate[1][2], 2.0);
-  }
-
   PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
 
-  for (iDim= 0; iDim< nDim; iDim++){
-    delete [] StrainRate[iDim];
-  }
-
-  delete [] StrainRate;
 }
