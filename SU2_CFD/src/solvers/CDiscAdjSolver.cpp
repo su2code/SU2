@@ -475,7 +475,7 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
 
   const bool time_n1_needed = config->GetTime_Marching() == DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == DT_STEPPING_1ST) || time_n1_needed;
@@ -533,7 +533,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       /*--- Store the adjoint solution at time n ---*/
 
-      nodes->Set_Solution_time_n(iPoint,Solution);
+      if (!CrossTerm) nodes->Set_Solution_time_n(iPoint,Solution);
     }
   }
 
@@ -546,7 +546,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       /*--- Store the adjoint solution at time n-1 ---*/
 
-      nodes->Set_Solution_time_n1(iPoint,Solution);
+      if (!CrossTerm) nodes->Set_Solution_time_n1(iPoint,Solution);
     }
   }
 

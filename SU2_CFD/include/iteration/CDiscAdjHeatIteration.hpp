@@ -75,11 +75,12 @@ class CDiscAdjHeatIteration : public CIteration {
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    * \param[in] val_iZone - Index of the zone.
    * \param[in] val_iInst - Index of the instance layer.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
    */
   void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-               unsigned short val_iInst) override;
+               unsigned short val_iInst, bool CrossTerm) override;
 
   /*!
    * \brief Perform a single iteration of the adjoint fluid system.

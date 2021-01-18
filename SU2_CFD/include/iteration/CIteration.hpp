@@ -132,11 +132,12 @@ class CIteration {
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    * \param[in] val_iZone - Index of the zone.
    * \param[in] val_iInst - Index of the instantiation.
+   * \param[in] CrossTerm - Boolean for CrossTerm.
    */
   virtual void Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
                        CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                        CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-                       unsigned short val_iInst){}
+                       unsigned short val_iInst, bool CrossTerm){}
 
   /*!
    * \brief A virtual member.

@@ -3776,6 +3776,15 @@ public:
    */
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
 
+    /*!
+   * \brief A virtual member.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] solver_container - The solver container holding all solutions.
+   * \param[in] config - The particular config.
+   * \param[in] CrossTerm - Boolean to determine if this is a cross term extraction.
+   */
+  inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.

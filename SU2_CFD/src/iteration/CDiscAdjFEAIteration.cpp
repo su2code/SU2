@@ -161,7 +161,7 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver*
 void CDiscAdjFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                    CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                    CSurfaceMovement** surface_movement, CVolumetricMovement*** volume_grid_movement,
-                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
   bool dynamic = (config[val_iZone]->GetTime_Domain());
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
@@ -207,7 +207,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput* output, CIntegration**** integr
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
     fem_iteration->Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                           FFDBox, val_iZone, val_iInst);
+                           FFDBox, val_iZone, val_iInst, false);
   }
 
   /*--- Prepare for recording ---*/
@@ -236,7 +236,7 @@ void CDiscAdjFEAIteration::SetRecording(COutput* output, CIntegration**** integr
   /*--- Run the direct iteration ---*/
 
   fem_iteration->Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                         FFDBox, val_iZone, val_iInst);
+                         FFDBox, val_iZone, val_iInst, false);
 
   config[val_iZone]->SetTimeIter(TimeIter);
 

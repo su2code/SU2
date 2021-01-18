@@ -188,7 +188,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 
     iteration->Iterate(output_container[ZONE_0], integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
-                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+                         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0, false);
 
     /*--- Monitor the pseudo-time ---*/
 
@@ -464,7 +464,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(unsigned short kind_recording){
 
   /*--- Iterate the direct solver ---*/
 
-  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0, false);
 
   /*--- Postprocess the direct solver ---*/
 
