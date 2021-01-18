@@ -169,12 +169,15 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT,    "", "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",ScreenOutputFormat::FIXED,      "", "LOAD_RAMP");
 
-  AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("REFERENCE_NODE",     "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("VOLUME_FRACTION",    "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("TOPOL_COMPLIANCE",   "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
-
+  AddHistoryOutput("REFERENCE_NODE", "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOPOL_COMPLIANCE", "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  if (config->GetRefGeom()) {
+    AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  }
+  if (config->GetTopology_Optimization()) {
+    AddHistoryOutput("VOLUME_FRACTION", "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  }
 }
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
