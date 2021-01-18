@@ -3844,7 +3844,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
             Velocity2 = 0.0; MassFlow = 0.0; Vel_Infty2 =0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Area += Vector[iDim]*Vector[iDim];
               Velocity[iDim] = V_inlet[iDim+1];
               Velocity2 += Velocity[iDim]*Velocity[iDim];
               Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
@@ -3857,7 +3856,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             if (Vn < 0.0) { ReverseFlow = true; }
 
             Vel_Infty = sqrt (Vel_Infty2);
-            Area = sqrt (Area);
             Mach = sqrt(Velocity2)/SoundSpeed;
             TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
             TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));

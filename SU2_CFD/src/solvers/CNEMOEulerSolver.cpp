@@ -222,9 +222,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
   
     nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
-
+  
     /*--- Set mixture state ---*/
-    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
+    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);  
 
     /*--- Compute other freestream quantities ---*/
     Density_Inf    = FluidModel->GetDensity();
@@ -247,7 +247,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
     nodes->SetSolution(iPoint,Solution);
     nodes->SetSolution_Old(iPoint,Solution);
-
+  
     if(nonPhys)
       counter_local++;
   }

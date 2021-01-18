@@ -142,16 +142,16 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
-
+  
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
 
     /*--- Reset velocity^2 [m2/s2] to zero ---*/
     sqvel = 0.0;
-
+  
     /*--- Set mixture state ---*/
     fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
-
+  
     /*--- Compute necessary quantities ---*/
     rho = fluidmodel->GetDensity();
     soundspeed = fluidmodel->ComputeSoundSpeed();
@@ -168,14 +168,14 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
     Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
-
+  
     Solution_Old = Solution;
-
+  
     /*--- Assign primitive variables ---*/
     Primitive(iPoint,T_INDEX)   = val_temperature;
     Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
     Primitive(iPoint,P_INDEX)   = val_pressure;
-  }
+  } 
 }
 
 void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {

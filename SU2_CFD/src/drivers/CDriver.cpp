@@ -1449,8 +1449,9 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       NEMO_euler = compressible = true; break;
 
     case NEMO_NAVIER_STOKES:
+
     case DISC_ADJ_NEMO_NAVIER_STOKES:
-      NEMO_ns = compressible = true; break;  
+      NEMO_ns = compressible = true; break;
 
     case RANS:
     case DISC_ADJ_RANS:
@@ -1555,8 +1556,8 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   if (fem_ns)          nVar_Flow = solver[MESH_0][FLOW_SOL]->GetnVar();
   //if (fem_turbulent)    nVar_Turb = solver_container[MESH_0][FEM_TURB_SOL]->GetnVar();
 
-  if (fem)             nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-  if (heat)            nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
+  if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
+  if (heat)         nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
 
   if (config->AddRadiation())    nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 

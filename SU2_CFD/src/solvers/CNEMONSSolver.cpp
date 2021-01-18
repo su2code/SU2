@@ -114,8 +114,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   //TODO: THIS NEEDS TO BE UPDATED ASAP!
   StrainMag_Max = 0.0;
   Omega_Max = 0.0;
-  nodes->SetVorticity_StrainMag();
 
+  nodes->SetVorticity_StrainMag();
   su2double strainMax = 0.0, omegaMax = 0.0;
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {

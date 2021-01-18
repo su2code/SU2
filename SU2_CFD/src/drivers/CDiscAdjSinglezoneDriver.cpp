@@ -71,7 +71,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     case DISC_ADJ_EULER:      case DISC_ADJ_NAVIER_STOKES:      case DISC_ADJ_RANS:
     case DISC_ADJ_INC_EULER:  case DISC_ADJ_INC_NAVIER_STOKES:  case DISC_ADJ_INC_RANS:
     case DISC_ADJ_NEMO_EULER: case DISC_ADJ_NEMO_NAVIER_STOKES: case DISC_ADJ_NEMO_RANS:
-
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -229,7 +228,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
     case DISC_ADJ_EULER :      case DISC_ADJ_NAVIER_STOKES :      case DISC_ADJ_RANS :
     case DISC_ADJ_INC_EULER :  case DISC_ADJ_INC_NAVIER_STOKES :  case DISC_ADJ_INC_RANS :
     case DISC_ADJ_NEMO_EULER : case DISC_ADJ_NEMO_NAVIER_STOKES : case DISC_ADJ_NEMO_RANS :
-
+    case DISC_ADJ_HEAT :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
