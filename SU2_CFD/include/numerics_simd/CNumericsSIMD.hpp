@@ -93,7 +93,8 @@ public:
    * \param[in] config - Problem definitions.
    * \param[in] nDim - 2D or 3D.
    * \param[in] iMesh - Grid index.
+   * \param[in] turbVars - Turbulence variables.
    */
-  static CNumericsSIMD* CreateNumerics(const CConfig& config, int nDim, int iMesh);
+  static CNumericsSIMD* CreateNumerics(const CConfig& config, int nDim, int iMesh, const CVariable* turbVars = nullptr);
 
 };

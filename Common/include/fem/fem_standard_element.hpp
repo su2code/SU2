@@ -1014,7 +1014,7 @@ public:
   * \brief Function, which makes available the number of DOFs for this standard element.
   * \return  The number of DOFs of this standard element.
   */
-  inline unsigned short GetNDOFs(void) const {return nDOFs;}
+  inline unsigned short GetNDOFs(void) const {return nDOFs;}  
 
   /*!
   * \brief Function, which makes available the polynomial degree for this standard element.
@@ -1707,11 +1707,11 @@ public:
   * \brief What is this?
   */
   inline const vector<su2double>* GetRDOFsFace(void)  {return &rDOFsFace;}
-  
+
   /*!
   * \brief What is this?
   */
-  inline const vector<su2double>* GetSDOFsFace(void)  {return &sDOFsFace;}
+  inline const vector<su2double>* GetSDOFsFace(void)  {return &sDOFsFace;}    
 
   /*!
   * \brief Function, which makes available the number of linear subfaces used
@@ -1770,6 +1770,7 @@ public:
   */
   su2double WorkEstimateMetisWallFunctions(CConfig              *config,
                                            const unsigned short nPointsWF);
+
   /*!
   * \brief What is this?
   */

@@ -232,12 +232,17 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Method to compute convective and viscous residual contribution using vectorized numerics.
    */
-  void EdgeFluxResidual(const CGeometry *geometry, const CConfig *config);
+  void EdgeFluxResidual(const CGeometry *geometry, const CSolver* const* solvers, const CConfig *config);
 
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    */
   void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Instantiate a SIMD numerics object.
+   */
+  inline virtual void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) {}
 
   /*!
    * \brief Destructor.

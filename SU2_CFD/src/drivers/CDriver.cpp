@@ -1629,24 +1629,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
       case SPACE_CENTERED :
         if (compressible) {
-          /*--- Compressible flow ---*/
-          switch (config->GetKind_Centered_Flow()) {
-            case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config); break;
-            case JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_Flow(nDim, nVar_Flow, config); break;
-            case JST_KE : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_KE_Flow(nDim, nVar_Flow, config); break;
-            case JST_MAT :
-              if (!config->GetUseVectorization()) {
-                SU2_MPI::Error("JST with matrix dissipation requires USE_VECTORIZATION=YES.", CURRENT_FUNCTION);
-              }
-              break;
-            default:
-              SU2_OMP_MASTER
-              SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
-              break;
-          }
-
-          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config);
+          /*--- "conv_term" is not instantiated as all compressible centered schemes are vectorized. ---*/
 
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)

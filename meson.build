@@ -165,6 +165,14 @@ endforeach
 
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
+if get_option('enable-mpp')
+  cmake = import('cmake')
+  mpp_subproj = cmake.subproject('Mutationpp')
+  mpp_dep = mpp_subproj.dependency('mutation++')
+  su2_deps     += mpp_dep
+  su2_cpp_args += '-DHAVE_MPP'
+endif
+
 # compile common library
 subdir('Common/src')
 # compile SU2_CFD executable
@@ -223,3 +231,11 @@ message('''---------------------------------------------------------------------
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
 
+if get_option('enable-mpp')
+  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+          ''')
+endif

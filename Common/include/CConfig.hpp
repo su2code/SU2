@@ -1321,7 +1321,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);  
 
   /*!
    * \brief Destructor of the class.
@@ -3662,7 +3662,7 @@ public:
    * \brief Gas model that we are using.
    * \return Gas model that we are using.
    */
-  string GetGasModel (void) const {return GasModel;}
+  string GetGasModel(void) const {return GasModel;}
 
   /*!
    * \brief Get the transport coefficient model.
@@ -5150,6 +5150,11 @@ public:
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
 
   /*!
+   * \brief Indicates if solution interpolation will be used.
+   */
+  bool GetSolutionInterpolation(void) const { return interpolate_solution; }
+
+  /*!
    * \brief Provides the number of varaibles.
    * \return Number of variables.
    */
@@ -5194,11 +5199,6 @@ public:
    * \brief Indicates if mixture is monoatomic.
    */
   bool GetMonoatomic(void) const { return monoatomic; }
-
-  /*!
-   * \brief Indicates if solution interpolation will be used.
-   */
-  bool GetSolutionInterpolation(void) const { return interpolate_solution; }
 
   /*!
    * \brief Information about computing and plotting the equivalent area distribution.

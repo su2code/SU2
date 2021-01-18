@@ -186,44 +186,6 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], unsigned 
 
 }
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
-
-  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
-
-  base_config = false;
-
-  iZone = val_iZone;
-  nZone = val_nZone;
-
-  Init();
-
-  /*--- Parsing the config file  ---*/
-
-  SetConfig_Parsing(case_filename);
-
-  /*--- Set the default values for all of the options that weren't set ---*/
-
-  SetDefault();
-
-  /*--- Set number of zone ---*/
-
-  SetnZone();
-
-  /*--- Configuration file postprocessing ---*/
-
-  SetPostprocessing(val_software, val_iZone, val_nDim);
-
-  /*--- Configuration file boundaries/markers setting ---*/
-
-  SetMarkers(val_software);
-
-  /*--- Configuration file output ---*/
-
-  if ((rank == MASTER_NODE) && verb_high)
-    SetOutput(val_software, val_iZone);
-
-}
-
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
 
   /*--- Set the case name to the base config file name without extension ---*/
@@ -289,6 +251,44 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
     if (all_options.find("TIME_ITER") == all_options.end())
       config->SetnTime_Iter(nTimeIter);
   }
+}
+
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
+
+  caseName = PrintingToolbox::split(string(case_filename),'.')[0];
+
+  base_config = false;
+
+  iZone = val_iZone;
+  nZone = val_nZone;
+
+  Init();
+
+  /*--- Parsing the config file  ---*/
+
+  SetConfig_Parsing(case_filename);
+
+  /*--- Set the default values for all of the options that weren't set ---*/
+
+  SetDefault();
+
+  /*--- Set number of zone ---*/
+
+  SetnZone();
+
+  /*--- Configuration file postprocessing ---*/
+
+  SetPostprocessing(val_software, val_iZone, val_nDim);
+
+  /*--- Configuration file boundaries/markers setting ---*/
+
+  SetMarkers(val_software);
+
+  /*--- Configuration file output ---*/
+
+  if ((rank == MASTER_NODE) && verb_high)
+    SetOutput(val_software, val_iZone);
+
 }
 
 SU2_MPI::Comm CConfig::GetMPICommunicator() const {
@@ -1200,8 +1200,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("IONIZATION", ionization, false);
   /* DESCRIPTION: Specify if there is VT transfer residual limiting */
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
-  /* DESCRIPTION: Specify if the gas is monoatomic */
-  addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -2832,9 +2830,8 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Target mesh for solution interpolation */
   addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
-  
-  /* END_CONFIG_OPTIONS */
 
+  /* END_CONFIG_OPTIONS */
 }
 
 void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
@@ -3109,12 +3106,13 @@ void CConfig::SetHeader(unsigned short val_software) const{
     cout << "|   / __| | | |_  )   Release 7.0.8 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
-    case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
-    case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_CFD:    cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
+    case SU2_DEF:    cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
+    case SU2_DOT:    cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
+    case SU2_MSH:    cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
+    case SU2_GEO:    cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
+    case SU2_SOL:    cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_INTERP: cout << "|   |___/\\___//___|   Suite (Solution Interpolation Code)               |" << endl; break;
     }
 
     cout << "|                                                                       |" << endl;
@@ -3221,7 +3219,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
-                    (Kind_FluidModel == USER_DEFINED_NONEQ));
+                    (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   bool nemo = GetNEMOProblem();
 
@@ -3586,10 +3584,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
-    SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
-  }
-
   if (nemo && Kind_TransCoeffModel != WILKE ) {
     SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver.", CURRENT_FUNCTION);
   }
@@ -3603,6 +3597,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nemo){
     if (Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+  }
+
+  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
+      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
@@ -5025,6 +5023,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
+  if (GetGasModel() == "ARGON") monoatomic = true;
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5606,14 +5605,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+        if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+        if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }

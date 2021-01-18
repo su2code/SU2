@@ -25,14 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fluid/CMutationTCLib.hpp"
+#if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
 
-#ifdef HAVE_MPP
+#include "../../include/fluid/CMutationTCLib.hpp"
 
 CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): CNEMOGas(config, val_nDim){
  
   Mutation::MixtureOptions opt(gas_model);
-  string transport_model, state_model;	
+  string transport_model;
 
   /* Allocating memory*/
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
@@ -42,19 +42,14 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
-  /*--- Define thermochemical nonequilibrium model ---*/
-  if(!frozen)
-    state_model = "ChemNonEqTTv";
-  else 
-    state_model = "NonEqTTv";
-
   /*--- Define transport model ---*/
   if(Kind_TransCoeffModel == WILKE)
     transport_model = "Wilke";
   else if (Kind_TransCoeffModel == GUPTAYOS)
- 	transport_model = "Gupta-Yos";
+    transport_model = "Gupta-Yos";
   
-  opt.setStateModel(state_model);
+  opt.setStateModel("ChemNonEqTTv");
+  if (frozen) opt.setMechanism("none");
   opt.setViscosityAlgorithm(transport_model);
   opt.setThermalConductivityAlgorithm(transport_model); 
   
@@ -84,7 +79,7 @@ void CMutationTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double va
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Density += rhos[iSpecies];
 
-  Pressure = GetPressure();
+  Pressure = ComputePressure();
 
   mix->setState(rhos.data(), temperatures.data(), 1);
 
@@ -223,5 +218,4 @@ vector<su2double>& CMutationTCLib::GetSpeciesFormationEnthalpy() {
 
    return Enthalpy_Formation;  
 }
-
 #endif

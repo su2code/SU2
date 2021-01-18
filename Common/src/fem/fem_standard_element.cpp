@@ -1811,6 +1811,50 @@ su2double CFEMStandardElementBase::ViscousPenaltyParameter(
   return penParam;
 }
 
+void CFEMStandardBoundaryFace::FaceBasisFunctionsAndDerivativesInPoint(
+                                    const su2double                      *parCoor,
+                                    vector<su2double>                    &lagBasis,
+                                    vector<vector<su2double> >           &dLagBasis) {
+
+  /* Allocate the memory for the help vectors for computing the Vandermonde
+     matrices and its derivatives. */
+  vector<vector<su2double> > rPoints(dLagBasis.size(), vector<su2double>(1));
+  vector<vector<su2double> > VDr(dLagBasis.size(), vector<su2double>(nDOFsFace));
+
+  vector<su2double> V(nDOFsFace);
+
+  /* Copy the parametric coordinates in rPoints, such that the functions to
+     compute the Vandermonde matrices can be used. */
+  for(unsigned long i=0; i<rPoints.size(); ++i)
+    rPoints[i][0] = parCoor[i];
+
+  /* Determine the element type and call the appropriate function to compute
+     the Vandermonde matrix and the derivative of the Vandermonde matrix. */
+  switch(VTK_Type) {
+    case LINE:
+      Vandermonde1D(nDOFsFace, rPoints[0], V);
+      GradVandermonde1D(nDOFsFace, rPoints[0], VDr[0]);
+      break;
+
+    case TRIANGLE:
+      Vandermonde2D_Triangle(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], V);
+      GradVandermonde2D_Triangle(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], VDr[0], VDr[1]);
+      break;
+
+    case QUADRILATERAL:
+      Vandermonde2D_Quadrilateral(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], V);
+      GradVandermonde2D_Quadrilateral(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], VDr[0], VDr[1]);
+      break;
+   }
+  /* Carry out the matrix multiplication to obtain the values of the Lagrangian
+     basis functions and its derivatives in the given parametric coordinate. */
+  MatMulRowMajor(nDOFsFace, 1, V, matVandermondeFaceInv, lagBasis);
+
+  for(unsigned long i=0; i<dLagBasis.size(); ++i){
+    MatMulRowMajor(nDOFsFace, 1, VDr[i], matVandermondeFaceInv, dLagBasis[i]);
+  }
+}
+
 /*----------------------------------------------------------------------------------*/
 /*          Private member functions of CFEMStandardElementBase.                    */
 /*----------------------------------------------------------------------------------*/
@@ -3982,50 +4026,6 @@ bool CFEMStandardBoundaryFace::SameStandardBoundaryFace(unsigned short val_VTK_T
 
   return true;
 }
-
-void CFEMStandardBoundaryFace::FaceBasisFunctionsAndDerivativesInPoint(
-                                    const su2double                      *parCoor,
-                                    vector<su2double>                    &lagBasis,
-                                    vector<vector<su2double> >           &dLagBasis) {
-
-  /* Allocate the memory for the help vectors for computing the Vandermonde
-     matrices and its derivatives. */
-  vector<vector<su2double> > rPoints(dLagBasis.size(), vector<su2double>(1));
-  vector<vector<su2double> > VDr(dLagBasis.size(), vector<su2double>(nDOFsFace));
-
-  vector<su2double> V(nDOFsFace);
-
-  /* Copy the parametric coordinates in rPoints, such that the functions to
-     compute the Vandermonde matrices can be used. */
-  for(unsigned long i=0; i<rPoints.size(); ++i)
-    rPoints[i][0] = parCoor[i];
-
-  /* Determine the element type and call the appropriate function to compute
-     the Vandermonde matrix and the derivative of the Vandermonde matrix. */
-  switch(VTK_Type) {
-    case LINE:
-      Vandermonde1D(nDOFsFace, rPoints[0], V);
-      GradVandermonde1D(nDOFsFace, rPoints[0], VDr[0]);
-      break;
-
-    case TRIANGLE:
-      Vandermonde2D_Triangle(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], V);
-      GradVandermonde2D_Triangle(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], VDr[0], VDr[1]);
-      break;
-
-    case QUADRILATERAL:
-      Vandermonde2D_Quadrilateral(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], V);
-      GradVandermonde2D_Quadrilateral(nPolyElem, nDOFsFace, rPoints[0], rPoints[1], VDr[0], VDr[1]);
-      break;
-   }
-  /* Carry out the matrix multiplication to obtain the values of the Lagrangian
-     basis functions and its derivatives in the given parametric coordinate. */
-  MatMulRowMajor(nDOFsFace, 1, V, matVandermondeFaceInv, lagBasis);
-
-  for(unsigned long i=0; i<dLagBasis.size(); ++i){
-    MatMulRowMajor(nDOFsFace, 1, VDr[i], matVandermondeFaceInv, dLagBasis[i]);
-  }
- }
 
 /*----------------------------------------------------------------------------------*/
 /*        Private member functions of CFEMStandardBoundaryFace.                     */
