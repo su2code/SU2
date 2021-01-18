@@ -527,10 +527,7 @@ public:
    * \param[in] numerics - Implementation of numerical method.
    * \param[in] of_comp_mode - Mode to compute just the objective function.
    */
-  inline void Postprocessing(CGeometry *geometry,
-                             CConfig *config,
-                             CNumerics **numerics,
-                             bool of_comp_mode) final;
+  void Postprocessing(CGeometry *geometry, CConfig *config, CNumerics **numerics, bool of_comp_mode) final;
 
   /*!
    * \brief Routine to solve the Jacobian-Residual linearized system.

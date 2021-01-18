@@ -1916,14 +1916,12 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
   /*--- Compute the objective function. ---*/
 
   const auto kindObjFunc = config->GetKind_ObjFunc();
-
-  if (((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
-      ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL))) {
-
-    Stiffness_Penalty(geometry, numerics, config);
-  }
+  const bool penalty = ((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
+                       ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL));
 
   if (of_comp_mode) {
+    if (penalty) Stiffness_Penalty(geometry, numerics, config);
+
     switch (kindObjFunc) {
       case REFERENCE_GEOMETRY: Compute_OFRefGeom(geometry, config); break;
       case REFERENCE_NODE:     Compute_OFRefNode(geometry, config); break;
@@ -1939,6 +1937,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
     Compute_NodalStress(geometry, numerics, config);
 
     /*--- Compute functions for monitoring and output. ---*/
+    if (penalty) Stiffness_Penalty(geometry, numerics, config);
     Compute_OFRefNode(geometry, config);
     Compute_OFCompliance(geometry, config);
     if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
