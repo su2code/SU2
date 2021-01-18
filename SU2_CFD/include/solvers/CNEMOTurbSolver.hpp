@@ -29,7 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CNEMOTurbVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
  * \class CNEMOTurbSolver
