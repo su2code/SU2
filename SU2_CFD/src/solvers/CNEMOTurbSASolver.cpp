@@ -27,7 +27,7 @@
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/solvers/CNEMOTurbSASolver.hpp"
 #include "../../include/variables/CNEMOTurbSAVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
