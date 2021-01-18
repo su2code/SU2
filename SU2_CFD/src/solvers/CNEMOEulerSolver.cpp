@@ -465,11 +465,10 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   }
   SU2_OMP_BARRIER
 
-  su2double Normal[3], Normal_Product;
+  su2double Normal[3];
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2;
   su2double Mean_ThermalCond, Mean_ThermalCond_ve, cv;
-  su2double Normal_Sym[3], UnitNormal_Sym[3];
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
@@ -508,10 +507,10 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Inviscid contribution ---*/
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
-      if (nodes->GetSymmetry(iPoint)==1) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-      else if(nodes->GetSymmetry(iPoint)==2) nodes->AddMax_Lambda_Inv(iPoint,3*Lambda);
+      if (nodes->GetSymmetry(iPoint) == 0) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+      else if (nodes->GetSymmetry(iPoint) == 1) nodes->AddMax_Lambda_Inv(iPoint, 2*Lambda);
+      else if (nodes->GetSymmetry(iPoint) == 2) nodes->AddMax_Lambda_Inv(iPoint, 4*Lambda);
 
       /*--- Viscous contribution ---*/
       if (!viscous) continue;
@@ -535,13 +534,13 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
 
       Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-      nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       if (nodes->GetSymmetry(iPoint))
-         if(nodes->GetSymmetry(iPoint)==1 && nodes->GetSymmetry(jPoint)) nodes->AddMax_Lambda_Visc(iPoint,3*Lambda);
-         else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint)==1) nodes->AddMax_Lambda_Visc(iPoint,7*Lambda);
-         else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint)==2) nodes->AddMax_Lambda_Visc(iPoint,15*Lambda);
-         else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+         if(nodes->GetSymmetry(iPoint) == 1 && nodes->GetSymmetry(jPoint)) nodes->AddMax_Lambda_Visc(iPoint, 4*Lambda);
+         else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint) == 1) nodes->AddMax_Lambda_Visc(iPoint, 8*Lambda);
+         else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint) == 2) nodes->AddMax_Lambda_Visc(iPoint, 16*Lambda);
+         else nodes->AddMax_Lambda_Visc(iPoint, 2*Lambda);
+      else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
     }
 
@@ -551,15 +550,6 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-
-      if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
-        geometry->vertex[iMarker][0]->GetNormal(Normal_Sym);
-
-        Area = GeometryToolbox::Norm(nDim, Normal_Sym);
- 
-        for(iDim = 0; iDim < nDim; iDim++)
-          UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
-    }
     
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -571,14 +561,10 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
         geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
 
-        if(nodes->GetSymmetry(iPoint) && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-          Normal_Product = 0.0;
-
+        /*--- Set Normal to zero if node is in the Symmetry Plane marker ---*/
+        if(config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {          
           for(iDim = 0; iDim < nDim; iDim++)
-            Normal_Product+= Normal[iDim]*UnitNormal_Sym[iDim];
-
-          for(iDim = 0; iDim < nDim; iDim++)
-            Normal[iDim] -= Normal_Product*UnitNormal_Sym[iDim];
+            Normal[iDim]=0;
         }
 
         Area = GeometryToolbox::Norm(nDim, Normal);
@@ -596,13 +582,12 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Inviscid contribution ---*/
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
-        if(nodes->GetSymmetry(iPoint)==1) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-        else if (nodes->GetSymmetry(iPoint)==2) nodes->AddMax_Lambda_Inv(iPoint,3*Lambda);
+        if (nodes->GetSymmetry(iPoint) == 0) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+        else if (nodes->GetSymmetry(iPoint) == 1) nodes->AddMax_Lambda_Inv(iPoint, 2*Lambda);
+        else if (nodes->GetSymmetry(iPoint) == 2) nodes->AddMax_Lambda_Inv(iPoint, 4*Lambda);
 
         /*--- Viscous contribution ---*/
-
 
         if (!viscous) continue;
 
@@ -618,13 +603,13 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc+Mean_EddyVisc);
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-        nodes->AddMax_Lambda_Visc(iPoint,Lambda);
 
         if(nodes->GetSymmetry(iPoint))
-          if(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE && nodes->GetSymmetry(iPoint)==1) nodes->AddMax_Lambda_Visc(iPoint,3*Lambda);
-          else if(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE && nodes->GetSymmetry(iPoint)==2) nodes->AddMax_Lambda_Visc(iPoint,15*Lambda);
-          else if(config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE && nodes->GetSymmetry(iPoint)==2) nodes->AddMax_Lambda_Visc(iPoint,7*Lambda);
-               else nodes->AddMax_Lambda_Visc(iPoint, Lambda); 
+          if(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE && nodes->GetSymmetry(iPoint) == 1) nodes->AddMax_Lambda_Visc(iPoint, 4*Lambda);
+          else if(config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE && nodes->GetSymmetry(iPoint) == 2) nodes->AddMax_Lambda_Visc(iPoint, 8*Lambda);
+          else if(config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE && nodes->GetSymmetry(iPoint) == 2) nodes->AddMax_Lambda_Visc(iPoint, 16*Lambda);
+          else nodes->AddMax_Lambda_Visc(iPoint, 2*Lambda);
+        else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
     }
@@ -1035,17 +1020,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       //  Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
       //  Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
       //}
-
-
-      //if (nodes->GetSymmetry(iPoint) || nodes->GetSymmetry(jPoint))
-      su2double Normal[3];
-
-      Normal[0]=geometry->edges->GetNormal(iEdge)[0];
-      Normal[1]=geometry->edges->GetNormal(iEdge)[1];
-      Normal[2]=geometry->edges->GetNormal(iEdge)[2];
-      
-      su2double Area = GeometryToolbox::Norm(nDim, Normal);
-            
     }
   }
 
@@ -1324,7 +1298,6 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     if (nodes->GetSymmetry(iPoint)) Vol*=2*nodes->GetSymmetry(iPoint);
 
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
-    //Delta = 0.0326993
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
 
@@ -1882,15 +1855,15 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   su2double Area, Normal[3], UnitNormal[3], Normal_Product;
   const su2double* Residual_Old;
 
-  geometry->vertex[val_marker][0]->GetNormal(Normal);
-
-  Area = GeometryToolbox::Norm(nDim, Normal);
-
-  for(iDim = 0; iDim < nDim; iDim++)
-    UnitNormal[iDim] = -Normal[iDim]/Area;
-
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+
+    Area = GeometryToolbox::Norm(nDim, Normal);
+
+    for(iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
  
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 

@@ -82,7 +82,7 @@ protected:
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
 
-  VectorType symmetry;
+  VectorType symmetry;      /*!< \brief Nodes in symmetry planes. */
 
 public:
 
@@ -534,6 +534,16 @@ public:
    */
   inline su2double GetGamma(unsigned long iPoint) { return Gamma(iPoint); }
 
+  /*!
+   * \brief Retrieves the number of symmetry planes at the specified node.
+   */  
+  inline unsigned short GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
+
+  /*!
+   * \brief Increases the number of symmetry planes at the specified node by one.
+   */  
+  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1;}
+
   /*---------------------------------------*/
   /*---           NEMO indices          ---*/
   /*---------------------------------------*/
@@ -587,9 +597,5 @@ public:
    * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
-  
-  inline unsigned short GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
-
-  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1;}
 
 };
