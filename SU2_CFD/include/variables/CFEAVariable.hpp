@@ -53,6 +53,7 @@ protected:
 
   MatrixType Solution_Pred;         /*!< \brief Predictor of the solution for FSI purposes */
   MatrixType Solution_Pred_Old;     /*!< \brief Predictor of the solution at time n for FSI purposes */
+  MatrixType Solution_Vel_Pred;     /*!< \brief Predictor of the velocity solution for FSI purposes */
 
   MatrixType Reference_Geometry;    /*!< \brief Reference solution for optimization problems */
 
@@ -259,11 +260,26 @@ public:
   }
 
   /*!
+   * \brief Set the value of the solution velocity predictor.
+   */
+  inline void SetSolution_Vel_Pred(unsigned long iPoint) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = Solution_Vel(iPoint,iVar);
+  }
+
+  /*!
    * \brief Set the value of the old solution.
    * \param[in] val_solution_pred - Pointer to the residual vector.
    */
   inline void SetSolution_Pred(unsigned long iPoint, const su2double *val_solution_pred) final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Pred(iPoint,iVar) = val_solution_pred[iVar];
+  }
+
+  /*!
+   * \brief Set the value of the velocity solution.
+   * \param[in] val_solution_vel_pred - Pointer to the residual vector.
+   */
+  inline void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *val_solution_vel_pred) final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_Vel_Pred(iPoint,iVar) = val_solution_vel_pred[iVar];
   }
 
   /*!
@@ -276,6 +292,15 @@ public:
   }
 
   /*!
+   * \brief  Set the value of the predicted velocity solution.
+   * \param[in] iVar - Index of the variable
+   * \param[in] val_solution_vel_pred - Value of the predicted solution.
+   */
+  inline void SetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar, su2double val_solution_vel_pred) final {
+    Solution_Vel_Pred(iPoint,iVar) = val_solution_vel_pred;
+  }
+
+  /*!
    * \brief Get the value of the solution predictor.
    * \param[in] iVar - Index of the variable.
    * \return Pointer to the old solution vector.
@@ -283,10 +308,23 @@ public:
   inline su2double GetSolution_Pred(unsigned long iPoint, unsigned long iVar) const final { return Solution_Pred(iPoint,iVar); }
 
   /*!
+   * \brief Get the value of the solution velocity predictor.
+   * \param[in] iVar - Index of the variable.
+   * \return Pointer to the velocity solution vector.
+   */
+  inline su2double GetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar) const final { return Solution_Vel_Pred(iPoint,iVar); }
+
+  /*!
    * \brief Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_Pred(unsigned long iPoint) final { return Solution_Pred[iPoint]; }
+
+  /*!
+   * \brief Get the velocity solution.
+   * \return Pointer to velocity solution vector.
+   */
+  inline su2double *GetSolution_Vel_Pred(unsigned long iPoint) final { return Solution_Vel_Pred[iPoint]; }
 
   /*!
    * \brief Set the value of the solution predictor.
