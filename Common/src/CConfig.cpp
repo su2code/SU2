@@ -4238,7 +4238,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     CGaussJacobiQuadrature GaussJacobi;
     GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
 
-    TimeDOFsADER_DG = new su2double[nTimeDOFsADER_DG];
+    TimeDOFsADER_DG = new passivedouble[nTimeDOFsADER_DG];
     for(unsigned short i=0; i<nTimeDOFsADER_DG; ++i)
       TimeDOFsADER_DG[i] = GLPoints[i];
 
@@ -4252,8 +4252,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     GLWeights.resize(nTimeIntegrationADER_DG);
     GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
 
-    TimeIntegrationADER_DG    = new su2double[nTimeIntegrationADER_DG];
-    WeightsIntegrationADER_DG = new su2double[nTimeIntegrationADER_DG];
+    TimeIntegrationADER_DG    = new passivedouble[nTimeIntegrationADER_DG];
+    WeightsIntegrationADER_DG = new passivedouble[nTimeIntegrationADER_DG];
     for(unsigned short i=0; i<nTimeIntegrationADER_DG; ++i) {
       TimeIntegrationADER_DG[i]    = GLPoints[i];
       WeightsIntegrationADER_DG[i] = GLWeights[i];

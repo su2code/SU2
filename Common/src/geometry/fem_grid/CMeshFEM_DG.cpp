@@ -1820,6 +1820,9 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
 
 void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
+  /*--- The master node writes a message. ---*/
+  if(rank == MASTER_NODE) cout << "Creating face information." << endl;
+
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Determine the faces of the locally stored part of the grid. ---*/
   /*---------------------------------------------------------------------------*/
@@ -2255,6 +2258,9 @@ void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
+  /*--- The master node writes a message. ---*/
+  if(rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
+
   /*--- Determine the chunk size for the OMP loop below. ---*/
 #ifdef HAVE_OMP
   const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
@@ -2295,6 +2301,9 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
+  /*--- The master node writes a message. ---*/
+  if(rank == MASTER_NODE) cout << "Computing metric terms volume elements." << endl;
+
   /*--- Determine whether or not the LGL node distribution is used. ---*/
   const bool useLGL = config->GetKind_FEM_GridDOFsLocation() == LGL;
 
@@ -2315,6 +2324,10 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
             predictor is used for ADER. ---*/
       if(config->GetKind_ADER_Predictor() == ADER_NON_ALIASED_PREDICTOR)
         DerMetricTerms = true;
+
+      /*--- Determine the time coefficients in the iteration matrix of the ADER-DG
+            predictor step. ---*/
+      TimeCoefficientsPredictorADER_DG(config);
     }
   }
 
@@ -2371,7 +2384,18 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 }
 
 void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+
+  /*--- The master node writes a message. ---*/
+  if(rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
+
+  /*--- Clear the current map and set the data. ---*/
+  Global_to_Local_Point.clear();
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
+      Global_to_Local_Point[volElem[i].offsetDOFsSolGlobal+j] = ii;
+    }
+  }
 }
 
 void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
@@ -2545,6 +2569,33 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
 }
 
 void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Check whether wall functions are used at all.              ---*/
+  /*--------------------------------------------------------------------------*/
+
+  bool wallFunctions = false;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION)
+          wallFunctions = true;
+        break;
+      }
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+
+  /* If no wall functions are used, nothing needs to be done and a
+     return can be made. */
+  if( !wallFunctions ) return;
+
+  /*--- The master node writes a message. ---*/
+  if(rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
@@ -3444,6 +3495,9 @@ void CMeshFEM_DG::CreateStandardFaces(CConfig                      *config,
 void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedShort4T> &elemTypes,
                                                        const unsigned short           locGridDOFs) {
 
+  /*--- The master node writes a message. ---*/
+  if(rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+
   /*--- Allocate the memory for the pointers. ---*/
   standardVolumeElementsSolution.resize(elemTypes.size(), nullptr);
 
@@ -3492,4 +3546,95 @@ void CMeshFEM_DG::SetWallDistance(su2double val) {
 void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+}
+
+void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig *config) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine the interpolation matrix from the time DOFs of ADER-DG   ---*/
+  /*--- to the time integration points. Note that in many cases this       ---*/
+  /*--- interpolation matrix is the identity matrix, i.e. the DOFs and the ---*/
+  /*--- integration points coincide.                                       ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Determine the number of time DOFs in the predictor step of ADER as well
+        as their location on the interval [-1..1]. ---*/
+  const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
+  const passivedouble  *TimeDOFs = config->GetTimeDOFsADER_DG();
+
+  /*--- Determine the number of time integration points of ADER as well as
+        their location on the interval [-1..1] and their integration weights. ---*/
+  unsigned short       nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+  const passivedouble *TimeIntegrationPoints  = config->GetTimeIntegrationADER_DG();
+  const passivedouble *TimeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+
+  /*--- Store the time DOFs and the time integration points in a vector. ---*/
+  vector<passivedouble> rTimeDOFs(nTimeDOFs);
+  for(unsigned short i=0; i<nTimeDOFs; ++i)
+    rTimeDOFs[i] = TimeDOFs[i];
+
+  vector<passivedouble> rTimeIntPoints(nTimeIntegrationPoints);
+  for(unsigned short i=0; i<nTimeIntegrationPoints; ++i)
+    rTimeIntPoints[i] = TimeIntegrationPoints[i];
+
+  /*--- Determine the Lagrangian basis functions in the time integration points. ---*/
+  CFEMStandardLineBase timeElement;
+  timeElement.LagBasisIntPointsLine(rTimeDOFs, rTimeIntPoints, false,
+                                    timeInterpolDOFToIntegrationADER_DG);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine the coefficients that appear in the iteration matrix of  ---*/
+  /*--- the prediction step of ADER-DG.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /*--- Determine the Lagrangian interpolation functions for r == 1, i.e.
+        the end of the time interval. ---*/
+  vector<passivedouble> rEnd(1); rEnd[0] = 1.0;
+  ColMajorMatrix<passivedouble> lEnd;
+  timeElement.LagBasisIntPointsLine(rTimeDOFs, rEnd, false, lEnd);
+
+  /*--- Determine the Lagrangian basis functions in the integration points. ---*/
+  ColMajorMatrix<passivedouble> derLInt;
+  timeElement.DerLagBasisIntPointsLine(rTimeDOFs, rTimeIntPoints, false, derLInt);
+
+  /*--- Compute the time coefficients of the iteration matrix in
+        the predictor step. ---*/
+  timeCoefADER_DG.Initialize(nTimeDOFs);
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeDOFs; ++i) {
+      timeCoefADER_DG(i,j) = lEnd(0,i)*lEnd(0,j);
+      for(unsigned short k=0; k<nTimeIntegrationPoints; ++k)
+        timeCoefADER_DG(i,j) -= TimeIntegrationWeights[k]*derLInt(k,i)
+                              * timeInterpolDOFToIntegrationADER_DG(k,j);
+    }
+  }
+
+  /*--- Determine the inverse of timeCoefADER_DG, because this is needed in the
+        iteration matrix of the predictor step of ADER-DG. ---*/
+  timeCoefADER_DG.Invert();
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine the interpolation matrix from the time DOFs of ADER-DG   ---*/
+  /*--- of adjacent elements of a higher time level to the time            ---*/
+  /*--- integration points.                                                ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Determine the location of the time integration points from the
+        perspective of an adjacent element with twice the time step. Note that
+        the time step of this adjacent element covers two fine time steps and
+        hence the number of integration points double and the position is
+        determined via the transformation xxi = 0.5(xi-1) and xi varies between
+        -1 and 3. ---*/
+  rTimeIntPoints.resize(2*nTimeIntegrationPoints);
+  for(unsigned short i=0; i<nTimeIntegrationPoints; ++i)
+    rTimeIntPoints[i] = 0.5*(TimeIntegrationPoints[i]-1.0);
+
+  for(unsigned short i=0; i<nTimeIntegrationPoints; ++i) {
+    const unsigned short ii = i + nTimeIntegrationPoints;
+    rTimeIntPoints[ii] = 0.5*(TimeIntegrationPoints[i]+1.0);
+  }
+
+  /*--- Determine the Lagrangian basis functions in these time integration points. ---*/
+  timeElement.LagBasisIntPointsLine(rTimeDOFs, rTimeIntPoints, false,
+                                    timeInterpolAdjDOFToIntegrationADER_DG);
 }

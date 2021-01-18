@@ -31,6 +31,8 @@
 #include "CMeshFEM_Base.hpp"
 #include "CVolumeElementFEM_DG.hpp"
 #include "CInternalFaceFEM_DG.hpp"
+#include "../../toolboxes/CSquareMatrixCM.hpp"
+
 
 /*--- Forward declarations. ---*/
 class CFaceOfElement;
@@ -77,6 +79,16 @@ protected:
                                                                                    matching faces for the grid. */
   vector<CFEMStandardInternalFaceSol *>  standardInternalFaceSolution; /*!< \brief Vector of standard elements of internal
                                                                                    matching faces for the solution. */ 
+
+  map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local mapping for the DOFs. */
+
+  CSquareMatrixCM timeCoefADER_DG;                                      /*!< \brief The time coefficients in the iteration matrix
+                                                                                    of the ADER-DG predictor step. */
+  ColMajorMatrix<passivedouble> timeInterpolDOFToIntegrationADER_DG;    /*!< \brief The interpolation matrix between the time DOFs
+                                                                                    and the time integration points for ADER-DG. */
+  ColMajorMatrix<passivedouble> timeInterpolAdjDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs
+                                                                                    of adjacent elements of a higher time level and
+                                                                                    the time integration points for ADER-DG. */
 
 public:
   /*!
@@ -180,4 +192,10 @@ private:
    * \param[in] WallADT - The ADT to compute the wall distance
    */
   void SetWallDistance(const CConfig *config, CADTElemClass* WallADT) override;
+
+  /*!
+   * \brief Function, which computes the time coefficients for the ADER-DG predictor step.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void TimeCoefficientsPredictorADER_DG(CConfig *config);
 };

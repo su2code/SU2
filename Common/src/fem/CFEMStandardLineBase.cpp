@@ -68,10 +68,6 @@ CFEMStandardLineBase::CFEMStandardLineBase(const unsigned short val_nPoly,
     wIntegration(i) = wLineInt[i];
 }
 
-/*-----------------------------------------------------------------------------------*/
-/*---                         Protected member functions.                         ---*/
-/*-----------------------------------------------------------------------------------*/
-
 void CFEMStandardLineBase::DerLagBasisIntPointsLine(const vector<passivedouble>   &rDOFs,
                                                     const vector<passivedouble>   &rInt,
                                                     const bool                    usePadding,
@@ -158,6 +154,10 @@ void CFEMStandardLineBase::LagBasisIntPointsLine(const vector<passivedouble>   &
   /*--- Check if the sum of the elements of the relevant rows of lag is 1. ---*/
   CheckRowSum(nIntLine, rDOFs.size(), 1.0, lag);
 }
+
+/*-----------------------------------------------------------------------------------*/
+/*---                         Protected member functions.                         ---*/
+/*-----------------------------------------------------------------------------------*/
 
 void CFEMStandardLineBase::Location1DGridDOFsEquidistant(const unsigned short  mPoly,
                                                          vector<passivedouble> &r) {

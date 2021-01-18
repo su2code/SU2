@@ -419,10 +419,10 @@ private:
 
   unsigned short nLevels_TimeAccurateLTS;   /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;          /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
-  su2double *TimeDOFsADER_DG;               /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
+  passivedouble *TimeDOFsADER_DG;           /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
   unsigned short nTimeIntegrationADER_DG;   /*!< \brief Number of time integration points ADER-DG. */
-  su2double *TimeIntegrationADER_DG;        /*!< \brief The location of the ADER-DG time integration points on the interval [-1,1]. */
-  su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
+  passivedouble *TimeIntegrationADER_DG;    /*!< \brief The location of the ADER-DG time integration points on the interval [-1,1]. */
+  passivedouble *WeightsIntegrationADER_DG; /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
 
@@ -2806,7 +2806,7 @@ public:
    * \brief Get the location of the time DOFs for ADER-DG on the interval [-1..1].
    * \return The location of the time DOFs used in ADER-DG.
    */
-  su2double *GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }
+  passivedouble *GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }
 
   /*!
    * \brief Get the number time integration points for ADER-DG.
@@ -2818,13 +2818,13 @@ public:
    * \brief Get the location of the time integration points for ADER-DG on the interval [-1..1].
    * \return The location of the time integration points used in ADER-DG.
    */
-  su2double *GetTimeIntegrationADER_DG(void) { return TimeIntegrationADER_DG; }
+  passivedouble *GetTimeIntegrationADER_DG(void) { return TimeIntegrationADER_DG; }
 
   /*!
    * \brief Get the weights of the time integration points for ADER-DG.
    * \return The weights of the time integration points used in ADER-DG.
    */
-  su2double *GetWeightsIntegrationADER_DG(void) { return WeightsIntegrationADER_DG; }
+  passivedouble *GetWeightsIntegrationADER_DG(void) { return WeightsIntegrationADER_DG; }
 
   /*!
    * \brief Get the total number of boundary markers including send/receive domains.

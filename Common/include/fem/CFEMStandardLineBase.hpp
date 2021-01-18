@@ -38,6 +38,11 @@
  */
 class CFEMStandardLineBase: public CFEMStandardElementBase {
 
+protected:
+  vector<passivedouble> rLineInt;      /*!< \brief 1D parametric coordinates of the
+                                                   integration points. */
+  vector<passivedouble> wLineInt;      /*!< \brief Weights of the 1D integration points. */
+
 public:
   /*-----------------------------------------------------------------------------------*/
   /*---                     Constructors and destructors.                           ---*/
@@ -62,13 +67,8 @@ public:
    */
   virtual ~CFEMStandardLineBase() = default;
 
-protected:
-  vector<passivedouble> rLineInt;      /*!< \brief 1D parametric coordinates of the
-                                                   integration points. */
-  vector<passivedouble> wLineInt;      /*!< \brief Weights of the 1D integration points. */
-
   /*-----------------------------------------------------------------------------------*/
-  /*---                         Protected member functions.                         ---*/
+  /*---                           Public member functions.                          ---*/
   /*-----------------------------------------------------------------------------------*/
 
   /*!
@@ -118,6 +118,12 @@ protected:
                              const vector<passivedouble>   &rInt,
                              const bool                    usePadding,
                              ColMajorMatrix<passivedouble> &lag);
+
+protected:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                         Protected member functions.                         ---*/
+  /*-----------------------------------------------------------------------------------*/
 
   /*!
    * \brief Function, which determines the location of the 1D grid DOFs for polynomial

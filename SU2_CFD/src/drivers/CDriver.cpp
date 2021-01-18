@@ -984,28 +984,22 @@ void CDriver::Geometrical_Preprocessing_DGFEM(CConfig* config, CGeometry **&geom
   CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[MESH_0]);
 
   /*--- Determine the standard elements for the volume elements. ---*/
-  if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
   DGMesh->CreateStandardVolumeElements(config);
 
   /*--- Create the face information needed to compute the contour integral
        for the elements in the Discontinuous Galerkin formulation. ---*/
-  if (rank == MASTER_NODE) cout << "Creating face information." << endl;
   DGMesh->CreateFaces(config);
 
   /*--- Compute the metric terms of the volume elements. ---*/
-  if (rank == MASTER_NODE) cout << "Computing metric terms volume elements." << endl;
   DGMesh->MetricTermsVolumeElements(config);
 
   /*--- Compute the metric terms of the surface elements. ---*/
-  if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
   DGMesh->MetricTermsSurfaceElements(config);
 
   /*--- Perform the preprocessing tasks when wall functions are used. ---*/
-  if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
   DGMesh->WallFunctionPreprocessing(config);
 
   /*--- Store the global to local mapping. ---*/
-  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
   geometry[MESH_0]->SetGlobal_to_Local_Point();
 
   /*--- Loop to create the coarser grid levels. ---*/
