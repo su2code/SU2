@@ -2171,8 +2171,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
-                          (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   bool center_jst       = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
   bool center_jst_ke    = (config->GetKind_Centered_Flow() == JST_KE) && (iMesh == MESH_0);
   bool center_jst_mat   = (config->GetKind_Centered_Flow() == JST_MAT) && (iMesh == MESH_0);
@@ -2275,12 +2274,11 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool cont_adjoint     = config->GetContinuous_Adjoint();
-  bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const auto InnerIter = config->GetInnerIter();
+  const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   /*--- Common preprocessing steps. ---*/
 
@@ -2288,7 +2286,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Upwind second order reconstruction ---*/
 
-  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+  if (!Output && muscl && !center) {
 
     /*--- Gradient computation for MUSCL reconstruction. ---*/
 
@@ -2303,10 +2301,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
     /*--- Limiter computation ---*/
 
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
-      SetPrimitive_Limiter(geometry, config);
+    if (limiter && !van_albada) SetPrimitive_Limiter(geometry, config);
   }
-
 }
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
@@ -3854,12 +3850,12 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
               MassFlow -= Vector[iDim]*Velocity[iDim]*Density;
             }
 
+            Area = GeometryToolbox::Norm(nDim, Vector);
             Vn = 0.0; ReverseFlow = false;
             for (iDim = 0; iDim < nDim; iDim++) {  Vn -= Velocity[iDim]*Vector[iDim]/Area; }
             if (Vn < 0.0) { ReverseFlow = true; }
 
             Vel_Infty = sqrt (Vel_Infty2);
-            Area = GeometryToolbox::Norm(nDim, Vector);
             Mach = sqrt(Velocity2)/SoundSpeed;
             TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
             TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
@@ -10112,7 +10108,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
 
-    geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
     geometry[MESH_0]->SetMaxLength(config);

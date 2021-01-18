@@ -241,11 +241,6 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." << endl;
       geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
 
-    /*--- Compute center of gravity ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry_container[iZone][INST_0]->SetCoord_CG();
-
     /*--- Create the dual control volume structures ---*/
 
     if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;

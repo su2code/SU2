@@ -735,7 +735,8 @@ private:
   unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
-  bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
+  unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
+  bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
   RefElemLength,         /*!< \brief Reference element length for computing the slope limiting epsilon. */
@@ -762,7 +763,6 @@ private:
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
-  Residual_FileName,             /*!< \brief Residual variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
   Restart_FileName,              /*!< \brief Restart file for flow variables. */
@@ -1067,10 +1067,10 @@ private:
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
 
+  array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double default_vel_inf[3],  /*!< \brief Default freestream velocity array for the COption class. */
   default_eng_cyl[7],            /*!< \brief Default engine box array for the COption class. */
   default_eng_val[5],            /*!< \brief Default engine box array values for the COption class. */
-  default_cfl_adapt[4],          /*!< \brief Default CFL adapt param array for the COption class. */
   default_jst_coeff[2],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   default_ffd_coeff[3],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   default_mixedout_coeff[3],     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
@@ -1548,13 +1548,6 @@ public:
    * \return Value of CFL adaption parameter
    */
   su2double GetCFL_AdaptParam(unsigned short val_index) const { return CFL_AdaptParam[val_index]; }
-
-  /*!
-   * \brief Set the values of the CFL adaption parameters.
-   * \param[in] val_index     - Index of the particular CFL adaption parameter
-   * \param[in] val_cfl_param - Value of the CFL adaption parameter
-   */
-  void SetCFL_AdaptParam(unsigned short val_index, su2double val_cfl_param) { CFL_AdaptParam[val_index] = val_cfl_param; }
 
   /*!
    * \brief Get the value of the CFL adaption flag.
@@ -3671,7 +3664,7 @@ public:
    * \brief Gas model that we are using.
    * \return Gas model that we are using.
    */
-  string GetGasModel (void) const {return GasModel;}
+  string GetGasModel(void) const {return GasModel;}
 
   /*!
    * \brief Get the transport coefficient model.
@@ -5226,12 +5219,6 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
-
-  /*!
-   * \brief Get the name of the file with the residual of the problem.
-   * \return Name of the file with the residual of the problem.
-   */
-  string GetResidual_FileName(void);
 
   /*!
    * \brief Get the format of the input/output grid.

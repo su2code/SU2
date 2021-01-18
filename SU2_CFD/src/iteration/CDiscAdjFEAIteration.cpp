@@ -385,7 +385,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   /*--- We only differentiate wrt to this variable in the adjoint secondary recording. ---*/
   if (config[iZone]->GetTopology_Optimization() && (kind_recording == MESH_COORDS)) {
     /*--- The filter may require the volumes of the elements. ---*/
-    structural_geometry->SetElemVolume(config[iZone]);
+    structural_geometry->SetElemVolume();
     /// TODO: Ideally there would be a way to capture this dependency without the `static_cast`, but
     ///       making it a virtual method of CSolver does not feel "right" as its purpose could be confused.
     static_cast<CFEASolver*>(dir_solver)->FilterElementDensities(structural_geometry, config[iZone]);

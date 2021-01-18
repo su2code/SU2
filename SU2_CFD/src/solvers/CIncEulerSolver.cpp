@@ -3931,7 +3931,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     /*--- Recompute the edges and  dual mesh control volumes in the
      domain and on the boundaries. ---*/
 
-    geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
     geometry[MESH_0]->SetMaxLength(config);
