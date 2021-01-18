@@ -451,6 +451,18 @@ public:
                     unsigned short val_marker) final;
 
   /*!
+   * \brief Velocity boundary condition at deformable marker.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Velocity(CGeometry *geometry,
+                    CNumerics *numerics,
+                    const CConfig *config,
+                    unsigned short val_marker) final;
+
+  /*!
    * \brief Iterate using an implicit Newmark solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] numerics - Numerical methods.
@@ -638,6 +650,13 @@ public:
    * \param[in] config - Configuration of the problem.
    */
   void PredictStruct_Displacement(CGeometry *geometry, CConfig *config) final;
+
+  /*!
+   * \brief Predictor for structural velocities based on previous iterations
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Configuration of the problem.
+   */
+  void PredictStruct_Velocity(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Computation of Aitken's coefficient.

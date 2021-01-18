@@ -89,6 +89,14 @@ protected:
   void ComputeGridVelocity(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Compute the grid velocity form the velocity at deformable boundary.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config);
+
+  /*!
    * \brief Update the coarse multigrid levels after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -101,6 +109,14 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+
+  /*!
+   * \brief Set boundary velocities.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics, CConfig *config);
 
 public:
   /*!
