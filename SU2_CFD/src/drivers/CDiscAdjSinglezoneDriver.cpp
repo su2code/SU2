@@ -425,26 +425,9 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     break;
 
   case DISC_ADJ_FEM:
-    switch (config->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-      break;
-    case REFERENCE_NODE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-      break;
-    case TOPOL_COMPLIANCE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
-      break;
-    case VOLUME_FRACTION:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-      break;
-    case TOPOL_DISCRETENESS:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFDiscreteness();
-      break;
-    default:
-      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-      break;
-    }
+    solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
+    solver[FEA_SOL]->Evaluate_ObjFunc(config);
+    ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
   }
 

@@ -684,6 +684,10 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
       case DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         break;
+
+      case DISC_ADJ_FEM:
+        solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
+        break;
     }
   }
 
@@ -693,13 +697,8 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
     auto config = config_container[iZone];
     auto solvers = solver_container[iZone][INST_0][MESH_0];
-    auto geometry = geometry_container[iZone][INST_0][MESH_0];
-
-    /*--- Not-per-surface objective functions (shall not be included above) ---*/
 
     const auto Weight_ObjFunc = config->GetWeight_ObjFunc(0);
-
-    bool ObjectiveNotCovered = false;
 
     switch (config->GetKind_Solver()) {
 
@@ -717,67 +716,29 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
           }
         }
         ObjFunc += val*Weight_ObjFunc;
-
-        /*--- This is not ideal... ---*/
-        ObjectiveNotCovered = (val==0.0);
         break;
       }
       case DISC_ADJ_HEAT:
       {
         switch(config->GetKind_ObjFunc()) {
-
-          // Not yet covered by new output structure. Be careful these use MARKER_MONITORING.
-
           case TOTAL_HEATFLUX:
             ObjFunc += solvers[HEAT_SOL]->GetTotal_HeatFlux()*Weight_ObjFunc;
             break;
           case AVG_TEMPERATURE:
             ObjFunc += solvers[HEAT_SOL]->GetTotal_AvgTemperature()*Weight_ObjFunc;
             break;
-
-          default:
-            ObjectiveNotCovered = true;
-            break;
         }
         break;
       }
       case DISC_ADJ_FEM:
       {
-        switch(config->GetKind_ObjFunc()) {
-
-          case REFERENCE_NODE:
-            solvers[FEA_SOL]->Compute_OFRefNode(geometry, config);
-            ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefNode()*Weight_ObjFunc;
-            break;
-          case REFERENCE_GEOMETRY:
-            solvers[FEA_SOL]->Compute_OFRefGeom(geometry, config);
-            ObjFunc += solvers[FEA_SOL]->GetTotal_OFRefGeom()*Weight_ObjFunc;
-            break;
-          case TOPOL_COMPLIANCE:
-            solvers[FEA_SOL]->Compute_OFCompliance(geometry, config);
-            ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
-            break;
-          case VOLUME_FRACTION:
-            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, config);
-            ObjFunc += solvers[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
-            break;
-          case TOPOL_DISCRETENESS:
-            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, config);
-            ObjFunc += solvers[FEA_SOL]->GetTotal_OFDiscreteness()*Weight_ObjFunc;
-            break;
-
-          default:
-            ObjectiveNotCovered = true;
-            break;
-        }
+        solvers[FEA_SOL]->Evaluate_ObjFunc(config);
+        ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj()*Weight_ObjFunc;
         break;
       }
       default:
         break;
     }
-
-    if (ObjectiveNotCovered && (rank == MASTER_NODE) && (kind_recording == SOLUTION_VARIABLES))
-      cout << " Objective function not covered in Zone " << iZone << endl;
   }
 
   if (rank == MASTER_NODE) {
