@@ -122,6 +122,8 @@ CDiscAdjMultizoneDriver::~CDiscAdjMultizoneDriver(){
 
 void CDiscAdjMultizoneDriver::StartSolver() {
 
+  bool time_domain = driver_config->GetTime_Domain();
+
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE) {
@@ -129,42 +131,61 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
     cout << "\nSimulation Run using the Discrete Adjoint Multizone Driver" << endl;
 
-    if (driver_config->GetTime_Domain())
-      SU2_MPI::Error("The discrete adjoint multizone driver is not ready for unsteady computations yet.",
-                     CURRENT_FUNCTION);
+    if (time_domain)
+      cout << "The simulation will run for " << driver_config->GetnTime_Iter() << " time steps." << endl;
   }
 
-  for (iZone = 0; iZone < nZone; iZone++){
+  while ( TimeIter < driver_config->GetnTime_Iter()) {
 
-    /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
-    /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
-    config_container[iZone]->SetTimeIter(0);
+    for (iZone = 0; iZone < nZone; iZone++) {
 
+      /*--- Set current time iteration ---*/
+      config_container[iZone]->SetTimeIter(TimeIter);
+
+      if (time_domain)
+        config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+      else
+        config_container[iZone]->SetPhysicalTime(0.0);
+    }
+
+    /*--- Size and initialize the matrix of cross-terms. ---*/
+
+    InitializeCrossTerms();
+
+    /*--- We directly start the discrete adjoint computation. ---*/
+
+    Run();
+
+    /*--- Output the solution in files for each time iteration. ---*/
+
+    Output(TimeIter);
+
+    TimeIter++;
   }
-
-  /*--- Size and initialize the matrix of cross-terms. ---*/
-
-  InitializeCrossTerms();
-
-  /*--- We directly start the (steady-state) discrete adjoint computation. ---*/
-
-  Run();
-
-  /*--- Output the solution in files. ---*/
-
-  Output(TimeIter);
-
 }
 
 void CDiscAdjMultizoneDriver::Run() {
 
   unsigned long wrt_sol_freq = 9999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
+  bool time_domain = driver_config->GetTime_Domain();
   vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector(nZone);
+
+  /*--- Reset external and solution ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver != nullptr) {
+        solver->GetNodes()->SetExternalZero();
+      }
+    }
+    Set_Solution_To_BGSSolution_k(iZone);
+  }
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
+    if (!time_domain)
+      wrt_sol_freq = min(wrt_sol_freq, config_container[iZone]->GetVolume_Wrt_Freq());
 
     iteration_container[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                                    solver_container, numerics_container, config_container, surface_movement,
@@ -197,13 +218,13 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
-   su2double rhs_norm = 0.0;
+  su2double rhs_norm = 0.0;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
-                                                surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                                surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
     Add_Solution_To_External(iZone);
 
     for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
@@ -303,10 +324,9 @@ void CDiscAdjMultizoneDriver::Run() {
         ComputeAdjoints(iZone, eval_transfer);
 
         /*--- Extracting adjoints for solvers in iZone w.r.t. to outputs in iZone (diagonal part). ---*/
-
         iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                     solver_container, numerics_container, config_container,
-                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                                    surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
 
         /*--- Use QN driver to improve the solution. ---*/
 
@@ -343,7 +363,7 @@ void CDiscAdjMultizoneDriver::Run() {
           config_container[jZone]->SetInnerIter(0);
           iteration_container[jZone][INST_0]->Iterate(output_container[jZone], integration_container, geometry_container,
                                                       solver_container, numerics_container, config_container,
-                                                      surface_movement, grid_movement, FFDBox, jZone, INST_0);
+                                                      surface_movement, grid_movement, FFDBox, jZone, INST_0, true);
 
           /*--- Extract the cross-term performing a relaxed update of it and of the sum (External) for jZone. ---*/
 
@@ -359,7 +379,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
     /*--- Set the multizone output. ---*/
 
-    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, 0, iOuterIter);
+    driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config, TimeIter, iOuterIter);
 
     /*--- Check for convergence. ---*/
 
@@ -375,6 +395,46 @@ void CDiscAdjMultizoneDriver::Run() {
 
     if (checkSensitivity)
       EvaluateSensitivities(iOuterIter, StopCalc);
+  }
+
+  /*--- Add current time sensitivity ---*/
+  /*--- Cumulative sensitivity stored here in order to exclude summation within outer iteration ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    auto geometry = geometry_container[iZone][INST_0][MESH_0];
+    int IDX_SOL;
+
+    switch (config_container[iZone]->GetKind_Solver()) {
+      case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
+      case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+        if(config_container[iZone]->GetDeform_Mesh()) IDX_SOL = ADJMESH_SOL;
+        else IDX_SOL = ADJFLOW_SOL;
+        break;
+      case DISC_ADJ_HEAT:
+        IDX_SOL = ADJHEAT_SOL;
+        break;
+      case DISC_ADJ_FEM:
+        IDX_SOL = ADJFEA_SOL;
+        break;
+    }
+
+    su2double Sensitivity;
+    for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+
+          /*--- Current time iteration sensitivity ---*/
+          Sensitivity = solvers[IDX_SOL]->GetNodes()->GetSensitivity(iPoint, iDim);
+
+          /*--- Update old sensitivity container ---*/
+          solvers[IDX_SOL]->GetNodes()->SetSensitivity_Old(iPoint, iDim, Sensitivity +
+            solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+
+          /*--- Update sensitivity ---*/
+          solvers[IDX_SOL]->GetNodes()->SetSensitivity(
+            iPoint, iDim, solvers[IDX_SOL]->GetNodes()->GetSensitivity_Old(iPoint, iDim));
+      }
+    }
   }
 }
 
@@ -455,11 +515,13 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
 
   AD::ClearAdjoints();
 
-  for (iZone = 0; iZone < nZone; iZone++) {
+  if (!driver_config->GetTime_Domain()) {
+    for (iZone = 0; iZone < nZone; iZone++) {
 
-    output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
-                                             config_container[iZone],
-                                             solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
+      output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+                                              config_container[iZone],
+                                              solver_container[iZone][INST_0][MESH_0], iOuterIter, StopCalc);
+    }
   }
 }
 
@@ -595,7 +657,7 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, unsigned sho
   /*--- Iterate the zone as a block a single time ---*/
   direct_iteration[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                           surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
 
   /*--- Print residuals in the first iteration ---*/
 
