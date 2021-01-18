@@ -771,7 +771,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
         if ( geometry->nodes->GetSharpEdge_Distance(iPoint) < config->GetAdjSharp_LimiterCoeff()*eps )
           Sensitivity = 0.0;
       }
-      if (!time_stepping) {
+      if (!time_stepping || config->GetMultizone_Problem()) {
         nodes->SetSensitivity(iPoint,iDim, Sensitivity);
       } else {
         nodes->SetSensitivity(iPoint, iDim, nodes->GetSensitivity(iPoint,iDim) + Sensitivity);
