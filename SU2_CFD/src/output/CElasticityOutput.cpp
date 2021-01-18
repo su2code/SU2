@@ -134,7 +134,15 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("LINSOL_ITER", fea_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(fea_solver->GetResLinSolver()));
 
-  SetHistoryOutputValue("COMBO", fea_solver->GetTotal_ComboObj());
+  SetHistoryOutputValue("REFERENCE_NODE", fea_solver->GetTotal_OFRefNode());
+  SetHistoryOutputValue("TOPOL_COMPLIANCE", fea_solver->GetTotal_OFCompliance());
+  if (config->GetRefGeom()) {
+    SetHistoryOutputValue("REFERENCE_GEOMETRY", fea_solver->GetTotal_OFRefGeom());
+  }
+  if (config->GetTopology_Optimization()) {
+    SetHistoryOutputValue("VOLUME_FRACTION", fea_solver->GetTotal_OFVolFrac());
+    SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
+  }
 
 }
 
@@ -158,10 +166,14 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", ScreenOutputFormat::FIXED,  "BGS_RES", "", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutput("VMS",            "VonMises", ScreenOutputFormat::SCIENTIFIC, "", "VMS");
-  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT, "", "LOAD_INCREMENT");
-  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       ScreenOutputFormat::FIXED, "", "LOAD_RAMP");
+  AddHistoryOutput("LOAD_INCREMENT", "Load[%]",  ScreenOutputFormat::PERCENT,    "", "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",ScreenOutputFormat::FIXED,      "", "LOAD_RAMP");
 
-  AddHistoryOutput("COMBO", "ObjFun", ScreenOutputFormat::SCIENTIFIC, "COMBO", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("REFERENCE_GEOMETRY", "RefGeom", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("REFERENCE_NODE",     "RefNode", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("VOLUME_FRACTION",    "VolFrac", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOPOL_COMPLIANCE",   "TopComp", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "", HistoryFieldType::COEFFICIENT);
 
 }
 

@@ -436,8 +436,10 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
       break;
     case VOLUME_FRACTION:
-    case TOPOL_DISCRETENESS:
       ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
+      break;
+    case TOPOL_DISCRETENESS:
+      ObjFunc = solver[FEA_SOL]->GetTotal_OFDiscreteness();
       break;
     default:
       ObjFunc = 0.0;  // If the objective function is computed in a different physical problem

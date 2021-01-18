@@ -758,9 +758,12 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFCompliance()*Weight_ObjFunc;
             break;
           case VOLUME_FRACTION:
-          case TOPOL_DISCRETENESS:
             solvers[FEA_SOL]->Compute_OFVolFrac(geometry, config);
             ObjFunc += solvers[FEA_SOL]->GetTotal_OFVolFrac()*Weight_ObjFunc;
+            break;
+          case TOPOL_DISCRETENESS:
+            solvers[FEA_SOL]->Compute_OFVolFrac(geometry, config);
+            ObjFunc += solvers[FEA_SOL]->GetTotal_OFDiscreteness()*Weight_ObjFunc;
             break;
 
           default:

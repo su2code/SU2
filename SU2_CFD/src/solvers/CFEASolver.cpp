@@ -194,7 +194,9 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize the value of the total objective function ---*/
   Total_OFRefGeom = 0.0;
   Total_OFRefNode = 0.0;
-  Total_OFVolFrac = 0.0;
+  Total_OFVolFrac = 1.0;
+  Total_OFDiscreteness = 0.0;
+  Total_OFCompliance = 0.0;
 
   /*--- Initialize the value of the global objective function ---*/
   Global_OFRefGeom = 0.0;
@@ -1928,12 +1930,22 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     Stiffness_Penalty(geometry, solver_container, numerics, config);
   }
 
-  switch (kindObjFunc) {
-    case REFERENCE_GEOMETRY: Compute_OFRefGeom(geometry, config); break;
-    case REFERENCE_NODE:     Compute_OFRefNode(geometry, config); break;
-    case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
-    case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
-    case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+  if (config->GetDiscrete_Adjoint()) {
+    /*--- Decide what needs to be computed based on the objective function. ---*/
+    switch (kindObjFunc) {
+      case REFERENCE_GEOMETRY: Compute_OFRefGeom(geometry, config); break;
+      case REFERENCE_NODE:     Compute_OFRefNode(geometry, config); break;
+      case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
+      case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
+      case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+    }
+  }
+  else {
+    /*--- Compute what we can for monitoring/output. ---*/
+    Compute_OFRefNode(geometry, config);
+    Compute_OFCompliance(geometry, config);
+    if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
+    if (config->GetTopology_Optimization()) Compute_OFVolFrac(geometry, config);
   }
 
   if (nonlinear_analysis) {
@@ -3006,9 +3018,6 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
 
   Global_OFRefGeom += Total_OFRefGeom;
 
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFRefGeom;
-
   /// TODO: Temporary output files for the direct mode.
 
   if ((rank == MASTER_NODE) && (config->GetDirectDiff() != NO_DERIVATIVE)) {
@@ -3051,9 +3060,6 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
   Total_OFRefNode = config->GetRefNode_Penalty() * Norm(int(MAXNVAR),dist_reduce) + PenaltyValue;
 
   Global_OFRefNode += Total_OFRefNode;
-
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFRefNode;
 
   /// TODO: Temporary output files for the direct mode.
 
@@ -3109,13 +3115,8 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
   SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   discreteness = tmp;
 
-  if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
-    Total_OFVolFrac = discreteness/total_volume;
-  else
-    Total_OFVolFrac = integral/total_volume;
-
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFVolFrac;
+  Total_OFDiscreteness = discreteness/total_volume;
+  Total_OFVolFrac = integral/total_volume;
 
 }
 
@@ -3168,9 +3169,6 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config
   }
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFCompliance;
 
 }
 

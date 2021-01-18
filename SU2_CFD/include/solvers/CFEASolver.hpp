@@ -67,8 +67,8 @@ protected:
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
+  su2double Total_OFDiscreteness;   /*!< \brief Total Objective Function: Discreteness (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
-  su2double Total_OFCombo = 0.0;    /*!< \brief One of the above, for output/history purposes. */
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -541,33 +541,29 @@ public:
 
   /*!
    * \brief Retrieve the value of the objective function for a reference geometry
-   * \param[out] OFRefGeom - value of the objective function.
    */
   inline su2double GetTotal_OFRefGeom(void) const final { return Total_OFRefGeom; }
 
   /*!
    * \brief Retrieve the value of the objective function for a reference node
-   * \param[out] OFRefNode - value of the objective function.
    */
   inline su2double GetTotal_OFRefNode(void) const final { return Total_OFRefNode; }
 
   /*!
    * \brief Retrieve the value of the volume fraction objective function
-   * \param[out] OFVolFrac - value of the objective function.
    */
   inline su2double GetTotal_OFVolFrac(void) const final { return Total_OFVolFrac; }
+
+  /*!
+   * \brief Retrieve the value of the discreteness objective function
+   */
+  inline su2double GetTotal_OFDiscreteness(void) const final { return Total_OFDiscreteness; }
 
   /*!
    * \brief Retrieve the value of the structural compliance objective function
    * \return Value of the objective function.
    */
   inline su2double GetTotal_OFCompliance(void) const final { return Total_OFCompliance; }
-
-  /*!
-   * \brief Retrieve the value of the combined objective function
-   * \note For now there is no combination, this is just a seletion.
-   */
-  inline su2double GetTotal_ComboObj(void) const final { return Total_OFCombo; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.

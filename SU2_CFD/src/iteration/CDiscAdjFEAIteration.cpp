@@ -401,10 +401,6 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geo
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                              unsigned short iZone, unsigned short iInst) {
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry[iZone][iInst][MESH_0], config[iZone]);
-
   /*--- Initialize the adjoints the conservative variables ---*/
 
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -455,8 +451,10 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
         myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
         break;
       case VOLUME_FRACTION:
-      case TOPOL_DISCRETENESS:
         myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFVolFrac() << "\t";
+        break;
+      case TOPOL_DISCRETENESS:
+        myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFDiscreteness() << "\t";
         break;
       case TOPOL_COMPLIANCE:
         myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFCompliance() << "\t";

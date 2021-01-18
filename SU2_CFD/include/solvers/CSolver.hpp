@@ -2466,6 +2466,11 @@ public:
   inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
 
   /*!
+   * \brief Retrieve the value of the discreteness objective function
+   */
+  inline virtual su2double GetTotal_OFDiscreteness() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the objective function for the structural compliance.
    */
@@ -3632,41 +3637,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void RefGeom_Sensitivity(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config){ }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void DE_Sensitivity(CGeometry *geometry,
-                                     CSolver **solver_container,
-                                     CNumerics **numerics_container,
-                                     CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Stiffness_Sensitivity(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics **numerics_container,
-                                            CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] iElem - element parameter.
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
@@ -3778,12 +3748,6 @@ public:
   inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
 
   /*!
-   * \brief A virtual member
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  inline virtual void RegisterObj_Func(CConfig *config){}
-
-  /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -3797,13 +3761,6 @@ public:
    * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
    */
   inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
-
-  /*!
-   * \brief A virtual member. Extract and set the derivative of objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.

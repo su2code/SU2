@@ -141,12 +141,6 @@ public:
   void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) override;
 
   /*!
-   * \brief Register the objective function as output.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void RegisterObj_Func(CConfig *config) override;
-
-  /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -159,13 +153,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) override;
-
-  /*!
-   * \brief Set the objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config) override;
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
