@@ -491,9 +491,21 @@ public:
    * \brief Get the edge index from using the nodes of the edge.
    * \param[in] first_point - First point of the edge.
    * \param[in] second_point - Second point of the edge.
+   * \param[in] error - Throw error if edge does not exist.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point) const;
+  inline long FindEdge(unsigned long first_point, unsigned long second_point, bool error = true) const {
+    for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+      auto iPoint = nodes->GetPoint(first_point, iNode);
+      if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
+    }
+    if (error) {
+      char buf[100];
+      SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+      SU2_MPI::Error(buf, CURRENT_FUNCTION);
+    }
+    return -1;
+  }
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
@@ -501,7 +513,9 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  bool CheckEdge(unsigned long first_point, unsigned long second_point) const;
+  inline bool CheckEdge(unsigned long first_point, unsigned long second_point) const {
+    return FindEdge(first_point, second_point, false) >= 0;
+  }
 
   /*!
    * \brief Get the distance between a plane (defined by three point) and a point.
@@ -684,11 +698,6 @@ public:
   inline virtual void GatherInOutAverageValues(CConfig *config, bool allocate) {}
 
   /*!
-   * \brief Sets CG coordinates.
-   */
-  inline virtual void SetCoord_CG(void) {}
-
-  /*!
    * \brief Set max length.
    * \param[in] config - Definition of the particular problem.
    */
@@ -704,9 +713,8 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void VisualizeControlVolume(CConfig *config, unsigned short action) {}
+  inline virtual void VisualizeControlVolume(const CConfig *config) const {}
 
   /*!
    * \brief A virtual member.
@@ -731,7 +739,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(CConfig *config, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CConfig *config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -1588,10 +1596,9 @@ public:
                               const su2double *cg_elem, vector<long> &neighbours, vector<bool> &is_neighbor) const;
 
   /*!
-   * \brief Compute and store the volume of the elements.
-   * \param[in] config - Problem configuration.
+   * \brief Compute and store the volume of the primal elements.
    */
-  void SetElemVolume(CConfig *config);
+  void SetElemVolume();
 
   /*!
    * \brief Set the multigrid index for the current geometry object.
@@ -1609,7 +1616,7 @@ public:
    * \brief A virtual member.
    * \param config - Config
    */
-  inline virtual void ComputeMeshQualityStatistics(CConfig *config) {}
+  inline virtual void ComputeMeshQualityStatistics(const CConfig *config) {}
 
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.
