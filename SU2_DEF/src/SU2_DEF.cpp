@@ -195,11 +195,6 @@ int main(int argc, char *argv[]) {
 
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
 
-      /*--- Compute center of gravity ---*/
-
-      if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-      geometry_container[iZone]->SetCoord_CG();
-
       /*--- Create the dual control volume structures ---*/
 
       if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
@@ -394,7 +389,6 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundVolume();
       geometry_container[iZone]->SetEdges();
       geometry_container[iZone]->SetVertex(config_container[iZone]);
-      geometry_container[iZone]->SetCoord_CG();
       geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
 

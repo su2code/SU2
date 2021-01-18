@@ -495,6 +495,7 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
   }
 
   delete nodes;
+  delete edgeNumerics;
 }
 
 template <class V, ENUM_REGIME R>
