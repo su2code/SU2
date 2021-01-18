@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/geometry/elements/CElement.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 
 /*--- Cross product ---*/
 
@@ -1389,28 +1389,6 @@ su2double CGeometry::Point2Plane_Distance(const su2double *Coord, const su2doubl
 
 }
 
-long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) const {
-
-  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
-    auto iPoint = nodes->GetPoint(first_point, iNode);
-    if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
-  }
-
-  char buf[100];
-  SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
-  SU2_MPI::Error(buf, CURRENT_FUNCTION);
-  return 0;
-}
-
-bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) const {
-
-  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
-    auto iPoint = nodes->GetPoint(first_point, iNode);
-    if (iPoint == second_point) return true;
-  }
-  return false;
-}
-
 void CGeometry::SetEdges(void) {
 
   nEdge = 0;
@@ -1434,8 +1412,7 @@ void CGeometry::SetEdges(void) {
   edges = new CEdge(nEdge,nDim);
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
-      auto jPoint = nodes->GetPoint(iPoint, iNode);
+    for (auto jPoint : nodes->GetPoints(iPoint)) {
       if (iPoint < jPoint) {
         auto iEdge = FindEdge(iPoint, jPoint);
         edges->SetNodes(iEdge, iPoint, jPoint);
@@ -1795,7 +1772,6 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
   vector<unsigned long> IGlobalID_Index0, JGlobalID_Index0, IGlobalID_Index1, JGlobalID_Index1, IGlobalID_Airfoil, JGlobalID_Airfoil;
   vector<unsigned short> Conection_Index0, Conection_Index1;
   vector<unsigned long> Duplicate;
-  vector<unsigned long>::iterator it;
   su2double **Coord_Variation = nullptr;
   vector<su2double> XcoordExtra, YcoordExtra, ZcoordExtra, VariableExtra;
   vector<unsigned long> IGlobalIDExtra, JGlobalIDExtra;
@@ -2549,7 +2525,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
 
-  geometry_container[MESH_0]->SetCoord_CG();
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
@@ -2778,8 +2753,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;
   unsigned long Neighbor_Point, iVertex, iPoint, jPoint, iElem_Bound, iEdge, nLocalVertex, MaxLocalVertex , *Buffer_Send_nVertex, *Buffer_Receive_nVertex, TotalnPointDomain;
   vector<unsigned long> Point_NeighborList, Elem_NeighborList, Point_Triangle, Point_Edge, Point_Critical;
-  vector<unsigned long>::iterator it;
-  su2double U[3] = {0.0,0.0,0.0}, V[3] = {0.0,0.0,0.0}, W[3] = {0.0,0.0,0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
+  su2double U[3] = {0.0}, V[3] = {0.0}, W[3] = {0.0}, Length_U, Length_V, Length_W, CosValue, Angle_Value, *K, *Angle_Defect, *Area_Vertex, *Angle_Alpha, *Angle_Beta, **NormalMeanK, MeanK, GaussK, MaxPrinK, cot_alpha, cot_beta, delta, X1, X2, X3, Y1, Y2, Y3, radius, *Buffer_Send_Coord, *Buffer_Receive_Coord, *Coord, Dist, MinDist, MaxK, MinK, SigmaK;
   bool *Check_Edge;
 
   const bool fea = config->GetStructuralProblem();
@@ -3504,7 +3478,7 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   return finished;
 }
 
-void CGeometry::SetElemVolume(CConfig *config)
+void CGeometry::SetElemVolume()
 {
   SU2_OMP_PARALLEL
   {
@@ -3948,10 +3922,8 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       ENUM_MAIN_SOLVER kindSolver = static_cast<ENUM_MAIN_SOLVER>(config_container[iZone]->GetKind_Solver());
       if (kindSolver == RANS ||
           kindSolver == INC_RANS ||
-          kindSolver == NEMO_RANS ||
           kindSolver == DISC_ADJ_RANS ||
           kindSolver == DISC_ADJ_INC_RANS ||
-          kindSolver == DISC_ADJ_NEMO_RANS ||
           kindSolver == FEM_LES ||
           kindSolver == FEM_RANS){
         wallDistanceNeeded[iZone] = true;

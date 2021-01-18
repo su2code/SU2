@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -762,7 +762,7 @@ bool COutput::SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** so
     volumeDataSorter->SortOutputData();
 
     unsigned short nVolumeFiles = config->GetnVolumeOutputFiles();
-    unsigned short *VolumeFiles = config->GetVolumeOutputFiles();
+    auto VolumeFiles = config->GetVolumeOutputFiles();
 
     if (rank == MASTER_NODE && nVolumeFiles != 0){
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -838,6 +838,11 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     const string &convField = convFields[iField_Conv];
     if (historyOutput_Map.count(convField) > 0){
       su2double monitor = historyOutput_Map.at(convField).value;
+
+      /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+      if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+        SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+      }
 
       /*--- Cauchy based convergence criteria ---*/
 
@@ -962,6 +967,11 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
       if (historyOutput_Map.count(WndConv_Field) > 0){
         su2double monitor = historyOutput_Map[WndConv_Field].value;
 
+        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+        if (std::isnan(SU2_TYPE::GetValue(monitor))) {
+          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
+        }
+
         /*--- Cauchy based convergence criteria ---*/
 
         if (historyOutput_Map[WndConv_Field].fieldType == HistoryFieldType::AUTO_COEFFICIENT) { //TAVG values are AUTO_COEFF
@@ -996,11 +1006,6 @@ bool COutput::MonitorTimeConvergence(CConfig *config, unsigned long TimeIteratio
           SetHistoryOutputValue("CAUCHY_" + WndConv_Field, WndCauchy_Value);
         }
         TimeConvergence = fieldConverged && TimeConvergence;
-
-        /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
-
-        if (monitor != monitor){
-          SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);}
       }
     }
 
@@ -1987,7 +1992,9 @@ bool COutput::WriteHistoryFile_Output(CConfig *config) {
 }
 
 bool COutput::WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing){
-  if (config->GetTime_Domain()) return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+  if (config->GetTime_Domain()){
+    return ((Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
+  }
   else {
     return ((Iter > 0) && (Iter % config->GetVolume_Wrt_Freq() == 0)) || force_writing;
   }

@@ -2,7 +2,7 @@
  * \file CSlidingMesh.cpp
  * \brief Implementation of sliding mesh interpolation.
  * \author H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,8 +31,9 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
 
-CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config, unsigned int iZone,
-                           unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config,
+                           unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -96,6 +97,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
   su2double **donor_element, *DonorPoint_Coord;
 
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
+
   /* 1 - Variable pre-processing */
 
   const unsigned short nDim = donor_geometry->GetnDim();
@@ -131,10 +134,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-    if(markTarget != -1)
-      nVertexTarget = target_geometry->GetnVertex( markTarget );
-    else
-      nVertexTarget  = 0;
+    nVertexTarget = 0;
+    if(markTarget != -1) nVertexTarget = target_geometry->GetnVertex( markTarget );
 
     /*
     3 -Reconstruct the boundaries from parallel partitioning
@@ -170,6 +171,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
      * - Starting from the closest donor node, it expands the supermesh by including
      * donor elements neighboring the initial one, until the overall target area is fully covered.
      */
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     if(nDim == 2){
 
@@ -413,12 +415,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-          target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
+          targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
           for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
-            target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor, Donor_GlobalPoint[Donor_Vect[iDonor]]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+            targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor];
+            targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
+            targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
           }
         }
       }
@@ -449,10 +451,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
 
         /*--- The value of Area computed here includes also portion of boundary belonging to different marker ---*/
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         for (iDim = 0; iDim < nDim; iDim++)
           Normal[iDim] /= Area;
@@ -594,7 +593,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                   tmpVect[jj] = ToVisit[jj];
                 tmpVect[nToVisit] = donor_iPoint;
 
-                
+
                   delete [] ToVisit;
 
                 ToVisit = tmpVect;
@@ -639,9 +638,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 tmp_Donor_Vect[ nDonorPoints ] = donor_iPoint;
                 tmp_storeProc[  nDonorPoints ] = Donor_Proc[donor_iPoint];
 
-                delete [] Donor_Vect; 
-                delete [] Coeff_Vect; 
-                delete [] storeProc;  
+                delete [] Donor_Vect;
+                delete [] Coeff_Vect;
+                delete [] storeProc;
 
                 Donor_Vect = tmp_Donor_Vect;
                 Coeff_Vect = tmp_Coeff_Vect;
@@ -670,7 +669,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for( jj = 0; jj < nToVisit; jj++ )
             tmpVect[ nAlreadyVisited + jj ] = ToVisit[jj];
 
-          
+
           delete [] alreadyVisitedDonor;
 
           alreadyVisitedDonor = tmpVect;
@@ -684,12 +683,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
         /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 
-        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(nDonorPoints);
+        targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
         for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
-          target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+          targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor] / Area;
+          targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
+          targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
         }
 
         for (ii = 0; ii < 2*nEdges_target + 2; ii++)

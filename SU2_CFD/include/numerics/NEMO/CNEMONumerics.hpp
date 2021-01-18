@@ -2,7 +2,7 @@
  * \file CNEMONumerics.hpp
  * \brief Base class template NEMO numerics.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -50,6 +50,7 @@ public:
   su2double *dPdU_i, *dPdU_j;
   su2double *dTdU_i, *dTdU_j;
   su2double *dTvedU_i, *dTvedU_j;
+  su2double Gamma_i, Gamma_j;
 
   vector<su2double> hs;
   su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
@@ -233,5 +234,12 @@ public:
    * \param[in] val_Cvve_j - cvve at j.
    */
   inline void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j)       final {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
+
+  /*!
+   * \brief Set the ratio of specific heats.
+   * \param[in] val_Gamma_i - Gamma at i.
+   * \param[in] val_Gamma_j - Gamma at j.
+   */
+  inline void SetGamma(su2double val_Gamma_i, su2double val_Gamma_j)      final {Gamma_i = val_Gamma_i; Gamma_j = val_Gamma_j; }
 
 };

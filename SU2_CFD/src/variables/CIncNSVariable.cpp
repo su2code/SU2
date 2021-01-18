@@ -2,11 +2,11 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -25,17 +25,23 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/variables/CIncNSVariable.hpp"
-
+#include "../../include/fluid/CFluidModel.hpp"
 
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config) :
                                CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
+
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
+
+  if (config->GetAxisymmetric()) {
+    nAuxVar = 1;
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
+  }
 }
 
 bool CIncNSVariable::SetVorticity_StrainMag() {

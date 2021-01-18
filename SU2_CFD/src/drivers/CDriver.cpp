@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,7 +90,7 @@
 
 #include "../../include/iteration/CIterationFactory.hpp"
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 #include <cassert>
 
@@ -154,7 +154,7 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunica
     /*--- Allocate transfer and interpolation container --- */
 
     interface_container[iZone]    = new CInterface*[nZone] ();
-    interpolator_container[iZone] = new CInterpolator*[nZone] ();
+    interpolator_container[iZone].resize(nZone);
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
@@ -330,7 +330,6 @@ void CDriver::SetContainers_Null(){
   surface_movement               = nullptr;
   grid_movement                  = nullptr;
   FFDBox                         = nullptr;
-  interpolator_container         = nullptr;
   interface_container            = nullptr;
   interface_types                = nullptr;
   nInst                          = nullptr;
@@ -347,7 +346,7 @@ void CDriver::SetContainers_Null(){
   surface_movement               = new CSurfaceMovement*[nZone];
   grid_movement                  = new CVolumetricMovement**[nZone];
   FFDBox                         = new CFreeFormDefBox**[nZone];
-  interpolator_container         = new CInterpolator**[nZone];
+  interpolator_container.resize(nZone);
   interface_container            = new CInterface**[nZone];
   interface_types                = new unsigned short*[nZone];
   output_container               = new COutput*[nZone];
@@ -365,7 +364,6 @@ void CDriver::SetContainers_Null(){
     surface_movement[iZone]               = nullptr;
     grid_movement[iZone]                  = nullptr;
     FFDBox[iZone]                         = nullptr;
-    interpolator_container[iZone]         = nullptr;
     interface_container[iZone]            = nullptr;
     interface_types[iZone]                = new unsigned short[nZone];
     output_container[iZone]               = nullptr;
@@ -379,8 +377,7 @@ void CDriver::SetContainers_Null(){
 
 void CDriver::Postprocessing() {
 
-  bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
-  bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
+  const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
     /*--- Output some information to the console. ---*/
 
@@ -438,19 +435,6 @@ void CDriver::Postprocessing() {
   }
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
-
-  if (interpolator_container != nullptr) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      if (interpolator_container[iZone] != nullptr) {
-        for (unsigned short jZone = 0; jZone < nZone; jZone++)
-          if (interpolator_container[iZone][jZone] != nullptr)
-            delete interpolator_container[iZone][jZone];
-        delete [] interpolator_container[iZone];
-      }
-    }
-    delete [] interpolator_container;
-    if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
-  }
 
   if (interface_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -590,7 +574,7 @@ void CDriver::Postprocessing() {
     cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
       cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
-      if (isBinary) {
+      if (BandwidthSum > 0) {
         cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
         cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
       }
@@ -823,24 +807,19 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   geometry[MESH_0]->SetEdges();
   geometry[MESH_0]->SetVertex(config);
 
-  /*--- Compute cell center of gravity ---*/
-
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-  SU2_OMP_PARALLEL {
-    geometry[MESH_0]->SetCoord_CG();
-  }
-
   /*--- Create the control volume structures ---*/
 
   if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-  geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
-  geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  SU2_OMP_PARALLEL {
+    geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  }
 
   /*--- Visualize a dual control volume if requested ---*/
 
   if ((config->GetVisualize_CV() >= 0) &&
-      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetnPointDomain()))
-    geometry[MESH_0]->VisualizeControlVolume(config, UPDATE);
+      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetGlobal_nPointDomain()))
+    geometry[MESH_0]->VisualizeControlVolume(config);
 
   /*--- Identify closest normal neighbor ---*/
 
@@ -1081,7 +1060,7 @@ void CDriver::Solver_Preprocessing(CConfig* config, CGeometry** geometry, CSolve
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver, geometry, config); 
+  Inlet_Preprocessing(solver, geometry, config);
 
 }
 
@@ -1659,19 +1638,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
       case SPACE_CENTERED :
         if (compressible) {
-          /*--- Compressible flow ---*/
-          switch (config->GetKind_Centered_Flow()) {
-            case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config); break;
-            case JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_Flow(nDim, nVar_Flow, config); break;
-            case JST_KE : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_KE_Flow(nDim, nVar_Flow, config); break;
-            default:
-              SU2_OMP_MASTER
-              SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
-              break;
-          }
-
-          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config);
+          /*--- "conv_term" is not instantiated as all compressible centered schemes are vectorized. ---*/
 
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1889,8 +1856,10 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       else if (config->GetAxisymmetric() == YES) {
         if (incompressible)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncAxisymmetric_Flow(nDim, nVar_Flow, config);
-        else
+        else if (ideal_gas)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
+        else
+          numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGeneralAxisymmetric_Flow(nDim, nVar_Flow, config);
       }
       else if (config->GetGravityForce() == YES) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceGravity(nDim, nVar_Flow, config);
@@ -2069,6 +2038,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   }
 
   /*--- Solver definition for the turbulent model problem ---*/
+
   if (turbulent) {
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
@@ -2606,7 +2576,7 @@ void CDriver::DynamicMesh_Preprocessing(CConfig *config, CGeometry **geometry, C
 
 void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGeometry**** geometry,
                                       unsigned short** interface_types, CInterface ***interface,
-                                      CInterpolator ***interpolation) {
+                                      vector<vector<unique_ptr<CInterpolator> > >& interpolation) {
 
   /*--- Setup interpolation and transfer for all possible donor/target pairs. ---*/
 
@@ -2635,7 +2605,8 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
         /*--- Setup the interpolation. ---*/
 
-        interpolation[donor][target] = CInterpolatorFactory::CreateInterpolator(geometry, config, donor, target);
+        interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
+                                       geometry, config, interpolation[target][donor].get(), donor, target));
 
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 
@@ -2668,13 +2639,13 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
           interface_type = BOUNDARY_DISPLACEMENTS;
-          interface[donor][target] = new CDisplacementsInterface(nDim, 0, config[donor]);
+          interface[donor][target] = new CDisplacementsInterface(nDim, 0);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
           interface_type = SLIDING_INTERFACE;
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-          interface[donor][target] = new CSlidingInterface(nVar, 0, config[donor]);
+          interface[donor][target] = new CSlidingInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << "sliding interface." << endl;
         }
         else if (heat_donor || heat_target) {
@@ -2692,7 +2663,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
-            interface[donor][target] = new CConjugateHeatInterface(nVar, 0, config[donor]);
+            interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
           }
           else {
@@ -2705,7 +2676,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
 
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
           interface_type = CONSERVATIVE_VARIABLES;
-          interface[donor][target] = new CConservativeVarsInterface(nVar, 0, config[donor]);
+          interface[donor][target] = new CConservativeVarsInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << "generic conservative variables." << endl;
         }
       }
@@ -2715,7 +2686,7 @@ void CDriver::Interface_Preprocessing(CConfig **config, CSolver***** solver, CGe
       if (config[donor]->GetBoolMixingPlaneInterface()) {
         interface_type = MIXING_PLANE;
         auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-        interface[donor][target] = new CMixingPlaneInterface(nVar, 0, config[donor], config[target]);
+        interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
         if (rank == MASTER_NODE) {
           cout << "Set mixing-plane interface from donor zone "
                << donor << " to target zone " << target << "." << endl;
@@ -2851,16 +2822,9 @@ void CDriver::Output_Preprocessing(CConfig **config, CConfig *driver_config, COu
     driver_output->PreprocessMultizoneHistoryOutput(output, config, driver_config, !dry_run);
   }
 
-
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetTime_Domain() && config_container[ZONE_0]->GetRestart())
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
-  /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
-      && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-    TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
 
 }
 
@@ -3176,18 +3140,24 @@ void CFluidDriver::Run() {
 
 void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-  interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-      config_container[donorZone], config_container[targetZone]);
-  if (config_container[targetZone]->GetKind_Solver() == RANS)
-    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
-  if (config_container[targetZone]->GetKind_Solver() == NEMO_RANS)
-    interface_container[donorZone][targetZone]->BroadcastData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-        config_container[donorZone], config_container[targetZone]);
+  interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
+    solver_container[donorZone][INST_0][MESH_0][FLOW_SOL], solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+    geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
+    config_container[donorZone], config_container[targetZone]);
 
+  if (config_container[targetZone]->GetKind_Solver() == RANS) {
+    interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
+      solver_container[donorZone][INST_0][MESH_0][TURB_SOL], solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+      geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
+      config_container[donorZone], config_container[targetZone]);
+  }
+
+  if (config_container[targetZone]->GetKind_Solver() == NEMO_RANS) {
+    interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
+      solver_container[donorZone][INST_0][MESH_0][TURB_SOL], solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+      geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
+      config_container[donorZone], config_container[targetZone]);
+  }
 }
 
 void CFluidDriver::Update() {
@@ -3293,7 +3263,6 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile, unsigned short val_
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
         output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][INST_0]);
       }
     }
   }
@@ -3498,7 +3467,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
   case EULER: case NAVIER_STOKES: case RANS:
   case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
@@ -3540,7 +3508,6 @@ CHBDriver::CHBDriver(char* confFile,
       ConvHist_file[iZone] = new ofstream[nInst[iZone]];
       for (iInst = 0; iInst < nInst[iZone]; iInst++) {
         output_legacy->SetConvHistory_Header(&ConvHist_file[iZone][iInst], config_container[iZone], iZone, iInst);
-        config_container[iZone]->SetHistFile(&ConvHist_file[iZone][iInst]);
       }
     }
   }

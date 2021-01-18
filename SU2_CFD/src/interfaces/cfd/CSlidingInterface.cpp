@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,12 +27,11 @@
  */
 
 #include "../../../include/interfaces/cfd/CSlidingInterface.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../include/solvers/CSolver.hpp"
 
-
-CSlidingInterface::CSlidingInterface(void) : CInterface() { }
-
-CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst,
-                                     CConfig *config) : CInterface() {
+CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst) : CInterface() {
 
   Physical_Constants = new su2double[val_nConst] ();
   Donor_Variable     = new su2double[val_nVar] ();
@@ -41,16 +40,11 @@ CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val
   valAggregated      = false;
 
   nVar = val_nVar;
+
 }
 
-CSlidingInterface::~CSlidingInterface(void) { }
-
-void CSlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                                              CGeometry *donor_geometry, CGeometry *target_geometry,
-                                              CConfig *donor_config, CConfig *target_config) { }
-
 void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                          CConfig *donor_config, unsigned long Marker_Donor,
+                                          const CConfig *donor_config, unsigned long Marker_Donor,
                                           unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short iVar, nDonorVar;
@@ -83,16 +77,8 @@ void CSlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsi
 
 }
 
-void CSlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
-                                               su2double donorCoeff){
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
-
-  Target_Variable[nVar] = donorCoeff;
-}
-
 void CSlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                           CConfig *target_config, unsigned long Marker_Target,
+                                           const CConfig *target_config, unsigned long Marker_Target,
                                            unsigned long Vertex_Target, unsigned long Point_Target) {
 
   unsigned short iVar, iDonorVertex, nTargetVar;

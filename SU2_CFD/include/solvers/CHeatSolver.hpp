@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CHeatSolver final : public CSolver {
 protected:

@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -240,11 +240,6 @@ int main(int argc, char *argv[]) {
 
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." << endl;
       geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
-
-    /*--- Compute center of gravity ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry_container[iZone][INST_0]->SetCoord_CG();
 
     /*--- Create the dual control volume structures ---*/
 
@@ -955,7 +950,7 @@ void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned shor
     /*--- Write to file ---*/
 
     for (unsigned short iFile = 0; iFile < config[iZone]->GetnVolumeOutputFiles(); iFile++){
-      unsigned short* FileFormat = config[iZone]->GetVolumeOutputFiles();
+      auto FileFormat = config[iZone]->GetVolumeOutputFiles();
       if (FileFormat[iFile] != RESTART_ASCII &&
           FileFormat[iFile] != RESTART_BINARY &&
           FileFormat[iFile] != CSV)

@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,9 +31,8 @@
 #include "../variables/CEulerVariable.hpp"
 
 /*!
- * \class CSolver
- * \brief Main class for defining the PDE solution, it requires
- * a child class for each particular solver (Euler, Navier-Stokes, etc.)
+ * \class CEulerSolver
+ * \brief Class for compressible inviscid flow problems, serves as base for Navier-Stokes/RANS.
  * \author F. Palacios
  */
 class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
@@ -168,12 +167,6 @@ protected:
   void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
   /*!
-   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SumEdgeFluxes(CGeometry* geometry);
-
-  /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -285,6 +278,13 @@ protected:
    */
   void SetCoefficient_Gradients(CConfig *config) const;
 
+  /*!
+   * \brief Instantiate a SIMD numerics object.
+   * \param[in] solvers - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) final;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -374,6 +374,7 @@ public:
    */
   inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                        CNumerics *numerics, CConfig *config) { }
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
@@ -459,6 +460,7 @@ public:
    */
   void SetPreconditioner(const CConfig *config, unsigned long iPoint,
                          su2double delta, su2double** preconditioner) const;
+  using CSolver::SetPreconditioner; /*--- Silence warning. ---*/
 
   /*!
    * \brief Parallelization of Undivided Laplacian.

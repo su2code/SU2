@@ -1,8 +1,8 @@
-﻿/*!
+/*!
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 
 #include "CSolver.hpp"
 #include "../variables/CTurbVariable.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
  * \class CTurbSolver
@@ -100,6 +100,7 @@ private:
                         CSolver **solver_container,
                         CNumerics *numerics,
                         CConfig *config);
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.

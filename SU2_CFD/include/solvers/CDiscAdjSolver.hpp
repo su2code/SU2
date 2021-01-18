@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -157,10 +157,9 @@ public:
   /*!
    * \brief Extract and set the geometrical sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - The solver container holding all terms of the solution.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetSensitivity(CGeometry *geometry, CSolver **solver, CConfig *config) override;
+  void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) override;
 
   /*!
    * \brief Set the objective function.

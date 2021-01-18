@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,11 +64,15 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-      cout << "TODO Delete Me, Calling Mutation" << endl;
+        #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+          fluidmodel = new CMutationTCLib(config, nDim);
+        #else
+          SU2_MPI::Error(string("Mutation++ has not been configured/compiled. Add 1) '-Denable-mpp=true' to your meson string or 2) '-DHAVE_MPP' to the CXX FLAGS of your configure string, and recompile."),
+          CURRENT_FUNCTION);
+        #endif    
       break;
-      case USER_DEFINED_NONEQ:
-      fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+      case SU2_NONEQ:
+        fluidmodel = new CSU2TCLib(config, nDim, false);
       break;
     }
 }
@@ -109,11 +113,15 @@ CNEMONumerics::CNEMONumerics(unsigned short val_nDim, unsigned short val_nVar,
     /*--- Instatiate the correct fluid model ---*/
     switch (config->GetKind_FluidModel()) {
       case MUTATIONPP:
-      //FluidModel = new CMutationGas(config->GetGasModel(), config->GetKind_TransCoeffModel());
-      cout << "TODO Delete Me, Calling Mutation" << endl;
+        #if defined(HAVE_MPP) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+          fluidmodel = new CMutationTCLib(config, nDim);
+        #else
+          SU2_MPI::Error(string("Mutation++ has not been configured/compiled. Add 1) '-Denable-mpp=true' to your meson string or 2) '-DHAVE_MPP' to the CXX FLAGS of your configure string, and recompile."),
+          CURRENT_FUNCTION);
+        #endif    
       break;
-      case USER_DEFINED_NONEQ:
-      fluidmodel = new CUserDefinedTCLib(config, nDim, false);
+      case SU2_NONEQ:
+        fluidmodel = new CSU2TCLib(config, nDim, false);
       break;
     }
 }
@@ -281,7 +289,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
 
   unsigned short iSpecies, iVar, iDim, jDim;
-  su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
+  su2double *Ds, *V, **GV, mu, ktr, kve;
   su2double rho, T, Tve, RuSI, Ru;
   auto& Ms = fluidmodel->GetSpeciesMolarMass();
 
@@ -322,11 +330,6 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   //Cpve = V[RHOCVVE_INDEX]+Ru/Mass;
   //kve += Cpve*(val_eddy_viscosity/Prandtl_Turb);
 
-  /*--- Calculate the velocity divergence ---*/
-  div_vel = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += GV[VEL_INDEX+iDim][iDim];
-
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
@@ -336,16 +339,7 @@ void CNEMONumerics::GetViscousProjFlux(su2double *val_primvar,
   }
 
   /*--- Compute the viscous stress tensor ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
-      tau[iDim][jDim] = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++) {
-    for (jDim = 0 ; jDim < nDim; jDim++) {
-      tau[iDim][jDim] += mu * (val_gradprimvar[VEL_INDEX+jDim][iDim] +
-          val_gradprimvar[VEL_INDEX+iDim][jDim]);
-    }
-    tau[iDim][iDim] -= TWO3*mu*div_vel;
-  }
+  ComputeStressTensor(nDim,tau,val_gradprimvar+VEL_INDEX, mu);
 
   /*--- Populate entries in the viscous flux vector ---*/
   for (iDim = 0; iDim < nDim; iDim++) {

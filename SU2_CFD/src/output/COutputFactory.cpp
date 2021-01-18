@@ -2,7 +2,7 @@
  * \file COutputFactory.cpp
  * \brief Main subroutines for output solver information
  * \author T. Albring
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,7 +51,7 @@ COutput* COutputFactory::CreateOutput(ENUM_MAIN_SOLVER kindSolver, CConfig* conf
     case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
       output = new CFlowIncOutput(config, nDim);
       break;
-    case NEMO_EULER: case NEMO_NAVIER_STOKES: case NEMO_RANS:
+    case NEMO_EULER: case NEMO_NAVIER_STOKES:
       output = new CNEMOCompOutput(config, nDim);
       break;  
     case HEAT_EQUATION:

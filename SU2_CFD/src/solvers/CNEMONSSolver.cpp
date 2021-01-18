@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.7 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,23 +76,23 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool muscl              = config->GetMUSCL_Flow();
   bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  
+
   /*--- Common preprocessing steps (implemented by CNEMOEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Compute gradient for MUSCL reconstruction. ---*/
-  
+
   if ((muscl && !center) && (iMesh == MESH_0)) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
-        SetSolution_Gradient_GG(geometry, config, true); break;
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
       case LEAST_SQUARES:
       case WEIGHTED_LEAST_SQUARES:
-        SetSolution_Gradient_LS(geometry, config, true); break;
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
-  } 
+  }
 
   /*--- Compute gradient of the primitive variables ---*/
 
@@ -107,10 +107,11 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
    *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
-    SetSolution_Limiter(geometry, config);
+    SetPrimitive_Limiter(geometry, config);
   }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
+  //TODO: THIS NEEDS TO BE UPDATED ASAP!
   StrainMag_Max = 0.0;
   Omega_Max = 0.0;
   nodes->SetVorticity_StrainMag();
@@ -145,7 +146,7 @@ void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig 
 
   unsigned long iPoint, iVar;
   unsigned short iSpecies, RHO_INDEX, RHOS_INDEX;
-  
+
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
 
   /*--- Get indices of species & mixture density ---*/
@@ -352,10 +353,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -515,10 +513,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -708,10 +703,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
 
@@ -878,9 +870,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++)
@@ -892,7 +882,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       Di   = nodes->GetDiffusionCoeff(iPoint);
       eves = nodes->GetEve(iPoint);
       hs   = FluidModel->ComputeSpeciesEnthalpy(Vi[T_INDEX], Vi[TVE_INDEX], eves);
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)      
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
         Yj[iSpecies] = Vj[RHOS_INDEX+iSpecies]/Vj[RHO_INDEX];
       rho    = Vi[RHO_INDEX];
       dTdU   = nodes->GetdTdU(iPoint);
@@ -999,8 +989,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
 
   unsigned short iDim, jDim, iVar, iSpecies;
-  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX,
-      RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   su2double ktr, kve, Mass = 0.0;
   su2double Ti, Tvei, Tj, Tvej;
@@ -1022,7 +1011,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   su2double TauElem[3], TauTangent[3];
   su2double Tau[3][3];
   su2double TauNormal;
-  su2double div_vel=0, Delta;
 
   bool ionization = config->GetIonization();
 
@@ -1032,11 +1020,11 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   }
 
   /*--- Define 'proportional control' constant ---*/
-  C = 5;
+  C = 1;
 
   /*---Define under-relaxation factors --- */
-  alpha_V = 0.01;
-  alpha_T = 0.25;
+  alpha_V = 0.1;
+  alpha_T = 1.0;
 
   /*--- Identify the boundary ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -1059,10 +1047,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -1100,16 +1085,17 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       Viscosity = nodes->GetLaminarViscosity(iPoint);
       Eddy_Visc = nodes->GetEddyViscosity(iPoint);
       Density   = nodes->GetDensity(iPoint);
+      Gamma     = nodes->GetGamma(iPoint);
 
       /*--- Incorporate turbulence effects ---*/
-      auto&      Ms  = FluidModel->GetSpeciesMolarMass();
+      auto&      Ms = FluidModel->GetSpeciesMolarMass();
       su2double  Ru = 1000.0*UNIVERSAL_GAS_CONSTANT;
       su2double  tmp1, scl, Cptr;
       su2double *Vi = nodes->GetPrimitive(iPoint);
 
-      for (unsigned short iSpecies=0; iSpecies<nSpecies; iSpecies++)
+      for (iSpecies=0; iSpecies<nSpecies; iSpecies++)
         Mass += Vi[iSpecies]*Ms[iSpecies];
-      Cptr = Vi[RHOCVTR_INDEX]+Ru/Mass;
+      Cptr = rhoCvtr + Ru/Mass;
       tmp1 = Cptr*(Eddy_Visc/Prandtl_Turb);
       scl  = tmp1/ktr;
       ktr += Cptr*(Eddy_Visc/Prandtl_Turb);
@@ -1123,14 +1109,6 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       GasConstant = 0.0;
       for(iSpecies = 0; iSpecies<nSpecies; iSpecies++)
         GasConstant+=UNIVERSAL_GAS_CONSTANT*1000.0/Ms[iSpecies]*nodes->GetMassFraction(iPoint,iSpecies);
-      
-      /*--- Compute Gamma ---*/
-      //TODO: Move to fluidmodel?
-      //su2double rhoR = 0.0;
-      //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      //  rhoR += nodes->GetDensity(iPoint,iSpecies)*(UNIVERSAL_GAS_CONSTANT*1000.0)/Ms[iSpecies];
-      //Gamma = rhoR/(rhoCvtr + rhoCvve) + 1.0;
-      Gamma = FluidModel->ComputeGamma(Vi);
 
       /*--- Calculate temperature gradients normal to surface---*/ //Doubt about minus sign
       dTn = 0.0; dTven = 0.0;
@@ -1144,7 +1122,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
       /*--- Calculate Temperature Slip ---*/
       Tslip    = ((2.0-TAC)/TAC)*2.0*Gamma/(Gamma+1.0)/Prandtl_Lam*Lambda*dTn+Twall;
-      
+
       if (dTven==0) Tslip_ve = Twall;
       else Tslip_ve = (Tslip-Twall)*(kve*rhoCvtr/dTn)/(ktr*rhoCvve/dTven)+Twall;
 
@@ -1155,24 +1133,15 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
       }
 
       /*--- Calculate Heatflux tangent to surface ---*/
-      for (iDim = 0; iDim < nDim; iDim++) 
+      for (iDim = 0; iDim < nDim; iDim++)
         Vector_Tangent_HF[iDim] = -ktr*Vector_Tangent_dT[iDim]-kve*Vector_Tangent_dTve[iDim];
 
       /*--- Initialize viscous residual to zero ---*/
       for (iVar = 0; iVar < nVar; iVar ++)
         Res_Visc[iVar] = 0.0;
 
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
-
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
       for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0 ; jDim < nDim; jDim++) {
-          Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-          Tau[iDim][jDim] = Viscosity*(Grad_PrimVar[VEL_INDEX+jDim][iDim] +
-              Grad_PrimVar[VEL_INDEX+iDim][jDim]  )
-              - TWO3*Viscosity*div_vel*Delta;
-        }
         TauElem[iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
           TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];

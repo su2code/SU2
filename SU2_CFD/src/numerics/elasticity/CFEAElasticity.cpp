@@ -2,7 +2,7 @@
  * \file CFEAElasticity.cpp
  * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../../include/numerics/elasticity/CFEAElasticity.hpp"
-#include "../../../../Common/include/omp_structure.hpp"
+#include "../../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
