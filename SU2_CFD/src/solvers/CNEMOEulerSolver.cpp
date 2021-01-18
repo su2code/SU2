@@ -256,7 +256,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     }
   }
 
-  /*--- Initialize boolean vector with nodes in symmetry plane ---*/
+  /*--- Count number of symmetry planes where each Vertex is inserted ---*/
   for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
       for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
