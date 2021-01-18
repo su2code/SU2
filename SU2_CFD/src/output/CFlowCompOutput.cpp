@@ -229,10 +229,6 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    AddHistoryOutput("BUFFET", "Buffet", ScreenOutputFormat::SCIENTIFIC, "AERO_COEFF", "Buffet sensor", HistoryFieldType::COEFFICIENT);
-  }
-
   ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
   AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
@@ -274,6 +270,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /*--- Add aerodynamic coefficients fields --- */
 
   AddAerodynamicCoefficients(config);
+
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    AddHistoryOutput("BUFFET", "Buffet", ScreenOutputFormat::SCIENTIFIC, "AERO_COEFF", "Buffet sensor", HistoryFieldType::COEFFICIENT);
+  }
 
   /*--- Add Cp diff fields ---*/
 
@@ -664,10 +664,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     }
   }
 
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    SetHistoryOutputValue("BUFFET", flow_solver->GetTotal_Buffet_Metric());
-  }
-
   SetHistoryOutputValue("TOTAL_HEATFLUX",   flow_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("MAXIMUM_HEATFLUX", flow_solver->GetTotal_MaxHeatFlux());
 
@@ -703,6 +699,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
+
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    SetHistoryOutputValue("BUFFET", flow_solver->GetTotal_Buffet_Metric());
+  }
 
   /*--- Set rotating frame coefficients --- */
 
