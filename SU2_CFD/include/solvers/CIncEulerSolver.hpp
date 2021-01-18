@@ -214,6 +214,15 @@ public:
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline void Evaluate_ObjFunc(const CConfig *config) final {
+    Total_ComboObj = EvaluateCommonObjFunc(*config);
+  }
+
+  /*!
    * \brief Impose the far-field boundary condition using characteristics.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
