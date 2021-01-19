@@ -317,8 +317,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 CPhysicalGeometry::~CPhysicalGeometry(void) {
 
   delete [] Local_to_Global_Point;
-  delete [] Global_to_Local_Marker;
-  delete [] Local_to_Global_Marker;
 
   /*--- Free up memory from turbomachinery performance computation  ---*/
 
