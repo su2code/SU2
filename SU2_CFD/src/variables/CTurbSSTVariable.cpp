@@ -96,7 +96,9 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val
   arg2 = max(2.0*arg2A, arg2B);
   F2(iPoint) = tanh(pow(arg2, 2.0));
 
-  AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint));
+  AD::SetPreaccOut(F1(iPoint)); 
+  AD::SetPreaccOut(F2(iPoint));
+  AD::SetPreaccOut(CDkw(iPoint)); 
   AD::EndPreacc();
 
 }
