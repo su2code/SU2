@@ -741,7 +741,7 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat(void) {
 
 }
 
-void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
+su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
@@ -879,4 +879,19 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, co
 
   }
 
+  su2double avgStress[DIM_STRAIN_3D] = {0.0};
+  const auto nStress = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
+
+  for (unsigned short iStress = 0; iStress < nStress; ++iStress)
+    for (iNode = 0; iNode < nNode; iNode++)
+      avgStress[iStress] += element->Get_NodalStress(iNode, iStress) / nNode;
+
+  auto elStress = VonMisesStress(nDim, avgStress);
+
+  /*--- We only differentiate w.r.t. an avg VM stress for the element as
+   * considering all nodal stresses would use too much memory. ---*/
+  AD::SetPreaccOut(elStress);
+  AD::EndPreacc();
+
+  return elStress;
 }

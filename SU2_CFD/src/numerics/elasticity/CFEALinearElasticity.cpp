@@ -232,7 +232,7 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 }
 
 
-void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
+su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
@@ -240,16 +240,13 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
   unsigned short iDim, bDim;
 
   /*--- Auxiliary vector ---*/
-  su2double Strain[6], Stress[6];
+  su2double Strain[DIM_STRAIN_3D], Stress[DIM_STRAIN_3D], avgStress[DIM_STRAIN_3D] = {0.0};
 
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
 
   /*--- Register pre-accumulation inputs ---*/
-  /*--- WARNING: Outputs must be registered outside of this method, this allows more
-   * flexibility in selecting what is captured by AD, capturing the entire stress
-   * tensor would use more memory than that used by the stress residuals. ---*/
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
@@ -351,6 +348,18 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
 
   }
 
+  for (unsigned short iStress = 0; iStress < bDim; ++iStress)
+    for (iNode = 0; iNode < nNode; iNode++)
+      avgStress[iStress] += element->Get_NodalStress(iNode, iStress) / nNode;
+
+  auto elStress = VonMisesStress(nDim, avgStress);
+
+  /*--- We only differentiate w.r.t. an avg VM stress for the element as
+   * considering all nodal stresses would use too much memory. ---*/
+  AD::SetPreaccOut(elStress);
+  AD::EndPreacc();
+
+  return elStress;
 }
 
 

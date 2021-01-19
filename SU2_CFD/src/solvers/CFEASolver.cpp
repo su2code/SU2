@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/variables/CFEABoundVariable.hpp"
+#include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
@@ -1321,31 +1322,6 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 
 }
 
-namespace {
-template<class T>
-su2double vonMissesStress(unsigned short nDim, const T& stress) {
-  if (nDim == 2) {
-    su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
-
-    su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
-    su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
-    S1 += tauMax;
-    S2 -= tauMax;
-
-    return sqrt(S1*S1+S2*S2-2*S1*S2);
-  }
-  else {
-    su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
-    su2double Sxy = stress[2], Sxz = stress[4], Syz = stress[5];
-
-    return sqrt(0.5*(pow(Sxx - Syy, 2) +
-                     pow(Syy - Szz, 2) +
-                     pow(Szz - Sxx, 2) +
-                     6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
-  }
-}
-}
-
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool prestretch_fem = config->GetPrestretch();
@@ -1355,7 +1331,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
-  const auto stressScale = 1.0 / config->GetAllowedVMStress();
+  const su2double stressScale = 1.0 / config->GetAllowedVMStress();
   su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;
 
@@ -1434,13 +1410,11 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         /*--- Compute the averaged nodal stresses. ---*/
         int NUM_TERM = thread*MAX_TERMS + element_properties[iElem]->GetMat_Mod();
 
-        numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
+        auto elStress = numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
 
-        /*--- Average the stresses for the element to compute the stress penalty,
-         * this is the way to make the AD of that function more economical. ---*/
-        su2double avgStressElem[6] = {0.0};
-        AD::SetPreaccIn(simp_penalty);
-        const su2double el_weight = simp_penalty / nNodes;
+        stressPen += pow(max(0.0, elStress*simp_penalty*stressScale - 1.0), 2);
+
+        wasActive = AD::BeginPassive();
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -1453,22 +1427,15 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
             LinSysReact(iPoint,iVar) += simp_penalty*Ta[iVar];
 
           /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
-          su2double pt_weight = simp_penalty / geometry->nodes->GetnElem(iPoint);
+          su2double weight = simp_penalty / geometry->nodes->GetnElem(iPoint);
 
-          for (iStress = 0; iStress < nStress; iStress++) {
-            auto sigma = element->Get_NodalStress(iNode,iStress);
-            nodes->AddStress_FEM(iPoint,iStress, pt_weight*sigma);
-            avgStressElem[iStress] += el_weight*sigma;
-          }
+          for (iStress = 0; iStress < nStress; iStress++)
+            nodes->AddStress_FEM(iPoint,iStress, weight*element->Get_NodalStress(iNode,iStress));
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[iPoint]);
         }
 
-        su2double elPenalty = pow(max(0.0, vonMissesStress(nDim,avgStressElem)*stressScale - 1.0), 2);
-        AD::SetPreaccOut(elPenalty);
-        AD::EndPreacc(); // started above in Compute_Averaged_NodalStress
-
-        stressPen += elPenalty;
+        AD::EndPassive(wasActive);
 
       } // end iElem loop
       SU2_OMP_ATOMIC
@@ -1484,7 +1451,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      const auto vms = vonMissesStress(nDim, nodes->GetStress_FEM(iPoint));
+      const auto vms = CFEAElasticity::VonMisesStress(nDim, nodes->GetStress_FEM(iPoint));
 
       nodes->SetVonMises_Stress(iPoint, vms);
 
