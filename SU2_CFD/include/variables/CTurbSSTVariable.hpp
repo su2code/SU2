@@ -77,9 +77,8 @@ public:
    * \param[in] val_viscosity - Value of the vicosity.
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
-   * \param[in] val_cdkw_max - Maximum cross diffusion in the domain.
    */
-  void SetBlendingFunc(unsigned long iPoint, const su2double val_viscosity, const su2double val_dist, const su2double val_density, const su2double cdkw_max) override;
+  void SetBlendingFunc(unsigned long iPoint, const su2double val_viscosity, const su2double val_dist, const su2double val_density) override;
 
   /*!
    * \brief Get the first blending function.
