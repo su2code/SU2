@@ -508,7 +508,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       /*--- Inviscid contribution ---*/
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
 
-     nodes->AddMax_Lambda_Inv(iPoint,pow(2,nodes->GetSymmetry(iPoint))*Lambda);
+     nodes->AddMax_Lambda_Inv(iPoint, Lambda);
 
       /*--- Viscous contribution ---*/
       if (!viscous) continue;
@@ -533,10 +533,11 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
       Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-      if (nodes->GetSymmetry(jPoint) > nodes->GetSymmetry(iPoint))
-        nodes->AddMax_Lambda_Visc(iPoint, pow(2,(nodes->GetSymmetry(iPoint)*nodes->GetSymmetry(jPoint)))*Lambda);
-      else nodes->AddMax_Lambda_Visc(iPoint, pow(2,(nodes->GetSymmetry(iPoint)+nodes->GetSymmetry(jPoint)))*Lambda); 
-       
+      /*--- Still not sure for the case iPoint == 2 && jPoint == 0 ---*/
+      if(nodes->GetSymmetry(iPoint) == 1 && nodes->GetSymmetry(jPoint) == 0) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
+      else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint) == 1) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
+      else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+
     }
 
   }
@@ -578,7 +579,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         /*--- Inviscid contribution ---*/
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
 
-        nodes->AddMax_Lambda_Inv(iPoint,pow(2,nodes->GetSymmetry(iPoint))*Lambda);
+        nodes->AddMax_Lambda_Inv(iPoint, Lambda);
 
         /*--- Viscous contribution ---*/
 
@@ -597,9 +598,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-        if(nodes->GetSymmetry(iPoint) && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)
-          nodes->AddMax_Lambda_Visc(iPoint,pow(2,2*nodes->GetSymmetry(iPoint)-1)*Lambda);
-        else nodes->AddMax_Lambda_Visc(iPoint,pow(2,2*nodes->GetSymmetry(iPoint))*Lambda);
+      if(nodes->GetSymmetry(iPoint) && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
+      else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
     }
@@ -614,7 +614,6 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       Vol = geometry->nodes->GetVolume(iPoint);
-      if(nodes->GetSymmetry(iPoint)) Vol*=2*nodes->GetSymmetry(iPoint);
 
       if (Vol != 0.0) {
         Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
