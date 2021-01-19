@@ -145,7 +145,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   bool interp = config->GetSolutionInterpolation();
 
   /* Vector to count number of symmetry planes at each node. */
-  symmetry.resize(nPoint) = 0;
+  symmetry.resize(nPoint) = su2double(0.0);
 
   /*--- Do not initialize variables for solution interpolation, since it makes the interpolation super slow and is not necessary  ---*/
   if (!interp) {

@@ -527,12 +527,12 @@ public:
   /*!
    * \brief Retrieves the number of symmetry planes at the specified node.
    */  
-  inline unsigned short GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
+  inline su2double GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
 
   /*!
    * \brief Increases the number of symmetry planes at the specified node by one.
    */  
-  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1;}
+  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1.0;}
 
   /*---------------------------------------*/
   /*---           NEMO indices          ---*/
