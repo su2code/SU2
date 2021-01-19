@@ -56,8 +56,6 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   element->SetPreaccIn_Coords();
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
@@ -247,6 +245,18 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
   SetElement_Properties(element, config);
+
+  /*--- Register pre-accumulation inputs ---*/
+  /*--- WARNING: Outputs must be registered outside of this method, this allows more
+   * flexibility in selecting what is captured by AD, capturing the entire stress
+   * tensor would use more memory than that used by the stress residuals. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
+
   Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/

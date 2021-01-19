@@ -240,8 +240,6 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   if (maxwell_stress) {
     AD::SetPreaccIn(EFieldMod_Ref);
     AD::SetPreaccIn(ke_DE);
@@ -483,8 +481,6 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
   AD::StartPreacc();
   AD::SetPreaccIn(E);
   AD::SetPreaccIn(Nu);
-  AD::SetPreaccIn(Rho_s);
-  AD::SetPreaccIn(Rho_s_DL);
   if (maxwell_stress) {
     AD::SetPreaccIn(EFieldMod_Ref);
     AD::SetPreaccIn(ke_DE);
@@ -755,6 +751,21 @@ void CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, co
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
   /*-----------------------------------------------------------*/
+
+  /*--- Register pre-accumulation inputs ---*/
+  /*--- WARNING: Outputs must be registered outside of this method, this allows more
+   * flexibility in selecting what is captured by AD, capturing the entire stress
+   * tensor would use more memory than that used by the stress residuals. ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  if (maxwell_stress) {
+    AD::SetPreaccIn(EFieldMod_Ref);
+    AD::SetPreaccIn(ke_DE);
+  }
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
 
   su2double Weight, Jac_x;
 

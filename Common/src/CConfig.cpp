@@ -2289,10 +2289,13 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief REFERENCE_NODE\n  DESCRIPTION: Reference node for the structure (optimization applications) */
   addUnsignedLongOption("REFERENCE_NODE", refNodeID, 0);
-  /* DESCRIPTION: Modulus of the electric fields */
+  /*!\brief REFERENCE_NODE_DISPLACEMENT\n DESCRIPTION: Target displacement of the reference node \ingroup Config*/
   addDoubleListOption("REFERENCE_NODE_DISPLACEMENT", nDim_RefNode, RefNode_Displacement);
   /*!\brief REFERENCE_NODE_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
   addDoubleOption("REFERENCE_NODE_PENALTY", RefNode_Penalty, 1E3);
+
+  /*!\brief ALLOWED_VONMISSES_STRESS\n DESCRIPTION: Maximum allowed stress for structural optimization \ingroup Config*/
+  addDoubleOption("ALLOWED_VONMISSES_STRESS", AllowedVMStress, 1.0);
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
@@ -6051,6 +6054,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case VOLUME_FRACTION:            cout << "Volume fraction objective function." << endl; break;
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
+        case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
       }
     }
     else {
@@ -8018,6 +8022,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
+        case STRESS_PENALTY:              AdjExt = "_stress";   break;
       }
     }
     else{

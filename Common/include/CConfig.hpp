@@ -990,7 +990,8 @@ private:
   bool FEAAdvancedMode;             /*!< \brief Determine if advanced features are used from the element-based FEA analysis (experimental). */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,                  /*!< \brief Penalty weight value for the reference node objective function. */
-  DV_Penalty;                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
+  DV_Penalty,                       /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
+  AllowedVMStress;                  /*!< \brief Maximum stress for the stress penalty objective function. */
   unsigned long Nonphys_Points,     /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;                 /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
@@ -8531,6 +8532,11 @@ public:
    * \return  Penalty weight value for the reference geometry objective function.
    */
   su2double GetTotalDV_Penalty(void) const { return DV_Penalty; }
+
+  /*!
+   * \brief Get the maximum allowed VM stress for the stress penalty objective function.
+   */
+  su2double GetAllowedVMStress(void) const { return AllowedVMStress; }
 
   /*!
    * \brief Get whether a predictor is used for FSI applications.

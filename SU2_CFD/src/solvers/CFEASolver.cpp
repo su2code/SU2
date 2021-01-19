@@ -1321,24 +1321,51 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 
 }
 
-void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+namespace {
+template<class T>
+su2double vonMissesStress(unsigned short nDim, const T& stress) {
+  if (nDim == 2) {
+    su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
 
-  /*--- Never record this method as atm it is not differentiable. ---*/
-  const bool wasActive = AD::BeginPassive();
+    su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
+    su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
+    S1 += tauMax;
+    S2 -= tauMax;
+
+    return sqrt(S1*S1+S2*S2-2*S1*S2);
+  }
+  else {
+    su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
+    su2double Sxy = stress[2], Sxz = stress[4], Syz = stress[5];
+
+    return sqrt(0.5*(pow(Sxx - Syy, 2) +
+                     pow(Syy - Szz, 2) +
+                     pow(Szz - Sxx, 2) +
+                     6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
+  }
+}
+}
+
+void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   const bool prestretch_fem = config->GetPrestretch();
 
   const bool topology_mode = config->GetTopology_Optimization();
-  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const auto simp_exponent = config->GetSIMP_Exponent();
 
   const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
+  const auto stressScale = 1.0 / config->GetAllowedVMStress();
+  su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;
 
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL
   {
+    /*--- Some parts are not recorded, atm only StressPenalty is differentiated to save memory. ---*/
+    bool wasActive = AD::BeginPassive();
+
     /*--- Clear reactions. ---*/
     LinSysReact.SetValZero();
 
@@ -1349,8 +1376,11 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         nodes->SetStress_FEM(iPoint,iStress, 0.0);
       }
     }
+    AD::EndPassive(wasActive);
 
     for(auto color : ElemColoring) {
+
+      su2double stressPen = 0.0;
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
       SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
@@ -1379,7 +1409,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           for (iDim = 0; iDim < nDim; iDim++) {
             /*--- Compute current coordinate. ---*/
-            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            su2double val_Coord = geometry->nodes->GetCoord(indexNode[iNode],iDim);
             su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
 
             /*--- If pre-stretched the reference coordinate is stored in the nodes. ---*/
@@ -1406,6 +1436,12 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
         numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
 
+        /*--- Average the stresses for the element to compute the stress penalty,
+         * this is the way to make the AD of that function more economical. ---*/
+        su2double avgStressElem[6] = {0.0};
+        AD::SetPreaccIn(simp_penalty);
+        const su2double el_weight = simp_penalty / nNodes;
+
         for (iNode = 0; iNode < nNodes; iNode++) {
 
           auto iPoint = indexNode[iNode];
@@ -1417,18 +1453,30 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
             LinSysReact(iPoint,iVar) += simp_penalty*Ta[iVar];
 
           /*--- Divide the nodal stress by the number of elements that will contribute to this point. ---*/
-          su2double weight = simp_penalty / geometry->nodes->GetnElem(iPoint);
+          su2double pt_weight = simp_penalty / geometry->nodes->GetnElem(iPoint);
 
-          for (iStress = 0; iStress < nStress; iStress++)
-            nodes->AddStress_FEM(iPoint,iStress, weight*element->Get_NodalStress(iNode,iStress));
+          for (iStress = 0; iStress < nStress; iStress++) {
+            auto sigma = element->Get_NodalStress(iNode,iStress);
+            nodes->AddStress_FEM(iPoint,iStress, pt_weight*sigma);
+            avgStressElem[iStress] += el_weight*sigma;
+          }
 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[iPoint]);
         }
 
+        su2double elPenalty = pow(max(0.0, vonMissesStress(nDim,avgStressElem)*stressScale - 1.0), 2);
+        AD::SetPreaccOut(elPenalty);
+        AD::EndPreacc(); // started above in Compute_Averaged_NodalStress
+
+        stressPen += elPenalty;
+
       } // end iElem loop
+      SU2_OMP_ATOMIC
+      StressPenalty += stressPen;
 
     } // end color loop
 
+    wasActive = AD::BeginPassive();
 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
     su2double maxVonMises = 0.0;
@@ -1436,51 +1484,24 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Get the stresses, added up from all the elements that connect to the node. ---*/
+      const auto vms = vonMissesStress(nDim, nodes->GetStress_FEM(iPoint));
 
-      auto Stress = nodes->GetStress_FEM(iPoint);
-      su2double VonMises_Stress;
+      nodes->SetVonMises_Stress(iPoint, vms);
 
-      if (nDim == 2) {
-
-        su2double Sxx = Stress[0], Syy = Stress[1], Sxy = Stress[2];
-
-        su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
-        su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
-        S1 += tauMax;
-        S2 -= tauMax;
-
-        VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
-      }
-      else {
-
-        su2double Sxx = Stress[0], Syy = Stress[1], Szz = Stress[3];
-        su2double Sxy = Stress[2], Sxz = Stress[4], Syz = Stress[5];
-
-        VonMises_Stress = sqrt(0.5*(pow(Sxx - Syy, 2) +
-                                    pow(Syy - Szz, 2) +
-                                    pow(Szz - Sxx, 2) +
-                                    6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
-      }
-
-      nodes->SetVonMises_Stress(iPoint,VonMises_Stress);
-
-      /*--- Update the maximum value of the Von Mises Stress ---*/
-
-      maxVonMises = max(maxVonMises, VonMises_Stress);
+      maxVonMises = max(maxVonMises, vms);
     }
     SU2_OMP_CRITICAL
     MaxVonMises_Stress = max(MaxVonMises_Stress, maxVonMises);
 
+    AD::EndPassive(wasActive);
+
   } // end SU2_OMP_PARALLEL
 
-  su2double tmp = MaxVonMises_Stress;
-  SU2_MPI::Allreduce(&tmp, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
   /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
+  SU2_MPI::Allreduce(&MaxVonMises_Stress, &Total_CFEA, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-  Total_CFEA = MaxVonMises_Stress;
-
+  /*--- Reduce the stress penalty over all ranks ---*/
+  SU2_MPI::Allreduce(&StressPenalty, &Total_OFStressPenalty, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   bool outputReactions = false;
 
@@ -1602,8 +1623,6 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     myfile.close();
 
   }
-
-  AD::EndPassive(wasActive);
 
 }
 
@@ -1928,6 +1947,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
       case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
       case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
       case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+      case STRESS_PENALTY:
+        Compute_NodalStress(geometry, numerics, config);
+        break;
     }
     return;
   }
