@@ -1072,13 +1072,6 @@ public:
   inline virtual long GetGlobal_to_Local_Point(unsigned long val_ipoint) const { return 0; }
 
   /*!
-   * \brief A virtual member.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline virtual unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const { return 0; }
-
-  /*!
    * \brief Retrieve total number of elements in a simulation across all processors.
    * \return Total number of elements in a simulation across all processors.
    */
