@@ -598,7 +598,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-      if(nodes->GetSymmetry(iPoint) && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
+      if(nodes->GetSymmetry(iPoint) > 0 && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
       else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
@@ -1364,7 +1364,7 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
     Vol = (geometry->nodes->GetVolume(iPoint) +
            geometry->nodes->GetPeriodicVolume(iPoint));
-    if (nodes->GetSymmetry(iPoint)) Vol*=2*nodes->GetSymmetry(iPoint);
+    if (nodes->GetSymmetry(iPoint) > 0) Vol*=2*nodes->GetSymmetry(iPoint);
 
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
