@@ -9,7 +9,7 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
-                      'fluid/CUserDefinedTCLib.cpp'])
+                      'fluid/CSU2TCLib.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -138,6 +138,8 @@ su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
                       'numerics/elasticity/nonlinear_models.cpp'])
+
+su2_cfd_src += files(['../include/numerics_simd/CNumericsSIMD.cpp'])
 
 su2_cfd_src += files(['interfaces/CInterface.cpp',
                       'interfaces/cfd/CConservativeVarsInterface.cpp',

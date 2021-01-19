@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.0.6 "Blackbird"',
+        version: '7.0.8 "Blackbird"',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
@@ -12,14 +12,15 @@ python = pymod.find_installation()
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
-if build_machine.system() == 'windows'
-  default_warning_flags = []
-else
-  default_warning_flags = ['-Wno-unused-parameter',
-                           '-Wno-empty-body',
-                           '-Wno-format-security',
-                           '-Wno-deprecated-declarations',
-                           '-Wno-non-virtual-dtor']
+default_warning_flags = []
+if build_machine.system() != 'windows'
+  if meson.get_compiler('cpp').get_id() != 'intel'
+    default_warning_flags += ['-Wno-empty-body']
+  endif
+  default_warning_flags += ['-Wno-unused-parameter',
+                            '-Wno-format-security',
+                            '-Wno-deprecated-declarations',
+                            '-Wno-non-virtual-dtor']
 endif
 
 # meson script path
@@ -155,7 +156,22 @@ elif get_option('enable-openblas')
 
 endif
 
+extra_deps = get_option('extra-deps').split(',')
+foreach dep : extra_deps
+  if dep != ''
+    su2_deps += dependency(dep)
+  endif
+endforeach
+
 catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
+
+if get_option('enable-mpp')
+  cmake = import('cmake')
+  mpp_subproj = cmake.subproject('Mutationpp')
+  mpp_dep = mpp_subproj.dependency('mutation++')
+  su2_deps     += mpp_dep
+  su2_cpp_args += '-DHAVE_MPP'
+endif
 
 # compile common library
 subdir('Common/src')
@@ -180,7 +196,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.0.6 "Blackbird"                         |
+         |   / __| | | |_  )   Release 7.0.8 "Blackbird"                         |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -213,3 +229,11 @@ message('''---------------------------------------------------------------------
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), meson.build_root().split('/')[-1]))
 
+if get_option('enable-mpp')
+  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+          ''')
+endif

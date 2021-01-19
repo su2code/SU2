@@ -2,7 +2,7 @@
  * \file CFEAVariable.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -99,6 +99,11 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   if (prestretch_fem) Prestretch.resize(nPoint,nVar);
 
   if (multizone) Set_BGSSolution_k();
+
+  if (config->GetTopology_Optimization()) {
+    nAuxVar = 1;
+    AuxVar.resize(nPoint);
+  }
 }
 
 void CFEAVariable::SetSolution_Vel_time_n() { Solution_Vel_time_n = Solution_Vel; }

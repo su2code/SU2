@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
 #include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
 
 using namespace std;

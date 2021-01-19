@@ -2,7 +2,7 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,9 @@
  */
 
 
- #include "../include/drivers/CDriver.hpp"
+#include "../include/drivers/CDriver.hpp"
+#include "../include/drivers/CSinglezoneDriver.hpp"
+#include "../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 void CDriver::PythonInterface_Preprocessing(CConfig **config, CGeometry ****geometry, CSolver *****solver){
 
@@ -356,16 +358,9 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex)
   /*--- Parameters for the calculations ---*/
   // Pn: Pressure
   // Pinf: Pressure_infinite
-  // div_vel: Velocity divergence
-  // Dij: Dirac delta
-  su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
+  su2double Pn = 0.0;
   su2double Viscosity = 0.0;
-  su2double Grad_Vel[3][3] = { {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} } ;
-  su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} ,
-              {0.0, 0.0, 0.0} } ;
+  su2double Tau[3][3] = {{0.0}};
 
   su2double Pinf = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetPressure_Inf();
 
@@ -384,11 +379,6 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex)
     /*--- Get the values of pressure and viscosity ---*/
     Pn = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     if (viscous_flow) {
-      for(iDim=0; iDim<nDim; iDim++) {
-        for(jDim=0; jDim<nDim; jDim++) {
-          Grad_Vel[iDim][jDim] = solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, iDim+1, jDim);
-        }
-      }
       Viscosity = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
     }
 
@@ -399,23 +389,18 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned long iVertex)
 
     /*--- Calculate the viscous (shear stress) part of tn in the fluid nodes (force units) ---*/
     if ((incompressible || compressible) && viscous_flow) {
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += Grad_Vel[iDim][iDim];
-     if (incompressible) div_vel = 0.0;
-
+      CNumerics::ComputeStressTensor(nDim, Tau,
+        solver_container[ZONE_0][INST_0][FinestMesh][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint)+1, Viscosity);
       for (iDim = 0; iDim < nDim; iDim++) {
-       for (jDim = 0 ; jDim < nDim; jDim++) {
-         Dij = 0.0; if (iDim == jDim) Dij = 1.0;
-         Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*Dij;
-         PyWrapNodalForce[iDim] += Tau[iDim][jDim]*Normal[jDim];
+        for (jDim = 0 ; jDim < nDim; jDim++) {
+          PyWrapNodalForce[iDim] += Tau[iDim][jDim]*Normal[jDim];
         }
       }
     }
 
     //Divide by local are in case of force density communication.
-   for(iDim = 0; iDim < nDim; iDim++) {
-     PyWrapNodalForceDensity[iDim] = PyWrapNodalForce[iDim]/Area;
+    for(iDim = 0; iDim < nDim; iDim++) {
+      PyWrapNodalForceDensity[iDim] = PyWrapNodalForce[iDim]/Area;
     }
 
     halo = false;
@@ -604,10 +589,8 @@ passivedouble CDriver::GetVertexNormalHeatFlux(unsigned short iMarker, unsigned 
 
   if(geometry_container[ZONE_0][INST_0][MESH_0]->nodes->GetDomain(iPoint) && compressible){
     Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-    Area = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-    Area = sqrt(Area);
+
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     for (iDim = 0; iDim < nDim; iDim++)
       UnitNormal[iDim] = Normal[iDim]/Area;
@@ -651,17 +634,14 @@ passivedouble CDriver::GetThermalConductivity(unsigned short iMarker, unsigned l
 
 vector<passivedouble> CDriver::GetVertexUnitNormal(unsigned short iMarker, unsigned long iVertex){
 
-  unsigned short iDim;
   su2double *Normal;
   su2double Area;
   vector<su2double> ret_Normal(3, 0.0);
   vector<passivedouble> ret_Normal_passive(3, 0.0);
 
   Normal = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-      Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   ret_Normal[0] = Normal[0]/Area;
   ret_Normal[1] = Normal[1]/Area;
@@ -906,6 +886,32 @@ void CFluidDriver::SetInitialMesh() {
     }
   }
   //}
+}
+
+void CSinglezoneDriver::SetInitialMesh() {
+
+  DynamicMeshUpdate(0);
+
+  SU2_OMP_PARALLEL {
+    // Overwrite fictious velocities
+    for (iMesh = 0u; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+      SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(),omp_get_max_threads()))
+      for (unsigned long iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][iMesh]->GetnPoint(); iPoint++) {
+
+        /*--- Overwrite fictitious velocities ---*/
+        su2double Grid_Vel[3] = {0.0, 0.0, 0.0};
+
+        /*--- Set the grid velocity for this coarse node. ---*/
+        geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetGridVel(iPoint, Grid_Vel);
+      }
+      /*--- Push back the volume. ---*/
+      geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_n();
+      geometry_container[ZONE_0][INST_0][iMesh]->nodes->SetVolume_nM1();
+    }
+    /*--- Push back the solution so that there is no fictious velocity at the next step. ---*/
+    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n();
+    solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->Set_Solution_time_n1();
+  }
 }
 
 void CFluidDriver::SetVertexTtotal(unsigned short iMarker, unsigned long iVertex, passivedouble val_Ttotal_passive){
@@ -1248,4 +1254,3 @@ void CDriver::SetInlet_Angle(unsigned short iMarker, passivedouble alpha){
   }
 
 }
-

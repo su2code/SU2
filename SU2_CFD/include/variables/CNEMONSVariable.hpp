@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Main class for defining the variables of the NEMO Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.6
+ * \version 7.0.8
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
@@ -126,6 +126,12 @@ public:
   bool SetVorticity(void);
 
   /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override { Primitive(iPoint,EDDY_VISC_INDEX) = eddy_visc; }
+
+  /*!
    * \brief Get the species diffusion coefficient.
    * \return Value of the species diffusion coefficient.
    */
@@ -136,6 +142,12 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetLaminarViscosity(unsigned long iPoint) const override { return LaminarViscosity(iPoint); }
+
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override { return Primitive(iPoint,EDDY_VISC_INDEX); }
 
   /*!
    * \brief Get the thermal conductivity of the flow.

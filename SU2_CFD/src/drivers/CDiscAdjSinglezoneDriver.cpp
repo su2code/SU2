@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,7 +69,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
   switch (config->GetKind_Solver()) {
 
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
+  case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Euler/Navier-Stokes/RANS equation." << endl;
     if (turbo) {
@@ -82,6 +82,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     MainVariables = SOLUTION_VARIABLES;
     if (mesh_def) SecondaryVariables = MESH_DEFORM;
     else          SecondaryVariables = MESH_COORDS;
+    MainSolver = ADJFLOW_SOL;
     break;
 
   case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
@@ -91,6 +92,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_output = COutputFactory::CreateOutput(FEM_EULER, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
+    MainSolver = ADJFLOW_SOL;
     break;
 
   case DISC_ADJ_FEM:
@@ -100,6 +102,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_output = COutputFactory::CreateOutput(FEM_ELASTICITY, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
+    MainSolver = ADJFEA_SOL;
     break;
 
   case DISC_ADJ_HEAT:
@@ -109,6 +112,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     direct_output = COutputFactory::CreateOutput(HEAT_EQUATION, config, nDim);
     MainVariables = SOLUTION_VARIABLES;
     SecondaryVariables = MESH_COORDS;
+    MainSolver = ADJHEAT_SOL;
     break;
 
   }
@@ -222,6 +226,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
   {
     case DISC_ADJ_EULER :     case DISC_ADJ_NAVIER_STOKES :     case DISC_ADJ_RANS :
     case DISC_ADJ_INC_EULER : case DISC_ADJ_INC_NAVIER_STOKES : case DISC_ADJ_INC_RANS :
+    case DISC_ADJ_HEAT :
 
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
@@ -285,6 +290,22 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
+
+  if (kind_recording != NONE && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+    if (rank == MASTER_NODE) AD::PrintStatistics();
+#ifdef CODI_REVERSE_TYPE
+    if (size > SINGLE_NODE) {
+      su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      if (rank == MASTER_NODE) {
+        cout << "MPI\n";
+        cout << "-------------------------------------\n";
+        cout << "  Total memory used      :  " << totMem << " MB\n";
+        cout << "-------------------------------------\n" << endl;
+      }
+    }
+#endif
+  }
 
   AD::StopRecording();
 
@@ -388,8 +409,21 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       ObjFunc = solver[FLOW_SOL]->GetTotal_ComboObj();
 
     }
-
     break;
+
+  case DISC_ADJ_HEAT:
+    switch (config->GetKind_ObjFunc()){
+    case TOTAL_HEATFLUX:
+      ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
+      break;
+    case TOTAL_AVG_TEMPERATURE:
+      ObjFunc = solver[HEAT_SOL]->GetTotal_AvgTemperature();
+      break;
+    default:
+      break;
+    }
+    break;
+
   case DISC_ADJ_FEM:
     switch (config->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
@@ -550,20 +584,12 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Extract the computed sensitivity values. ---*/
 
-  int IDX_SOL;
-
-  if (config->GetKind_Solver() == DISC_ADJ_FEM) {
-    IDX_SOL = ADJFEA_SOL;
-  } else if(SecondaryVariables == MESH_COORDS) {
-    IDX_SOL = ADJFLOW_SOL;
-  } else if(SecondaryVariables == MESH_DEFORM) {
-    IDX_SOL = ADJMESH_SOL;
-  } else {
-    IDX_SOL = -1;
+  if (SecondaryVariables == MESH_COORDS) {
+    solver[MainSolver]->SetSensitivity(geometry, config);
   }
-
-  if(IDX_SOL >= 0)
-    solver[IDX_SOL]->SetSensitivity(geometry, solver, config);
+  else { // MESH_DEFORM
+    solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
+  }
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 

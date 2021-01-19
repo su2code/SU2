@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.hpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,27 +36,32 @@
  * \brief Main class for defining the NEMO Euler's flow solver.
  * \ingroup Euler_Equations
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CNEMOEulerSolver : public CFVMFlowSolverBase<CNEMOEulerVariable, COMPRESSIBLE> {
 protected:
 
-  unsigned short
-  nSpecies;                              /*!< \brief Number of species in the gas mixture. */
-
   su2double
-  Energy_ve_Inf,                         /*!< \brief Vib.-el. free stream energy. */
-  Temperature_ve_Inf;                    /*!< \brief Vib.-el. free stream temperature. */
-  const su2double *MassFrac_Inf;        /*!< \brief Free stream species mass fraction. */
+  Prandtl_Lam = 0.0,              /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb = 0.0;             /*!< \brief Turbulent Prandtl number. */
 
-  su2double *Source;   /*!< \brief Auxiliary vector to store source terms. */
+  unsigned short nSpecies;        /*!< \brief Number of species in the gas mixture. */
+                  
+  su2double                  
+  Energy_ve_Inf,                  /*!< \brief Vib.-el. free stream energy. */
+  Temperature_ve_Inf;             /*!< \brief Vib.-el. free stream temperature. */
+  const su2double *MassFrac_Inf;  /*!< \brief Free stream species mass fraction. */
 
-  su2double
-  **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+  su2double *Source;              /*!< \brief Auxiliary vector to store source terms. */
 
-  CNEMOGas  *FluidModel;         /*!< \brief fluid model used in the solver */
+  unsigned long ErrorCounter = 0; /*!< \brief Counter for number of un-physical states. */
 
-  CNEMOEulerVariable* node_infty;
+  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
+  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
+
+  CNEMOGas  *FluidModel;          /*!< \brief fluid model used in the solver */
+
+  CNEMOEulerVariable* node_infty = nullptr;
 
 public:
 
@@ -73,30 +78,27 @@ public:
   CNEMOEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, const bool navier_stokes = false);
 
   /*!
-     * \brief Destructor of the class.
-     */
+   * \brief Destructor of the class.
+   */
   ~CNEMOEulerSolver(void) override;
 
   /*!
-     * \brief Set the maximum value of the eigenvalue.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] config - Definition of the particular problem.
-     */
+   * \brief Set the maximum value of the eigenvalue.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
 
-   /*!
-  * \brief Compute the time step for solving the Euler equations.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] iMesh - Index of the mesh in multigrid computations.
-  * \param[in] Iteration - Value of the current iteration.
-    */
-  void SetTime_Step(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned long Iteration) final;
+  /*!
+   * \brief Compute the time step for solving the Euler equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Value of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container,
+                    CConfig *config, unsigned short iMesh, unsigned long Iteration) final;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -136,12 +138,21 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Upwind_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) final;
+  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) final;
 
+  /*!
+   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
+   *        in a more thermodynamically consistent way.
+   * \param[in] V - primitve variables.
+   * \param[out] d*dU - reconstructed secondaryvariables.
+   * \param[out] val_eves - reconstructed eve per species.
+   * \param[out] val_cvves - reconstructed cvve per species.
+   * \param[out] Gamma - reconstructed gamma.
+   */
+  static su2double ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
+                                                  su2double* dPdU, su2double* dTdU, su2double* dTvedU,
+                                                  su2double* val_eves, su2double* val_cvves);
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -151,11 +162,20 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Source_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) final;
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) final;
+
+  /*!
+   * \brief Preprocessing actions common to the Euler and NS solvers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
@@ -175,15 +195,8 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       bool Output);
-
-  /*!
-     * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
-     * \param[in] iPoint - Index of the grid point
-     * \param[in] config - Definition of the particular problem.
-     */
-  void SetPreconditioner(CConfig *config, unsigned short iPoint);
+  virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                               CConfig *config, bool Output);
 
   /*!
    * \brief Set the fluid solver nondimensionalization.
@@ -191,6 +204,23 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
+
+ /*!
+  * \brief Set all the conserved variables from the primitive vector..
+  */
+  void RecomputeConservativeVector(su2double *U, const su2double *V) const;
+
+ /*!
+  * \brief Check for unphysical points.
+  * \return Boolean value of physical point
+  */
+  bool CheckNonPhys(const su2double *V) const;
+
+    /*!
+   * \brief Compute the pressure at the infinity.
+   * \return Value of the pressure at the infinity.
+   */
+  inline CNEMOGas* GetFluidModel(void) const final { return FluidModel;}
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.

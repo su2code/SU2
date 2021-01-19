@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 #include "../gradients/computeGradientsGreenGauss.hpp"
 #include "../gradients/computeGradientsLeastSquares.hpp"
 #include "../limiters/computeLimiters.hpp"
+#include "../numerics_simd/CNumericsSIMD.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 template <class V, ENUM_REGIME R>
@@ -101,9 +102,9 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
-  if (config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-    iPoint_UndLapl = new su2double[nPoint];
-    jPoint_UndLapl = new su2double[nPoint];
+  if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
+    iPoint_UndLapl = new su2double[nPointDomain];
+    jPoint_UndLapl = new su2double[nPointDomain];
   }
 
   /*--- Initialize the solution and right hand side vectors for storing
@@ -207,6 +208,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     }
   }
 
+  /*--- Wall Shear Stress in all the markers ---*/
+
+  Alloc2D(nMarker, nVertex, WallShearStress);
+
   /*--- Store the values of the temperature and the heat flux density at the boundaries,
    used for coupling with a solid donor cell ---*/
   constexpr auto nHeatConjugateVar = 4u;
@@ -223,9 +228,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- Only initialize when there is a Marker_Fluid_Load defined
    *--- (this avoids overhead in all other cases while a more permanent structure is being developed) ---*/
   if ((config.GetnMarker_Fluid_Load() > 0) && (MGLevel == MESH_0)) {
-    InitVertexTractionContainer();
-
-    if (config.GetDiscrete_Adjoint()) InitVertexTractionAdjointContainer();
+    Alloc3D(nMarker, nVertex, nDim, VertexTraction);
+    if (config.GetDiscrete_Adjoint()) Alloc3D(nMarker, nVertex, nDim, VertexTractionAdjoint);
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
@@ -302,7 +306,7 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
   InitiateComms(geometry, config, SOLUTION);
   CompleteComms(geometry, config, SOLUTION);
 
-  /* Store the initial CFL number for all grid points. */
+  /*--- Store the initial CFL number for all grid points. ---*/
 
   const auto CFL = config->GetCFL(MGLevel);
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -353,6 +357,12 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << COLORING_EFF_THRESH << " (min value was " << minEff << ").\n"
            << "         Those ranks will now use a fallback strategy, better performance may be possible\n"
            << "         with a different value of config option EDGE_COLORING_GROUP_SIZE (default 512)." << endl;
+    }
+
+    if (config.GetUseVectorization() && (omp_get_max_threads() > 1) &&
+        (config.GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
   }
 
@@ -467,6 +477,13 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
     delete[] CSkinFriction;
   }
 
+  if (WallShearStress != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete[] WallShearStress[iMarker];
+    }
+    delete[] WallShearStress;
+  }
+
   if (HeatConjugateVar != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -478,6 +495,7 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
   }
 
   delete nodes;
+  delete edgeNumerics;
 }
 
 template <class V, ENUM_REGIME R>
@@ -535,7 +553,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
    global measures, one can compute the order of accuracy. ---*/
 
   bool write_heads =
-      ((((config->GetInnerIter() % (config->GetWrt_Con_Freq() * 40)) == 0) && (config->GetInnerIter() != 0)) ||
+      ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2) * 40)) == 0) && (config->GetInnerIter() != 0)) ||
        (config->GetInnerIter() == 1));
   if (!write_heads) return;
 
@@ -689,9 +707,7 @@ su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(su2double* val_inlet, unsig
             /*-- Compute boundary face area for this vertex. ---*/
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-            Area = sqrt(Area);
+            Area = GeometryToolbox::Norm(nDim, Normal);
 
             /*--- Access and store the inlet variables for this vertex. ---*/
 
@@ -828,9 +844,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity
             component gradients. ---*/
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim] / Area;
 
@@ -1134,7 +1148,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
             /*--- Accumulate the residuals to compute the average ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] += weight * residual.residual[iVar];
+              Residual[iVar] += weight * residual[iVar];
               for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] += weight * residual.jacobian_i[iVar][jVar];
             }
           }
@@ -1191,7 +1205,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
               /*--- Accumulate the residuals to compute the average ---*/
 
               for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] += weight * residual.residual[iVar];
+                Residual[iVar] += weight * residual[iVar];
                 for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] += weight * residual.jacobian_i[iVar][jVar];
               }
             }
@@ -1270,6 +1284,60 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
   } else {
     /* The user must specify the custom BC's here. */
     SU2_MPI::Error("Implement customized boundary conditions here.", CURRENT_FUNCTION);
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
+                                                const CSolver* const* solvers,
+                                                const CConfig *config) {
+  if (!edgeNumerics) {
+    InstantiateEdgeNumerics(solvers, config);
+  }
+
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring) {
+    /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for(auto k = 0ul; k < color.size; k += Double::Size) {
+      Int iEdge;
+      Double mask;
+      for (auto j = 0ul; j < Double::Size; ++j) {
+        bool in = (k+j < color.size);
+        mask[j] = in;
+        iEdge[j] = color.indices[k+j*in];
+      }
+
+      if (ReducerStrategy) {
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+      } else {
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+      }
+    }
+  }
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
+      Jacobian.SetDiagonalAsColumnSum();
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+    LinSysRes.SetBlock_Zero(iPoint);
+
+    for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
+        LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+      else
+        LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+    }
   }
 }
 
@@ -1501,7 +1569,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
               SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
               SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
               SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
-              SurfaceInvCoeff.CEff[iMarker_Monitoring] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+              SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
               SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
               SurfaceInvCoeff.CFy[iMarker_Monitoring] += InvCoeff.CFy[iMarker];
               SurfaceInvCoeff.CFz[iMarker_Monitoring] += InvCoeff.CFz[iMarker];
@@ -1620,7 +1688,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     SurfaceCoeff.CD[iMarker_Monitoring] = SurfaceInvCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring] = SurfaceInvCoeff.CSF[iMarker_Monitoring];
     SurfaceCoeff.CEff[iMarker_Monitoring] =
-        SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
     SurfaceCoeff.CFx[iMarker_Monitoring] = SurfaceInvCoeff.CFx[iMarker_Monitoring];
     SurfaceCoeff.CFy[iMarker_Monitoring] = SurfaceInvCoeff.CFy[iMarker_Monitoring];
     SurfaceCoeff.CFz[iMarker_Monitoring] = SurfaceInvCoeff.CFz[iMarker_Monitoring];
@@ -1634,7 +1702,7 @@ template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometry, const CConfig* config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double Area, factor, RefVel2 = 0.0, RefTemp, RefDensity = 0.0, Mach2Vel, Mach_Motion, MassFlow, Density;
+  su2double factor, RefVel2 = 0.0, RefTemp, RefDensity = 0.0, Mach2Vel, Mach_Motion, MassFlow, Density;
   const su2double *Normal = nullptr, *Coord = nullptr;
   string Marker_Tag, Monitoring_Tag;
   su2double AxiFactor;
@@ -1728,11 +1796,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->nodes->GetCoord(iPoint);
           Density = nodes->GetDensity(iPoint);
-
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-          Area = sqrt(Area);
-
           MassFlow = 0.0;
           su2double Velocity[MAXNDIM] = {0.0}, MomentDist[MAXNDIM] = {0.0};
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -1759,7 +1822,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 
           /*--- Moment with respect to the reference axis ---*/
 
-          if (iDim == 3) {
+          if (nDim == 3) {
             MomentMomentum[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
             MomentX_Force[1] += (-Force[1] * Coord[2]);
             MomentX_Force[2] += (Force[2] * Coord[1]);
@@ -1836,7 +1899,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
             SurfaceMntCoeff.CL[iMarker_Monitoring] += MntCoeff.CL[iMarker];
             SurfaceMntCoeff.CD[iMarker_Monitoring] += MntCoeff.CD[iMarker];
             SurfaceMntCoeff.CSF[iMarker_Monitoring] += MntCoeff.CSF[iMarker];
-            SurfaceMntCoeff.CEff[iMarker_Monitoring] = MntCoeff.CL[iMarker] / (MntCoeff.CD[iMarker] + EPS);
+            SurfaceMntCoeff.CEff[iMarker_Monitoring] = SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
             SurfaceMntCoeff.CFx[iMarker_Monitoring] += MntCoeff.CFx[iMarker];
             SurfaceMntCoeff.CFy[iMarker_Monitoring] += MntCoeff.CFy[iMarker];
             SurfaceMntCoeff.CFz[iMarker_Monitoring] += MntCoeff.CFz[iMarker];
@@ -1944,8 +2007,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
     SurfaceCoeff.CL[iMarker_Monitoring] += SurfaceMntCoeff.CL[iMarker_Monitoring];
     SurfaceCoeff.CD[iMarker_Monitoring] += SurfaceMntCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring] += SurfaceMntCoeff.CSF[iMarker_Monitoring];
-    SurfaceCoeff.CEff[iMarker_Monitoring] +=
-        SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
+    SurfaceCoeff.CEff[iMarker_Monitoring] =
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
     SurfaceCoeff.CFx[iMarker_Monitoring] += SurfaceMntCoeff.CFx[iMarker_Monitoring];
     SurfaceCoeff.CFy[iMarker_Monitoring] += SurfaceMntCoeff.CFy[iMarker_Monitoring];
     SurfaceCoeff.CFz[iMarker_Monitoring] += SurfaceMntCoeff.CFz[iMarker_Monitoring];
@@ -1964,14 +2027,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, div_vel, WallDist[3] = {0.0}, Area, WallShearStress, TauNormal, RefTemp, RefVel2 = 0.0,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0, dTn, dTven,
             RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
-            thermal_conductivity, thermal_conductivity_tr, thermal_conductivity_ve = 0.0,
-            MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor,
-            delta[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
-  su2double **Grad_PrimVar = nullptr, dTn, dTven;
 
   string Marker_Tag, Monitoring_Tag;
 
@@ -2109,62 +2169,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
       Density = nodes->GetDensity(iPoint);
 
-      if (nemo) {
-        thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
-        thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
-      }
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-      Area = sqrt(Area);
-
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++) {
         UnitNormal[iDim] = Normal[iDim] / Area;
       }
 
       /*--- Evaluate Tau ---*/
-
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0; jDim < nDim; jDim++) {
-          Tau[iDim][jDim] = Viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) -
-                            TWO3 * Viscosity * div_vel * delta[iDim][jDim];
-        }
-      }
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 
-      if (QCR) {
-        su2double den_aux, c_cr1 = 0.3, O_ik, O_jk;
-        unsigned short kDim;
-
-        /*--- Denominator Antisymmetric normalized rotation tensor ---*/
-
-        den_aux = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++) den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
-        den_aux = sqrt(max(den_aux, 1E-10));
-
-        /*--- Adding the QCR contribution ---*/
-
-        su2double tauQCR[MAXNDIM][MAXNDIM] = {{0.0}};
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            for (kDim = 0; kDim < nDim; kDim++) {
-              O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim]) / den_aux;
-              O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim]) / den_aux;
-              tauQCR[iDim][jDim] += O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim];
-            }
-          }
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++) Tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
-      }
+      if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau);
 
       /*--- Project Tau in each surface element ---*/
 
@@ -2181,13 +2196,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       TauNormal = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
 
-      WallShearStress = 0.0;
+      WallShearStress[iMarker][iVertex] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
         CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5 * RefDensity * RefVel2);
-        WallShearStress += TauTangent[iDim] * TauTangent[iDim];
+        WallShearStress[iMarker][iVertex] += TauTangent[iDim] * TauTangent[iDim];
       }
-      WallShearStress = sqrt(WallShearStress);
+      WallShearStress[iMarker][iVertex] = sqrt(WallShearStress[iMarker][iVertex]);
 
       for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
       WallDistMod = 0.0;
@@ -2196,7 +2211,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Compute y+ and non-dimensional velocity ---*/
 
-      FrictionVel = sqrt(fabs(WallShearStress) / Density);
+      FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
       YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
@@ -2224,6 +2239,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = -thermal_conductivity * GradTemperature * RefHeatFlux;
 
       } else {
+
+        const auto thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
+        const auto thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
+        const auto Grad_PrimVar            = nodes->GetGradient_Primitive(iPoint);
 
         dTn = 0.0; dTven = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -2255,7 +2274,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         /*--- Moment with respect to the reference axis ---*/
 
-        if (iDim == 3) {
+        if (nDim == 3) {
           MomentViscous[0] += (Force[2] * MomentDist[1] - Force[1] * MomentDist[2]) / RefLength;
           MomentX_Force[1] += (-Force[1] * Coord[2]);
           MomentX_Force[2] += (Force[2] * Coord[1]);
@@ -2337,7 +2356,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
           SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];
           SurfaceViscCoeff.CSF[iMarker_Monitoring] += ViscCoeff.CSF[iMarker];
-          SurfaceViscCoeff.CEff[iMarker_Monitoring] += ViscCoeff.CEff[iMarker];
+          SurfaceViscCoeff.CEff[iMarker_Monitoring] = SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
           SurfaceViscCoeff.CFx[iMarker_Monitoring] += ViscCoeff.CFx[iMarker];
           SurfaceViscCoeff.CFy[iMarker_Monitoring] += ViscCoeff.CFy[iMarker];
           SurfaceViscCoeff.CFz[iMarker_Monitoring] += ViscCoeff.CFz[iMarker];
@@ -2460,7 +2479,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     SurfaceCoeff.CD[iMarker_Monitoring] += SurfaceViscCoeff.CD[iMarker_Monitoring];
     SurfaceCoeff.CSF[iMarker_Monitoring] += SurfaceViscCoeff.CSF[iMarker_Monitoring];
     SurfaceCoeff.CEff[iMarker_Monitoring] =
-        SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
+        SurfaceCoeff.CL[iMarker_Monitoring] / (SurfaceCoeff.CD[iMarker_Monitoring] + EPS);
     SurfaceCoeff.CFx[iMarker_Monitoring] += SurfaceViscCoeff.CFx[iMarker_Monitoring];
     SurfaceCoeff.CFy[iMarker_Monitoring] += SurfaceViscCoeff.CFy[iMarker_Monitoring];
     SurfaceCoeff.CFz[iMarker_Monitoring] += SurfaceViscCoeff.CFz[iMarker_Monitoring];
@@ -2490,9 +2509,6 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
         break;
       case SIDEFORCE_COEFFICIENT:
         objFun += weight * SurfaceCoeff.CSF[iMarker];
-        break;
-      case EFFICIENCY:
-        objFun += weight * SurfaceCoeff.CEff[iMarker];
         break;
       case MOMENT_X_COEFFICIENT:
         objFun += weight * SurfaceCoeff.CMx[iMarker];
@@ -2531,6 +2547,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
   const auto weight = config.GetWeight_ObjFunc(0);
 
   switch (config.GetKind_ObjFunc(0)) {
+    case EFFICIENCY:
+      objFun += weight * TotalCoeff.CEff;
+      break;
     case INVERSE_DESIGN_PRESSURE:
       objFun += weight * Total_CpDiff;
       break;

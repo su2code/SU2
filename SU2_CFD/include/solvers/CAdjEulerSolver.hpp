@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.hpp
  * \brief Headers of the CAdjEulerSolver class
  * \author F. Palacios
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,6 +77,13 @@ protected:
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
   inline CVariable* GetBaseClassPointerToNodes() override { return nodes; }
+
+  /*!
+   * \brief Compute the Least Squares gradient of an auxiliar variable on the profile surface.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config);
 
 public:
 

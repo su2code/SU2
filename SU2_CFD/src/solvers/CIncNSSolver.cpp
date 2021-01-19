@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,7 +59,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
-  unsigned long InnerIter     = config->GetInnerIter();
+  unsigned long InnerIter   = config->GetInnerIter();
   bool cont_adjoint         = config->GetContinuous_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
@@ -236,7 +236,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     jPoint = geometry->edges->GetNode(iEdge,1);
 
     Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Mean Values ---*/
 
@@ -293,7 +293,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
 
@@ -527,10 +527,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Initialize the convective & viscous residuals to zero ---*/
 
@@ -560,7 +557,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
@@ -657,7 +654,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
@@ -666,10 +663,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
         Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         /*--- Compute closest normal neighbor ---*/
 
@@ -797,7 +791,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
       nodes->SetVelocity_Old(iPoint,Vector);
 
       for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
       nodes->SetVel_ResTruncError_Zero(iPoint);
 
       if (energy) {
@@ -843,7 +837,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
         /*--- Strong imposition of the temperature on the fluid zone. ---*/
 
-        LinSysRes.SetBlock_Zero(iPoint, nDim+1);
+        LinSysRes(iPoint, nDim+1) = 0.0;
         nodes->SetSolution_Old(iPoint, nDim+1, Twall);
         nodes->SetEnergy_ResTruncError_Zero(iPoint);
       }

@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,8 +27,9 @@
  */
 
 #include "../../../include/interfaces/cht/CConjugateHeatInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst) :
@@ -39,47 +40,28 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
                                                 const CConfig *donor_config, unsigned long Marker_Donor,
                                                 unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned short nDim, iDim;
-  unsigned long iPoint, PointNormal;
+  const auto nDim = donor_geometry->GetnDim();
 
-  su2double *Coord, *Coord_Normal, *Normal, *Edge_Vector, dist, dist2, Area,
-      Twall, Tnormal, dTdn, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
+  su2double Twall, Tnormal, dTdn, rho_cp_solid, Prandtl_Lam, laminar_viscosity,
       thermal_diffusivity, thermal_conductivity=0.0, thermal_conductivityND,
       heat_flux_density=0.0, conductivity_over_dist=0.0;
 
-  nDim = donor_geometry->GetnDim();
-
-  Edge_Vector = new su2double[nDim];
-
   /*--- Check whether the current zone is a solid zone or a fluid zone ---*/
 
-  bool compressible_flow = ((donor_config->GetKind_Solver() == NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == RANS)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool incompressible_flow = (((donor_config->GetKind_Solver() == INC_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == INC_RANS)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_NAVIER_STOKES)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_INC_RANS))
-               && (donor_config->GetEnergy_Equation()));
-  bool heat_equation = ((donor_config->GetKind_Solver() == HEAT_EQUATION)
-               || (donor_config->GetKind_Solver() == DISC_ADJ_HEAT));
+  const bool compressible_flow = (donor_config->GetKind_Regime() == COMPRESSIBLE);
+  const bool incompressible_flow = (donor_config->GetKind_Regime() == INCOMPRESSIBLE) && donor_config->GetEnergy_Equation();
+  const bool heat_equation = (donor_config->GetKind_Solver() == HEAT_EQUATION) ||
+                             (donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
-  Coord         = donor_geometry->nodes->GetCoord(Point_Donor);
+  const auto Coord = donor_geometry->nodes->GetCoord(Point_Donor);
+  const auto PointNormal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
+  const auto Coord_Normal = donor_geometry->nodes->GetCoord(PointNormal);
 
-  Normal        = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
-  PointNormal   = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal_Neighbor();
-  Coord_Normal  = donor_geometry->nodes->GetCoord(PointNormal);
+  Twall = 0.0; Tnormal = 0.0; dTdn = 0.0;
 
-  Twall = 0.0; Tnormal = 0.0; dTdn = 0.0; dist2 = 0.0; Area = 0.0;
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Edge_Vector[iDim] = Coord_Normal[iDim] - Coord[iDim];
-    dist2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-    Area += Normal[iDim]*Normal[iDim];
-  }
-  dist = sqrt(dist2);
-  Area = sqrt(Area);
+  su2double Edge_Vector[3] = {0.0};
+  GeometryToolbox::Distance(nDim, Coord_Normal, Coord, Edge_Vector);
+  su2double dist = GeometryToolbox::Norm(nDim, Edge_Vector);
 
   /*--- Retrieve temperature solution and its gradient ---*/
 
@@ -102,6 +84,8 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     Tnormal = donor_solution->GetNodes()->GetSolution(PointNormal,0);
 
     // TODO: Check if these improve accuracy, if needed at all
+    //    const auto Normal = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNormal();
+    //    su2double Area = GeometryToolbox::Norm(nDim, Normal);
     //    for (iDim = 0; iDim < nDim; iDim++) {
     //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
     //    }
@@ -137,7 +121,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   }
   else if (incompressible_flow) {
 
-    iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
+    const auto iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
     thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
     heat_flux_density       = thermal_conductivityND*dTdn;
@@ -188,10 +172,6 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     Donor_Variable[2] = conductivity_over_dist;
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
   }
-
-
-
-  delete [] Edge_Vector;
 
 }
 

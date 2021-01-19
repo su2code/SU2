@@ -2,7 +2,7 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,10 +59,11 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
   unsigned long InnerIter, TimeIter;
 
-  bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                  (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
-  bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
-                     (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  const bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+                        (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
+                           (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
@@ -135,7 +136,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
-  if (config[val_iZone]->GetCFL_Adapt() == YES) {
+  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
@@ -236,7 +237,6 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
-
   if (config[val_iZone]->GetSinglezone_Driver()) {
     /*--- Compute the tractions at the vertices ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVertexTractions(geometry[val_iZone][val_iInst][MESH_0],
@@ -306,9 +306,14 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   if (multizone && steady) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
 
-    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+    /*--- Set the convergence to false (to make sure outer subiterations converge) ---*/
 
-    integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    if (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) {
+      integration[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
+    }
+    else {
+      integration[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    }
   }
 }
 

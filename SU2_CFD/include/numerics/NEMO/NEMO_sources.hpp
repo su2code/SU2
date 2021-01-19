@@ -2,7 +2,7 @@
  * \file NEMO_sources.hpp
  * \brief Delarations of numerics classes for source-term integration.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for two-temperature model source terms.
  * \ingroup SourceDiscr
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  */
 class CSource_NEMO : public CNEMONumerics {
 private:
@@ -78,7 +78,7 @@ public:
   * \param[in] val_reaction - Reaction number indicator.
   * \param[in] config - Definition of the particular problem.
   */
-  void GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
+  void ComputeKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config);
  
   /*!
    * \brief Residual of the translational to vibrational energy.

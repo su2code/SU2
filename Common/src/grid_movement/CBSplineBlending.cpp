@@ -2,7 +2,7 @@
  * \file CBSplineBlending.cpp
  * \brief Subroutines for B-Spline blening for FFDs
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/grid_movement/CBSplineBlending.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 
 CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints): CFreeFormBlending(){
   SetOrder(val_order, n_controlpoints);

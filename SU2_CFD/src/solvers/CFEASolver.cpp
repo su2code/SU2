@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -782,7 +782,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * This only needs to be done for the undeformed (initial) shape.
    */
   if (topology_mode && !topol_filter_applied) {
-    geometry->SetElemVolume(config);
+    geometry->SetElemVolume();
     FilterElementDensities(geometry, config);
     topol_filter_applied = true;
   }
@@ -1788,11 +1788,9 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, CNumerics *numerics, const
 void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
-
   const bool dynamic = config->GetTime_Domain();
 
   /*--- Determine axis of symmetry based on the normal of the first element in the marker. ---*/
-
   const su2double* nodeCoord[MAXNNODE_2D] = {nullptr};
 
   const bool quad = (geometry->bound[val_marker][0]->GetVTK_Type() == QUADRILATERAL);
@@ -1802,7 +1800,6 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     auto iPoint = geometry->bound[val_marker][0]->GetNode(iNode);
     nodeCoord[iNode] = geometry->nodes->GetCoord(iPoint);
   }
-
   su2double normal[MAXNDIM] = {0.0};
 
   switch (nNodes) {
@@ -1828,7 +1825,6 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
     /*--- Set and enforce solution at current and previous time-step ---*/
     nodes->SetSolution(iPoint, axis, 0.0);
-
     if (dynamic) {
       nodes->SetSolution_Vel(iPoint, axis, 0.0);
       nodes->SetSolution_Accel(iPoint, axis, 0.0);
@@ -1839,9 +1835,10 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
-
     LinSysSol(iPoint, axis) = 0.0;
-    LinSysReact(iPoint, axis) = 0.0;
+    if (LinSysReact.GetLocSize() > 0){
+      LinSysReact(iPoint, axis) = 0.0;
+    }
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
 
   }
@@ -1884,6 +1881,34 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CNumerics *numerics, const CCon
 
 }
 
+template<class T, class U, su2enable_if<is_same<T,U>::value> = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  CSysVector<T> r(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
+  SU2_OMP_PARALLEL { A.ComputeResidual(x, b, r); }
+  return r;
+}
+
+template<class T, class U, su2enable_if<!is_same<T,U>::value> = 0>
+CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
+                                    const CSysVector<U>& x,
+                                    const CSysVector<U>& b) {
+  /*--- Different types of A and x/b, use temporaries to interface with A. ---*/
+  const auto nVar = x.GetNVar();
+  const auto nBlk = x.GetNBlk();
+  const auto nBlkDom = x.GetNBlkDomain();
+  CSysVector<T> r(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> xtmp(nBlk, nBlkDom, nVar, nullptr);
+  CSysVector<T> btmp(nBlk, nBlkDom, nVar, nullptr);
+  SU2_OMP_PARALLEL {
+    xtmp.PassiveCopy(x);
+    btmp.PassiveCopy(b);
+    A.ComputeResidual(xtmp, btmp, r);
+  }
+  return r;
+}
+
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, CNumerics **numerics, unsigned short iMesh) {
 
@@ -1922,7 +1947,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     {
     su2double utol = LinSysSol.norm();
     su2double rtol = LinSysRes.norm();
-    su2double etol = LinSysSol.dot(LinSysRes);
+    su2double etol = fabs(LinSysSol.dot(LinSysRes));
 
     SU2_OMP_MASTER
     {
@@ -1937,34 +1962,16 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     /*--- If the problem is linear, the only check we do is the RMS of the residuals. ---*/
     /*---  Compute the residual Ax-f ---*/
 
-#ifndef CODI_FORWARD_TYPE
-    CSysVector<su2mixedfloat> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#else
-    CSysVector<su2double> LinSysAux(nPoint, nPointDomain, nVar, nullptr);
-#endif
-
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-    /*---  We need temporaries to interface with the passive matrix. ---*/
-    CSysVector<su2mixedfloat> sol, res;
-#endif
-
-    SU2_OMP_PARALLEL
-    {
-#if !(defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)) || defined(CODI_FORWARD_TYPE)
-    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-#else
-    sol.PassiveCopy(LinSysSol);
-    res.PassiveCopy(LinSysRes);
-    Jacobian.ComputeResidual(sol, res, LinSysAux);
-#endif
+    const auto ResidualAux = computeLinearResidual(Jacobian, LinSysSol, LinSysRes);
 
     /*--- Set maximum residual to zero. ---*/
 
-    SU2_OMP_MASTER
     for (auto iVar = 0ul; iVar < nVar; iVar++) {
       SetRes_RMS(iVar, 0.0);
       SetRes_Max(iVar, 0.0, 0);
     }
+
+    SU2_OMP_PARALLEL {
 
     /*--- Compute the residual. ---*/
 
@@ -1975,7 +1982,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       for (auto iVar = 0ul; iVar < nVar; iVar++) {
-        su2double Res = fabs(LinSysAux(iPoint, iVar));
+        su2double Res = fabs(ResidualAux(iPoint, iVar));
         resRMS[iVar] += Res*Res;
         if (Res > resMax[iVar]) {
           resMax[iVar] = Res;
@@ -2718,7 +2725,6 @@ void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, const CConfig
 void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 
   /*--- Enforce solution at some halo points possibly not covered by essential BC markers. ---*/
-
   Jacobian.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
   Jacobian.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
 
@@ -2735,6 +2741,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
   /*--- Solve or smooth the linear system. ---*/
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
   SU2_OMP_MASTER
   {
     SetIterLinSolver(iter);
@@ -3499,6 +3506,18 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
       if      (rho > 1.0) element_properties[iElem]->SetPhysicalDensity(1.0);
       else if (rho < 0.0) element_properties[iElem]->SetPhysicalDensity(0.0);
       else element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
+    }
+
+    /*--- Compute nodal averages for output. ---*/
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint=0ul; iPoint<nPoint; ++iPoint) {
+      su2double sum = 0, vol = 0;
+      for (auto iElem : geometry->nodes->GetElems(iPoint)) {
+        su2double w = geometry->nodes->GetVolume(iPoint);
+        sum += w * element_properties[iElem]->GetPhysicalDensity();
+        vol += w;
+      }
+      nodes->SetAuxVar(iPoint, 0, sum/vol);
     }
   }
 

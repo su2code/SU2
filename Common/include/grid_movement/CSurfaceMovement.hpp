@@ -2,7 +2,7 @@
  * \file CSurfaceMovement.hpp
  * \brief Headers of the CSurfaceMovement class.
  * \author F. Palacios, T. Economon.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -210,8 +210,9 @@ public:
    * \brief Set the surface/boundary deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  void SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
+  vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) override;
 
   /*!
    * \brief Compute the parametric coordinates of a grid point using a point inversion strategy
@@ -267,6 +268,15 @@ public:
    * \param[in] FFDBoxChild - Array with child FFDBoxes of the computation.
    */
   void GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
+
+  /*!
+   * \brief Apply the design variables to the control point position
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iFFDBox - Index of FFD box.
+   */
+  void ApplyDesignVariables(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, unsigned short iFFDBox);
 
   /*!
    * \brief Recompute the cartesian coordinates using the control points position.
@@ -484,4 +494,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Calculate the determinant of the Jacobian matrix for the FFD problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Free form deformation box.
+   * \return Number of points with negative Jacobian determinant.
+   */
+  unsigned long calculateJacobianDeterminant(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox) const;
 };

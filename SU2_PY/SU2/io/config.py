@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.0.6 "Blackbird"
+#  \version 7.0.8 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -669,9 +669,6 @@ def read_config(filename):
         data_dict['OPT_BOUND_LOWER'] = -1e10
     if 'OPT_COMBINE_OBJECTIVE' not in data_dict:
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
-    # ensure that per-surface output will be included when there are multiple objectives
-    if 'WRT_SURFACE' not in data_dict and 'OPT_OBJECTIVE' in data_dict and len(data_dict['OPT_OBJECTIVE'])>1:
-        data_dict['WRT_SURFACE'] = "YES"
     if 'OPT_CONSTRAINT' not in data_dict:
         data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if 'VALUE_OBJFUNC_FILENAME' not in data_dict:

@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,16 +29,6 @@
 #include "../../include/CConfig.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
-
-
-/*! \brief Helper struct to (partially) sort neighbours according to distance while
- *         keeping track of the origin of the point (i.e. index and processor). */
-struct DonorInfo {
-  su2double dist;
-  unsigned pidx;
-  int proc;
-  DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) : dist(d), pidx(i), proc(p) { }
-};
 
 CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
                                    unsigned int iZone, unsigned int jZone) :
@@ -138,7 +128,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         }
       }
 
-      /*--- Find k closest points (need to define the comparator inline or debug build give wrong results). ---*/
+      /*--- Find k closest points. ---*/
       partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
         [](const DonorInfo& a, const DonorInfo& b) {
           /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/

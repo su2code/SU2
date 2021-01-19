@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.cpp
  * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
 #endif
 #include "../../include/adt/CADTElemClass.hpp"
 
-#include "../../include/blas_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>

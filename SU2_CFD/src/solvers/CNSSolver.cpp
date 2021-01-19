@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -98,21 +98,29 @@ CNSSolver::~CNSSolver(void) {
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter   = config->GetInnerIter();
-  bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool wall_functions       = config->GetWall_Functions();
+  const auto InnerIter = config->GetInnerIter();
+  const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  /*--- Compute gradient for MUSCL reconstruction. ---*/
+  /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
+   turbulence solver, and post) only temperature and velocity are needed ---*/
 
-  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+  const auto nPrimVarGrad_bak = nPrimVarGrad;
+  if (Output) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    nPrimVarGrad = 1+nDim;
+    SU2_OMP_BARRIER
+  }
+
+  if (config->GetReconstructionGradientRequired() && muscl && !center) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
         SetPrimitive_Gradient_GG(geometry, config, true); break;
@@ -132,10 +140,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
-   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  if (Output) {
+    SU2_OMP_MASTER
+    nPrimVarGrad = nPrimVarGrad_bak;
+    SU2_OMP_BARRIER
+  }
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !van_albada) {
+  /*--- Compute the limiters ---*/
+
+  if (muscl && !center && limiter && !van_albada && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
 
@@ -150,21 +163,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   nodes->SetVorticity_StrainMag();
 
+  /*--- Min and Max are not really differentiable ---*/
+  const bool wasActive = AD::BeginPassive();
+
   su2double strainMax = 0.0, omegaMax = 0.0;
 
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    su2double StrainMag = nodes->GetStrainMag(iPoint);
-    const su2double* Vorticity = nodes->GetVorticity(iPoint);
-    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
-
-    strainMax = max(strainMax, StrainMag);
-    omegaMax = max(omegaMax, Omega);
-
+    strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
+    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
   }
-  SU2_OMP_CRITICAL
-  {
+  SU2_OMP_CRITICAL {
     StrainMag_Max = max(StrainMag_Max, strainMax);
     Omega_Max = max(Omega_Max, omegaMax);
   }
@@ -181,6 +190,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
     SU2_OMP_BARRIER
   }
+
+  AD::EndPassive(wasActive);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -354,9 +365,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
         if(Monitoring == YES){
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
 
@@ -471,23 +480,10 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
   su2double total_viscosity = laminar_viscosity + eddy_viscosity;
 
-  const auto Grad_Vel = &nodes->GetGradient_Primitive(iPoint)[1];
-
-  /*--- Divergence of the velocity ---*/
-
-  su2double div_vel = 0.0;
-  for (auto iDim = 0u; iDim < nDim; iDim++)
-    div_vel += Grad_Vel[iDim][iDim];
-
   /*--- Compute the viscous stress tensor ---*/
 
   su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    for (auto jDim = 0u; jDim < nDim; jDim++) {
-      tau[iDim][jDim] = total_viscosity * (Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]);
-    }
-    tau[iDim][iDim] -= TWO3*total_viscosity*div_vel;
-  }
+  CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, total_viscosity);
 
   /*--- Dot product of the stress tensor with the grid velocity ---*/
 
@@ -631,7 +627,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
     }
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+      LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- If the wall is moving, there are additional residual contributions
@@ -786,7 +782,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     }
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes.SetBlock_Zero(iPoint, iDim+1);
+      LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Get transport coefficients ---*/
@@ -988,21 +984,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute the shear stress at the wall in the regular fashion
        by using the stress tensor on the surface ---*/
 
-      su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
-
-      const auto GradVel = &nodes->GetGradient_Primitive(iPoint)[1];
-
-      su2double div_vel = 0.0;
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        div_vel += GradVel[iDim][iDim];
-
       su2double tau[MAXNDIM][MAXNDIM] = {{0.0}}, TauElem[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        for (auto jDim = 0u; jDim < nDim; jDim++) {
-          tau[iDim][jDim] = Lam_Visc_Wall * (GradVel[jDim][iDim] + GradVel[iDim][jDim]);
-        }
-        tau[iDim][iDim] -= TWO3*Lam_Visc_Wall*div_vel;
+      su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
+      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetGradient_Primitive(iPoint)+1, Lam_Visc_Wall);
 
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         TauElem[iDim] = GeometryToolbox::DotProduct(nDim, tau[iDim], UnitNormal);
       }
 

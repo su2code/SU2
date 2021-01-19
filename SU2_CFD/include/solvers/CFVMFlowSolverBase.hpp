@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,9 +26,11 @@
 
 #pragma once
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "CSolver.hpp"
+
+class CNumericsSIMD;
 
 template <class VariableType, ENUM_REGIME FlowRegime>
 class CFVMFlowSolverBase : public CSolver {
@@ -143,6 +145,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double** HeatFluxTarget = nullptr;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   su2double*** CharacPrimVar = nullptr;    /*!< \brief Value of the characteristic variables at each boundary. */
   su2double*** CSkinFriction = nullptr;    /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  su2double** WallShearStress = nullptr;   /*!< \brief Wall Shear Stress for each boundary and vertex. */
   su2double*** HeatConjugateVar = nullptr; /*!< \brief CHT variables for each boundary and vertex. */
   su2double** CPressure = nullptr;         /*!< \brief Pressure coefficient for each boundary and vertex. */
   su2double** CPressureTarget = nullptr;   /*!< \brief Target Pressure coefficient for each boundary and vertex. */
@@ -178,7 +181,12 @@ class CFVMFlowSolverBase : public CSolver {
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
 
-  VariableType* nodes = nullptr; /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
+  CNumericsSIMD* edgeNumerics = nullptr; /*!< \brief Object for edge flux computation. */
+
+  /*!
+   * \brief The highest level in the variable hierarchy the DERIVED solver can safely use.
+   */
+  VariableType* nodes = nullptr;
 
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
@@ -220,6 +228,21 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Evaluate common part of objective function to all solvers.
    */
   su2double EvaluateCommonObjFunc(const CConfig& config) const;
+
+  /*!
+   * \brief Method to compute convective and viscous residual contribution using vectorized numerics.
+   */
+  void EdgeFluxResidual(const CGeometry *geometry, const CSolver* const* solvers, const CConfig *config);
+
+  /*!
+   * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
+   */
+  void SumEdgeFluxes(const CGeometry* geometry);
+
+  /*!
+   * \brief Instantiate a SIMD numerics object.
+   */
+  inline virtual void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) {}
 
   /*!
    * \brief Destructor.
@@ -1534,6 +1557,16 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
     return CSkinFriction[val_marker][val_dim][val_vertex];
+  }
+
+  /*!
+   * \brief Get the wall shear stress.
+   * \param[in] val_marker - Surface marker where the wall shear stress is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the wall shear stress is evaluated.
+   * \return Value of the wall shear stress.
+   */
+  inline su2double GetWallShearStress(unsigned short val_marker, unsigned long val_vertex) const final {
+    return WallShearStress[val_marker][val_vertex];
   }
 
   /*!

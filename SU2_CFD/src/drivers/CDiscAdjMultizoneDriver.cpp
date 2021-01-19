@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, T. Albring, R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.0.8 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -218,12 +218,32 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
+   su2double rhs_norm = 0.0;
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     iteration_container[iZone][INST_0]->Iterate(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
                                                 surface_movement, grid_movement, FFDBox, iZone, INST_0, false);
     Add_Solution_To_External(iZone);
+
+    for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
+      if (solver && solver->GetAdjoint())
+        for (unsigned short iVar=0; iVar < solver->GetnVar(); ++iVar)
+          rhs_norm += solver->GetRes_RMS(iVar);
+    }
+  }
+
+  /*--- If the gradient of the objective function is 0 so are the adjoint variables. ---*/
+
+  if (rhs_norm < EPS) {
+    if (rank == MASTER_NODE) {
+      cout << "\nThe gradient of the objective function is numerically 0.";
+      cout << "\nThis implies that the adjoint variables are also 0.\n\n";
+    }
+    EvaluateSensitivities(0, true);
+    return;
   }
 
   /*--- Loop over the number of outer iterations. ---*/
@@ -463,21 +483,25 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long iOuterIter, bo
       case DISC_ADJ_EULER:     case DISC_ADJ_NAVIER_STOKES:     case DISC_ADJ_RANS:
       case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
 
-        if(Has_Deformation(iZone) && config_container[iZone]->GetDeform_Mesh()) {
-          solvers[ADJMESH_SOL]->SetSensitivity(geometry, solvers, config);
+        if(Has_Deformation(iZone)) {
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJFLOW_SOL]);
         } else {
-          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, solvers, config);
+          solvers[ADJFLOW_SOL]->SetSensitivity(geometry, config);
         }
         break;
 
       case DISC_ADJ_HEAT:
 
-        solvers[ADJHEAT_SOL]->SetSensitivity(geometry, solvers, config);
+        if(Has_Deformation(iZone)) {
+          solvers[ADJMESH_SOL]->SetSensitivity(geometry, config, solvers[ADJHEAT_SOL]);
+        } else {
+          solvers[ADJHEAT_SOL]->SetSensitivity(geometry, config);
+        }
         break;
 
       case DISC_ADJ_FEM:
 
-        solvers[ADJFEA_SOL]->SetSensitivity(geometry, solvers, config);
+        solvers[ADJFEA_SOL]->SetSensitivity(geometry, config);
         break;
 
       default:
@@ -602,11 +626,20 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording, Kind_T
     }
   }
 
-  if (rank == MASTER_NODE) {
-    if(kind_recording != NONE && config_container[record_zone]->GetWrt_AD_Statistics()) {
-      AD::PrintStatistics();
+  if (kind_recording != NONE && driver_config->GetWrt_AD_Statistics()) {
+    if (rank == MASTER_NODE) AD::PrintStatistics();
+#ifdef CODI_REVERSE_TYPE
+    if (size > SINGLE_NODE) {
+      su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      if (rank == MASTER_NODE) {
+        cout << "MPI\n";
+        cout << "-------------------------------------\n";
+        cout << "  Total memory used      :  " << totMem << " MB\n";
+        cout << "-------------------------------------\n" << endl;
+      }
     }
-    cout << "-------------------------------------------------------------------------\n" << endl;
+#endif
   }
 
   AD::StopRecording();
@@ -761,18 +794,21 @@ void CDiscAdjMultizoneDriver::SetObjFunction(unsigned short kind_recording) {
 
           // Aerodynamic coefficients
 
-          case DRAG_COEFFICIENT:      FieldName = "DRAG";       break;
-          case LIFT_COEFFICIENT:      FieldName = "LIFT";       break;
-          case SIDEFORCE_COEFFICIENT: FieldName = "SIDEFORCE";  break;
-          case EFFICIENCY:            FieldName = "EFFICIENCY"; break;
-          case MOMENT_X_COEFFICIENT:  FieldName = "MOMENT-X";   break;
-          case MOMENT_Y_COEFFICIENT:  FieldName = "MOMENT-Y";   break;
-          case MOMENT_Z_COEFFICIENT:  FieldName = "MOMENT-Z";   break;
-          case FORCE_X_COEFFICIENT:   FieldName = "FORCE-X";    break;
-          case FORCE_Y_COEFFICIENT:   FieldName = "FORCE-Y";    break;
-          case FORCE_Z_COEFFICIENT:   FieldName = "FORCE-Z";    break;
+          case DRAG_COEFFICIENT:
+          case LIFT_COEFFICIENT:
+          case SIDEFORCE_COEFFICIENT:
+          case EFFICIENCY:
+          case MOMENT_X_COEFFICIENT:
+          case MOMENT_Y_COEFFICIENT:
+          case MOMENT_Z_COEFFICIENT:
+          case FORCE_X_COEFFICIENT:
+          case FORCE_Y_COEFFICIENT:
+          case FORCE_Z_COEFFICIENT:
+            FieldName = config->GetName_ObjFunc();
+            break;
 
           // Other surface-related output values
+          // The names are different than in CConfig...
 
           case SURFACE_MASSFLOW:            FieldName = "AVG_MASSFLOW";              break;
           case SURFACE_MACH:                FieldName = "AVG_MACH";                  break;
