@@ -1070,7 +1070,6 @@ private:
   su2double default_vel_inf[3],  /*!< \brief Default freestream velocity array for the COption class. */
   default_eng_cyl[7],            /*!< \brief Default engine box array for the COption class. */
   default_eng_val[5],            /*!< \brief Default engine box array values for the COption class. */
-  default_cfl_adapt[4],          /*!< \brief Default CFL adapt param array for the COption class. */
   default_jst_coeff[2],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   default_ffd_coeff[3],          /*!< \brief Default artificial dissipation (flow) array for the COption class. */
   default_mixedout_coeff[3],     /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
