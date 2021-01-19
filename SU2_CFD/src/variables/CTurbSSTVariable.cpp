@@ -60,11 +60,20 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   Delta_Time.resize(nPoint) = su2double(0.0);
 }
 
-void CTurbSSTVariable::SetCrossDiff(unsigned long iPoint, const su2double val_density) {
+void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val_viscosity,
+                                       const su2double val_dist, const su2double val_density) {
+  su2double arg2, arg2A, arg2B, arg1;
+
   AD::StartPreacc();
+  AD::SetPreaccIn(val_viscosity);  
+  AD::SetPreaccIn(val_dist);
   AD::SetPreaccIn(val_density);
-  AD::SetPreaccIn(Primitive(iPoint,1));
+  AD::SetPreaccIn(Primitive[iPoint], nVar);
   AD::SetPreaccIn(Gradient[iPoint], nVar, nDim);
+
+  /*--- Note: Hellsten uses max CDkw in domain times 10^-8 as CDkw_min in arg1 for
+              numerical stability. ---*/
+  const su2double eps = numeric_limits<passivedouble>::epsilon();
 
   /*--- Cross diffusion ---*/
 
@@ -73,27 +82,6 @@ void CTurbSSTVariable::SetCrossDiff(unsigned long iPoint, const su2double val_de
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Primitive(iPoint,1);
   // CDkw(iPoint) = max(CDkw(iPoint), CDKW_MIN);
-
-  AD::SetPreaccOut(CDkw(iPoint));
-  AD::EndPreacc();
-}
-
-void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, const su2double val_viscosity,
-                                       const su2double val_dist, const su2double val_density, const su2double cdkw_max) {
-  su2double arg2, arg2A, arg2B, arg1;
-
-  AD::StartPreacc();
-  AD::SetPreaccIn(val_viscosity);  
-  AD::SetPreaccIn(val_dist);
-  AD::SetPreaccIn(val_density);
-  AD::SetPreaccIn(Primitive[iPoint], nVar);
-  AD::SetPreaccIn(cdkw_max);
-  AD::SetPreaccIn(CDkw(iPoint));
-
-  /*--- Note: Hellsten uses max CDkw in domain times 10^-8 as CDkw_min in arg1 for
-              numerical stability. ---*/
-  const su2double eps = numeric_limits<passivedouble>::epsilon();
-  // const su2double cdkw_min = cdkw_max*1.0e-8;
 
   /*--- F1 ---*/
 

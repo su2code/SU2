@@ -349,26 +349,6 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
   
   const su2double a1 = constants[7];
-
-  su2double local_cdkw_max = 0.0, cdkw_max = 0.0;
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    /*--- Compute cross diffusion ---*/
-    
-    const su2double rho = flowNodes->GetDensity(iPoint);
-        
-    nodes->SetCrossDiff(iPoint, rho);
-
-    local_cdkw_max = max(nodes->GetCrossDiff(iPoint), local_cdkw_max);
-  }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&local_cdkw_max, &cdkw_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-  cdkw_max = local_cdkw_max;
-#endif
   
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -379,7 +359,7 @@ void CTurbSSTSolver::SetEddyViscosity(CGeometry *geometry, CSolver **solver) {
     const su2double mu  = flowNodes->GetLaminarViscosity(iPoint);
     const su2double dist = geometry->node[iPoint]->GetWall_Distance();
         
-    nodes->SetBlendingFunc(iPoint, mu, dist, rho, cdkw_max);
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho);
 
     /*--- Compute the eddy viscosity ---*/
 

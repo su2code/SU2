@@ -2188,19 +2188,12 @@ public:
   inline virtual VectorOfMatrix& GetGradient_Reconstruction(void) { return Gradient; }
 
   /*!
-   * \brief Set the cross diffusion of k-w.
-   * \param[in] val_density - Value of the density.
-   */
-  inline virtual void SetCrossDiff(unsigned long iPoint, const su2double val_density) {}
-
-  /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_cdkw_max - Maximum cross diffusion in the domain.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, const su2double val_viscosity, const su2double val_dist, const su2double val_density, const su2double cdkw_max) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, const su2double val_viscosity, const su2double val_dist, const su2double val_density) {}
 
   /*!
    * \brief Get the first blending function of the SST model.
