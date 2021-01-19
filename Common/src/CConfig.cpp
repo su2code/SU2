@@ -6541,7 +6541,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<
+        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3]
         <<",\n                acceptable linear residual: "<< CFL_AdaptParam[4] << "." << endl;;
 
       if (nMGLevels !=0) {
