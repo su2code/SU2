@@ -13288,16 +13288,16 @@ void CPhysicalGeometry::SetWallFunctionNodes(const CConfig *config) {
   /*--- Next store neighbors of neighbors ---*/
   vector<unsigned long> secondWallNeighbors;
   for (auto iPoint=0; iPoint<GetnPointDomain(); ++iPoint) {
-    if (!node[iPoint]->GetSolidBoundary()) {
+    if ((!node[iPoint]->GetSolidBoundary())  && (!node[iPoint]->GetBool_Wall_Neighbor())) {
       for (auto iNode = 0; iNode < node[iPoint]->GetnPoint(); ++iNode) {
         const unsigned long jPoint = node[iPoint]->GetPoint(iNode);
-        if ((node[jPoint]->GetBool_Wall_Neighbor()) && (!node[iPoint]->GetBool_Wall_Neighbor())) {
+        if (node[jPoint]->GetBool_Wall_Neighbor()) {
           secondWallNeighbors.push_back(iPoint);
           maxWallDist = max(maxWallDist, node[iPoint]->GetWall_Distance());
           break;
-        }// if jPoint WallNeighbor && iPoint !WallNeighbor
+        }// if jPoint WallNeighbor
       }// iNode
-    }// iPoint !SolidBoundary
+    }// iPoint !SolidBoundary && !WallNeighbor
   }
 
   for (auto iNode = 0; iNode < secondWallNeighbors.size(); iNode++)

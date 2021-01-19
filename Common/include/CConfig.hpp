@@ -728,6 +728,7 @@ private:
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
+  unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   bool CFL_Adapt;        /*!< \brief Adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
@@ -1063,6 +1064,8 @@ private:
   su2double *Wall_Emissivity;          /*!< \brief Emissivity of the wall. */
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
+
+  array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
 
   su2double default_vel_inf[3],  /*!< \brief Default freestream velocity array for the COption class. */
   default_eng_cyl[7],            /*!< \brief Default engine box array for the COption class. */
