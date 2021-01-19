@@ -2468,7 +2468,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
-  const unsigned short Res_Count    = 100;
   unsigned short nMGLevels          = config->GetnMGLevels();
 
   const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
