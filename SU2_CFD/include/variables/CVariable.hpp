@@ -2246,16 +2246,33 @@ public:
   inline virtual void SetSolution_Pred(unsigned long iPoint) {}
 
   /*!
+   * \brief  A virtual member. Set the value of the velocity solution predictor.
+   */
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint) {}
+
+  /*!
    * \brief  A virtual member. Set the value of the old solution.
    * \param[in] solution_pred - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
 
   /*!
+   * \brief  A virtual member. Set the value of the velocity solution.
+   * \param[in] solution_vel_pred - Pointer to the residual vector.
+   */
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, const su2double *solution_vel_pred) {}
+
+  /*!
    * \brief  A virtual member. Set the value of the solution predicted.
    * \param[in] solution_old - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_pred) {}
+
+  /*!
+   * \brief  A virtual member. Set the value of the velocity solution predicted.
+   * \param[in] solution__vel_pred - Pointer to the residual vector.
+   */
+  inline virtual void SetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_vel_pred) {}
 
   /*!
    * \brief  A virtual member. Get the value of the solution predictor.
@@ -2265,10 +2282,23 @@ public:
   inline virtual su2double GetSolution_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
+   * \brief  A virtual member. Get the value of the velocity solution predictor.
+   * \param[in] iVar - Index of the variable.
+   * \return Pointer to the velocity solution vector.
+   */
+  inline virtual su2double GetSolution_Vel_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+
+  /*!
    * \brief  A virtual member. Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
   inline virtual su2double *GetSolution_Pred(unsigned long iPoint) {return nullptr; }
+
+  /*!
+   * \brief  A virtual member. Get the velocity solution predictor.
+   * \return Pointer to the velocity solution vector.
+   */
+  inline virtual su2double *GetSolution_Vel_Pred(unsigned long iPoint) {return nullptr; }
 
   /*!
    * \brief  A virtual member. Set the value of the solution predictor.
@@ -2381,11 +2411,22 @@ public:
   inline virtual su2double GetBound_Disp(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
+   * \brief A virtual member. Get the value of the velocity imposed at the boundary.
+   * \return Value of the boundary velocity.
+   */
+  inline virtual su2double GetBound_Vel(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+  /*!
    * \brief A virtual member. Set the boundary displacement.
    * \param[in] val_BoundDisp - Pointer to the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, const su2double *val_BoundDisp) { }
 
+  /*!
+   * \brief A virtual member. Set the boundary velocity.
+   * \param[in] val_BoundVel - Pointer to the boundary velocity.
+   */
+  inline virtual void SetBound_Vel(unsigned long iPoint, const su2double *val_BoundVel) { }
 
   /*!
    * \brief A virtual member. Set the boundary displacement.
@@ -2393,6 +2434,13 @@ public:
    * \param[in] val_BoundDisp - Value of the boundary displacements.
    */
   inline virtual void SetBound_Disp(unsigned long iPoint, unsigned long iDim, const su2double val_BoundDisp) { }
+
+  /*!
+   * \brief A virtual member. Set the boundary velocity.
+   * \param[in] iDim - Index of the dimension of interest.
+   * \param[in] val_BoundVel - Value of the boundary velocity.
+   */
+  inline virtual void SetBound_Vel(unsigned long iPoint, unsigned long iDim, const su2double val_BoundVel) { }
 
   /*!
    * \brief A virtual member. Get the value of the displacement imposed at the boundary.

@@ -2214,7 +2214,8 @@ enum MPI_QUANTITIES {
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
-  PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
+  PRIMITIVE            = 30,  /*!< \brief Primitive solution communication. */
+  SOLUTION_VEL_PRED    = 31   /*!< \brief Velocity solution predicted communication. */
 };
 
 /*!

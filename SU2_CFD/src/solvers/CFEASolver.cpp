@@ -2240,6 +2240,26 @@ void CFEASolver::BC_Deforming(CGeometry *geometry, CNumerics *numerics, const CC
 
 }
 
+void CFEASolver::BC_Velocity(CGeometry *geometry, CNumerics *numerics, const CConfig *config, unsigned short val_marker){
+
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+    auto iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Retrieve the boundary velocity ---*/
+    su2double Vel[MAXNVAR] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Vel[iDim] = nodes->GetBound_Vel(iNode,iDim);
+
+    /*--- Set and enforce solution ---*/
+    LinSysSol.SetBlock(iNode, Vel);
+    Jacobian.EnforceSolutionAtNode(iNode, Vel, LinSysRes);
+
+  }
+
+}
+
 su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, const CConfig *config){
 
   su2double LoadCoeff = 1.0;
@@ -2781,6 +2801,19 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
 
 }
 
+void CFEASolver::PredictStruct_Velocity(CGeometry *geometry, CConfig *config) {
+
+  /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
+  SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
+  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
+    nodes->SetSolution_Vel_Pred(iPoint);
+  }
+
+  InitiateComms(geometry, config, SOLUTION_VEL_PRED);
+  CompleteComms(geometry, config, SOLUTION_VEL_PRED);
+
+}
+
 void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {
 
   unsigned long iPoint, iDim;
@@ -2889,6 +2922,10 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
 
     /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
     nodes->SetSolution_Old(iPoint, dispCalc);
+
+    /*--- Set predicted velocity to update in multizone iterations ---*/
+
+    if (config->GetTime_Domain()) nodes->SetSolution_Vel_Pred(iPoint);
 
     /*--- Apply the Aitken relaxation ---*/
     for (unsigned short iDim=0; iDim < nDim; iDim++) {
@@ -3300,9 +3337,10 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
           nodes->SetSolution_Accel(iPoint_Local, iVar, Sol[iVar+2*nVar]);
           nodes->SetSolution_Accel_time_n(iPoint_Local, iVar, Sol[iVar+2*nVar]);
         }
-        if (fluid_structure && !dynamic) {
+        if (fluid_structure) {
           nodes->SetSolution_Pred(iPoint_Local, iVar, Sol[iVar]);
           nodes->SetSolution_Pred_Old(iPoint_Local, iVar, Sol[iVar]);
+          if (dynamic) nodes->SetSolution_Vel_Pred(iPoint_Local, iVar, Sol[iVar+nVar]);
         }
         if (fluid_structure && discrete_adjoint){
           nodes->SetSolution_Old(iPoint_Local, iVar, Sol[iVar]);
@@ -3331,12 +3369,17 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
     solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
   }
-  if (fluid_structure && !dynamic) {
+  if (fluid_structure) {
     solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
 
     solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
     solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+
+    if (dynamic) {
+      solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_VEL_PRED);
+      solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_VEL_PRED);
+    }
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
