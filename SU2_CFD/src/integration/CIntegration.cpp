@@ -143,6 +143,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DIELEC_BOUNDARY:
         solver_container[MainSolver]->BC_Dielec(geometry, solver_container, conv_bound_numerics, config, iMarker);
         break;
+      case SYMMETRY_PLANE:
+        if (!config->GetNEMOProblem())
+          solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        break;
     }
   }
 
@@ -186,7 +190,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
-      if (KindBC == SYMMETRY_PLANE) solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+      if (KindBC == SYMMETRY_PLANE && config->GetNEMOProblem()) solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
   }
 
 }
