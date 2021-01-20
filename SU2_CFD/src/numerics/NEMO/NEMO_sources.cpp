@@ -372,12 +372,12 @@ CNumerics::ResidualType<> CSource_NEMO::ComputeAxisymmetric(const CConfig *confi
                                                                     -TWO3*AuxVar_Grad_i[0][0]);
     residual[nSpecies+1] -= Volume*(yinv*total_viscosity_i*2*(PrimVar_Grad_i[nSpecies+3][1]-v*yinv)
                                                                     -TWO3*AuxVar_Grad_i[0][1]);
-    residual[nSpecies+2] -= Volume*(yinv*(- sumJhs_y + total_viscosity_i*(u*(PrimVar_Grad_i[nSpecies+3][0]+PrimVar_Grad_i[nSpecies+2][1])
+    residual[nSpecies+2] -= Volume*(yinv*(sumJhs_y + total_viscosity_i*(u*(PrimVar_Grad_i[nSpecies+3][0]+PrimVar_Grad_i[nSpecies+2][1])
                                                      +v*TWO3*(2*PrimVar_Grad_i[nSpecies+2][1]-PrimVar_Grad_i[nSpecies+2][0]
                                                      -v*yinv+rho*turb_ke_i))
                                                      -total_conductivity_i*PrimVar_Grad_i[nSpecies][1])
                                                      -TWO3*(AuxVar_Grad_i[1][1]+AuxVar_Grad_i[2][1]));
-    residual[nSpecies+3] -= Volume*(yinv*(-sumJeve_y -qy_ve));
+    residual[nSpecies+3] -= Volume*(yinv*(sumJeve_y -qy_ve));
   }
 
 //  if (implicit) {
