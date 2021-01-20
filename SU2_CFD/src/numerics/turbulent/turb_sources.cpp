@@ -762,6 +762,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
+  exact_jacobian = (config->GetUse_Accurate_Turb_Jacobians());
 
   /*--- Closure constants ---*/
   beta_star     = constants[6];
@@ -852,24 +853,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   su2double pw = Density_i*alfa_blended*(StrainMag2 - TWO3*zeta*diverg);
 
   const su2double pkmax = 20.*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0];
-     
-  /*--- k production Jacobian ---*/
 
-  if (pk > pkmax) {
-    Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
-    Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
-  }
-  else if (pk > 0) {
-    Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-    if (!stress_limited)
-      Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
-  }
-   
-  /*--- omega production Jacobian ---*/
-
-  if (!stress_limited && pw > 0) {
-    Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
-  }
+  const bool pk_limited  = (pk > pkmax);
+  const bool pk_positive = (pk > 0);
+  const bool pw_positive = (pw > 0);
     
   pk = min(pk, pkmax);
     
@@ -923,14 +910,34 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   Jacobian_i[0][1] -= beta_star*TurbVar_i[0]*Volume;
   Jacobian_i[1][1] -= 2.*beta_blended*TurbVar_i[1]*Volume;
 
-  // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
-  // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited);
-  Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*cdkw_positive;
+  if (exact_jacobian) {
+    /*--- k production Jacobian ---*/
 
-  if (Residual[1] > 1e10) {
-    su2double dKdOmega = 0;
-    for (auto iDim = 0; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
-    cout << "CDkw= "  << CDkw_i << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
+    if (pk_limited) {
+      Jacobian_i[0][0] += 20.*beta_star*TurbVar_i[1]*Volume;
+      Jacobian_i[0][1] += 20.*beta_star*TurbVar_i[0]*Volume;
+    }
+    else if (pk_positive) {
+      Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
+      if (!stress_limited)
+        Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+    }
+     
+    /*--- omega production Jacobian ---*/
+
+    if (!stress_limited && pw_positive) {
+      Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
+    }
+
+    // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume;
+    // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited);
+    Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*cdkw_positive;
+
+    if (Residual[1] > 1e10) {
+      su2double dKdOmega = 0;
+      for (auto iDim = 0; iDim < nDim; iDim++) dKdOmega += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[1][iDim];
+      cout << "CDkw= "  << CDkw_i << ", GradKGradO= " << dKdOmega << ", 1/O= " << 1.0/TurbVar_i[1] << endl;
+    }
   }
   
   AD::SetPreaccOut(Residual, nVar);
