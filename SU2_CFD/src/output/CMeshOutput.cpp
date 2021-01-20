@@ -2,7 +2,7 @@
  * \file output_mesh.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

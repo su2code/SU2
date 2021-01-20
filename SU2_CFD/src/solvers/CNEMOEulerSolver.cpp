@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -217,7 +217,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
-  
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
@@ -642,6 +642,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   SU2_OMP_MASTER
   if (config->GetComm_Level() == COMM_FULL) {
     su2double rbuf_time;
+    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     Min_Delta_Time = rbuf_time;
 
     SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -1528,7 +1529,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    #else
      SU2_MPI::Error(string("Either 1) Mutation++ has not been configured/compiled (add '-Denable-mpp=true' to your meson string) or 2) CODI must be deactivated since it is not compatible with Mutation++."),
      CURRENT_FUNCTION);
-   #endif    
+   #endif
    break;
   case SU2_NONEQ:
    FluidModel = new CSU2TCLib(config, nDim, viscous);

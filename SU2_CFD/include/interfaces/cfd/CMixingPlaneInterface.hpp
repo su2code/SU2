@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
