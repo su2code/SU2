@@ -110,10 +110,7 @@ AC_ARG_ENABLE(SOL,
   [build_SOL=$enableval], [build_SOL="yes"])
 AC_ARG_ENABLE(GEO,
     AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
-  [build_GEO=$enableval], [build_GEO="yes"])
-AC_ARG_ENABLE(INTERP,
-    AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
-  [build_INTERP=$enableval], [build_INTERP="yes"])  
+  [build_GEO=$enableval], [build_GEO="yes"]) 
 AC_ARG_ENABLE(PY_WRAPPER,
     AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
   [build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
@@ -332,7 +329,6 @@ AC_OUTPUT(Makefile \
 	      SU2_DEF/obj/Makefile \
 	      SU2_SOL/obj/Makefile \
 	      SU2_GEO/obj/Makefile \
-        SU2_INTERP/obj/Makefile \
 	      SU2_PY/Makefile \
 	      SU2_PY/pySU2/Makefile)
 
@@ -411,7 +407,6 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
-    Build SU2_INTERP:     $build_INTERP
     Build Py Wrapper:     $build_PY_WRAPPER
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,

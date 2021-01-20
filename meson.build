@@ -185,8 +185,6 @@ subdir('SU2_DEF/src')
 subdir('SU2_GEO/src')
 # compile SU2_SOL executable
 subdir('SU2_SOL/src')
-# compile SU2_INTERP executable
-subdir('SU2_INTERP/src')
 # install python scripts
 subdir('SU2_PY')
 # unit tests

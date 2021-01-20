@@ -667,7 +667,6 @@ private:
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                 /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-  Wrt_Binary_Restart,           /*!< \brief Write binary SU2 native restart files.*/
   Read_Binary_Restart,          /*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;                 /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
@@ -1158,9 +1157,6 @@ private:
   monoatomic;                               /*!< \brief Flag for monoatomic mixture. */
   string GasModel,                          /*!< \brief Gas Model. */
   *Wall_Catalytic;                          /*!< \brief Pointer to catalytic walls. */
-  
-  bool interpolate_solution;                /*!< \brief Flag for solution interpolation */
-  string Interpolated_Restart_FileName;     /*!< \brief Name of interpolated restart file. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1317,11 +1313,6 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-
-  /*!
-   * \brief Constructor of the class which reads the input file.
-   */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);  
 
   /*!
    * \brief Destructor of the class.
@@ -5122,37 +5113,10 @@ public:
   bool GetRestart(void) const { return Restart; }
 
   /*!
-   * \brief Sets the restart information.
-   */
-  void SetRestart(bool val_restart) { Restart = val_restart; }
-
-  /*!
-   * \brief Sets the mesh filename for interpolation.
-   */
-  void SetMesh_FileName(string val_filename) { Mesh_FileName = val_filename; }
-
-  /*!
-   * \brief Get the interpolation target mesh name.
-   * \return Mesh filename to be interpolated.
-   */
-  string GetTarget_Mesh_FileName(void) { return Target_Mesh_FileName; }
-
-  /*!
-   * \brief Flag for whether binary SU2 native restart files are written.
-   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
-   */
-  bool GetWrt_Binary_Restart(void) const { return Wrt_Binary_Restart; }
-
-  /*!
    * \brief Flag for whether binary SU2 native restart files are read.
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
-
-  /*!
-   * \brief Indicates if solution interpolation will be used.
-   */
-  bool GetSolutionInterpolation(void) const { return interpolate_solution; }
 
   /*!
    * \brief Provides the number of varaibles.
