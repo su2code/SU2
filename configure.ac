@@ -113,7 +113,7 @@ AC_ARG_ENABLE(GEO,
   [build_GEO=$enableval], [build_GEO="yes"])
 AC_ARG_ENABLE(INTERP,
     AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
-  [build_GEO=$enableval], [build_GEO="yes"])  
+  [build_INTERP=$enableval], [build_INTERP="yes"])  
 AC_ARG_ENABLE(PY_WRAPPER,
     AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
   [build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
@@ -298,6 +298,7 @@ then
   build_DEF=no
   build_SOL=no
   build_GEO=no
+  build_INTERP=no
   build_PY=no
 fi
 
@@ -317,6 +318,7 @@ AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_INTERP],[test $build_INTERP != "no"])
 AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
 AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 
