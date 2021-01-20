@@ -45,7 +45,7 @@ def main():
     thermalbath.cfg_dir   = "nonequilibrium/thermalbath/finitechemistry"
     thermalbath.cfg_file  = "thermalbath.cfg"
     thermalbath.test_iter = 10
-    thermalbath.test_vals = [2.598566,   2.598566,  -12.154360,  -12.217291,  -32.000000,   10.929878] #last 4 columns
+    thermalbath.test_vals = [2.473627,   2.473627,  -12.154360,  -12.217291,  -32.000000,   10.804939] #last 4 columns
     thermalbath.su2_exec  = "SU2_CFD"
     thermalbath.timeout   = 1600
     thermalbath.new_output = True
@@ -57,7 +57,7 @@ def main():
     thermalbath_frozen.cfg_dir   = "nonequilibrium/thermalbath/frozen"
     thermalbath_frozen.cfg_file  = "thermalbath_frozen.cfg"
     thermalbath_frozen.test_iter = 10
-    thermalbath_frozen.test_vals = [-32.000000,  -32.000000,  -12.030273,  -12.066776,  -32.000000,   10.938802] #last 4 columns
+    thermalbath_frozen.test_vals = [-32.000000,  -32.000000, -12.030273,  -12.066776,  -32.000000,   10.813864] #last 4 columns
     thermalbath_frozen.su2_exec  = "SU2_CFD"
     thermalbath_frozen.timeout   = 1600
     thermalbath_frozen.new_output = True
