@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -558,7 +558,6 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
   /*--- After moving all nodes, update the dual mesh. Recompute the edges and
    dual mesh control volumes in the domain and on the boundaries. ---*/
 
-  geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
   geometry->SetMaxLength(config);
@@ -645,35 +644,28 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
 
   unsigned short iMarker;
 
-  /*--- Impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries). ---*/
-  /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
+  /*--- Impose zero displacements of all non-moving surfaces that are not MARKER_DEFORM_SYM_PLANE. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
+        (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == NO) &&
         (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
-        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 
       BC_Clamped(geometry, numerics, config, iMarker);
     }
   }
 
-  /*--- Symmetry plane is clamped, for now. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
-        (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
-
-      BC_Clamped(geometry, numerics, config, iMarker);
-    }
-  }
-
-  /*--- Impose displacement boundary conditions. ---*/
+  /*--- Impose displacement boundary conditions and symmetry. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
       BC_Deforming(geometry, numerics, config, iMarker);
+    }
+    else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
+
+      BC_Sym_Plane(geometry, numerics, config, iMarker);
     }
   }
 
@@ -690,6 +682,26 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
       nodes->SetSolution(iPoint, zeros);
       LinSysSol.SetBlock(iPoint, zeros);
       Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+    }
+  }
+
+  /*--- Clamp nodes outside of a given area. ---*/
+  if (config->GetHold_GridFixed()) {
+
+    auto MinCoordValues = config->GetHold_GridFixed_Coord();
+    auto MaxCoordValues = &config->GetHold_GridFixed_Coord()[3];
+
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
+      auto Coord = geometry->nodes->GetCoord(iPoint);
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
+          su2double zeros[MAXNVAR] = {0.0};
+          nodes->SetSolution(iPoint, zeros);
+          LinSysSol.SetBlock(iPoint, zeros);
+          Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
+          break;
+        }
+      }
     }
   }
 

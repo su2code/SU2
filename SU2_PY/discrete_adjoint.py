@@ -3,7 +3,7 @@
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 7.0.8 "Blackbird"
+#  \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -85,10 +85,6 @@ def discrete_adjoint( filename           ,
 
     # State
     state = SU2.io.State()
-
-    # Force CSV output in order to compute gradients
-    config.WRT_CSV_SOL = 'YES'
-
 
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 

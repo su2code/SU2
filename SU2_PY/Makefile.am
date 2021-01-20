@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 7.0.8 "Blackbird"
+# \version 7.1.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -72,13 +72,9 @@ nobase_dist_mypkg_DATA= \
     SU2/io/tools.py \
     SU2/io/historyMap.py \
     SU2/io/__init__.py \
-    SU2/mesh/adapt.py \
-    SU2/mesh/tools.py \
-    SU2/mesh/__init__.py \
     SU2/opt/project.py \
     SU2/opt/scipy_tools.py \
     SU2/opt/__init__.py \
-    SU2/run/adaptation.py \
     SU2/run/adjoint.py \
     SU2/run/deform.py \
     SU2/run/direct.py \
@@ -98,13 +94,6 @@ nobase_dist_mypkg_DATA= \
     SU2/util/polarSweepLib.py \
     SU2/util/switch.py \
     SU2/util/which.py \
-    SU2/util/__init__.py \
-    FSI/__init__.py \
-    FSI/FSIInterface.py \
-    FSI/PitchPlungeAirfoilStructuralTester.py \
-    FSI/io/__init__.py \
-    FSI/io/FSI_config.py \
-    FSI/util/__init__.py \
-    FSI/util/switch.py
+    SU2/util/__init__.py
 
 EXTRA_DIST = $(bin_SCRIPTS)

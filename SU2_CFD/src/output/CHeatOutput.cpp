@@ -2,7 +2,7 @@
  * \file output_heat.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -83,7 +83,7 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
   CSolver* heat_solver = solver[HEAT_SOL];
 
   SetHistoryOutputValue("TOTAL_HEATFLUX", heat_solver->GetTotal_HeatFlux());
-  SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
+  SetHistoryOutputValue("MAXIMUM_HEATFLUX", heat_solver->GetTotal_MaxHeatFlux());
   SetHistoryOutputValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
   SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
@@ -107,7 +107,7 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss seidel residual of the temperature", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("HEATFLUX_MAX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MAXIMUM_HEATFLUX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximal heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 
@@ -136,6 +136,8 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ASPECT_RATIO",  "Aspect_Ratio",  "MESH_QUALITY", "CV Face Area Aspect Ratio");
   AddVolumeOutput("VOLUME_RATIO",  "Volume_Ratio",  "MESH_QUALITY", "CV Sub-Volume Ratio");
 
+  // MPI-Rank
+  AddVolumeOutput("RANK", "rank", "MPI", "Rank of the MPI-partition");
 }
 
 
@@ -163,6 +165,8 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputValue("VOLUME_RATIO",  iPoint, geometry->Volume_Ratio[iPoint]);
   }
 
+  // MPI-Rank
+  SetVolumeOutputValue("RANK", iPoint, rank);
 }
 
 void CHeatOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

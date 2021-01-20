@@ -3,7 +3,7 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
  */
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
 
 /*--- Definition of the static members of the Venkatakrishnan-Wang

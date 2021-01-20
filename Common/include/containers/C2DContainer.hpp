@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -613,7 +613,8 @@ public:
  * \brief Useful typedefs with default template parameters
  */
 template<class T> using su2vector = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor, 64, DynamicSize, DynamicSize>;
+template<class T> using su2matrix = C2DContainer<unsigned long, T, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+template<class T> using ColMajorMatrix = C2DContainer<unsigned long, T, StorageType::ColumnMajor, 64, DynamicSize, DynamicSize>;
 
 using su2activevector = su2vector<su2double>;
 using su2activematrix = su2matrix<su2double>;

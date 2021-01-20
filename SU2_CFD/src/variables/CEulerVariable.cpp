@@ -2,7 +2,7 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -119,6 +119,12 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   if (config->GetReconstructionGradientRequired()) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
+  }
+
+  if (config->GetAxisymmetric()){
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
   }
 
   if (config->GetLeastSquaresRequired()) {

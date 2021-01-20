@@ -4,7 +4,7 @@
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 namespace detail {
 

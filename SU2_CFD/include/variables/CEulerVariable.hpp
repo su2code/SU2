@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,7 @@ protected:
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
   /*--- Secondary variable definition ---*/
-  MatrixType Secondary;        /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  MatrixType Secondary;        /*!< \brief Secondary variables (dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho) in compressible (Euler: 2, NS: 8) flows. */
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
 
@@ -228,10 +228,9 @@ public:
    * \param[in] soundspeed2 - Value of soundspeed^2.
    */
   bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) final {
-    su2double radical = soundspeed2;
-    if (radical < 0.0) return true;
+    if (soundspeed2 < 0.0) return true;
     else {
-      Primitive(iPoint,nDim+4) = sqrt(radical);
+      Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
       return false;
     }
   }
@@ -291,24 +290,29 @@ public:
   inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
 
   /*!
-   * \brief Get the primitive variables.
+   * \brief Get all the secondary variables.
+   */
+  inline const MatrixType& GetSecondary() const {return Secondary; }
+
+  /*!
+   * \brief Get the secondary variables.
    * \param[in] iVar - Index of the variable.
-   * \return Value of the primitive variable for the index <i>iVar</i>.
+   * \return Value of the secondary variable for the index <i>iVar</i>.
    */
   inline su2double GetSecondary(unsigned long iPoint, unsigned long iVar) const final {return Secondary(iPoint,iVar); }
 
   /*!
-   * \brief Set the value of the primitive variables.
+   * \brief Set the value of the secondary variables.
    * \param[in] iVar - Index of the variable.
    * \param[in] iVar - Index of the variable.
-   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   * \return Set the value of the secondary variable for the index <i>iVar</i>.
    */
   inline void SetSecondary(unsigned long iPoint, unsigned long iVar, su2double val_secondary) final {Secondary(iPoint,iVar) = val_secondary; }
 
   /*!
-   * \brief Set the value of the primitive variables.
+   * \brief Set the value of the secondary variables.
    * \param[in] val_prim - Primitive variables.
-   * \return Set the value of the primitive variable for the index <i>iVar</i>.
+   * \return Set the value of the secondary variable for the index <i>iVar</i>.
    */
   inline void SetSecondary(unsigned long iPoint, const su2double *val_secondary) final {
     for (unsigned long iVar = 0; iVar < nSecondaryVar; iVar++)
@@ -316,8 +320,8 @@ public:
   }
 
   /*!
-   * \brief Get the primitive variables of the problem.
-   * \return Pointer to the primitive variable vector.
+   * \brief Get the secondary variables of the problem.
+   * \return Pointer to the secondary variable vector.
    */
   inline su2double *GetSecondary(unsigned long iPoint) final { return Secondary[iPoint]; }
 

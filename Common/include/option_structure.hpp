@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
+#include "./parallelization/mpi_structure.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -64,17 +64,16 @@ using MapType = CEmptyMap<T,U>;
  * \brief Different software components of SU2
  */
 enum SU2_COMPONENT {
-  SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
-  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
-  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
-  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
-  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
+  SU2_CFD = 1,  /*!< \brief Running the SU2_CFD software. */
+  SU2_DEF = 2,  /*!< \brief Running the SU2_DEF software. */
+  SU2_DOT = 3,  /*!< \brief Running the SU2_DOT software. */
+  SU2_MSH = 4,  /*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 5,  /*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 6   /*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
-const unsigned int BUFSIZE = 3000000;         /*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
@@ -95,13 +94,14 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
 const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
 const su2double ONE2 = 0.5;         /*!< \brief One divided by two. */
+const su2double ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
 const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
 const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
@@ -109,9 +109,9 @@ const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
 
 const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
 
-const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
-const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
-const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
+const int MASTER_NODE = 0;      /*!< \brief Master node for MPI parallelization. */
+const int SINGLE_NODE = 1;      /*!< \brief There is only a node in the MPI parallelization. */
+const int SINGLE_ZONE = 1;      /*!< \brief There is only a zone. */
 
 const unsigned short COMM_TYPE_UNSIGNED_LONG  = 1;  /*!< \brief Communication type for unsigned long. */
 const unsigned short COMM_TYPE_LONG           = 2;  /*!< \brief Communication type for long. */
@@ -399,8 +399,8 @@ enum ENUM_TRANSFER {
  * \brief different regime modes
  */
 enum ENUM_REGIME {
-  COMPRESSIBLE = 0,		/*!< \brief Definition of compressible solver. */
-  INCOMPRESSIBLE = 1,	/*!< \brief Definition of incompressible solver. */
+  COMPRESSIBLE = 0,   /*!< \brief Definition of compressible solver. */
+  INCOMPRESSIBLE = 1, /*!< \brief Definition of incompressible solver. */
   NO_FLOW = 2
 };
 
@@ -428,8 +428,8 @@ static const MapType<string, ENUM_KIND_NONDIM> NonDim_Map = {
  * \brief different system of measurements
  */
 enum ENUM_MEASUREMENTS {
-  SI = 0,			/*!< \brief Definition of compressible solver. */
-  US = 1			/*!< \brief Definition of incompressible solver. */
+  SI = 0,     /*!< \brief Definition of compressible solver. */
+  US = 1      /*!< \brief Definition of incompressible solver. */
 };
 static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
   MakePair("SI", SI)
@@ -541,9 +541,9 @@ enum ENUM_FLUIDMODEL {
   PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
   CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
   INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY = 6,  /*!< \brief Inc. ideal gas, polynomial gas model. */
+  INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
   MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  USER_DEFINED_NONEQ = 8        /*!< \brief User defined gas model for nonequilibrium flow. */
+  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -554,7 +554,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("USER_DEFINED_NONEQ", USER_DEFINED_NONEQ)
+  MakePair("SU2_NONEQ", SU2_NONEQ)
 };
 
 /*!
@@ -1267,7 +1267,7 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT = 1,          /*!< \brief User specifies total pressure, total temperature, and flow direction. */
   DENSITY_VELOCITY = 2,             /*!< \brief User specifies density and velocity, and flow direction. */
   STATIC_PRESSURE = 3,              /*!< \brief User specifies static pressure. */
-  TOTAL_SUPERSONIC_INFLOW = 4,	    /*!< \brief User specifies total pressure, total temperature and Velocity components. */
+  TOTAL_SUPERSONIC_INFLOW = 4,      /*!< \brief User specifies total pressure, total temperature and Velocity components. */
   STATIC_SUPERSONIC_INFLOW_PT = 5,  /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   STATIC_SUPERSONIC_INFLOW_PD = 6,  /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7,                    /*!< \brief User does not specify anything; information is retrieved from the other domain */
@@ -1319,7 +1319,7 @@ static const MapType<string, RIEMANN_TYPE> Giles_Map = {
 enum AVERAGEPROCESS_TYPE {
   ALGEBRAIC = 1,  /*!< \brief an algebraic average is computed at the boundary of interest. */
   AREA = 2,       /*!< \brief an area average is computed at the boundary of interest. */
-  MIXEDOUT = 3,	  /*!< \brief an mixed-out average is computed at the boundary of interest. */
+  MIXEDOUT = 3,   /*!< \brief an mixed-out average is computed at the boundary of interest. */
   MASSFLUX = 4    /*!< \brief a mass flow average is computed at the boundary of interest. */
 };
 static const MapType<string, AVERAGEPROCESS_TYPE> AverageProcess_Map = {
@@ -1377,7 +1377,7 @@ static const MapType<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
  * \brief Types of Turbomachinery performance flag.
  */
 enum TURBO_MARKER_TYPE{
-  INFLOW   = 1,	  /*!< \brief flag for inflow marker for compute turboperformance. */
+  INFLOW  = 1,    /*!< \brief flag for inflow marker for compute turboperformance. */
   OUTFLOW = 2     /*!< \brief flag for outflow marker for compute turboperformance. */
 };
 
@@ -1385,7 +1385,7 @@ enum TURBO_MARKER_TYPE{
  * \brief Types inlet boundary treatments
  */
 enum INLET_TYPE {
-  TOTAL_CONDITIONS = 1,	  /*!< \brief User specifies total pressure, total temperature, and flow direction. */
+  TOTAL_CONDITIONS = 1,   /*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW = 2,          /*!< \brief User specifies density and velocity (mass flow). */
   INPUT_FILE = 3,         /*!< \brief User specifies an input file. */
   VELOCITY_INLET = 4,     /*!< \brief Velocity inlet for an incompressible flow. */
@@ -1481,11 +1481,11 @@ enum ENUM_OBJECTIVE {
   LIFT_COEFFICIENT = 2,         /*!< \brief Lift objective function definition. */
   SIDEFORCE_COEFFICIENT = 3,    /*!< \brief Side force objective function definition. */
   EFFICIENCY = 4,               /*!< \brief Efficiency objective function definition. */
-  INVERSE_DESIGN_PRESSURE = 5,	/*!< \brief Pressure objective function definition (inverse design). */
+  INVERSE_DESIGN_PRESSURE = 5,  /*!< \brief Pressure objective function definition (inverse design). */
   INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
   TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
   MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
-  TOTAL_AVG_TEMPERATURE = 70,   /*!< \brief Total averaged temperature. */
+  AVG_TEMPERATURE = 70,         /*!< \brief Total averaged temperature. */
   MOMENT_X_COEFFICIENT = 9,     /*!< \brief Pitching moment objective function definition. */
   MOMENT_Y_COEFFICIENT = 10,    /*!< \brief Rolling moment objective function definition. */
   MOMENT_Z_COEFFICIENT = 11,    /*!< \brief Yawing objective function definition. */
@@ -1506,8 +1506,8 @@ enum ENUM_OBJECTIVE {
   SURFACE_SECONDARY = 53,       /*!< \brief Secondary flow strength objective function definition. */
   SURFACE_MOM_DISTORTION = 54,  /*!< \brief Momentum distortion objective function definition. */
   SURFACE_SECOND_OVER_UNIFORM = 55, /*!< \brief Secondary over uniformity (relative secondary strength) objective function definition. */
-  SURFACE_PRESSURE_DROP = 56, 	/*!< \brief Pressure drop objective function definition. */
-  CUSTOM_OBJFUNC = 31, 	        /*!< \brief Custom objective function definition. */
+  SURFACE_PRESSURE_DROP = 56,   /*!< \brief Pressure drop objective function definition. */
+  CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
   TOTAL_PRESSURE_LOSS = 39,
   KINETIC_ENERGY_LOSS = 40,
   TOTAL_EFFICIENCY = 41,
@@ -1545,7 +1545,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TORQUE", TORQUE_COEFFICIENT)
   MakePair("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
   MakePair("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
-  MakePair("TOTAL_AVG_TEMPERATURE", TOTAL_AVG_TEMPERATURE)
+  MakePair("AVG_TEMPERATURE", AVG_TEMPERATURE)
   MakePair("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
@@ -1581,8 +1581,8 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
  * \brief Types of residual criteria equations
  */
 enum ENUM_RESIDUAL {
-    RHO_RESIDUAL = 1, 	     /*!< \brief Rho equation residual criteria equation. */
-    RHO_ENERGY_RESIDUAL = 2  /*!< \brief RhoE equation residual criteria equation. */
+  RHO_RESIDUAL = 1,        /*!< \brief Rho equation residual criteria equation. */
+  RHO_ENERGY_RESIDUAL = 2  /*!< \brief RhoE equation residual criteria equation. */
 };
 static const MapType<string, ENUM_RESIDUAL> Residual_Map = {
   MakePair("RHO", RHO_RESIDUAL)
@@ -1711,6 +1711,39 @@ static const MapType<string, ENUM_OUTPUT> Output_Map = {
   MakePair("STL", STL)
   MakePair("STL_BINARY", STL_BINARY)
 };
+
+/*!
+ * \brief Return true if format is one of the Paraview options.
+ */
+inline bool isParaview(ENUM_OUTPUT format) {
+  switch(format) {
+    case PARAVIEW:
+    case PARAVIEW_BINARY:
+    case SURFACE_PARAVIEW:
+    case SURFACE_PARAVIEW_BINARY:
+    case PARAVIEW_XML:
+    case SURFACE_PARAVIEW_XML:
+    case PARAVIEW_MULTIBLOCK:
+      return true;
+    default:
+      return false;
+  }
+}
+
+/*!
+ * \brief Return true if format is one of the Tecplot options.
+ */
+inline bool isTecplot(ENUM_OUTPUT format) {
+  switch(format) {
+    case TECPLOT:
+    case TECPLOT_BINARY:
+    case SURFACE_TECPLOT:
+    case SURFACE_TECPLOT_BINARY:
+      return true;
+    default:
+      return false;
+  }
+}
 
 /*!
  * \brief Type of solution output file formats
@@ -1995,7 +2028,7 @@ static const MapType<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = {
  */
 enum ENUM_GEO_DESCRIPTION {
   TWOD_AIRFOIL = 0, /*!< \brief Airfoil analysis. */
-  WING = 1, 	    /*!< \brief Wing analysis. */
+  WING = 1,         /*!< \brief Wing analysis. */
   FUSELAGE = 2,     /*!< \brief Fuselage analysis. */
   NACELLE = 3       /*!< \brief Nacelle analysis. */
 };
@@ -2012,8 +2045,8 @@ static const MapType<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = {
 enum ENUM_UNSTEADY {
   STEADY = 0,            /*!< \brief A steady computation. */
   TIME_STEPPING = 1,     /*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  DT_STEPPING_1ST = 2,   /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND = 3,   /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
   ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
   HARMONIC_BALANCE = 5   /*!< \brief Use a harmonic balance source term. */
 };
@@ -2180,7 +2213,7 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     = 29,   /*!< \brief Solution at time n-1. */
+  SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */
   PRIMITIVE            = 30   /*!< \brief Primitive solution communication. */
 };
 

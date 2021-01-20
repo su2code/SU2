@@ -2,8 +2,8 @@
 
 ## \file FSI_config.py
 #  \brief Python class for handling configuration file for FSI computation.
-#  \author David Thomas
-#  \version 7.0.8 "Blackbird"
+#  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
+#  \version 7.1.0 "Blackbird"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -40,7 +40,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-from ..util import switch
+from FSI_tools.switch import switch
 
 # ----------------------------------------------------------------------
 #  FSI Configuration Class
@@ -58,23 +58,23 @@ class FSIConfig:
         self.readConfig()
 
     def __str__(self):
-	tempString = str()
-	for key, value in self._ConfigContent.items():
-	   tempString += "{} = {}\n".format(key,value)
-	return tempString
+        tempString = str()
+        for key, value in self._ConfigContent.items():
+            tempString += "{} = {}\n".format(key,value)
+        return tempString
 
     def __getitem__(self,key):
-	return self._ConfigContent[key]
+        return self._ConfigContent[key]
 
     def __setitem__(self, key, value):
-	self._ConfigContent[key] = value
+        self._ConfigContent[key] = value
 
     def readConfig(self):
         input_file = open(self.ConfigFileName)
         while 1:
-	    line = input_file.readline()
-	    if not line:
-	        break
+            line = input_file.readline()
+            if not line:
+                break
             # remove line returns
             line = line.strip('\r\n')
             # make sure it has useful data
@@ -87,45 +87,35 @@ class FSIConfig:
 
             for case in switch(this_param):
 	        #integer values
-		if case("NDIM")			      : pass
-	        #if case("MESH_DEF_LIN_ITER")	      : pass
-	        #if case("MESH_DEF_NONLIN_ITER")       : pass
-		if case("RESTART_ITER")		      : pass
-		if case("NB_EXT_ITER")		      : pass
-	        if case("NB_FSI_ITER")		      :
-		    self._ConfigContent[this_param] = int(this_value)
-		    break
+                if case("NDIM")			      : pass
+                if case("RESTART_ITER")		      : pass
+                if case("TIME_TRESHOLD")          : pass
+                if case("NB_FSI_ITER")		      :
+                    self._ConfigContent[this_param] = int(this_value)
+                    break
 
-	        #float values
+            #float values
                 if case("RBF_RADIUS")                 : pass
-		if case("AITKEN_PARAM")		      : pass
-		if case("START_TIME")		      : pass
-		if case("UNST_TIMESTEP")	      : pass
-		if case("UNST_TIME")		      : pass
-	        if case("FSI_TOLERANCE")	      :
-		    self._ConfigContent[this_param] = float(this_value)
-		    break
+                if case("AITKEN_PARAM")		      : pass
+                if case("UNST_TIMESTEP")	      : pass
+                if case("UNST_TIME")		      : pass
+                if case("FSI_TOLERANCE")	      :
+                    self._ConfigContent[this_param] = float(this_value)
+                    break
 
-	        #string values
-		if case("CFD_CONFIG_FILE_NAME")	      : pass
-		if case("CSD_SOLVER")		      : pass
-		if case("CSD_CONFIG_FILE_NAME")	      : pass
-		if case("RESTART_SOL")		      : pass
-		if case("MATCHING_MESH")	      : pass
+            #string values
+                if case("CFD_CONFIG_FILE_NAME")	      : pass
+                if case("CSD_SOLVER")		      : pass
+                if case("CSD_CONFIG_FILE_NAME")	      : pass
+                if case("RESTART_SOL")		      : pass
+                if case("MATCHING_MESH")	      : pass
                 if case("MESH_INTERP_METHOD")         : pass
-		if case("DISP_PRED")		      : pass
-		if case("AITKEN_RELAX")               : pass
-	        if case("TIME_MARCHING")	      : pass
-		if case("INTERNAL_FLOW")	      : 
-	        #if case("MESH_DEF_METHOD")	      : pass
-		    self._ConfigContent[this_param] = this_value
-		    break
+                if case("DISP_PRED")		      : pass
+                if case("AITKEN_RELAX")               : pass
+                if case("TIME_MARCHING")	      :
+                    self._ConfigContent[this_param] = this_value
+                    break
 
- 	        if case():
-		    print(this_param + " is an invalid option !")
-		    break
-	    #end for
-	
-
-
-    #def dump()
+                if case():
+                    print(this_param + " is an invalid option !")
+                    break

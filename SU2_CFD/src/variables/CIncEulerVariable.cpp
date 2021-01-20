@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,8 +34,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   bool dual_time    = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
                       (config->GetTime_Marching() == DT_STEPPING_2ND);
-  bool viscous      = config->GetViscous();
-  bool axisymmetric = config->GetAxisymmetric();
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
 
@@ -104,10 +102,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint,nDim,nDim,0.0);
   }
-
-  /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
-
-  if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();

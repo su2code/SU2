@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #ifdef HAVE_CGNS
   #include "cgnslib.h"
@@ -120,7 +120,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  COutputLegacy(CConfig *congig);
+  COutputLegacy(CConfig *config);
 
   /*!
    * \brief Destructor of the class.

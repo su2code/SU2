@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,8 +28,8 @@
 
 #pragma once
 
-#include "../../include/mpi_structure.hpp"
-#include "../../include/omp_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/parallelization/vectorization.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"

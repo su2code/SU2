@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -291,9 +291,20 @@ void CDiscAdjSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   SetObjFunction();
 
-  if (rank == MASTER_NODE && kind_recording != NONE && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
-    AD::PrintStatistics();
-    cout << "-------------------------------------------------------------------------\n" << endl;
+  if (kind_recording != NONE && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
+    if (rank == MASTER_NODE) AD::PrintStatistics();
+#ifdef CODI_REVERSE_TYPE
+    if (size > SINGLE_NODE) {
+      su2double myMem = AD::globalTape.getTapeValues().getUsedMemorySize(), totMem = 0.0;
+      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      if (rank == MASTER_NODE) {
+        cout << "MPI\n";
+        cout << "-------------------------------------\n";
+        cout << "  Total memory used      :  " << totMem << " MB\n";
+        cout << "-------------------------------------\n" << endl;
+      }
+    }
+#endif
   }
 
   AD::StopRecording();
@@ -366,7 +377,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
       }
-      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+      else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
       }
     }
@@ -405,7 +416,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     case TOTAL_HEATFLUX:
       ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
       break;
-    case TOTAL_AVG_TEMPERATURE:
+    case AVG_TEMPERATURE:
       ObjFunc = solver[HEAT_SOL]->GetTotal_AvgTemperature();
       break;
     default:
@@ -414,24 +425,9 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     break;
 
   case DISC_ADJ_FEM:
-    switch (config->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-      break;
-    case REFERENCE_NODE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-      break;
-    case TOPOL_COMPLIANCE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
-      break;
-    case VOLUME_FRACTION:
-    case TOPOL_DISCRETENESS:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-      break;
-    default:
-      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-      break;
-    }
+    solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
+    solver[FEA_SOL]->Evaluate_ObjFunc(config);
+    ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
   }
 
