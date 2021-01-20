@@ -218,7 +218,9 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config) final;
+  inline void Evaluate_ObjFunc(const CConfig *config) final {
+    Total_ComboObj = EvaluateCommonObjFunc(*config);
+  }
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.

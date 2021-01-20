@@ -60,7 +60,6 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization, and buffer setting ---*/
 
-#ifdef HAVE_MPI
 #ifdef HAVE_OMP
   int required = use_thread_mult? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided;
@@ -69,9 +68,6 @@ int main(int argc, char *argv[]) {
   SU2_MPI::Init(&argc, &argv);
 #endif
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);

@@ -219,22 +219,22 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   counter_local = 0;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  
+
     nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
-  
+
     /*--- Set mixture state ---*/
-    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);  
+    FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
 
     /*--- Compute other freestream quantities ---*/
     Density_Inf    = FluidModel->GetDensity();
     Soundspeed_Inf = FluidModel->GetSoundSpeed();
-  
+
     sqvel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
       sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
     }
     const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
-  
+
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
@@ -246,9 +246,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
     nodes->SetSolution(iPoint,Solution);
     nodes->SetSolution_Old(iPoint,Solution);
-  
+
     if(nonPhys)
-      counter_local++;  
+      counter_local++;
   }
 
   /*--- Warning message about non-physical points ---*/
@@ -614,6 +614,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   SU2_OMP_MASTER
   if (config->GetComm_Level() == COMM_FULL) {
     su2double rbuf_time;
+    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     Min_Delta_Time = rbuf_time;
 
     SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -1501,7 +1502,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    #else
      SU2_MPI::Error(string("Either 1) Mutation++ has not been configured/compiled (add '-Denable-mpp=true' to your meson string) or 2) CODI must be deactivated since it is not compatible with Mutation++."),
      CURRENT_FUNCTION);
-   #endif    
+   #endif
    break;
   case SU2_NONEQ:
    FluidModel = new CSU2TCLib(config, nDim, viscous);

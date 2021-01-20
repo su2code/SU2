@@ -62,10 +62,8 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
                        RunTime_EqSystem);
 
   solver->Postprocessing(geometry[iZone][iInst][MESH_0],
-                         solver_container[iZone][iInst][MESH_0],
                          config[iZone],
-                         numerics_container[iZone][iInst][MESH_0][SolContainer_Position],
-                         MESH_0);
+                         numerics_container[iZone][iInst][MESH_0][SolContainer_Position]);
 }
 
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,

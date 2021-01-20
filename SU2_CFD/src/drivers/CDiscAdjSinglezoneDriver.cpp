@@ -377,7 +377,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
       if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_HeatFlux();
       }
-      else if (config->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+      else if (config->GetKind_ObjFunc() == AVG_TEMPERATURE) {
         ObjFunc += solver[HEAT_SOL]->GetTotal_AvgTemperature();
       }
     }
@@ -416,7 +416,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     case TOTAL_HEATFLUX:
       ObjFunc = solver[HEAT_SOL]->GetTotal_HeatFlux();
       break;
-    case TOTAL_AVG_TEMPERATURE:
+    case AVG_TEMPERATURE:
       ObjFunc = solver[HEAT_SOL]->GetTotal_AvgTemperature();
       break;
     default:
@@ -425,24 +425,9 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     break;
 
   case DISC_ADJ_FEM:
-    switch (config->GetKind_ObjFunc()){
-    case REFERENCE_GEOMETRY:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefGeom();
-      break;
-    case REFERENCE_NODE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFRefNode();
-      break;
-    case TOPOL_COMPLIANCE:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFCompliance();
-      break;
-    case VOLUME_FRACTION:
-    case TOPOL_DISCRETENESS:
-      ObjFunc = solver[FEA_SOL]->GetTotal_OFVolFrac();
-      break;
-    default:
-      ObjFunc = 0.0;  // If the objective function is computed in a different physical problem
-      break;
-    }
+    solver[FEA_SOL]->Postprocessing(geometry, config, numerics_container[ZONE_0][INST_0][MESH_0][FEA_SOL], true);
+    solver[FEA_SOL]->Evaluate_ObjFunc(config);
+    ObjFunc = solver[FEA_SOL]->GetTotal_ComboObj();
     break;
   }
 
