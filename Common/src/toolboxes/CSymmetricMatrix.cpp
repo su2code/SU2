@@ -2,7 +2,7 @@
  * \file CSymmetricMatrix.cpp
  * \brief Implementation of dense symmetric matrix helper class (see hpp).
  * \author Joel Ho, P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
