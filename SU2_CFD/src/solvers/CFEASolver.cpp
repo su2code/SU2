@@ -782,7 +782,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * This only needs to be done for the undeformed (initial) shape.
    */
   if (topology_mode && !topol_filter_applied) {
-    geometry->SetElemVolume(config);
+    geometry->SetElemVolume();
     FilterElementDensities(geometry, config);
     topol_filter_applied = true;
   }

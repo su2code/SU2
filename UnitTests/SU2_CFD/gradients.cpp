@@ -87,7 +87,6 @@ struct GradientTestBase {
     geometry->Check_BoundElem_Orientation(config.get());
     geometry->SetEdges();
     geometry->SetVertex(config.get());
-    geometry->SetCoord_CG();
     geometry->SetControlVolume(config.get(), ALLOCATE);
     geometry->SetBoundControlVolume(config.get(), ALLOCATE);
     geometry->FindNormal_Neighbor(config.get());

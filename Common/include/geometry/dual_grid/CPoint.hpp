@@ -36,6 +36,7 @@
 using namespace std;
 
 class CConfig;
+class CPhysicalGeometry;
 
 /*!
  * \class CPoint
@@ -44,6 +45,8 @@ class CConfig;
  */
 class CPoint {
 private:
+  friend class CPhysicalGeometry;
+
   const unsigned long nDim = 0;
 
   su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */
