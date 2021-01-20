@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1464,6 +1464,13 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    */
   void Friction_Forces(const CGeometry* geometry, const CConfig* config) final;
+
+  /*!
+   * \brief Compute the buffet sensor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) { }
 
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it.
