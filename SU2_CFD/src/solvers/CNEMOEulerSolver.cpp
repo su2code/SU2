@@ -1345,7 +1345,6 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 
     Vol = (geometry->nodes->GetVolume(iPoint) +
            geometry->nodes->GetPeriodicVolume(iPoint));
-    if (nodes->GetSymmetry(iPoint) > 0) Vol*=2*nodes->GetSymmetry(iPoint);
 
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -1904,6 +1903,10 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, iVar;
   su2double Area, Normal[3], UnitNormal[3], Normal_Product;
   const su2double* Residual_Old;
+  su2double *Residual = new su2double[nVar];
+
+  for(iVar = 0; iVar < nVar; iVar++)
+    Residual[iVar]=0.0;
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1919,20 +1922,22 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
     Residual_Old = LinSysRes.GetBlock(iPoint);
 
-    for(iVar = 0; iVar < nVar; iVar++)
-      Res_Conv[iVar] = Residual_Old[iVar];
+    for(iDim = 0; iDim < nDim; iDim++)
+      Residual[nSpecies+iDim] = Residual_Old[nSpecies+iDim];
 
     Normal_Product = 0.0;
 
     for(iDim = 0; iDim < nDim; iDim++)
-      Normal_Product+= Res_Conv[nSpecies+iDim]*UnitNormal[iDim];
+      Normal_Product+= Residual[nSpecies+iDim]*UnitNormal[iDim];
 
+    /* --- Removes momentum residual normal to the Vertex in symmetry Plane ---*/
     for(iDim = 0; iDim < nDim; iDim++)
-      Res_Conv[nSpecies+iDim]-=2*Normal_Product*UnitNormal[iDim];
+      Residual[nSpecies+iDim]=(Residual[nSpecies+iDim]-2*Normal_Product*UnitNormal[iDim])*abs(UnitNormal[iDim]);
 
-    LinSysRes.AddBlock(iPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, Residual);
   }
 
+  delete [] Residual;
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
