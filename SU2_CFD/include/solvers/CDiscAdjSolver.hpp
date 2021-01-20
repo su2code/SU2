@@ -49,7 +49,6 @@ private:
   su2double Total_Sens_BPress;   /*!< \brief Total sensitivity to outlet pressure. */
   su2double Total_Sens_Density;  /*!< \brief Total sensitivity to initial density (incompressible). */
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
-  su2double ObjFunc_Value;       /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
 

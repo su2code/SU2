@@ -39,7 +39,6 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization ---*/
 
-#ifdef HAVE_MPI
 #ifdef HAVE_OMP
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
@@ -47,9 +46,6 @@ int main(int argc, char *argv[]) {
   SU2_MPI::Init(&argc, &argv);
 #endif
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -502,10 +498,7 @@ int main(int argc, char *argv[]) {
     cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
 
   /*--- Finalize MPI parallelization ---*/
-
-#ifdef HAVE_MPI
   SU2_MPI::Finalize();
-#endif
 
   return EXIT_SUCCESS;
 

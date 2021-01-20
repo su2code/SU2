@@ -39,7 +39,6 @@
  */
 class CDiscAdjMeshSolver final : public CSolver {
 private:
-  unsigned short KindDirect_Solver = 0;
   CSolver *direct_solver = nullptr;
 
   CDiscAdjMeshBoundVariable* nodes = nullptr;   /*!< \brief Variables of the discrete adjoint mesh solver. */
