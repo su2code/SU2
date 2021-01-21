@@ -1924,18 +1924,9 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
     Residual_Old = LinSysRes.GetBlock(iPoint);
 
     for(iDim = 0; iDim < nDim; iDim++)
-      Residual[nSpecies+iDim] = Residual_Old[nSpecies+iDim];
+      Residual[nSpecies+iDim] = Residual_Old[nSpecies+iDim]*abs(UnitNormal[iDim]);
 
-    Normal_Product = 0.0;
-
-    for(iDim = 0; iDim < nDim; iDim++)
-      Normal_Product+= Residual[nSpecies+iDim]*UnitNormal[iDim];
-
-    /* --- Removes momentum residual normal to the Vertex in symmetry Plane ---*/
-    for(iDim = 0; iDim < nDim; iDim++)
-      Residual[nSpecies+iDim]=(Residual[nSpecies+iDim]-2*Normal_Product*UnitNormal[iDim])*abs(UnitNormal[iDim]);
-
-    LinSysRes.AddBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, Residual);
   }
 
   delete [] Residual;
