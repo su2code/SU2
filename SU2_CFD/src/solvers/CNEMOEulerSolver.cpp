@@ -1902,7 +1902,7 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
   unsigned short iDim, iVar;
-  su2double Area, Normal[3], UnitNormal[3], Normal_Product;
+  su2double Area, Normal[3], UnitNormal[3];
   const su2double* Residual_Old;
   su2double *Residual = new su2double[nVar];
 
