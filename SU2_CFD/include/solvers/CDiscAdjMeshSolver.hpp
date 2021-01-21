@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,6 @@
  */
 class CDiscAdjMeshSolver final : public CSolver {
 private:
-  unsigned short KindDirect_Solver = 0;
   CSolver *direct_solver = nullptr;
 
   CDiscAdjMeshBoundVariable* nodes = nullptr;   /*!< \brief Variables of the discrete adjoint mesh solver. */

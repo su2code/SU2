@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,12 +58,8 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization ---*/
 
-#ifdef HAVE_MPI
   SU2_MPI::Init(&argc,&argv);
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -1292,10 +1288,7 @@ int main(int argc, char *argv[]) {
 
 
   /*--- Finalize MPI parallelization ---*/
-
-#ifdef HAVE_MPI
   SU2_MPI::Finalize();
-#endif
 
   return EXIT_SUCCESS;
 
