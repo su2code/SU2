@@ -46,7 +46,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  unsigned long iPoint, counter_local, counter_global = 0;
+  unsigned long iPoint, jPoint, iEdge, counter_local, counter_global = 0;
   unsigned short iDim, iMarker, iSpecies, nLineLets;
   unsigned short nZone = geometry->GetnZone();
   su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
@@ -58,6 +58,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
+  su2double Normal[3], Tangent[3], Normal_Sym[3], UnitNormal_Sym[3], Product, Area;
+  su2double tol = 1e-16;
 
   bool nonPhys;
 
@@ -261,6 +263,58 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       }
     }
   }
+
+
+  /*--- Correct normal directions of edges ---*/
+  for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+      for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        geometry->vertex[iMarker][iVertex]->GetNormal(Normal_Sym);
+
+        Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+
+        for(iDim = 0; iDim<nDim; iDim++){
+          UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
+        }
+
+        for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh){
+          Product = 0.0;
+
+          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+
+          /*---Check if neighbour point is on the same plane as the Symmetry_Plane 
+               by computing the internal product and of the Normal Vertex vector and
+               the vector connecting iPoint and jPoint. If the product is lower than
+               estabilished tolerance (to account for Numerical errors) both points are
+               in the same plane as SYMMETRY_PLANE---*/
+
+          for(iDim = 0; iDim<nDim; iDim++){
+            Tangent[iDim] = geometry->nodes->GetCoord(jPoint,iDim) - geometry->nodes->GetCoord(iPoint,iDim);
+            Product += Tangent[iDim] * Normal_Sym[iDim];
+          }
+
+          if (abs(Product) < tol) {
+            Product = 0.0;
+
+            iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+
+            geometry->edges->GetNormal(iEdge,Normal);
+
+            for(iDim = 0; iDim<nDim; iDim++)
+              Product += Normal[iDim]*UnitNormal_Sym[iDim];
+
+            for(iDim = 0; iDim<nDim; iDim++)
+              Normal[iDim]-=Product*UnitNormal_Sym[iDim];
+
+            geometry->edges->SetNormal(iEdge,Normal);
+          }
+        }
+      }
+    }
+  } 
 
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
@@ -1902,11 +1956,9 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
   unsigned short iDim, iVar;
-  su2double Area, Normal[3], UnitNormal[3];
+  su2double Area, Normal[3], UnitNormal[3], Normal_Product;
   const su2double* Residual_Old;
   su2double *Residual = new su2double[nVar];
-
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 
   for(iVar = 0; iVar < nVar; iVar++)
     Residual[iVar]=0.0;
@@ -1914,19 +1966,23 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
+    Normal_Product = 0.0;
+
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
     Area = GeometryToolbox::Norm(nDim, Normal);
 
-    for(iDim = 0; iDim < nDim; iDim++)
-      UnitNormal[iDim] = Normal[iDim]/Area;
- 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     Residual_Old = LinSysRes.GetBlock(iPoint);
 
+    for(iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim]/Area;
+      Normal_Product += Residual_Old[nSpecies+iDim]*UnitNormal[iDim];
+    }
+
     for(iDim = 0; iDim < nDim; iDim++)
-      Residual[nSpecies+iDim] = Residual_Old[nSpecies+iDim]*abs(UnitNormal[iDim]);
+      Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
 
     LinSysRes.SubtractBlock(iPoint, Residual);
   }
