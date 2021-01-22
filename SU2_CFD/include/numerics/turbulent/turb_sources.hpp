@@ -317,7 +317,7 @@ private:
   *Jacobian_i[2] = {nullptr},
   Jacobian_Buffer[4] = {0.0}; /// Static storage for the Jacobian (which needs to be pointer for return type).
 
-  const bool incompressible = false, sustaining_terms = false;
+  const bool incompressible = false, sustaining_terms = false, exact_jacobian = false;
 
   /*!
    * \brief Initialize the Reynolds Stress Matrix

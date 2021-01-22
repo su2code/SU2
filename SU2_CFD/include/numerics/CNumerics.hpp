@@ -232,7 +232,7 @@ protected:
   su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
   su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
-  const bool tkeNeeded = false,  exact_jacobian = false;
+  bool tkeNeeded = false;
 
   su2double Volume_i, /*!< \brief Volume of the control volume around point i. */
             Volume_j; /*!< \brief Volume of the control volume around point j. */

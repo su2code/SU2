@@ -28,8 +28,7 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config),
-                                   tkeNeeded((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)) {
+                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
