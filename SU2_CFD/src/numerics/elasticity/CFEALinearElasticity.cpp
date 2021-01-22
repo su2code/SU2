@@ -239,8 +239,7 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
   unsigned short iNode, nNode;
   unsigned short iDim, bDim;
 
-  /*--- Auxiliary vector ---*/
-  su2double Strain[DIM_STRAIN_3D], Stress[DIM_STRAIN_3D], avgStress[DIM_STRAIN_3D] = {0.0};
+  su2double avgStress[DIM_STRAIN_3D] = {0.0};
 
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
@@ -282,9 +281,7 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
       }
     }
 
-    for (iVar = 0; iVar < bDim; iVar++) {
-      Strain[iVar] = 0.0;
-    }
+    su2double Strain[DIM_STRAIN_3D] = {0.0};
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
@@ -319,11 +316,13 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
 
     /*--- Compute the Stress Vector as D*epsilon ---*/
 
+    su2double Stress[DIM_STRAIN_3D] = {0.0};
+
     for (iVar = 0; iVar < bDim; iVar++) {
-      Stress[iVar] = 0.0;
       for (jVar = 0; jVar < bDim; jVar++) {
         Stress[iVar] += D_Mat[iVar][jVar]*Strain[jVar];
       }
+      avgStress[iVar] += Stress[iVar] / nGauss;
     }
 
     for (iNode = 0; iNode < nNode; iNode++) {
@@ -348,10 +347,7 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
 
   }
 
-  for (unsigned short iStress = 0; iStress < bDim; ++iStress)
-    for (iNode = 0; iNode < nNode; iNode++)
-      avgStress[iStress] += element->Get_NodalStress(iNode, iStress) / nNode;
-
+  if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
   auto elStress = VonMisesStress(nDim, avgStress);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as

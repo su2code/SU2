@@ -747,6 +747,8 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
   unsigned short iGauss, nGauss;
   unsigned short iDim, iNode, nNode;
 
+  su2double avgStress[DIM_STRAIN_3D] = {0.0};
+
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
@@ -848,6 +850,15 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
     Compute_Stress_Tensor(element, config);
     if (maxwell_stress) Add_MaxwellStress(element, config);
 
+    avgStress[0] += Stress_Tensor[0][0] / nGauss;
+    avgStress[1] += Stress_Tensor[1][1] / nGauss;
+    avgStress[2] += Stress_Tensor[0][1] / nGauss;
+    if (nDim == 3) {
+      avgStress[3] += Stress_Tensor[2][2] / nGauss;
+      avgStress[4] += Stress_Tensor[0][2] / nGauss;
+      avgStress[5] += Stress_Tensor[1][2] / nGauss;
+    }
+
     for (iNode = 0; iNode < nNode; iNode++) {
 
       /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
@@ -878,13 +889,6 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
     }
 
   }
-
-  su2double avgStress[DIM_STRAIN_3D] = {0.0};
-  const auto nStress = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-
-  for (unsigned short iStress = 0; iStress < nStress; ++iStress)
-    for (iNode = 0; iNode < nNode; iNode++)
-      avgStress[iStress] += element->Get_NodalStress(iNode, iStress) / nNode;
 
   auto elStress = VonMisesStress(nDim, avgStress);
 
