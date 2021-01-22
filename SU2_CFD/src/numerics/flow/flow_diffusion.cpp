@@ -35,7 +35,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config),
       nPrimVar(val_nPrimVar),
-      correct_gradient(val_correct_grad) {
+      correct_gradient(val_correct_grad),
+      exact_jacobian(config->GetUse_Accurate_Visc_Jacobians()) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -645,8 +646,10 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
       SetHeatFluxJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Area, UnitNormal);
       GetViscousProjJacs(Mean_PrimVar, Proj_Flux_Tensor);
     }
-    SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
-    SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+    if (exact_jacobian) {
+      SetLaminarViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+      SetEddyViscosityJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Normal, config);
+    }
 
     AD::EndPassive(wasActive);
 

@@ -758,11 +758,10 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
                                                    su2double val_kine_Inf,
                                                    su2double val_omega_Inf,
                                                    const CConfig* config) :
-                          CNumerics(val_nDim, val_nVar, config) {
-
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
-  exact_jacobian = (config->GetUse_Accurate_Turb_Jacobians());
+                          CNumerics(val_nDim, val_nVar, config),
+                          incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
+                          sustaining_terms(config->GetKind_Turb_Model() == SST_SUST),
+                          exact_jacobian(config->GetUse_Accurate_Turb_Jacobians()) {
 
   /*--- Closure constants ---*/
   beta_star     = constants[6];
