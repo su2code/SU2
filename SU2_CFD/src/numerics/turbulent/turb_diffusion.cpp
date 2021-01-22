@@ -284,12 +284,13 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   Jacobian_j[0][0] =  proj_on_rho_j*diff_kine;
   Jacobian_j[1][1] =  proj_on_rho_j*diff_omega;
 
+  if (correct_jacobian) CorrectJacobian(config);
+  if (!correct_gradient) {
+    Jacobian_i[0][0] = Jacobian_i[1][1] = 0.0;
+    Jacobian_j[0][0] = Jacobian_j[1][1] = 0.0;
+  }
+
   if (exact_jacobian) {
-    if (correct_jacobian) CorrectJacobian(config);
-    if (!correct_gradient) {
-      Jacobian_i[0][0] = Jacobian_i[1][1] = 0.0;
-      Jacobian_j[0][0] = Jacobian_j[1][1] = 0.0;
-    }
     
     /*--- Jacobian wrt eddy viscosity ---*/
     
