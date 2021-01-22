@@ -1375,7 +1375,7 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
+  /* DESCRIPTION: Periodic boundary marker(s)
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
@@ -1393,10 +1393,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
 
-  /*!\brief MARKER_ACTDISK\n DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
-   Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
-   rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
-   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
+  /*!\brief MARKER_ACTDISK\n DESCRIPTION: \ingroup Config*/
   addActDiskOption("MARKER_ACTDISK",
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
@@ -2032,21 +2029,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
 
-  /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
-  /*--- Options related to grid adaptation ---*/
-
-  /* DESCRIPTION: Kind of grid adaptation */
-  addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
-  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
-  /* DESCRIPTION: Scale factor for the dual volume */
-  addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
-  /* DESCRIPTION: Use analytical definition for surfaces */
-  addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
-  addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
-  /* DESCRIPTION: Adapt the boundary elements */
-  addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
+  addUnsignedShortOption("SMOOTH_GEOMETRY", SmoothNumGrid, 0);
 
   /*!\par CONFIG_CATEGORY: Aeroelastic Simulation (Typical Section Model) \ingroup Config*/
   /*--- Options related to aeroelastic simulations using the Typical Section Model) ---*/
@@ -3038,7 +3022,6 @@ void CConfig::SetHeader(unsigned short val_software) const{
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
     case SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
     case SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
     }
@@ -4758,16 +4741,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
   }
 
-  /*--- Check for running SU2_MSH for periodic preprocessing, and throw
-   an error to report that this is no longer necessary. ---*/
-
-  if ((Kind_SU2 == SU2_MSH) &&
-      (Kind_Adaptation == PERIODIC)) {
-    SU2_MPI::Error(string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
-                   string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
-                   string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
-  }
-
   /* Set a default for the size of the RECTANGLE / BOX grid sizes. */
 
   if (nMesh_Box_Size == 0) {
@@ -4980,8 +4953,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  if (val_software != SU2_MSH)
-    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   /*--- Compute the total number of markers in the config file ---*/
@@ -5785,23 +5757,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
   }
 
-  if (val_software == SU2_MSH) {
-    switch (Kind_Adaptation) {
-    case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
-      break;
-    case GRAD_FLOW:
-      cout << "Read flow solution from: " << Solution_FileName << "." << endl;
-      break;
-    case GRAD_ADJOINT:
-      cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-      break;
-    case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-      cout << "Read flow solution from: " << Solution_FileName << "." << endl;
-      cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-      break;
-    }
-  }
-
   if (val_software == SU2_DEF) {
     cout << endl <<"---------------- Grid deformation parameters ( Zone "  << iZone << " )  ----------------" << endl;
     cout << "Grid deformation using a linear elasticity method." << endl;
@@ -6580,37 +6535,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (val_software == SU2_MSH) {
-    cout << endl <<"----------------- Grid adaptation strategy ( Zone "  << iZone << " ) -------------------" << endl;
-
-    switch (Kind_Adaptation) {
-      case NONE: break;
-      case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
-      case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
-      case WAKE: cout << "Grid adaptation of the wake." << endl; break;
-      case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
-      case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
-      case GRAD_FLOW: cout << "Grid adaptation using gradient based strategy (density)." << endl; break;
-      case GRAD_ADJOINT: cout << "Grid adaptation using gradient based strategy (adjoint density)." << endl; break;
-      case GRAD_FLOW_ADJ: cout << "Grid adaptation using gradient based strategy (density and adjoint density)." << endl; break;
-      case COMPUTABLE: cout << "Grid adaptation using computable correction."<< endl; break;
-      case REMAINING: cout << "Grid adaptation using remaining error."<< endl; break;
-      case SMOOTHING: cout << "Grid smoothing using an implicit method."<< endl; break;
-      case SUPERSONIC_SHOCK: cout << "Grid adaptation for a supersonic shock at Mach: " << Mach <<"."<< endl; break;
-    }
-
-    switch (Kind_Adaptation) {
-      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
-        cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
-        cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
-        break;
-    }
-
-    if (Analytical_Surface != NONE)
-      cout << "Use analytical definition for including points in the surfaces." << endl;
-
-  }
-
   cout << endl <<"-------------------- Output Information ( Zone "  << iZone << " ) ----------------------" << endl;
 
   if (val_software == SU2_CFD) {
@@ -6679,28 +6603,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (val_software == SU2_MSH) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-  }
-
   if (val_software == SU2_DOT) {
     if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
     }
     cout << "Output gradient file name: " << ObjFunc_Grad_FileName << ". " << endl;
-  }
-
-  if (val_software == SU2_MSH) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    cout << "Restart flow file name: " << Restart_FileName << "." << endl;
-    if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
-        (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
-      if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc[0] == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc[0] == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc[0] == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-    }
   }
 
   cout << endl <<"------------- Config File Boundary Information ( Zone "  << iZone << " ) ---------------" << endl;

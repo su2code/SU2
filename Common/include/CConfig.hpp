@@ -109,6 +109,7 @@ private:
   su2double Opt_RelaxFactor;              /*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;         /*!< \brief Bounds for the line search. */
   su2double StartTime;
+  unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -123,8 +124,6 @@ private:
   Low_Mach_Precon,          /*!< \brief Flag to know if we are using a low Mach number preconditioner. */
   Low_Mach_Corr,            /*!< \brief Flag to know if we are using a low Mach number correction. */
   GravityForce,             /*!< \brief Flag to know if the gravity force is incuded in the formulation. */
-  SmoothNumGrid,            /*!< \brief Smooth the numerical grid. */
-  AdaptBoundary,            /*!< \brief Adapt the elements on the boundary. */
   SubsonicEngine,           /*!< \brief Engine intake subsonic region. */
   Frozen_Visc_Cont,         /*!< \brief Flag for cont. adjoint problem with/without frozen viscosity. */
   Frozen_Visc_Disc,         /*!< \brief Flag for disc. adjoint problem with/without frozen viscosity. */
@@ -167,10 +166,8 @@ private:
   unsigned short Continuous_Eqns;    /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns;      /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
   unsigned short *Design_Variable;   /*!< \brief Kind of design variable. */
-  unsigned short Kind_Adaptation;    /*!< \brief Kind of numerical grid adaptation. */
   unsigned short nTimeInstances;     /*!< \brief Number of periodic time instances for  harmonic balance. */
   su2double HarmonicBalance_Period;  /*!< \brief Period of oscillation to be used with harmonic balance computations. */
-  su2double New_Elem_Adapt;          /*!< \brief Elements to adapt in the numerical grid adaptation process. */
   su2double Delta_UnstTime,          /*!< \brief Time step for unsteady computations. */
   Delta_UnstTimeND;                  /*!< \brief Time step for unsteady computations (non dimensional). */
   su2double Delta_DynTime,        /*!< \brief Time step for dynamic structural computations. */
@@ -712,9 +709,7 @@ private:
   *Marker_CfgFile_DV,                 /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;           /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;                   /*!< \brief Global index for the plane adaptation (upper, lower). */
-  su2double DualVol_Power;            /*!< \brief Power for the dual volume in the grid adaptation sensor. */
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
-  unsigned short Analytical_Surface;  /*!< \brief Information about the analytical definition of the surface for grid adaptation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
@@ -1457,20 +1452,6 @@ public:
    * \return Distortion rack.
    */
   const su2double *GetDistortionRack(void) const { return distortion; }
-
-  /*!
-   * \brief Get the power of the dual volume in the grid adaptation sensor.
-   * \return Power of the dual volume in the grid adaptation sensor.
-   */
-  su2double GetDualVol_Power(void) const { return DualVol_Power; }
-
-  /*!
-   * \brief Get Information about if there is an analytical definition of the surface for doing the
-   *        grid adaptation.
-   * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
-   *         and it will use and interpolation.
-   */
-  unsigned short GetAnalytical_Surface(void) const { return Analytical_Surface; }
 
   /*!
    * \brief Get Description of the geometry to be analyzed
@@ -4158,18 +4139,6 @@ public:
   unsigned short GetKind_SGS_Model(void) const { return Kind_SGS_Model; }
 
   /*!
-   * \brief Get the kind of adaptation technique.
-   * \return Kind of adaptation technique.
-   */
-  unsigned short GetKind_Adaptation(void) const { return Kind_Adaptation; }
-
-  /*!
-   * \brief Get the number of new elements added in the adaptation process.
-   * \return percentage of new elements that are going to be added in the adaptation.
-   */
-  su2double GetNew_Elem_Adapt(void) const { return New_Elem_Adapt; }
-
-  /*!
    * \brief Get the kind of time integration method.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
@@ -5795,28 +5764,10 @@ public:
   bool GetAxisymmetric(void) const { return Axisymmetric; }
 
   /*!
-   * \brief Get information about the axisymmetric frame.
-   * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
-   */
-  bool GetDebugMode(void);
-
-  /*!
    * \brief Get information about there is a smoothing of the grid coordinates.
    * \return <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
    */
-  bool GetAdaptBoundary(void) const { return AdaptBoundary; }
-
-  /*!
-   * \brief Get information about there is a smoothing of the grid coordinates.
-   * \return <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
-   */
-  bool GetSmoothNumGrid(void) const { return SmoothNumGrid; }
-
-  /*!
-   * \brief Set information about there is a smoothing of the grid coordinates.
-   * \param[in] val_smoothnumgrid - <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
-   */
-  void SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
+  unsigned short GetSmoothNumGrid(void) const { return SmoothNumGrid; }
 
   /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
