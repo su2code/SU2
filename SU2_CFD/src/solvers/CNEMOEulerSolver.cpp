@@ -58,8 +58,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
-  su2double Normal[3], Tangent[3], Normal_Sym[3], UnitNormal_Sym[3], Product, Area;
-  su2double tol = 1e-16;
+  su2double Normal[MAXNDIM] = {0.0}, Tangent[MAXNDIM]  = {0.0};
+  su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
+  su2double Product, Area, tol = 1e-16;
 
   bool nonPhys;
 
@@ -234,7 +235,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     sqvel = 0.0;
     for (iDim = 0; iDim < nDim; iDim++){
       sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
-    }      
+    }
     const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
 
     /*--- Initialize Solution & Solution_Old vectors ---*/
@@ -250,9 +251,8 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     nodes->SetSolution_Old(iPoint,Solution);
 
     if(nonPhys)
-      counter_local++;   
+      counter_local++;
   }
-  
 
   /*--- Count number of symmetry planes where each Vertex is inserted ---*/
   for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -263,7 +263,6 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       }
     }
   }
-
 
   /*--- Correct normal directions of edges ---*/
   for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -285,7 +284,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
 
-          /*---Check if neighbour point is on the same plane as the Symmetry_Plane 
+          /*---Check if neighbour point is on the same plane as the Symmetry_Plane
                by computing the internal product and of the Normal Vertex vector and
                the vector connecting iPoint and jPoint. If the product is lower than
                estabilished tolerance (to account for Numerical errors) both points are
@@ -314,7 +313,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
         }
       }
     }
-  } 
+  }
 
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
@@ -587,31 +586,23 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       if(nodes->GetSymmetry(iPoint) == 1 && nodes->GetSymmetry(jPoint) == 0) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
       else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint) == 1) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
       else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-
     }
-
   }
 
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    
+
       SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
         /*--- Point identification, Normal vector and area ---*/
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (!geometry->nodes->GetDomain(iPoint)) continue;
+        if (!geometry->nodes->GetDomain(iPoint) || config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) continue;
 
         geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-
-        /*--- Set Normal to zero if node is in the Symmetry Plane marker ---*/
-        if(config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {          
-          for(iDim = 0; iDim < nDim; iDim++)
-            Normal[iDim]=0;
-        }
 
         Area = GeometryToolbox::Norm(nDim, Normal);
         /*--- Mean Values ---*/
@@ -648,8 +639,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
 
-      if(nodes->GetSymmetry(iPoint) > 0 && config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
-      else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
     }
@@ -1956,12 +1946,9 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iPoint, iVertex;
   unsigned short iDim, iVar;
-  su2double Area, Normal[3], UnitNormal[3], Normal_Product;
+  su2double Area, Normal[MAXNDIM], UnitNormal[MAXNDIM], Normal_Product;
   const su2double* Residual_Old;
-  su2double *Residual = new su2double[nVar];
-
-  for(iVar = 0; iVar < nVar; iVar++)
-    Residual[iVar]=0.0;
+  su2double Residual[MAXNVAR] = {0.0};
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1986,8 +1973,6 @@ void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
     LinSysRes.SubtractBlock(iPoint, Residual);
   }
-
-  delete [] Residual;
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
@@ -2908,21 +2893,12 @@ void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   unsigned long iVertex, iPoint;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous = config->GetViscous();
   bool preprocessed = false;
 
   unsigned short VEL_INDEX = nodes->GetVelIndex();
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
-
-  /*--- Allocation of variables necessary for viscous fluxes. ---*/
-  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
-      Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
-
-  /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
-  su2double** Grad_Reflected = new su2double*[nPrimVarGrad];
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) Grad_Reflected[iVar] = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -2956,35 +2932,6 @@ void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 
       /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
             t*n=0 && |t|_2 = 1 ---*/
-      if (viscous) {
-        switch (nDim) {
-          case 2: {
-            Tangential[0] = -UnitNormal[1];
-            Tangential[1] = UnitNormal[0];
-            break;
-          }
-          case 3: {
-            /*--- n = ai + bj + ck, if |b| > |c| ---*/
-            if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
-              /*--- t = bi + (c-a)j - bk  ---*/
-              Tangential[0] = UnitNormal[1];
-              Tangential[1] = UnitNormal[2] - UnitNormal[0];
-              Tangential[2] = -UnitNormal[1];
-            } else {
-              /*--- t = ci - cj + (b-a)k  ---*/
-              Tangential[0] = UnitNormal[2];
-              Tangential[1] = -UnitNormal[2];
-              Tangential[2] = UnitNormal[1] - UnitNormal[0];
-            }
-            /*--- Make it a unit vector. ---*/
-            TangentialNorm = sqrt(pow(Tangential[0], 2) + pow(Tangential[1], 2) + pow(Tangential[2], 2));
-            Tangential[0] = Tangential[0] / TangentialNorm;
-            Tangential[1] = Tangential[1] / TangentialNorm;
-            Tangential[2] = Tangential[2] / TangentialNorm;
-            break;
-          }
-        }  // switch
-      }    // if viscous
     }      // if bound_is_straight
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3051,143 +2998,8 @@ void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       if (implicit) {
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
-
-      if (viscous) {
-        /*-------------------------------------------------------------------------------*/
-        /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
-        /*---         Primitive variables and their gradients. The viscous numerics   ---*/
-        /*---         container is filled just as the convective numerics container,  ---*/
-        /*---         but the primitive gradients of the reflected state have to be   ---*/
-        /*---         determined additionally such that symmetry at the boundary is   ---*/
-        /*---         enforced. Based on the Viscous_Residual routine.                ---*/
-        /*-------------------------------------------------------------------------------*/
-
-        /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
-        visc_numerics->SetNormal(Normal);
-
-        /*--- Primitive variables, and gradient ---*/
-        visc_numerics->SetPrimitive(V_domain, V_reflected);
-
-        visc_numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
-
-        /*--- Also need to correct Gradient for Conservative Quantities ?? ---*/
-     // visc_numerics->SetConsVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint) );
-
-        /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
-        visc_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
-        visc_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
-        visc_numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
-        visc_numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
-
-        /*--- Species diffusion coefficients ---*/
-        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusionCoeff(iPoint),
-                                         nodes->GetDiffusionCoeff(iPoint));
-
-        /*--- Laminar viscosity ---*/
-        visc_numerics->SetLaminarViscosity(nodes->GetLaminarViscosity(iPoint),
-                                           nodes->GetLaminarViscosity(iPoint));
-
-        /*--- Eddy viscosity ---*/
-        visc_numerics->SetEddyViscosity(nodes->GetEddyViscosity(iPoint),
-                                        nodes->GetEddyViscosity(iPoint));
-
-        /*--- Thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint),
-                                              nodes->GetThermalConductivity(iPoint));
-
-        /*--- Vib-el. thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint),
-                                                 nodes->GetThermalConductivity_ve(iPoint));
-
-        /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-              1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
-              2. The gradients of the velocity components need more attention, i.e. the gradient of the
-                 normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-                 normal direction is mirrored. ---*/
-
-        /*--- Get gradients of primitives of boundary cell ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-
-        /*--- Reflect the gradients for all scalars including the velocity components.
-              The gradients of the velocity components are set later with the
-              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if (iVar == 0 || iVar > nDim) {  // Exclude velocity component gradients
-
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
-          }
-        }
-
-        /*--- Compute gradients of normal and tangential velocity:
-              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) {  // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[VEL_INDEX + iDim][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[VEL_INDEX + iDim][iVar] * Tangential[iDim];
-          }
-        }
-
-        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
-              component twice, just as done with velocity above.
-              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        ProjNormVelGrad = 0.0;
-        ProjTangVelGrad = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
-
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (iVar = 0; iVar < nDim; iVar++)    // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++)  // loops over the entries of the above
-            Grad_Reflected[VEL_INDEX + iDim][iDim] =
-                GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
-
-        /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), Grad_Reflected);
-
-        /*--- Turbulent kinetic energy. ---*/
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
-
-        /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
-              following routine based upon the velocity-component gradients. ---*/
-        auto residual = visc_numerics->ComputeResidual(config);
-
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Jacobian contribution for implicit integration. ---*/
-        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-      }  // if viscous
     }    // if GetDomain
   }      // for iVertex
-
-  /*--- Free locally allocated memory ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) delete[] Grad_Reflected[iVar];
-  delete[] Grad_Reflected;
-
 }
 
 void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,

@@ -559,7 +559,7 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
 void CNEMOCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
 
-  if ((config->GetKind_Solver() == NEMO_NAVIER_STOKES && config->GetMarker_All_KindBC(iMarker) != EULER && config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE)) {
+  if (config->GetKind_Solver() == NEMO_NAVIER_STOKES && config->GetViscous_Wall(iMarker)) {
     SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
     SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
     if (nDim == 3)
