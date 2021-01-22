@@ -5841,7 +5841,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
+  const su2double *Flow_Dir, *Mach;
+  su2double P_Total, T_Total, P_static, T_static, Rho_static, Area, UnitNormal[MAXNDIM];
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
@@ -6352,7 +6353,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
   unsigned short iDim, iVar, jVar, kVar, iSpan;
   unsigned long iPoint, Point_Normal, oldVertex, iVertex;
-  su2double P_Total, T_Total, *Flow_Dir;
+  const su2double *Flow_Dir;
+  su2double P_Total, T_Total;
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_e, Velocity2_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
@@ -7036,7 +7038,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   su2double relfacFouCfg       = config->GetGiles_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
   su2double TwoPiThetaFreq_Pitch, pitch,theta;
-  const su2double *SpanWiseValues = nullptr;
+  const su2double *SpanWiseValues = nullptr, *FlowDir;
   su2double spanPercent, extrarelfacAvg = 0.0, deltaSpan = 0.0, relfacAvg, relfacFou, coeffrelfacAvg = 0.0;
   unsigned short Turbo_Flag;
 
@@ -7053,7 +7055,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   S_boundary       = new su2double[8];
 
   su2double  AvgMach , *cj, GilesBeta, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC, gammaIn_BC = 0,
-      P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c3js_Re, cOutjs_Re, avgVel2 =0.0;
+      P_Total, T_Total, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c3js_Re, cOutjs_Re, avgVel2 =0.0;
 
   long freq;
 
@@ -8233,7 +8235,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain;
 
-  su2double Density, Pressure, Temperature, Energy, *Vel, Velocity2;
+  su2double Density, Energy, Velocity2;
   su2double Gas_Constant = config->GetGas_ConstantND();
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -8246,9 +8248,9 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
    so all flow variables can be imposed at the inlet.
    First, retrieve the specified values for the primitive variables. ---*/
 
-  Temperature = config->GetInlet_Temperature(Marker_Tag);
-  Pressure    = config->GetInlet_Pressure(Marker_Tag);
-  Vel         = config->GetInlet_Velocity(Marker_Tag);
+  auto Temperature = config->GetInlet_Temperature(Marker_Tag);
+  auto Pressure    = config->GetInlet_Pressure(Marker_Tag);
+  auto Vel         = config->GetInlet_Velocity(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary. ---*/
 
@@ -10202,7 +10204,7 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
   unsigned long iPoint;
   unsigned short iDim;
   unsigned short iZone  =  config->GetiZone();
-  su2double *turboVelocity, *cartVelocity, *turboNormal;
+  su2double *turboVelocity, *cartVelocity;
 
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   su2double Mach             = config->GetMach();
@@ -10211,7 +10213,7 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
   turboVelocity   = new su2double[nDim];
   cartVelocity    = new su2double[nDim];
 
-  turboNormal     = config->GetFreeStreamTurboNormal();
+  auto turboNormal = config->GetFreeStreamTurboNormal();
 
   GetFluidModel()->SetTDState_Prho(Pressure_Inf, Density_Inf);
   SoundSpeed = GetFluidModel()->GetSoundSpeed();

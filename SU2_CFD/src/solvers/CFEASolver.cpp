@@ -1329,9 +1329,12 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   const bool topology_mode = config->GetTopology_Optimization();
   const auto simp_exponent = config->GetSIMP_Exponent();
 
+  const auto stressParam = config->GetStressPenaltyParam();
+  const su2double stress_scale = 1.0 / stressParam[0];
+  const su2double ks_mult = stressParam[1];
+
   const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
-  const su2double stressScale = 1.0 / config->GetAllowedVMStress();
   su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;
 
@@ -1412,7 +1415,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
         auto elStress = numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
 
-        stressPen += pow(max(0.0, elStress*simp_penalty*stressScale - 1.0), 2);
+        stressPen += exp(ks_mult * elStress*simp_penalty*stress_scale);
 
         wasActive = AD::BeginPassive();
 
@@ -1469,6 +1472,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   /*--- Reduce the stress penalty over all ranks ---*/
   SU2_MPI::Allreduce(&StressPenalty, &Total_OFStressPenalty, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  Total_OFStressPenalty = log(Total_OFStressPenalty)/ks_mult - 1.0;
 
   bool outputReactions = false;
 
