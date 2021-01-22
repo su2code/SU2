@@ -73,7 +73,7 @@ protected:
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
   
-  bool exact_jacobian = false;
+  const bool exact_jacobian = false;
   su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
   su2double sigma_k_i = 0.0, sigma_k_j = 0.0;
   su2double F1_i, F1_j;
