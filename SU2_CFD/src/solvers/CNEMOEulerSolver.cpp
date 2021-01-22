@@ -893,8 +893,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
-        su2double lim_i = 0.0;
-        su2double lim_j = 0.0;
+        su2double lim_i = 1.0;
+        su2double lim_j = 1.0;
         su2double Project_Grad_i = 0.0;
         su2double Project_Grad_j = 0.0;
 
