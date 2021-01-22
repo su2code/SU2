@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,8 +42,6 @@ class CPhysicalGeometry final : public CGeometry {
   unordered_map<unsigned long, unsigned long>
   Global_to_Local_Point;                           /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point{nullptr};            /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker{nullptr}; /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker{nullptr}; /*!< \brief Global to Local marker. */
   unsigned long *adj_counter{nullptr};             /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem{nullptr};          /*!< \brief Adjacency element list. */
   su2activematrix Sensitivity;                     /*!< \brief Matrix holding the sensitivities at each point. */
@@ -301,15 +299,6 @@ public:
     if (it != Global_to_Local_Point.cend())
       return it->second;
     return -1;
-  }
-
-  /*!
-   * \brief Get the local marker that correspond with the global marker.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const override {
-    return Global_to_Local_Marker[val_imarker];
   }
 
   /*!

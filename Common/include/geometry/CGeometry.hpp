@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1071,13 +1071,6 @@ public:
    * \return Local index that correspond with the global index.
    */
   inline virtual long GetGlobal_to_Local_Point(unsigned long val_ipoint) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline virtual unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const { return 0; }
 
   /*!
    * \brief Retrieve total number of elements in a simulation across all processors.

@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -742,16 +742,15 @@ public:
   /*!
    * \brief A virtual member, overloaded.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   *
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] numerics - Implementation of numerical method.
+   * \param[in] of_comp_mode - Mode to compute just the objective function.
    */
   inline virtual void Postprocessing(CGeometry *geometry,
-                                     CSolver **solver_container,
                                      CConfig *config,
                                      CNumerics **numerics,
-                                     unsigned short iMesh) { }
+                                     bool of_comp_mode = false) { }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -847,7 +846,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Evaluate_ObjFunc(CConfig *config) {};
+  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
 
   /*!
    * \brief A virtual member.
@@ -1649,13 +1648,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Friction_Forces(const CGeometry* geometry, const CConfig* config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Buffet_Monitoring(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -2483,6 +2475,11 @@ public:
    * \return Value of the objective function for the volume fraction.
    */
   inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
+
+  /*!
+   * \brief Retrieve the value of the discreteness objective function
+   */
+  inline virtual su2double GetTotal_OFDiscreteness() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3619,78 +3616,11 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFRefGeom(CGeometry *geometry,
-                                        const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFRefNode(CGeometry *geometry,
-                                        const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFVolFrac(CGeometry *geometry,
-                                        const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFCompliance(CGeometry *geometry,
-                                           const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
    */
   inline virtual void LoadRestart_FSI(CGeometry *geometry,
                                       CConfig *config,
                                       int val_iter) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void RefGeom_Sensitivity(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config){ }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void DE_Sensitivity(CGeometry *geometry,
-                                     CSolver **solver_container,
-                                     CNumerics **numerics_container,
-                                     CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Stiffness_Sensitivity(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics **numerics_container,
-                                            CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3805,12 +3735,6 @@ public:
   inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
 
   /*!
-   * \brief A virtual member
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  inline virtual void RegisterObj_Func(CConfig *config){}
-
-  /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -3824,13 +3748,6 @@ public:
    * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
    */
   inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
-
-  /*!
-   * \brief A virtual member. Extract and set the derivative of objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
