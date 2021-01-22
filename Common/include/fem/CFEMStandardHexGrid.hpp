@@ -147,6 +147,32 @@ public:
   void DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                               vector<ColMajorMatrix<su2double> > &matDerCoor) override;
 
+  /*!
+   * \brief Function, which evaluates the coordinates and gradients for the given
+   *        parametric coordinates.
+   * \param[in]  matCoor - Matrix that contains the coordinates of the grid DOFs.
+   * \param[in]  par     - Parametric coordinates for which the physical coordinates
+   *                       and derivatives must be determined.
+   * \param[out] x       - Physical coordinates to be determined.
+   * \param[out] dxdpar  - Derivatives of the physical coordinates w.r.t. the parametric
+   *                       coordinates.
+   */
+  void EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,
+                           const su2double           *par,
+                           su2double                 x[3],
+                           su2double                 dxdpar[3][3]) override;
+
+  /*!
+   * \brief Function, which interpolates the parametric coordinate within the
+   *        given linear sub-element.
+   * \param[in]  subElem - Sub-element in which the coordinate must be interpolated.
+   * \param[in]  weights - Interpolation weights in the linear sub-element.
+   * \param[out] parCoor - Parametric coordinates to be interpolated.
+   */
+  void InterpolCoorSubElem(const unsigned short subElem,
+                           const su2double      *weights,
+                           su2double            *parCoor) override;
+
 private:
 
   vector<passivedouble> rLineDOFs;    /*!< \brief 1D parametric coordinates of the grid DOFs. */

@@ -66,6 +66,15 @@ public:
   su2activevector wallDistance;     /*!< \brief The wall distance to the viscous walls for
                                                 the integration points of this face. */
 
+  vector<unsigned long>  donorsWallFunction;                   /*!< \brief Local element IDs of the donors for the wall
+                                                                           function treatment. These donors can be halo's. */
+  vector<unsigned short> nIntPerWallFunctionDonor;             /*!< \brief The number of integration points per donor
+                                                                           element for the wall function treatment. */
+  vector<unsigned short> intPerWallFunctionDonor;              /*!< \brief The integration points per donor element
+                                                                           for the wall function treatment. */
+  vector<ColMajorMatrix<passivedouble> > matWallFunctionDonor; /*!< \brief Matrices, which store the interpolation coefficients
+                                                                           for the donors of the integration points.*/
+
   CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
   CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
                                                                    standard flow solution variables. */

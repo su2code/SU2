@@ -73,3 +73,25 @@ CFEMStandardQuadVolumeSol::CFEMStandardQuadVolumeSol(const unsigned short val_nP
   SetFunctionPointerVolumeDataQuad(nDOFs1D, nInt1D, TensorProductDataVolIntPoints);
   SetFunctionPointerVolumeDataQuad(nDOFs1D, nDOFs1D, TensorProductDataVolSolDOFs);
 }
+
+void CFEMStandardQuadVolumeSol::BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
+                                                       ColMajorMatrix<passivedouble>        &matBasis) {
+
+  /*--- Determine the 1D basis functions for all parametric coordinates in
+        the two directions. ---*/
+  const unsigned short nCoor = parCoor[0].size();
+
+  ColMajorMatrix<passivedouble> legR(nCoor,nDOFs1D), legS(nCoor,nDOFs1D);
+
+  Vandermonde1D(nPoly, parCoor[0], legR);
+  Vandermonde1D(nPoly, parCoor[1], legS);
+
+  /*--- Allocate the memory for matBasis and set the values. ---*/
+  matBasis.resize(nCoor, nDOFs);
+
+  unsigned short ii = 0;
+  for(unsigned short j=0; j<nDOFs1D; ++j)
+    for(unsigned short i=0; i<nDOFs1D; ++i, ++ii)
+      for(unsigned short l=0; l<nCoor; ++l)
+        matBasis(l,ii) = legR(l,i)*legS(l,j);
+}

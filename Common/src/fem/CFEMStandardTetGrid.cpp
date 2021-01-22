@@ -143,3 +143,60 @@ void CFEMStandardTetGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>      
             nSolDOFs, nDOFs, nSolDOFs,
             derLagBasisSolDOFs[nn], matCoor, matDerCoor[nn], nullptr);
 }
+
+void CFEMStandardTetGrid::EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,
+                                              const su2double           *par,
+                                              su2double                 x[3],
+                                              su2double                 dxdpar[3][3]) {
+
+  /*--- Convert the parametric coordinates to a passivedouble and
+        store them in vectors of size 1. ---*/
+  vector<passivedouble> rPar(1, SU2_TYPE::GetValue(par[0]));
+  vector<passivedouble> sPar(1, SU2_TYPE::GetValue(par[1]));
+  vector<passivedouble> tPar(1, SU2_TYPE::GetValue(par[2]));
+
+  /*--- Compute the Lagrangian basis functions and its first
+        derivatives in this parametric point. ---*/
+  ColMajorMatrix<passivedouble> lag;
+  vector<ColMajorMatrix<passivedouble> > derLag;
+
+  LagBasisIntPointsTet(nPoly, rTetDOFs, sTetDOFs, tTetDOFs, rPar, sPar, tPar, lag);
+  DerLagBasisIntPointsTet(nPoly, rTetDOFs, sTetDOFs, tTetDOFs, rPar, sPar, tPar, derLag);
+
+  /*--- Initialize the coordinates and its derivatives. ---*/
+  for(unsigned short j=0; j<3; ++j) {
+    x[j] = 0.0;
+    for(unsigned short i=0; i<3; ++i)
+      dxdpar[j][i] = 0.0;
+  }
+
+  /*--- Loop to compute the coordinates and its derivatives. ---*/
+  for(unsigned short l=0; l<3; ++l) {
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      x[l]         += matCoor(i,l)*lag(0,i);
+      dxdpar[l][0] += matCoor(i,l)*derLag[0](0,i);
+      dxdpar[l][1] += matCoor(i,l)*derLag[1](0,i);
+      dxdpar[l][2] += matCoor(i,l)*derLag[2](0,i);
+    }
+  }
+}
+
+void CFEMStandardTetGrid::InterpolCoorSubElem(const unsigned short subElem,
+                                              const su2double      *weights,
+                                              su2double            *parCoor) {
+
+  /*--- Easier storage of the connectivity of the sub-element. ---*/
+  const unsigned short *conn = subConn1ForPlotting.data() + 4*subElem;
+  const unsigned short n0    = conn[0];
+  const unsigned short n1    = conn[1];
+  const unsigned short n2    = conn[2];
+  const unsigned short n3    = conn[3];
+
+  /*--- Compute the parametric coordinates. ---*/
+  parCoor[0] = weights[0]*rTetDOFs[n0] + weights[1]*rTetDOFs[n1]
+             + weights[2]*rTetDOFs[n2] + weights[3]*rTetDOFs[n3];
+  parCoor[1] = weights[0]*sTetDOFs[n0] + weights[1]*sTetDOFs[n1]
+             + weights[2]*sTetDOFs[n2] + weights[3]*sTetDOFs[n3];
+  parCoor[2] = weights[0]*tTetDOFs[n0] + weights[1]*tTetDOFs[n1]
+             + weights[2]*tTetDOFs[n2] + weights[3]*tTetDOFs[n3];
+}

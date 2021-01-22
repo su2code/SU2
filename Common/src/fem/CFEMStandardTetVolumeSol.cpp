@@ -110,3 +110,15 @@ if( jitterDOFs2Int ) {
   }  
 #endif
 }
+
+void CFEMStandardTetVolumeSol::BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
+                                                      ColMajorMatrix<passivedouble>        &matBasis) {
+
+  /*--- Allocate the memory for matBasis. ---*/
+  const unsigned short nCoor = parCoor[0].size();
+  matBasis.resize(nCoor, nDOFs);
+
+  /*--- Determine the values of the basis functions in the given
+        parametric coordinates. ---*/
+  VandermondeTetrahedron(nPoly, parCoor[0], parCoor[1], parCoor[2], matBasis);
+}

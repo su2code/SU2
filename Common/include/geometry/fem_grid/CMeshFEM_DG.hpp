@@ -181,6 +181,27 @@ private:
                                             const unsigned short           locGridDOFs);
 
   /*!
+   * \brief Function, which computes the parametric coordinates of the given
+            Cartesian coordinates inside the given parent element.
+   * \param[in]  coor           - Cartesian coordinates for which the parametric
+                                  coordinates must be determined.
+   * \param[in]  parElem        - The high order parent element which contains
+                                  the point.
+   * \param[in]  subElem        - Low order sub element inside the parent element
+                                  which contains the point.
+   * \param[in]  weightsSubElem - Interpolation weights inside subElem for the
+                                  coordinates. Used for an initial guess.
+   * \param[out] parCoor        - Parametric coordinates inside the high order
+                                  parent element for the given coordinates.
+                                  These parametric coordinates must be computed.
+   */
+  void HighOrderContainmentSearch(const su2double      *coor,
+                                  const unsigned long  parElem,
+                                  const unsigned short subElem,
+                                  const su2double      *weightsSubElem,
+                                  su2double            *parCoor);
+
+  /*!
    * \brief Set wall distances a specific value
    * \param[in] val - Value to which the wall distance must be set.
    */

@@ -146,3 +146,75 @@ void CFEMStandardPyraGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>     
             nSolDOFs, nDOFs, nSolDOFs,
             derLagBasisSolDOFs[nn], matCoor, matDerCoor[nn], nullptr);
 }
+
+void CFEMStandardPyraGrid::EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,
+                                               const su2double           *par,
+                                               su2double                 x[3],
+                                               su2double                 dxdpar[3][3]) {
+
+  /*--- Convert the parametric coordinates to a passivedouble and
+        store them in vectors of size 1. ---*/
+  vector<passivedouble> rPar(1, SU2_TYPE::GetValue(par[0]));
+  vector<passivedouble> sPar(1, SU2_TYPE::GetValue(par[1]));
+  vector<passivedouble> tPar(1, SU2_TYPE::GetValue(par[2]));
+
+  /*--- Compute the Lagrangian basis functions and its first
+        derivatives in this parametric point. ---*/
+  ColMajorMatrix<passivedouble> lag;
+  vector<ColMajorMatrix<passivedouble> > derLag;
+
+  LagBasisIntPointsPyra(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs, rPar, sPar, tPar, lag);
+  DerLagBasisIntPointsPyra(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs, rPar, sPar, tPar, derLag);
+
+  /*--- Initialize the coordinates and its derivatives. ---*/
+  for(unsigned short j=0; j<3; ++j) {
+    x[j] = 0.0;
+    for(unsigned short i=0; i<3; ++i)
+      dxdpar[j][i] = 0.0;
+  }
+
+  /*--- Loop to compute the coordinates and its derivatives. ---*/
+  for(unsigned short l=0; l<3; ++l) {
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      x[l]         += matCoor(i,l)*lag(0,i);
+      dxdpar[l][0] += matCoor(i,l)*derLag[0](0,i);
+      dxdpar[l][1] += matCoor(i,l)*derLag[1](0,i);
+      dxdpar[l][2] += matCoor(i,l)*derLag[2](0,i);
+    }
+  }
+}
+
+void CFEMStandardPyraGrid::InterpolCoorSubElem(const unsigned short subElem,
+                                               const su2double      *weights,
+                                               su2double            *parCoor) {
+
+  /*--- Set the pointer for the connectivity of the sub-elements,
+        depending on the type of the sub-element. ---*/
+  unsigned short nDOFsPerSubElem = 0;
+  const unsigned short *conn;
+  const unsigned short nSubElemType1 = GetNSubElemsType1();
+
+  if(subElem < nSubElemType1) {
+
+    /*--- Sub-element is a pyramid. ---*/
+    nDOFsPerSubElem = 5;
+    conn = subConn1ForPlotting.data() + 5*subElem;
+  }
+  else {
+
+    /*--- Sub-element is a tetrahedron. ---*/
+    nDOFsPerSubElem = 4;
+    conn = subConn2ForPlotting.data() + 5*(subElem - nSubElemType1);
+  }
+
+  /*--- Initialize the parametric coordinates to zero. ---*/
+  parCoor[0] = parCoor[1] = parCoor[2] = 0.0;
+
+  /*--- Loop over the DOFs of the sub-element to determine the
+        parametric coordinates. ---*/
+  for(unsigned short i=0; i<nDOFsPerSubElem; ++i) {
+    parCoor[0] += weights[i]*rPyraDOFs[conn[i]];
+    parCoor[1] += weights[i]*sPyraDOFs[conn[i]];
+    parCoor[2] += weights[i]*tPyraDOFs[conn[i]];
+  }
+}

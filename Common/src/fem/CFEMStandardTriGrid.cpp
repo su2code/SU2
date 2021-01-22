@@ -141,3 +141,53 @@ void CFEMStandardTriGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>      
             nSolDOFs, nDOFs, nSolDOFs,
             derLagBasisSolDOFs[nn], matCoor, matDerCoor[nn], nullptr);
 }
+
+void CFEMStandardTriGrid::EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,
+                                              const su2double           *par,
+                                              su2double                 x[3],
+                                              su2double                 dxdpar[3][3]) {
+
+  /*--- Convert the parametric coordinates to a passivedouble and
+        store them in vectors of size 1. ---*/
+  vector<passivedouble> rPar(1, SU2_TYPE::GetValue(par[0]));
+  vector<passivedouble> sPar(1, SU2_TYPE::GetValue(par[1]));
+
+  /*--- Compute the Lagrangian basis functions and its first
+        derivatives in this parametric point. ---*/
+  ColMajorMatrix<passivedouble> lag;
+  vector<ColMajorMatrix<passivedouble> > derLag;
+
+  LagBasisIntPointsTriangle(nPoly, rTriangleDOFs, sTriangleDOFs, rPar, sPar, lag);
+  DerLagBasisIntPointsTriangle(nPoly, rTriangleDOFs, sTriangleDOFs, rPar, sPar, derLag);
+
+  /*--- Initialize the coordinates and its derivatives. ---*/
+  for(unsigned short j=0; j<2; ++j) {
+    x[j] = 0.0;
+    for(unsigned short i=0; i<2; ++i)
+      dxdpar[j][i] = 0.0;
+  }
+
+  /*--- Loop to compute the coordinates and its derivatives. ---*/
+  for(unsigned short l=0; l<2; ++l) {
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      x[l]         += matCoor(i,l)*lag(0,i);
+      dxdpar[l][0] += matCoor(i,l)*derLag[0](0,i);
+      dxdpar[l][1] += matCoor(i,l)*derLag[1](0,i);
+    }
+  }
+}
+
+void CFEMStandardTriGrid::InterpolCoorSubElem(const unsigned short subElem,
+                                              const su2double      *weights,
+                                              su2double            *parCoor) {
+
+  /*--- Easier storage of the connectivity of the sub-element. ---*/
+  const unsigned short *conn = subConn1ForPlotting.data() + 3*subElem;
+  const unsigned short n0    = conn[0];
+  const unsigned short n1    = conn[1];
+  const unsigned short n2    = conn[2];
+  
+  /*--- Compute the parametric coordinates. ---*/
+  parCoor[0] = weights[0]*rTriangleDOFs[n0] + weights[1]*rTriangleDOFs[n1] + weights[2]*rTriangleDOFs[n2];
+  parCoor[1] = weights[0]*sTriangleDOFs[n0] + weights[1]*sTriangleDOFs[n1] + weights[2]*sTriangleDOFs[n2];
+}

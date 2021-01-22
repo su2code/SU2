@@ -2597,7 +2597,263 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
   /*--- The master node writes a message. ---*/
   if(rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Build the local ADT of the volume elements. The halo       ---*/
+  /*---         elements are included, because these may also be donors.   ---*/
+  /*---         Note that the ADT is built with the linear subelements.    ---*/
+  /*---         This is done to avoid relatively many expensive Newton     ---*/
+  /*---         solves for high order elements.                            ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Define the vectors, which store the mapping from the subelement to the
+        parent element, subelement ID within the parent element, the element
+        type and the connectivity of the subelements. ---*/
+  vector<unsigned long>  parentElement;
+  vector<unsigned short> subElementIDInParent;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned long>  elemConn;
+
+  /*--- Loop over the locally stored volume elements (including halo elements)
+        to create the connectivity of the subelements. ---*/
+  for(unsigned long l=0; l<nVolElemTot; ++l) {
+
+    /*--- Determine the necessary data from the corresponding standard element. ---*/
+    unsigned short VTK_SubType[] = {volElem[l].standardElemGrid->GetVTK_SubType1(),
+                                    volElem[l].standardElemGrid->GetVTK_SubType2()};
+    unsigned short nSubElems[]       = {0, 0};
+    unsigned short nDOFsPerSubElem[] = {0, 0};
+
+    const unsigned short *connSubElems[] = {nullptr, nullptr};
+
+    if(VTK_SubType[0] != NONE) {
+      nSubElems[0]       = volElem[l].standardElemGrid->GetNSubElemsType1();
+      nDOFsPerSubElem[0] = volElem[l].standardElemGrid->GetNDOFsPerSubElem(VTK_SubType[0]);
+      connSubElems[0]    = volElem[l].standardElemGrid->GetSubConnType1();
+    }
+
+    if(VTK_SubType[1] != NONE) {
+      nSubElems[1]       = volElem[l].standardElemGrid->GetNSubElemsType2();
+      nDOFsPerSubElem[1] = volElem[l].standardElemGrid->GetNDOFsPerSubElem(VTK_SubType[1]);
+      connSubElems[1]    = volElem[l].standardElemGrid->GetSubConnType2();
+    }
+
+    /*--- Abbreviate the grid DOFs of this element a bit easier. ---*/
+    const vector<unsigned long> &nodeIDs = volElem[l].nodeIDsGrid;
+
+    /*--- Loop over the number of subelements and store the required data. ---*/
+    unsigned short jj = 0;
+    for(unsigned short i=0; i<2; ++i) {
+      unsigned short kk = 0;
+      for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
+        parentElement.push_back(l);
+        subElementIDInParent.push_back(jj);
+        VTK_TypeElem.push_back(VTK_SubType[i]);
+
+        for(unsigned short k=0; k<nDOFsPerSubElem[i]; ++k, ++kk)
+          elemConn.push_back(nodeIDs[connSubElems[i][kk]]);
+      }
+    }
+  }
+
+  /*--- Copy the coordinates in a vector that can be used by the ADT. ---*/
+  vector<su2double> volCoor;
+  volCoor.reserve(nDim*meshPoints.size());
+
+  for(unsigned long l=0; l<meshPoints.size(); ++l) {
+    for(unsigned short k=0; k<nDim; ++k)
+      volCoor.push_back(meshPoints[l].coor[k]);
+  }
+
+  /*--- Build the local ADT. ---*/
+  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                               subElementIDInParent, parentElement, false);
+
+  /*--- Release the memory of the vectors used to build the ADT. To make sure
+        that all the memory is deleted, the swap function is used. ---*/
+  vector<unsigned short>().swap(subElementIDInParent);
+  vector<unsigned short>().swap(VTK_TypeElem);
+  vector<unsigned long>().swap(parentElement);
+  vector<unsigned long>().swap(elemConn);
+  vector<su2double>().swap(volCoor);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
+  /*---         the local elements.                                        ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Loop over the markers and select the ones for which a wall function
+          treatment must be carried out. ---*/
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case ISOTHERMAL:
+        case HEAT_FLUX: {
+          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+
+            /*--- An LES wall model is used for this boundary marker. Determine
+                  which wall model and allocate the memory for the member variable. ---*/
+            SU2_OMP_SINGLE
+            {
+              switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
+                case EQUILIBRIUM_WALL_MODEL: {
+                  if(rank == MASTER_NODE)
+                    cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
+
+                  boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
+                  break;
+                }
+                case LOGARITHMIC_WALL_MODEL: {
+                  if(rank == MASTER_NODE)
+                    cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
+
+                  boundaries[iMarker].wallModel = new CWallModelLogLaw(config, Marker_Tag);
+                  break;
+                }
+                default: {
+                  SU2_MPI::Error("Wall function not present yet", CURRENT_FUNCTION);
+                }
+              }
+            }
+
+            /*--- Retrieve the double information for this wall model. The height
+                  of the exchange location is the first element of this array. ---*/
+            const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+
+            /*--- Easier storage of the surface elements. ---*/
+            vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+            /*--- Determine the chunk size for the OMP loop below. ---*/
+#ifdef HAVE_OMP
+            const size_t omp_chunk_size = computeStaticChunkSize(surfElem.size(),
+                                                                 omp_get_num_threads(), 64);
+#endif
+            /*--- Loop over the local boundary elements for this marker. ---*/
+            SU2_OMP_FOR_DYN(omp_chunk_size)
+            for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+              /*--- Easier storage of the number of integration points. ---*/
+              const unsigned short nInt = surfElem[l].standardElemGrid->GetNIntegration();
+
+              /*--- Allocate the memory for the memory to store the donors and
+                    the parametric weights. The donor elements are stored in an
+                    CUnsignedLong2T, such that they can be sorted. ---*/
+              vector<CUnsignedLong2T> donorElements(nInt);
+              ColMajorMatrix<su2double> parCoorInDonor(nInt,nDim);
+
+              /*--- Loop over the integration points of the face. ---*/
+              for(unsigned short i=0; i<nInt; ++i) {
+
+                /*--- Determine the coordinates of the exchange point. ---*/
+                su2double coorExchange[] = {0.0, 0.0, 0.0};  // To avoid a compiler warning.
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  coorExchange[iDim] = surfElem[l].coorIntegrationPoints(i,iDim)
+                                     - surfElem[l].metricNormalsFace(i,iDim)*doubleInfo[0];
+
+                /*--- Search for the element, which contains the exchange location. ---*/
+                unsigned short subElem;
+                unsigned long  parElem;
+                int            rank;
+                su2double      parCoor[3], weightsInterpol[8];
+                if( localVolumeADT.DetermineContainingElement(coorExchange, subElem,
+                                                              parElem, rank, parCoor,
+                                                              weightsInterpol) ) {
+
+                  /*--- Subelement found that contains the exchange location. However,
+                        what is needed is the location in the high order parent element.
+                        Determine this. ---*/
+                  HighOrderContainmentSearch(coorExchange, parElem, subElem,
+                                             weightsInterpol, parCoor);
+
+                  /*--- Store the info in donorElements and parCoorInDonor. ---*/
+                  donorElements[i].long0 = parElem;
+                  donorElements[i].long1 = i;
+                  for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                    parCoorInDonor(i,iDim) = parCoor[iDim];
+                }
+                else {
+
+                  /* No subelement found that contains the exchange location.
+                     The partitioning is done such that this should not happen.
+                     Print an error message and exit. */
+                  SU2_MPI::Error(string("Exchange location not found in ADT. This should not happen"),
+                                 CURRENT_FUNCTION);
+                }
+              }
+
+              /*--- Sort donorElements in increasing order, such that the
+                    integration points with the same donor are grouped together. ---*/
+              sort(donorElements.begin(), donorElements.end());
+
+              /*--- Store the donor information in the member variables of surfElem. ---*/
+              surfElem[l].donorsWallFunction.push_back(donorElements[0].long0);
+              surfElem[l].nIntPerWallFunctionDonor.push_back(0);
+              surfElem[l].intPerWallFunctionDonor.resize(nInt);
+              surfElem[l].intPerWallFunctionDonor[0] = donorElements[0].long1;
+
+              for(unsigned short i=1; i<nInt; ++i) {
+                if(donorElements[i].long0 != surfElem[l].donorsWallFunction.back()) {
+                  surfElem[l].donorsWallFunction.push_back(donorElements[i].long0);
+                  surfElem[l].nIntPerWallFunctionDonor.push_back(i);
+                }
+                surfElem[l].intPerWallFunctionDonor[i] = donorElements[i].long1;
+              }
+
+              surfElem[l].nIntPerWallFunctionDonor.push_back(nInt);
+
+              /*--- Determine whether or not halo information is needed to apply
+                    the boundary conditions for this surface. If needed, set
+                    haloInfoNeededForBC of the boundary to true. As donorsWallFunction is
+                    sorted in increasing order, it suffices to check the last element. ---*/
+              if(surfElem[l].donorsWallFunction.back() >= nVolElemOwned)
+                boundaries[iMarker].haloInfoNeededForBC = true;
+
+              /*--- Allocate the memory of the first index of the interpolation
+                    matrices for the donordata. ---*/
+              surfElem[l].matWallFunctionDonor.resize(surfElem[l].donorsWallFunction.size());
+
+              /*--- Loop over the different donors for the wall function data. ---*/
+              for(unsigned long j=0; j<surfElem[l].donorsWallFunction.size(); ++j) {
+
+                /*--- Easier storage of the donor and the vector for the
+                      interpolation data for this donor. ---*/
+                const unsigned long donor               = surfElem[l].donorsWallFunction[j];
+                ColMajorMatrix<passivedouble> &matDonor = surfElem[l].matWallFunctionDonor[j];
+
+                /*--- Determine the number of integration points for this donor. ---*/
+                const unsigned short nIntThisDonor = surfElem[l].nIntPerWallFunctionDonor[j+1]
+                                                   - surfElem[l].nIntPerWallFunctionDonor[j];
+
+                /*--- Allocate the memory to store the parametric coordinates, which
+                      must be handled by the current donor. Note that a passive double
+                      must be used here. Set the appropriate values afterwards. ---*/
+                vector<vector<passivedouble> > parCoor(nDim, vector<passivedouble>(nIntThisDonor));
+                for(unsigned short i=surfElem[l].nIntPerWallFunctionDonor[j];
+                                   i<surfElem[l].nIntPerWallFunctionDonor[j+1]; ++i) {
+                  const unsigned short ii = surfElem[l].intPerWallFunctionDonor[i];
+                  for(unsigned short k=0; k<nDim; ++k)
+                    parCoor[k][i] = SU2_TYPE::GetValue(parCoorInDonor(ii,k));
+                }
+
+                /*--- Determine the values of the basis functions in these points.
+                      Note that the standard element of the solution must be used
+                      for this purpose, because the solution must be interpolated
+                      in these exchange points. ---*/
+                volElem[donor].standardElemFlow->BasisFunctionsInPoints(parCoor, matDonor);
+              }
+            }
+          }
+
+          break;
+        }
+        default:  /* Just to avoid a compiler warning. */
+          break;
+      }
+    }
+  }
 }
 
 /*---------------------------------------------------------------------*/
@@ -3536,6 +3792,94 @@ void CMeshFEM_DG::CreateStandardVolumeElementsSolution(const vector<CUnsignedSho
                        CURRENT_FUNCTION);
     }
   }
+}
+
+void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
+                                             const unsigned long  parElem,
+                                             const unsigned short subElem,
+                                             const su2double      *weightsSubElem,
+                                             su2double            *parCoor) {
+
+  /*--- Definition of the maximum number of iterations in the Newton solver
+        and the tolerance level. ---*/
+  const unsigned short maxIt = 50;
+  const su2double tolNewton  = 1.e-10;
+
+  /*--- Create an initial guess for the parametric coordinates from
+        interpolation in the linear sub-element of the parent element. ---*/
+  volElem[parElem].standardElemGrid->InterpolCoorSubElem(subElem, weightsSubElem,
+                                                         parCoor);
+
+  /*--- Start of the Newton algorithm. Loop over the number of iterations. ---*/
+  unsigned short itCount;
+  for(itCount=0; itCount<maxIt; ++itCount) {
+
+    /*--- Determine the coordinates and its gradients for the current
+          values of the parametric coordinates. ---*/
+    su2double x[3], dxdpar[3][3];
+    volElem[parElem].standardElemGrid->EvalCoorAndGradCoor(volElem[parElem].coorGridDOFs,
+                                                           parCoor, x, dxdpar);
+
+    /*--- Compute the update, for which a distinction between
+          2D and 3D must be made. ---*/
+    bool converged = false;
+    switch( nDim ) {
+      case 2: {
+        /*--- Two dimensional computation. Compute the values of the function
+              and minus the Jacobian matrix. ---*/
+        const su2double f0  = coor[0]-x[0], f1  = coor[1]-x[1];
+        const su2double a00 = dxdpar[0][0], a01 = dxdpar[0][1],
+                        a10 = dxdpar[1][0], a11 = dxdpar[1][1];
+
+        /*--- Compute the updates of the parametric values. As minus the
+              Jacobian is computed, the updates should be added to parCoor. ---*/
+        const su2double detInv = 1.0/(a00*a11 - a01*a10);
+        const su2double dr = detInv*(f0*a11 - f1*a01);
+        const su2double ds = detInv*(f1*a00 - f0*a10);
+
+        parCoor[0] += dr;
+        parCoor[1] += ds;
+
+        /*--- Check for convergence. ---*/
+        if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton) converged = true;
+        break;
+      }
+
+      case 3: {
+        /*--- Three dimensional computation. Compute the values of the function
+              and minus the Jacobian matrix. ---*/
+        const su2double f0  = coor[0]-x[0], f1  = coor[1]-x[1], f2  = coor[2]-x[2];
+        const su2double a00 = dxdpar[0][0], a01 = dxdpar[0][1], a02 = dxdpar[0][2],
+                        a10 = dxdpar[1][0], a11 = dxdpar[1][1], a12 = dxdpar[1][2],
+                        a20 = dxdpar[2][0], a21 = dxdpar[2][1], a22 = dxdpar[2][2];
+
+        /*--- Compute the updates of the parametric values. As minus the
+              Jacobian is computed, the updates should be added to parCoor. ---*/
+        const su2double detInv = 1.0/(a00*a11*a22 - a00*a12*a21 - a01*a10*a22
+                               +      a01*a12*a20 + a02*a10*a21 - a02*a11*a20);
+        const su2double dr =  detInv*(a01*a12*f2 - a01*a22*f1 - a02*a11*f2
+                           +          a02*a21*f1 + a11*a22*f0 - a12*a21*f0);
+        const su2double ds = -detInv*(a00*a12*f2 - a00*a22*f1 - a02*a10*f2
+                           +          a02*a20*f1 + a10*a22*f0 - a12*a20*f0);
+        const su2double dt =  detInv*(a00*a11*f2 - a00*a21*f1 - a01*a10*f2
+                           +          a01*a20*f1 + a10*a21*f0 - a11*a20*f0);
+        parCoor[0] += dr;
+        parCoor[1] += ds;
+        parCoor[2] += dt;
+
+        /* Check for convergence. */
+        if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton && fabs(dt) <= tolNewton)
+          converged = true;
+        break;
+      }
+    }
+
+    /* Break the loop if the Newton algorithm converged. */
+    if( converged ) break;
+  }
+
+  /*--- Terminate if the Newton algorithm did not converge. ---*/
+  if(itCount == maxIt) SU2_MPI::Error(string("Newton did not converge"), CURRENT_FUNCTION);
 }
 
 void CMeshFEM_DG::SetWallDistance(su2double val) {

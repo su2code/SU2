@@ -150,3 +150,68 @@ void CFEMStandardPrismGrid::DerivativesCoorSolDOFs(ColMajorMatrix<su2double>    
             nSolDOFs, nDOFs, nSolDOFs,
             derLagBasisSolDOFs[nn], matCoor, matDerCoor[nn], nullptr);
 }
+
+void CFEMStandardPrismGrid::EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,
+                                                const su2double           *par,
+                                                su2double                 x[3],
+                                                su2double                 dxdpar[3][3]) {
+
+  /*--- Convert the parametric coordinates to a passivedouble and
+        store them in vectors of size 1. ---*/
+  vector<passivedouble> rPar(1, SU2_TYPE::GetValue(par[0]));
+  vector<passivedouble> sPar(1, SU2_TYPE::GetValue(par[1]));
+  vector<passivedouble> tPar(1, SU2_TYPE::GetValue(par[2]));
+
+  /*--- Compute the Lagrangian basis functions and its first
+        derivatives in this parametric point. ---*/
+  ColMajorMatrix<passivedouble> lag;
+  vector<ColMajorMatrix<passivedouble> > derLag;
+
+  LagBasisIntPointsPrism(nPoly, rTriangleDOFs, sTriangleDOFs, rLineDOFs,
+                         rPar, sPar, tPar, lag);
+  DerLagBasisIntPointsPrism(nPoly, rTriangleDOFs, sTriangleDOFs, rLineDOFs,
+                            rPar, sPar, tPar, derLag);
+
+  /*--- Initialize the coordinates and its derivatives. ---*/
+  for(unsigned short j=0; j<3; ++j) {
+    x[j] = 0.0;
+    for(unsigned short i=0; i<3; ++i)
+      dxdpar[j][i] = 0.0;
+  }
+
+  /*--- Loop to compute the coordinates and its derivatives. ---*/
+  for(unsigned short l=0; l<3; ++l) {
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      x[l]         += matCoor(i,l)*lag(0,i);
+      dxdpar[l][0] += matCoor(i,l)*derLag[0](0,i);
+      dxdpar[l][1] += matCoor(i,l)*derLag[1](0,i);
+      dxdpar[l][2] += matCoor(i,l)*derLag[2](0,i);
+    }
+  }
+}
+
+void CFEMStandardPrismGrid::InterpolCoorSubElem(const unsigned short subElem,
+                                                const su2double      *weights,
+                                                su2double            *parCoor) {
+
+  /*--- Easier storage of the connectivity of the sub-element. ---*/
+  const unsigned short *conn = subConn1ForPlotting.data() + 6*subElem;
+
+  /*--- Initialize the parametric coordinates to zero. ---*/
+  parCoor[0] = parCoor[1] = parCoor[2] = 0.0;
+
+  /*--- Loop over the 6 DOFs of the linear prism. ---*/
+  for(unsigned short ind=0; ind<6; ++ind) {
+
+    /*--- Determine the (i,j) indices of this vertex inside the parent element.
+          The j-index is the index in the structured direction, the i-index
+          is the index in the triangle. ---*/
+    const unsigned short j = conn[ind]/nDOFsTriangle;
+    const unsigned short i = conn[ind] - j*nDOFsTriangle;
+
+    /*--- Update the parametric coordinates. ---*/
+    parCoor[0] = weights[ind]*rTriangleDOFs[i];
+    parCoor[1] = weights[ind]*sTriangleDOFs[i];
+    parCoor[2] = weights[ind]*rLineDOFs[j];
+  }
+}

@@ -64,6 +64,21 @@ public:
    */
   ~CFEMStandardQuadVolumeSol() = default;
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Public member functions.                                ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which determines the basis functions for the given parametric
+   *        coordinates.
+   * \param[in]  parCoor  - Double vector that contains the parametric coordinates
+   *                        for which the basis functions must be determined.
+   * \param[out] matBasis - Matrix that contains the values of the basis functions
+   *                        in the given parametric coordinates.
+   */
+  void BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
+                              ColMajorMatrix<passivedouble>        &matBasis) override;
+
 private:
 
   vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */

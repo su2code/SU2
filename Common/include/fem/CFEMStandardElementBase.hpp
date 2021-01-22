@@ -140,6 +140,20 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  parCoor  - Double vector that contains the parametric coordinates
+   *                        for which the basis functions must be determined.
+   * \param[out] matBasis - Matrix that contains the values of the basis functions
+   *                        in the given parametric coordinates.
+   */
+  virtual void BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
+                                      ColMajorMatrix<passivedouble>        &matBasis) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \param[in]  LGLDistribution - Whether or not the LGL node distribution must be used.
    * \param[in]  matCoorDOF - Matrix that contains the coordinates of the grid DOFs.
    * \param[out] matCoorInt - Matrix that contains the coordinates of the integration
@@ -197,6 +211,24 @@ public:
    */
   virtual void DerivativesCoorSolDOFs(ColMajorMatrix<su2double>          &matCoor,
                                       vector<ColMajorMatrix<su2double> > &matDerCoor) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  matCoor - Matrix that contains the coordinates of the grid DOFs.
+   * \param[in]  par     - Parametric coordinates for which the physical coordinates
+   *                       and derivatives must be determined.
+   * \param[out] x       - Physical coordinates to be determined.
+   * \param[out] dxdpar  - Derivatives of the physical coordinates w.r.t. the parametric
+   *                       coordinates.
+   */
+  virtual void EvalCoorAndGradCoor(ColMajorMatrix<su2double> &matCoor,
+                                   const su2double           *par,
+                                   su2double                 x[3],
+                                   su2double                 dxdpar[3][3]) {
 
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
@@ -262,6 +294,20 @@ public:
     SU2_MPI::Error(string("This function must be overwritten by the derived class"),
                    CURRENT_FUNCTION);
     return 0;
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in]  subElem - Sub-element in which the coordinate must be interpolated.
+   * \param[in]  weights - Interpolation weights in the linear sub-element.
+   * \param[out] parCoor - Parametric coordinates to be interpolated.
+   */
+  virtual void InterpolCoorSubElem(const unsigned short subElem,
+                                   const su2double      *weights,
+                                   su2double            *parCoor) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
   }
 
   /*!
