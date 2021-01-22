@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1519,7 +1519,7 @@ enum ENUM_OBJECTIVE {
   INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
   TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
   MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
-  TOTAL_AVG_TEMPERATURE = 70,   /*!< \brief Total averaged temperature. */
+  AVG_TEMPERATURE = 70,         /*!< \brief Total averaged temperature. */
   MOMENT_X_COEFFICIENT = 9,     /*!< \brief Pitching moment objective function definition. */
   MOMENT_Y_COEFFICIENT = 10,    /*!< \brief Rolling moment objective function definition. */
   MOMENT_Z_COEFFICIENT = 11,    /*!< \brief Yawing objective function definition. */
@@ -1579,7 +1579,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TORQUE", TORQUE_COEFFICIENT)
   MakePair("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
   MakePair("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
-  MakePair("TOTAL_AVG_TEMPERATURE", TOTAL_AVG_TEMPERATURE)
+  MakePair("AVG_TEMPERATURE", AVG_TEMPERATURE)
   MakePair("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)

@@ -2,7 +2,7 @@
  * \file CGemmBase.hpp
  * \brief Base class for carrying out a GEMM multiplication.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@ using namespace std;
  * \class CGemmBase
  * \brief Base class to carry out a GEMM multiplication.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CGemmBase {
 

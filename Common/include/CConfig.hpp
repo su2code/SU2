@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -141,8 +141,7 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
-  Buffet_Monitoring;        /*!< \brief Flag for computing the buffet sensor.*/
+  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -5064,11 +5063,6 @@ public:
   unsigned short GetKind_ObjFunc(unsigned short val_obj = 0) const { return Kind_ObjFunc[val_obj]; }
 
   /*!
-   * \brief Similar to GetKind_ObjFunc but returns the corresponding string.
-   */
-  string GetName_ObjFunc(unsigned short val_obj = 0) const;
-
-  /*!
    * \author H. Kline
    * \brief Get the weight of objective function. There are several options: Drag coefficient,
    *        Lift coefficient, efficiency, etc.
@@ -5895,12 +5889,6 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv) const { return Design_Variable[val_dv]; }
-
-  /*!
-   * \brief Provides the buffet monitoring information.
-   * \return Buffet monitoring information, if <code>TRUE</code> then the code will compute the buffet sensor.
-   */
-  bool GetBuffet_Monitoring(void) const { return Buffet_Monitoring; }
 
   /*!
    * \brief Get the buffet sensor sharpness coefficient.

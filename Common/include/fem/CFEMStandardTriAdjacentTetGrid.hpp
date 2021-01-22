@@ -4,7 +4,7 @@
  *        adjacent to a tetrahedron for the grid.
  *        The functions are in the <i>CFEMStandardTriAdjacentTetGrid.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
  * \brief Class which defines the variables and methods for the triangle 
  *        standard surface element adjacent to a tetrahedron for the grid.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEMStandardTriAdjacentTetGrid final: public CFEMStandardTetBase {
 

@@ -3,7 +3,7 @@
  * \brief Class definition for a surface element for the FEM solver.
  *        The implementations are in the <i>CSurfaceElementFEM.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,7 @@ class CVolumeElementFEM_DG;
  * \class CSurfaceeSurfaceFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CSurfaceElementFEM final {
 public:

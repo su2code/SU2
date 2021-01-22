@@ -2,7 +2,7 @@
  * \file classes_multiple_integers.hpp
  * \brief Header file for the classes that consists of multiple integer types.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -106,7 +106,7 @@ struct CUnsignedShort2T {
 /*!
  * \struct CLong3T
  * \brief Help struct used to store three longs as one entity.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 struct CLong3T {
   long long0 = 0;  /*!< \brief First long to store in this class. */
@@ -139,7 +139,7 @@ struct CLong3T {
 /*!
  * \struct CUnsignedShort3T
  * \brief Help struct used to store three unsigned shorts as one entity.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 struct CUnsignedShort3T {
   unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
@@ -184,7 +184,7 @@ struct CUnsignedShort3T {
 /*!
  * \struct CUnsignedShort4T
  * \brief Help struct used to store four unsigned shorts as one entity.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 struct CUnsignedShort4T {
   unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
@@ -233,7 +233,7 @@ struct CUnsignedShort4T {
 /*!
  * \struct CUnsignedShort8T
  * \brief Help struct used to store eight unsigned shorts as one entity.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 struct CUnsignedShort8T {
   unsigned short short0 = 0;  /*!< \brief First short to store in this class. */
@@ -301,7 +301,7 @@ struct CUnsignedShort8T {
 /*!
  * \struct CUnsignedShort11T
  * \brief Help struct used to store eleven unsigned shorts as one entity.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 struct CUnsignedShort11T {
   unsigned short short0  = 0;  /*!< \brief First short to store in this class. */

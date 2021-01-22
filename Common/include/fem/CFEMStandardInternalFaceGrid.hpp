@@ -4,7 +4,7 @@
  *        for the grid.
  *        The functions are in the <i>CFEMStandardInternalFaceGrid.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \brief Class which defines the variables and methods for the standard
  *        standard element for an internal matching face for the grid.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEMStandardInternalFaceGrid final {
 private:

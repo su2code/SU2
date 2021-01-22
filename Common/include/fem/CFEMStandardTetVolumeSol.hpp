@@ -3,7 +3,7 @@
  * \brief Class for the FEM tetrahedron standard element for the volume solution.
  *        The functions are in the <i>CFEMStandardTetVolumeSol.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class which defines the variables and methods for the
  *        tetrahedron standard element for the volume solution.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEMStandardTetVolumeSol final: public CFEMStandardTetBase {
 

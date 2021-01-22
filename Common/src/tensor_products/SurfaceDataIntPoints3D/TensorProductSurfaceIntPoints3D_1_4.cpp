@@ -2,7 +2,7 @@
  * \file TensorProductSurfaceIntPoints3D_1_4.cpp
  * \brief Function, which carries out the tensor product for (nDOFs1D,nInt1D) = (1,4)
  * \author Automatically generated file, do not change manually
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

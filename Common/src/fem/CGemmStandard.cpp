@@ -2,7 +2,7 @@
  * \file CGemmStandard.cpp
  * \brief Functions for the class CGemmStandard.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

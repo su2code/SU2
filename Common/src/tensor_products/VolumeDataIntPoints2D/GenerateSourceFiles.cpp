@@ -4,7 +4,7 @@
  *        combinations for the tensor products to compute the
  *        data in the 2D volume integration points.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -553,7 +553,7 @@ void WriteFileHeader(std::ofstream &file,
   file << " * \\author Automatically generated file, do not change manually" << std::endl;
 
   /* Write the remainder of the header file. */
-  file << " * \\version 7.0.8 \"Blackbird\"" << std::endl;
+  file << " * \\version 7.1.0 \"Blackbird\"" << std::endl;
   file << " *" << std::endl;
   file << " * SU2 Project Website: https://su2code.github.io" << std::endl;
   file << " *" << std::endl;

@@ -3,7 +3,7 @@
  * \brief Class for a volume element for the DG-FEM solver.
  *        The implementations are in the <i>CVolumeElementFEM_DG.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@ using namespace std;
  * \class CVolumeElementFEM_DG
  * \brief Class to store a volume element for the DG-FEM solver.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CVolumeElementFEM_DG final: public CVolumeElementFEM_Base {
 public:

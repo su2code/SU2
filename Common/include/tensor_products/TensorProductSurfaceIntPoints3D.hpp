@@ -2,7 +2,7 @@
  * \file TensorProductSurfaceIntPoints3D.hpp
  * \brief Function prototypes for the tensor product to compute the surface data in the 2D integration points of a quad
  * \author Automatically generated file, do not change manually
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

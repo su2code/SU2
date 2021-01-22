@@ -4,7 +4,7 @@
  *        adjacent to a hexahedron for the solution.
  *        The functions are in the <i>CFEMStandardQuadAdjacentHexSol.cpp</i> file.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
  * \brief Class which defines the variables and methods for the quadrilateral
  *        standard surface element adjacent to a hexahedron for the solution.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEMStandardQuadAdjacentHexSol final: public CFEMStandardHexBase {
 
