@@ -254,8 +254,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] Iteration - Value of the current iteration.
-   * \tparam SoundSpeedFunc - Function object to compute speed of sound
-   * \tparam LambdaViscFunc - Function object to compute the viscous lambda
+   * \tparam SoundSpeedFunc - Function object to compute speed of sound.
+   * \tparam LambdaViscFunc - Function object to compute the viscous lambda.
    * \note Both functors need to implement (nodes,iPoint,jPoint) for edges, and (nodes,iPoint) for vertices.
    */
   template<class SoundSpeedFunc, class LambdaViscFunc>
@@ -496,6 +496,103 @@ class CFVMFlowSolverBase : public CSolver {
         nodes->SetDelta_Time(iPoint, dt);
       }
     }
+  }
+
+  /*!
+   * \brief Compute the max eigenvalue, gemeric implementation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \tparam SoundSpeedFunc - Function object to compute speed of sound.
+   * \note Functor needs to implement (nodes,iPoint,jPoint) for edges, and (nodes,iPoint) for vertices.
+   */
+  template<class SoundSpeedFunc>
+  FORCEINLINE void SetMax_Eigenvalue_impl(const SoundSpeedFunc& soundSpeed, CGeometry *geometry, CConfig *config) {
+
+    /*--- Loop domain points. ---*/
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+      /*--- Set eigenvalues to zero. ---*/
+      nodes->SetLambda(iPoint,0.0);
+
+      /*--- Loop over the neighbors of point i. ---*/
+      for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+      {
+        auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+
+        auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        auto Normal = geometry->edges->GetNormal(iEdge);
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        /*--- Mean Values ---*/
+
+        su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint, jPoint) * Area;
+
+        /*--- Adjustment for grid movement ---*/
+
+        if (dynamic_grid) {
+          const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+          const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+            Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+        }
+
+        /*--- Inviscid contribution ---*/
+
+        nodes->AddLambda(iPoint, fabs(Mean_ProjVel) + Mean_SoundSpeed);
+      }
+    }
+
+    /*--- Loop boundary edges ---*/
+
+    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+          /*--- Point identification, Normal vector and area ---*/
+
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+          /*--- Mean Values ---*/
+
+          su2double Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
+          su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint) * Area;
+
+          /*--- Adjustment for grid movement ---*/
+
+          if (dynamic_grid) {
+            Mean_ProjVel -= GeometryToolbox::DotProduct(nDim, Normal, geometry->nodes->GetGridVel(iPoint));
+          }
+
+          /*--- Inviscid contribution ---*/
+
+          nodes->AddLambda(iPoint, fabs(Mean_ProjVel) + Mean_SoundSpeed);
+        }
+      }
+    }
+
+    /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, MAX_EIGENVALUE);
+    CompleteComms(geometry, config, MAX_EIGENVALUE);
   }
 
   /*!

@@ -1575,109 +1575,21 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
-  su2double Area, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
-  Mean_BetaInc2, Lambda, ProjVel, ProjVel_i, ProjVel_j, *GridVel, *GridVel_i, *GridVel_j;
-  const su2double* Normal;
-
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
-
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    nodes->SetLambda(iPoint,0.0);
-  }
-
-  /*--- Loop interior edges ---*/
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    /*--- Point identification, Normal vector and area ---*/
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    Normal = geometry->edges->GetNormal(iEdge);
-    Area = GeometryToolbox::Norm(nDim, Normal);
-
-    /*--- Mean Values ---*/
-
-    Mean_ProjVel    = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (nodes->GetBetaInc2(iPoint)      + nodes->GetBetaInc2(jPoint));
-    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-    /*--- Adjustment for grid movement ---*/
-
-    if (dynamic_grid) {
-      GridVel_i = geometry->nodes->GetGridVel(iPoint);
-      GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      ProjVel_i = 0.0; ProjVel_j =0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
-      }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+  /*--- Define an object to compute the speed of sound. ---*/
+  struct SoundSpeed {
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      return sqrt(0.5 * (nodes.GetBetaInc2(iPoint) + nodes.GetBetaInc2(jPoint)));
     }
 
-    /*--- Inviscid contribution ---*/
-
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddLambda(iPoint,Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddLambda(jPoint,Lambda);
-
-  }
-
-  /*--- Loop boundary edges ---*/
-
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Mean Values ---*/
-
-      Mean_ProjVel    = nodes->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = nodes->GetBetaInc2(iPoint);
-      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-      /*--- Adjustment for grid movement ---*/
-
-      if (dynamic_grid) {
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        ProjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjVel += GridVel[iDim]*Normal[iDim];
-        Mean_ProjVel -= ProjVel;
-      }
-
-      /*--- Inviscid contribution ---*/
-
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->nodes->GetDomain(iPoint)) {
-        nodes->AddLambda(iPoint,Lambda);
-      }
-
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      return sqrt(nodes.GetBetaInc2(iPoint));
     }
-    }
-  }
 
-  /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+  } soundSpeed;
 
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
-  }
+  /*--- Instantiate generic implementation. ---*/
 
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, MAX_EIGENVALUE);
-  CompleteComms(geometry, config, MAX_EIGENVALUE);
+  SetMax_Eigenvalue_impl(soundSpeed, geometry, config);
 
 }
 

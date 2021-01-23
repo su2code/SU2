@@ -482,59 +482,21 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
 void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
-  /*--- Loop domain points. ---*/
-  for ( unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-
-    /*--- Set inviscid eigenvalues to zero. ---*/
-    nodes->SetLambda(iPoint, 0.0);
-
-    /*--- Loop over the neighbors of point i. ---*/
-    for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
-    {
-      auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-
-      auto iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-      auto Normal = geometry->edges->GetNormal(iEdge);
-      su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Mean Values ---*/
-      su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-      su2double Mean_SoundSpeed = 0.5 * (nodes->GetSoundSpeed(iPoint) + nodes->GetSoundSpeed(jPoint)) * Area;
-
-      /*--- Inviscid contribution ---*/
-      su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      nodes->AddLambda(iPoint,Lambda);
+  /*--- Define an object to compute the speed of sound. ---*/
+  struct SoundSpeed {
+    FORCEINLINE su2double operator() (const CNEMOEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      return 0.5 * (nodes.GetSoundSpeed(iPoint) + nodes.GetSoundSpeed(jPoint));
     }
-  }
 
-  /*--- Loop boundary edges ---*/
-  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))  {
-
-    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-      auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Mean Values ---*/
-      su2double Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
-      su2double Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
-
-      /*--- Inviscid contribution ---*/
-      su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->nodes->GetDomain(iPoint)) {
-        nodes->AddLambda(iPoint,Lambda);
-      }
+    FORCEINLINE su2double operator() (const CNEMOEulerVariable& nodes, unsigned long iPoint) const {
+      return nodes.GetSoundSpeed(iPoint);
     }
-    }
-  }
 
-  /*--- Call the MPI routine ---*/
-  InitiateComms(geometry, config, MAX_EIGENVALUE);
-  CompleteComms(geometry, config, MAX_EIGENVALUE);
+  } soundSpeed;
+
+  /*--- Instantiate generic implementation. ---*/
+
+  SetMax_Eigenvalue_impl(soundSpeed, geometry, config);
 
 }
 
