@@ -36,6 +36,15 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
+
+  /*!
+   * \brief Generic implementation of the isothermal and heatflux walls.
+   */
+  void BC_Wall_Generic(const CGeometry *geometry,
+                       const CConfig *config,
+                       unsigned short val_marker,
+                       unsigned short kind_boundary);
+
 public:
   /*!
    * \brief Constructor of the class.

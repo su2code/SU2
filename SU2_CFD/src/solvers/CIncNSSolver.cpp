@@ -191,373 +191,228 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *config,
+                                   unsigned short val_marker, unsigned short kind_boundary) {
 
-  unsigned short iDim, iVar, jVar;// Wall_Function;
-  unsigned long iVertex, iPoint, total_index;
-
-  su2double *GridVel, *Normal, Area, Wall_HeatFlux;
-
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool energy        = config->GetEnergy_Equation();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool energy = config->GetEnergy_Equation();
 
   /*--- Identify the boundary by string name ---*/
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  /*--- Get the specified wall heat flux from config ---*/
+  /*--- Get the specified wall heat flux or temperature from config ---*/
 
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  su2double Wall_HeatFlux = 0.0, Twall = 0.0;
 
-//  /*--- Get wall function treatment from config. ---*/
-//
-//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != NO_WALL_FUNCTION) {
-//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
-//  }
-
-  /*--- Loop over all of the vertices on this boundary marker ---*/
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-
-    if (geometry->nodes->GetDomain(iPoint)) {
-
-      /*--- Compute dual-grid area and boundary normal ---*/
-
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Initialize the convective & viscous residuals to zero ---*/
-
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
-        Res_Visc[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-      }
-
-      /*--- Store the corrected velocity at the wall which will
-       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
-
-      if (dynamic_grid) {
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
-      } else {
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-      }
-
-      /*--- Impose the value of the velocity as a strong boundary
-       condition (Dirichlet). Fix the velocity and remove any
-       contribution to the residual at this node. ---*/
-
-      nodes->SetVelocity_Old(iPoint,Vector);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes(iPoint, iDim+1) = 0.0;
-      nodes->SetVel_ResTruncError_Zero(iPoint);
-
-      if (energy) {
-
-        /*--- Apply a weak boundary condition for the energy equation.
-        Compute the residual due to the prescribed heat flux. ---*/
-
-        Res_Visc[nDim+1] = Wall_HeatFlux*Area;
-
-        /*--- Viscous contribution to the residual at the wall ---*/
-
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-      }
-
-      /*--- Enforce the no-slip boundary condition in a strong way by
-       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
-
-      if (implicit) {
-        for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      }
-
-    }
-  }
-}
-
-void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  unsigned short iDim, iVar, jVar, Wall_Function;
-  unsigned long iVertex, iPoint, Point_Normal, total_index;
-
-  su2double *GridVel;
-  su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij;
-  su2double Twall, dTdn;
-  su2double thermal_conductivity;
-
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool energy        = config->GetEnergy_Equation();
-
-  /*--- Identify the boundary by string name ---*/
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  /*--- Retrieve the specified wall temperature ---*/
-
-  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  if (kind_boundary == HEAT_FLUX)
+    Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+  else if (kind_boundary == ISOTHERMAL)
+    Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  else
+    SU2_MPI::Error("Unknown type of boundary condition", CURRENT_FUNCTION);
 
   /*--- Get wall function treatment from config. ---*/
 
-  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-  if (Wall_Function != NO_WALL_FUNCTION) {
-    SU2_MPI::Error("Wall function treatment not implemented yet.", CURRENT_FUNCTION);
-  }
+  const auto Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if (Wall_Function != NO_WALL_FUNCTION)
+    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- Initialize the convective & viscous residuals to zero ---*/
+    /*--- Compute dual-grid area and boundary normal ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
-        Res_Visc[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-      }
+    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      /*--- Store the corrected velocity at the wall which will
-       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-      if (dynamic_grid) {
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
-      } else {
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-      }
+    /*--- Impose the value of the velocity as a strong boundary
+     condition (Dirichlet). Fix the velocity and remove any
+     contribution to the residual at this node. ---*/
 
-      /*--- Impose the value of the velocity as a strong boundary
-       condition (Dirichlet). Fix the velocity and remove any
-       contribution to the residual at this node. ---*/
+    if (dynamic_grid) {
+      nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+    } else {
+      su2double zero[MAXNDIM] = {0.0};
+      nodes->SetVelocity_Old(iPoint, zero);
+    }
 
-      nodes->SetVelocity_Old(iPoint,Vector);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      LinSysRes(iPoint, iDim+1) = 0.0;
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes(iPoint, iDim+1) = 0.0;
-      nodes->SetVel_ResTruncError_Zero(iPoint);
+    /*--- Enforce the no-slip boundary condition in a strong way by
+     modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
-      if (energy) {
+    if (implicit) {
+      for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+    }
 
-        /*--- Compute dual grid area and boundary normal ---*/
+    if (!energy) continue;
 
-        Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    if (kind_boundary == HEAT_FLUX) {
 
-        Area = GeometryToolbox::Norm(nDim, Normal);
+      /*--- Apply a weak boundary condition for the energy equation.
+      Compute the residual due to the prescribed heat flux. ---*/
 
-        /*--- Compute closest normal neighbor ---*/
+      LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
+    }
+    else { // ISOTHERMAL
 
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-        Coord_i = geometry->nodes->GetCoord(iPoint);
-        Coord_j = geometry->nodes->GetCoord(Point_Normal);
-        dist_ij = 0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-        dist_ij = sqrt(dist_ij);
+      auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      su2double Edge_Vector[MAXNDIM];
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
+      su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
+      su2double dist_ij = sqrt(dist_ij_2);
 
-        /*--- Compute the normal gradient in temperature using Twall ---*/
+      /*--- Compute the normal gradient in temperature using Twall ---*/
 
-        dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
+      su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
-        /*--- Get thermal conductivity ---*/
+      /*--- Get thermal conductivity ---*/
 
-        thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+      su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
-        /*--- Apply a weak boundary condition for the energy equation.
-        Compute the residual due to the prescribed heat flux. ---*/
+      /*--- Apply a weak boundary condition for the energy equation.
+      Compute the residual due to the prescribed heat flux. ---*/
 
-        Res_Visc[nDim+1] = thermal_conductivity*dTdn*Area;
+      LinSysRes(iPoint, nDim+1) -= thermal_conductivity*dTdn*Area;
 
-        /*--- Jacobian contribution for temperature equation. ---*/
-
-        if (implicit) {
-          su2double Edge_Vector[3];
-          su2double dist_ij_2 = 0, proj_vector_ij = 0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-            dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-            proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-          }
-          if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-          else proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-          Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*proj_vector_ij;
-
-          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
-        }
-
-        /*--- Viscous contribution to the residual at the wall ---*/
-
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-      }
-
-      /*--- Enforce the no-slip boundary condition in a strong way by
-       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+      /*--- Jacobian contribution for temperature equation. ---*/
 
       if (implicit) {
-        for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      }
+        su2double proj_vector_ij = 0.0;
+        if (dist_ij_2 > 0.0)
+          proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
 
+        auto Blk_i = Jacobian.GetBlock(iPoint, iPoint);
+#ifdef CODI_FORWARD_TYPE
+        Blk_i[nVar*nVar-1] += thermal_conductivity*proj_vector_ij;
+#else
+        Blk_i[nVar*nVar-1] += SU2_TYPE::GetValue(thermal_conductivity*proj_vector_ij);
+#endif
+      }
     }
   }
 }
 
+void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
+                                    CNumerics*, CConfig *config, unsigned short val_marker) {
+
+  BC_Wall_Generic(geometry, config, val_marker, HEAT_FLUX);
+}
+
+void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver**, CNumerics*,
+                                    CNumerics*, CConfig *config, unsigned short val_marker) {
+
+  BC_Wall_Generic(geometry, config, val_marker, ISOTHERMAL);
+}
 
 void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                               CConfig *config, unsigned short val_marker) {
 
-  unsigned short iVar, jVar, iDim, Wall_Function;
-  unsigned long iVertex, iPoint, total_index, Point_Normal;
-
-  su2double *Coord_i, *Coord_j, dist_ij;
-  su2double *GridVel, There, Tconjugate, Twall= 0.0, Temperature_Ref, thermal_conductivity, HF_FactorHere, HF_FactorConjugate;
-
-  Temperature_Ref = config->GetTemperature_Ref();
-
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool energy        = config->GetEnergy_Equation();
+  const su2double Temperature_Ref = config->GetTemperature_Ref();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool energy = config->GetEnergy_Equation();
 
   /*--- Identify the boundary ---*/
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Retrieve the specified wall function treatment.---*/
 
-  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-  if(Wall_Function != NO_WALL_FUNCTION) {
-      SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+  const auto Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if (Wall_Function != NO_WALL_FUNCTION) {
+    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
   }
 
   /*--- Loop over boundary points ---*/
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- Initialize the convective & viscous residuals to zero ---*/
+    /*--- Impose the value of the velocity as a strong boundary
+     condition (Dirichlet). Fix the velocity and remove any
+     contribution to the residual at this node. ---*/
 
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
-        Res_Visc[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-      }
-
-      /*--- Store the corrected velocity at the wall which will
-       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
-
-      if (dynamic_grid) {
-        GridVel = geometry->nodes->GetGridVel(iPoint);
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
-      } else {
-        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-      }
-
-      /*--- Impose the value of the velocity as a strong boundary
-       condition (Dirichlet). Fix the velocity and remove any
-       contribution to the residual at this node. ---*/
-
-      nodes->SetVelocity_Old(iPoint,Vector);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes(iPoint, iDim+1) = 0.0;
-      nodes->SetVel_ResTruncError_Zero(iPoint);
-
-      if (energy) {
-
-        Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0)/Temperature_Ref;
-
-        if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
-            (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
-
-          /*--- Compute closest normal neighbor ---*/
-
-          Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-          /*--- Get coordinates of i & nearest normal and compute distance ---*/
-
-          Coord_i = geometry->nodes->GetCoord(iPoint);
-          Coord_j = geometry->nodes->GetCoord(Point_Normal);
-          dist_ij = 0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-          dist_ij = sqrt(dist_ij);
-
-          /*--- Compute wall temperature from both temperatures ---*/
-
-          thermal_conductivity = nodes->GetThermalConductivity(iPoint);
-          There = nodes->GetTemperature(Point_Normal);
-          HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
-          HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
-
-          Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
-        }
-        else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
-                 (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
-
-          /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
-
-          Twall = Tconjugate;
-        }
-        else {
-          Twall = 0.0;
-          SU2_MPI::Error("Unknown CHT coupling method.", CURRENT_FUNCTION);
-        }
-
-        /*--- Strong imposition of the temperature on the fluid zone. ---*/
-
-        LinSysRes(iPoint, nDim+1) = 0.0;
-        nodes->SetSolution_Old(iPoint, nDim+1, Twall);
-        nodes->SetEnergy_ResTruncError_Zero(iPoint);
-      }
-
-      /*--- Enforce the no-slip boundary condition in a strong way by
-       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
-
-      if (implicit) {
-        for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-        if(energy) {
-          total_index = iPoint*nVar+nDim+1;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      }
+    if (dynamic_grid) {
+      nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+    } else {
+      su2double zero[MAXNDIM] = {0.0};
+      nodes->SetVelocity_Old(iPoint, zero);
     }
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      LinSysRes(iPoint, iDim+1) = 0.0;
+    nodes->SetVel_ResTruncError_Zero(iPoint);
+
+    /*--- Enforce the no-slip boundary condition in a strong way by
+     modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+
+    if (implicit) {
+      for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+      if (energy) Jacobian.DeleteValsRowi(iPoint*nVar+nDim+1);
+    }
+
+    if (!energy) continue;
+
+    su2double Tconjugate = GetConjugateHeatVariable(val_marker, iVertex, 0) / Temperature_Ref;
+    su2double Twall = 0.0;
+
+    if ((config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_NEUMANN_HEATFLUX) ||
+        (config->GetKind_CHT_Coupling() == AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+      /*--- Compute closest normal neighbor ---*/
+
+      auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+      auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+      su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_j, Coord_i);
+
+      /*--- Compute wall temperature from both temperatures ---*/
+
+      su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+      su2double There = nodes->GetTemperature(Point_Normal);
+      su2double HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
+      su2double HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+
+      Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
+    }
+    else if ((config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_NEUMANN_HEATFLUX) ||
+             (config->GetKind_CHT_Coupling() == DIRECT_TEMPERATURE_ROBIN_HEATFLUX)) {
+
+      /*--- (Directly) Set wall temperature to conjugate temperature. ---*/
+
+      Twall = Tconjugate;
+    }
+    else {
+      SU2_MPI::Error("Unknown CHT coupling method.", CURRENT_FUNCTION);
+    }
+
+    /*--- Strong imposition of the temperature on the fluid zone. ---*/
+
+    LinSysRes(iPoint, nDim+1) = 0.0;
+    nodes->SetSolution_Old(iPoint, nDim+1, Twall);
+    nodes->SetEnergy_ResTruncError_Zero(iPoint);
   }
 }
