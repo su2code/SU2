@@ -3193,7 +3193,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
 }
 
-void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
+void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
 
   unsigned long iPoint;
   unsigned short iDim;

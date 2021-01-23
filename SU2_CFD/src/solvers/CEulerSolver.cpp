@@ -9607,7 +9607,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
 }
 
-void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
+void CEulerSolver::SetFreeStream_Solution(const CConfig *config) {
 
   unsigned long iPoint;
   unsigned short iDim;

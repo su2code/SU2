@@ -1117,7 +1117,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_Solution(CConfig *config) final;
+  void SetFreeStream_Solution(const CConfig *config) final;
 
   /*!
    * \brief Initilize turbo containers.
