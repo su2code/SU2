@@ -3975,16 +3975,16 @@ void CEulerSolver::HeatFluxJacobian(CSolver             **solver,
 
   /*--- Additional factor if TKE flux is needed ---*/
   su2double tke_i = 0., tke_visc = 0.;
-  // if (tkeNeeded) {
-  //   const su2double F1_i = turbNodes->GetF1blending(iPoint);
-  //   const su2double F1_j = turbNodes->GetF1blending(jPoint);
-  //   const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
-  //   const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodes->GetEddyViscosity(iPoint);
-  //   const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodes->GetEddyViscosity(jPoint);
+  if (tkeNeeded) {
+    const su2double F1_i = turbNodes->GetF1blending(iPoint);
+    const su2double F1_j = turbNodes->GetF1blending(jPoint);
+    const su2double sigma_k1 = 0.85, sigma_k2 = 1.0;
+    const su2double visc_k_i = 0.5*(F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2)*nodes->GetEddyViscosity(iPoint);
+    const su2double visc_k_j = 0.5*(F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2)*nodes->GetEddyViscosity(jPoint);
 
-  //   tke_visc = (Mean_LaminarVisc + visc_k_i + visc_k_j);
-  //   tke_i = turbNodes->GetPrimitive(iPoint,0);
-  // }
+    tke_visc = (Mean_LaminarVisc + visc_k_i + visc_k_j);
+    tke_i = turbNodes->GetPrimitive(iPoint,0);
+  }
 
   /*--- Reset most of Jacobian now so we don't need to later ---*/
   for (auto iVar = 0; iVar < nVar-1; iVar++) {
