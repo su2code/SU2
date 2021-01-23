@@ -1832,7 +1832,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
-                                   CConfig *config, unsigned short iMesh) {
+                                        CConfig *config, unsigned short iMesh) {
 
   su2double epsilon2  = config->GetBeta_Factor();
   su2double epsilon2_default = 4.1;
@@ -1856,10 +1856,8 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
     /*--- Communicate the max globally to give a conservative estimate. ---*/
 
-#ifdef HAVE_MPI
     su2double myMaxVel2 = maxVel2; maxVel2 = 0.0;
     SU2_MPI::Allreduce(&myMaxVel2, &maxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
 
     Beta = max(1e-10,maxVel2);
     config->SetMax_Vel2(Beta);
@@ -1979,132 +1977,123 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
 
-  su2double *V_infty, *V_domain;
+  const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+  const bool viscous = config->GetViscous();
 
-  bool implicit      = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-  bool viscous       = config->GetViscous();
-
-  su2double *Normal = new su2double[nDim];
+  su2double Normal[MAXNDIM] = {0.0};
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Allocate the value at the infinity ---*/
-
-    V_infty = GetCharacPrimVar(val_marker, iVertex);
-
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- Index of the closest interior node ---*/
+    /*--- Allocate the value at the infinity ---*/
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    auto V_infty = GetCharacPrimVar(val_marker, iVertex);
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Index of the closest interior node ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
+    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      /*--- Retrieve solution at the farfield boundary node ---*/
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      V_domain = nodes->GetPrimitive(iPoint);
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    conv_numerics->SetNormal(Normal);
 
-      /*--- Recompute and store the velocity in the primitive variable vector. ---*/
+    /*--- Retrieve solution at the farfield boundary node ---*/
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        V_infty[iDim+1] = GetVelocity_Inf(iDim);
+    auto V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Far-field pressure set to static pressure (0.0). ---*/
+    /*--- Recompute and store the velocity in the primitive variable vector. ---*/
 
-      V_infty[0] = GetPressure_Inf();
+    for (iDim = 0; iDim < nDim; iDim++)
+      V_infty[iDim+1] = GetVelocity_Inf(iDim);
 
-      /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
+    /*--- Far-field pressure set to static pressure (0.0). ---*/
 
-      V_infty[nDim+1] = GetTemperature_Inf();
+    V_infty[0] = GetPressure_Inf();
 
-      /*--- Store the density.  ---*/
+    /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
 
-      V_infty[nDim+2] = GetDensity_Inf();
+    V_infty[nDim+1] = GetTemperature_Inf();
 
-      /*--- Beta coefficient stored at the node ---*/
+    /*--- Store the density.  ---*/
 
-      V_infty[nDim+3] = nodes->GetBetaInc2(iPoint);
+    V_infty[nDim+2] = GetDensity_Inf();
 
-      /*--- Cp is needed for Temperature equation. ---*/
+    /*--- Beta coefficient stored at the node ---*/
 
-      V_infty[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
+    V_infty[nDim+3] = nodes->GetBetaInc2(iPoint);
 
-      /*--- Set various quantities in the numerics class ---*/
+    /*--- Cp is needed for Temperature equation. ---*/
 
-      conv_numerics->SetPrimitive(V_domain, V_infty);
+    V_infty[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
 
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
+    /*--- Set various quantities in the numerics class ---*/
 
-      /*--- Compute the convective residual using an upwind scheme ---*/
+    conv_numerics->SetPrimitive(V_domain, V_infty);
 
-      auto residual = conv_numerics->ComputeResidual(config);
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Update residual value ---*/
+    /*--- Compute the convective residual using an upwind scheme ---*/
 
-      LinSysRes.AddBlock(iPoint, residual);
+    auto residual = conv_numerics->ComputeResidual(config);
 
-      /*--- Convective Jacobian contribution for implicit integration ---*/
+    /*--- Update residual value ---*/
 
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    LinSysRes.AddBlock(iPoint, residual);
 
-      /*--- Viscous residual contribution ---*/
+    /*--- Convective Jacobian contribution for implicit integration ---*/
 
-      if (viscous) {
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
-        /*--- Set transport properties at infinity. ---*/
+    /*--- Viscous residual contribution ---*/
 
-        V_infty[nDim+4] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+5] = nodes->GetEddyViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetThermalConductivity(iPoint);
+    if (!viscous) continue;
 
-        /*--- Set the normal vector and the coordinates ---*/
+    /*--- Set transport properties at infinity. ---*/
 
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                                geometry->nodes->GetCoord(Point_Normal));
+    V_infty[nDim+4] = nodes->GetLaminarViscosity(iPoint);
+    V_infty[nDim+5] = nodes->GetEddyViscosity(iPoint);
+    V_infty[nDim+6] = nodes->GetThermalConductivity(iPoint);
 
-        /*--- Primitive variables, and gradient ---*/
+    /*--- Set the normal vector and the coordinates ---*/
 
-        visc_numerics->SetPrimitive(V_domain, V_infty);
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          nodes->GetGradient_Primitive(iPoint));
+    visc_numerics->SetNormal(Normal);
+    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                            geometry->nodes->GetCoord(Point_Normal));
 
-        /*--- Turbulent kinetic energy ---*/
+    /*--- Primitive variables, and gradient ---*/
 
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+    visc_numerics->SetPrimitive(V_domain, V_infty);
+    visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                      nodes->GetGradient_Primitive(iPoint));
 
-        /*--- Compute and update viscous residual ---*/
+    /*--- Turbulent kinetic energy ---*/
 
-        auto residual = visc_numerics->ComputeResidual(config);
-        LinSysRes.SubtractBlock(iPoint, residual);
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
-        /*--- Viscous Jacobian contribution for implicit integration ---*/
+    /*--- Compute and update viscous residual ---*/
 
-        if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    auto residual_v = visc_numerics->ComputeResidual(config);
+    LinSysRes.SubtractBlock(iPoint, residual_v);
 
-      }
+    /*--- Viscous Jacobian contribution for implicit integration ---*/
 
-    }
+    if (implicit)
+      Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
+
   }
-
-  /*--- Free locally allocated memory ---*/
-
-  delete [] Normal;
 
 }
 
@@ -2115,248 +2104,234 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long Point_Normal;
   su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area, P_total, P_domain, Vn;
   su2double *V_inlet, *V_domain;
-  su2double UnitFlowDir[3] = {0.0,0.0,0.0};
-  su2double dV[3] = {0.0,0.0,0.0};
+  su2double UnitFlowDir[MAXNDIM] = {0.0}, dV[MAXNDIM] = {0.0};
   su2double Damping = config->GetInc_Inlet_Damping();
 
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous       = config->GetViscous();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool viscous = config->GetViscous();
 
-  string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   unsigned short Kind_Inlet = config->GetKind_Inc_Inlet(Marker_Tag);
 
-  su2double *Normal = new su2double[nDim];
+  su2double Normal[MAXNDIM] = {0.0};
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     /*--- Allocate the value at the inlet ---*/
 
     V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Index of the closest interior node ---*/
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      /*--- Index of the closest interior node ---*/
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    conv_numerics->SetNormal(Normal);
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Both types of inlets may use the prescribed flow direction.
+     Ensure that the flow direction is a unit vector. ---*/
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
+    Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+    Flow_Dir_Mag = GeometryToolbox::Norm(nDim, Flow_Dir);
 
-      Area = GeometryToolbox::Norm(nDim, Normal);
+    /*--- Store the unit flow direction vector. ---*/
 
-      /*--- Both types of inlets may use the prescribed flow direction.
-       Ensure that the flow direction is a unit vector. ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
 
-      Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
-      Flow_Dir_Mag = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Flow_Dir_Mag += Flow_Dir[iDim]*Flow_Dir[iDim];
-      Flow_Dir_Mag = sqrt(Flow_Dir_Mag);
+    /*--- Retrieve solution at this boundary node. ---*/
 
-      /*--- Store the unit flow direction vector. ---*/
+    V_domain = nodes->GetPrimitive(iPoint);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitFlowDir[iDim] = Flow_Dir[iDim]/Flow_Dir_Mag;
+    /*--- Neumann condition for dynamic pressure ---*/
 
-      /*--- Retrieve solution at this boundary node. ---*/
+    V_inlet[0] = nodes->GetPressure(iPoint);
 
-      V_domain = nodes->GetPrimitive(iPoint);
+    /*--- The velocity is either prescribed or computed from total pressure. ---*/
 
-      /*--- Neumann condition for dynamic pressure ---*/
+    switch (Kind_Inlet) {
 
-      V_inlet[0] = nodes->GetPressure(iPoint);
+        /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
 
-      /*--- The velocity is either prescribed or computed from total pressure. ---*/
+      case VELOCITY_INLET:
 
-      switch (Kind_Inlet) {
+        /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
 
-          /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
+        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
 
-        case VELOCITY_INLET:
+        /*--- Store the velocity in the primitive variable vector. ---*/
 
-          /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
 
-          Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
+        /*--- Dirichlet condition for temperature (if energy is active) ---*/
 
-          /*--- Store the velocity in the primitive variable vector. ---*/
+        V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+
+        break;
+
+        /*--- Stagnation pressure has been specified at the inlet. ---*/
+
+      case PRESSURE_INLET:
+
+        /*--- Retrieve the specified total pressure for the inlet. ---*/
+
+        P_total = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+
+        /*--- Store the current static pressure for clarity. ---*/
+
+        P_domain = nodes->GetPressure(iPoint);
+
+        /*--- Check for back flow through the inlet. ---*/
+
+        Vn = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Vn += V_domain[iDim+1]*(-1.0*Normal[iDim]/Area);
+        }
+
+        /*--- If the local static pressure is larger than the specified
+         total pressure or the velocity is directed upstream, we have a
+         back flow situation. The specified total pressure should be used
+         as a static pressure condition and the velocity from the domain
+         is used for the BC. ---*/
+
+        if ((P_domain > P_total) || (Vn < 0.0)) {
+
+          /*--- Back flow: use the prescribed P_total as static pressure. ---*/
+
+          V_inlet[0] = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+
+          /*--- Neumann condition for velocity. ---*/
 
           for (iDim = 0; iDim < nDim; iDim++)
-            V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
+            V_inlet[iDim+1] = V_domain[iDim+1];
+
+          /*--- Neumann condition for the temperature. ---*/
+
+          V_inlet[nDim+1] = nodes->GetTemperature(iPoint);
+
+        } else {
+
+          /*--- Update the velocity magnitude using the total pressure. ---*/
+
+          Vel_Mag = sqrt((P_total - P_domain)/(0.5*nodes->GetDensity(iPoint)));
+
+          /*--- If requested, use the local boundary normal (negative),
+           instead of the prescribed flow direction in the config. ---*/
+
+          if (config->GetInc_Inlet_UseNormal()) {
+            for (iDim = 0; iDim < nDim; iDim++)
+              UnitFlowDir[iDim] = -Normal[iDim]/Area;
+          }
+
+          /*--- Compute the delta change in velocity in each direction. ---*/
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
+
+          /*--- Update the velocity in the primitive variable vector.
+           Note we use damping here to improve stability/convergence. ---*/
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_inlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
 
           /*--- Dirichlet condition for temperature (if energy is active) ---*/
 
           V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
-          break;
+        }
 
-          /*--- Stagnation pressure has been specified at the inlet. ---*/
-
-        case PRESSURE_INLET:
-
-          /*--- Retrieve the specified total pressure for the inlet. ---*/
-
-          P_total = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
-
-          /*--- Store the current static pressure for clarity. ---*/
-
-          P_domain = nodes->GetPressure(iPoint);
-
-          /*--- Check for back flow through the inlet. ---*/
-
-          Vn = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Vn += V_domain[iDim+1]*(-1.0*Normal[iDim]/Area);
-          }
-
-          /*--- If the local static pressure is larger than the specified
-           total pressure or the velocity is directed upstream, we have a
-           back flow situation. The specified total pressure should be used
-           as a static pressure condition and the velocity from the domain
-           is used for the BC. ---*/
-
-          if ((P_domain > P_total) || (Vn < 0.0)) {
-
-            /*--- Back flow: use the prescribed P_total as static pressure. ---*/
-
-            V_inlet[0] = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
-
-            /*--- Neumann condition for velocity. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_inlet[iDim+1] = V_domain[iDim+1];
-
-            /*--- Neumann condition for the temperature. ---*/
-
-            V_inlet[nDim+1] = nodes->GetTemperature(iPoint);
-
-          } else {
-
-            /*--- Update the velocity magnitude using the total pressure. ---*/
-
-            Vel_Mag = sqrt((P_total - P_domain)/(0.5*nodes->GetDensity(iPoint)));
-
-            /*--- If requested, use the local boundary normal (negative),
-             instead of the prescribed flow direction in the config. ---*/
-
-            if (config->GetInc_Inlet_UseNormal()) {
-              for (iDim = 0; iDim < nDim; iDim++)
-                UnitFlowDir[iDim] = -Normal[iDim]/Area;
-            }
-
-            /*--- Compute the delta change in velocity in each direction. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
-
-            /*--- Update the velocity in the primitive variable vector.
-             Note we use damping here to improve stability/convergence. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_inlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
-
-            /*--- Dirichlet condition for temperature (if energy is active) ---*/
-
-            V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
-
-          }
-
-          break;
-
-      }
-
-      /*--- Access density at the node. This is either constant by
-        construction, or will be set fixed implicitly by the temperature
-        and equation of state. ---*/
-
-      V_inlet[nDim+2] = nodes->GetDensity(iPoint);
-
-      /*--- Beta coefficient from the config file ---*/
-
-      V_inlet[nDim+3] = nodes->GetBetaInc2(iPoint);
-
-      /*--- Cp is needed for Temperature equation. ---*/
-
-      V_inlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Update residual value ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-
-      if (viscous) {
-
-        /*--- Set transport properties at the inlet ---*/
-
-        V_inlet[nDim+4] = nodes->GetLaminarViscosity(iPoint);
-        V_inlet[nDim+5] = nodes->GetEddyViscosity(iPoint);
-        V_inlet[nDim+6] = nodes->GetThermalConductivity(iPoint);
-
-        /*--- Set the normal vector and the coordinates ---*/
-
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                                geometry->nodes->GetCoord(Point_Normal));
-
-        /*--- Primitive variables, and gradient ---*/
-
-        visc_numerics->SetPrimitive(V_domain, V_inlet);
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          nodes->GetGradient_Primitive(iPoint));
-
-        /*--- Turbulent kinetic energy ---*/
-
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
-
-        /*--- Compute and update residual ---*/
-
-        auto residual = visc_numerics->ComputeResidual(config);
-
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Jacobian contribution for implicit integration ---*/
-
-        if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-
-      }
+        break;
 
     }
+
+    /*--- Access density at the node. This is either constant by
+      construction, or will be set fixed implicitly by the temperature
+      and equation of state. ---*/
+
+    V_inlet[nDim+2] = nodes->GetDensity(iPoint);
+
+    /*--- Beta coefficient from the config file ---*/
+
+    V_inlet[nDim+3] = nodes->GetBetaInc2(iPoint);
+
+    /*--- Cp is needed for Temperature equation. ---*/
+
+    V_inlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
+
+    /*--- Set various quantities in the solver class ---*/
+
+    conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
+
+    /*--- Compute the residual using an upwind scheme ---*/
+
+    auto residual = conv_numerics->ComputeResidual(config);
+
+    /*--- Update residual value ---*/
+
+    LinSysRes.AddBlock(iPoint, residual);
+
+    /*--- Jacobian contribution for implicit integration ---*/
+
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+    /*--- Viscous contribution, commented out because serious convergence problems ---*/
+
+    if (!viscous) continue;
+
+    /*--- Set transport properties at the inlet ---*/
+
+    V_inlet[nDim+4] = nodes->GetLaminarViscosity(iPoint);
+    V_inlet[nDim+5] = nodes->GetEddyViscosity(iPoint);
+    V_inlet[nDim+6] = nodes->GetThermalConductivity(iPoint);
+
+    /*--- Set the normal vector and the coordinates ---*/
+
+    visc_numerics->SetNormal(Normal);
+    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                            geometry->nodes->GetCoord(Point_Normal));
+
+    /*--- Primitive variables, and gradient ---*/
+
+    visc_numerics->SetPrimitive(V_domain, V_inlet);
+    visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                      nodes->GetGradient_Primitive(iPoint));
+
+    /*--- Turbulent kinetic energy ---*/
+
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+
+    /*--- Compute and update residual ---*/
+
+    auto residual_v = visc_numerics->ComputeResidual(config);
+
+    LinSysRes.SubtractBlock(iPoint, residual_v);
+
+    /*--- Jacobian contribution for implicit integration ---*/
+
+    if (implicit)
+      Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
   }
-
-  /*--- Free locally allocated memory ---*/
-
-  delete [] Normal;
-
 }
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
@@ -2367,197 +2342,190 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
   su2double Damping = config->GetInc_Outlet_Damping();
 
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous       = config->GetViscous();
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool viscous = config->GetViscous();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *Normal = new su2double[nDim];
+  su2double Normal[MAXNDIM] = {0.0};
 
   unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
     /*--- Allocate the value at the outlet ---*/
 
     V_outlet = GetCharacPrimVar(val_marker, iVertex);
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Index of the closest interior node ---*/
 
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
-      /*--- Index of the closest interior node ---*/
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    conv_numerics->SetNormal(Normal);
 
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    /*--- Current solution at this boundary node ---*/
 
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    V_domain = nodes->GetPrimitive(iPoint);
 
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
+    /*--- Store the current static pressure for clarity. ---*/
 
-      /*--- Current solution at this boundary node ---*/
+    P_domain = nodes->GetPressure(iPoint);
 
-      V_domain = nodes->GetPrimitive(iPoint);
+    /*--- Compute a boundary value for the pressure depending on whether
+     we are prescribing a back pressure or a mass flow target. ---*/
 
-      /*--- Store the current static pressure for clarity. ---*/
+    switch (Kind_Outlet) {
 
-      P_domain = nodes->GetPressure(iPoint);
+        /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
 
-      /*--- Compute a boundary value for the pressure depending on whether
-       we are prescribing a back pressure or a mass flow target. ---*/
+      case PRESSURE_OUTLET:
 
-      switch (Kind_Outlet) {
+        /*--- Retrieve the specified back pressure for this outlet. ---*/
 
-          /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
+        P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 
-        case PRESSURE_OUTLET:
+        /*--- The pressure is prescribed at the outlet. ---*/
 
-          /*--- Retrieve the specified back pressure for this outlet. ---*/
+        V_outlet[0] = P_Outlet;
 
-          P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+        /*--- Neumann condition for the velocity. ---*/
 
-          /*--- The pressure is prescribed at the outlet. ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          V_outlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
+        }
 
-          V_outlet[0] = P_Outlet;
+        break;
 
-          /*--- Neumann condition for the velocity. ---*/
+        /*--- A mass flow target has been specified for the outlet. ---*/
 
-          for (iDim = 0; iDim < nDim; iDim++) {
-            V_outlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
-          }
+      case MASS_FLOW_OUTLET:
 
-          break;
+        /*--- Retrieve the specified target mass flow at the outlet. ---*/
 
-          /*--- A mass flow target has been specified for the outlet. ---*/
+        mDot_Target = config->GetOutlet_Pressure(Marker_Tag)/(config->GetDensity_Ref() * config->GetVelocity_Ref());
 
-        case MASS_FLOW_OUTLET:
+        /*--- Retrieve the old mass flow, density, and area of the outlet,
+         which has been computed in a preprocessing step. These values
+         were stored in non-dim. form in the config container. ---*/
 
-          /*--- Retrieve the specified target mass flow at the outlet. ---*/
+        mDot_Old    = config->GetOutlet_MassFlow(Marker_Tag);
+        Density_Avg = config->GetOutlet_Density(Marker_Tag);
+        Area_Outlet = config->GetOutlet_Area(Marker_Tag);
 
-          mDot_Target = config->GetOutlet_Pressure(Marker_Tag)/(config->GetDensity_Ref() * config->GetVelocity_Ref());
+        /*--- Compute the pressure increment based on the difference
+         between the current and target mass flow. Note that increasing
+         pressure decreases flow speed. ---*/
 
-          /*--- Retrieve the old mass flow, density, and area of the outlet,
-           which has been computed in a preprocessing step. These values
-           were stored in non-dim. form in the config container. ---*/
+        dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
 
-          mDot_Old    = config->GetOutlet_MassFlow(Marker_Tag);
-          Density_Avg = config->GetOutlet_Density(Marker_Tag);
-          Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+        /*--- Update the new outlet pressure. Note that we use damping
+         here to improve stability/convergence. ---*/
 
-          /*--- Compute the pressure increment based on the difference
-           between the current and target mass flow. Note that increasing
-           pressure decreases flow speed. ---*/
+        P_Outlet = P_domain + Damping*dP;
 
-          dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
+        /*--- The pressure is prescribed at the outlet. ---*/
 
-          /*--- Update the new outlet pressure. Note that we use damping
-           here to improve stability/convergence. ---*/
+        V_outlet[0] = P_Outlet;
 
-          P_Outlet = P_domain + Damping*dP;
+        /*--- Neumann condition for the velocity ---*/
 
-          /*--- The pressure is prescribed at the outlet. ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          V_outlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
+        }
 
-          V_outlet[0] = P_Outlet;
-
-          /*--- Neumann condition for the velocity ---*/
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            V_outlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
-          }
-
-          break;
-
-      }
-
-      /*--- Neumann condition for the temperature. ---*/
-
-      V_outlet[nDim+1] = nodes->GetTemperature(iPoint);
-
-      /*--- Access density at the interior node. This is either constant by
-        construction, or will be set fixed implicitly by the temperature
-        and equation of state. ---*/
-
-      V_outlet[nDim+2] = nodes->GetDensity(iPoint);
-
-      /*--- Beta coefficient from the config file ---*/
-
-      V_outlet[nDim+3] = nodes->GetBetaInc2(iPoint);
-
-      /*--- Cp is needed for Temperature equation. ---*/
-
-      V_outlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
-
-      /*--- Set various quantities in the solver class ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_outlet);
-
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                  geometry->nodes->GetGridVel(iPoint));
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Update residual value ---*/
-
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration ---*/
-
-      if (implicit) {
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      }
-
-      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-
-      if (viscous) {
-
-        /*--- Set transport properties at the outlet. ---*/
-
-        V_outlet[nDim+4] = nodes->GetLaminarViscosity(iPoint);
-        V_outlet[nDim+5] = nodes->GetEddyViscosity(iPoint);
-        V_outlet[nDim+6] = nodes->GetThermalConductivity(iPoint);
-
-        /*--- Set the normal vector and the coordinates ---*/
-
-        visc_numerics->SetNormal(Normal);
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                                geometry->nodes->GetCoord(Point_Normal));
-
-        /*--- Primitive variables, and gradient ---*/
-
-        visc_numerics->SetPrimitive(V_domain, V_outlet);
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                          nodes->GetGradient_Primitive(iPoint));
-
-        /*--- Turbulent kinetic energy ---*/
-
-        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
-
-        /*--- Compute and update residual ---*/
-
-        auto residual = visc_numerics->ComputeResidual(config);
-
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Jacobian contribution for implicit integration ---*/
-        if (implicit)
-          Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-
-      }
+        break;
 
     }
-  }
 
-  /*--- Free locally allocated memory ---*/
-  delete [] Normal;
+    /*--- Neumann condition for the temperature. ---*/
+
+    V_outlet[nDim+1] = nodes->GetTemperature(iPoint);
+
+    /*--- Access density at the interior node. This is either constant by
+      construction, or will be set fixed implicitly by the temperature
+      and equation of state. ---*/
+
+    V_outlet[nDim+2] = nodes->GetDensity(iPoint);
+
+    /*--- Beta coefficient from the config file ---*/
+
+    V_outlet[nDim+3] = nodes->GetBetaInc2(iPoint);
+
+    /*--- Cp is needed for Temperature equation. ---*/
+
+    V_outlet[nDim+7] = nodes->GetSpecificHeatCp(iPoint);
+
+    /*--- Set various quantities in the solver class ---*/
+
+    conv_numerics->SetPrimitive(V_domain, V_outlet);
+
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
+
+    /*--- Compute the residual using an upwind scheme ---*/
+
+    auto residual = conv_numerics->ComputeResidual(config);
+
+    /*--- Update residual value ---*/
+
+    LinSysRes.AddBlock(iPoint, residual);
+
+    /*--- Jacobian contribution for implicit integration ---*/
+
+    if (implicit) {
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
+
+    /*--- Viscous contribution, commented out because serious convergence problems ---*/
+
+    if (!viscous) continue;
+
+    /*--- Set transport properties at the outlet. ---*/
+
+    V_outlet[nDim+4] = nodes->GetLaminarViscosity(iPoint);
+    V_outlet[nDim+5] = nodes->GetEddyViscosity(iPoint);
+    V_outlet[nDim+6] = nodes->GetThermalConductivity(iPoint);
+
+    /*--- Set the normal vector and the coordinates ---*/
+
+    visc_numerics->SetNormal(Normal);
+    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                            geometry->nodes->GetCoord(Point_Normal));
+
+    /*--- Primitive variables, and gradient ---*/
+
+    visc_numerics->SetPrimitive(V_domain, V_outlet);
+    visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                      nodes->GetGradient_Primitive(iPoint));
+
+    /*--- Turbulent kinetic energy ---*/
+
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
+      visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
+                                          solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+
+    /*--- Compute and update residual ---*/
+
+    auto residual_v = visc_numerics->ComputeResidual(config);
+
+    LinSysRes.SubtractBlock(iPoint, residual_v);
+
+    /*--- Jacobian contribution for implicit integration ---*/
+    if (implicit)
+      Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
+
+  }
 
 }
 
@@ -3014,21 +2982,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
     /*--- All the ranks to compute the total value ---*/
 
-#ifdef HAVE_MPI
-
     SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-#else
-
-    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
-      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
-      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
-    }
-
-#endif
 
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {

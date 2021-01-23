@@ -273,6 +273,13 @@ protected:
    */
   void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) final;
 
+  /*!
+   * \brief Set the solver nondimensionalization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -292,13 +299,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CEulerSolver(void) override;
-
-  /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Compute the pressure at the infinity.

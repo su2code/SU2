@@ -95,6 +95,33 @@ protected:
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, const CConfig *config);
 
+  /*!
+   * \brief Update the Beta parameter for the incompressible preconditioner.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void SetBeta_Parameter(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config,
+                         unsigned short iMesh);
+
+  /*!
+   * \brief A virtual member.
+   */
+  void GetOutlet_Properties(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned short iMesh,
+                            bool Output);
+
+  /*!
+   * \brief Set the solver nondimensionalization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -114,13 +141,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CIncEulerSolver(void) override;
-
-  /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
 
   /*!
    * \brief Compute the pressure at the infinity.
@@ -377,26 +397,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config) final;
-
-  /*!
-   * \brief Update the Beta parameter for the incompressible preconditioner.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   */
-  void SetBeta_Parameter(CGeometry *geometry,
-                         CSolver **solver_container,
-                         CConfig *config,
-                         unsigned short iMesh) final;
-
-  /*!
-   * \brief A virtual member.
-   */
-  void GetOutlet_Properties(CGeometry *geometry,
-                            CConfig *config,
-                            unsigned short iMesh,
-                            bool Output) final;
 
   /*!
    * \brief Print verification error to screen.

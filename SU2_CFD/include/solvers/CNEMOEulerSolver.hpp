@@ -218,7 +218,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh) final;
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Set all the conserved variables from the primitive vector..
