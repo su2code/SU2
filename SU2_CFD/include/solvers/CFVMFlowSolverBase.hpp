@@ -506,7 +506,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \note Functor needs to implement (nodes,iPoint,jPoint) for edges, and (nodes,iPoint) for vertices.
    */
   template<class SoundSpeedFunc>
-  FORCEINLINE void SetMax_Eigenvalue_impl(const SoundSpeedFunc& soundSpeed, CGeometry *geometry, CConfig *config) {
+  FORCEINLINE void SetMax_Eigenvalue_impl(const SoundSpeedFunc& soundSpeed, CGeometry *geometry, const CConfig *config) {
 
     /*--- Loop domain points. ---*/
 
@@ -593,6 +593,75 @@ class CFVMFlowSolverBase : public CSolver {
 
     InitiateComms(geometry, config, MAX_EIGENVALUE);
     CompleteComms(geometry, config, MAX_EIGENVALUE);
+  }
+
+  /*!
+   * \brief Compute the dissipation sensor for centered schemes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \tparam SensVarFunc - Function object implementing (nodes, iPoint) to return the sensor variable, e.g. pressure.
+   */
+  template<class SensVarFunc>
+  FORCEINLINE void SetCentered_Dissipation_Sensor_impl(const SensVarFunc& sensVar,
+                                                       CGeometry *geometry, const CConfig *config) {
+
+    /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
+
+    const bool isPeriodic = (config->GetnMarker_Periodic() > 0);
+
+    /*--- Loop domain points. ---*/
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
+      const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+      const su2double sensVar_i = sensVar(*nodes, iPoint);
+
+      /*--- Initialize. ---*/
+      iPoint_UndLapl[iPoint] = 0.0;
+      jPoint_UndLapl[iPoint] = 0.0;
+
+      /*--- Loop over the neighbors of point i. ---*/
+      for (auto jPoint : geometry->nodes->GetPoints(iPoint))
+      {
+        bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+        /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+        if (boundary_i && !boundary_j) continue;
+
+        su2double sensVar_j = sensVar(*nodes, jPoint);
+
+        /*--- Dissipation sensor, add variable difference and variable sum. ---*/
+        iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
+        jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+      }
+
+      if (!isPeriodic) {
+        /*--- Every neighbor is accounted for, sensor can be computed. ---*/
+        nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+      }
+    }
+
+    if (isPeriodic) {
+      /*--- Correct the sensor values across any periodic boundaries. ---*/
+
+      for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+        InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+        CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+      }
+
+      /*--- Set final pressure switch for each point ---*/
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+        nodes->SetSensor(iPoint, fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, SENSOR);
+    CompleteComms(geometry, config, SENSOR);
+
   }
 
   /*!

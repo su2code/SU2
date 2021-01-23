@@ -1573,7 +1573,7 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 
 }
 
-void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config) {
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -1593,7 +1593,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
 
   unsigned long iPoint, jPoint, iEdge;
   su2double *Diff;
@@ -1652,84 +1652,17 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
 
 }
 
-void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
+void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config) {
 
-  unsigned long iEdge, iPoint, jPoint;
-  su2double Pressure_i = 0.0, Pressure_j = 0.0;
-  bool boundary_i, boundary_j;
-
-  /*--- Reset variables to store the undivided pressure ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    iPoint_UndLapl[iPoint] = 0.0;
-    jPoint_UndLapl[iPoint] = 0.0;
-  }
-
-  /*--- Evaluate the pressure sensor ---*/
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    /*--- Get the pressure, or density for incompressible solvers ---*/
-
-    Pressure_i = nodes->GetDensity(iPoint);
-    Pressure_j = nodes->GetDensity(jPoint);
-
-    boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-    boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-    /*--- Both points inside the domain, or both on the boundary ---*/
-
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-
-      if (geometry->nodes->GetDomain(iPoint)) {
-        iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-        jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-      }
-
-      if (geometry->nodes->GetDomain(jPoint)) {
-        iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-        jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-      }
-
+  /*--- Define an object for the sensor variable, density. ---*/
+  struct SensVar {
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      return nodes.GetDensity(iPoint);
     }
+  } sensVar;
 
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->nodes->GetDomain(iPoint)) {
-        iPoint_UndLapl[iPoint] += (Pressure_j - Pressure_i);
-        jPoint_UndLapl[iPoint] += (Pressure_i + Pressure_j);
-      }
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->nodes->GetDomain(jPoint)) {
-        iPoint_UndLapl[jPoint] += (Pressure_i - Pressure_j);
-        jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
-      }
-
-  }
-
-  /*--- Correct the sensor values across any periodic boundaries. ---*/
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
-  }
-
-  /*--- Set pressure switch for each point ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetSensor(iPoint,fabs(iPoint_UndLapl[iPoint]) / jPoint_UndLapl[iPoint]);
-
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  /*--- Instantiate generic implementation. ---*/
+  SetCentered_Dissipation_Sensor_impl(sensVar, geometry, config);
 
 }
 
