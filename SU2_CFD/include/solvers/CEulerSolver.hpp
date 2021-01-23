@@ -114,8 +114,6 @@ protected:
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
-  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
-
   /*--- Turbomachinery Solver Variables ---*/
 
   su2double ***AverageFlux = nullptr,
@@ -257,11 +255,10 @@ protected:
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                               CConfig *config, bool Output);
+                                               const CConfig *config);
 
   /*!
    * \brief Set gradients of coefficients for fixed CL mode

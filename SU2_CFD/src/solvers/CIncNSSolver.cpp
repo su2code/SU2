@@ -54,35 +54,30 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 }
 
-void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long iPoint, ErrorCounter = 0;
-  su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
+  const auto InnerIter = config->GetInnerIter();
+  const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
-  unsigned long InnerIter   = config->GetInnerIter();
-  bool cont_adjoint         = config->GetContinuous_Adjoint();
-  bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
-  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_turb         = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  bool outlet               = ((config->GetnMarker_Outlet() != 0));
+  /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
-  /*--- Set the primitive variables ---*/
+  CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  /*--- Compute gradient for MUSCL reconstruction ---*/
 
-  /*--- Compute gradient for MUSCL reconstruction. ---*/
-
-  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetPrimitive_Gradient_LS(geometry, config, true);
+  if (config->GetReconstructionGradientRequired() && muscl && !center) {
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
+    }
   }
 
   /*--- Compute gradient of the primitive variables ---*/
@@ -90,84 +85,68 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
   }
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model
-   or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  /*--- Compute the limiters ---*/
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
-      && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
-
-  /*--- Artificial dissipation for centered schemes. ---*/
-
-  if (center && !Output) {
-    SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetCentered_Dissipation_Sensor(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-    }
+  if (muscl && !center && limiter && !van_albada && !Output) {
+    SetPrimitive_Limiter(geometry, config);
   }
-
-  /*--- Update the beta value based on the maximum velocity / viscosity. ---*/
-
-  SetBeta_Parameter(geometry, solver_container, config, iMesh);
-
-  /*--- Compute properties needed for mass flow BCs. ---*/
-
-  if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
 
+  SU2_OMP_MASTER
+  {
+    StrainMag_Max = 0.0;
+    Omega_Max = 0.0;
+  }
+  SU2_OMP_BARRIER
+
   nodes->SetVorticity_StrainMag();
 
-  StrainMag_Max = 0.0; Omega_Max = 0.0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  /*--- Min and Max are not really differentiable ---*/
+  const bool wasActive = AD::BeginPassive();
 
-    StrainMag = nodes->GetStrainMag(iPoint);
-    Vorticity = nodes->GetVorticity(iPoint);
-    Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+  su2double strainMax = 0.0, omegaMax = 0.0;
 
-    StrainMag_Max = max(StrainMag_Max, StrainMag);
-    Omega_Max = max(Omega_Max, Omega);
-
+  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
+    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
+  }
+  SU2_OMP_CRITICAL {
+    StrainMag_Max = max(StrainMag_Max, strainMax);
+    Omega_Max = max(Omega_Max, omegaMax);
   }
 
-  /*--- Initialize the Jacobian matrices ---*/
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    {
+      su2double MyOmega_Max = Omega_Max;
+      su2double MyStrainMag_Max = StrainMag_Max;
 
-  if (implicit && !Output) Jacobian.SetValZero();
-
-  /*--- Error message ---*/
-
-  if (config->GetComm_Level() == COMM_FULL) {
-
-#ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    su2double MyOmega_Max = Omega_Max; Omega_Max = 0.0;
-    su2double MyStrainMag_Max = StrainMag_Max; StrainMag_Max = 0.0;
-
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
-
-    if (iMesh == MESH_0)
-      config->SetNonphysical_Points(ErrorCounter);
-
+      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    }
+    SU2_OMP_BARRIER
   }
+
+  AD::EndPassive(wasActive);
 
 }
 
-unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  bool physical = true;
 
   bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     /*--- Retrieve the value of the kinetic energy (if needed) ---*/
@@ -183,7 +162,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
     /*--- Incompressible flow, primitive variables --- */
 
-    physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
+    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, FluidModel);
 
     /* Check for non-realizable states for reporting. */
 
@@ -192,10 +171,6 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     /*--- Set the DES length scale ---*/
 
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 
   }
 

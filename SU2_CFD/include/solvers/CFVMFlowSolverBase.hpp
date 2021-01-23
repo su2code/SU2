@@ -59,6 +59,8 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
   Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
 
+  unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
+
   /*!
    * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
    */
