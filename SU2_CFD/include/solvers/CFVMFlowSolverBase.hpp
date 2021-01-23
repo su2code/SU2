@@ -286,9 +286,6 @@ class CFVMFlowSolverBase : public CSolver {
     }
     SU2_OMP_BARRIER
 
-    su2double Local_Delta_Time, Local_Delta_Time_Visc;
-    unsigned short iDim;
-
     /*--- Loop domain points. ---*/
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
@@ -322,13 +319,13 @@ class CFVMFlowSolverBase : public CSolver {
           const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
           const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
-          for (iDim = 0; iDim < nDim; iDim++)
+          for (unsigned short iDim = 0; iDim < nDim; iDim++)
             Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
         }
 
         /*--- Inviscid contribution ---*/
 
-        su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+        su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
         nodes->AddMax_Lambda_Inv(iPoint,Lambda);
 
         /*--- Viscous contribution ---*/
@@ -367,10 +364,7 @@ class CFVMFlowSolverBase : public CSolver {
           /*--- Adjustment for grid movement ---*/
 
           if (dynamic_grid) {
-            const su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjVel -= GridVel[iDim]*Normal[iDim];
+            ProjVel -= GeometryToolbox::DotProduct(nDim, Normal, geometry->nodes->GetGridVel(iPoint));
           }
 
           /*--- Inviscid contribution ---*/
@@ -399,11 +393,11 @@ class CFVMFlowSolverBase : public CSolver {
         su2double Vol = geometry->nodes->GetVolume(iPoint);
 
         if (Vol != 0.0) {
-          Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+          su2double Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
 
           if(viscous) {
-            Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
-            Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+            su2double dt_visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol / nodes->GetMax_Lambda_Visc(iPoint);
+            Local_Delta_Time = min(Local_Delta_Time, dt_visc);
           }
 
           minDt = min(minDt, Local_Delta_Time);
@@ -498,8 +492,8 @@ class CFVMFlowSolverBase : public CSolver {
     if (dual_time && !implicit) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        nodes->SetDelta_Time(iPoint, Local_Delta_Time);
+        su2double dt = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+        nodes->SetDelta_Time(iPoint, dt);
       }
     }
   }
