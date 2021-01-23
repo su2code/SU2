@@ -38,11 +38,6 @@
  */
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
-  su2double
-  *Primitive = nullptr,   /*!< \brief Auxiliary nPrimVar vector. */
-  *Primitive_i = nullptr, /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Primitive_j = nullptr; /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
   CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
 
   /*!

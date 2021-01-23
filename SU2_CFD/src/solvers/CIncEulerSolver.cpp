@@ -136,12 +136,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   AllocateTerribleLegacyTemporaryVariables();
 
-  /*--- Define some auxiliary vectors related to the primitive solution ---*/
-
-  Primitive   = new su2double[nPrimVar] ();
-  Primitive_i = new su2double[nPrimVar] ();
-  Primitive_j = new su2double[nPrimVar] ();
-
   /*--- Allocate base class members. ---*/
 
   Allocate(*config);
@@ -219,10 +213,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
-
-  delete [] Primitive;
-  delete [] Primitive_i;
-  delete [] Primitive_j;
 
   delete FluidModel;
 }
@@ -1130,8 +1120,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = nullptr, *Limiter_j = nullptr;
+  /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
+  su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
@@ -1158,20 +1148,25 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Get primitive variables ---*/
 
-    V_i = nodes->GetPrimitive(iPoint); V_j = nodes->GetPrimitive(jPoint);
-    S_i = nodes->GetSecondary(iPoint); S_j = nodes->GetSecondary(jPoint);
+    auto V_i = nodes->GetPrimitive(iPoint);
+    auto V_j = nodes->GetPrimitive(jPoint);
 
     /*--- High order reconstruction using MUSCL strategy ---*/
 
     if (muscl) {
 
+      auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      auto Coord_j = geometry->nodes->GetCoord(jPoint);
+
+      su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_i[iDim] = 0.5*(geometry->nodes->GetCoord(jPoint, iDim) - geometry->nodes->GetCoord(iPoint, iDim));
-        Vector_j[iDim] = 0.5*(geometry->nodes->GetCoord(iPoint, iDim) - geometry->nodes->GetCoord(jPoint, iDim));
+        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
       }
 
-      Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
-      Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+      auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
+      auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
+
+      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
 
       if (limiter) {
         Limiter_i = nodes->GetLimiter_Primitive(iPoint);
@@ -1179,10 +1174,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       }
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
         }
         if (limiter) {
           if (van_albada){
@@ -1217,17 +1212,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         bool neg_density_i  = (Primitive_i[nDim+2] < 0.0);
         bool neg_density_j  = (Primitive_j[nDim+2] < 0.0);
 
-        if (neg_density_i || neg_temperature_i) {
-          nodes->SetNon_Physical(iPoint, true);
-        } else {
-          nodes->SetNon_Physical(iPoint, false);
-        }
-
-        if (neg_density_j || neg_temperature_j) {
-          nodes->SetNon_Physical(jPoint, true);
-        } else {
-          nodes->SetNon_Physical(jPoint, false);
-        }
+        nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
+        nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
 
         /* Lastly, check for existing first-order points still active
          from previous iterations. */
@@ -1248,10 +1234,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     } else {
 
-      /*--- Set conservative variables without reconstruction ---*/
+      /*--- Set primitive variables without reconstruction ---*/
 
       numerics->SetPrimitive(V_i, V_j);
-      numerics->SetSecondary(S_i, S_j);
 
     }
 
@@ -2763,6 +2748,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   Velocity2, Density, Area, AxiFactor;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
+  su2double Vector[MAXNDIM] = {0.0};
 
   bool axisymmetric = config->GetAxisymmetric();
 
