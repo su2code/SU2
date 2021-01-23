@@ -2888,7 +2888,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, Coord[3] = {0.0}, *Solution_Fine;
+  su2double Area_Children, Area_Parent, Coord[MAXNDIM] = {0.0}, *Solution_Fine;
   bool static_fsi = ((config->GetTime_Marching() == STEADY) && config->GetFSI_Simulation());
   bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -2923,6 +2923,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   unsigned short nVar_Restart = nVar;
   if ((!energy) && (!weakly_coupled_heat)) nVar_Restart--;
+  su2double Solution[MAXNVAR] = {0.0};
   Solution[nVar-1] = GetTemperature_Inf();
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
@@ -2966,7 +2967,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         index = counter*Restart_Vars[1];
         for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
-        su2double GridVel[3] = {0.0,0.0,0.0};
+        su2double GridVel[MAXNDIM] = {0.0};
         if (!steady_restart) {
           /*--- Move the index forward to get the grid velocities. ---*/
           index = counter*Restart_Vars[1] + skipVars + nVar_Restart + turbVars;
