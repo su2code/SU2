@@ -116,9 +116,6 @@ protected:
 
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
-  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
-  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
-
   /*--- Turbomachinery Solver Variables ---*/
 
   su2double ***AverageFlux = nullptr,

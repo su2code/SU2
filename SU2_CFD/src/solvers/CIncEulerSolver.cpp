@@ -1020,207 +1020,56 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 }
 
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                unsigned short iMesh, unsigned long Iteration) {
+                                   unsigned short iMesh, unsigned long Iteration) {
 
-  su2double Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0,
-  Mean_BetaInc2, Lambda, Local_Delta_Time,
-  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
-  const su2double* Normal;
-
-  unsigned long iEdge, iVertex, iPoint, jPoint;
-  unsigned short iDim, iMarker;
-
-  bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
-  bool dual_time     = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                    (config->GetTime_Marching() == DT_STEPPING_2ND));
-
-  Min_Delta_Time = 1.E30; Max_Delta_Time = 0.0;
-
-  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->SetMax_Lambda_Inv(iPoint,0.0);
-
-  /*--- Loop interior edges ---*/
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    /*--- Point identification, Normal vector and area ---*/
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    Normal = geometry->edges->GetNormal(iEdge);
-
-    Area = GeometryToolbox::Norm(nDim, Normal);
-
-    /*--- Mean Values ---*/
-
-    Mean_ProjVel    = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-    Mean_BetaInc2   = 0.5 * (nodes->GetBetaInc2(iPoint)      + nodes->GetBetaInc2(jPoint));
-    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-    /*--- Adjustment for grid movement ---*/
-
-    if (dynamic_grid) {
-      su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
-      su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      ProjVel_i = 0.0; ProjVel_j = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
-      }
-      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+  /*--- Define an object to compute the speed of sound. ---*/
+  struct SoundSpeed {
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      return sqrt(0.5 * (nodes.GetBetaInc2(iPoint) + nodes.GetBetaInc2(jPoint)));
     }
 
-    /*--- Inviscid contribution ---*/
-
-    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-    if (geometry->nodes->GetDomain(iPoint)) nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddMax_Lambda_Inv(jPoint,Lambda);
-
-  }
-
-  /*--- Loop boundary edges ---*/
-
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-
-      /*--- Point identification, Normal vector and area ---*/
-
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      /*--- Mean Values ---*/
-
-      Mean_ProjVel    = nodes->GetProjVel(iPoint,Normal);
-      Mean_BetaInc2   = nodes->GetBetaInc2(iPoint);
-      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
-
-      /*--- Adjustment for grid movement ---*/
-
-      if (dynamic_grid) {
-        su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
-        ProjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjVel += GridVel[iDim]*Normal[iDim];
-        Mean_ProjVel -= ProjVel;
-      }
-
-      /*--- Inviscid contribution ---*/
-
-      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      if (geometry->nodes->GetDomain(iPoint)) {
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
-      }
-
-    }
-    }
-  }
-
-  /*--- Local time-stepping: each element uses their own speed for steady state
-   simulations or for pseudo time steps in a dual time simulation. ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    Vol = geometry->nodes->GetVolume(iPoint);
-
-    if (Vol != 0.0) {
-      Local_Delta_Time  = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
-      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-      Min_Delta_Time    = min(Min_Delta_Time, Local_Delta_Time);
-      Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
-      if (Local_Delta_Time > config->GetMax_DeltaTime())
-        Local_Delta_Time = config->GetMax_DeltaTime();
-      nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-    }
-    else {
-      nodes->SetDelta_Time(iPoint,0.0);
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      return sqrt(nodes.GetBetaInc2(iPoint));
     }
 
-  }
+  } soundSpeed;
 
-  /*--- Compute the max and the min dt (in parallel) ---*/
+  /*--- Define an object to compute the viscous eigenvalue. ---*/
+  struct LambdaVisc {
+    const bool energy;
 
-  if (config->GetComm_Level() == COMM_FULL) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Min_Delta_Time = rbuf_time;
+    LambdaVisc(bool e) : energy(e) {}
 
-    sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Max_Delta_Time = rbuf_time;
-#endif
-  }
-
-  /*--- For time-accurate simulations use the minimum delta time of the whole mesh (global) ---*/
-
-  if (time_stepping) {
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_Time = rbuf_time;
-#endif
-    /*--- If the unsteady CFL is set to zero, it uses the defined
-     unsteady time step, otherwise it computes the time step based
-     on the unsteady CFL ---*/
-
-    if (config->GetUnst_CFL() == 0.0) {
-      Global_Delta_Time = config->GetDelta_UnstTime();
-    }
-    config->SetDelta_UnstTimeND(Global_Delta_Time);
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-
-      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
-
-      nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
-      nodes->SetDelta_Time(iPoint, Global_Delta_Time);
-      Min_Delta_Time = Global_Delta_Time;
-      Max_Delta_Time = Global_Delta_Time;
-
-    }
-  }
-
-  /*--- Recompute the unsteady time step for the dual time strategy
-   if the unsteady CFL is diferent from 0 ---*/
-
-  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-
-    Global_Delta_UnstTimeND = 1e30;
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND,config->GetUnst_CFL()*Global_Delta_Time/nodes->GetLocalCFL(iPoint));
+    FORCEINLINE su2double lambda(su2double lamVisc, su2double eddyVisc, su2double rho, su2double k, su2double cv) const {
+      su2double Lambda_1 = (4.0/3.0)*(lamVisc + eddyVisc);
+      su2double Lambda_2 = 0.0;
+      if (energy) Lambda_2 = k / cv;
+      return (Lambda_1 + Lambda_2) / rho;
     }
 
-#ifdef HAVE_MPI
-    su2double rbuf_time, sbuf_time;
-    sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    Global_Delta_UnstTimeND = rbuf_time;
-#endif
-    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
-  }
-
-  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
-
-  if (dual_time)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      if (!implicit) {
-        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
-        nodes->SetDelta_Time(iPoint,Local_Delta_Time);
-      }
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint, unsigned long jPoint) const {
+      su2double thermalCond = 0.5*(nodes.GetThermalConductivity(iPoint) + nodes.GetThermalConductivity(jPoint));
+      su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
+      su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
+      su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
+      su2double cv = 0.5*(nodes.GetSpecificHeatCv(iPoint) + nodes.GetSpecificHeatCv(jPoint));
+      return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
     }
+
+    FORCEINLINE su2double operator() (const CIncEulerVariable& nodes, unsigned long iPoint) const {
+      su2double thermalCond = nodes.GetThermalConductivity(iPoint);
+      su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
+      su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
+      su2double density = nodes.GetDensity(iPoint);
+      su2double cv = nodes.GetSpecificHeatCv(iPoint);
+      return lambda(laminarVisc, eddyVisc, density, thermalCond, cv);
+    }
+
+  } lambdaVisc(config->GetEnergy_Equation());
+
+  /*--- Now instantiate the generic implementation with the two functors above. ---*/
+
+  SetTime_Step_impl(soundSpeed, lambdaVisc, geometry, solver_container, config, iMesh, Iteration);
 
 }
 

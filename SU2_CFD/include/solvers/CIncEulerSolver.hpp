@@ -91,7 +91,7 @@ public:
                     CSolver **solver_container,
                     CConfig *config,
                     unsigned short iMesh,
-                    unsigned long Iteration) override;
+                    unsigned long Iteration) final;
 
   /*!
    * \brief Compute the spatial integration using a centered scheme.

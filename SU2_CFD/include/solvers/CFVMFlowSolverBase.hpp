@@ -56,6 +56,9 @@ class CFVMFlowSolverBase : public CSolver {
   su2double StrainMag_Max; /*!< \brief Maximum Strain Rate magnitude. */
   su2double Omega_Max;     /*!< \brief Maximum Omega. */
 
+  su2double Global_Delta_Time = 0.0, /*!< \brief Time-step for TIME_STEPPING time marching strategy. */
+  Global_Delta_UnstTimeND = 0.0;     /*!< \brief Unsteady time step for the dual time strategy. */
+
   /*!
    * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
    */
@@ -243,6 +246,263 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Instantiate a SIMD numerics object.
    */
   inline virtual void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) {}
+
+  /*!
+   * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Value of the current iteration.
+   * \tparam SoundSpeedFunc - Function object to compute speed of sound
+   * \tparam LambdaViscFunc - Function object to compute the viscous lambda
+   * \note Both functors need to implement (nodes,iPoint,jPoint) for edges, and (nodes,iPoint) for vertices.
+   */
+  template<class SoundSpeedFunc, class LambdaViscFunc>
+  FORCEINLINE void SetTime_Step_impl(const SoundSpeedFunc& soundSpeed,
+                                     const LambdaViscFunc& lambdaVisc,
+                                     CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CConfig *config,
+                                     unsigned short iMesh,
+                                     unsigned long Iteration) {
+
+    const bool viscous       = config->GetViscous();
+    const bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const bool time_stepping = (config->GetTime_Marching() == TIME_STEPPING);
+    const bool dual_time     = (config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                               (config->GetTime_Marching() == DT_STEPPING_2ND);
+    const su2double K_v = 0.25;
+
+    /*--- Init thread-shared variables to compute min/max values.
+     *    Critical sections are used for this instead of reduction
+     *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
+
+    SU2_OMP_MASTER
+    {
+      Min_Delta_Time = 1e30;
+      Max_Delta_Time = 0.0;
+      Global_Delta_UnstTimeND = 1e30;
+    }
+    SU2_OMP_BARRIER
+
+    su2double Local_Delta_Time, Local_Delta_Time_Visc;
+    unsigned short iDim;
+
+    /*--- Loop domain points. ---*/
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+      /*--- Set maximum eigenvalues to zero. ---*/
+
+      nodes->SetMax_Lambda_Inv(iPoint,0.0);
+
+      if (viscous)
+        nodes->SetMax_Lambda_Visc(iPoint,0.0);
+
+      /*--- Loop over the neighbors of point i. ---*/
+
+      for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh)
+      {
+        auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+
+        auto iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+        auto Normal = geometry->edges->GetNormal(iEdge);
+        auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
+
+        /*--- Mean Values ---*/
+
+        su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+        su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint, jPoint) * sqrt(Area2);
+
+        /*--- Adjustment for grid movement ---*/
+
+        if (dynamic_grid) {
+          const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
+          const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+        }
+
+        /*--- Inviscid contribution ---*/
+
+        su2double Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
+        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+
+        /*--- Viscous contribution ---*/
+
+        if (!viscous) continue;
+
+        Lambda = lambdaVisc(*nodes, iPoint, jPoint) * Area2;
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+      }
+
+    }
+
+    /*--- Loop boundary edges ---*/
+
+    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+          /*--- Point identification, Normal vector and area ---*/
+
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+          auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          auto Area2 = GeometryToolbox::SquaredNorm(nDim, Normal);
+
+          /*--- Mean Values ---*/
+
+          su2double ProjVel = nodes->GetProjVel(iPoint,Normal);
+          su2double SoundSpeed = soundSpeed(*nodes, iPoint) * sqrt(Area2);
+
+          /*--- Adjustment for grid movement ---*/
+
+          if (dynamic_grid) {
+            const su2double *GridVel = geometry->nodes->GetGridVel(iPoint);
+
+            for (iDim = 0; iDim < nDim; iDim++)
+              ProjVel -= GridVel[iDim]*Normal[iDim];
+          }
+
+          /*--- Inviscid contribution ---*/
+
+          su2double Lambda = fabs(ProjVel) + SoundSpeed;
+          nodes->AddMax_Lambda_Inv(iPoint, Lambda);
+
+          /*--- Viscous contribution ---*/
+
+          if (!viscous) continue;
+
+          Lambda = lambdaVisc(*nodes,iPoint) * Area2;
+          nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+        }
+      }
+    }
+
+    /*--- Each element uses their own speed, steady state simulation. ---*/
+    {
+      /*--- Thread-local variables for min/max reduction. ---*/
+      su2double minDt = 1e30, maxDt = 0.0;
+
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+        su2double Vol = geometry->nodes->GetVolume(iPoint);
+
+        if (Vol != 0.0) {
+          Local_Delta_Time = nodes->GetLocalCFL(iPoint)*Vol / nodes->GetMax_Lambda_Inv(iPoint);
+
+          if(viscous) {
+            Local_Delta_Time_Visc = nodes->GetLocalCFL(iPoint)*K_v*Vol*Vol/ nodes->GetMax_Lambda_Visc(iPoint);
+            Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+          }
+
+          minDt = min(minDt, Local_Delta_Time);
+          maxDt = max(maxDt, Local_Delta_Time);
+
+          nodes->SetDelta_Time(iPoint, min(Local_Delta_Time, config->GetMax_DeltaTime()));
+        }
+        else {
+          nodes->SetDelta_Time(iPoint,0.0);
+        }
+      }
+      /*--- Min/max over threads. ---*/
+      SU2_OMP_CRITICAL
+      {
+        Min_Delta_Time = min(Min_Delta_Time, minDt);
+        Max_Delta_Time = max(Max_Delta_Time, maxDt);
+        Global_Delta_Time = Min_Delta_Time;
+      }
+      SU2_OMP_BARRIER
+    }
+
+    /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
+
+    SU2_OMP_MASTER
+    if (config->GetComm_Level() == COMM_FULL) {
+      su2double rbuf_time;
+      SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      Min_Delta_Time = rbuf_time;
+
+      SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      Max_Delta_Time = rbuf_time;
+    }
+    SU2_OMP_BARRIER
+
+    /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
+    if (time_stepping) {
+
+      /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step,
+       *    otherwise it computes the time step based on the unsteady CFL. ---*/
+
+      SU2_OMP_MASTER
+      {
+        if (config->GetUnst_CFL() == 0.0) {
+          Global_Delta_Time = config->GetDelta_UnstTime();
+        }
+        else {
+          Global_Delta_Time = Min_Delta_Time;
+        }
+        Max_Delta_Time = Global_Delta_Time;
+
+        config->SetDelta_UnstTimeND(Global_Delta_Time);
+      }
+      SU2_OMP_BARRIER
+
+      /*--- Sets the regular CFL equal to the unsteady CFL. ---*/
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        nodes->SetLocalCFL(iPoint, config->GetUnst_CFL());
+        nodes->SetDelta_Time(iPoint, Global_Delta_Time);
+      }
+
+    }
+
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0. ---*/
+
+    if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+
+      /*--- Thread-local variable for reduction. ---*/
+      su2double glbDtND = 1e30;
+
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
+      }
+      SU2_OMP_CRITICAL
+      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
+      SU2_OMP_BARRIER
+
+      SU2_OMP_MASTER
+      {
+        SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+        Global_Delta_UnstTimeND = glbDtND;
+
+        config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+      }
+      SU2_OMP_BARRIER
+    }
+
+    /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+
+    if (dual_time && !implicit) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+        nodes->SetDelta_Time(iPoint, Local_Delta_Time);
+      }
+    }
+  }
 
   /*!
    * \brief Destructor.
