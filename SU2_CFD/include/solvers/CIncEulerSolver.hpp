@@ -44,7 +44,6 @@ protected:
   *Primitive_j = nullptr; /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
   CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
-  su2double **Preconditioner = nullptr; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -62,8 +61,11 @@ protected:
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] iPoint - Index of the grid point
    * \param[in] config - Definition of the particular problem.
+   * \param[in] delta - Volume over delta time, does not matter for explicit.
+   * \param[out] preconditioner - The preconditioner matrix.
    */
-  void SetPreconditioner(const CConfig *config, unsigned long iPoint);
+  void SetPreconditioner(const CConfig *config, unsigned long iPoint,
+                         su2double delta, su2activematrix& preconditioner) const;
 
   /*!
    * \brief Compute a pressure sensor switch.

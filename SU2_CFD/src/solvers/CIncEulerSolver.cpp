@@ -41,7 +41,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
   const string description = navier_stokes? "Navier-Stokes" : "Euler";
 
-  unsigned short iVar, iMarker, nLineLets;
+  unsigned short iMarker, nLineLets;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -142,12 +142,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Primitive_i = new su2double[nPrimVar] ();
   Primitive_j = new su2double[nPrimVar] ();
 
-  /*--- Allocate preconditioning matrix. ---*/
-
-  Preconditioner = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar ++)
-    Preconditioner[iVar] = new su2double[nVar];
-
   /*--- Allocate base class members. ---*/
 
   Allocate(*config);
@@ -226,17 +220,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 CIncEulerSolver::~CIncEulerSolver(void) {
 
-  unsigned short iVar;
-
   delete [] Primitive;
   delete [] Primitive_i;
   delete [] Primitive_j;
-
-  if (Preconditioner != nullptr) {
-    for (iVar = 0; iVar < nVar; iVar ++)
-      delete [] Preconditioner[iVar];
-    delete [] Preconditioner;
-  }
 
   delete FluidModel;
 }
@@ -1679,25 +1665,25 @@ template<ENUM_TIME_INT IntegrationType>
 FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                      CConfig *config, unsigned short iRKStep) {
   struct Precond {
-    CIncEulerSolver* solver;
-    const su2double* const* matrix;
+    const CIncEulerSolver* solver;
+    su2activematrix matrix;
     unsigned short nVar;
 
-    Precond(CIncEulerSolver* s, const su2double* const* m, unsigned short n) :
-      solver(s), matrix(m), nVar(n) {}
+    Precond(const CIncEulerSolver* s, unsigned short n) : solver(s), nVar(n) {
+      matrix.resize(nVar,nVar);
+    }
 
     FORCEINLINE void compute(const CConfig* config, unsigned long iPoint) {
-      /// TODO: This is not thread-safe, this function needs to return by value.
-      solver->SetPreconditioner(config, iPoint);
+      solver->SetPreconditioner(config, iPoint, 1.0, matrix);
     }
 
-    FORCEINLINE su2double apply(unsigned short iVar, const su2double* res, const su2double* resTrunc) {
+    FORCEINLINE su2double apply(unsigned short iVar, const su2double* res, const su2double* resTrunc) const {
       su2double resPrec = 0.0;
       for (unsigned short jVar = 0; jVar < nVar; ++jVar)
-        resPrec += matrix[iVar][jVar] * (res[jVar] + resTrunc[jVar]);
+        resPrec += matrix(iVar,jVar) * (res[jVar] + resTrunc[jVar]);
       return resPrec;
     }
-  } precond(this, Preconditioner, nVar);
+  } precond(this, nVar);
 
   Explicit_Iteration_impl<IntegrationType>(precond, geometry, solver_container, config, iRKStep);
 }
@@ -1721,113 +1707,21 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  unsigned short iVar, jVar;
-  unsigned long iPoint, total_index, IterLinSol = 0;
-  su2double Delta, *local_Res_TruncError, Vol;
+  struct IncPrec {
+    const CIncEulerSolver* solver;
+    const bool active = true;
+    su2activematrix matrix;
 
-  bool adjoint = config->GetContinuous_Adjoint();
+    IncPrec(const CIncEulerSolver* s, unsigned short nVar) : solver(s) { matrix.resize(nVar,nVar); }
 
-  /*--- Set maximum residual to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
-  /*--- Build implicit system ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Read the residual ---*/
-
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-
-    /*--- Read the volume ---*/
-
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
-
-    /*--- Apply the preconditioner and add to the diagonal. ---*/
-
-    if (nodes->GetDelta_Time(iPoint) != 0.0) {
-      Delta = Vol / nodes->GetDelta_Time(iPoint);
-      SetPreconditioner(config, iPoint);
-      for (iVar = 0; iVar < nVar; iVar ++ ) {
-        for (jVar = 0; jVar < nVar; jVar ++ ) {
-          Preconditioner[iVar][jVar] = Delta*Preconditioner[iVar][jVar];
-        }
-      }
-      Jacobian.AddBlock2Diag(iPoint, Preconditioner);
-    } else {
-      Jacobian.SetVal2Diag(iPoint, 1.0);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
-        local_Res_TruncError[iVar] = 0.0;
-      }
+    FORCEINLINE const su2activematrix& operator() (const CConfig* config, unsigned long iPoint, su2double delta) {
+      solver->SetPreconditioner(config, iPoint, delta, matrix);
+      return matrix;
     }
 
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+  } precond(this, nVar);
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-    }
-
-  }
-
-  /*--- Initialize residual and solution at the ghost points ---*/
-
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
-  }
-
-  /*--- Solve or smooth the linear system ---*/
-
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-  /*--- Store the value of the residual. ---*/
-
-  SetResLinSolver(System.GetResidual());
-
-  /*--- The the number of iterations of the linear solver ---*/
-
-  SetIterLinSolver(IterLinSol);
-
-  /*--- Update solution (system written in terms of increments) ---*/
-
-  if (!adjoint) {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-      }
-    }
-  }
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-  }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
-  /*--- For verification cases, compute the global error metrics. ---*/
-
-  ComputeVerificationError(geometry, config);
+  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, false);
 
 }
 
@@ -1873,12 +1767,13 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint) {
+void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
+                                        su2double delta, su2activematrix& Preconditioner) const {
 
-  unsigned short iDim, jDim;
+  unsigned short iDim, jDim, iVar, jVar;
 
   su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
-  su2double  Velocity[3] = {0.0,0.0,0.0};
+  su2double  Velocity[MAXNDIM] = {0.0};
 
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -1935,6 +1830,10 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
     if (energy) Preconditioner[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
     else        Preconditioner[nDim+1][nDim+1] = 1.0;
+
+    for (iVar = 0; iVar < nVar; iVar ++ )
+      for (jVar = 0; jVar < nVar; jVar ++ )
+        Preconditioner[iVar][jVar] = delta*Preconditioner[iVar][jVar];
 
   } else {
 

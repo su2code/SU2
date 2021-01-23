@@ -447,7 +447,7 @@ public:
    * \param[in,out] preconditioner - The preconditioner matrix, must be allocated outside.
    */
   void SetPreconditioner(const CConfig *config, unsigned long iPoint,
-                         su2double delta, su2double** preconditioner) const;
+                         su2double delta, su2activematrix& preconditioner) const;
 
   /*!
    * \brief Parallelization of Undivided Laplacian.

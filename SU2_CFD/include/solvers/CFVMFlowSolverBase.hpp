@@ -804,6 +804,150 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
+   * \brief Generic implementation of implicit Euler iteration with an optional preconditioner applied to the diagonal.
+   * \param[in] compute_ur - Whether to use automatic under-relaxation for the update.
+   * \tparam DiagonalPrecond - A function object implementing:
+   *         - active: A boolean variable to determine if the preconditioner should be used.
+   *         - (config, iPoint, delta): Compute and return a matrix type compatible with the Jacobian matrix,
+   *           where "delta" is V/dt.
+   */
+  template<class DiagonalPrecond>
+  void ImplicitEuler_Iteration_impl(DiagonalPrecond& preconditioner, CGeometry *geometry,
+                                    CSolver **solver_container, CConfig *config, bool compute_ur) {
+
+    const bool adjoint = config->GetContinuous_Adjoint();
+
+    /*--- Set shared residual variables to 0 and declare
+     *    local ones for current thread to work on. ---*/
+
+    SU2_OMP_MASTER
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar, 0.0);
+      SetRes_Max(iVar, 0.0, 0);
+    }
+    SU2_OMP_BARRIER
+
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    const su2double* coordMax[MAXNVAR] = {nullptr};
+    unsigned long idxMax[MAXNVAR] = {0};
+
+    /*--- Build implicit system ---*/
+
+    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Read the residual ---*/
+
+      su2double* local_Res_TruncError = nodes->GetResTruncError(iPoint);
+
+      /*--- Read the volume ---*/
+
+      su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+
+      /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+
+      if (nodes->GetDelta_Time(iPoint) != 0.0) {
+
+        su2double Delta = Vol / nodes->GetDelta_Time(iPoint);
+
+        if (preconditioner.active) {
+          Jacobian.AddBlock2Diag(iPoint, preconditioner(config, iPoint, Delta));
+        }
+        else {
+          Jacobian.AddVal2Diag(iPoint, Delta);
+        }
+      }
+      else {
+        Jacobian.SetVal2Diag(iPoint, 1.0);
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          LinSysRes(iPoint,iVar) = 0.0;
+          local_Res_TruncError[iVar] = 0.0;
+        }
+      }
+
+      /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+        LinSysSol[total_index] = 0.0;
+
+        su2double Res = fabs(LinSysRes[total_index]);
+        resRMS[iVar] += Res*Res;
+        if (Res > resMax[iVar]) {
+          resMax[iVar] = Res;
+          idxMax[iVar] = iPoint;
+          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+        }
+      }
+    }
+    SU2_OMP_CRITICAL
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      AddRes_RMS(iVar, resRMS[iVar]);
+      AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+    }
+
+    /*--- Initialize residual and solution at the ghost points ---*/
+
+    SU2_OMP(sections nowait)
+    {
+      SU2_OMP(section)
+      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+        LinSysRes.SetBlock_Zero(iPoint);
+
+      SU2_OMP(section)
+      for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++)
+        LinSysSol.SetBlock_Zero(iPoint);
+    }
+
+    /*--- Solve or smooth the linear system. ---*/
+
+    auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+    SU2_OMP_MASTER
+    {
+      SetIterLinSolver(iter);
+      SetResLinSolver(System.GetResidual());
+    }
+    SU2_OMP_BARRIER
+
+    if (compute_ur) ComputeUnderRelaxationFactor(solver_container, config);
+
+    /*--- Update solution (system written in terms of increments) ---*/
+
+    if (!adjoint) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+          nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
+        }
+      }
+    }
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+
+    SU2_OMP_MASTER
+    {
+      /*--- Compute the root mean square residual ---*/
+
+      SetResidual_RMS(geometry, config);
+
+      /*--- For verification cases, compute the global error metrics. ---*/
+
+      ComputeVerificationError(geometry, config);
+    }
+    SU2_OMP_BARRIER
+
+  }
+
+  /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
    */
   inline void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
