@@ -665,6 +665,143 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
+   * \brief Generic implementation of explicit iterations with a preconditioner.
+   * \note The preconditioner is a functor implementing the methods:
+   *       - compute(config, iPoint): Should prepare the preconditioner for iPoint.
+   *       - apply(iVar, residual[], resTruncError[]): Apply it to compute the iVar update.
+   *       See Explicit_Iteration for the general form of the preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType, class ResidualPrecond>
+  void Explicit_Iteration_impl(ResidualPrecond& preconditioner, CGeometry *geometry,
+                               CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
+
+    static_assert(IntegrationType == CLASSICAL_RK4_EXPLICIT ||
+                  IntegrationType == RUNGE_KUTTA_EXPLICIT ||
+                  IntegrationType == EULER_EXPLICIT, "");
+
+    const bool adjoint = config->GetContinuous_Adjoint();
+
+    const su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+
+    /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
+    const su2double RK_FuncCoeff[] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+    const su2double RK_TimeCoeff[] = {0.5, 0.5, 1.0, 1.0};
+
+    /*--- Set shared residual variables to 0 and declare
+     *    local ones for current thread to work on. ---*/
+
+    SU2_OMP_MASTER
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar, 0.0);
+      SetRes_Max(iVar, 0.0, 0);
+    }
+    SU2_OMP_BARRIER
+
+    su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+    const su2double* coordMax[MAXNVAR] = {nullptr};
+    unsigned long idxMax[MAXNVAR] = {0};
+
+    /*--- Update the solution and residuals ---*/
+
+    if (!adjoint) {
+      SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+        su2double Delta = nodes->GetDelta_Time(iPoint) / Vol;
+
+        const su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+        const su2double* Residual = LinSysRes.GetBlock(iPoint);
+
+        preconditioner.compute(config, iPoint);
+
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+
+          su2double Res = preconditioner.apply(iVar, Residual, Res_TruncError);
+
+          /*--- "Static" switch which should be optimized at compile time. ---*/
+          switch(IntegrationType) {
+
+            case EULER_EXPLICIT:
+              nodes->AddSolution(iPoint,iVar, -Res*Delta);
+              break;
+
+            case RUNGE_KUTTA_EXPLICIT:
+              nodes->AddSolution(iPoint, iVar, -Res*Delta*RK_AlphaCoeff);
+              break;
+
+            case CLASSICAL_RK4_EXPLICIT:
+            {
+              su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*Delta;
+              su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*Delta;
+
+              if (iRKStep < 3) {
+                /* Base Solution Update */
+                nodes->AddSolution(iPoint,iVar, tmp_time*Res);
+
+                /* New Solution Update */
+                nodes->AddSolution_New(iPoint,iVar, tmp_func*Res);
+              } else {
+                nodes->SetSolution(iPoint, iVar, nodes->GetSolution_New(iPoint, iVar) + tmp_func*Res);
+              }
+            }
+            break;
+          }
+
+          /*--- Update residual information for current thread. ---*/
+          resRMS[iVar] += Res*Res;
+          if (fabs(Res) > resMax[iVar]) {
+            resMax[iVar] = fabs(Res);
+            idxMax[iVar] = iPoint;
+            coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
+          }
+        }
+      }
+      /*--- Reduce residual information over all threads in this rank. ---*/
+      SU2_OMP_CRITICAL
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        AddRes_RMS(iVar, resRMS[iVar]);
+        AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
+      }
+      SU2_OMP_BARRIER
+    }
+
+    /*--- MPI solution ---*/
+
+    InitiateComms(geometry, config, SOLUTION);
+    CompleteComms(geometry, config, SOLUTION);
+
+    if (!adjoint) {
+      SU2_OMP_MASTER {
+        /*--- Compute the root mean square residual ---*/
+
+        SetResidual_RMS(geometry, config);
+
+        /*--- For verification cases, compute the global error metrics. ---*/
+
+        ComputeVerificationError(geometry, config);
+      }
+      SU2_OMP_BARRIER
+    }
+
+  }
+
+  /*!
+   * \brief Generic implementation of explicit iterations without preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  FORCEINLINE void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep) {
+    struct Identity {
+      FORCEINLINE void compute(const CConfig*, unsigned long) {}
+      FORCEINLINE su2double apply(unsigned short iVar, const su2double* res, const su2double* resTrunc) {
+        return res[iVar] + resTrunc[iVar];
+      }
+    } precond;
+
+    Explicit_Iteration_impl<IntegrationType>(precond, geometry, solver_container, config, iRKStep);
+  }
+
+  /*!
    * \brief Destructor.
    */
   ~CFVMFlowSolverBase();

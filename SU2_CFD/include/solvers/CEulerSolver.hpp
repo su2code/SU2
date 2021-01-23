@@ -158,12 +158,6 @@ protected:
   /*--- End of Turbomachinery Solver Variables ---*/
 
   /*!
-   * \brief Generic implementation of explicit iterations (RK, Classic RK and EULER).
-   */
-  template<ENUM_TIME_INT IntegrationType>
-  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
-
-  /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -457,7 +451,6 @@ public:
    */
   void SetPreconditioner(const CConfig *config, unsigned long iPoint,
                          su2double delta, su2double** preconditioner) const;
-  using CSolver::SetPreconditioner; /*--- Silence warning. ---*/
 
   /*!
    * \brief Parallelization of Undivided Laplacian.

@@ -992,9 +992,6 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
 }
 
-void CIncEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh) { }
-
 unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
@@ -1666,109 +1663,48 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const 
 
 }
 
-void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                        CConfig *config, unsigned short iRKStep) {
+template<ENUM_TIME_INT IntegrationType>
+FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                                     CConfig *config, unsigned short iRKStep) {
+  struct Precond {
+    CIncEulerSolver* solver;
+    const su2double* const* matrix;
+    unsigned short nVar;
 
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar, jVar;
-  unsigned long iPoint;
+    Precond(CIncEulerSolver* s, const su2double* const* m, unsigned short n) :
+      solver(s), matrix(m), nVar(n) {}
 
-  su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetContinuous_Adjoint();
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
-  /*--- Update the solution ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
-
-    Res_TruncError = nodes->GetResTruncError(iPoint);
-    Residual = LinSysRes.GetBlock(iPoint);
-
-    if (!adjoint) {
-      SetPreconditioner(config, iPoint);
-      for (iVar = 0; iVar < nVar; iVar ++ ) {
-        Res = 0.0;
-        for (jVar = 0; jVar < nVar; jVar ++ )
-          Res += Preconditioner[iVar][jVar]*(Residual[jVar] + Res_TruncError[jVar]);
-        nodes->AddSolution(iPoint,iVar, -Res*Delta*RK_AlphaCoeff);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-      }
+    FORCEINLINE void compute(const CConfig* config, unsigned long iPoint) {
+      /// TODO: This is not thread-safe, this function needs to return by value.
+      solver->SetPreconditioner(config, iPoint);
     }
-  }
 
-  /*--- MPI solution ---*/
+    FORCEINLINE su2double apply(unsigned short iVar, const su2double* res, const su2double* resTrunc) {
+      su2double resPrec = 0.0;
+      for (unsigned short jVar = 0; jVar < nVar; ++jVar)
+        resPrec += matrix[iVar][jVar] * (res[jVar] + resTrunc[jVar]);
+      return resPrec;
+    }
+  } precond(this, Preconditioner, nVar);
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  Explicit_Iteration_impl<IntegrationType>(precond, geometry, solver_container, config, iRKStep);
+}
 
-  /*--- Compute the root mean square residual ---*/
+void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                           CConfig *config, unsigned short iRKStep) {
 
-  SetResidual_RMS(geometry, config);
+  Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
+}
 
-  /*--- For verification cases, compute the global error metrics. ---*/
+void CIncEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                             CConfig *config, unsigned short iRKStep) {
 
-  ComputeVerificationError(geometry, config);
-
+  Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar, jVar;
-  unsigned long iPoint;
-
-  bool adjoint = config->GetContinuous_Adjoint();
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    SetRes_RMS(iVar, 0.0);
-    SetRes_Max(iVar, 0.0, 0);
-  }
-
-  /*--- Update the solution ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = (geometry->nodes->GetVolume(iPoint) +
-           geometry->nodes->GetPeriodicVolume(iPoint));
-    Delta = nodes->GetDelta_Time(iPoint) / Vol;
-
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
-    local_Residual = LinSysRes.GetBlock(iPoint);
-
-
-    if (!adjoint) {
-      SetPreconditioner(config, iPoint);
-      for (iVar = 0; iVar < nVar; iVar ++ ) {
-        Res = 0.0;
-        for (jVar = 0; jVar < nVar; jVar ++ )
-          Res += Preconditioner[iVar][jVar]*(local_Residual[jVar] + local_Res_TruncError[jVar]);
-        nodes->AddSolution(iPoint,iVar, -Res*Delta);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
-      }
-    }
-  }
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-
-  SetResidual_RMS(geometry, config);
-
-  /*--- For verification cases, compute the global error metrics. ---*/
-
-  ComputeVerificationError(geometry, config);
-
+  Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -1927,7 +1863,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CIncEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
+void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint) {
 
   unsigned short iDim, jDim;
 

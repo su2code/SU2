@@ -46,6 +46,44 @@ protected:
   CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
   su2double **Preconditioner = nullptr; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] iPoint - Index of the grid point
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPreconditioner(const CConfig *config, unsigned long iPoint);
+
+  /*!
+   * \brief Compute a pressure sensor switch.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the undivided laplacian for the solution, except the energy equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the max eigenvalue.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -169,51 +207,6 @@ public:
                     bool Output) override;
 
   /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output);
-
-  /*!
-   * \brief Compute a pressure sensor switch.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
-
-  /*!
-   * \brief Compute the max eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config);
-
-  /*!
    * \author H. Kline
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
@@ -278,6 +271,12 @@ public:
   static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
 
   /*!
+   * \brief Generic implementation of explicit iterations with preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
+  /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -288,6 +287,18 @@ public:
                             CSolver **solver_container,
                             CConfig *config,
                             unsigned short iRKStep) final;
+
+  /*!
+   * \brief Update the solution using the classical Runge-Kutta 4 scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config,
+                              unsigned short iRKStep) final;
 
   /*!
    * \brief Update the solution using the explicit Euler scheme.
@@ -367,13 +378,6 @@ public:
                          CSolver **solver_container,
                          CConfig *config,
                          unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the preconditioner for low-Mach flows.
-   * \param[in] iPoint - Index of the grid point
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetPreconditioner(CConfig *config, unsigned long iPoint) final;
 
   /*!
    * \brief A virtual member.
