@@ -297,13 +297,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
         su2double proj_vector_ij = 0.0;
         if (dist_ij_2 > 0.0)
           proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
-
-        auto Blk_i = Jacobian.GetBlock(iPoint, iPoint);
-#ifdef CODI_FORWARD_TYPE
-        Blk_i[nVar*nVar-1] += thermal_conductivity*proj_vector_ij;
-#else
-        Blk_i[nVar*nVar-1] += SU2_TYPE::GetValue(thermal_conductivity*proj_vector_ij);
-#endif
+        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity*proj_vector_ij);
       }
     }
   }

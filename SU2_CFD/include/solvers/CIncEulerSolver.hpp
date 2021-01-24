@@ -119,6 +119,12 @@ protected:
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh);
 
+  /*!
+   * \brief Generic implementation of explicit iterations with preconditioner.
+   */
+  template<ENUM_TIME_INT IntegrationType>
+  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -290,19 +296,6 @@ public:
                  CNumerics *visc_numerics,
                  CConfig *config,
                  unsigned short val_marker) final;
-
-  /*!
-   * \brief compare to values.
-   * \param[in] a - value 1.
-   * \param[in] b - value 2.
-   */
-  static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
-
-  /*!
-   * \brief Generic implementation of explicit iterations with preconditioner.
-   */
-  template<ENUM_TIME_INT IntegrationType>
-  void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
