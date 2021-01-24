@@ -811,20 +811,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     cout << NonDimTableOut.str();
   }
 
-
-
 }
 
 void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
-
-  unsigned long iPoint, Point_Fine;
-  unsigned short iMesh, iChildren, iVar;
-  su2double Area_Children, Area_Parent, *Solution_Fine, *Solution;
 
   const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != NONE);
   const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == DT_STEPPING_2ND));
+
+  /*--- Start OpenMP parallel region. ---*/
+
+  SU2_OMP_PARALLEL {
+
+  unsigned long iPoint, Point_Fine;
+  unsigned short iMesh, iChildren, iVar;
+  su2double Area_Children, Area_Parent;
+  const su2double *Solution_Fine;
 
   /*--- Check if a verification solution is to be computed. ---*/
   if ((VerificationSolution) && (TimeIter == 0) && !restart) {
@@ -833,6 +836,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
       /*--- Loop over all grid points. ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
         /* Set the pointers to the coordinates and solution of this DOF. */
@@ -852,11 +856,11 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 
   if (restart && (TimeIter == 0)) {
 
-    Solution = new su2double[nVar];
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-        for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+        su2double Solution[MAXNVAR] = {0.0};
         for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
           Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
           Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
@@ -870,18 +874,16 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
       solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
     }
-    delete [] Solution;
 
     /*--- Interpolate the turblence variable also, if needed ---*/
 
     if (rans) {
 
       unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-      Solution = new su2double[nVar_Turb];
       for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
           Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-          for (iVar = 0; iVar < nVar_Turb; iVar++) Solution[iVar] = 0.0;
+          su2double Solution[MAXNVAR] = {0.0};
           for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
             Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
             Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
@@ -896,9 +898,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
         solver_container[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
         solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
       }
-      delete [] Solution;
     }
-
   }
 
   /*--- The value of the solution for the first iteration of the dual time ---*/
@@ -906,6 +906,9 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   if (dual_time && (TimeIter == 0 || (restart && TimeIter == config->GetRestart_Iter()))) {
     PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
   }
+
+  } // end SU2_OMP_PARALLEL
+
 }
 
 void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -1080,14 +1083,21 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
-  CNumerics* numerics = numerics_container[CONV_TERM];
+  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  unsigned long iEdge, iPoint, jPoint;
+  unsigned long iPoint, jPoint;
 
   bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
@@ -1120,16 +1130,33 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     auto residual = numerics->ComputeResidual(config);
 
-    /*--- Update convective and artificial dissipation residuals ---*/
+    /*--- Update residual value ---*/
 
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
-
-    /*--- Store implicit contributions from the residual calculation. ---*/
-
-    if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    if (ReducerStrategy) {
+      EdgeFluxes.SetBlock(iEdge, residual);
+      if (implicit)
+        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
+    else {
+      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(jPoint, residual);
+
+      /*--- Set implicit computation ---*/
+      if (implicit)
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
+
+    /*--- Viscous contribution. ---*/
+
+    Viscous_Residual(iEdge, geometry, solver_container,
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+  }
+  } // end color loop
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (implicit)
+      Jacobian.SetDiagonalAsColumnSum();
   }
 
 }
@@ -1137,23 +1164,31 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[CONV_TERM];
+  CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
-  unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
+  unsigned long iPoint, jPoint, counter_local = 0;
   unsigned short iDim, iVar;
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  SU2_OMP_MASTER
+  ErrorCounter = 0;
 
-  /*--- Loop over all the edges ---*/
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+  const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Loop over edge colors. ---*/
+  for (auto color : EdgeColoring)
+  {
+  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
+  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+  for(auto k = 0ul; k < color.size; ++k) {
+
+    auto iEdge = color.indices[k];
 
     /*--- Points in edge and normal vectors ---*/
 
@@ -1265,23 +1300,48 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Update residual value ---*/
 
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
-
-    /*--- Set implicit Jacobians ---*/
-
-    if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    if (ReducerStrategy) {
+      EdgeFluxes.SetBlock(iEdge, residual);
+      if (implicit)
+        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
+    else {
+      LinSysRes.AddBlock(iPoint, residual);
+      LinSysRes.SubtractBlock(jPoint, residual);
+
+      /*--- Set implicit computation ---*/
+      if (implicit)
+        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    }
+
+    /*--- Viscous contribution. ---*/
+
+    Viscous_Residual(iEdge, geometry, solver_container,
+                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+  }
+  } // end color loop
+
+  if (ReducerStrategy) {
+    SumEdgeFluxes(geometry);
+    if (implicit)
+      Jacobian.SetDiagonalAsColumnSum();
   }
 
   /*--- Warning message about non-physical reconstructions. ---*/
 
-  if (config->GetComm_Level() == COMM_FULL) {
-    if (iMesh == MESH_0) {
-      SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-      config->SetNonphysical_Reconstr(counter_global);
+  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
+    /*--- Add counter results for all threads. ---*/
+    SU2_OMP_ATOMIC
+    ErrorCounter += counter_local;
+    SU2_OMP_BARRIER
+
+    /*--- Add counter results for all ranks. ---*/
+    SU2_OMP_MASTER {
+      counter_local = ErrorCounter;
+      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      config->SetNonphysical_Reconstr(ErrorCounter);
     }
+    SU2_OMP_BARRIER
   }
 
 }
@@ -1289,7 +1349,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -1307,6 +1368,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Loop over all points ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
@@ -1338,6 +1400,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Loop over all points ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
@@ -1369,6 +1432,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Loop over all points ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the primitive variables ---*/
@@ -1404,6 +1468,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     if (viscous) {
 
+      SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
         su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
@@ -1433,6 +1498,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- loop over points ---*/
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Conservative variables w/o reconstruction ---*/
@@ -1485,8 +1551,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   if (radiation) {
 
-    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Store the radiation source term ---*/
@@ -1535,6 +1602,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       if (config->GetTime_Marching()) time = config->GetPhysicalTime();
 
       /*--- Loop over points ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/

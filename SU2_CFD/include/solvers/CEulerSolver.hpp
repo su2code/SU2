@@ -351,20 +351,6 @@ public:
                        unsigned short iMesh) final;
 
   /*!
-   * \brief Compute the viscous contribution for a particular edge.
-   * \note The convective residual methods include a call to this for each edge,
-   *       this allows convective and viscous loops to be "fused".
-   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                       CNumerics *numerics, CConfig *config) { }
-  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
-
-  /*!
    * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
    *        in a more thermodynamically consistent way.
    * \note This method is static to improve the chances of it being used in a
@@ -1627,7 +1613,7 @@ public:
   void PrintVerificationError(const CConfig* config) const final;
 
   /*!
-   * \brief The Euler and NS solvers support MPI+OpenMP (except the BC bits).
+   * \brief The Euler and NS solvers support MPI+OpenMP.
    */
   inline bool GetHasHybridParallel() const final { return true; }
 

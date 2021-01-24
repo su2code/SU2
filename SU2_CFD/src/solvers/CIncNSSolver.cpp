@@ -99,6 +99,12 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 }
 
+void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                    CNumerics *numerics, CConfig *config) {
+
+  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
+}
+
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
@@ -136,58 +142,6 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
   }
 
   return nonPhysicalPoints;
-
-}
-
-void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
-                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-
-  CNumerics* numerics = numerics_container[VISC_TERM];
-
-  unsigned long iPoint, jPoint, iEdge;
-
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    /*--- Points, coordinates and normal vector in edge ---*/
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                       geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-    /*--- Primitive and secondary variables ---*/
-
-    numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                           nodes->GetPrimitive(jPoint));
-
-    /*--- Gradient and limiters ---*/
-
-    numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                 nodes->GetGradient_Primitive(jPoint));
-
-    /*--- Turbulent kinetic energy ---*/
-
-    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
-      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
-                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(jPoint,0));
-
-    /*--- Compute and update residual ---*/
-
-    auto residual = numerics->ComputeResidual(config);
-
-    LinSysRes.SubtractBlock(iPoint, residual);
-    LinSysRes.AddBlock(jPoint, residual);
-
-    /*--- Implicit part ---*/
-
-    if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-    }
-
-  }
 
 }
 

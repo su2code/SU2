@@ -542,6 +542,65 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                                     CNumerics *numerics, CConfig *config) {
+
+  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
+                         (config->GetKind_Turb_Model() == SST_SUST);
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+
+  /*--- Points, coordinates and normal vector in edge ---*/
+
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
+
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                     geometry->nodes->GetCoord(jPoint));
+
+  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+  /*--- Primitive and secondary variables. ---*/
+
+  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                         nodes->GetPrimitive(jPoint));
+
+  numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                         nodes->GetSecondary(jPoint));
+
+  /*--- Gradients. ---*/
+
+  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                               nodes->GetGradient_Primitive(jPoint));
+
+  /*--- Turbulent kinetic energy. ---*/
+
+  if (tkeNeeded)
+    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
+                                   turbNodes->GetSolution(jPoint,0));
+
+  /*--- Compute and update residual ---*/
+
+  auto residual = numerics->ComputeResidual(config);
+
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual);
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+  }
+  else {
+    LinSysRes.SubtractBlock(iPoint, residual);
+    LinSysRes.AddBlock(jPoint, residual);
+
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+  }
+
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CConfig* config) {
   /*--- The errors only need to be computed on the finest grid. ---*/
   if (MGLevel != MESH_0) return;

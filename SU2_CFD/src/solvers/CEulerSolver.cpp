@@ -1992,14 +1992,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   /*--- Start OpenMP parallel region. ---*/
 
-  SU2_OMP_PARALLEL
-  {
+  SU2_OMP_PARALLEL {
 
   unsigned long iPoint;
   unsigned short iMesh, iDim;
-  su2double X0[3] = {0.0,0.0,0.0}, X1[3] = {0.0,0.0,0.0}, X2[3] = {0.0,0.0,0.0},
-  X1_X0[3] = {0.0,0.0,0.0}, X2_X0[3] = {0.0,0.0,0.0}, X2_X1[3] = {0.0,0.0,0.0},
-  CP[3] = {0.0,0.0,0.0}, Distance, DotCheck, Radius;
+  su2double X0[MAXNDIM] = {0.0}, X1[MAXNDIM] = {0.0}, X2[MAXNDIM] = {0.0},
+  X1_X0[MAXNDIM] = {0.0}, X2_X0[MAXNDIM] = {0.0}, X2_X1[MAXNDIM] = {0.0},
+  CP[MAXNDIM] = {0.0}, Distance, DotCheck, Radius;
 
   /*--- Check if a verification solution is to be computed. ---*/
   if ((VerificationSolution) && (TimeIter == 0) && !restart) {
@@ -2441,10 +2440,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Roe Turkel preconditioning ---*/
 
     if (roe_turkel) {
-      su2double sqvel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim ++)
-        sqvel += pow(config->GetVelocity_FreeStream()[iDim], 2);
-      numerics->SetVelocity2_Inf(sqvel);
+      numerics->SetVelocity2_Inf(GeometryToolbox::SquaredNorm(nDim, config->GetVelocity_FreeStream()));
     }
 
     /*--- Grid movement ---*/
@@ -2623,8 +2619,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     SU2_OMP_BARRIER
 
     /*--- Add counter results for all ranks. ---*/
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_MASTER {
       counter_local = ErrorCounter;
       SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
       config->SetNonphysical_Reconstr(ErrorCounter);
@@ -5009,10 +5004,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *GridVel;
-  su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
-  su2double Density, Pressure, Energy,  Velocity[3] = {0.0,0.0,0.0};
-  su2double Density_Bound, Pressure_Bound, Vel_Bound[3] = {0.0,0.0,0.0};
-  su2double Density_Infty, Pressure_Infty, Vel_Infty[3] = {0.0,0.0,0.0};
+  su2double Area, UnitNormal[MAXNDIM] = {0.0};
+  su2double Density, Pressure, Energy,  Velocity[MAXNDIM] = {0.0};
+  su2double Density_Bound, Pressure_Bound, Vel_Bound[MAXNDIM] = {0.0};
+  su2double Density_Infty, Pressure_Infty, Vel_Infty[MAXNDIM] = {0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;

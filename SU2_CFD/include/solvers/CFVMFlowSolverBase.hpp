@@ -250,6 +250,22 @@ class CFVMFlowSolverBase : public CSolver {
   inline virtual void InstantiateEdgeNumerics(const CSolver* const* solvers, const CConfig* config) {}
 
   /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \note The convective residual methods include a call to this for each edge,
+   *       this allows convective and viscous loops to be "fused".
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                       CNumerics *numerics, CConfig *config) { }
+  void Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                             CNumerics *numerics, CConfig *config);
+  using CSolver::Viscous_Residual; /*--- Silence warning ---*/
+
+  /*!
    * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

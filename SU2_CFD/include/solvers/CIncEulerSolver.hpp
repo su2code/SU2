@@ -375,6 +375,7 @@ public:
                            CSolver ***solver_container,
                            CConfig *config,
                            unsigned long TimeIter) final;
+
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
@@ -386,5 +387,10 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void PrintVerificationError(const CConfig* config) const final;
+
+  /*!
+   * \brief The incompressible Euler and NS solvers support MPI+OpenMP.
+   */
+  inline bool GetHasHybridParallel() const final { return true; }
 
 };
