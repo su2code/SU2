@@ -1522,7 +1522,7 @@ def main():
     intersect_def.tol       = 1e-04
 
     pass_list.append(intersect_def.run_def())
-    test_list.append(intersec_def)
+    test_list.append(intersect_def)
 
     # Inviscid NACA0012 (triangles)
     naca0012_def            = TestCase('naca0012_def')
