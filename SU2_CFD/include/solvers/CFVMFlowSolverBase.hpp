@@ -949,8 +949,13 @@ class CFVMFlowSolverBase : public CSolver {
 
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
+   * \tparam VelocityOffset: Index in the primitive variables where the velocity starts.
    */
-  inline void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+  template<size_t VelocityOffset>
+  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+
+    const auto& Gradient_Primitive = nodes->GetGradient_Primitive();
+    auto& StrainMag = nodes->GetStrainMag();
 
     SU2_OMP_MASTER {
       StrainMag_Max = 0.0;
@@ -958,27 +963,76 @@ class CFVMFlowSolverBase : public CSolver {
     }
     SU2_OMP_BARRIER
 
-    nodes->SetVorticity_StrainMag();
-
-    /*--- Min and Max are not really differentiable ---*/
-    const bool wasActive = AD::BeginPassive();
-
     su2double strainMax = 0.0, omegaMax = 0.0;
 
-    SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      strainMax = max(strainMax, nodes->GetStrainMag(iPoint));
-      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)));
-    }
-    SU2_OMP_CRITICAL {
-      StrainMag_Max = max(StrainMag_Max, strainMax);
-      Omega_Max = max(Omega_Max, omegaMax);
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      constexpr size_t u = VelocityOffset;
+      constexpr size_t v = VelocityOffset+1;
+      constexpr size_t w = VelocityOffset+2;
+
+      /*--- Vorticity ---*/
+
+      su2double* Vorticity = nodes->GetVorticity(iPoint);
+
+      Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+
+      Vorticity[2] = Gradient_Primitive(iPoint,v,0)-Gradient_Primitive(iPoint,u,1);
+
+      if (nDim == 3) {
+        Vorticity[0] = Gradient_Primitive(iPoint,w,1)-Gradient_Primitive(iPoint,v,2);
+        Vorticity[1] = -(Gradient_Primitive(iPoint,w,0)-Gradient_Primitive(iPoint,u,2));
+      }
+
+      /*--- Strain Magnitude ---*/
+
+      AD::StartPreacc();
+      AD::SetPreaccIn(&Gradient_Primitive[iPoint][VelocityOffset], nDim, nDim);
+
+      su2double Div = 0.0;
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        Div += Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim);
+      Div /= 3.0;
+
+      StrainMag(iPoint) = 0.0;
+
+      /*--- Add diagonal part ---*/
+
+      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+        StrainMag(iPoint) += pow(Gradient_Primitive(iPoint, iDim+VelocityOffset, iDim) - Div, 2);
+      }
+      if (nDim == 2) {
+        StrainMag(iPoint) += pow(Div, 2);
+      }
+
+      /*--- Add off diagonals ---*/
+
+      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,1) + Gradient_Primitive(iPoint,v,0)), 2);
+
+      if (nDim == 3) {
+        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,u,2) + Gradient_Primitive(iPoint,w,0)), 2);
+        StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,v,2) + Gradient_Primitive(iPoint,w,1)), 2);
+      }
+
+      StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
+      AD::SetPreaccOut(StrainMag(iPoint));
+
+      /*--- Max is not differentiable, we so not register for preacc. ---*/
+      strainMax = max(strainMax, StrainMag(iPoint));
+      omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
+
+      AD::EndPreacc();
     }
 
     if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
+      SU2_OMP_CRITICAL {
+        StrainMag_Max = max(StrainMag_Max, strainMax);
+        Omega_Max = max(Omega_Max, omegaMax);
+      }
+
       SU2_OMP_BARRIER
-      SU2_OMP_MASTER
-      {
+      SU2_OMP_MASTER {
         su2double MyOmega_Max = Omega_Max;
         su2double MyStrainMag_Max = StrainMag_Max;
 
@@ -988,7 +1042,6 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_OMP_BARRIER
     }
 
-    AD::EndPassive(wasActive);
   }
 
   /*!

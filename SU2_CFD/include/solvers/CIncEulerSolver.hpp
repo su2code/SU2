@@ -71,13 +71,6 @@ protected:
   void SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Compute the undivided laplacian for the solution, except the energy equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
-
-  /*!
    * \brief Compute the max eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

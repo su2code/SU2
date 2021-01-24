@@ -151,6 +151,13 @@ protected:
    */
   inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
 
+  /*!
+   * \brief Compute the undivided laplacian for the solution variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
+
 private:
 
   /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the

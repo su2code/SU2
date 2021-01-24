@@ -95,7 +95,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, iMesh);
+  ComputeVorticityAndStrainMag<1>(*config, iMesh);
 
 }
 
