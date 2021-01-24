@@ -136,6 +136,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Allocate(*config);
 
+  /*--- MPI + OpenMP initialization. ---*/
+
+  HybridParallelInitialization(*config, *geometry);
+
   /*--- Jacobians and vector structures for implicit computations ---*/
 
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
@@ -143,7 +147,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -210,7 +214,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 CIncEulerSolver::~CIncEulerSolver(void) {
 
-  delete FluidModel;
+  for(auto& model : FluidModel) delete model;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
@@ -255,21 +259,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Depending on the density model chosen, select a fluid model. ---*/
 
+  CFluidModel* auxFluidModel = nullptr;
+
   switch (config->GetKind_FluidModel()) {
 
     case CONSTANT_DENSITY:
 
-      FluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
-      FluidModel->SetTDState_T(Temperature_FreeStream);
+      auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
+      auxFluidModel->SetTDState_T(Temperature_FreeStream);
       break;
 
     case INC_IDEAL_GAS:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      FluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
-      FluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = FluidModel->GetPressure();
+      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = auxFluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
@@ -277,15 +283,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      FluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
+      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
-        FluidModel->SetCpModel(config);
+        auxFluidModel->SetCpModel(config);
       }
-      FluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = FluidModel->GetPressure();
+      auxFluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = auxFluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
@@ -311,8 +317,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     /*--- Use the fluid model to compute the dimensional viscosity/conductivity. ---*/
 
-    FluidModel->SetLaminarViscosityModel(config);
-    Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
+    auxFluidModel->SetLaminarViscosityModel(config);
+    Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
     config->SetViscosity_FreeStream(Viscosity_FreeStream);
 
     Reynolds = Density_FreeStream*ModVel_FreeStream/Viscosity_FreeStream; config->SetReynolds(Reynolds);
@@ -369,7 +375,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Get the freestream energy. Only useful if energy equation is active. ---*/
 
-  Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+  Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
   config->SetEnergy_FreeStream(Energy_FreeStream);
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
 
@@ -421,67 +427,78 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Delete the original (dimensional) FluidModel object. No fluid is used for inscompressible cases. ---*/
 
-  delete FluidModel;
+  delete auxFluidModel;
 
-  switch (config->GetKind_FluidModel()) {
+  /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
+   *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
 
-    case CONSTANT_DENSITY:
-      FluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
-      break;
+  assert(FluidModel.empty() && "Potential memory leak!");
+  FluidModel.resize(omp_get_max_threads());
 
-    case INC_IDEAL_GAS:
-      FluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
-      break;
+  for (auto& fluidModel : FluidModel) {
 
-    case INC_IDEAL_GAS_POLY:
-      FluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
-      if (viscous) {
-        /*--- Variable Cp model via polynomial. ---*/
-        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
-        for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
-          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
-        FluidModel->SetCpModel(config);
-      }
-      break;
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
+    switch (config->GetKind_FluidModel()) {
+
+      case CONSTANT_DENSITY:
+        fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
+        break;
+
+      case INC_IDEAL_GAS:
+        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
+        break;
+
+      case INC_IDEAL_GAS_POLY:
+        fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
+        if (viscous) {
+          /*--- Variable Cp model via polynomial. ---*/
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+          for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+            config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+          fluidModel->SetCpModel(config);
+        }
+        break;
+        /// TODO: Why is this outside?
+        fluidModel->SetTDState_T(Temperature_FreeStreamND);
+    }
+
+    if (viscous) {
+
+      /*--- Constant viscosity model ---*/
+
+      config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
+
+      /*--- Sutherland's model ---*/
+
+      config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
+      config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
+      config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
+
+      /*--- Viscosity model via polynomial. ---*/
+
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(0)/Viscosity_Ref, 0);
+      for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+        config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Viscosity_Ref, iVar);
+
+      /*--- Constant thermal conductivity model ---*/
+
+      config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+
+      /*--- Conductivity model via polynomial. ---*/
+
+      config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(0)/Conductivity_Ref, 0);
+      for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+        config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Conductivity_Ref, iVar);
+
+      /*--- Set up the transport property models. ---*/
+
+      fluidModel->SetLaminarViscosityModel(config);
+      fluidModel->SetThermalConductivityModel(config);
+
+    }
+
   }
 
-  Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-
-  if (viscous) {
-
-    /*--- Constant viscosity model ---*/
-
-    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
-
-    /*--- Sutherland's model ---*/
-
-    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
-
-    /*--- Viscosity model via polynomial. ---*/
-
-    config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(0)/Viscosity_Ref, 0);
-    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
-      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Viscosity_Ref, iVar);
-
-    /*--- Constant thermal conductivity model ---*/
-
-    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
-
-    /*--- Conductivity model via polynomial. ---*/
-
-    config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(0)/Conductivity_Ref, 0);
-    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
-      config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Conductivity_Ref, iVar);
-
-    /*--- Set up the transport property models. ---*/
-
-    FluidModel->SetLaminarViscosityModel(config);
-    FluidModel->SetThermalConductivityModel(config);
-
-  }
+  Energy_FreeStreamND = GetFluidModel()->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
 
@@ -931,11 +948,17 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Update the beta value based on the maximum velocity. ---*/
 
+  SU2_OMP_MASTER
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
+  SU2_OMP_BARRIER
 
   /*--- Compute properties needed for mass flow BCs. ---*/
 
-  if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
+  if (outlet) {
+    SU2_OMP_MASTER
+    GetOutlet_Properties(geometry, config, iMesh, Output);
+    SU2_OMP_BARRIER
+  }
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
@@ -990,7 +1013,7 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
     /*--- Incompressible flow, primitive variables ---*/
 
-    auto physical = nodes->SetPrimVar(iPoint,FluidModel);
+    auto physical = nodes->SetPrimVar(iPoint,GetFluidModel());
 
     /* Check for non-realizable states for reporting. */
 
@@ -1864,6 +1887,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -1998,6 +2022,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -2232,6 +2257,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -2897,9 +2923,12 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
-  int counter = 0;
+  unsigned long counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  SU2_OMP_MASTER {
 
   /*--- Skip coordinates ---*/
 
@@ -3001,10 +3030,12 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) {
+  if (counter != nPointDomain) {
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
   /*--- Update the geometry for flows on deforming meshes ---*/
 
@@ -3059,6 +3090,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
@@ -3086,10 +3118,16 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     Restart_OldGeometry(geometry[MESH_0], config);
   }
 
+  /*--- Go back to single threaded execution. ---*/
+  SU2_OMP_MASTER
+  {
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   delete [] Restart_Vars; Restart_Vars = nullptr;
   delete [] Restart_Data; Restart_Data = nullptr;
+
+  } // end SU2_OMP_MASTER
+  SU2_OMP_BARRIER
 
 }
 
@@ -3098,6 +3136,7 @@ void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
   unsigned long iPoint;
   unsigned short iDim;
 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     nodes->SetSolution(iPoint,0, Pressure_Inf);
     for (iDim = 0; iDim < nDim; iDim++){

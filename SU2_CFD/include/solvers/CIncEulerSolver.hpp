@@ -38,7 +38,7 @@
  */
 class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, INCOMPRESSIBLE> {
 protected:
-  CFluidModel *FluidModel = nullptr;    /*!< \brief fluid model used in the solver */
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -149,7 +149,7 @@ public:
    * \brief Compute the pressure at the infinity.
    * \return Value of the pressure at the infinity.
    */
-  inline CFluidModel* GetFluidModel(void) const final { return FluidModel;}
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
    * \brief Compute the time step for solving the Euler equations.
