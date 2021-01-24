@@ -1749,7 +1749,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
           if (geometry->nodes->GetDomain(iPoint)) {
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
+            Vel_Mag  = Inlet_Ptotal[iMarker][iVertex]/config->GetVelocity_Ref();
 
             MassFlux_Part = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -1913,7 +1913,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 
   unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
   unsigned short iDim, iVar, KindBC, Kind_Outlet;
-  su2double Vel, Current_Pressure, factor, PCorr_Ref, Coeff_Mom, Vol, delT;
+  su2double Vel, Current_Pressure, factor, PCorr_Ref, Vol, delT;
   string Marker_Tag;
   su2activevector Pressure_Correc, alpha_p;
   su2activematrix vel_corr;
@@ -1926,9 +1926,8 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   alpha_p.resize(nPointDomain);
 
   /*--- Pressure Corrections ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Pressure_Correc[iPoint] = solver_container[POISSON_SOL]->GetNodes()->GetSolution(iPoint,0);
-  }
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    Pressure_Correc[iPoint] = solver_container[POISSON_SOL]->GetNodes()->GetSolution(iPoint,0);
 
   Pref_local = geometry->GetGlobal_to_Local_Point(PRef_Point);
   PCorr_Ref = 0.0;
@@ -1942,8 +1941,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     Vol = geometry->nodes->GetVolume(iPoint);
     delT = nodes->GetDelta_Time(iPoint);
     for (iVar = 0; iVar < nVar; iVar++) {
-      Coeff_Mom = nodes->Get_Mom_Coeff(iPoint,iVar);
-      vel_corr[iPoint][iVar] = Coeff_Mom*(solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iVar));
+      vel_corr[iPoint][iVar] = nodes->Get_Mom_Coeff(iPoint,iVar)*(solver_container[POISSON_SOL]->GetNodes()->GetGradient(iPoint,0,iVar));
       if (implicit) factor += Jacobian.GetBlock(iPoint, iPoint, iVar, iVar);
     }
     if (implicit)
@@ -1959,18 +1957,16 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     KindBC = config->GetMarker_All_KindBC(iMarker);
     Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
     switch (KindBC) {
-    /*--- Only a fully developed outlet is implemented. For pressure, a dirichlet
-          BC has to be applied and no correction is necessary. Velocity has a neumann BC. ---*/
+      /*--- Only a fully developed outlet is implemented. For pressure, a dirichlet
+            BC has to be applied and no correction is necessary. Velocity has a neumann BC. ---*/
       case OUTLET_FLOW:
-
         Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
         switch (Kind_Outlet) {
           case PRESSURE_OUTLET:
             for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
               iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-              if (geometry->nodes->GetDomain(iPoint)) {
+              if (geometry->nodes->GetDomain(iPoint))
                 Pressure_Correc[iPoint] = PCorr_Ref;
-              }
             }
           break;
           // Not working yet
@@ -1984,15 +1980,13 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
          * the velocity is known and thus no correction is necessary.---*/
         case ISOTHERMAL: case HEAT_FLUX: case INLET_FLOW: 
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           if (geometry->nodes->GetDomain(iPoint)) {
-              for (iDim = 0; iDim < nDim; iDim++)
-                  vel_corr[iPoint][iDim] = 0.0;
-
-              alpha_p[iPoint] = 1.0;
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->nodes->GetDomain(iPoint)) {
+            for (iDim = 0; iDim < nDim; iDim++)
+              vel_corr[iPoint][iDim] = 0.0;
+            alpha_p[iPoint] = 1.0;
            }
         }
-
         break;
 
         /*--- Farfield is treated as a fully developed flow for pressure and a fixed pressure is
@@ -2002,17 +1996,17 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
          * is the one from the previous iteration. ---*/
 
          case FAR_FIELD:
-         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           if (geometry->nodes->GetDomain(iPoint)) {
-              // Check if inlet or not
-              if (nodes->GetStrongBC(iPoint)) {
-                for (iDim = 0; iDim < nDim; iDim++)
-                  vel_corr[iPoint][iDim] = 0.0;
-              }
-              Pressure_Correc[iPoint] = PCorr_Ref;
+           for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+             if (geometry->nodes->GetDomain(iPoint)) {
+               // Check if inlet or not
+               if (nodes->GetStrongBC(iPoint)) {
+                 for (iDim = 0; iDim < nDim; iDim++)
+                   vel_corr[iPoint][iDim] = 0.0;
+               }
+               Pressure_Correc[iPoint] = PCorr_Ref;
+             }
            }
-         }
          break;
         default:
         break;
@@ -2492,7 +2486,7 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       /*--- Retrieve the specified velocity for the inlet. ---*/
 
-      Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
+      Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
 
       Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
       Flow_Dir_Mag = 0.0;
