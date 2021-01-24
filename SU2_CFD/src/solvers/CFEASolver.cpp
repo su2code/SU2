@@ -2814,15 +2814,10 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
 
 void CFEASolver::PredictStruct_Velocity(CGeometry *geometry, CConfig *config) {
 
-  /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
     nodes->SetSolution_Vel_Pred(iPoint);
   }
-
-  InitiateComms(geometry, config, SOLUTION_VEL_PRED);
-  CompleteComms(geometry, config, SOLUTION_VEL_PRED);
-
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config, unsigned long iOuterIter) {

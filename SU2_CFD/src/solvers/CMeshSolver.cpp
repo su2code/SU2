@@ -588,7 +588,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
 
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       su2double val_vel = LinSysSol(iPoint, iDim);
 
@@ -598,10 +598,6 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
     }
   }
-
-  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 }
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
