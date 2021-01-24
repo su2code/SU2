@@ -951,9 +951,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Update the beta value based on the maximum velocity. ---*/
 
-  SU2_OMP_MASTER
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
-  SU2_OMP_BARRIER
 
   /*--- Compute properties needed for mass flow BCs. ---*/
 
@@ -1740,43 +1738,40 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
-
-  su2double epsilon2  = config->GetBeta_Factor();
-  su2double epsilon2_default = 4.1;
-  su2double maxVel2 = 0.0;
-  su2double Beta = 1.0;
-
-  unsigned long iPoint;
+  static su2double MaxVel2;
+  const su2double epsilon2_default = 4.1;
 
   /*--- For now, only the finest mesh level stores the Beta for all levels. ---*/
 
   if (iMesh == MESH_0) {
+    MaxVel2 = 0.0;
+    su2double maxVel2 = 0.0;
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+      maxVel2 = max(maxVel2, nodes->GetVelocity2(iPoint));
 
-      /*--- Store the local maximum of the squared velocity in the field. ---*/
+    SU2_OMP_CRITICAL
+    MaxVel2 = max(MaxVel2, maxVel2);
 
-      if (nodes->GetVelocity2(iPoint) > maxVel2)
-        maxVel2 = nodes->GetVelocity2(iPoint);
+    SU2_OMP_BARRIER
 
+    SU2_OMP_MASTER {
+      maxVel2 = MaxVel2;
+      SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+      config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
-
-    /*--- Communicate the max globally to give a conservative estimate. ---*/
-
-    su2double myMaxVel2 = maxVel2; maxVel2 = 0.0;
-    SU2_MPI::Allreduce(&myMaxVel2, &maxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-    Beta = max(1e-10,maxVel2);
-    config->SetMax_Vel2(Beta);
-
+    SU2_OMP_BARRIER
   }
 
   /*--- Allow an override if user supplies a large epsilon^2. ---*/
 
-  epsilon2 = max(epsilon2_default,epsilon2);
+  su2double BetaInc2 = max(epsilon2_default, config->GetBeta_Factor()) * config->GetMax_Vel2();
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    nodes->SetBetaInc2(iPoint,epsilon2*config->GetMax_Vel2());
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    nodes->SetBetaInc2(iPoint, BetaInc2);
 
 }
 
