@@ -107,16 +107,9 @@ protected:
    * \brief Check the boundary vertex that are going to be moved.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] velocity_transfer - Boolean for deforming displacement or velocity
    */
-  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
-
-  /*!
-   * \brief Set boundary velocities.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config, bool velocity_transfer);
 
 public:
   /*!
