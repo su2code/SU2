@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -392,87 +392,6 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register variables as output of the solver iteration ---*/
 
   direct_solver->GetNodes()->RegisterSolution(input, push_index);
-}
-
-void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
-
-  /*--- Here we can add new (scalar) objective functions ---*/
-  if (config->GetnObj()==1) {
-    switch (config->GetKind_ObjFunc()) {
-    case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CD();
-      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCMy() * direct_solver->GetTotal_CMy();
-      break;
-    case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CL();
-      break;
-    case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSF();
-      break;
-    case EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_CEff();
-      break;
-    case MOMENT_X_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMx();
-      break;
-    case MOMENT_Y_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMy();
-      break;
-    case MOMENT_Z_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
-    case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
-    case BUFFET_SENSOR:
-      ObjFunc_Value = direct_solver->GetTotal_Buffet_Metric();
-      break;
-    case TOTAL_HEATFLUX:
-      ObjFunc_Value = direct_solver->GetTotal_HeatFlux();
-      break;
-    }
-
-    /*--- Template for new objective functions where TemplateObjFunction()
-     *  is the routine that returns the obj. function value. The computation
-     * must be done while the tape is active, i.e. between AD::StartRecording() and
-     * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
-     * inside MeanFlowIteration::Iterate().
-     *
-     * case TEMPLATE_OBJECTIVE:
-     *    ObjFunc_Value = TemplateObjFunction();
-     *    break;
-     * ---*/
-  }
-  else{
-    ObjFunc_Value = direct_solver->GetTotal_ComboObj();
-  }
-  if (rank == MASTER_NODE) {
-    AD::RegisterOutput(ObjFunc_Value);
-  }
-}
-
-void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
-
-  bool time_stepping = config->GetTime_Marching() != STEADY;
-  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long TimeIter = config->GetTimeIter();
-  su2double seeding = 1.0;
-
-  if (time_stepping) {
-    if (TimeIter < IterAvg_Obj) {
-      seeding = 1.0/((su2double)IterAvg_Obj);
-    }
-    else {
-      seeding = 0.0;
-    }
-  }
-
-  if (rank == MASTER_NODE) {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
-  } else {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
-  }
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){

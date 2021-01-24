@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -228,10 +228,9 @@ public:
    * \param[in] soundspeed2 - Value of soundspeed^2.
    */
   bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) final {
-    su2double radical = soundspeed2;
-    if (radical < 0.0) return true;
+    if (soundspeed2 < 0.0) return true;
     else {
-      Primitive(iPoint,nDim+4) = sqrt(radical);
+      Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
       return false;
     }
   }
