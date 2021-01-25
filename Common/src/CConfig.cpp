@@ -6166,6 +6166,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               case VAN_ALBADA_EDGE:
                 cout << "Van Albada slope-limiting method implemented by edges." << endl;
                 break;
+              case MINMOD:
+                cout << "Minmod slope-limiting method." << endl;
+                break;
             }
         }
         else {

@@ -387,7 +387,8 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   bool muscl              = config->GetMUSCL_Flow();
   bool limiter            = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(config->GetFrozen_Limiter_Disc()));
   bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool van_albada         = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  bool minmod             = (config->GetKind_SlopeLimit_Flow() == MINMOD);
 
   /*--- Common preprocessing steps ---*/
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
@@ -404,7 +405,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
     }
 
     /*--- Limiter computation ---*/
-    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
+    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada && !minmod) {
       SetPrimitive_Limiter(geometry, config);
     }
   }
@@ -823,6 +824,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
                                 (InnerIter <= config->GetLimiterIter());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
+  const bool minmod           = (config->GetKind_SlopeLimit_Flow() == MINMOD);
+
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -909,12 +912,31 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
             Limiter_i[iVar] = V_ij*( 2.0*Project_Grad_i + V_ij) / (4*pow(Project_Grad_i, 2) + pow(V_ij, 2) + EPS);
             Limiter_j[iVar] = V_ij*(-2.0*Project_Grad_j + V_ij) / (4*pow(Project_Grad_j, 2) + pow(V_ij, 2) + EPS);
           }
+          else if (minmod) {
+            su2double r_i=Project_Grad_j/Project_Grad_i;
+            su2double r_j=Project_Grad_i/Project_Grad_j;
+
+            if(r_i >= 1)               {Limiter_i[iVar] = 1;  }
+            else if(r_i >= 0 && r_i<1) {Limiter_i[iVar] = r_i;}
+            else                       {Limiter_i[iVar] = 0;  }
+
+            if(r_j >= 1)               {Limiter_j[iVar] = 1;  }
+            else if(r_j >= 0 && r_j<1) {Limiter_j[iVar] = r_j;}
+            else                       {Limiter_j[iVar] = 0;  }
+
+          }
           if (lim_i > Limiter_i[iVar] && Limiter_i[iVar] != 0) lim_i = Limiter_i[iVar];
           if (lim_j > Limiter_j[iVar] && Limiter_j[iVar] != 0) lim_j = Limiter_j[iVar];
           su2double lim_ij = min(lim_i, lim_j);
 
-          Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
+          if (minmod){
+            Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+            Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          }
+          else{
+            Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i;
+            Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j;
+          }
         } else {
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
