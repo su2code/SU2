@@ -309,6 +309,9 @@ class Solver:
       header = header + '\n'
       histFile.write(header)
       histFile.close()
+    else:
+      self.__setRestart('nM1')
+      self.__setRestart('n')
 
   def __readConfig(self):
     """
@@ -840,7 +843,7 @@ class Solver:
 
     self.__computeInterfacePosVel(True)
 
-  def setRestart(self, timeIter):
+  def __setRestart(self, timeIter):
     if timeIter == 'nM1':
       #read the Structhistory to obtain the mode amplitudes
       with open('StructHistoryModal.dat','r') as file:

@@ -1924,10 +1924,6 @@ class Interface:
           #If restart
           if FSI_config['RESTART_SOL'] == 'YES':
             TimeIterTreshold = -1
-            self.MPIPrint("Reading the modal amplitudes at time n-1")
-            if myid in self.solidSolverProcessors:
-              SolidSolver.setRestart('nM1')
-              SolidSolver.setRestart('n')
             self.getSolidInterfaceDisplacement(SolidSolver)
             self.displacementPredictor(FSI_config, SolidSolver, deltaT)
             # We need now to update the solution because both restarter functions (solid and fluid)
