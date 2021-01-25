@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,7 @@
 using namespace std;
 
 class CConfig;
+class CPhysicalGeometry;
 
 /*!
  * \class CPoint
@@ -44,6 +45,8 @@ class CConfig;
  */
 class CPoint {
 private:
+  friend class CPhysicalGeometry;
+
   const unsigned long nDim = 0;
 
   su2vector<unsigned long> GlobalIndex;   /*!< \brief Global index in the parallel simulation. */

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -74,7 +74,6 @@ enum SU2_COMPONENT {
 
 const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
-const unsigned int BUFSIZE = 3000000;         /*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
@@ -95,7 +94,7 @@ const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
 const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
@@ -541,15 +540,15 @@ static const MapType<string, ENUM_SPACE> Space_Map = {
  * \brief Types of fluid model
  */
 enum ENUM_FLUIDMODEL {
-  STANDARD_AIR         = 0, /*!< \brief Standard air gas model. */
-  IDEAL_GAS            = 1, /*!< \brief Ideal gas model. */
-  VW_GAS               = 2, /*!< \brief Van Der Waals gas model. */
-  PR_GAS               = 3, /*!< \brief Perfect Real gas model. */
-  CONSTANT_DENSITY     = 4, /*!< \brief Constant density gas model. */
-  INC_IDEAL_GAS        = 5, /*!< \brief Incompressible ideal gas model. */
-  INC_IDEAL_GAS_POLY   = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
-  MUTATIONPP           = 7, /*!< \brief Mutation++ gas model for nonequilibrium flow. */
-  USER_DEFINED_NONEQ   = 8, /*!< \brief User defined gas model for nonequilibrium flow. */
+  STANDARD_AIR = 0,       /*!< \brief Standard air gas model. */
+  IDEAL_GAS = 1,          /*!< \brief Ideal gas model. */
+  VW_GAS = 2,             /*!< \brief Van Der Waals gas model. */
+  PR_GAS = 3,             /*!< \brief Perfect Real gas model. */
+  CONSTANT_DENSITY = 4,   /*!< \brief Constant density gas model. */
+  INC_IDEAL_GAS = 5,      /*!< \brief Incompressible ideal gas model. */
+  INC_IDEAL_GAS_POLY = 6, /*!< \brief Inc. ideal gas, polynomial gas model. */
+  MUTATIONPP = 7,         /*!< \brief Mutation++ gas model for nonequilibrium flow. */
+  SU2_NONEQ = 8           /*!< \brief User defined gas model for nonequilibrium flow. */
   FLAMELET_FLUID_MODEL = 9, /*!, \brief Flamelet model */
 };
 static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
@@ -561,7 +560,7 @@ static const MapType<string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("INC_IDEAL_GAS", INC_IDEAL_GAS)
   MakePair("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY)
   MakePair("MUTATIONPP", MUTATIONPP)
-  MakePair("USER_DEFINED_NONEQ", USER_DEFINED_NONEQ)
+  MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLAMELET_FLUID_MODEL", FLAMELET_FLUID_MODEL)
 };
 
@@ -1538,7 +1537,7 @@ enum ENUM_OBJECTIVE {
   INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
   TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
   MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
-  TOTAL_AVG_TEMPERATURE = 70,   /*!< \brief Total averaged temperature. */
+  AVG_TEMPERATURE = 70,         /*!< \brief Total averaged temperature. */
   MOMENT_X_COEFFICIENT = 9,     /*!< \brief Pitching moment objective function definition. */
   MOMENT_Y_COEFFICIENT = 10,    /*!< \brief Rolling moment objective function definition. */
   MOMENT_Z_COEFFICIENT = 11,    /*!< \brief Yawing objective function definition. */
@@ -1602,7 +1601,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TORQUE", TORQUE_COEFFICIENT)
   MakePair("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
   MakePair("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
-  MakePair("TOTAL_AVG_TEMPERATURE", TOTAL_AVG_TEMPERATURE)
+  MakePair("AVG_TEMPERATURE", AVG_TEMPERATURE)
   MakePair("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
   MakePair("BUFFET", BUFFET_SENSOR)
   MakePair("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)

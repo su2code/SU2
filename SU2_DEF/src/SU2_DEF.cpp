@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,7 +39,6 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization ---*/
 
-#ifdef HAVE_MPI
 #ifdef HAVE_OMP
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
@@ -47,9 +46,6 @@ int main(int argc, char *argv[]) {
   SU2_MPI::Init(&argc, &argv);
 #endif
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -194,11 +190,6 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone]->SetVertex(config_container[iZone]);
 
     if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
-
-      /*--- Compute center of gravity ---*/
-
-      if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-      geometry_container[iZone]->SetCoord_CG();
 
       /*--- Create the dual control volume structures ---*/
 
@@ -394,7 +385,6 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundVolume();
       geometry_container[iZone]->SetEdges();
       geometry_container[iZone]->SetVertex(config_container[iZone]);
-      geometry_container[iZone]->SetCoord_CG();
       geometry_container[iZone]->SetControlVolume(config_container[iZone], ALLOCATE);
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
 
@@ -508,10 +498,7 @@ int main(int argc, char *argv[]) {
     cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
 
   /*--- Finalize MPI parallelization ---*/
-
-#ifdef HAVE_MPI
   SU2_MPI::Finalize();
-#endif
 
   return EXIT_SUCCESS;
 

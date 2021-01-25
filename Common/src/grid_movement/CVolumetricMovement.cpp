@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,7 +90,6 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
   /*--- After moving all nodes, update the dual mesh. Recompute the edges and
    dual mesh control volumes in the domain and on the boundaries. ---*/
 
-  geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
   geometry->SetMaxLength(config);
@@ -354,7 +353,7 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
         nNonconvexElements++;
       }
     }
-  } else {
+  } else if (false) {
 
     /*--- 3D elements ---*/
     unsigned short iNode, iFace, nFaceNodes;
@@ -371,6 +370,8 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
           unsigned long face_point_i, face_point_j, face_point_k;
 
           face_point_i = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, iNode));
+
+          /// TODO: Faces may have up to 4 nodes, not all posibilities are covered
 
           if (iNode == 0) {
             face_point_j = geometry->elem[iElem]->GetNode(geometry->elem[iElem]->GetFaces(iFace, nFaceNodes-1));
@@ -392,6 +393,9 @@ void CVolumetricMovement::ComputenNonconvexElements(CGeometry *geometry, bool Sc
           /*--- Calculate cross product of edge vectors and its length---*/
           su2double crossProduct[3];
           GeometryToolbox::CrossProduct(edgeVector_i, edgeVector_j, crossProduct);
+
+          /// TODO: This logic is incorrect, the norm will never be less than 0
+
           crossProductLength = GeometryToolbox::Norm(nDim, crossProduct);
 
           /*--- Check if length is minimum or maximum ---*/

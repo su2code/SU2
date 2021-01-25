@@ -2,7 +2,7 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,7 +49,7 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   energies.resize(nEnergyEq,0.0);  
   ThermalConductivities.resize(nEnergyEq,0.0);
 
-  Kind_GasModel        = config->GetGasModel();
+  gas_model            = config->GetGasModel();
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
   frozen               = config->GetFrozen();
@@ -176,6 +176,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
 
   /*--- Necessary indexes to assess primitive variables ---*/
   unsigned long RHOS_INDEX    = 0;
+  unsigned long T_INDEX       = nSpecies;
   unsigned long VEL_INDEX     = nSpecies+2;
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
   unsigned long RHOCVVE_INDEX = nSpecies+nDim+7;
@@ -191,6 +192,7 @@ void CNEMOGas::ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double 
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
+  T       = V[T_INDEX];
 
   /*--- Pre-compute useful quantities ---*/
   CvtrBAR = 0.0;
@@ -249,10 +251,12 @@ void CNEMOGas::ComputedTdU(su2double *V, su2double *val_dTdU){
   su2double Vel[3] = {0.0};
 
   /*--- Necessary indexes to assess primitive variables ---*/
+  unsigned long T_INDEX       = nSpecies;
   unsigned long VEL_INDEX     = nSpecies+2;
   unsigned long RHOCVTR_INDEX = nSpecies+nDim+6;
 
   /*--- Rename for convenience ---*/
+  T       = V[T_INDEX];
   rhoCvtr = V[RHOCVTR_INDEX];
 
   Cvtrs              = GetSpeciesCvTraRot();

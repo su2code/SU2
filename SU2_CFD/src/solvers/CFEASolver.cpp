@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -194,7 +194,9 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize the value of the total objective function ---*/
   Total_OFRefGeom = 0.0;
   Total_OFRefNode = 0.0;
-  Total_OFVolFrac = 0.0;
+  Total_OFVolFrac = 1.0;
+  Total_OFDiscreteness = 0.0;
+  Total_OFCompliance = 0.0;
 
   /*--- Initialize the value of the global objective function ---*/
   Global_OFRefGeom = 0.0;
@@ -782,7 +784,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * This only needs to be done for the undeformed (initial) shape.
    */
   if (topology_mode && !topol_filter_applied) {
-    geometry->SetElemVolume(config);
+    geometry->SetElemVolume();
     FilterElementDensities(geometry, config);
     topol_filter_applied = true;
   }
@@ -1909,34 +1911,43 @@ CSysVector<T> computeLinearResidual(const CSysMatrix<T>& A,
   return r;
 }
 
-void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
-                                CConfig *config, CNumerics **numerics, unsigned short iMesh) {
+void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics **numerics, bool of_comp_mode) {
 
-  const bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);
-
-  /*--- Compute stresses for monitoring and output. ---*/
-
-  Compute_NodalStress(geometry, numerics, config);
-
-  /*--- Compute the objective function to be able to monitor it. ---*/
+  /*--- Compute the objective function. ---*/
 
   const auto kindObjFunc = config->GetKind_ObjFunc();
+  const bool penalty = ((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
+                       ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL));
 
-  if (((kindObjFunc == REFERENCE_GEOMETRY) || (kindObjFunc == REFERENCE_NODE)) &&
-      ((config->GetDV_FEA() == YOUNG_MODULUS) || (config->GetDV_FEA() == DENSITY_VAL))) {
+  if (of_comp_mode) {
+    if (penalty) Stiffness_Penalty(geometry, numerics, config);
 
-    Stiffness_Penalty(geometry, solver_container, numerics, config);
+    switch (kindObjFunc) {
+      case REFERENCE_GEOMETRY: Compute_OFRefGeom(geometry, config); break;
+      case REFERENCE_NODE:     Compute_OFRefNode(geometry, config); break;
+      case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
+      case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
+      case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+    }
+    return;
   }
 
-  switch (kindObjFunc) {
-    case REFERENCE_GEOMETRY: Compute_OFRefGeom(geometry, config); break;
-    case REFERENCE_NODE:     Compute_OFRefNode(geometry, config); break;
-    case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
-    case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
-    case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+  if (!config->GetDiscrete_Adjoint()) {
+    /*--- Compute stresses for monitoring and output. ---*/
+    Compute_NodalStress(geometry, numerics, config);
+
+    /*--- Compute functions for monitoring and output. ---*/
+    if (penalty) Stiffness_Penalty(geometry, numerics, config);
+    Compute_OFRefNode(geometry, config);
+    Compute_OFCompliance(geometry, config);
+    if (config->GetRefGeom()) Compute_OFRefGeom(geometry, config);
+    if (config->GetTopology_Optimization()) Compute_OFVolFrac(geometry, config);
   }
 
-  if (nonlinear_analysis) {
+  /*--- Residuals do not have to be computed while recording. ---*/
+  if (config->GetDiscrete_Adjoint() && AD::TapeActive()) return;
+
+  if (config->GetGeometricConditions() == LARGE_DEFORMATIONS) {
 
     /*--- For nonlinear analysis we have 3 convergence criteria: ---*/
     /*--- UTOL = norm(Delta_U(k)): ABSOLUTE, norm of the incremental displacements ---*/
@@ -3006,9 +3017,6 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
 
   Global_OFRefGeom += Total_OFRefGeom;
 
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFRefGeom;
-
   /// TODO: Temporary output files for the direct mode.
 
   if ((rank == MASTER_NODE) && (config->GetDirectDiff() != NO_DERIVATIVE)) {
@@ -3051,9 +3059,6 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, const CConfig *config){
   Total_OFRefNode = config->GetRefNode_Penalty() * Norm(int(MAXNVAR),dist_reduce) + PenaltyValue;
 
   Global_OFRefNode += Total_OFRefNode;
-
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFRefNode;
 
   /// TODO: Temporary output files for the direct mode.
 
@@ -3109,13 +3114,8 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
   SU2_MPI::Allreduce(&discreteness,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
   discreteness = tmp;
 
-  if (config->GetKind_ObjFunc() == TOPOL_DISCRETENESS)
-    Total_OFVolFrac = discreteness/total_volume;
-  else
-    Total_OFVolFrac = integral/total_volume;
-
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFVolFrac;
+  Total_OFDiscreteness = discreteness/total_volume;
+  Total_OFVolFrac = integral/total_volume;
 
 }
 
@@ -3169,12 +3169,9 @@ void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config
 
   SU2_MPI::Allreduce(&compliance, &Total_OFCompliance, 1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
-  /*--- To be accessible from the output. ---*/
-  Total_OFCombo = Total_OFCompliance;
-
 }
 
-void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
+void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CNumerics **numerics, CConfig *config){
 
   if (config->GetTotalDV_Penalty() == 0.0) {
     /*--- No need to go into expensive computations. ---*/

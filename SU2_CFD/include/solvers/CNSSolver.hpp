@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,11 +54,10 @@ private:
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config, bool Output) override;
+                                       const CConfig *config) override;
 
   /*!
    * \brief Common code for wall boundaries, add the residual and Jacobian
@@ -149,7 +148,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config) override;
+  void Evaluate_ObjFunc(const CConfig *config) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -203,7 +202,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Buffet_Monitoring(CGeometry *geometry, CConfig *config) override;
+  void Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) override;
 
   /*!
    * \brief Compute the viscous contribution for a particular edge.
