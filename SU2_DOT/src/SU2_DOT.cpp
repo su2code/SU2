@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,6 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization, and buffer setting ---*/
 
-#ifdef HAVE_MPI
 #ifdef HAVE_OMP
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
@@ -46,9 +45,6 @@ int main(int argc, char *argv[]) {
   SU2_MPI::Init(&argc, &argv);
 #endif
   SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
 
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
@@ -241,11 +237,6 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." << endl;
       geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
 
-    /*--- Compute center of gravity ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry_container[iZone][INST_0]->SetCoord_CG();
-
     /*--- Create the dual control volume structures ---*/
 
     if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
@@ -412,10 +403,7 @@ int main(int argc, char *argv[]) {
     cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------\n" << endl;
 
   /*--- Finalize MPI parallelization ---*/
-
-#ifdef HAVE_MPI
   SU2_MPI::Finalize();
-#endif
 
   return EXIT_SUCCESS;
 
@@ -782,11 +770,8 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-      localGradient = my_Gradient;
-#endif
+      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
       /*--- Angle of Attack design variable (this is different,
        the value comes form the input file) ---*/
 

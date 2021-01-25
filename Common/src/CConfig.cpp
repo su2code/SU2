@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1162,8 +1162,6 @@ void CConfig::SetConfig_Options() {
   addBoolOption("IONIZATION", ionization, false);
   /* DESCRIPTION: Specify if there is VT transfer residual limiting */
   addBoolOption("VT_RESIDUAL_LIMITING", vt_transfer_res_limit, false);
-  /* DESCRIPTION: Specify if the gas is monoatomic */
-  addBoolOption("MONOATOMIC", monoatomic, false);
   /* DESCRIPTION: List of catalytic walls */
   addStringListOption("CATALYTIC_WALL", nWall_Catalytic, Wall_Catalytic);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
@@ -1596,8 +1594,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Evaluate a problem with engines */
   addBoolOption("ENGINE", Engine, false);
 
-  /* DESCRIPTION:  Compute buffet sensor */
-  addBoolOption("BUFFET_MONITORING", Buffet_Monitoring, false);
   /* DESCRIPTION:  Sharpness coefficient for the buffet sensor */
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
@@ -1620,11 +1616,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
-   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
+   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max), acceptable linear residual )
    * Factor down generally <1.0, factor up generally > 1.0 to cause the CFL to increase when the under-relaxation parameter is 1.0
    * and to decrease when the under-relaxation parameter is less than 0.1. Factor is multiplicative. \ingroup Config*/
   default_cfl_adapt[0] = 1.0; default_cfl_adapt[1] = 1.0; default_cfl_adapt[2] = 10.0; default_cfl_adapt[3] = 100.0;
-  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
+  default_cfl_adapt[4] = 0.001;
+  addDoubleListOption("CFL_ADAPT_PARAM", nCFL_AdaptParam, CFL_AdaptParam);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -2785,7 +2782,6 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
-
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3059,7 +3055,7 @@ void CConfig::SetHeader(unsigned short val_software) const{
   if ((iZone == 0) && (rank == MASTER_NODE)){
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.0.8 \"Blackbird\"                         |" << endl;
+    cout << "|   / __| | | |_  )   Release 7.1.0 \"Blackbird\"                         |" << endl;
     cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
     switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3174,7 +3170,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
-                    (Kind_FluidModel == USER_DEFINED_NONEQ));
+                    (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   bool nemo = GetNEMOProblem();
 
@@ -3504,10 +3500,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
 
-  if ((Kind_Solver != NAVIER_STOKES && Kind_Solver != RANS) && (Buffet_Monitoring == true)){
-    SU2_MPI::Error("Buffet monitoring incompatible with solvers other than NAVIER_STOKES and RANS", CURRENT_FUNCTION);
-  }
-
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
@@ -3539,10 +3531,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
   }
 
-  if (nemo && Kind_FluidModel != USER_DEFINED_NONEQ ) {
-    SU2_MPI::Error("Only USER_DEFINED_NONEQ fluid model can be used with the NEMO solver. Mutation++ library will soon be available.", CURRENT_FUNCTION);
-  }
-
   if (nemo && Kind_TransCoeffModel != WILKE ) {
     SU2_MPI::Error("Only WILKE transport model is stable for the NEMO solver.", CURRENT_FUNCTION);
   }
@@ -3556,6 +3544,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nemo){
     if (Kind_Upwind_Flow == AUSMPWPLUS)
       SU2_MPI::Error("AUSMPW+ is extremely unstable. Feel free to fix me!", CURRENT_FUNCTION);
+  }
+
+  if (GetGasModel() == "ARGON" && GetKind_FluidModel() == SU2_NONEQ){
+      SU2_MPI::Error("ARGON is not working with SU2_NONEQ fluid model!", CURRENT_FUNCTION);
+  }
+
+  if (GetKind_FluidModel() == MUTATIONPP && GetFrozen() == true){
+      SU2_MPI::Error("The option of FROZEN_MIXTURE is not yet working with Mutation++ support.", CURRENT_FUNCTION);
   }
 
   if(GetBoolTurbomachinery()){
@@ -4141,6 +4137,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMGLevels+1;
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
+
+  /*--- Handle optional CFL adapt parameter values ---*/
+
+  if (nCFL_AdaptParam < default_cfl_adapt.size()) {
+    auto newParam = new su2double [default_cfl_adapt.size()];
+    for (iCFL = 0; iCFL < default_cfl_adapt.size(); ++iCFL) {
+      if (iCFL < nCFL_AdaptParam) newParam[iCFL] = CFL_AdaptParam[iCFL];
+      else newParam[iCFL] = default_cfl_adapt[iCFL];
+    }
+    swap(newParam, CFL_AdaptParam);
+    delete [] newParam;
+    nCFL_AdaptParam = default_cfl_adapt.size();
+  }
 
   /*--- Evaluate when the Cl should be evaluated ---*/
 
@@ -4978,6 +4987,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
+  if (GetGasModel() == "ARGON") monoatomic = true;
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
@@ -5559,14 +5569,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         break;
       case NEMO_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+        if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
         break;
       case NEMO_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        if(Kind_FluidModel == USER_DEFINED_NONEQ){
+        if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
         }
@@ -6537,7 +6547,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
+        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3]
+        <<",\n                acceptable linear residual: "<< CFL_AdaptParam[4] << "." << endl;
 
       if (nMGLevels !=0) {
         PrintingToolbox::CTablePrinter MGTable(&std::cout);
@@ -7978,9 +7989,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
         case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
-        case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
+        case AVG_TEMPERATURE:             AdjExt = "_avtp";     break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
-        case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
+        case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;
@@ -9285,13 +9296,6 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
     if ((tag == sideA) || (tag == sideB)) return iMarker;
   }
   return -1;
-}
-
-string CConfig::GetName_ObjFunc(unsigned short val_obj) const {
-  for (auto item : Objective_Map)
-    if (item.second == static_cast<ENUM_OBJECTIVE>(Kind_ObjFunc[val_obj]))
-      return item.first;
-  return string();
 }
 
 void CConfig::Tick(double *val_start_time) {

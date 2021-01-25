@@ -3,7 +3,7 @@
  * \brief Delarations of classes for Flux-Vector-Spliting schemes,
  *        the implementations are in fvs.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,20 +39,16 @@
 class CUpwMSW_Flow final : public CNumerics {
 private:
   bool implicit;
-  su2double *Diff_U;
   su2double *u_i, *u_j, *ust_i, *ust_j;
   su2double *Fc_i, *Fc_j;
   su2double *Lambda_i, *Lambda_j;
-  su2double rhos_i, rhos_j;
-  su2double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Velst_i, *Velst_j;
+  su2double *Vst_i, *Vst_j, *Velst_i, *Velst_j;
   su2double **P_Tensor, **invP_Tensor;
-  unsigned short nPrimVar, nVar, nDim;
 
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
 
 public:
-
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.

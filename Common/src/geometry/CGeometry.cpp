@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1389,26 +1389,6 @@ su2double CGeometry::Point2Plane_Distance(const su2double *Coord, const su2doubl
 
 }
 
-long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) const {
-
-  for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
-    auto iPoint = nodes->GetPoint(first_point, iNode);
-    if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
-  }
-
-  char buf[100];
-  SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
-  SU2_MPI::Error(buf, CURRENT_FUNCTION);
-  return 0;
-}
-
-bool CGeometry::CheckEdge(unsigned long first_point, unsigned long second_point) const {
-
-  for (auto iPoint : nodes->GetPoints(first_point))
-    if (iPoint == second_point) return true;
-  return false;
-}
-
 void CGeometry::SetEdges(void) {
 
   nEdge = 0;
@@ -2545,7 +2525,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
     geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
 
-  geometry_container[MESH_0]->SetCoord_CG();
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetMaxLength(config);
@@ -3499,7 +3478,7 @@ bool CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
   return finished;
 }
 
-void CGeometry::SetElemVolume(CConfig *config)
+void CGeometry::SetElemVolume()
 {
   SU2_OMP_PARALLEL
   {

@@ -3,7 +3,7 @@
  * \brief Delaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
 #include "../../../Common/include/CConfig.hpp"
 #include "../fluid/CNEMOGas.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
-#include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 
 using namespace std;

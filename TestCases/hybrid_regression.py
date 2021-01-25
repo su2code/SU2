@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.8 "Blackbird"
+#  \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -232,7 +232,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.979967, 1.140048, 1.215111, 0.195366]
+    turb_naca0012_1c.test_vals = [-4.980749, 1.139261, 0.244629, -0.112860]
     test_list.append(turb_naca0012_1c)
 
     # NACA0012 2c
@@ -240,7 +240,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484204, 0.969783, 1.311085, 0.231449]
+    turb_naca0012_2c.test_vals = [-5.483337, 0.968887, 0.212022, -0.120321]
     test_list.append(turb_naca0012_2c)
 
     # NACA0012 3c
@@ -248,7 +248,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.586959, 0.932359, 1.535455, 0.315820]
+    turb_naca0012_3c.test_vals = [-5.584300, 0.931383, 0.205075, -0.120905]
     test_list.append(turb_naca0012_3c)
 
     # NACA0012 p1c1
@@ -256,7 +256,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.132991, 1.076082, 1.177974, 0.181556]
+    turb_naca0012_p1c1.test_vals = [-5.133237, 1.075365, 0.337532, -0.077873]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -264,7 +264,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556581, 0.945167, 1.240884, 0.205031]
+    turb_naca0012_p1c2.test_vals = [-5.554623, 0.943691, 0.226361, -0.116560]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -378,7 +378,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280316, 0.379651, 72.207590, 1.277638]
+    Jones_tc.test_vals = [-5.280316, 0.379651, 72.212090, 1.277440]
     Jones_tc.new_output = False
     test_list.append(Jones_tc)
 
@@ -387,7 +387,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625330, -1.568896, 33.995140, 10.181610]
+    Jones_tc_rst.test_vals = [-4.625248, -1.568821, 33.995140, 10.181940]
     Jones_tc_rst.new_output = False
     test_list.append(Jones_tc_rst)
 

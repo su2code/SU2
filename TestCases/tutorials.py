@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.8 "Blackbird"
+#  \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -144,7 +144,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.339712, -6.750056, 4.260703, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.187400, -9.409241, 3.477513, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_nicfd_nozzle.timeout   = 1600
     tutorial_nicfd_nozzle.tol       = 0.00001

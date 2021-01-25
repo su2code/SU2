@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -75,7 +75,8 @@ public:
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \return Compute the normal (dimensional) to the face that makes the vertex.
    */
-  void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_FaceElem_CG, su2double *val_coord_Elem_CG) override;
+  void SetNodes_Coord(const su2double *val_coord_Edge_CG, const su2double *val_coord_FaceElem_CG,
+                      const su2double *val_coord_Elem_CG) override;
 
   /*!
    * \overload
@@ -83,7 +84,7 @@ public:
    * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \return Compute the normal (dimensional) to the face that makes the vertex.
    */
-  void SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Elem_CG) override;
+  void SetNodes_Coord(const su2double *val_coord_Edge_CG, const su2double *val_coord_Elem_CG) override;
 
   /*!
    * \brief Copy the the normal vector of a face.

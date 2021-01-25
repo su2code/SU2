@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,7 @@ protected:
   bool frozen,                           /*!< \brief Indicates if mixture is frozen. */
   ionization;                            /*!< \brief Presence of charged species in gas mixture. */
 
-  string Kind_GasModel;                  /*!< \brief String gas model. */
+  string gas_model;                      /*!< \brief String gas model. */
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
@@ -101,7 +101,6 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
-   * \param[in] Ms   - Mass fraction of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
@@ -183,17 +182,17 @@ public:
   su2double ComputeGamma();
 
   /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
+   * \brief Compute derivative of pressure w.r.t. conservative variables.
    */
   void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
   
   /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
+   * \brief Compute derivative of temperature w.r.t. conservative variables.
    */
   void ComputedTdU(su2double *V, su2double *val_dTdU);
   
   /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
+   * \brief Compute derivative of vibrational temperature w.r.t. conservative variables.
    */
   void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 

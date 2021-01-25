@@ -1,8 +1,8 @@
 /*!
- * \file CUserDefinedTCLib.hpp
+ * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,11 +30,11 @@
 #include "CNEMOGas.hpp"
 
 /*!
- * \derived class CUserDefinedTCLib
+ * \derived class CSU2TCLib
  * \brief Child class for user defined nonequilibrium gas model.
  * \author: C. Garbacz, W. Maier, S. R. Copeland
  */
-class CUserDefinedTCLib : public CNEMOGas {
+class CSU2TCLib : public CNEMOGas {
 
 private:
 
@@ -77,12 +77,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous);
+  CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUserDefinedTCLib(void);
+  virtual ~CSU2TCLib(void);
 
   /*!
    * \brief Set mixture thermodynamic state.

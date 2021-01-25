@@ -2,7 +2,7 @@
  * \file CDiscAdjFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -385,7 +385,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
   /*--- We only differentiate wrt to this variable in the adjoint secondary recording. ---*/
   if (config[iZone]->GetTopology_Optimization() && (kind_recording == MESH_COORDS)) {
     /*--- The filter may require the volumes of the elements. ---*/
-    structural_geometry->SetElemVolume(config[iZone]);
+    structural_geometry->SetElemVolume();
     /// TODO: Ideally there would be a way to capture this dependency without the `static_cast`, but
     ///       making it a virtual method of CSolver does not feel "right" as its purpose could be confused.
     static_cast<CFEASolver*>(dir_solver)->FilterElementDensities(structural_geometry, config[iZone]);
@@ -401,10 +401,6 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geo
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                              unsigned short iZone, unsigned short iInst) {
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry[iZone][iInst][MESH_0], config[iZone]);
-
   /*--- Initialize the adjoints the conservative variables ---*/
 
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
@@ -447,21 +443,8 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
 
     myfile_res << config[val_iZone]->GetTimeIter() << "\t";
 
-    switch (config[val_iZone]->GetKind_ObjFunc()) {
-      case REFERENCE_GEOMETRY:
-        myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << "\t";
-        break;
-      case REFERENCE_NODE:
-        myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
-        break;
-      case VOLUME_FRACTION:
-      case TOPOL_DISCRETENESS:
-        myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFVolFrac() << "\t";
-        break;
-      case TOPOL_COMPLIANCE:
-        myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFCompliance() << "\t";
-        break;
-    }
+    solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->Evaluate_ObjFunc(config[val_iZone]);
+    myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_ComboObj() << "\t";
 
     for (iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++)
       myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_E(iVar) << "\t";
@@ -471,13 +454,11 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
       for (iVar = 0; iVar < config[val_iZone]->GetnMaterialDensity(); iVar++)
         myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_Rho(iVar) << "\t";
     }
-
     if (de_effects) {
       for (iVar = 0; iVar < config[val_iZone]->GetnElectric_Field(); iVar++)
         myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_EField(iVar)
                    << "\t";
     }
-
     for (iVar = 0; iVar < solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetnDVFEA(); iVar++) {
       myfile_res << scientific << solver[val_iZone][val_iInst][MESH_0][ADJFEA_SOL]->GetTotal_Sens_DVFEA(iVar) << "\t";
     }

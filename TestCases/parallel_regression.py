@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.8 "Blackbird"
+#  \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -89,6 +89,19 @@ def main():
     viscwedge.new_output = True
     viscwedge.tol       = 0.00001
     test_list.append(viscwedge)
+
+    # Viscous single wedge with Mutation++
+    #viscwedge_mpp           = TestCase('viscwedge_mpp')
+    #viscwedge_mpp.cfg_dir   = "nonequilibrium/viscwedge_mpp"
+    #viscwedge_mpp.cfg_file  = "viscwedge_mpp.cfg"
+    #viscwedge_mpp.test_iter = 10
+    #viscwedge_mpp.test_vals = [-20.608474, -20.586446,-20.707524, -5.171304,-5.696067,-1.548350,-2.071211,2.231054,-2.545494]
+    #viscwedge_mpp.su2_exec  = "mpirun -n 2 SU2_CFD"
+    #viscwedge_mpp.timeout   = 1600
+    #viscwedge_mpp.new_output = True
+    #viscwedge_mpp.tol       = 0.00001
+    #test_list.append(viscwedge_mpp)
+
 
     ##########################
     ### Compressible Euler ###
@@ -284,7 +297,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.388853, -6.689340, 0.230321, 0.157649] #last 4 columns
+    turb_oneram6.test_vals = [-2.388839, -6.689413, 0.230321, 0.157640] #last 4 columns
     turb_oneram6.su2_exec  = "parallel_computation.py -f"
     turb_oneram6.timeout   = 3200
     turb_oneram6.tol       = 0.00001
@@ -683,7 +696,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.981674, 1.138300, 0.867182, 0.015761]
+    turb_naca0012_1c.test_vals = [-4.976520, 1.141381, 0.460006, -0.078852]
     turb_naca0012_1c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_1c.timeout   = 1600
     turb_naca0012_1c.tol       = 0.00001
@@ -694,7 +707,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.484231, 0.967172, 0.901005, 0.029186]
+    turb_naca0012_2c.test_vals = [-5.483311, 0.968826, 0.303278, -0.113945]
     turb_naca0012_2c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_2c.timeout   = 1600
     turb_naca0012_2c.tol       = 0.00001
@@ -705,7 +718,7 @@ def main():
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
     turb_naca0012_3c.test_iter = 10
-    turb_naca0012_3c.test_vals = [-5.587082, 0.929221, 1.000121, 0.065793]
+    turb_naca0012_3c.test_vals = [-5.584310, 0.931348, 0.279056, -0.113209]
     turb_naca0012_3c.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_3c.timeout   = 1600
     turb_naca0012_3c.tol       = 0.00001
@@ -716,7 +729,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.128763, 1.076245, 0.954666, 0.040210]
+    turb_naca0012_p1c1.test_vals = [-5.128788, 1.077306, 0.584228, -0.048152]
     turb_naca0012_p1c1.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c1.timeout   = 1600
     turb_naca0012_p1c1.tol       = 0.00001
@@ -727,7 +740,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.556632, 0.941881, 0.950638, 0.041949]
+    turb_naca0012_p1c2.test_vals = [-5.554534, 0.943774, 0.400400, -0.095514]
     turb_naca0012_p1c2.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_p1c2.timeout   = 1600
     turb_naca0012_p1c2.tol       = 0.00001
@@ -897,7 +910,7 @@ def main():
     Jones_tc.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc.cfg_file  = "Jones.cfg"
     Jones_tc.test_iter = 5
-    Jones_tc.test_vals = [-5.280323, 0.379652, 72.206910, 1.277706]
+    Jones_tc.test_vals = [-5.280323, 0.379652, 72.211410, 1.277509]
     Jones_tc.su2_exec  = "parallel_computation.py -f"
     Jones_tc.timeout   = 1600
     Jones_tc.new_output = False
@@ -909,7 +922,7 @@ def main():
     Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
     Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.625234, -1.568780, 33.994680, 10.181610]
+    Jones_tc_rst.test_vals = [-4.625153, -1.568706, 33.994680, 10.181950]
     Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
     Jones_tc_rst.timeout   = 1600
     Jones_tc_rst.new_output = False
@@ -921,7 +934,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [-1.933208, 5.379917, 73.357930, 0.925868]
+    axial_stage2D.test_vals = [-1.933208, 5.379977, 73.357930, 0.925863]
     axial_stage2D.su2_exec  = "parallel_computation.py -f"
     axial_stage2D.timeout   = 1600
     axial_stage2D.new_output = False
@@ -974,7 +987,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.398053, 0.352779, 0.405462]
+    channel_2D.test_vals = [2.000000, 0.000000, 0.397970, 0.352779, 0.405462]
     channel_2D.su2_exec  = "parallel_computation.py -f"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001

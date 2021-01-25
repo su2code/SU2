@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -804,24 +804,19 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   geometry[MESH_0]->SetEdges();
   geometry[MESH_0]->SetVertex(config);
 
-  /*--- Compute cell center of gravity ---*/
-
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-  SU2_OMP_PARALLEL {
-    geometry[MESH_0]->SetCoord_CG();
-  }
-
   /*--- Create the control volume structures ---*/
 
   if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-  geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
-  geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  SU2_OMP_PARALLEL {
+    geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  }
 
   /*--- Visualize a dual control volume if requested ---*/
 
   if ((config->GetVisualize_CV() >= 0) &&
-      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetnPointDomain()))
-    geometry[MESH_0]->VisualizeControlVolume(config, UPDATE);
+      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetGlobal_nPointDomain()))
+    geometry[MESH_0]->VisualizeControlVolume(config);
 
   /*--- Identify closest normal neighbor ---*/
 
