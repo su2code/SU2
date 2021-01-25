@@ -68,7 +68,7 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   
   if (config->GetAxisymmetric() && config->GetViscous()) {
     AuxVar.resize(nPoint);
-    Grad_AuxVar.resize(nPoint,nDim);
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim);
   }
 
 }

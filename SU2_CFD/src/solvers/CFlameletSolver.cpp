@@ -408,7 +408,7 @@ void CFlameletSolver::SetInitialCondition(CGeometry **geometry,
 
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
 
-      
+      prog_burnt = fluid_model_local->GetLookUpTable()->GetTableLimitsProg().second;
 
       for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPoint(); i_point++) {
         
@@ -761,47 +761,71 @@ void CFlameletSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *visc_numerics, CConfig *config,
                                 unsigned short val_marker) {
 
-  unsigned long iPoint, iVertex, Point_Normal, total_index;
-  unsigned short iVar, iDim;
-  su2double *Normal;
-  
+  unsigned long i_point, i_vertex, total_index;
+  su2double *normal;
+  su2double *v_outlet, *v_domain;
+
   bool grid_movement  = config->GetGrid_Movement();
+  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  
+
   CFluidModel *fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();  
-  Normal = new su2double[nDim];
+
+  normal = new su2double[nDim];
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (i_vertex = 0; i_vertex < geometry->nVertex[val_marker]; i_vertex++) {
     
-    /* strong zero flux Neumann boundary condition at the outlet */
-
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    i_point = geometry->vertex[val_marker][i_vertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    
-    if (geometry->nodes->GetDomain(iPoint)) {
-      
-      /*--- Allocate the value at the outlet ---*/
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); 
-          
-        for (iVar = 0; iVar < nVar; iVar++)
-          Solution[iVar] = nodes->GetSolution(Point_Normal, iVar);
-        nodes->SetSolution_Old(iPoint, Solution);
-    
-        LinSysRes.SetBlock_Zero(iPoint);
+    if (geometry->nodes->GetDomain(i_point)) {
 
-        for (iVar = 0; iVar < nVar; iVar++){
-          nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
-        }
+        /*--- get the normal vector for i_vertex ---*/
+        geometry->vertex[val_marker][i_vertex]->GetNormal(normal);
 
-        /*--- Includes 1 in the diagonal ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
+        /* negate sign for outward facing normal */
+        for (int i_dim = 0; i_dim < nDim; ++i_dim)
+          normal[i_dim] *= -1;
+
+        /*--- set the normal ---*/
+        conv_numerics->SetNormal(normal);
+
+        /*--- get solution at the farfield boundary node ---*/
+        v_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(i_point);
+
+        /*--- get solution on the outlet ---*/
+        v_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, i_vertex);
+
+        /* --- Neumann condition for velocity ---*/
+        for (int i_dim = 0; i_dim < nDim; ++i_dim)
+            v_outlet[i_dim+1] = v_domain[i_dim+1];
+
+        /* --- Neumann condition for density ---*/
+        v_outlet[nDim+2] = v_domain[nDim+2];
+
+        conv_numerics->SetPrimitive(v_domain, v_outlet);
+
+        conv_numerics->SetScalarVar(nodes->GetSolution(i_point),
+                                    nodes->GetSolution(i_point));
+
+        if (dynamic_grid)
+          conv_numerics->SetGridVel(geometry->nodes->GetGridVel(i_point),
+                                    geometry->nodes->GetGridVel(i_point));
+
+        /*--- compute the residual using an upwind scheme ---*/
+        auto residual = conv_numerics->ComputeResidual(config);
+
+        /*--- Update residual value ---*/
+        LinSysRes.AddBlock(i_point, residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        if (implicit)
+          Jacobian.AddBlock2Diag(i_point, residual.jacobian_i);
     }
-  
   }
-  delete [] Normal;
+  delete [] normal;
 }
 
 void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
@@ -899,7 +923,8 @@ void CFlameletSolver::BC_Isothermal_Wall(CGeometry *geometry,
         condition (Dirichlet) and remove any 
         contribution to the residual at this node. ---*/
 
-        nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);  
+        nodes->SetSolution(iPoint, I_ENTHALPY, enth_wall);
+        nodes->SetSolution_Old(iPoint, I_ENTHALPY, enth_wall);
 
         LinSysRes.SetBlock_Zero(iPoint, I_ENTHALPY);
 

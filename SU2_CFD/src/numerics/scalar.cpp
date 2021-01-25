@@ -76,7 +76,7 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   AD::StartPreacc();
   AD::SetPreaccIn(Normal, nDim);
 
-  // FIXME daniel: this has to work for TurbVar and for scalars
+  // FIXME daniel: this has to work for TurbVar and for flamelet scalars
   // AD::SetPreaccIn(TurbVar_i, nVar);  AD::SetPreaccIn(TurbVar_j, nVar);
 
   AD::SetPreaccIn(scalar_i, nVar);  AD::SetPreaccIn(scalar_j, nVar);
@@ -100,7 +100,9 @@ CNumerics::ResidualType<> CUpwScalar::ComputeResidual(const CConfig* config) {
   }
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      q_ij += 0.5*(V_i[iDim+1]+V_j[iDim+1])*Normal[iDim];
+      su2double Velocity_i = V_i[iDim+1];
+      su2double Velocity_j = V_j[iDim+1];
+      q_ij += 0.5*(Velocity_i+Velocity_j)*Normal[iDim];
     }
   }
 
@@ -159,7 +161,8 @@ void CUpwScalar_General::FinishResidualCalc(const CConfig* config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    Flux[iVar] = a0*Density_i*scalar_i[iVar] + a1*Density_j*scalar_j[iVar];
+    Flux[iVar] = a0 * Density_i * scalar_i[iVar]
+               + a1 * Density_j * scalar_j[iVar];
 
     if (implicit) {
       for (jVar = 0; jVar < nVar; jVar++) {

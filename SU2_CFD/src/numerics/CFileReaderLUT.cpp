@@ -1,5 +1,5 @@
 #include "../include/numerics/CFileReaderLUT.hpp"
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../Common/include/option_structure.hpp"
 #include <string>
 #include <fstream>

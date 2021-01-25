@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 /*#include "../../Common/include/datatypes/primitive_structure.hpp"*/
 
 using namespace std;
