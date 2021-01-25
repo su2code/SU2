@@ -367,14 +367,7 @@ public:
   /*!
    * \brief Get the pointer to the reference geometry
    */
-  inline su2double *GetReference_Geometry(unsigned long iPoint) final { return Reference_Geometry[iPoint]; }
-
-  /*!
-   * \brief Get the value of the reference geometry for the coordinate iVar
-   */
-  inline su2double GetReference_Geometry(unsigned long iPoint, unsigned long iVar) const final {
-    return Reference_Geometry(iPoint,iVar);
-  }
+  inline const su2double* GetReference_Geometry(unsigned long iPoint) const final { return Reference_Geometry[iPoint]; }
 
   /*!
    * \brief Register the variables in the solution time_n array as input/output variable.
