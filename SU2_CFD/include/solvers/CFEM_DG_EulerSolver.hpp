@@ -306,7 +306,6 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
-  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.

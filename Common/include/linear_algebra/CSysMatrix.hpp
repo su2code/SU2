@@ -708,8 +708,8 @@ public:
    * \param[in] val_block - Block to add to the diagonal of the matrix.
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, bool Overwrite = true>
-  inline void SetBlock2Diag(unsigned long block_i, const OtherType* const* val_block, OtherType alpha = 1.0) {
+  template<class OtherType, bool Overwrite = true, class T = ScalarType>
+  inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
 
     auto mat_ii = &matrix[dia_ptr[block_i]*nVar*nEqn];
 
@@ -723,8 +723,8 @@ public:
   /*!
    * \brief Non overwrite version of SetBlock2Diag, also with scaling.
    */
-  template<class OtherType>
-  inline void AddBlock2Diag(unsigned long block_i, const OtherType* const* val_block, OtherType alpha = 1.0) {
+  template<class OtherType, class T = ScalarType>
+  inline void AddBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
     SetBlock2Diag<OtherType,false>(block_i, val_block, alpha);
   }
 
@@ -732,8 +732,8 @@ public:
    * \brief Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal.
    */
   template<class OtherType>
-  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType* const* val_block) {
-    AddBlock2Diag(block_i, val_block, OtherType(-1));
+  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType& val_block) {
+    AddBlock2Diag(block_i, val_block, -1.0);
   }
 
   /*!
@@ -746,6 +746,18 @@ public:
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val_matrix);
+  }
+
+  /*!
+   * \brief Adds the specified value to the diagonal of the (i, i) subblock
+   *        of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] iVar - Variable index.
+   * \param[in] val - Value to add to the diagonal elements of A(i, i).
+   */
+  template<class OtherType>
+  inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
+    matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val);
   }
 
   /*!

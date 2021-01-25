@@ -141,7 +141,7 @@ public:
    * \param[in] iVar - Index of the variable.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
-  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) override { Primitive(iPoint,iVar) = val_prim; }
+  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -283,7 +283,7 @@ public:
    * \param[in] iDim   - Index of the dimension.
    * \param[in] value  - Value of the reconstruction gradient component.
    */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override {
+  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
   }
 
@@ -364,7 +364,7 @@ public:
    * \brief Set the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
    */
-  void SetVelocity2(unsigned long iPoint) override;
+  void SetVelocity2(unsigned long iPoint) final;
 
   /*!
    * \brief Get the norm 2 of the velocity.
@@ -459,28 +459,28 @@ public:
    * \brief A virtual member.
    * \return Value of the vibrational-electronic temperature.
    */
-  inline su2double GetTemperature_ve(unsigned long iPoint) const override
+  inline su2double GetTemperature_ve(unsigned long iPoint) const final
                                     { return Primitive(iPoint,TVE_INDEX); }
 
   /*!
    * \brief Sets the vibrational electronic temperature of the flow.
    * \return Value of the temperature of the flow.
    */
-  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) override
+  inline bool SetTemperature_ve(unsigned long iPoint, su2double val_Tve) final
                                { Primitive(iPoint,TVE_INDEX) = val_Tve; return false; }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (trans.-rot.).
    * \return \f$\rho C^{t-r}_{v} \f$
    */
-  inline su2double GetRhoCv_tr(unsigned long iPoint) const override
+  inline su2double GetRhoCv_tr(unsigned long iPoint) const final
                               { return Primitive(iPoint,RHOCVTR_INDEX); }
 
   /*!
    * \brief Get the mixture specific heat at constant volume (vib.-el.).
    * \return \f$\rho C^{v-e}_{v} \f$
    */
-  inline su2double GetRhoCv_ve(unsigned long iPoint) const override
+  inline su2double GetRhoCv_ve(unsigned long iPoint) const final
                               { return Primitive(iPoint,RHOCVVE_INDEX); }
 
   /*!
@@ -496,24 +496,24 @@ public:
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  inline su2double *GetdPdU(unsigned long iPoint) override { return dPdU[iPoint]; }
+  inline su2double *GetdPdU(unsigned long iPoint) final { return dPdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial T}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTdU(unsigned long iPoint) override { return dTdU[iPoint]; }
+  inline su2double *GetdTdU(unsigned long iPoint) final { return dTdU[iPoint]; }
 
   /*!
    * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial T^{V-E}}{\partial \rho_s}\f$
    */
-  inline su2double *GetdTvedU(unsigned long iPoint) override { return dTvedU[iPoint]; }
+  inline su2double *GetdTvedU(unsigned long iPoint) final { return dTvedU[iPoint]; }
 
   /*!
    * \brief Get the mass fraction \f$\rho_s / \rho \f$ of species s.
    * \param[in] val_Species - Index of species s.
    * \return Value of the mass fraction of species s.
    */
-  inline su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const override {
+  inline su2double GetMassFraction(unsigned long iPoint, unsigned long val_Species) const final {
     return Primitive(iPoint,RHOS_INDEX+val_Species) / Primitive(iPoint,RHO_INDEX);
   }
 
