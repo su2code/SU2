@@ -34,9 +34,8 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
                                  const CConfig* config) :
   CNumerics(val_nDim, val_nVar, config),
   correct_gradient(correct_grad),
-  correct_jacobian(config->GetUse_Accurate_Turb_Jacobians()),
   incompressible(config->GetKind_Regime() == INCOMPRESSIBLE),
-  exact_jacobian(config->GetUse_Accurate_Turb_Jacobians())
+  exact_jacobian(config->GetUse_Accurate_Visc_Jacobians())
 {
   Proj_Mean_GradTurbVar = new su2double [nVar];
 
@@ -189,7 +188,7 @@ void CAvgGrad_TurbSA::FinishResidualCalc(const CConfig* config) {
   Jacobian_i[0][0] = -nu_e*proj_vector_ij/sigma;
   Jacobian_j[0][0] =  nu_e*proj_vector_ij/sigma;
   
-  if (correct_jacobian) CorrectJacobian(config);
+  if (exact_jacobian) CorrectJacobian(config);
 
   Jacobian_i[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
   Jacobian_j[0][0] += 0.5*Proj_Mean_GradTurbVar[0]/sigma;
@@ -284,7 +283,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(const CConfig* config) {
   Jacobian_j[0][0] =  proj_on_rho_j*diff_kine;
   Jacobian_j[1][1] =  proj_on_rho_j*diff_omega;
 
-  if (correct_jacobian) CorrectJacobian(config);
+  if (exact_jacobian) CorrectJacobian(config);
   if (!correct_gradient) {
     Jacobian_i[0][0] = Jacobian_i[1][1] = 0.0;
     Jacobian_j[0][0] = Jacobian_j[1][1] = 0.0;
