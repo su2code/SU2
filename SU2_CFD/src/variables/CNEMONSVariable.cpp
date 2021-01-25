@@ -6,7 +6,7 @@
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -30,7 +30,7 @@
 
 CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                  const su2double *val_massfrac,
-                                 su2double *val_mach, 
+                                 su2double *val_mach,
                                  su2double val_temperature,
                                  su2double val_temperature_ve,
                                  unsigned long npoint,
@@ -51,7 +51,7 @@ CNEMONSVariable::CNEMONSVariable(su2double val_pressure,
                                                                        val_nvarprimgrad,
                                                                        config,
                                                                        fluidmodel) {
-                               
+
 
 
   Temperature_Ref = config->GetTemperature_Ref();
@@ -116,17 +116,20 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+
+    /*--- Recompute Primitive from previous solution ---*/
+    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
-  /*--- Set additional point quantaties ---*/
-  Gamma(iPoint) = fluidmodel->ComputeGamma();  
+  /*--- Set additional point quantities ---*/
+  Gamma(iPoint) = fluidmodel->ComputeGamma();
 
   SetVelocity2(iPoint);
 
   Ds = fluidmodel->GetDiffusionCoeff();
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     DiffusionCoeff(iPoint, iSpecies) = Ds[iSpecies];
-  
+
   LaminarViscosity(iPoint) = fluidmodel->GetViscosity();
 
   thermalconductivities    = fluidmodel->GetThermalConductivities();

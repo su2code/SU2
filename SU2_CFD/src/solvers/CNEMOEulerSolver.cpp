@@ -217,28 +217,28 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
 
   counter_local = 0;
-  
+
   bool interp = config->GetSolutionInterpolation();
 
   /*--- Do not initialize variables for solution interpolation, since it makes the interpolation super slow and is not necessary  ---*/
   if (!interp) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  
+
       nonPhys = nodes->SetPrimVar(iPoint, FluidModel);
-  
+
       /*--- Set mixture state ---*/
       FluidModel->SetTDStatePTTv(Pressure_Inf, MassFrac_Inf, Temperature_Inf, Temperature_ve_Inf);
-  
+
       /*--- Compute other freestream quantities ---*/
       Density_Inf    = FluidModel->GetDensity();
       Soundspeed_Inf = FluidModel->GetSoundSpeed();
-  
+
       sqvel = 0.0;
       for (iDim = 0; iDim < nDim; iDim++){
         sqvel += Mvec_Inf[iDim]*Soundspeed_Inf * Mvec_Inf[iDim]*Soundspeed_Inf;
-      }      
+      }
       const auto& Energies_Inf = FluidModel->ComputeMixtureEnergies();
-  
+
       /*--- Initialize Solution & Solution_Old vectors ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         Solution[iSpecies]      = Density_Inf*MassFrac_Inf[iSpecies];
@@ -250,9 +250,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       Solution[nSpecies+nDim+1]   = Density_Inf*Energies_Inf[1];
       nodes->SetSolution(iPoint,Solution);
       nodes->SetSolution_Old(iPoint,Solution);
-  
+
       if(nonPhys)
-        counter_local++;   
+        counter_local++;
     }
   }
 
@@ -1018,7 +1018,10 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
   /*--- Rename density vector ---*/
   rhos.resize(nSpecies,0.0);
   for (unsigned short iSpecies=0; iSpecies < nSpecies; iSpecies++ ){
-    rhos[iSpecies] = V[iSpecies];
+    if (V[iSpecies] > 0)
+      rhos[iSpecies] = V[iSpecies];
+    else
+      rhos[iSpecies] = 1e-20;
   }
 
   /*--- Set new fluid state ---*/
@@ -1049,11 +1052,17 @@ void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double
   unsigned short T_INDEX   = nodes->GetTIndex();
   unsigned short TVE_INDEX = nodes->GetTveIndex();
   unsigned short VEL_INDEX = nodes->GetVelIndex();
-  
+
   /*--- Set densities and mass fraction ---*/
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-    U[iSpecies]    = V[iSpecies];
-    rhos[iSpecies] = V[iSpecies];
+    if (V[iSpecies] > 0) {
+      U[iSpecies]    = V[iSpecies];
+      rhos[iSpecies] = V[iSpecies];
+    }
+    else {
+      U[iSpecies]    = 1e-20;
+      rhos[iSpecies] = 1e-20;
+    }
   }
 
   /*--- Set momentum and compute v^2 ---*/
@@ -1094,8 +1103,8 @@ bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
   Tvemin = 50.0; Tvemax = 8E4;
 
   /*--- Check whether state makes sense ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    if (V[RHOS_INDEX+iSpecies] < 0.0) nonPhys = true;
+  // for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  //   if (V[RHOS_INDEX+iSpecies] < 0.0) nonPhys = true;
 
   if (V[P_INDEX] < 0.0) nonPhys = true;
 
@@ -1199,7 +1208,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         /*--- Set primitive variables for viscous terms and/or generalised source ---*/
         numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
 
-        /*--- If necessary, set variables needed for viscous computation ---*/       
+        /*--- If necessary, set variables needed for viscous computation ---*/
         if (viscous) {
 
           /*--- Set gradient of primitive variables ---*/
@@ -1223,7 +1232,7 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           /*--- Vib-el. thermal conductivity ---*/
           numerics->SetThermalConductivity_ve(nodes->GetThermalConductivity_ve(iPoint), nodes->GetThermalConductivity_ve(iPoint));
 
-          /*--- Vib-el energy ---*/          
+          /*--- Vib-el energy ---*/
           numerics->SetEve(nodes->GetEve(iPoint), nodes->GetEve(iPoint));
 
           /*--- Set turbulence kinetic energy ---*/
@@ -1521,7 +1530,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
    #else
      SU2_MPI::Error(string("Either 1) Mutation++ has not been configured/compiled (add '-Denable-mpp=true' to your meson string) or 2) CODI must be deactivated since it is not compatible with Mutation++."),
      CURRENT_FUNCTION);
-   #endif    
+   #endif
    break;
   case SU2_NONEQ:
    FluidModel = new CSU2TCLib(config, nDim, viscous);
