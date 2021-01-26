@@ -119,7 +119,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
 
     /*--- Compute recoverd pressure and temperature for all points ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
       /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
       dot_product = 0.0;
@@ -258,7 +258,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     integratedHeatFlow = config->GetStreamwise_Periodic_IntegratedHeatFlow();
 
     norm2_translation = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
     }
   }
@@ -343,7 +343,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
           /*--- Dot product ---*/
           dot_product = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
             dot_product += config->GetPeriodicTranslation(0)[iDim]*Normal[iDim];
           }
 
