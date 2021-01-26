@@ -87,6 +87,10 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
             geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n();
             geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n1();
           }
+          if (config[val_iZone]->GetDynamic_Grid()) {
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_n();
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_nM1();
+          }
         }
       }
       if (dual_time) {
@@ -105,6 +109,9 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
           }
           if (grid_IsMoving) {
             geometry[val_iZone][val_iInst][iMesh]->nodes->SetCoord_n();
+          }
+          if (config[val_iZone]->GetDynamic_Grid()) {
+              geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_n();
           }
         }
       }
@@ -126,6 +133,16 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
       Afterwards the GridVelocity is computed based on the Coordinates.
       ---*/
 
+      /*--- Temporarily store the loaded volumes in to old containers ---*/
+      if (config[val_iZone]->GetDynamic_Grid()) {
+        for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
+          geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_Old();
+          geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_n_Old();
+          geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_nM1_Old();
+        }
+      }
+
+      /*-- Load mesh solver ---*/
       if (config[val_iZone]->GetDeform_Mesh()) {
         solver[val_iZone][val_iInst][MESH_0][MESH_SOL]->LoadRestart(
             geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], Direct_Iter, true);
@@ -136,6 +153,26 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
         LoadUnsteady_Solution(geometry, solver, config, val_iInst, val_iZone, Direct_Iter - 1);
       } else {
         LoadUnsteady_Solution(geometry, solver, config, val_iInst, val_iZone, Direct_Iter - 2);
+
+        /*--- Set volumes into correct containers ---*/
+        if (config[val_iZone]->GetDynamic_Grid()) {
+          for (iMesh=0; iMesh<=config[val_iZone]->GetnMGLevels();iMesh++) {
+            /*--- If negative iteration number, set default ---*/
+            if (Direct_Iter - 2 < 0) {
+              for(iPoint=0; iPoint<geometry[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
+                geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume(iPoint,0.0);
+              }
+            }
+
+            /*--- Set currently loaded volume to Volume_nM1 ---*/
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_n();
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_nM1();
+
+            /*--- Set Volume_n and Volume from old containers ---*/
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_n_from_OldnM1();
+            geometry[val_iZone][val_iInst][iMesh]->nodes->SetVolume_from_Oldn();
+          }
+        }
       }
 
       /*--- Temporarily store the loaded solution in the Solution_Old array ---*/

@@ -60,6 +60,9 @@ private:
   su2activevector Volume;                 /*!< \brief Volume or Area of the control volume in 3D and 2D. */
   su2activevector Volume_n;               /*!< \brief Volume at time n. */
   su2activevector Volume_nM1;             /*!< \brief Volume at time n-1. */
+  su2activevector Volume_Old;             /*!< \brief Old containers for Volume. */
+  su2activevector Volume_n_Old;           /*!< \brief Old containers for Volume at time n. */
+  su2activevector Volume_nM1_Old;         /*!< \brief Old containers for Volume at time n-1. */
   su2activevector Periodic_Volume;        /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
 
   su2vector<bool> Domain;                 /*!< \brief Indicates if a point must be computed or belong to another boundary */
@@ -539,6 +542,31 @@ public:
    * \brief Set the volume of the control volume at time n+1.
    */
   void SetVolume_nM1();
+
+  /*!
+   * \brief Set the volume of the control volume at time n using n-1.
+   */
+  void SetVolume_n_from_OldnM1();
+
+  /*!
+   * \brief Set the volume of the control volume at current time using time n.
+   */
+  void SetVolume_from_Oldn();
+
+  /*!
+   * \brief Set the Volume to Volume_Old.
+   */
+  void SetVolume_Old();
+
+  /*!
+   * \brief Set the Volume_n to Volume_n_Old.
+   */
+  void SetVolume_n_Old();
+
+    /*!
+   * \brief Set the Volume_nM1 to Volume_nM1_Old.
+   */
+  void SetVolume_nM1_Old();
 
   /*!
    * \brief Set the parent control volume of an agglomerated control volume.
