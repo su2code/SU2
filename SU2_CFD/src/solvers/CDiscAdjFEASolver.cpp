@@ -885,6 +885,35 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
     }
   }
   SetSurface_Sensitivity(geometry, config);
+
+  // Temporary Output
+  if (config->GetAdvanced_FEAElementBased()) {
+    if (rank == MASTER_NODE) {
+      unsigned short iVar;
+
+      /*--- Header of the temporary dv sensitivity output file ---*/
+      ofstream myfile2_res;
+      bool outputDVFEA = false;
+
+      switch (config->GetDV_FEA()) {
+        case YOUNG_MODULUS:
+          myfile2_res.open("grad_young.opt");
+          myfile2_res << "INDEX"
+                    << "\t"
+                    << "GRAD" << endl;
+          myfile2_res.precision(15);
+
+          for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+            myfile2_res << iDV;
+            myfile2_res << "\t";
+            myfile2_res << scientific << Total_Sens_DV[iDV];
+            myfile2_res << endl;
+          }
+          myfile2_res.close();
+          break;
+      }
+    }
+  }
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
