@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,16 +107,9 @@ protected:
    * \brief Check the boundary vertex that are going to be moved.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] velocity_transfer - Boolean for deforming displacement or velocity
    */
-  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config);
-
-  /*!
-   * \brief Set boundary velocities.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics, CConfig *config);
+  void SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config, bool velocity_transfer);
 
 public:
   /*!

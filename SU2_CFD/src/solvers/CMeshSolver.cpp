@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -498,7 +498,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   }
 
   /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config);
+  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config, false);
 
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
@@ -583,12 +583,12 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
     LinSysSol.SetValZero();
   }
 
-  /*--- Impose boundary conditions including bouundary velocity ---*/
-  SetBoundaryVelocities(geometry[MESH_0], numerics[FEA_TERM], config);
+  /*--- Impose boundary conditions including boundary velocity ---*/
+  SetBoundaryDisplacements(geometry[MESH_0], numerics[FEA_TERM], config, true);
 
   /*--- Solve the linear system. ---*/
   Solve_System(geometry[MESH_0], config);
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       su2double val_vel = LinSysSol(iPoint, iDim);
 
@@ -598,10 +598,6 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
       geometry[MESH_0]->nodes->SetGridVel(iPoint, iDim, val_vel);
     }
   }
-
-  /*--- The velocity was computed for nPointDomain, now we communicate it. ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 }
 
 void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
@@ -664,7 +660,7 @@ void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config) const{
 
 }
 
-void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config){
+void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numerics, CConfig *config, bool velocity_transfer){
 
   /* Surface motions are not applied during discrete adjoint runs as the corresponding
    * boundary displacements are computed when loading the primal solution, and it
@@ -701,7 +697,8 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
         (config->GetMarker_All_Moving(iMarker) == YES)) {
 
-      BC_Deforming(geometry, numerics, config, iMarker);
+      if (!velocity_transfer) BC_Deforming(geometry, numerics, config, iMarker);
+      else BC_Velocity(geometry, numerics, config, iMarker);
     }
     else if (config->GetMarker_All_Deform_Mesh_Sym_Plane(iMarker) == YES) {
 
@@ -745,59 +742,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CNumerics *numer
     }
   }
 
-}
-
-void CMeshSolver::SetBoundaryVelocities(CGeometry *geometry, CNumerics *numerics, CConfig *config){
-
-  unsigned short iMarker;
-
-  /*--- Impose zero displacements of all non-moving surfaces (also at nodes in multiple moving/non-moving boundaries). ---*/
-  /*--- Exceptions: symmetry plane, the receive boundaries and periodic boundaries should get a different treatment. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
-        (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
-        (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
-
-      BC_Clamped(geometry, numerics, config, iMarker);
-    }
-  }
-
-  /*--- Symmetry plane is clamped, for now. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == NO) &&
-        (config->GetMarker_All_Moving(iMarker) == NO) &&
-        (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)) {
-
-      BC_Clamped(geometry, numerics, config, iMarker);
-    }
-  }
-
-  /*--- Impose velocity boundary conditions. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Deform_Mesh(iMarker) == YES) ||
-        (config->GetMarker_All_Moving(iMarker) == YES)) {
-
-      BC_Velocity(geometry, numerics, config, iMarker);
-    }
-  }
-
-  /*--- Clamp far away nodes according to deform limit. ---*/
-  if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) &&
-      (config->GetDeform_Limit() < MaxDistance)) {
-
-    const su2double limit = config->GetDeform_Limit() / MaxDistance;
-
-    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-      if (nodes->GetWallDistance(iPoint) <= limit) continue;
-
-      su2double zeros[MAXNVAR] = {0.0};
-      nodes->SetSolution(iPoint, zeros);
-      LinSysSol.SetBlock(iPoint, zeros);
-      Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
-    }
-  }
 }
 
 void CMeshSolver::SetDualTime_Mesh(void){
