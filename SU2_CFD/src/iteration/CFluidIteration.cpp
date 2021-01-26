@@ -40,7 +40,7 @@ void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, 
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This is done only in the first block subiteration.---*/
   /*--- From then on, the solver reuses the partially converged solution obtained in the previous subiteration ---*/
-  if (fsi && (OuterIter == 0)) {
+  if (fsi && !config[val_iZone]->GetDiscrete_Adjoint() && (OuterIter == 0)) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(
         geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone], TimeIter);
   }
