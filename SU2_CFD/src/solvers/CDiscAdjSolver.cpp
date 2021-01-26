@@ -261,10 +261,10 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(input, push_index);
 
   if (time_n_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n();
+    direct_solver->GetNodes()->RegisterSolution_time_n(push_index);
 
   if (time_n1_needed)
-    direct_solver->GetNodes()->RegisterSolution_time_n1();
+    direct_solver->GetNodes()->RegisterSolution_time_n1(push_index);
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -500,7 +500,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
@@ -529,7 +529,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       /*--- Extract the adjoint solution at time n ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      }
 
       /*--- Store the adjoint solution at time n ---*/
 
@@ -542,7 +547,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
       /*--- Extract the adjoint solution at time n-1 ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1_LocalIndex(iPoint,Solution);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      }
 
       /*--- Store the adjoint solution at time n-1 ---*/
 

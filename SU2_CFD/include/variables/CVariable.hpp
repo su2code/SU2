@@ -98,6 +98,12 @@ protected:
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
+  su2matrix<int> AD_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Time_n1_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Time_n1_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
@@ -2481,27 +2487,27 @@ public:
    /*!
     * \brief A virtual member.
     */
-  inline virtual void Register_femSolution_time_n() {}
+  inline virtual void Register_femSolution_time_n(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel(bool input) {}
+  inline virtual void RegisterSolution_Vel(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Vel_time_n() {}
+  inline virtual void RegisterSolution_Vel_time_n(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Accel(bool input) {}
+  inline virtual void RegisterSolution_Accel(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterSolution_Accel_time_n() {}
+  inline virtual void RegisterSolution_Accel_time_n(bool input, bool push_index) {}
 
   /*!
    * \brief A virtual member.
@@ -2522,6 +2528,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Vel(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Vel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief A virtual member.
@@ -2532,6 +2539,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Vel_time_n(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Vel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief A virtual member.
@@ -2542,6 +2550,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Accel(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Accel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief A virtual member.
@@ -2552,6 +2561,7 @@ public:
    * \brief A virtual member.
    */
   inline virtual void GetAdjointSolution_Accel_time_n(unsigned long iPoint, su2double *adj_sol) const {}
+  inline virtual void GetAdjointSolution_Accel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {}
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2563,12 +2573,12 @@ public:
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
-  void RegisterSolution_time_n();
+  void RegisterSolution_time_n(bool push_index);
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
-  void RegisterSolution_time_n1();
+  void RegisterSolution_time_n1(bool push_index);
 
   /*!
    * \brief Set the adjoint values of the solution.
@@ -2624,6 +2634,11 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Time_n_InputIndex(iPoint,iVar));
+  }
+
   /*!
    * \brief Set the adjoint values of the solution at time n-1.
    * \param[in] adj_sol - The adjoint values of the solution.
@@ -2640,6 +2655,11 @@ public:
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
+  }
+
+  inline void GetAdjointSolution_time_n1_LocalIndex(unsigned long iPoint, su2double *adj_sol) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Time_n1_InputIndex(iPoint,iVar));
   }
 
   /*!

@@ -350,14 +350,14 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
 
-    direct_solver->GetNodes()->RegisterSolution_Accel(input);
-    direct_solver->GetNodes()->RegisterSolution_Vel(input);
+    direct_solver->GetNodes()->RegisterSolution_Accel(input, push_index);
+    direct_solver->GetNodes()->RegisterSolution_Vel(input, push_index);
 
     /*--- Register solution (u), acceleration (u'') and velocity (u') at time step n-1 ---*/
 
-    direct_solver->GetNodes()->Register_femSolution_time_n();
-    direct_solver->GetNodes()->RegisterSolution_Accel_time_n();
-    direct_solver->GetNodes()->RegisterSolution_Vel_time_n();
+    direct_solver->GetNodes()->Register_femSolution_time_n(input, push_index);
+    direct_solver->GetNodes()->RegisterSolution_Accel_time_n(input, push_index);
+    direct_solver->GetNodes()->RegisterSolution_Vel_time_n(input, push_index);
 
   }
 
@@ -456,8 +456,8 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
   if (dynamic) {
     /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
-    direct_solver->GetNodes()->RegisterSolution_Accel(input);
-    direct_solver->GetNodes()->RegisterSolution_Vel(input);
+    direct_solver->GetNodes()->RegisterSolution_Accel(input, push_index);
+    direct_solver->GetNodes()->RegisterSolution_Vel(input, push_index);
   }
 
 }
@@ -549,7 +549,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetMultizone_Problem()) {
+    if(multizone) {
       direct_solver->GetNodes()->GetAdjointSolution_LocalIndex(iPoint,Solution);
     }
     else {
@@ -575,7 +575,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint acceleration solution u'' ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_Accel(iPoint,Solution_Accel);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_Accel_LocalIndex(iPoint,Solution_Accel);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_Accel(iPoint,Solution_Accel);
+      }
 
       /*--- Store the adjoint acceleration solution u'' ---*/
 
@@ -592,7 +597,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint velocity solution u'' ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_Vel(iPoint,Solution_Vel);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_Vel_LocalIndex(iPoint,Solution_Vel);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_Vel(iPoint,Solution_Vel);
+      }
 
       /*--- Store the adjoint velocity solution u'' ---*/
 
@@ -605,7 +615,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint solution at time n ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n_LocalIndex(iPoint,Solution);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      }
 
       /*--- Store the adjoint solution at time n ---*/
 
@@ -617,7 +632,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint acceleration solution u'' at time n ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_Accel_time_n(iPoint,Solution_Accel);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_Accel_time_n_LocalIndex(iPoint,Solution_Accel);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_Accel_time_n(iPoint,Solution_Accel);
+      }
 
       /*--- Store the adjoint acceleration solution u'' at time n---*/
 
@@ -630,7 +650,12 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       /*--- Extract the adjoint velocity solution u' at time n ---*/
 
-      direct_solver->GetNodes()->GetAdjointSolution_Vel_time_n(iPoint,Solution_Vel);
+      if(multizone) {
+        direct_solver->GetNodes()->GetAdjointSolution_Vel_time_n_LocalIndex(iPoint,Solution_Vel);
+      }
+      else {
+        direct_solver->GetNodes()->GetAdjointSolution_Vel_time_n(iPoint,Solution_Vel);
+      }
 
       /*--- Store the adjoint velocity solution u' at time n ---*/
 

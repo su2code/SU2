@@ -59,6 +59,18 @@ protected:
 
   MatrixType Prestretch;            /*!< \brief Prestretch geometry */
 
+  su2matrix<int> AD_Vel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Vel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Vel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Vel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Accel_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Accel_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
+  su2matrix<int> AD_Accel_Time_n_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_Accel_Time_n_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+
   /*!
    * \brief Constructor of the class.
    * \note This class is not supposed to be instantiated, it is only a building block for CFEABoundVariable
@@ -418,29 +430,29 @@ public:
    * \brief Register the variables in the solution time_n array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void Register_femSolution_time_n() final;
+  void Register_femSolution_time_n(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the velocity array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void RegisterSolution_Vel(bool input) final;
+  void RegisterSolution_Vel(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the velocity time_n array as input/output variable.
    */
-  void RegisterSolution_Vel_time_n() final;
+  void RegisterSolution_Vel_time_n(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the acceleration array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void RegisterSolution_Accel(bool input) final;
+  void RegisterSolution_Accel(bool input, bool push_index) final;
 
   /*!
    * \brief Register the variables in the acceleration time_n array as input/output variable.
    */
-  void RegisterSolution_Accel_time_n() final;
+  void RegisterSolution_Accel_time_n(bool input, bool push_index) final;
 
   /*!
    * \brief Set the velocity adjoint values of the solution.
@@ -458,6 +470,11 @@ public:
   inline void GetAdjointSolution_Vel(unsigned long iPoint, su2double *adj_sol) const final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel(iPoint,iVar));
+  }
+
+  inline void GetAdjointSolution_Vel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Vel_InputIndex(iPoint,iVar));
   }
 
   /*!
@@ -478,6 +495,11 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel_time_n(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_Vel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Vel_Time_n_InputIndex(iPoint,iVar));
+  }
+
   /*!
    * \brief Set the acceleration adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
@@ -494,6 +516,11 @@ public:
   inline void GetAdjointSolution_Accel(unsigned long iPoint, su2double *adj_sol) const final {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel(iPoint,iVar));
+  }
+
+  inline void GetAdjointSolution_Accel_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Accel_InputIndex(iPoint,iVar));
   }
 
   /*!
@@ -514,4 +541,8 @@ public:
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n(iPoint,iVar));
   }
 
+  inline void GetAdjointSolution_Accel_time_n_LocalIndex(unsigned long iPoint, su2double *adj_sol) const final {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      adj_sol[iVar] = AD::GetDerivative(AD_Accel_Time_n_InputIndex(iPoint,iVar));
+  }
 };
