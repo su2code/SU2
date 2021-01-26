@@ -316,8 +316,6 @@ def aerodynamics( config, state=None ):
     for key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
     
-    print('funcs output')
-    print(funcs)
     return funcs
 
 #: def aerodynamics()

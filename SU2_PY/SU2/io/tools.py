@@ -162,8 +162,7 @@ def read_history( History_filename, nZones = 1):
                 var = field + '[' + key.split('[')[1]
                 
         history_data[var] = plot_data[key]
-    print('history_data output')
-    print(history_data)
+
     return history_data
     
 #: def read_history()
