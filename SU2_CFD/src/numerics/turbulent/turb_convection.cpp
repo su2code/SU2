@@ -146,9 +146,11 @@ void CUpwSca_TurbSST::FinishResidualCalc(const CConfig* config) {
   Jacobian_j[0][0] = Jacobian_j[1][1] = a_j;
 
   if (exact_jacobian) {
-    const su2double upw_factor = (Density_i*TurbVar_i[iVar]*a_i + Density_j*TurbVar_j[iVar]*a_j)
-                               / (a_i+a_j);
     for (auto iVar = 0; iVar < nVar; iVar++) {
+      const su2double upw_factor = (Density_i*TurbVar_i[iVar]*a_i 
+                                 +  Density_j*TurbVar_j[iVar]*a_j)
+                                 / (a_i+a_j);
+                                 
       Jacobian_i[iVar][nVar] = - 0.5*upw_factor*Proj_i/Density_i;
       Jacobian_j[iVar][nVar] = - 0.5*upw_factor*Proj_j/Density_j;
       for (auto iDim = 0; iDim < nDim; iDim++) {

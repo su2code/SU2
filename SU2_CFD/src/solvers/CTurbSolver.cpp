@@ -381,10 +381,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   constexpr size_t MAXNVARTOT = MAXNVAR + 4;
 
-  const su2double dUl_dVl = *rho_l;
-  const su2double dUr_dVr = *rho_r;
-  const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
-
   su2double dFl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
             dFr_dVr[MAXNVAR][MAXNVARTOT] = {0.0},
             dUl_dVl[MAXNVARTOT][MAXNVARTOT] = {0.0},
@@ -507,7 +503,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto ind = nVar+(iVar%(nDim+2));
     if (limiterFlow) {
       Psi_i[ind] = sign*flowNodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
-\    }
+    }
     else {
       Psi_i[ind] = sign*0.5*(1.0 - Kappa_Flow)*good_i;
     }

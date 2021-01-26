@@ -30,15 +30,14 @@
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
                                    bool val_low_dissipation) 
     : CNumerics(val_nDim, val_nVar, config),
-      impliicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
+      implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
       dynamic_grid(config->GetDynamic_Grid()),
+      roe_low_dissipation(val_low_dissipation),
       exact_jacobian(config->GetUse_Accurate_Kappa_Jacobians()) {
 
   kappa = config->GetRoe_Kappa(),; // 1 is unstable
 
   nPrimVarTot = nVar + tkeNeeded*exact_jacobian;
-
-  roe_low_dissipation = val_low_dissipation;
 
   Flux = new su2double [nVar] ();
   Diff_U = new su2double [nPrimVarTot] ();
