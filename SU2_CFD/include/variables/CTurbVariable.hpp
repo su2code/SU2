@@ -144,12 +144,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual const MatrixType& GetPrimitive(void) const { static const MatrixType dummy_mat; return dummy_mat; }
+  inline virtual const MatrixType& GetPrimitive(void) const { return Solution; }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
+  inline virtual su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const { return Solution(iPoint,iVar); }
 
   /*!
    * \brief A virtual member.
@@ -164,7 +164,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetPrimitive(unsigned long iPoint) { return nullptr; }
+  inline virtual su2double *GetPrimitive(unsigned long iPoint) { return Solution[iPoint]; }
 
 
   

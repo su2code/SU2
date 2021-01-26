@@ -3317,7 +3317,6 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
   const auto InnerIter     = config->GetInnerIter();
   const auto turb_model    = config->GetKind_Turb_Model();
   const bool turb          = (turb_model != NONE) && (nTurbVarGrad > 0);
-  const bool tkeNeeded     = (turb_model == SST) || (turb_model == SST_SUST);
   const bool limNeeded     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
   const bool limTurbNeeded = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
 
@@ -3391,8 +3390,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
   if (turb) {
 
-    const auto T_i = tkeNeeded? turbNodes->GetPrimitive(iPoint) : turbNodes->GetSolution(iPoint);
-    const auto T_j = tkeNeeded? turbNodes->GetPrimitive(jPoint) : turbNodes->GetSolution(jPoint);
+    const auto T_i = turbNodes->GetPrimitive(iPoint);
+    const auto T_j = turbNodes->GetPrimitive(jPoint);
 
     const auto& Lim_Turb_i = turbNodes->GetLimiter(iPoint);
     const auto& Lim_Turb_j = turbNodes->GetLimiter(jPoint);
@@ -3720,7 +3719,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       vel_k[iDim] = primvar_k[iDim+1];
       sq_vel_k += pow(vel_k[iDim],2);
     }
-    
+
     dVk_dUk[0][0] = 1.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;

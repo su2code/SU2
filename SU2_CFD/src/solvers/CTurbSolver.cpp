@@ -96,8 +96,6 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   const unsigned short turbModel = config->GetKind_Turb_Model();
-  const bool sst = ((turbModel == SST) || (turbModel == SST_SUST));
-  const bool sa_neg = (turbModel == SA_NEG);
   const bool kappa  = config->GetUse_Accurate_Kappa_Jacobians();
 
   const bool muscl_start = ((config->GetInnerIter() >= config->GetMUSCL_Start_Iter()) || 
@@ -138,8 +136,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
 
     /*--- Turbulent variables w/o reconstruction ---*/
 
-    const auto T_i = sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint);
-    const auto T_j = sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint);
+    const auto T_i = nodes->GetPrimitive(iPoint);
+    const auto T_j = nodes->GetPrimitive(jPoint);
 
     /*--- Grid Movement ---*/
 
@@ -261,8 +259,8 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-  numerics->SetTurbVar(sst? nodes->GetPrimitive(iPoint) : nodes->GetSolution(iPoint),
-                       sst? nodes->GetPrimitive(jPoint) : nodes->GetSolution(jPoint));
+  numerics->SetTurbVar(nodes->GetPrimitive(iPoint),
+                       nodes->GetPrimitive(jPoint));
 
   numerics->SetTurbVarGradient(nodes->GetGradient(iPoint),
                                nodes->GetGradient(jPoint));
