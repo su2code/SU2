@@ -3567,13 +3567,14 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
   for (auto iVar = 1; iVar <= nVar; iVar++) {
+    const auto ind = iVar%(nDim+2);
     if (limiter) {  
-      dVl_dVi[iVar%nVar] = sign*(1.0 + 0.5*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
-      dVr_dVi[iVar%nVar] = sign*(    - 0.5*nodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
+      dVl_dVi[ind] = sign*(1.0 + 0.5*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
+      dVr_dVi[ind] = sign*(    - 0.5*nodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
     }
     else {
-      dVl_dVi[iVar%nVar] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
-      dVr_dVi[iVar%nVar] = sign*(      0.5*Kappa_Flow*good_j);
+      dVl_dVi[ind] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
+      dVr_dVi[ind] = sign*(      0.5*Kappa_Flow*good_j);
     }
   }
   if (tkeNeeded) {
@@ -3672,10 +3673,11 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   su2double Psi_i[MAXNVARTOT] = {0.0};
   for (auto iVar = 1; iVar <= nVar; iVar++) {
+    const auto ind = iVar%(nDim+2);
     if (limiter)
-      Psi_i[iVar%nVar] = sign*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
+      Psi_i[ind] = sign*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
     else
-      Psi_i[iVar%nVar] = sign*0.5*(1.0-Kappa_Flow)*good_i;
+      Psi_i[ind] = sign*0.5*(1.0-Kappa_Flow)*good_i;
   }
   if (tkeNeeded) {
     if (limiterTurb)
@@ -3718,7 +3720,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
       vel_k[iDim] = primvar_k[iDim+1];
       sq_vel_k += pow(vel_k[iDim],2);
     }
-
+    
     dVk_dUk[0][0] = 1.0;
     for (auto iDim = 0; iDim < nDim; iDim++) {
       dVk_dUk[iDim+1][0]      = -vel_k[iDim]*inv_rho_k;

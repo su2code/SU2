@@ -196,16 +196,20 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver,
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
       if (muscl && kappa) {
-        const su2double rho_i = good_i? flowPrimVar_i[nDim+2] : V_i[nDim+2],
-                        rho_j = good_j? flowPrimVar_j[nDim+2] : V_j[nDim+2];
+        su2double *primvar_i = good_i? flowPrimVar_i : V_i,
+                  *primvar_j = good_j? flowPrimVar_j : V_j,
+                  *turbvar_i = good_i? turbPrimVar_i : T_i,
+                  *turbvar_j = good_j? turbPrimVar_j : T_j;
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &rho_i, &rho_j,
+                                 primvar_i, primvar_j,
+                                 turbvar_i, turbvar_j,
                                  residual.jacobian_i, 
                                  residual.jacobian_j,
                                  good_i, good_j,
                                  iPoint, jPoint);
         SetExtrapolationJacobian(solver, geometry, config,
-                                 &rho_j, &rho_i,
+                                 primvar_j, primvar_i,
+                                 turbvar_j, turbvar_i,
                                  residual.jacobian_j, 
                                  residual.jacobian_i,
                                  good_j, good_i,
@@ -342,8 +346,10 @@ void CTurbSolver::CheckExtrapolatedState(const CConfig       *config,
 void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
                                            const CGeometry     *geometry,
                                            const CConfig       *config,
-                                           const su2double     *rho_l, 
-                                           const su2double     *rho_r,
+                                           const su2double     *primvar_l, 
+                                           const su2double     *primvar_r,
+                                           const su2double     *turbvar_l, 
+                                           const su2double     *turbvar_r,
                                            const su2double     *const *const dFl_dUl,
                                            const su2double     *const *const dFr_dUr,
                                            const bool          good_i,
@@ -359,17 +365,32 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   const bool gg = (kindRecon == GREEN_GAUSS);
 
-  const auto InnerIter  = config->GetInnerIter();
-  const bool limiter    = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const su2double Kappa = config->GetMUSCL_Kappa_Turb();
+  const auto InnerIter   = config->GetInnerIter();
+  const bool limiter     = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  
+  const su2double Kappa_Flow = config->GetMUSCL_Kappa_Flow();
+  const su2double Kappa_Turb = config->GetMUSCL_Kappa_Turb();
   
   auto flowNodes = solver[FLOW_SOL]->GetNodes();
 
   const su2double sign  = 1.0 - 2.0*(iPoint > jPoint);
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
+
+  const unsigned long nPrimVarTot = nVar + nDim + 1;
+
+  constexpr size_t MAXNVARTOT = MAXNVAR + 4;
+
   const su2double dUl_dVl = *rho_l;
   const su2double dUr_dVr = *rho_r;
   const su2double dVi_dUi = 1.0/flowNodes->GetDensity(iPoint);
+
+  su2double dFl_dVl[MAXNVAR][MAXNVARTOT] = {0.0},
+            dFr_dVr[MAXNVAR][MAXNVARTOT] = {0.0},
+            dUl_dVl[MAXNVARTOT][MAXNVARTOT] = {0.0},
+            dUr_dVr[MAXNVARTOT][MAXNVARTOT] = {0.0},
+            dVi_dUi[MAXNVARTOT][MAXNVAR] = {0.0},
+            dVk_dUk[MAXNVARTOT][MAXNVAR] = {0.0};
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -378,22 +399,85 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- Store reconstruction weights ---*/
 
-  su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
+  su2double dVl_dVi[MAXNVARTOT] = {0.0}, dVr_dVi[MAXNVARTOT] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
       dVl_dVi[iVar] = sign*(1.0 + 0.5*nodes->GetLimiter(iPoint,iVar)*good_i);
       dVr_dVi[iVar] = sign*(    - 0.5*nodes->GetLimiter(jPoint,iVar)*good_j);
     }
     else {
-      dVl_dVi[iVar] = sign*(1.0 - 0.5*Kappa*good_i);
-      dVr_dVi[iVar] = sign*(      0.5*Kappa*good_j);
+      dVl_dVi[iVar] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
+      dVr_dVi[iVar] = sign*(      0.5*Kappa_Turb*good_j);
     }
+  }
+
+  for (auto iVar = 1; iVar <= nDim+2; iVar++) {
+    if (iVar == nDim+1) continue; // skip pressure
+    const auto ind = nVar+(iVar%(nDim+2));
+    if (limiterFlow) {
+      dVl_dVi[ind] = sign*(1.0 + 0.5*flowNodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
+      dVr_dVi[ind] = sign*(    - 0.5*flowNodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
+    }
+    else {
+      dVl_dVi[ind] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
+      dVr_dVi[ind] = sign*(      0.5*Kappa_Flow*good_j);
+    }
+  }
+
+  /*--- dU/d{k,o,r,v}, evaluated at face ---*/
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    dUl_dVl[iVar][iVar] = primvar_l[nDim+2];
+    dUr_dVr[iVar][iVar] = primvar_r[nDim+2];;
+
+    dUl_dVl[iVar][nVar] = turbvar_l[iVar];
+    dUr_dVr[iVar][nVar] = turbvar_r[iVar];
+  }
+  dUl_dVl[nVar][nVar] = dUl_dVl[nVar][nVar] = 1.0;
+
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    dUl_dVl[nVar+1][nVar] = primvar_l[iDim+1];
+    dUr_dVr[nVar+1][nVar] = primvar_r[iDim+1];
+
+    dUl_dVl[nVar+1][nVar+1] = primvar_l[nDim+2];
+    dUr_dVr[nVar+1][nVar+1] = primvar_r[nDim+2];
+  }
+
+  /*--- dF/d{r,v,p,k}, evaluated at face ---*/
+
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    for (auto jVar = 0; jVar < nPrimVarTot; jVar++) {
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+        dFl_dVl[iVar][jVar] += dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
+        dFr_dVr[iVar][jVar] += dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
+      }
+    }
+  }
+
+  /*--- d{k,o,r,v}/dU, evaluated at node ---*/
+
+  const auto primvar_i = flowNodes->GetPrimitive(iPoint);
+  const auto turbvar_i = nodes->GetPrimitive(iPoint);
+
+  su2double inv_rho_i = 1.0/primvar_i[nDim+2];
+  for (auto iVar = 0; iVar < nVar; iVar++) {
+    dVi_dUi[iVar][iVar] = inv_rho_i;
+    dVi_dUi[iVar][nVar] = -turbvar_i[iVar]*inv_rho_i;
+  }
+  dVi_dUi[nVar][nVar] = 1.0;
+
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    dVi_dUi[nVar+1][nVar] = -primvar_i[iDim+1]*inv_rho_i;
+    dVi_dUi[nVar+1][nVar+1] = inv_rho_i;
   }
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] = (dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]
-                              + dFr_dUr[iVar][jVar]*dUr_dVr*dVr_dVi[jVar])*dVi_dUi;
+      Jacobian_i[iVar][jVar] = 0.0;
+      for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+        Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
+                                 + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
+      }
     }
   }
 
@@ -410,12 +494,23 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
    /*--- Store Psi_i since it's the same for the Jacobian  of all neighbors ---*/
 
-  su2double Psi_i[MAXNVAR] = {0.0};
+  su2double Psi_i[MAXNVARTOT] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter)
       Psi_i[iVar] = sign*nodes->GetLimiter(iPoint,iVar)*good_i;
     else
-      Psi_i[iVar] = sign*0.5*(1.0-Kappa)*good_i;
+      Psi_i[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
+  }
+
+  for (auto iVar = 1; iVar <= nDim+2; iVar++) {
+    if (iVar == nDim+1) continue; // skip pressure
+    const auto ind = nVar+(iVar%(nDim+2));
+    if (limiterFlow) {
+      Psi_i[ind] = sign*flowNodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
+\    }
+    else {
+      Psi_i[ind] = sign*0.5*(1.0 - Kappa_Flow)*good_i;
+    }
   }
 
   /*--- Green-Gauss surface terms ---*/
@@ -433,14 +528,31 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] += dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVi_dUi;
+        for (auto kVar = 0; kVar < nPrimVarTot; kVar++)
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
   }
 
   /*--- Neighbor node terms ---*/
 
   for (auto iNeigh = 0; iNeigh < node_i->GetnPoint(); iNeigh++) {
+
+    /*--- d{k,o,r,v}/dU, evaluated at neighbor node ---*/
+
     const auto kPoint = node_i->GetPoint(iNeigh);
-    const su2double dVk_dUk = 1.0/flowNodes->GetDensity(kPoint);
+    const auto primvar_k = flowNodes->GetPrimitive(kPoint);
+    const auto turbvar_k = nodes->GetPrimitive(kPoint);
+
+    su2double inv_rho_k = 1.0/primvar_k[nDim+2];
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      dVk_dUk[iVar][iVar] = inv_rho_k;
+      dVk_dUk[iVar][nVar] = -turbvar_k[iVar]*inv_rho_k;
+    }
+    dVk_dUk[nVar][nVar] = 1.0;
+
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      dVk_dUk[nVar+1][nVar] = -primvar_k[iDim+1]*inv_rho_k;
+      dVk_dUk[nVar+1][nVar+1] = inv_rho_k;
+    }
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
@@ -453,8 +565,11 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] += dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
-        Jacobian_j[iVar][jVar]  = dFl_dUl[iVar][jVar]*dUl_dVl*dVl_dVi[jVar]*dVk_dUk;
+        Jacobian_j[iVar][jVar] = 0.0;
+        for (auto kVar = 0; kVar < nPrimVarTot; kVar++) {
+          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
+          Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
+        }
       }
     }
 
