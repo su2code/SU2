@@ -1632,7 +1632,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     }
   }
 
-  factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  AeroCoeffForceRef = 0.5 * RefDensity * RefArea * RefVel2;
+  factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Reference pressure is always the far-field value. ---*/
 
@@ -1938,57 +1939,18 @@ template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometry, const CConfig* config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double factor, RefVel2 = 0.0, RefTemp, RefDensity = 0.0, Mach2Vel, Mach_Motion, MassFlow, Density;
+  su2double MassFlow, Density;
   const su2double *Normal = nullptr, *Coord = nullptr;
   string Marker_Tag, Monitoring_Tag;
   su2double AxiFactor;
 
   su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
-  su2double RefArea = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
-  su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
   bool axisymmetric = config->GetAxisymmetric();
 
-  /// TODO: Move these ifs to specialized functions.
-
-  if (FlowRegime == COMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dynamic meshes, use the motion Mach number as a reference value
-     for computing the force coefficients. Otherwise, use the freestream values,
-     which is the standard convention. ---*/
-
-    RefTemp = Temperature_Inf;
-    RefDensity = Density_Inf;
-    if (dynamic_grid) {
-      Mach2Vel = sqrt(Gamma * Gas_Constant * RefTemp);
-      Mach_Motion = config->GetMach_Motion();
-      RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
-    } else {
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    }
-  }
-
-  if (FlowRegime == INCOMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dimensional or non-dim based on initial values, use
-     the far-field state (inf). For a custom non-dim based
-     on user-provided reference values, use the ref values
-     to compute the forces. ---*/
-
-    if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-      RefDensity = Density_Inf;
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-      RefDensity = config->GetInc_Density_Ref();
-      RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
-    }
-  }
-
-  factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*-- Variables initialization ---*/
 
@@ -2263,8 +2225,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short T_INDEX = 0, TVE_INDEX = 0, VEL_INDEX = 0;
-  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefTemp, RefVel2 = 0.0, dTn, dTven,
-            RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel, Mach2Vel, Mach_Motion,
+  su2double Viscosity = 0.0, WallDist[3] = {0.0}, Area, TauNormal, RefVel2 = 0.0, dTn, dTven,
+            RefDensity = 0.0, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, TauTangent[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2273,7 +2235,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
-  su2double RefArea = config->GetRefArea();
   su2double RefLength = config->GetRefLength();
   su2double RefHeatFlux = config->GetHeat_Flux_Ref();
   su2double Gas_Constant = config->GetGas_ConstantND();
@@ -2294,44 +2255,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     VEL_INDEX     = nSpecies+2;
   }
 
-  /// TODO: Move these ifs to specialized functions.
-
-  if (FlowRegime == COMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dynamic meshes, use the motion Mach number as a reference value
-     for computing the force coefficients. Otherwise, use the freestream values,
-     which is the standard convention. ---*/
-
-    RefTemp = Temperature_Inf;
-    RefDensity = Density_Inf;
-    if (dynamic_grid) {
-      Mach2Vel = sqrt(Gamma * Gas_Constant * RefTemp);
-      Mach_Motion = config->GetMach_Motion();
-      RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
-    } else {
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    }
-  }
-
-  if (FlowRegime == INCOMPRESSIBLE) {
-    /*--- Evaluate reference values for non-dimensionalization.
-     For dimensional or non-dim based on initial values, use
-     the far-field state (inf). For a custom non-dim based
-     on user-provided reference values, use the ref values
-     to compute the forces. ---*/
-
-    if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) || (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-      RefDensity = Density_Inf;
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
-    } else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
-      RefDensity = config->GetInc_Density_Ref();
-      RefVel2 = config->GetInc_Velocity_Ref() * config->GetInc_Velocity_Ref();
-    }
-  }
-
-  const su2double factor = 1.0 / (0.5 * RefDensity * RefArea * RefVel2);
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*--- Variables initialization ---*/
 
@@ -2451,8 +2375,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
 
       /*--- Compute total and maximum heat flux on the wall ---*/
-
-
 
       /// TODO: Move these ifs to specialized functions.
       if (!nemo){

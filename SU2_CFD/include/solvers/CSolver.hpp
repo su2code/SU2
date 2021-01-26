@@ -2517,6 +2517,11 @@ public:
   inline virtual void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
   /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the lift coefficient (inviscid + viscous contribution).
    */
