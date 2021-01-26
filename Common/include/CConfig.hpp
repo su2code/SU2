@@ -732,6 +732,7 @@ private:
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
   unsigned short Tab_FileFormat;      /*!< \brief Format of the output files. */
+  unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
@@ -5225,6 +5226,12 @@ public:
    * \return Format of the output solution.
    */
   unsigned short GetTabular_FileFormat(void) const { return Tab_FileFormat; }
+
+  /*!
+   * \brief Get the output precision to be used in <ofstream>.precision(value).
+   * \return Output precision.
+   */
+  unsigned short GetOutput_Precision(void) const { return output_precision; }
 
   /*!
    * \brief Get the format of the output solution.
