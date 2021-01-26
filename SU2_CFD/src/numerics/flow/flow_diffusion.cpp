@@ -35,10 +35,13 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config),
       nPrimVar(val_nPrimVar),
+      implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
       correct_gradient(val_correct_grad),
       exact_jacobian(config->GetUse_Accurate_Visc_Jacobians()) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  
+  tkeNeeded = ((config->GetKind_Turb_Model() == SST) || 
+               (config->GetKind_Turb_Model() == SST_SUST));
 
   TauWall_i = -1.0; TauWall_j = -1.0;
 

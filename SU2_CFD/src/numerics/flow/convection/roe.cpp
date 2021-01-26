@@ -35,6 +35,10 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
       roe_low_dissipation(val_low_dissipation),
       exact_jacobian(config->GetUse_Accurate_Kappa_Jacobians()) {
 
+  tkeNeeded = ((config->GetKind_Turb_Model() == SST) || 
+               (config->GetKind_Turb_Model() == SST_SUST)) &&
+               (exact_jacobian);
+
   kappa = config->GetRoe_Kappa(); // 1 is unstable
 
   nPrimVarTot = nVar + tkeNeeded*exact_jacobian;

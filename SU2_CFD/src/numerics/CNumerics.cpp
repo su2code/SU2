@@ -159,8 +159,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Corners[2][1] = 0.866025;
   }
 
-  tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
-
 }
 
 CNumerics::~CNumerics(void) {
