@@ -47,5 +47,6 @@ void CDiscAdjFEABoundVariable::AllocateBoundaryVariables(CConfig *config) {
 
   FlowTraction_Sens.resize(nBoundPt,nDim) = su2double(0.0);
   SourceTerm_DispAdjoint.resize(nBoundPt,nDim) = su2double(0.0);
+  SourceTerm_VelAdjoint.resize(nBoundPt,nDim) = su2double(0.0);
 
 }

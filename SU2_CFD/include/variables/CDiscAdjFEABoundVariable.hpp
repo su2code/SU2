@@ -43,6 +43,7 @@ private:
   MatrixType FlowTraction_Sens;        /*!< \brief Adjoint of the flow tractions. */
   MatrixType SourceTerm_DispAdjoint;   /*!< \brief Source term applied into the displacement
                                                    adjoint coming from external solvers. */
+  MatrixType SourceTerm_VelAdjoint;
 
   CVertexMap<unsigned> VertexMap;      /*!< \brief Object that controls accesses to the variables of this class. */
 
@@ -101,6 +102,10 @@ public:
     if (!VertexMap.GetVertexIndex(iPoint)) return;
     SourceTerm_DispAdjoint(iPoint,iDim) = val;
   }
+  inline void SetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim, su2double val) override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return;
+    SourceTerm_VelAdjoint(iPoint,iDim) = val;
+  }
 
   /*!
    * \brief Get the source term applied into the displacement adjoint coming from external solvers
@@ -111,7 +116,10 @@ public:
     if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
     return SourceTerm_DispAdjoint(iPoint,iDim);
   }
-
+  inline su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const override {
+    if (!VertexMap.GetVertexIndex(iPoint)) return 0.0;
+    return SourceTerm_VelAdjoint(iPoint,iDim);
+  }
   /*!
    * \brief Get whether a node is on the boundary
    */
