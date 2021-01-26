@@ -45,23 +45,23 @@ protected:
 
   bool ionization;          /*!< \brief Presence of charged species in gas mixture. */
   bool monoatomic = false;  /*!< \brief Presence of single species gas. */
-  
+
   VectorType Velocity2;     /*!< \brief Square of the velocity vector. */
   MatrixType Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
 
   CVectorOfMatrix& Gradient_Reconstruction;  /*!< \brief Reference to the gradient of the conservative variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix  Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-  
+
   /*--- Primitive variable definition ---*/
   MatrixType Primitive;                /*!< \brief Primitive variables (rhos_s, T, Tve, ...) in compressible flows. */
   MatrixType Primitive_Aux;            /*!< \brief Primitive auxiliary variables (Y_s, T, Tve, ...) in compressible flows. */
   CVectorOfMatrix Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (rhos_s, T, Tve, ...). */
   MatrixType Limiter_Primitive;        /*!< \brief Limiter of the primitive variables  (rhos_s, T, Tve, ...). */
-  
+
   /*--- Secondary variable definition ---*/
   MatrixType Secondary;                /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   CVectorOfMatrix Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  
+
   /*--- New solution container for Classical RK4 ---*/
   MatrixType Solution_New;  /*!< \brief New solution container for Classical RK4. */
 
@@ -72,15 +72,17 @@ protected:
   MatrixType eves;   /*!< \brief energy of vib-el mode w.r.t. species. */
   MatrixType Cvves;  /*!< \brief Specific heat of vib-el mode w.r.t. species. */
   VectorType Gamma;  /*!< \brief Ratio of specific heats. */
-  
+
   CNEMOGas *fluidmodel;
 
   /*!< \brief Index definition for NEMO pritimive variables. */
-  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX, 
+  unsigned long RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX,
   LAM_VISC_INDEX, EDDY_VISC_INDEX, nSpecies;
 
   su2double Tve_Freestream; /*!< \brief Freestream vib-el temperature. */
+
+  VectorType symmetry;      /*!< \brief Nodes in symmetry planes. */
 
 public:
 
@@ -522,6 +524,16 @@ public:
    */
   inline su2double GetGamma(unsigned long iPoint) { return Gamma(iPoint); }
 
+  /*!
+   * \brief Retrieves the number of symmetry planes at the specified node.
+   */  
+  inline su2double GetSymmetry(unsigned long iPoint) { return symmetry[iPoint]; }
+
+  /*!
+   * \brief Increases the number of symmetry planes at the specified node by one.
+   */  
+  inline void SetSymmetry(unsigned long iPoint) {symmetry[iPoint] += 1.0;}
+
   /*---------------------------------------*/
   /*---           NEMO indices          ---*/
   /*---------------------------------------*/
@@ -575,5 +587,5 @@ public:
    * \brief Retrieves the value of the RhoCvve in the primitive variable vector.
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
-  
+
 };

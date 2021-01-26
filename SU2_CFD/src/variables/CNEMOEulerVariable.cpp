@@ -142,6 +142,9 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /* Under-relaxation parameter. */
   LocalCFL.resize(nPoint) = su2double(0.0);
 
+  /* Vector to count number of symmetry planes at each node. */
+  symmetry.resize(nPoint) = su2double(0.0);
+
   bool interp = config->GetSolutionInterpolation();
 
   /*--- Do not initialize variables for solution interpolation, since it makes the interpolation super slow and is not necessary  ---*/

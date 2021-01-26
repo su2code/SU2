@@ -46,7 +46,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
     description = "Euler";
   }
 
-  unsigned long iPoint, counter_local, counter_global = 0;
+  unsigned long iPoint, jPoint, iEdge, counter_local, counter_global = 0;
   unsigned short iDim, iMarker, iSpecies, nLineLets;
   unsigned short nZone = geometry->GetnZone();
   su2double *Mvec_Inf, Alpha, Beta, Soundspeed_Inf, sqvel;
@@ -58,6 +58,9 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   bool time_stepping = config->GetTime_Marching() == TIME_STEPPING;
   bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = "flow";
+  su2double Normal[MAXNDIM] = {0.0}, Tangent[MAXNDIM]  = {0.0};
+  su2double Normal_Sym[MAXNDIM] = {0.0}, UnitNormal_Sym[MAXNDIM] = {0.0};
+  su2double Product, Area, tol = 1e-16;
 
   bool nonPhys;
 
@@ -254,8 +257,69 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
       if(nonPhys)
         counter_local++;
     }
-  }
 
+    /*--- Count number of symmetry planes where each Vertex is inserted ---*/
+    for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+        for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          nodes->SetSymmetry(iPoint);
+        }
+      }
+    }
+
+    /*--- Correct normal directions of edges ---*/
+    for (unsigned long iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
+        for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+          unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal_Sym);
+
+          Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+
+          for(iDim = 0; iDim<nDim; iDim++){
+            UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
+          }
+
+          for (unsigned short iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh){
+            Product = 0.0;
+
+            jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+
+            /*---Check if neighbour point is on the same plane as the Symmetry_Plane
+                 by computing the internal product and of the Normal Vertex vector and
+                 the vector connecting iPoint and jPoint. If the product is lower than
+                 estabilished tolerance (to account for Numerical errors) both points are
+                 in the same plane as SYMMETRY_PLANE---*/
+
+            for(iDim = 0; iDim<nDim; iDim++){
+              Tangent[iDim] = geometry->nodes->GetCoord(jPoint,iDim) - geometry->nodes->GetCoord(iPoint,iDim);
+              Product += Tangent[iDim] * Normal_Sym[iDim];
+            }
+
+            if (abs(Product) < tol) {
+              Product = 0.0;
+
+              iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
+
+              geometry->edges->GetNormal(iEdge,Normal);
+
+              for(iDim = 0; iDim<nDim; iDim++)
+                Product += Normal[iDim]*UnitNormal_Sym[iDim];
+
+              for(iDim = 0; iDim<nDim; iDim++)
+                Normal[iDim]-=Product*UnitNormal_Sym[iDim];
+
+              geometry->edges->SetNormal(iEdge,Normal);
+            }
+          }
+        }
+      }
+    }
+  }
+  
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
 
@@ -456,7 +520,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   }
   SU2_OMP_BARRIER
 
-  const su2double *Normal = nullptr;
+  su2double Normal[MAXNDIM];
   su2double Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc;
   su2double Mean_LaminarVisc, Mean_EddyVisc, Mean_Density, Lambda_1, Lambda_2;
   su2double Mean_ThermalCond, Mean_ThermalCond_ve, cv;
@@ -479,7 +543,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
 
       iEdge = geometry->nodes->GetEdge(iPoint,iNeigh);
-      Normal = geometry->edges->GetNormal(iEdge);
+      geometry->edges->GetNormal(iEdge,Normal);
+
       Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Mean Values ---*/
@@ -497,7 +562,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Inviscid contribution ---*/
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-      nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+
+     nodes->AddMax_Lambda_Inv(iPoint, Lambda);
 
       /*--- Viscous contribution ---*/
       if (!viscous) continue;
@@ -521,9 +587,12 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
 
       Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-      nodes->AddMax_Lambda_Visc(iPoint, Lambda);
-    }
 
+      /*--- Still not sure for the case iPoint == 2 && jPoint == 0 ---*/
+      if(nodes->GetSymmetry(iPoint) == 1 && nodes->GetSymmetry(jPoint) == 0) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
+      else if (nodes->GetSymmetry(iPoint) == 2 && nodes->GetSymmetry(jPoint) == 1) nodes->AddMax_Lambda_Visc(iPoint, Lambda/2.0);
+      else nodes->AddMax_Lambda_Visc(iPoint, Lambda);
+    }
   }
 
   /*--- Loop boundary edges ---*/
@@ -537,11 +606,11 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         /*--- Point identification, Normal vector and area ---*/
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (!geometry->nodes->GetDomain(iPoint)) continue;
+        if (!geometry->nodes->GetDomain(iPoint) || config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) continue;
 
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+
         Area = GeometryToolbox::Norm(nDim, Normal);
-
         /*--- Mean Values ---*/
         Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
         Mean_SoundSpeed = nodes->GetSoundSpeed(iPoint) * Area;
@@ -556,9 +625,11 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
         /*--- Inviscid contribution ---*/
         Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        nodes->AddMax_Lambda_Inv(iPoint,Lambda);
+
+        nodes->AddMax_Lambda_Inv(iPoint, Lambda);
 
         /*--- Viscous contribution ---*/
+
         if (!viscous) continue;
 
         /*--- Calculate viscous mean quantities ---*/
@@ -573,7 +644,8 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc+Mean_EddyVisc);
         Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
         Lambda   = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
-        nodes->AddMax_Lambda_Visc(iPoint,Lambda);
+
+        nodes->AddMax_Lambda_Visc(iPoint, Lambda);
 
       }
     }
@@ -620,6 +692,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   SU2_OMP_MASTER
   if (config->GetComm_Level() == COMM_FULL) {
     su2double rbuf_time;
+    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     Min_Delta_Time = rbuf_time;
 
     SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -1370,7 +1443,6 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
            geometry->nodes->GetPeriodicVolume(iPoint));
 
     Delta = nodes->GetDelta_Time(iPoint) / Vol;
-
     local_Res_TruncError = nodes->GetResTruncError(iPoint);
     local_Residual = LinSysRes.GetBlock(iPoint);
 
@@ -1923,126 +1995,35 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  unsigned short iDim, jDim, iSpecies, iVar, jVar;
   unsigned long iPoint, iVertex;
+  unsigned short iDim, iVar;
+  su2double Area, Normal[MAXNDIM], UnitNormal[MAXNDIM], Normal_Product;
+  const su2double* Residual_Old;
+  su2double Residual[MAXNVAR] = {0.0};
 
-  su2double *Normal = nullptr, Area, UnitNormal[3], *NormalArea,
-  **Jacobian_b, **DubDu,
-  rho, cs, P, rhoE, rhoEve, conc, *u, *dPdU;
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+    Normal_Product = 0.0;
 
-  /*--- Allocate arrays ---*/
-  Normal     = new su2double[nDim];
-  NormalArea = new su2double[nDim];
-  Jacobian_b = new su2double*[nVar];
-  DubDu      = new su2double*[nVar];
-  u          = new su2double[nDim];
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Jacobian_b[iVar] = new su2double[nVar];
-    DubDu[iVar] = new su2double[nVar];
-  }
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
-  /*--- Get species molar mass ---*/
-  auto& Ms = FluidModel->GetSpeciesMolarMass();
-
-  /*--- Loop over all the vertices on this boundary (val_marker) ---*/
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
+    Residual_Old = LinSysRes.GetBlock(iPoint);
 
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-
-      /*--- Calculate parameters from the geometry ---*/
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
-      for (iDim = 0; iDim < nDim; iDim++){
-        NormalArea[iDim] = -Normal[iDim];
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-      }
-
-      /*--- Retrieve the pressure on the vertex ---*/
-      P   = nodes->GetPressure(iPoint);
-
-      /*--- Apply the flow-tangency b.c. to the convective flux ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Residual[iSpecies] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        Residual[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
-      }
-      Residual[nSpecies+nDim]   = 0.0;
-      Residual[nSpecies+nDim+1] = 0.0;
-
-      /*--- Add value to the residual ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
-
-      /*--- If using implicit time-stepping, calculate b.c. contribution to Jacobian ---*/
-      if (implicit) {
-
-        /*--- Initialize Jacobian ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-
-        /*--- Calculate state i ---*/
-        rho     = nodes->GetDensity(iPoint);
-        rhoE    = nodes->GetSolution(iPoint,nSpecies+nDim);
-        rhoEve  = nodes->GetSolution(iPoint,nSpecies+nDim+1);
-        dPdU    = nodes->GetdPdU(iPoint);
-        for (iDim = 0; iDim < nDim; iDim++)
-          u[iDim] = nodes->GetVelocity(iPoint,iDim);
-
-        conc = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          cs    = nodes->GetMassFraction(iPoint,iSpecies);
-          conc += cs * rho/Ms[iSpecies];
-
-          /////// NEW //////
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
-            Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
-          }
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (jDim = 0; jDim < nDim; jDim++) {
-            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
-                + dPdU[nSpecies+jDim]*UnitNormal[iDim];
-          }
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
-          Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
-
-          Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = (rhoE+P)/rho * UnitNormal[iDim];
-          Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho   * UnitNormal[iDim];
-        }
-
-        /*--- Integrate over the dual-grid area ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = Jacobian_i[iVar][jVar] * Area;
-
-        /*--- Apply the contribution to the system ---*/
-        Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-
-      }
+    for(iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim]/Area;
+      Normal_Product += Residual_Old[nSpecies+iDim]*UnitNormal[iDim];
     }
-  }
-  delete [] Normal;
-  delete [] NormalArea;
-  delete [] u;
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] Jacobian_b[iVar];
-    delete [] DubDu[iVar];
-  }
+    for(iDim = 0; iDim < nDim; iDim++)
+      Residual[nSpecies+iDim] = Normal_Product*UnitNormal[iDim];
 
-  delete [] Jacobian_b;
-  delete [] DubDu;
+    LinSysRes.SubtractBlock(iPoint, Residual);
+  }
 }
 
 void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
@@ -2956,13 +2937,121 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solut
 
 }
 
-//void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
-//                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  /*--- Call the Euler wall routine ---*/
-//  BC_Euler_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//}
+void CNEMOEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
+                                    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint;
+
+  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  bool preprocessed = false;
+
+  unsigned short VEL_INDEX = nodes->GetVelIndex();
+
+  /*--- Allocation of variables necessary for convective fluxes. ---*/
+  su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+
+  /*--- Loop over all the vertices on this boundary marker. ---*/
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    if (!preprocessed || geometry->bound_is_straight[val_marker] != true) {
+      /*----------------------------------------------------------------------------------------------*/
+      /*--- Preprocessing:                                                                         ---*/
+      /*--- Compute the unit normal and (in case of viscous flow) a corresponding unit tangential  ---*/
+      /*--- to that normal. On a straight(2D)/plane(3D) boundary these two vectors are constant.   ---*/
+      /*--- This circumstance is checked in gemoetry->ComputeSurf_Straightness(...) and stored     ---*/
+      /*--- such that the recomputation does not occur for each node. On true symmetry planes, the ---*/
+      /*--- normal is constant but this routines is used for Symmetry, Euler-Wall in inviscid flow ---*/
+      /*--- and Euler Wall in viscous flow as well. In the latter curvy boundaries are likely to   ---*/
+      /*--- happen. In doubt, the conditional above which checks straightness can be thrown out    ---*/
+      /*--- such that the recomputation is done for each node (which comes with a tiny performance ---*/
+      /*--- penalty).                                                                              ---*/
+      /*----------------------------------------------------------------------------------------------*/
+
+      preprocessed = true;
+
+      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity
+            component gradients. ---*/
+      Area = GeometryToolbox::Norm(nDim, Normal);
+
+      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim] / Area;
+
+      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
+            t*n=0 && |t|_2 = 1 ---*/
+    }      // if bound_is_straight
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    if (geometry->nodes->GetDomain(iPoint)) {
+      /*-------------------------------------------------------------------------------*/
+      /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
+      /*---         Primitive variables by copying all interior values to the       ---*/
+      /*---         reflected. Only the velocity is mirrored along the symmetry     ---*/
+      /*---         axis. Based on the Upwind_Residual routine.                     ---*/
+      /*-------------------------------------------------------------------------------*/
+
+      /*--- Allocate the reflected state at the symmetry boundary. ---*/
+      V_reflected = GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Grid movement ---*/
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+      /*--- Normal vector for this vertex (negate for outward convention). ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      /*--- Get current solution at this boundary node ---*/
+      V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Set the reflected state based on the boundary node. Scalars are copied and
+            the velocity is mirrored along the symmetry boundary, i.e. the velocity in
+            normal direction is substracted twice. ---*/
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+
+      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
+            velocity in normal direction: v_r = v - 2 (v*n)n ---*/
+      ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
+
+      /*--- Adjustment to v.n due to grid movement. ---*/
+      if (dynamic_grid) {
+        ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
+      }
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_reflected[VEL_INDEX + iDim] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
+
+      /*--- Set Primitive and Secondary for numerics class. ---*/
+      conv_numerics->SetPrimitive(V_domain, V_reflected);
+      conv_numerics->SetConservative(nodes->GetSolution(iPoint),nodes->GetSolution(iPoint));
+
+      conv_numerics->SetdPdU  (nodes->GetdPdU(iPoint),   nodes->GetdPdU(iPoint));
+      conv_numerics->SetdTdU  (nodes->GetdTdU(iPoint),   nodes->GetdTdU(iPoint));
+      conv_numerics->SetdTvedU(nodes->GetdTvedU(iPoint), nodes->GetdTvedU(iPoint));
+      conv_numerics->SetEve   (nodes->GetEve(iPoint),    nodes->GetEve(iPoint));
+      conv_numerics->SetCvve  (nodes->GetCvve(iPoint),   nodes->GetCvve(iPoint));
+      conv_numerics->SetGamma (nodes->GetGamma(iPoint),  nodes->GetGamma(iPoint));
+
+      /*--- Compute the residual using an upwind scheme. ---*/
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      /*--- Update residual value ---*/
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration. ---*/
+      if (implicit) {
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      }
+    }    // if GetDomain
+  }      // for iVertex
+}
 
 void CNEMOEulerSolver::SetResidual_DualTime(CGeometry *geometry,
                                             CSolver **solution_container,
