@@ -940,8 +940,10 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
   
   /*--- Compute integrated Heatflux and massflow, TK:: Euler equations not implemented yet, probalby wasted here ---*/
-  if(rank==MASTER_NODE) cout << "EulerPrepsocessing GetStreamwise_Periodic_Properties." << endl;
-  if (config->GetKind_Streamwise_Periodic()) GetStreamwise_Periodic_Properties(geometry, config, iMesh);
+  if (config->GetKind_Streamwise_Periodic()) {
+    if(rank==MASTER_NODE) cout << "EulerPrepsocessing GetStreamwise_Periodic_Properties." << endl;
+    GetStreamwise_Periodic_Properties(geometry, config, iMesh);
+  } 
 
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
@@ -1292,10 +1294,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool streamwise_periodic = config->GetKind_Streamwise_Periodic();
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
 
-
-  /*--- Initialize the source residual to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
   if (streamwise_periodic) {
 
