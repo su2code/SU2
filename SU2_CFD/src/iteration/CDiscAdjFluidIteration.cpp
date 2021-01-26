@@ -352,6 +352,13 @@ void CDiscAdjFluidIteration::Iterate(COutput* output, CIntegration**** integrati
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
 
     solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+    /*--- If mesh deformation defined in config, extract here as well ---*/
+    if (config[iZone]->GetDeform_Mesh()) {
+      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    }
   }
   if (turbulent && !frozen_visc) {
     solver[iZone][iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
@@ -407,6 +414,16 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
 
       solver[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+      /*--- If mesh deformation defined in config, register here as well ---*/
+      if (config[iZone]->GetDeform_Mesh()) {
+
+        /*--- Undeformed mesh coordinates ---*/
+        solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+
+        /*--- Boundary displacements ---*/
+        solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+      }
     }
 
     if (turbulent && !frozen_visc) {
