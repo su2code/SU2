@@ -28,14 +28,15 @@
 #include "../../../../include/numerics/flow/convection/roe.hpp"
 
 CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config,
-                                   bool val_low_dissipation) : CNumerics(val_nDim, val_nVar, config) {
+                                   bool val_low_dissipation) 
+    : CNumerics(val_nDim, val_nVar, config),
+      impliicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT),
+      dynamic_grid(config->GetDynamic_Grid()),
+      exact_jacobian(config->GetUse_Accurate_Kappa_Jacobians()) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
-  dynamic_grid = config->GetDynamic_Grid();
-  kappa = config->GetRoe_Kappa(); // 1 is unstable
+  kappa = config->GetRoe_Kappa(),; // 1 is unstable
 
-  nPrimVarTot = nVar + tkeNeeded;
+  nPrimVarTot = nVar + tkeNeeded*exact_jacobian;
 
   roe_low_dissipation = val_low_dissipation;
 
