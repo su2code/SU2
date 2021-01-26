@@ -35,7 +35,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
       roe_low_dissipation(val_low_dissipation),
       exact_jacobian(config->GetUse_Accurate_Kappa_Jacobians()) {
 
-  kappa = config->GetRoe_Kappa(),; // 1 is unstable
+  kappa = config->GetRoe_Kappa(); // 1 is unstable
 
   nPrimVarTot = nVar + tkeNeeded*exact_jacobian;
 
@@ -93,8 +93,6 @@ void CUpwRoeBase_Flow::FinalizeResidual(su2double *val_residual, su2double **val
 }
 
 CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* config) {
-
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3); 
