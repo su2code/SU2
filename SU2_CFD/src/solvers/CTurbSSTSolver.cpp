@@ -331,16 +331,9 @@ void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver) {
   
   CVariable* flowNodes = solver[FLOW_SOL]->GetNodes();
 
-  for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
-    // const su2double StaticEnergy = flowNodes->GetEnergy(iPoint)-0.5*flowNodes->GetVelocity2(iPoint)-nodes->GetSolution(iPoint,0)/flowNodes->GetDensity(iPoint);
-    // if (StaticEnergy < 0) {
-    //   for (auto iVar = 0; iVar < nVar; iVar++)
-    //     nodes->SetSolution(iPoint,iVar,nodes->GetSolution_Old(iPoint,iVar));
-    // }
-
+  for (auto iPoint = 0; iPoint < nPoint; iPoint++)
     for (auto iVar = 0; iVar < nVar; iVar++)
       nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
-  }
 
 }
 
@@ -541,8 +534,8 @@ void CTurbSSTSolver::CrossDiffusionJacobian(CSolver         **solver,
     SetSurfaceGradWeights_GG(gradWeight, geometry, config, iPoint);
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_i[1][0] += factor*gradWeight[iDim]*gradom[iDim];
-      Jacobian_i[1][1] += factor*gradWeight[iDim]*gradk[iDim];
+      Jacobian_i[1][0] += factor/r_i*gradWeight[iDim]*gradom[iDim];
+      Jacobian_i[1][1] += factor/r_i*gradWeight[iDim]*gradk[iDim];
     }
   }// if physical boundary
   
