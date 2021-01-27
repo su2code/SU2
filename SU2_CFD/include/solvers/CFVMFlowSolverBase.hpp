@@ -323,11 +323,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  inline void BC_Euler_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override {
-    /*--- Call the equivalent symmetry plane boundary condition. ---*/
-    BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  }
+  void BC_Euler_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \author T. Kattmann

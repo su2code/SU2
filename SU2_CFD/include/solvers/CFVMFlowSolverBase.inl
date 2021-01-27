@@ -800,6 +800,41 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  unsigned long iPoint, iVertex;
+  unsigned short iDim, iVar;
+  su2double Area, Normal[MAXNDIM], UnitNormal[MAXNDIM], Normal_Product;
+  const su2double* Residual_Old;
+  su2double Residual[MAXNVAR] = {0.0};
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    Normal_Product = 0.0;
+
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+
+    Area = GeometryToolbox::Norm(nDim, Normal);
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    Residual_Old = LinSysRes.GetBlock(iPoint);
+    
+    for(iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim]/Area;
+      Normal_Product += Residual_Old[1+iDim]*UnitNormal[iDim];
+    }
+
+    for(iDim = 0; iDim < nDim; iDim++)
+      Residual[1+iDim] = Normal_Product*UnitNormal[iDim];
+
+    LinSysRes.SubtractBlock(iPoint, Residual);
+
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::BC_Euler_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   unsigned short iDim, iVar;
   unsigned long iVertex, iPoint;
 
