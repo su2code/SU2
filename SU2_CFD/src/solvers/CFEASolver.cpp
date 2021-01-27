@@ -1318,8 +1318,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         AD::EndPassive(wasActive);
 
       } // end iElem loop
-      SU2_OMP_ATOMIC
-      StressPenalty += stressPen;
+      atomicAdd(stressPen, StressPenalty);
 
     } // end color loop
 
