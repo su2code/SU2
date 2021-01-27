@@ -2,7 +2,7 @@
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
@@ -90,7 +90,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:
@@ -115,7 +115,7 @@ private:
   bool implicit;                /*!< \brief Implicit calculus. */
 
   su2double* Flux = nullptr;    /*!< \brief The flux / residual across the edge. */
-  
+
 public:
 
   /*!
@@ -142,5 +142,5 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   ResidualType<> ComputeResidual(const CConfig* config) final;
-  
+
 };

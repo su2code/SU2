@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1226,7 +1226,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   bool frozen     = config->GetFrozen();
   bool monoatomic = config->GetMonoatomic();
   bool viscous    = config->GetViscous();
-  bool ideal_gas  = (config->GetKind_FluidModel() == STANDARD_AIR) || (config->GetKind_FluidModel() == IDEAL_GAS);
   bool rans       = (config->GetKind_Turb_Model() != NONE);
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
@@ -1258,6 +1257,57 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
                        geometry->nodes->GetCoord(iPoint) );
 
+    /*--- Compute finite rate chemistry ---*/
+
+    if(!monoatomic){
+      if(!frozen){
+        /*--- Compute the non-equilibrium chemistry ---*/
+        auto residual = numerics->ComputeChemistry(config);
+
+        /*--- Check for errors before applying source to the linear system ---*/
+        err = false;
+        for (iVar = 0; iVar < nVar; iVar++)
+          if (residual[iVar] != residual[iVar]) err = true;
+        //if (implicit)
+        //  for (iVar = 0; iVar < nVar; iVar++)
+        //    for (jVar = 0; jVar < nVar; jVar++)
+        //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+
+        /*--- Apply the chemical sources to the linear system ---*/
+        if (!err) {
+          LinSysRes.SubtractBlock(iPoint, residual);
+          //if (implicit)
+          //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        } else
+          eChm_local++;
+      }
+    }
+
+    /*--- Compute vibrational energy relaxation ---*/
+    /// NOTE: Jacobians don't account for relaxation time derivatives
+
+    if (!monoatomic){
+      auto residual = numerics->ComputeVibRelaxation(config);
+
+      /*--- Check for errors before applying source to the linear system ---*/
+      err = false;
+      for (iVar = 0; iVar < nVar; iVar++)
+        if (residual[iVar] != residual[iVar]) err = true;
+      //if (implicit)
+      //  for (iVar = 0; iVar < nVar; iVar++)
+      //    for (jVar = 0; jVar < nVar; jVar++)
+      //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
+
+      /*--- Apply the vibrational relaxation terms to the linear system ---*/
+      if (!err) {
+        LinSysRes.SubtractBlock(iPoint, residual);
+        //if (implicit)
+        //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      } else
+        eVib_local++;
+    }
+
+  }
     /*--- Compute axisymmetric source terms (if needed) ---*/
     if (config->GetAxisymmetric()) {
 
@@ -1291,20 +1341,23 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
       SU2_OMP_FOR_DYN(omp_chunk_size)
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-        /*--- Set solution  ---*/
-        numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
-
-        /*--- Set control volume ---*/
-        numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
-        /*--- Set y coordinate ---*/
-        numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
-
-        /*--- Set primitive variables for viscous terms and/or generalised source ---*/
-        numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
-
         /*--- If necessary, set variables needed for viscous computation ---*/
         if (viscous) {
+
+          // TODO: NOTE: Some of these are set above. They need to be set here as well, otherwise they are passed in incorrectly.
+          // Do not remove.
+          
+          /*--- Set volume ---*/
+          numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+          /*--- Set coords ---*/
+          numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+
+          /*--- Set conservative vars ---*/
+          numerics->SetConservative(nodes->GetSolution(iPoint),   nodes->GetSolution(iPoint));
+
+          /*--- Set primitive vars ---*/
+          numerics->SetPrimitive   (nodes->GetPrimitive(iPoint),  nodes->GetPrimitive(iPoint) );
 
           /*--- Set gradient of primitive variables ---*/
           numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(iPoint));
@@ -1357,55 +1410,6 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
           eAxi_local++;
       }
     }
-
-    if(!monoatomic){
-      if(!frozen){
-        /*--- Compute the non-equilibrium chemistry ---*/
-        auto residual = numerics->ComputeChemistry(config);
-
-        /*--- Check for errors before applying source to the linear system ---*/
-        err = false;
-        for (iVar = 0; iVar < nVar; iVar++)
-          if (residual[iVar] != residual[iVar]) err = true;
-        //if (implicit)
-        //  for (iVar = 0; iVar < nVar; iVar++)
-        //    for (jVar = 0; jVar < nVar; jVar++)
-        //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-
-        /*--- Apply the chemical sources to the linear system ---*/
-        if (!err) {
-          LinSysRes.SubtractBlock(iPoint, residual);
-          //if (implicit)
-          //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        } else
-          eChm_local++;
-      }
-    }
-
-    /*--- Compute vibrational energy relaxation ---*/
-    /// NOTE: Jacobians don't account for relaxation time derivatives
-
-    if (!monoatomic){
-      auto residual = numerics->ComputeVibRelaxation(config);
-
-      /*--- Check for errors before applying source to the linear system ---*/
-      err = false;
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (residual[iVar] != residual[iVar]) err = true;
-      //if (implicit)
-      //  for (iVar = 0; iVar < nVar; iVar++)
-      //    for (jVar = 0; jVar < nVar; jVar++)
-      //      if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar]) err = true;
-
-      /*--- Apply the vibrational relaxation terms to the linear system ---*/
-      if (!err) {
-        LinSysRes.SubtractBlock(iPoint, residual);
-        //if (implicit)
-        //  Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      } else
-        eVib_local++;
-    }
-  }
 
   /*--- Checking for NaN ---*/
   eAxi_global = eAxi_local;
