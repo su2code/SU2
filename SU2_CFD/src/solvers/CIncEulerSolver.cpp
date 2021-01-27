@@ -3097,7 +3097,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      su2double Solution[MAXNVAR] = {0.0};
       for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
         Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
         Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);

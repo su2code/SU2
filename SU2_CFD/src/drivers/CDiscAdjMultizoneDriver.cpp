@@ -197,7 +197,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   /*--- Initialize External with the objective function gradient. ---*/
 
-   su2double rhs_norm = 0.0;
+  su2double rhs_norm = 0.0;
 
   for (iZone = 0; iZone < nZone; iZone++) {
 

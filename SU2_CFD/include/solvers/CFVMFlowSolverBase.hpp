@@ -1036,7 +1036,7 @@ class CFVMFlowSolverBase : public CSolver {
       StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
       AD::SetPreaccOut(StrainMag(iPoint));
 
-      /*--- Max is not differentiable, we so not register for preacc. ---*/
+      /*--- Max is not differentiable, so we not register them for preacc. ---*/
       strainMax = max(strainMax, StrainMag(iPoint));
       omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
 
