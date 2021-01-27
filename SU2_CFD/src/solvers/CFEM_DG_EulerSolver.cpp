@@ -7721,7 +7721,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          pressure and temperature as well as the flow direction. */
       su2double P_Total   = config->GetRiemann_Var1(Marker_Tag);
       su2double T_Total   = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
       P_Total /= config->GetPressure_Ref();
       T_Total /= config->GetTemperature_Ref();
@@ -7782,7 +7782,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          temperature as well as the three components of the Mach number. */
       su2double P_static = config->GetRiemann_Var1(Marker_Tag);
       su2double T_static = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Mach    = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Mach = config->GetRiemann_FlowDir(Marker_Tag);
 
       P_static /= config->GetPressure_Ref();
       T_static /= config->GetTemperature_Ref();
@@ -7833,7 +7833,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          temperature as well as the three components of the Mach number. */
       su2double P_static   = config->GetRiemann_Var1(Marker_Tag);
       su2double Rho_static = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Mach      = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Mach            = config->GetRiemann_FlowDir(Marker_Tag);
 
       P_static /= config->GetPressure_Ref();
       Rho_static /= config->GetDensity_Ref();
@@ -7883,7 +7883,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
          flow direction. Retrieve the non-dimensional data. */
       su2double Density_e = config->GetRiemann_Var1(Marker_Tag);
       su2double VelMag_e  = config->GetRiemann_Var2(Marker_Tag);
-      su2double *Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+      auto Flow_Dir       = config->GetRiemann_FlowDir(Marker_Tag);
 
       Density_e /= config->GetDensity_Ref();
       VelMag_e  /= config->GetVelocity_Ref();
