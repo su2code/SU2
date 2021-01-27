@@ -56,6 +56,7 @@ class FSIConfig:
         self.ConfigFileName = FileName
         self._ConfigContent = {}
         self.readConfig()
+        self.applyDefaults()
 
     def __str__(self):
         tempString = str()
@@ -119,3 +120,8 @@ class FSIConfig:
                 if case():
                     print(this_param + " is an invalid option !")
                     break
+
+    def applyDefaults(self):
+        if self._ConfigContent["CSD_SOLVER"] == "IMPOSED":
+            self._ConfigContent["AITKEN_RELAX"] = "STATIC"
+            self._ConfigContent["AITKEN_PARAM"] = 1.0

@@ -94,7 +94,6 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
-  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Set the initial condition for the Euler Equations.

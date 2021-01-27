@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/variables/CFEABoundVariable.hpp"
+#include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include <algorithm>
@@ -336,23 +337,16 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iElem;
-  unsigned long index;
-  unsigned long elProperties[4];
+  const auto iZone = config->GetiZone();
+  const auto nZone = geometry->GetnZone();
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-
-  bool topology_mode = config->GetTopology_Optimization();
-
-  string filename;
-  ifstream properties_file;
+  const bool topology_mode = config->GetTopology_Optimization();
 
   element_properties = new CProperty*[nElement];
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetFEA_FileName();
+  auto filename = config->GetFEA_FileName();
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
@@ -360,7 +354,8 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
-  properties_file.open(filename.data(), ios::in);
+  ifstream properties_file;
+  properties_file.open(filename);
 
   /*--- In case there is no file, all elements get the same property (0) ---*/
 
@@ -373,7 +368,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
         SU2_MPI::Error("Topology mode requires an element-based properties file.",CURRENT_FUNCTION);
     }
 
-    for (iElem = 0; iElem < nElement; iElem++){
+    for (auto iElem = 0ul; iElem < nElement; iElem++){
       element_properties[iElem] = new CElementProperty(FEA_TERM, 0, 0, 0);
     }
 
@@ -384,24 +379,15 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
     element_based = true;
 
-    /*--- In case this is a parallel simulation, we need to perform the
-       Global2Local index transformation first. ---*/
+    /*--- In case this is a parallel simulation, we need to perform the Global2Local index transformation first. ---*/
 
-    long *Global2Local = new long[geometry->GetGlobal_nElemDomain()];
+    unordered_map<unsigned long, unsigned long> Global2Local;
 
-    /*--- First, set all indices to a negative value by default ---*/
-
-    for (iElem = 0; iElem < geometry->GetGlobal_nElemDomain(); iElem++)
-      Global2Local[iElem] = -1;
-
-    /*--- Now fill array with the transform values only for the points in the rank (including halos) ---*/
-
-    for (iElem = 0; iElem < nElement; iElem++)
+    for (auto iElem = 0ul; iElem < nElement; iElem++)
       Global2Local[geometry->elem[iElem]->GetGlobalIndex()] = iElem;
 
     /*--- Read all lines in the restart file ---*/
 
-    long iElem_Local;
     unsigned long iElem_Global_Local = 0, iElem_Global = 0; string text_line;
 
     /*--- The first line is the header ---*/
@@ -419,9 +405,13 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
          Otherwise, the local index for this node on the current processor
          will be returned and used to instantiate the vars. ---*/
 
-      iElem_Local = Global2Local[iElem_Global];
+      auto it = Global2Local.find(iElem_Global);
 
-      if (iElem_Local >= 0) {
+      if (it != Global2Local.end()) {
+
+        auto iElem_Local = it->second;
+
+        unsigned long elProperties[4], index;
 
         if (config->GetAdvanced_FEAElementBased() || topology_mode){
           point_line >> index >> elProperties[0] >> elProperties[1] >> elProperties[2] >> elProperties[3];
@@ -453,34 +443,18 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
     }
 
-    /*--- Close the restart file ---*/
-
-    properties_file.close();
-
-    /*--- Free memory needed for the transformation ---*/
-
-    delete [] Global2Local;
-
   }
 
 }
 
 void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iPoint;
-  unsigned long index;
-
-  unsigned short iVar;
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-
-  string filename;
-  ifstream prestretch_file;
-
+  const auto iZone = config->GetiZone();
+  const auto nZone = geometry->GetnZone();
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetPrestretch_FEMFileName();
+  auto filename = config->GetPrestretch_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
   if (nZone > 1)
@@ -488,7 +462,8 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
-  prestretch_file.open(filename.data(), ios::in);
+  ifstream prestretch_file;
+  prestretch_file.open(filename);
 
   /*--- In case there is no file ---*/
 
@@ -496,20 +471,15 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Error(string("There is no FEM prestretch reference file ") + filename, CURRENT_FUNCTION);
   }
 
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
+  /*--- Make a global to local map that also covers halo nodes (the one in geometry does not). ---*/
 
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
+  unordered_map<unsigned long, unsigned long> Global2Local;
 
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
     Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
 
   /*--- Read all lines in the restart file ---*/
 
-  long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
 
   /*--- The first line is the header ---*/
@@ -522,17 +492,20 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
+    auto it = Global2Local.find(iPoint_Global);
 
-      iPoint_Local = Global2Local[iPoint_Global];
+    if (it != Global2Local.end()) {
+
+      auto iPoint_Local = it->second;
 
       su2double Sol[MAXNVAR] = {0.0};
+      unsigned long index;
 
       if (nDim == 2) point_line >> Sol[0] >> Sol[1] >> index;
       if (nDim == 3) point_line >> Sol[0] >> Sol[1] >> Sol[2] >> index;
 
-      for (iVar = 0; iVar < nVar; iVar++) nodes->SetPrestretch(iPoint_Local,iVar, Sol[iVar]);
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        nodes->SetPrestretch(iPoint_Local, iVar, Sol[iVar]);
 
       iPoint_Global_Local++;
     }
@@ -541,99 +514,28 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local != nPointDomain) {
+  if (iPoint_Global_Local != nPoint) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
-
-  /*--- Close the restart file ---*/
-
-  prestretch_file.close();
-
-#ifdef HAVE_MPI
-  /*--- We need to communicate here the prestretched geometry for the halo nodes. ---*/
-  /*--- We avoid creating a new function as this may be reformatted.              ---*/
-
-  unsigned short iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double *Buffer_Receive_U = nullptr, *Buffer_Send_U = nullptr;
-
-  int send_to, receive_from;
-
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-
-      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;        nBufferR_Vector = nVertexR*nVar;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_U = new su2double [nBufferR_Vector];
-      Buffer_Send_U = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution that should be sent ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
-          Buffer_Send_U[iVar*nVertexS+iVertex] = nodes->GetPrestretch(iPoint,iVar);
-      }
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, nullptr);
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_U;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-
-        /*--- Store received values back into the variable. ---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-          nodes->SetPrestretch(iPoint, iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_U;
-
-    }
-
-  }
-#endif
 
 }
 
 void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
-  unsigned long iPoint;
-
-  unsigned short iVar;
-  unsigned short iZone = config->GetiZone();
-  unsigned short file_format = config->GetRefGeom_FileFormat();
-
-  string filename;
-  ifstream reference_file;
-
+  const auto iZone = config->GetiZone();
+  const auto file_format = config->GetRefGeom_FileFormat();
 
   /*--- Restart the solution from file information ---*/
 
-  filename = config->GetRefGeom_FEMFileName();
+  auto filename = config->GetRefGeom_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
 
   filename = config->GetMultizone_FileName(filename, iZone, ".csv");
 
-  reference_file.open(filename.data(), ios::in);
+  ifstream reference_file;
+  reference_file.open(filename);
 
   /*--- In case there is no file ---*/
 
@@ -643,24 +545,8 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << " and format " << file_format << "." << endl;
 
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-
-  /*--- First, set all indices to a negative value by default ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->nodes->GetGlobalIndex(iPoint)] = iPoint;
-
   /*--- Read all lines in the restart file ---*/
 
-  long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
 
   /*--- The first line is the header ---*/
@@ -676,7 +562,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
 
-    iPoint_Local = Global2Local[iPoint_Global];
+    auto iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local >= 0) {
 
@@ -691,7 +577,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
         Sol[2] = PrintingToolbox::stod(point_line[6]);
       }
 
-      for (iVar = 0; iVar < nVar; iVar++)
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
         nodes->SetReference_Geometry(iPoint_Local, iVar, Sol[iVar]);
 
       iPoint_Global_Local++;
@@ -705,14 +591,6 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n")  +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
-
-  /*--- Close the restart file ---*/
-
-  reference_file.close();
-
-  /*--- Free memory needed for the transformation ---*/
-
-  delete [] Global2Local;
 
 }
 
@@ -1323,22 +1201,27 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
 
 void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
-  /*--- Never record this method as atm it is not differentiable. ---*/
-  const bool wasActive = AD::BeginPassive();
-
   const bool prestretch_fem = config->GetPrestretch();
 
   const bool topology_mode = config->GetTopology_Optimization();
-  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const auto simp_exponent = config->GetSIMP_Exponent();
+
+  const auto stressParam = config->GetStressPenaltyParam();
+  const su2double stress_scale = 1.0 / stressParam[0];
+  const su2double ks_mult = stressParam[1];
 
   const unsigned short nStress = (nDim == 2) ? 3 : 6;
 
+  su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;
 
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL
   {
+    /*--- Some parts are not recorded, atm only StressPenalty is differentiated to save memory. ---*/
+    bool wasActive = AD::BeginPassive();
+
     /*--- Clear reactions. ---*/
     LinSysReact.SetValZero();
 
@@ -1349,8 +1232,11 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         nodes->SetStress_FEM(iPoint,iStress, 0.0);
       }
     }
+    AD::EndPassive(wasActive);
 
     for(auto color : ElemColoring) {
+
+      su2double stressPen = 0.0;
 
       /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
       SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
@@ -1379,7 +1265,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
           for (iDim = 0; iDim < nDim; iDim++) {
             /*--- Compute current coordinate. ---*/
-            su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+            su2double val_Coord = geometry->nodes->GetCoord(indexNode[iNode],iDim);
             su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
 
             /*--- If pre-stretched the reference coordinate is stored in the nodes. ---*/
@@ -1404,7 +1290,11 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         /*--- Compute the averaged nodal stresses. ---*/
         int NUM_TERM = thread*MAX_TERMS + element_properties[iElem]->GetMat_Mod();
 
-        numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
+        auto elStress = numerics[NUM_TERM]->Compute_Averaged_NodalStress(element, config);
+
+        stressPen += exp(ks_mult * elStress*simp_penalty*stress_scale);
+
+        wasActive = AD::BeginPassive();
 
         for (iNode = 0; iNode < nNodes; iNode++) {
 
@@ -1425,10 +1315,14 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
           if (LockStrategy) omp_unset_lock(&UpdateLocks[iPoint]);
         }
 
+        AD::EndPassive(wasActive);
+
       } // end iElem loop
+      atomicAdd(stressPen, StressPenalty);
 
     } // end color loop
 
+    wasActive = AD::BeginPassive();
 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
     su2double maxVonMises = 0.0;
@@ -1436,51 +1330,25 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     SU2_OMP(for schedule(static,omp_chunk_size) nowait)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Get the stresses, added up from all the elements that connect to the node. ---*/
+      const auto vms = CFEAElasticity::VonMisesStress(nDim, nodes->GetStress_FEM(iPoint));
 
-      auto Stress = nodes->GetStress_FEM(iPoint);
-      su2double VonMises_Stress;
+      nodes->SetVonMises_Stress(iPoint, vms);
 
-      if (nDim == 2) {
-
-        su2double Sxx = Stress[0], Syy = Stress[1], Sxy = Stress[2];
-
-        su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
-        su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
-        S1 += tauMax;
-        S2 -= tauMax;
-
-        VonMises_Stress = sqrt(S1*S1+S2*S2-2*S1*S2);
-      }
-      else {
-
-        su2double Sxx = Stress[0], Syy = Stress[1], Szz = Stress[3];
-        su2double Sxy = Stress[2], Sxz = Stress[4], Syz = Stress[5];
-
-        VonMises_Stress = sqrt(0.5*(pow(Sxx - Syy, 2) +
-                                    pow(Syy - Szz, 2) +
-                                    pow(Szz - Sxx, 2) +
-                                    6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
-      }
-
-      nodes->SetVonMises_Stress(iPoint,VonMises_Stress);
-
-      /*--- Update the maximum value of the Von Mises Stress ---*/
-
-      maxVonMises = max(maxVonMises, VonMises_Stress);
+      maxVonMises = max(maxVonMises, vms);
     }
     SU2_OMP_CRITICAL
     MaxVonMises_Stress = max(MaxVonMises_Stress, maxVonMises);
 
+    AD::EndPassive(wasActive);
+
   } // end SU2_OMP_PARALLEL
 
-  su2double tmp = MaxVonMises_Stress;
-  SU2_MPI::Allreduce(&tmp, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
   /*--- Set the value of the MaxVonMises_Stress as the CFEA coeffient ---*/
+  SU2_MPI::Allreduce(&MaxVonMises_Stress, &Total_CFEA, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-  Total_CFEA = MaxVonMises_Stress;
-
+  /*--- Reduce the stress penalty over all ranks ---*/
+  SU2_MPI::Allreduce(&StressPenalty, &Total_OFStressPenalty, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  Total_OFStressPenalty = log(Total_OFStressPenalty)/ks_mult - 1.0;
 
   bool outputReactions = false;
 
@@ -1602,8 +1470,6 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     myfile.close();
 
   }
-
-  AD::EndPassive(wasActive);
 
 }
 
@@ -1928,6 +1794,9 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
       case VOLUME_FRACTION:    Compute_OFVolFrac(geometry, config); break;
       case TOPOL_DISCRETENESS: Compute_OFVolFrac(geometry, config); break;
       case TOPOL_COMPLIANCE:   Compute_OFCompliance(geometry, config); break;
+      case STRESS_PENALTY:
+        Compute_NodalStress(geometry, numerics, config);
+        break;
     }
     return;
   }
@@ -2993,19 +2862,25 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
   {
   su2double obj_fun_local = 0.0;
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  if (!config->GetRefGeomSurf()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      obj_fun_local += SquaredDistance(nVar, nodes->GetReference_Geometry(iPoint), nodes->GetSolution(iPoint));
+    }
+  }
+  else {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY) ||
+          (config->GetMarker_All_KindBC(iMarker) == LOAD_DIR_BOUNDARY) ||
+          (config->GetMarker_All_KindBC(iMarker) == FLOWLOAD_BOUNDARY)) {
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); ++iVertex) {
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-      /*--- Retrieve the value of the reference geometry ---*/
-      su2double reference_geometry = nodes->GetReference_Geometry(iPoint,iVar);
-
-      /*--- Retrieve the value of the current solution ---*/
-      su2double current_solution = nodes->GetSolution(iPoint,iVar);
-
-      /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      obj_fun_local += pow(current_solution - reference_geometry, 2);
+          if (geometry->nodes->GetDomain(iPoint))
+            obj_fun_local += SquaredDistance(nVar, nodes->GetReference_Geometry(iPoint), nodes->GetSolution(iPoint));
+        }
+      }
     }
   }
   atomicAdd(obj_fun_local, objective_function);
@@ -3388,9 +3263,8 @@ void CFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config)
   if (rank == MASTER_NODE) {
     string filename = config->GetTopology_Optim_FileName();
     ofstream file;
-    file.open(filename.c_str());
+    file.open(filename);
     for(iElem=0; iElem<nElemDomain; ++iElem) file << rec_buf[iElem] << "\n";
-    file.close();
   }
 
   delete [] send_buf;

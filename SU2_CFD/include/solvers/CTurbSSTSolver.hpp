@@ -239,7 +239,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) override {
+  inline void SetFreeStream_Solution(const CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       nodes->SetSolution(iPoint, 0, kine_Inf);
       nodes->SetSolution(iPoint, 1, omega_Inf);

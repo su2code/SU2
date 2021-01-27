@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization, and buffer setting ---*/
 
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int required = use_thread_mult? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, required, &provided);

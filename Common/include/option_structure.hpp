@@ -67,7 +67,6 @@ enum SU2_COMPONENT {
   SU2_CFD = 1,  /*!< \brief Running the SU2_CFD software. */
   SU2_DEF = 2,  /*!< \brief Running the SU2_DEF software. */
   SU2_DOT = 3,  /*!< \brief Running the SU2_DOT software. */
-  SU2_MSH = 4,  /*!< \brief Running the SU2_MSH software. */
   SU2_GEO = 5,  /*!< \brief Running the SU2_GEO software. */
   SU2_SOL = 6   /*!< \brief Running the SU2_SOL software. */
 };
@@ -1558,7 +1557,8 @@ enum ENUM_OBJECTIVE {
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
-  TOPOL_COMPLIANCE = 64         /*!< \brief Measure of the discreteness of the current topology. */
+  TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
+  STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
 };
 static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -1609,6 +1609,7 @@ static const MapType<string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
+  MakePair("STRESS_PENALTY", STRESS_PENALTY)
 };
 
 /*!
@@ -1649,40 +1650,6 @@ static const MapType<string, ENUM_SENS> Sens_Map = {
   MakePair("SENS_MACH", SENS_MACH)
   MakePair("SENS_AOA", SENS_AOA)
   MakePair("SENS_AOS", SENS_AOS)
-};
-
-/*!
- * \brief Types of grid adaptation/refinement
- */
-enum ENUM_ADAPT {
-  NO_ADAPT = 0,           /*!< \brief No grid adaptation. */
-  FULL = 1,               /*!< \brief Do a complete grid refinement of all the computational grids. */
-  FULL_FLOW = 2,          /*!< \brief Do a complete grid refinement of the flow grid. */
-  FULL_ADJOINT = 3,       /*!< \brief Do a complete grid refinement of the adjoint grid. */
-  GRAD_FLOW = 5,          /*!< \brief Do a gradient based grid adaptation of the flow grid. */
-  GRAD_ADJOINT = 6,       /*!< \brief Do a gradient based grid adaptation of the adjoint grid. */
-  GRAD_FLOW_ADJ = 7,      /*!< \brief Do a gradient based grid adaptation of the flow and adjoint grid. */
-  COMPUTABLE = 9,         /*!< \brief Apply a computable error grid adaptation. */
-  REMAINING = 10,         /*!< \brief Apply a remaining error grid adaptation. */
-  WAKE = 12,              /*!< \brief Do a grid refinement on the wake. */
-  SMOOTHING = 14,         /*!< \brief Do a grid smoothing of the geometry. */
-  SUPERSONIC_SHOCK = 15,  /*!< \brief Do a grid smoothing. */
-  PERIODIC = 17           /*!< \brief Add the periodic halo cells. */
-};
-static const MapType<string, ENUM_ADAPT> Adapt_Map = {
-  MakePair("NONE", NO_ADAPT)
-  MakePair("FULL", FULL)
-  MakePair("FULL_FLOW", FULL_FLOW)
-  MakePair("FULL_ADJOINT", FULL_ADJOINT)
-  MakePair("GRAD_FLOW", GRAD_FLOW)
-  MakePair("GRAD_ADJOINT", GRAD_ADJOINT)
-  MakePair("GRAD_FLOW_ADJ", GRAD_FLOW_ADJ)
-  MakePair("COMPUTABLE", COMPUTABLE)
-  MakePair("REMAINING", REMAINING)
-  MakePair("WAKE", WAKE)
-  MakePair("SMOOTHING", SMOOTHING)
-  MakePair("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
-  MakePair("PERIODIC", PERIODIC)
 };
 
 /*!

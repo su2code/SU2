@@ -308,13 +308,6 @@ public:
   inline virtual void SetDualTime_Mesh(void){ }
 
   /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  inline virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
-
-  /*!
    * \brief Get information whether the initialization is an adjoint solver or not.
    * \return <code>TRUE</code> means that it is an adjoint solver.
    */
@@ -1669,13 +1662,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] iPoint - Index of the grid point.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPreconditioner(CConfig *config, unsigned long iPoint) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics_container - Description of the numerical method.
@@ -2237,18 +2223,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual void GetOutlet_Properties(CGeometry *geometry,
-                                           CConfig *config,
-                                           unsigned short iMesh,
-                                           bool Output) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] convergence - boolean for whether the solution is converged
    * \return boolean for whether the Fixed C_L mode is converged to target C_L
@@ -2465,15 +2439,21 @@ public:
   inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
 
   /*!
-   * \brief Retrieve the value of the discreteness objective function
+   * \brief Retrieve the value of the discreteness objective function.
    */
   inline virtual su2double GetTotal_OFDiscreteness() const { return 0; }
 
   /*!
    * \brief A virtual member.
-   * \return Value of the objective function for the structural compliance.
+   * \return Value of the compliance objective function.
    */
   inline virtual su2double GetTotal_OFCompliance() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the stress penalty objective function.
+   */
+  inline virtual su2double GetTotal_OFStressPenalty() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3925,7 +3905,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetFreeStream_Solution(CConfig *config) { }
+  inline virtual void SetFreeStream_Solution(const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4313,18 +4293,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetFreeStream_TurboSolution(CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   */
-  inline virtual void SetBeta_Parameter(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config,
-                                        unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.
