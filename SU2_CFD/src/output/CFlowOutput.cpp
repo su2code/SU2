@@ -559,14 +559,14 @@ void CFlowOutput::SetAnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfi
   SetHistoryOutputValue("SURFACE_STATIC_PRESSURE", Tot_Surface_Pressure);
   SetHistoryOutputValue("AVG_DENSITY", Tot_Surface_Density);
   SetHistoryOutputValue("AVG_ENTHALPY", Tot_Surface_Enthalpy);
-  SetHistoryOutputValue("AVG_NORMALVEL", Tot_Surface_Enthalpy);
+  SetHistoryOutputValue("AVG_NORMALVEL", Tot_Surface_NormalVelocity);
   SetHistoryOutputValue("SURFACE_UNIFORMITY", Tot_Surface_StreamVelocity2);
   SetHistoryOutputValue("SURFACE_SECONDARY", Tot_Surface_TransvVelocity2);
   SetHistoryOutputValue("SURFACE_MOM_DISTORTION", Tot_Momentum_Distortion);
   SetHistoryOutputValue("SURFACE_SECOND_OVER_UNIFORM", Tot_SecondOverUniformity);
   SetHistoryOutputValue("SURFACE_TOTAL_TEMPERATURE", Tot_Surface_TotalTemperature);
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
-  SetHistoryOutputValue("SURFACE_PRESSURE_DROP",  Tot_Surface_PressureDrop);
+  SetHistoryOutputValue("SURFACE_PRESSURE_DROP", Tot_Surface_PressureDrop);
 
   if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint() && output) {
 
