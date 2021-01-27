@@ -9287,7 +9287,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
 
-      if (dynamic_grid && val_update_geo) {
+      if (dynamic_grid && val_update_geo && !config->GetDeform_Mesh()) {
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
@@ -9313,7 +9313,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
        grid coordinates for each node (but not the grid velocities, as there are none). ---*/
 
-      if (static_fsi && val_update_geo) {
+      if (static_fsi && val_update_geo && !config->GetDeform_Mesh()) {
        /*--- Rewind the index to retrieve the Coords. ---*/
         index = counter*Restart_Vars[1];
         Coord = &Restart_Data[index];
