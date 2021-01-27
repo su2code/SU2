@@ -681,7 +681,7 @@ CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_
 
   Streamwise_Coord_Vector.resize(nDim);
   for (iDim = 0; iDim < nDim; iDim++)
-    Streamwise_Coord_Vector[iDim] = config->GetPeriodicTranslation(0)[iDim];
+    Streamwise_Coord_Vector[iDim] = config->GetPeriodic_Translation(iDim);
 
   /*--- Compute square of the distance between the 2 periodic surfaces via inner product with itself:
         dot_prod(t*t) = (|t|_2)^2  ---*/

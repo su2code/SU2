@@ -940,7 +940,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
   
   /*--- Compute integrated Heatflux and massflow, TK:: Euler equations not implemented yet, probalby wasted here ---*/
-  if (config->GetKind_Streamwise_Periodic()) {
+  if (config->GetKind_Streamwise_Periodic() && false) {
     if(rank==MASTER_NODE) cout << "EulerPrepsocessing GetStreamwise_Periodic_Properties." << endl;
     GetStreamwise_Periodic_Properties(geometry, config, iMesh);
   } 
