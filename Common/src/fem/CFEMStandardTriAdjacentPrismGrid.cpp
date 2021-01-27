@@ -72,6 +72,10 @@ CFEMStandardTriAdjacentPrismGrid::CFEMStandardTriAdjacentPrismGrid(const unsigne
                          rTrianglePrism, sTrianglePrism, rLinePrism, lagBasisInt);
   DerLagBasisIntPointsPrism(nPoly, rTriangleDOFs, sTriangleDOFs, rLineDOFs,
                             rTrianglePrism, sTrianglePrism, rLinePrism, derLagBasisInt);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardTriBase::SubConnLinearElements();
 }
 
 void CFEMStandardTriAdjacentPrismGrid::CoorIntPoints(const bool                notUsed,

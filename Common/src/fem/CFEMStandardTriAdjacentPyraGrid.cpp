@@ -66,6 +66,10 @@ CFEMStandardTriAdjacentPyraGrid::CFEMStandardTriAdjacentPyraGrid(const unsigned 
                         rInt, sInt, tInt, lagBasisInt);
   DerLagBasisIntPointsPyra(nPoly, rPyraDOFs, sPyraDOFs, tPyraDOFs,
                            rInt, sInt, tInt, derLagBasisInt);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardTriBase::SubConnLinearElements();
 }
 
 void CFEMStandardTriAdjacentPyraGrid::CoorIntPoints(const bool                notUsed,

@@ -112,6 +112,10 @@ CFEMStandardQuadAdjacentHexGrid::CFEMStandardQuadAdjacentHexGrid(const unsigned 
     tensorDSolDs[0] = lagN;    tensorDSolDs[1] = derLagT0; tensorDSolDs[2] = lagT1;
     tensorDSolDt[0] = lagN;    tensorDSolDt[1] = lagT0;    tensorDSolDt[2] = derLagT1;
   }
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardQuadBase::SubConnLinearElements();
 }
 
 void CFEMStandardQuadAdjacentHexGrid::CoorIntPoints(const bool                notUsed,

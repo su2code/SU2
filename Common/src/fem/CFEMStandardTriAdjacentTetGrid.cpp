@@ -66,6 +66,10 @@ CFEMStandardTriAdjacentTetGrid::CFEMStandardTriAdjacentTetGrid(const unsigned sh
                        rInt, sInt, tInt, lagBasisInt);
   DerLagBasisIntPointsTet(nPoly, rTetDOFs, sTetDOFs, tTetDOFs, 
                           rInt, sInt, tInt, derLagBasisInt);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardTriBase::SubConnLinearElements();
 }
 
 void CFEMStandardTriAdjacentTetGrid::CoorIntPoints(const bool                notUsed,

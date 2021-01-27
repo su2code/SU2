@@ -32,6 +32,30 @@
 /*---        Public member functions of CInternalFaceFEM_DG.        ---*/
 /*---------------------------------------------------------------------*/
 
+void CInternalFaceFEM_DG::ComputeWallDistance(CADTElemClass        *WallADT,
+                                              const unsigned short nDim) {
+
+  /*--- Determine the number of integration points. ---*/
+  const unsigned short nInt = standardElemGrid->GetNIntegration();
+
+  /*--- Loop over the integration points and compute the
+        distance to the wall. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    su2double coor[3] = {0.0};
+    for(unsigned short k=0; k<nDim; ++k)
+      coor[k] = coorIntegrationPoints(i,k);
+
+    unsigned short markerID;
+    unsigned long  elemID;
+    int            rankID;
+    su2double      dist;
+    WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+
+    wallDistance(i) = dist;
+  }
+}
+
 void CInternalFaceFEM_DG::InitGridVelocities(const unsigned short nDim) {
 
   /*--- Determine the padded number of integration points. ---*/
@@ -96,4 +120,13 @@ void CInternalFaceFEM_DG::MetricTermsIntegrationPoints(const unsigned short     
                                                 JacobiansFace, metricNormalsFace,
                                                 metricCoorDerivFace0,
                                                 metricCoorDerivFace1);
+}
+
+void CInternalFaceFEM_DG::SetWallDistance(su2double val) {
+
+  /*--- Determine the padded number of integration points, allocate the
+        memory for the wall distances and set them. ---*/
+  const unsigned short nIntPad = standardElemGrid->GetNIntegrationPad();
+  wallDistance.resize(nIntPad);
+  wallDistance.setConstant(val);
 }

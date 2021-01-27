@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../fem/CFEMStandardElementBase.hpp"
+#include "../../adt/CADTElemClass.hpp"
 
 using namespace std;
 
@@ -82,6 +83,14 @@ public:
                                                                    pressure for an incompressible flow. */
 
   /*!
+   * \brief Function, which computes the wall distances.
+   * \param[in] WallADT - The ADT to compute the wall distances.
+   * \param[in] nDim    - Number of spatial dimensions.
+   */
+  void ComputeWallDistance(CADTElemClass        *WallADT,
+                           const unsigned short nDim);
+
+  /*!
    * \brief Less than operator of the class. Needed for the sorting.
             The criterion for comparison is the corresponding (local) volume ID.
    */
@@ -108,4 +117,10 @@ public:
    */
   void MetricTermsIntegrationPoints(const unsigned short         nDim,
                                     vector<CVolumeElementFEM_DG> &volElem);
+
+  /*!
+   * \brief Function, which sets the wall distances to the given value.
+   * \param[in] val - Value to which the wall distance must be set.
+   */
+  void SetWallDistance(su2double val);
 };

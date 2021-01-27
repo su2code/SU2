@@ -33,6 +33,48 @@
 /*---      Public member functions of CVolumeElementFEM_Base.       ---*/
 /*---------------------------------------------------------------------*/
 
+void CVolumeElementFEM_Base::ComputeWallDistance(CADTElemClass        *WallADT,
+                                                 const unsigned short nDim) {
+
+  /*--- Determine the number of integration points and solution DOFs. ---*/
+  const unsigned short nInt     = standardElemGrid->GetNIntegration();
+  const unsigned short nDOFsSol = standardElemGrid->GetNSolDOFs();
+
+  /*--- Loop over the integration points and compute the
+        distance to the wall. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    su2double coor[3] = {0.0};
+    for(unsigned short k=0; k<nDim; ++k)
+      coor[k] = coorIntegrationPoints(i,k);
+
+    unsigned short markerID;
+    unsigned long  elemID;
+    int            rankID;
+    su2double      dist;
+    WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+
+    wallDistanceInt(i) = dist;
+  }
+
+  /*--- Loop over the solution DOFs and compute the
+        distance to the wall. ---*/
+  for(unsigned short i=0; i<nDOFsSol; ++i) {
+
+    su2double coor[3] = {0.0};
+    for(unsigned short k=0; k<nDim; ++k)
+      coor[k] = coorSolDOFs(i,k);
+
+    unsigned short markerID;
+    unsigned long  elemID;
+    int            rankID;
+    su2double      dist;
+    WallADT->DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+
+    wallDistanceSolDOFs(i) = dist;
+  }
+}
+
 void CVolumeElementFEM_Base::DerMetricTermsIntegrationPoints(const unsigned short nDim) {
 
   /*--- Allocate the memory for the metric terms to compute the second derivatives
@@ -170,4 +212,18 @@ void CVolumeElementFEM_Base::SetCoorGridDOFs(const unsigned short    nDim,
   for(unsigned short k=0; k<nDim; ++k)
     for(unsigned long i=0; i<nodeIDsGrid.size(); ++i)
       coorGridDOFs(i,k) = meshPoints[nodeIDsGrid[i]].coor[k];
+}
+
+void CVolumeElementFEM_Base::SetWallDistance(su2double val) {
+
+  /*--- Determine the padded number of integration points and solution DOFs,
+        allocate the memory for the wall distances and set the value. ---*/
+  const unsigned short nIntPad     = standardElemGrid->GetNIntegrationPad();
+  const unsigned short nDOFsSolPad = standardElemGrid->GetNSolDOFsPad();
+
+  wallDistanceInt.resize(nIntPad);
+  wallDistanceSolDOFs.resize(nDOFsSolPad);
+
+  wallDistanceInt.setConstant(val);
+  wallDistanceSolDOFs.setConstant(val);
 }

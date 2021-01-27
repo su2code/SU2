@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../fem/CFEMStandardElementBase.hpp"
+#include "../../adt/CADTElemClass.hpp"
 
 using namespace std;
 
@@ -94,17 +95,25 @@ public:
 
   ColMajorMatrix<su2double> coorIntegrationPoints;  /*!< \brief Coordinates of the integration points of this element. */
   ColMajorMatrix<su2double> gridVelocitiesInt;      /*!< \brief Grid velocities of the integration points of this element. */
-  ColMajorMatrix<su2double> wallDistanceInt;        /*!< \brief The wall distance to the viscous walls for
+  su2activevector           wallDistanceInt;        /*!< \brief The wall distance to the viscous walls for
                                                                 the integration points of this element. */
 
   ColMajorMatrix<su2double> coorSolDOFs;            /*!< \brief Coordinates of the nodal solution DOFs of this element.
                                                                 It only differs from coorGridDOFs if the polynomial degree
                                                                 of the grid and solution differ. */
   ColMajorMatrix<su2double> gridVelocitiesSolDOFs;  /*!< \brief Grid velocities of the nodal solution DOFs of this element. */
-  ColMajorMatrix<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
+  su2activevector           wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
                                                                 the nodal solution DOFs of this element. */    
 
   CFEMStandardElementBase *standardElemGrid = nullptr; /*!< \brief Pointer to the standard element for the grid. */
+
+  /*!
+   * \brief Function, which computes the wall distances.
+   * \param[in] WallADT - The ADT to compute the wall distances.
+   * \param[in] nDim    - Number of spatial dimensions.
+   */
+  void ComputeWallDistance(CADTElemClass        *WallADT,
+                           const unsigned short nDim);
 
   /*!
    * \brief Function, which computes the derivatives of the metric terms
@@ -155,4 +164,10 @@ public:
    */
   void SetCoorGridDOFs(const unsigned short    nDim,
                        const vector<CPointFEM> &meshPoints);
+
+  /*!
+   * \brief Function, which sets the wall distances to the given value.
+   * \param[in] val - Value to which the wall distance must be set.
+   */
+  void SetWallDistance(su2double val);
 };

@@ -2261,16 +2261,14 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
   /*--- The master node writes a message. ---*/
   if(rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
 
-  /*--- Determine the chunk size for the OMP loop below. ---*/
-#ifdef HAVE_OMP
-  const size_t omp_chunk_size = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
-#endif
-
   /*---- Start of the OpenMP parallel region, if supported. ---*/
   SU2_OMP_PARALLEL
   {
     /*--- Loop over the internal matching faces. ---*/
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT(omp_chunk_size_face)
     for(unsigned long i=0; i<matchingFaces.size(); ++i) {
 
       /*--- Initialize the grid velocities. ---*/
@@ -2285,7 +2283,11 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
       if( !boundaries[l].periodicBoundary ) {
 
         /*--- Loop over the boundary faces. ---*/
-        SU2_OMP_FOR_STAT(omp_chunk_size)
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size_surf = computeStaticChunkSize(boundaries[l].surfElem.size(),
+                                                                  omp_get_num_threads(), 64);
+#endif
+        SU2_OMP_FOR_STAT(omp_chunk_size_surf)
         for(unsigned long i=0; i<boundaries[l].surfElem.size(); ++i) {
 
           /*--- Initialize the grid velocities. ---*/
@@ -3884,12 +3886,81 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
 
 void CMeshFEM_DG::SetWallDistance(su2double val) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Set the wall distance for the owned volume elements and
+          the internal matching faces. ---*/
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP(for schedule(static,omp_chunk_size_elem) nowait)
+    for(unsigned long l=0; l<nVolElemOwned; ++l)
+      volElem[l].SetWallDistance(val);
+
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
+#endif
+    SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+    for(unsigned long l=0; l<matchingFaces.size(); ++l)
+      matchingFaces[l].SetWallDistance(val);
+
+    /*--- Set the wall distance for the physical boundary markers. ---*/
+    for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+      if( !boundaries[iMarker].periodicBoundary ) {
+
+        vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
+#endif
+        SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+        for(unsigned long l=0; l<surfElem.size(); ++l)
+          surfElem[l].SetWallDistance(val);
+      }
+    }
+  }
 }
 
 void CMeshFEM_DG::SetWallDistance(const CConfig *config, CADTElemClass* WallADT) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Return immediately if the tree is empty. ---*/
+  if( WallADT->IsEmpty() ) return;
+
+  /*---- Start of the OpenMP parallel region, if supported. ---*/
+  SU2_OMP_PARALLEL
+  {
+    /*--- Determine the wall distances of the integration points and
+          solution DOFs of the locally owned volume elements and of
+          the integration points of the internal matching faces. ---*/
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_elem = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP(for schedule(static,omp_chunk_size_elem) nowait)
+    for(unsigned long l=0; l<nVolElemOwned; ++l)
+      volElem[l].ComputeWallDistance(WallADT, nDim);
+
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_face = computeStaticChunkSize(matchingFaces.size(), omp_get_num_threads(), 64);
+#endif
+    SU2_OMP(for schedule(static,omp_chunk_size_face) nowait)
+    for(unsigned long l=0; l<matchingFaces.size(); ++l)
+      matchingFaces[l].ComputeWallDistance(WallADT, nDim);
+
+    /*--- Determine the wall distances of the integration points
+          of the physical boundary markers. ---*/
+    for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+      if( !boundaries[iMarker].periodicBoundary ) {
+
+        vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+#ifdef HAVE_OMP
+        const size_t omp_chunk_size_surf = computeStaticChunkSize(surfElem.size(), omp_get_num_threads(), 64);
+#endif
+        SU2_OMP(for schedule(static,omp_chunk_size_surf) nowait)
+        for(unsigned long l=0; l<surfElem.size(); ++l)
+          surfElem[l].ComputeWallDistance(WallADT, nDim);
+      }
+    }
+  }
 }
 
 void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig *config) {

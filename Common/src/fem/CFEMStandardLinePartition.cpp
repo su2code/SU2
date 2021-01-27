@@ -50,7 +50,7 @@ CFEMStandardLinePartition::CFEMStandardLinePartition(const unsigned short val_nP
   DerLagBasisIntPointsLine(rLineDOFsLGL,  rLineInt, true, derLagBasisLineIntLGL);
 
   /*--- Determine the local subconnectivity of this standard element when split
-        in several linear elements. Used for a.o. plotting and searcing. ---*/
+        in several linear elements. Used for a.o. plotting and searching. ---*/
   SubConnLinearElements();
 
   /*--- Set up the jitted gemm call, if supported. For this particular standard

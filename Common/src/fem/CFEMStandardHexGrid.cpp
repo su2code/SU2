@@ -62,7 +62,7 @@ CFEMStandardHexGrid::CFEMStandardHexGrid(const unsigned short val_nPolyGrid,
   DerLagBasisIntPointsLine(rLineDOFs, rLineSolDOFs, true, derLagBasisLineSolDOFs);
 
   /*--- Determine the local subconnectivity of this standard element when split
-        in several linear elements. Used for a.o. plotting and searcing. ---*/
+        in several linear elements. Used for a.o. plotting and searching. ---*/
   CFEMStandardHexBase::SubConnLinearElements();
 
   /*--- Set the function pointers for the tensor product multiplications to

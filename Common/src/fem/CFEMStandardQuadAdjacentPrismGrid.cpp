@@ -102,6 +102,10 @@ CFEMStandardQuadAdjacentPrismGrid::CFEMStandardQuadAdjacentPrismGrid(const unsig
   CheckRowSum(nIntegration, rDOFs.size(), 0.0, derLagBasisInt[0]);
   CheckRowSum(nIntegration, rDOFs.size(), 0.0, derLagBasisInt[1]);
   CheckRowSum(nIntegration, rDOFs.size(), 0.0, derLagBasisInt[2]);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardQuadBase::SubConnLinearElements();
 }
 
 void CFEMStandardQuadAdjacentPrismGrid::CoorIntPoints(const bool                notUsed,

@@ -64,6 +64,10 @@ CFEMStandardLineAdjacentTriGrid::CFEMStandardLineAdjacentTriGrid(const unsigned 
                             rTriangleInt, sTriangleInt, lagBasisInt);
   DerLagBasisIntPointsTriangle(nPoly, rTriangleDOFs, sTriangleDOFs,
                                rTriangleInt, sTriangleInt, derLagBasisInt);
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardLineBase::SubConnLinearElements();
 }
 
 void CFEMStandardLineAdjacentTriGrid::CoorIntPoints(const bool                notUsed,

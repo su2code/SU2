@@ -94,6 +94,10 @@ CFEMStandardLineAdjacentQuadGrid::CFEMStandardLineAdjacentQuadGrid(const unsigne
     tensorDSolDr[0] = derLagN; tensorDSolDr[1] = lagT;
     tensorDSolDs[0] = lagN;    tensorDSolDs[1] = derLagT;
   }
+
+  /*--- Determine the local subconnectivity of this standard element when split
+        in several linear elements. Used for a.o. plotting and searching. ---*/
+  CFEMStandardLineBase::SubConnLinearElements();
 }
 
 void CFEMStandardLineAdjacentQuadGrid::CoorIntPoints(const bool                notUsed,
