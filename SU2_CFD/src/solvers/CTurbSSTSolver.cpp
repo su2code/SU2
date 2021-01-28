@@ -2052,15 +2052,11 @@ void CTurbSSTSolver::TurbulentMetric(CSolver                    **solver,
   //--- Zeroth-order terms due to production
   if (!pk_limited){
     weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0)*pk_positive;
-    // weights[0][nVarFlo+1] += TWO3*alfa*divu*varAdjTur->GetSolution(iPoint,1)*(!stress_limited);
   }
   else {
     weights[0][0]         += 20.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
-                             // -20.*betastar*alfa*omega*omega*varAdjTur->GetSolution(iPoint,1)(!stress_limited);
     weights[0][nVarFlo+0] += -20.*betastar*omega*varAdjTur->GetSolution(iPoint,0);
     weights[0][nVarFlo+1] += -20.*betastar*k*varAdjTur->GetSolution(iPoint,0);
-                             // -20.*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1)
-                             // -20.*betastar*alfa*zeta*varAdjTur->GetSolution(iPoint,1)*(!stress_limited);
   }
   weights[0][nVarFlo+1] += TWO3*(!stress_limited)*alfa*divu*varAdjTur->GetSolution(iPoint,1)*pw_positive;
   
