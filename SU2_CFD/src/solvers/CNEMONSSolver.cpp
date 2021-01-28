@@ -773,7 +773,27 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                    (ktr*(Twall-Ti) + kve*(Twall-Tvei))*C)*Area/dij;
       Res_Visc[nSpecies+nDim+1] = (kve*(Tvei-Tvej) + kve*(Twall-Tvei) *C)*Area/dij;
 
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+     // LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      vector<su2double> rhos;
+
+      rhos.resize(nSpecies,0.0);
+
+      for (unsigned short i = 0; i < nSpecies; i++) {
+        rhos[i]=nodes->GetDensity(iPoint,i);
+      }
+
+      vector<su2double> energies;
+
+      FluidModel->SetTDStateRhosTTv(rhos, Twall, Twall);
+      energies = FluidModel->ComputeMixtureEnergies();
+
+      nodes->SetEnergy_Old(iPoint,energies);
+
+      for (unsigned short i = 0; i < 2; i++) {
+       LinSysRes(iPoint, nSpecies+nDim+i) = 0.0;
+       nodes->SetVal_ResTruncError_Zero(iPoint,nSpecies+nDim+i);
+      }
 
       //if (implicit) {
       //  for (iVar = 0; iVar < nVar; iVar++)
