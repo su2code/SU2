@@ -268,6 +268,20 @@ class CFVMFlowSolverBase : public CSolver {
   using CSolver::Viscous_Residual; /*--- Silence warning ---*/
 
   /*!
+   * \brief General implementation to load a flow solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current external iteration number.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   * \param[in] RestartSolution - Optional buffer to load restart vars into,
+   *            this allows default values to be given when nVar > nVar_Restart.
+   * \param[in] nVar_Restart - Number of restart variables, if 0 defaults to nVar.
+   */
+  void LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo,
+                        su2double* RestartSolution = nullptr, unsigned short nVar_Restart = 0);
+
+  /*!
    * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -1068,6 +1082,17 @@ class CFVMFlowSolverBase : public CSolver {
   ~CFVMFlowSolverBase();
 
  public:
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current external iteration number.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter, bool update_geo) override;
+
   /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
