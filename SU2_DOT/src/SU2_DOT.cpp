@@ -821,7 +821,7 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
       }
 
       /*--- Print the gradient to file and screen ---*/
-
+      cout << std::setprecision(10);
       for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
         cout << Gradient[iDV][iDV_Value];
         if (iDV_Value != nDV_Value-1 ){

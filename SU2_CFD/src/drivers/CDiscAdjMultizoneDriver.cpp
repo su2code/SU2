@@ -158,7 +158,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 void CDiscAdjMultizoneDriver::Run() {
 
-  unsigned long wrt_sol_freq = 9999;
+  unsigned long wrt_sol_freq = 99999;
   unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   vector<CQuasiNewtonInvLeastSquares<passivedouble> > fixPtCorrector(nZone);
 
