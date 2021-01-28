@@ -74,7 +74,7 @@ def main():
     invwedge.cfg_dir   = "nonequilibrium/invwedge"
     invwedge.cfg_file  = "invwedge.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.040996,-1.565650,-16.737300,-17.063678|,-17.010405,2.274542,1.878569,5.316417,0.870704]
+    invwedge.test_vals = [-1.040996,-1.565650,-16.737300,-17.063678,-17.010405,2.274542,1.878569,5.316417,0.870704]
     invwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     invwedge.timeout   = 1600
     invwedge.new_output = True
@@ -86,7 +86,7 @@ def main():
     viscwedge.cfg_dir   = "nonequilibrium/viscwedge"
     viscwedge.cfg_file  = "viscwedge.cfg"
     viscwedge.test_iter = 10
-    viscwedge.test_vals = [-5.164412,-5.689175,-20.392759,-20.312416,-20.776380,-1.575654,-2.097837,2.201542,-2.584361]
+    viscwedge.test_vals = [ -5.106662,   -5.631424, -20.687934,  -20.692551, -22.671423,   -1.943955,   -2.536928,  1.058940,  -3.215452]
     viscwedge.su2_exec  = "mpirun -n 2 SU2_CFD"
     viscwedge.timeout   = 1600
     viscwedge.new_output = True
