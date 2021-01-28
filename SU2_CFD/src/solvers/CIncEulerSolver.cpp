@@ -815,7 +815,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
 void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
-  const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != NONE);
   const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == DT_STEPPING_2ND));
@@ -824,10 +824,8 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 
   SU2_OMP_PARALLEL {
 
-  unsigned long iPoint, Point_Fine;
-  unsigned short iMesh, iChildren, iVar;
-  su2double Area_Children, Area_Parent;
-  const su2double *Solution_Fine;
+  unsigned long iPoint;
+  unsigned short iMesh;
 
   /*--- Check if a verification solution is to be computed. ---*/
   if ((VerificationSolution) && (TimeIter == 0) && !restart) {
@@ -847,56 +845,6 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
            the verification solution class. This can be the exact solution,
            but this is not necessary. */
         VerificationSolution->GetInitialCondition(coor, solDOF);
-      }
-    }
-  }
-
-  /*--- If restart solution, then interpolate the flow solution to
-   all the multigrid levels, this is important with the dual time strategy ---*/
-
-  if (restart && (TimeIter == 0)) {
-
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-        su2double Solution[MAXNVAR] = {0.0};
-        for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-          Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-          Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-          Solution_Fine = solver_container[iMesh-1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-          }
-        }
-        solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-      }
-      solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
-    }
-
-    /*--- Interpolate the turblence variable also, if needed ---*/
-
-    if (rans) {
-
-      unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-      for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-          su2double Solution[MAXNVAR] = {0.0};
-          for (iChildren = 0; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-            Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-            Area_Children = geometry[iMesh-1]->nodes->GetVolume(Point_Fine);
-            Solution_Fine = solver_container[iMesh-1][TURB_SOL]->GetNodes()->GetSolution(Point_Fine);
-            for (iVar = 0; iVar < nVar_Turb; iVar++) {
-              Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-            }
-          }
-          solver_container[iMesh][TURB_SOL]->GetNodes()->SetSolution(iPoint,Solution);
-        }
-        solver_container[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_EDDY);
-        solver_container[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
-        solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
       }
     }
   }

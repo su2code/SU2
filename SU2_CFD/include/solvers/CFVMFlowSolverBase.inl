@@ -882,7 +882,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
       index = counter*Restart_Vars[1] + skipVars;
 
       if (SolutionRestart == nullptr) {
-        nodes->SetSolution(iPoint_Local, &Restart_Data[index]);
+        for (iVar = 0; iVar < nVar_Restart; iVar++)
+          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
       }
       else {
         /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
