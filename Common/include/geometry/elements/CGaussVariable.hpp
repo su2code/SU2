@@ -2,11 +2,11 @@
  * \file CGaussVariable.hpp
  * \brief Light-weight class to store Gaussian point information.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -27,12 +27,12 @@
 
 #pragma once
 
-#include "../../toolboxes/C2DContainer.hpp"
+#include "../../containers/C2DContainer.hpp"
 
 /*!
  * \class CGaussVariable
  * \brief Main class for defining the gaussian points.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CGaussVariable {
 protected:

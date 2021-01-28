@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,8 @@
 #pragma once
 
 #include "CSolver.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/geometry/elements/CElement.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 /*!
  * \class CFEASolver
@@ -66,8 +67,10 @@ protected:
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
   su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
+  su2double Total_OFDiscreteness;   /*!< \brief Total Objective Function: Discreteness (topology optimization). */
   su2double Total_OFCompliance;     /*!< \brief Total Objective Function: Compliance (topology optimization). */
-  su2double Total_OFCombo = 0.0;    /*!< \brief One of the above, for output/history purposes. */
+  su2double Total_OFStressPenalty;  /*!< \brief Total Objective Function: Stress penalty. */
+  su2double ObjFunc;
 
   su2double Global_OFRefGeom;       /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;       /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -197,6 +200,34 @@ protected:
                                  su2double der,
                                  su2double der_avg) const;
 
+  /*!
+   * \brief Compute the objective function for a reference geometry
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFRefGeom(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the objective function for a reference node
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFRefNode(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the objective function for a volume fraction
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFVolFrac(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Compute the compliance objective function
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFCompliance(CGeometry *geometry, const CConfig *config);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -243,20 +274,6 @@ public:
                            CSolver ***solver_container,
                            CConfig *config,
                            unsigned long TimeIter) override;
-
-  /*!
-   * \brief Compute the time step for solving the FEM equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
-   */
-  inline void SetTime_Step(CGeometry *geometry,
-                           CSolver **solver_container,
-                           CConfig *config,
-                           unsigned short iMesh,
-                           unsigned long Iteration) override { }
 
   /*!
    * \brief Get the value of the reference coordinate to set on the element structure.
@@ -450,13 +467,6 @@ public:
                     unsigned short val_marker) final;
 
   /*!
-   * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Integrate_FSI_Loads(CGeometry *geometry, const CConfig *config);
-
-  /*!
    * \brief Iterate using an implicit Newmark solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] numerics - Numerical methods.
@@ -514,15 +524,11 @@ public:
   /*!
    * \brief Postprocessing.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] numerics - Implementation of numerical method.
+   * \param[in] of_comp_mode - Mode to compute just the objective function.
    */
-  void Postprocessing(CGeometry *geometry,
-                      CSolver **solver_container,
-                      CConfig *config,
-                      CNumerics **numerics,
-                      unsigned short iMesh) final;
+  void Postprocessing(CGeometry *geometry, CConfig *config, CNumerics **numerics, bool of_comp_mode) final;
 
   /*!
    * \brief Routine to solve the Jacobian-Residual linearized system.
@@ -541,39 +547,71 @@ public:
 
   /*!
    * \brief Provide the maximum Von Mises Stress for structural analysis.
-   * \return Value of the maximum Von Mises Stress.
    */
   inline su2double GetTotal_CFEA(void) const final { return Total_CFEA; }
 
   /*!
    * \brief Retrieve the value of the objective function for a reference geometry
-   * \param[out] OFRefGeom - value of the objective function.
    */
   inline su2double GetTotal_OFRefGeom(void) const final { return Total_OFRefGeom; }
 
   /*!
    * \brief Retrieve the value of the objective function for a reference node
-   * \param[out] OFRefNode - value of the objective function.
    */
   inline su2double GetTotal_OFRefNode(void) const final { return Total_OFRefNode; }
 
   /*!
    * \brief Retrieve the value of the volume fraction objective function
-   * \param[out] OFVolFrac - value of the objective function.
    */
   inline su2double GetTotal_OFVolFrac(void) const final { return Total_OFVolFrac; }
 
   /*!
+   * \brief Retrieve the value of the discreteness objective function
+   */
+  inline su2double GetTotal_OFDiscreteness(void) const final { return Total_OFDiscreteness; }
+
+  /*!
    * \brief Retrieve the value of the structural compliance objective function
-   * \return Value of the objective function.
    */
   inline su2double GetTotal_OFCompliance(void) const final { return Total_OFCompliance; }
 
   /*!
-   * \brief Retrieve the value of the combined objective function
-   * \note For now there is no combination, this is just a seletion.
+   * \brief Retrieve the value of the stress penalty objective function
    */
-  inline su2double GetTotal_ComboObj(void) const final { return Total_OFCombo; }
+  inline su2double GetTotal_OFStressPenalty(void) const final { return Total_OFStressPenalty; }
+
+  /*!
+   * \brief Compute the objective function.
+   * \param[in] config - Definition of the problem.
+   */
+  inline void Evaluate_ObjFunc(const CConfig *config) final {
+    ObjFunc = 0.0;
+    switch (config->GetKind_ObjFunc()) {
+      case REFERENCE_GEOMETRY:
+        ObjFunc = GetTotal_OFRefGeom();
+        break;
+      case REFERENCE_NODE:
+        ObjFunc = GetTotal_OFRefNode();
+        break;
+      case TOPOL_COMPLIANCE:
+        ObjFunc = GetTotal_OFCompliance();
+        break;
+      case VOLUME_FRACTION:
+        ObjFunc = GetTotal_OFVolFrac();
+        break;
+      case TOPOL_DISCRETENESS:
+        ObjFunc = GetTotal_OFDiscreteness();
+        break;
+      case STRESS_PENALTY:
+        ObjFunc = GetTotal_OFStressPenalty();
+        break;
+    }
+  }
+
+  /*!
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   */
+  inline su2double GetTotal_ComboObj() const final { return ObjFunc; }
 
   /*!
    * \brief Determines whether there is an element-based file or not.
@@ -663,42 +701,12 @@ public:
   void SetAitken_Relaxation(CGeometry *geometry, CConfig *config) final;
 
   /*!
-   * \brief Compute the objective function for a reference geometry
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFRefGeom(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Compute the objective function for a reference node
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFRefNode(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Compute the objective function for a volume fraction
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFVolFrac(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
-   * \brief Compute the compliance objective function
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Compute_OFCompliance(CGeometry *geometry, const CConfig *config) final;
-
-  /*!
    * \brief Compute the penalty due to the stiffness increase
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
   void Stiffness_Penalty(CGeometry *geometry,
-                         CSolver **solver_container,
                          CNumerics **numerics_container,
                          CConfig *config);
 

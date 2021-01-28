@@ -86,3 +86,7 @@ Mercurial
 
 # Ignore build folder
 ./build/
+build/
+
+# ninja binary (build system)
+ninja

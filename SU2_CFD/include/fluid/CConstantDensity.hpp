@@ -2,7 +2,7 @@
  * \file CConstantDensity.hpp
  * \brief Defines the incompressible constant density model.
  * \author T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *

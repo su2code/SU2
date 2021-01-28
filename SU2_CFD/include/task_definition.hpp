@@ -2,11 +2,11 @@
  * \file task_definition.hpp
  * \brief Header of the task definition class for the SU2 solvers.
  * \author E. van der Weide, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <iostream>
 
@@ -37,7 +37,7 @@ using namespace std;
  * \class CTaskDefinition
  * \brief Class for defining a task to be carried out
  * \author: E. van der Weide, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CTaskDefinition {
 

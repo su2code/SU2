@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.6 "Blackbird"
+# \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -53,6 +53,9 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CIdealGas.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
+  ../src/fluid/CNEMOGas.cpp \
+  ../src/fluid/CSU2TCLib.cpp \
+  ../src/fluid/CMutationTCLib.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \
   ../src/integration/CMultiGridIntegration.cpp \
@@ -90,6 +93,15 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/flow/convection/centered.cpp \
   ../src/numerics/flow/flow_diffusion.cpp \
   ../src/numerics/flow/flow_sources.cpp \
+  ../src/numerics/NEMO/convection/roe.cpp \
+  ../src/numerics/NEMO/convection/ausm.cpp \
+  ../src/numerics/NEMO/convection/ausmplusup2.cpp \
+  ../src/numerics/NEMO/convection/ausmpwplus.cpp \
+  ../src/numerics/NEMO/convection/lax.cpp \
+  ../src/numerics/NEMO/convection/msw.cpp \
+  ../src/numerics/NEMO/CNEMONumerics.cpp \
+  ../src/numerics/NEMO/NEMO_diffusion.cpp \
+  ../src/numerics/NEMO/NEMO_sources.cpp \
   ../src/numerics/continuous_adjoint/adj_convection.cpp \
   ../src/numerics/continuous_adjoint/adj_diffusion.cpp \
   ../src/numerics/continuous_adjoint/adj_sources.cpp \
@@ -100,6 +112,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/numerics/elasticity/CFEALinearElasticity.cpp \
   ../src/numerics/elasticity/CFEANonlinearElasticity.cpp \
   ../src/numerics/elasticity/nonlinear_models.cpp \
+  ../include/numerics_simd/CNumericsSIMD.cpp \
   ../src/output/filewriter/CCSVFileWriter.cpp \
   ../src/output/filewriter/CSTLFileWriter.cpp \
   ../src/output/filewriter/CFEMDataSorter.cpp \
@@ -133,6 +146,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/CAdjFlowCompOutput.cpp \
   ../src/output/CAdjFlowIncOutput.cpp \
   ../src/output/CMultizoneOutput.cpp \
+  ../src/output/CNEMOCompOutput.cpp \
   ../src/output/COutputFactory.cpp \
   ../src/output/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
@@ -154,6 +168,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/solvers/CMeshSolver.cpp \
   ../src/solvers/CRadSolver.cpp \
   ../src/solvers/CRadP1Solver.cpp \
+  ../src/solvers/CNEMOEulerSolver.cpp \
+  ../src/solvers/CNEMONSSolver.cpp \
   ../src/solvers/CNSSolver.cpp \
   ../src/solvers/CSolver.cpp \
   ../src/solvers/CTemplateSolver.cpp \
@@ -190,6 +206,8 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/variables/CIncEulerVariable.cpp \
   ../src/variables/CTurbVariable.cpp \
   ../src/variables/CNSVariable.cpp \
+  ../src/variables/CNEMOEulerVariable.cpp \
+  ../src/variables/CNEMONSVariable.cpp \
   ../src/variables/CBaselineVariable.cpp \
   ../src/variables/CTurbSAVariable.cpp \
   ../src/variables/CFEAVariable.cpp \

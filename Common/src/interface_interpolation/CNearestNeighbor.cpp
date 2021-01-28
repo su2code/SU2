@@ -2,7 +2,7 @@
  * \file CNearestNeighbor.cpp
  * \brief Implementation of nearest neighbor interpolation.
  * \author H. Kline
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,18 +30,9 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
-
-/*! \brief Helper struct to (partially) sort neighbours according to distance while
- *         keeping track of the origin of the point (i.e. index and processor). */
-struct DonorInfo {
-  su2double dist;
-  unsigned pidx;
-  int proc;
-  DonorInfo(su2double d = 0.0, unsigned i = 0, int p = 0) : dist(d), pidx(i), proc(p) { }
-};
-
-CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,  unsigned int iZone,
-                                   unsigned int jZone) : CInterpolator(geometry_container, config, iZone, jZone) {
+CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, const CConfig* const* config,
+                                   unsigned int iZone, unsigned int jZone) :
+  CInterpolator(geometry_container, config, iZone, jZone) {
   SetTransferCoeff(config);
 }
 
@@ -63,6 +54,8 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
   const auto nDim = donor_geometry->GetnDim();
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+
+  targetVertices.resize(config[targetZone]->GetnMarker_All());
 
   vector<vector<DonorInfo> > DonorInfoVec(omp_get_max_threads());
 
@@ -88,6 +81,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor. ---*/
     Determine_ArraySize(markDonor, markTarget, nVertexDonor, nDim);
+    if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
     const auto nPossibleDonor = accumulate(Buffer_Receive_nVertex_Donor,
                                 Buffer_Receive_nVertex_Donor+nProcessor, 0ul);
@@ -113,8 +107,8 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
     SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget,2*omp_get_max_threads()))
     for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
-      auto target_vertex = target_geometry->vertex[markTarget][iVertexTarget];
-      const auto Point_Target = target_vertex->GetNode();
+      auto& target_vertex = targetVertices[markTarget][iVertexTarget];
+      const auto Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
 
       if (!target_geometry->nodes->GetDomain(Point_Target)) continue;
 
@@ -134,7 +128,7 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         }
       }
 
-      /*--- Find k closest points (need to define the comparator inline or debug build give wrong results). ---*/
+      /*--- Find k closest points. ---*/
       partial_sort(donorInfo.begin(), donorInfo.begin()+nDonor, donorInfo.end(),
         [](const DonorInfo& a, const DonorInfo& b) {
           /*--- Global index is used as tie-breaker to make sorted order independent of initial. ---*/
@@ -156,12 +150,12 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       }
 
       /*--- Set interpolation coefficients. ---*/
-      target_vertex->Allocate_DonorInfo(nDonor);
+      target_vertex.resize(nDonor);
 
       for (auto iDonor = 0ul; iDonor < nDonor; ++iDonor) {
-        target_vertex->SetInterpDonorPoint(iDonor, donorInfo[iDonor].pidx);
-        target_vertex->SetInterpDonorProcessor(iDonor, donorInfo[iDonor].proc);
-        target_vertex->SetDonorCoeff(iDonor, donorInfo[iDonor].dist/denom);
+        target_vertex.globalPoint[iDonor] = donorInfo[iDonor].pidx;
+        target_vertex.processor[iDonor] = donorInfo[iDonor].proc;
+        target_vertex.coefficient[iDonor] = donorInfo[iDonor].dist/denom;
       }
     }
     SU2_OMP_CRITICAL

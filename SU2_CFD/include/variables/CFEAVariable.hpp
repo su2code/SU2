@@ -2,7 +2,7 @@
  * \file CFEAVariable.hpp
  * \brief Class for defining the variables of the FEM structural problem.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for defining the variables of the FEM structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -367,14 +367,7 @@ public:
   /*!
    * \brief Get the pointer to the reference geometry
    */
-  inline su2double *GetReference_Geometry(unsigned long iPoint) final { return Reference_Geometry[iPoint]; }
-
-  /*!
-   * \brief Get the value of the reference geometry for the coordinate iVar
-   */
-  inline su2double GetReference_Geometry(unsigned long iPoint, unsigned long iVar) const final {
-    return Reference_Geometry(iPoint,iVar);
-  }
+  inline const su2double* GetReference_Geometry(unsigned long iPoint) const final { return Reference_Geometry[iPoint]; }
 
   /*!
    * \brief Register the variables in the solution time_n array as input/output variable.

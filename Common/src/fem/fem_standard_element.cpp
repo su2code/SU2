@@ -2,7 +2,7 @@
  * \file fem_standard_element.cpp
  * \brief Functions for the FEM standard elements.
  * \author E. van der Weide
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #include "../../include/fem/fem_standard_element.hpp"
 #include "../../include/fem/fem_gauss_jacobi_quadrature.hpp"
-#include "../../include/blas_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardElementBase.                     */

@@ -2,7 +2,7 @@
  * \file CTurbSASolver.hpp
  * \brief Headers of the CTurbSASolver class
  * \author A. Bueno.
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -353,7 +353,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) override {
+  inline void SetFreeStream_Solution(const CConfig *config) override {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
 

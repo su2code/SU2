@@ -2,7 +2,7 @@
  * \file output_adj_heat.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,16 +93,16 @@ CAdjHeatOutput::~CAdjHeatOutput(void) {}
 void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables.
-  /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
+  /// DESCRIPTION: Root-mean square residual of the adjoint temperature.
   AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables.
-  /// DESCRIPTION: Maximum residual of the adjoint Pressure.
+  /// DESCRIPTION: Maximum residual of the adjoint temperature.
   AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
-  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables.
-  /// DESCRIPTION: Maximum residual of the adjoint Pressure.
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables.
+  /// DESCRIPTION: Root-mean-square residual of the adjoint temperature.
   AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "bgs[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.

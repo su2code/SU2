@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -61,28 +61,24 @@ class CHeatIteration : public CFluidIteration {
                unsigned short val_iInst) override;
 
   /*!
-   * \brief Iterate the heat system for a number of Inner_Iter iterations.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration - Container vector with all the integration methods.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-  void Solve(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
-             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
-             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
-             unsigned short val_iInst) override;
-
-  /*!
    * \brief Updates the containers for the heat system.
-   * \param[in] ??? - Description here.
    */
   void Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
               CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
               CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
               unsigned short val_iInst) override;
+
+  /*!
+   * \brief Override the preprocessing of CFluidIteration.
+   */
+  inline void Preprocess(COutput*, CIntegration****, CGeometry****, CSolver*****, CNumerics******, CConfig**,
+                         CSurfaceMovement**, CVolumetricMovement***, CFreeFormDefBox***, unsigned short,
+                         unsigned short) override {}
+
+  /*!
+   * \brief Override the postprocessing of CFluidIteration.
+   */
+  inline void Postprocess(COutput*, CIntegration****, CGeometry****, CSolver*****, CNumerics******, CConfig**,
+                          CSurfaceMovement**, CVolumetricMovement***, CFreeFormDefBox***, unsigned short,
+                          unsigned short) override {}
 };

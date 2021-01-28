@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/integration/CIntegration.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CIntegration::CIntegration() {
@@ -64,11 +64,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
 
   /*--- Compute viscous residuals ---*/
-
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics, config, iMesh, iRKStep);
 
   /*--- Compute source term residuals ---*/
-
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
@@ -171,6 +169,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         else {
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
+        break;
+      case SMOLUCHOWSKI_MAXWELL:
+        solver_container[MainSolver]->BC_Smoluchowski_Maxwell(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
     }
 

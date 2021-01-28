@@ -2,7 +2,7 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/variables/CRadP1Variable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
@@ -269,7 +270,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
@@ -303,10 +304,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
 
@@ -346,7 +344,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Radiative_Energy;
@@ -380,10 +378,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
 
@@ -424,7 +419,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short val_marker) {
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
 
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
@@ -454,10 +449,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       // Weak application of the boundary condition
 
@@ -584,7 +576,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
 
-  unsigned short iDim, iMarker;
+  unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
@@ -609,7 +601,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Get the edge's normal vector to compute the edge's area ---*/
     Normal = geometry->edges->GetNormal(iEdge);
-    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, Normal);
 
     /*--- Viscous contribution ---*/
 
@@ -628,7 +620,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       /*--- Viscous contribution ---*/
 

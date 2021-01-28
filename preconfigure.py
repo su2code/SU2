@@ -3,7 +3,7 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 7.0.6 "Blackbird"
+#  \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -137,8 +137,7 @@ def prepare_source(replace = False, remove = False, revert = False):
                  "SU2_DEF",
                  "SU2_DOT",
                  "SU2_GEO",
-                 "SU2_SOL",
-                 "SU2_MSH"]
+                 "SU2_SOL"]
 
     file_list = ""
 
@@ -169,12 +168,10 @@ def prepare_source(replace = False, remove = False, revert = False):
 
 
     # Hardcoded files that will be skipped
-    exclude_dic_files = { 'Common/include/datatype_structure.hpp' : [-1],
-                          'Common/include/datatype_structure.inl' : [-1],
-                          'Common/include/mpi_structure.hpp' : [-1],
-                          'Common/include/mpi_structure.inl' : [-1],
-                          'Common/src/datatype_structure.cpp': [-1],
-                          'Common/src/mpi_structure.cpp' : [-1] }
+    exclude_dic_files = { 'Common/include/basic_types/datatype_structure.hpp' : [-1],
+                          'Common/include/parallelization/mpi_structure.hpp' : [-1],
+                          'Common/src/basic_types/datatype_structure.cpp': [-1],
+                          'Common/include/parallelization/mpi_structure.cpp' : [-1] }
 
     str_double = 'double'
 
@@ -290,9 +287,9 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = 'b8ddede642eb2824a56c75cebddb79ba194c2ada'
+    sha_version_codi = '1b8d3f5f03de560fb63a2a76ad91ab7bb3fa67d8'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
-    sha_version_medi = '051753df5bb6e66c9fb6fbe4f2413c4ba187e81d'
+    sha_version_medi = 'b84cef4272ab8bad981c0d0386d855daa8fbd340'
     github_repo_medi = 'https://github.com/SciCompKL/MeDiPack'
 
     medi_name = 'MeDiPack'
@@ -480,7 +477,6 @@ def configure(argument_dict,
         print('\tSU2_CFD            -> General solver for direct, cont. adjoint and linearized equations.\n' \
               '\tSU2_DOT            -> Gradient Projection Code.\n' \
               '\tSU2_DEF            -> Mesh Deformation Code.\n'  \
-              '\tSU2_MSH            -> Mesh Adaption Code.\n' \
               '\tSU2_SOL            -> Solution Export Code.\n' \
               '\tSU2_GEO            -> Geometry Definition Code.\n')
     if modes['SU2_AD']:

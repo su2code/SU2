@@ -2,7 +2,7 @@
  * \file CFEALinearElasticity.hpp
  * \brief Declaration and inlines of the linear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEALinearElasticity : public CFEAElasticity {
 protected:
@@ -72,7 +72,7 @@ public:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
+  su2double Compute_Averaged_NodalStress(CElement *element_container, const CConfig *config) final;
 
 private:
   /*!
@@ -90,7 +90,7 @@ private:
  * \brief Particular case of linear elasticity used for mesh deformation.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CFEAMeshElasticity final : public CFEALinearElasticity {
 

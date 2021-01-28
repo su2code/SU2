@@ -3,11 +3,11 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -33,7 +33,7 @@
  * \class CDiscAdjSinglezoneDriver
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
@@ -42,6 +42,7 @@ protected:
   unsigned short RecordingState;                /*!< \brief The kind of recording the tape currently holds.*/
   unsigned short MainVariables,                 /*!< \brief The kind of recording linked to the main variables of the problem.*/
                  SecondaryVariables;            /*!< \brief The kind of recording linked to the secondary variables of the problem.*/
+  int MainSolver;                               /*!< \brief Index of the main adjoint solver. */
   su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
   CIteration* direct_iteration;                 /*!< \brief A pointer to the direct iteration.*/
 

@@ -2,7 +2,7 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../include/integration/CMultiGridIntegration.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -43,6 +43,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   switch (config[iZone]->GetKind_Solver()) {
     case EULER:
     case NAVIER_STOKES:
+    case NEMO_EULER:
+    case NEMO_NAVIER_STOKES:
     case RANS:
     case FEM_EULER:
     case FEM_NAVIER_STOKES:
@@ -103,6 +105,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
@@ -172,6 +175,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
 
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+
 
       if (iRKStep == 0) {
 
@@ -683,12 +687,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
-
-      /*--- Evaluate the buffet metric if requested ---*/
-
-      if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-          solver_container[FinestMesh][FLOW_SOL]->Buffet_Monitoring(geometry[FinestMesh], config);
-      }
 
       break;
 

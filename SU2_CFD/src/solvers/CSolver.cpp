@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.0.6 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -125,8 +125,6 @@ CSolver::CSolver(bool mesh_deform_mode) : System(mesh_deform_mode) {
 
   /*--- Auxiliary data needed for CFL adaption. ---*/
 
-  NonLinRes_Value = 0;
-  NonLinRes_Func = 0;
   Old_Func = 0;
   New_Func = 0;
   NonLinRes_Counter = 0;
@@ -344,7 +342,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   bool weighted = true;
 
   unsigned short iVar, jVar, iDim;
-  unsigned short iNeighbor, nNeighbor = 0;
+  unsigned short nNeighbor       = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   unsigned short ICOUNT          = nVar;
@@ -352,7 +350,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   int iMessage, iSend, nSend;
 
-  unsigned long iPoint, jPoint, msg_offset, buf_offset, iPeriodic, Neighbor_Point;
+  unsigned long iPoint, msg_offset, buf_offset, iPeriodic;
 
   su2double *Diff      = new su2double[nVar];
   su2double *Und_Lapl  = new su2double[nVar];
@@ -482,16 +480,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
           case PERIODIC_NEIGHBORS:
 
             nNeighbor = 0;
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              Neighbor_Point = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Check if this neighbor lies on the periodic face so
                that we avoid double counting neighbors on both sides. If
                not, increment the count of neighbors for the donor. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(Neighbor_Point))
-              nNeighbor++;
-
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint))
+                nNeighbor++;
             }
 
             /*--- Store the number of neighbors in bufffer. ---*/
@@ -598,8 +594,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               Und_Lapl[iVar] = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -673,8 +668,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              on both sides of the periodic face. ---*/
 
             Sensor_i = 0.0; Sensor_j = 0.0;
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
@@ -825,8 +819,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -974,8 +967,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
             r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
@@ -1093,8 +1085,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetPrimitive(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetPrimitive(jPoint, iVar));
@@ -1144,8 +1135,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               Sol_Max[iVar] = base_nodes->GetSolution_Max(iPoint, iVar);
             }
 
-            for (iNeighbor = 0; iNeighbor < geometry->nodes->GetnPoint(iPoint); iNeighbor++) {
-              jPoint = geometry->nodes->GetPoint(iPoint, iNeighbor);
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               for (iVar = 0; iVar < nVar; iVar++) {
                 Sol_Min[iVar] = min(Sol_Min[iVar], base_nodes->GetSolution(jPoint, iVar));
                 Sol_Max[iVar] = max(Sol_Max[iVar], base_nodes->GetSolution(jPoint, iVar));
@@ -1367,7 +1357,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
-                    LinSysRes.SetBlock_Zero(iPoint, iVar);
+                    LinSysRes(iPoint, iVar) = 0.0;
                     total_index = iPoint*nVar+iVar;
                     Jacobian.DeleteValsRowi(total_index);
                   }
@@ -1655,7 +1645,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case AUXVAR_GRADIENT:
-      COUNT_PER_POINT  = nDim;
+      COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case MESH_DISPLACEMENTS:
@@ -1786,8 +1776,11 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = base_nodes->GetLimiter_Primitive(iPoint, iVar);
             break;
           case AUXVAR_GRADIENT:
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetAuxVarGradient(iPoint, iDim);
+            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++){
+              for (iDim = 0; iDim < nDim; iDim++){
+                bufDSend[buf_offset+iVar*nDim+iDim] = base_nodes->GetAuxVarGradient(iPoint, iVar, iDim);
+              }
+            }
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1961,8 +1954,11 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetLimiter_Primitive(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case AUXVAR_GRADIENT:
-            for (iDim = 0; iDim < nDim; iDim++)
-              base_nodes->SetAuxVarGradient(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            for (iVar = 0; iVar < base_nodes->GetnAuxVar(); iVar++){
+              for (iDim = 0; iDim < nDim; iDim++){
+                base_nodes->SetAuxVarGradient(iPoint, iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+              }
+            }
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -2026,8 +2022,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
 void CSolver::ResetCFLAdapt() {
   NonLinRes_Series.clear();
-  NonLinRes_Value = 0;
-  NonLinRes_Func = 0;
   Old_Func = 0;
   New_Func = 0;
   NonLinRes_Counter = 0;
@@ -2046,7 +2040,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
+  const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
+
+  /* Number of iterations considered to check for stagnation. */
+  const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
+
+  static bool reduceCFL, resetCFL, canIncrease;
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
@@ -2067,78 +2067,80 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Check whether we achieved the requested reduction in the linear
      solver residual within the specified number of linear iterations. */
 
-    bool reduceCFL = false;
-    su2double linResFlow = solverFlow->GetResLinSolver();
-    su2double linResTurb = -1.0;
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      linResTurb = solverTurb->GetResLinSolver();
-    }
+    su2double linResTurb = 0.0;
+    if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
 
-    su2double maxLinResid = max(linResFlow, linResTurb);
-    if (maxLinResid > 0.5) {
-      reduceCFL = true;
-    }
+    /* Max linear residual between flow and turbulence. */
+    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+
+    /* Tolerance limited to an acceptable value. */
+    const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
 
     /* Check that we are meeting our nonlinear residual reduction target
-     over time so that we do not get stuck in limit cycles. */
+     over time so that we do not get stuck in limit cycles, this is done
+     on the fine grid and applied to all others. */
 
     SU2_OMP_MASTER
     { /* Only the master thread updates the shared variables. */
 
-    Old_Func = New_Func;
-    unsigned short Res_Count = 100;
-    if (NonLinRes_Series.size() == 0) NonLinRes_Series.resize(Res_Count,0.0);
+    /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
+    resetCFL = linRes > 1.0;
+    reduceCFL = linRes > 1.2*linTol;
+    canIncrease = linRes < linTol;
 
-    /* Sum the RMS residuals for all equations. */
+    if ((iMesh == MESH_0) && (Res_Count > 0)) {
+      Old_Func = New_Func;
+      if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
 
-    New_Func = 0.0;
-    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-      New_Func += solverFlow->GetRes_RMS(iVar);
-    }
-    if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
-      for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-        New_Func += solverTurb->GetRes_RMS(iVar);
+      /* Sum the RMS residuals for all equations. */
+
+      New_Func = 0.0;
+      for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+        New_Func += log10(solverFlow->GetRes_RMS(iVar));
+      }
+      if ((iMesh == MESH_0) && solverTurb) {
+        for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+          New_Func += log10(solverTurb->GetRes_RMS(iVar));
+        }
+      }
+
+      /* Compute the difference in the nonlinear residuals between the
+       current and previous iterations, taking care with very low initial
+       residuals (due to initialization). */
+
+      if ((config->GetInnerIter() == 1) && (New_Func - Old_Func > 10)) {
+        Old_Func = New_Func;
+      }
+      NonLinRes_Series[NonLinRes_Counter] = New_Func - Old_Func;
+
+      /* Increment the counter, if we hit the max size, then start over. */
+
+      NonLinRes_Counter++;
+      if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
+
+      /* Detect flip-flop convergence to reduce CFL and large increases
+       to reset to minimum value, in that case clear the history. */
+
+      if (config->GetInnerIter() >= Res_Count) {
+        unsigned long signChanges = 0;
+        su2double totalChange = 0.0;
+        auto prev = NonLinRes_Series.front();
+        for (auto val : NonLinRes_Series) {
+          totalChange += val;
+          signChanges += (prev > 0) ^ (val > 0);
+          prev = val;
+        }
+        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+
+        if (totalChange > 2.0) { // orders of magnitude
+          resetCFL = true;
+          NonLinRes_Counter = 0;
+          for (auto& val : NonLinRes_Series) val = 0.0;
+        }
       }
     }
-
-    /* Compute the difference in the nonlinear residuals between the
-     current and previous iterations. */
-
-    NonLinRes_Func = (New_Func - Old_Func);
-    NonLinRes_Series[NonLinRes_Counter] = NonLinRes_Func;
-
-    /* Increment the counter, if we hit the max size, then start over. */
-
-    NonLinRes_Counter++;
-    if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
-
-    /* Sum the total change in nonlinear residuals over the previous
-     set of all stored iterations. */
-
-    NonLinRes_Value = New_Func;
-    if (config->GetTimeIter() >= Res_Count) {
-      NonLinRes_Value = 0.0;
-      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Value += NonLinRes_Series[iCounter];
-    }
-
-    /* If the sum is larger than a small fraction of the current nonlinear
-     residual, then we are not decreasing the nonlinear residual at a high
-     rate. In this situation, we force a reduction of the CFL in all cells.
-     Reset the array so that we delay the next decrease for some iterations. */
-
-    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-      NonLinRes_Counter = 0;
-      for (unsigned short iCounter = 0; iCounter < Res_Count; iCounter++)
-        NonLinRes_Series[iCounter] = New_Func;
-    }
-
     } /* End SU2_OMP_MASTER, now all threads update the CFL number. */
     SU2_OMP_BARRIER
-
-    if (fabs(NonLinRes_Value) < 0.1*New_Func) {
-      reduceCFL = true;
-    }
 
     /* Loop over all points on this grid and apply CFL adaption. */
 
@@ -2165,7 +2167,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
       su2double underRelaxationTurb = 1.0;
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE))
+      if ((iMesh == MESH_0) && solverTurb)
         underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
       const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
 
@@ -2175,9 +2177,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
        then we schedule an increase the CFL number for the next iteration. */
 
       su2double CFLFactor = 1.0;
-      if ((underRelaxation < 0.1)) {
+      if (underRelaxation < 0.1 || reduceCFL) {
         CFLFactor = CFLFactorDecrease;
-      } else if (underRelaxation >= 0.1 && underRelaxation < 1.0) {
+      } else if ((underRelaxation >= 0.1 && underRelaxation < 1.0) || !canIncrease) {
         CFLFactor = 1.0;
       } else {
         CFLFactor = CFLFactorIncrease;
@@ -2196,7 +2198,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* If we detect a stalled nonlinear residual, then force the CFL
        for all points to the minimum temporarily to restart the ramp. */
 
-      if (reduceCFL) {
+      if (resetCFL) {
         CFL       = CFLMin;
         CFLFactor = MGFactor[iMesh];
       }
@@ -2205,7 +2207,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      if ((iMesh == MESH_0) && (config->GetKind_Turb_Model() != NONE)) {
+      if ((iMesh == MESH_0) && solverTurb) {
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
       }
 
@@ -2508,7 +2510,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   auto gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, solution, 0, 1, gradient);
+                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
@@ -2519,7 +2521,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, 1, gradient, rmatrix);
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix);
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
@@ -2598,118 +2600,6 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
 
   computeGradientsLeastSquares(nullptr, GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
                                true, gridVel, 0, nDim, gridVelGrad, rmatrix);
-}
-
-void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config) {
-
-  unsigned short iDim, jDim, iNeigh, iMarker;
-  unsigned short nDim = geometry->GetnDim();
-  unsigned long iPoint, jPoint, iVertex;
-  su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j;
-  su2double **Smatrix, *Cvector;
-
-  Smatrix = new su2double* [nDim];
-  Cvector = new su2double [nDim];
-  for (iDim = 0; iDim < nDim; iDim++)
-    Smatrix[iDim] = new su2double [nDim];
-
-
-  /*--- Loop over boundary markers to select those for Euler or NS walls ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if (config->GetSolid_Wall(iMarker)) {
-
-      /*--- Loop over points on the surface (Least-Squares approximation) ---*/
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (geometry->nodes->GetDomain(iPoint)) {
-          Coord_i = geometry->nodes->GetCoord(iPoint);
-          AuxVar_i = base_nodes->GetAuxVar(iPoint);
-
-          /*--- Inizialization of variables ---*/
-          for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iDim] = 0.0;
-          su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
-
-          for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-            jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-            Coord_j = geometry->nodes->GetCoord(jPoint);
-            AuxVar_j = base_nodes->GetAuxVar(jPoint);
-
-            su2double weight = 0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
-            /*--- Sumations for entries of upper triangular matrix R ---*/
-            r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-            r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-            r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
-            if (nDim == 3) {
-              r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-              r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-              r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-              r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
-            }
-
-            /*--- Entries of c:= transpose(A)*b ---*/
-            for (iDim = 0; iDim < nDim; iDim++)
-              Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
-          }
-
-          /*--- Entries of upper triangular matrix R ---*/
-          r11 = sqrt(r11);
-          r12 = r12/r11;
-          r22 = sqrt(r22-r12*r12);
-          if (nDim == 3) {
-            r13 = r13/r11;
-            r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-            r33 = sqrt(r33-r23*r23-r13*r13);
-          }
-          /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-          if (nDim == 2) {
-            su2double detR2 = (r11*r22)*(r11*r22);
-            Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-            Smatrix[0][1] = -r11*r12/detR2;
-            Smatrix[1][0] = Smatrix[0][1];
-            Smatrix[1][1] = r11*r11/detR2;
-          }
-          else {
-            su2double detR2 = (r11*r22*r33)*(r11*r22*r33);
-            su2double z11, z12, z13, z22, z23, z33; // aux vars
-            z11 = r22*r33;
-            z12 = -r12*r33;
-            z13 = r12*r23-r13*r22;
-            z22 = r11*r33;
-            z23 = -r11*r23;
-            z33 = r11*r22;
-            Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-            Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-            Smatrix[0][2] = (z13*z33)/detR2;
-            Smatrix[1][0] = Smatrix[0][1];
-            Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-            Smatrix[1][2] = (z23*z33)/detR2;
-            Smatrix[2][0] = Smatrix[0][2];
-            Smatrix[2][1] = Smatrix[1][2];
-            Smatrix[2][2] = (z33*z33)/detR2;
-          }
-          /*--- Computation of the gradient: S*c ---*/
-          su2double product;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            product = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++)
-              product += Smatrix[iDim][jDim]*Cvector[jDim];
-            base_nodes->SetAuxVarGradient(iPoint, iDim, product);
-          }
-        }
-      } /*--- End of loop over surface points ---*/
-    }
-  }
-
-  /*--- Memory deallocation ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    delete [] Smatrix[iDim];
-  delete [] Cvector;
-  delete [] Smatrix;
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
@@ -3246,7 +3136,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   fclose(fhw);
@@ -3285,7 +3175,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
     SU2_MPI::Error(string("File ") + string(fname) + string(" is a binary SU2 restart file, expected ASCII.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   MPI_File_close(&fhw);
@@ -3394,7 +3284,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   /*--- Store the number of fields to be read for clarity. ---*/
@@ -3471,7 +3361,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     SU2_MPI::Error(string("File ") + string(fname) + string(" is not a binary SU2 restart file.\n") +
                    string("SU2 reads/writes binary restart files by default.\n") +
                    string("Note that backward compatibility for ASCII restart files is\n") +
-                   string("possible with the WRT_BINARY_RESTART / READ_BINARY_RESTART options."), CURRENT_FUNCTION);
+                   string("possible with the READ_BINARY_RESTART option."), CURRENT_FUNCTION);
   }
 
   /*--- Store the number of fields to be read for clarity. ---*/
@@ -4150,11 +4040,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
                        (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   // Parameters for the calculations
-  su2double Pn = 0.0, div_vel = 0.0;
-  su2double Viscosity = 0.0;
-  su2double Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-  su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0},{0.0, 0.0, 1.0}};
+  su2double Pn = 0.0;
   su2double auxForce[3] = {1.0, 0.0, 0.0};
 
   unsigned short iMarker;
@@ -4203,26 +4089,11 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, CConfig *config){
 
           // Calculate tn in the fluid nodes for the viscous term
           if (viscous_flow) {
-
-            Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-
+            su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+            su2double Tau[3][3];
+            CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetGradient_Primitive(iPoint)+1, Viscosity);
             for (iDim = 0; iDim < nDim; iDim++) {
               for (jDim = 0 ; jDim < nDim; jDim++) {
-                Grad_Vel[iDim][jDim] = base_nodes->GetGradient_Primitive(iPoint, iDim+1, jDim);
-              }
-            }
-
-            // Divergence of the velocity
-            div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++) {
-              for (jDim = 0 ; jDim < nDim; jDim++) {
-
-                // Viscous stress
-                Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim])
-                                 - TWO3*Viscosity*div_vel*delta[iDim][jDim];
-
-                // Viscous component in the tn vector --> Units of force (non-dimensional).
                 auxForce[iDim] += Tau[iDim][jDim]*iNormal[jDim];
               }
             }
