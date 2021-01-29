@@ -284,22 +284,6 @@ CNEMOEulerSolver::~CNEMOEulerSolver(void) {
 
 }
 
-void CNEMOEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
-
-  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  const bool rans = false;
-  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                          (config->GetTime_Marching() == DT_STEPPING_2ND));
-
-  /*--- Make sure that the solution is well initialized for unsteady calculations
-   * with dual time-stepping (load additional restarts for 2nd-order). ---*/
-
-  if (dual_time && ((TimeIter == 0) || (restart && (TimeIter == config->GetRestart_Iter()))) ) {
-    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
-  }
-
-}
-
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 

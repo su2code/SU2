@@ -37,6 +37,8 @@
  */
 class CEulerSolver : public CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE> {
 protected:
+  using BaseClass = CFVMFlowSolverBase<CEulerVariable, COMPRESSIBLE>;
+
   su2double
   Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */

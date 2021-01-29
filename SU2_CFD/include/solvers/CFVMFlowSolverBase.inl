@@ -1048,6 +1048,54 @@ void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solv
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                                                   CConfig *config, unsigned long TimeIter) {
+
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool rans = (config->GetKind_Turb_Model() != NONE);
+  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == DT_STEPPING_2ND));
+
+  /*--- Start OpenMP parallel region. ---*/
+
+  SU2_OMP_PARALLEL {
+
+  unsigned long iPoint;
+  unsigned short iMesh;
+
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ((VerificationSolution) && (TimeIter == 0) && !restart) {
+
+    /*--- Loop over the multigrid levels. ---*/
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+
+      /*--- Loop over all grid points. ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+
+        /* Set the solution in this DOF to the initial condition provided by
+           the verification solution class. This can be the exact solution,
+           but this is not necessary. */
+        VerificationSolution->GetInitialCondition(coor, solDOF);
+      }
+    }
+  }
+
+  /*--- The value of the solution for the first iteration of the dual time ---*/
+
+  if (dual_time && (TimeIter == 0 || (restart && TimeIter == config->GetRestart_Iter()))) {
+    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
+  }
+
+  } // end SU2_OMP_PARALLEL
+
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans,
                                                       CSolver*** solver_container, CGeometry** geometry,
                                                       CConfig* config) {

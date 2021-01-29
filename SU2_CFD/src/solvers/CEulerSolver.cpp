@@ -1985,180 +1985,120 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  const bool rans = (config->GetKind_Turb_Model() != NONE);
-  const bool dual_time = ((config->GetTime_Marching() == DT_STEPPING_1ST) ||
-                          (config->GetTime_Marching() == DT_STEPPING_2ND));
   const bool SubsonicEngine = config->GetSubsonicEngine();
+
+  /*--- Use default implementation, then add solver-specifics. ---*/
+
+  BaseClass::SetInitialCondition(geometry, solver_container, config, TimeIter);
+
+  /*--- Set subsonic initial condition for engine intakes at iteration 0 ---*/
+
+  if (!SubsonicEngine || (TimeIter != 0) || restart) return;
 
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL {
 
-  unsigned long iPoint;
-  unsigned short iMesh, iDim;
-  su2double X0[MAXNDIM] = {0.0}, X1[MAXNDIM] = {0.0}, X2[MAXNDIM] = {0.0},
-  X1_X0[MAXNDIM] = {0.0}, X2_X0[MAXNDIM] = {0.0}, X2_X1[MAXNDIM] = {0.0},
-  CP[MAXNDIM] = {0.0}, Distance, DotCheck, Radius;
+    unsigned long iPoint;
+    unsigned short iMesh, iDim;
+    su2double X0[MAXNDIM] = {0.0}, X1[MAXNDIM] = {0.0}, X2[MAXNDIM] = {0.0},
+    X1_X0[MAXNDIM] = {0.0}, X2_X0[MAXNDIM] = {0.0}, X2_X1[MAXNDIM] = {0.0},
+    CP[MAXNDIM] = {0.0}, Distance, DotCheck, Radius;
 
-  /*--- Check if a verification solution is to be computed. ---*/
-  if ((VerificationSolution) && (TimeIter == 0) && !restart) {
+    su2double Velocity_Cyl[MAXNDIM] = {0.0}, Velocity_CylND[MAXNDIM] = {0.0}, Viscosity_Cyl,
+    Density_Cyl, Density_CylND, Pressure_CylND, ModVel_Cyl, ModVel_CylND, Energy_CylND,
+    T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
+    const su2double *Coord, *SubsonicEngine_Cyl, *SubsonicEngine_Values;
 
-    /*--- Loop over the multigrid levels. ---*/
+    SubsonicEngine_Values = config->GetSubsonicEngine_Values();
+    su2double Mach_Cyl        = SubsonicEngine_Values[0];
+    su2double Alpha_Cyl       = SubsonicEngine_Values[1];
+    su2double Beta_Cyl        = SubsonicEngine_Values[2];
+    su2double Pressure_Cyl    = SubsonicEngine_Values[3];
+    su2double Temperature_Cyl = SubsonicEngine_Values[4];
+
+    su2double Alpha = Alpha_Cyl*PI_NUMBER/180.0;
+    su2double Beta  = Beta_Cyl*PI_NUMBER/180.0;
+
+    su2double Gamma_Minus_One = Gamma - 1.0;
+    su2double Gas_Constant = config->GetGas_Constant();
+
+    su2double Mach2Vel_Cyl = sqrt(Gamma*Gas_Constant*Temperature_Cyl);
+
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
 
-      /*--- Loop over all grid points. ---*/
+      auto FlowNodes = solver_container[iMesh][FLOW_SOL]->GetNodes();
+
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
 
-        /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
-        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+        Velocity_Cyl[0] = cos(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
+        Velocity_Cyl[1] = sin(Beta)*Mach_Cyl*Mach2Vel_Cyl;
+        Velocity_Cyl[2] = sin(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
 
-        /* Set the solution in this DOF to the initial condition provided by
-           the verification solution class. This can be the exact solution,
-           but this is not necessary. */
-        VerificationSolution->GetInitialCondition(coor, solDOF);
+        ModVel_Cyl = GeometryToolbox::Norm(nDim, Velocity_Cyl);
 
-      }
-    }
-  }
-
-  /*--- Set subsonic initial condition for engine intakes ---*/
-
-  if (SubsonicEngine) {
-
-    /*--- Set initial boundary condition at iteration 0 ---*/
-
-    if ((TimeIter == 0) && (!restart)) {
-
-      su2double Velocity_Cyl[3] = {0.0, 0.0, 0.0}, Velocity_CylND[3] = {0.0, 0.0, 0.0}, Viscosity_Cyl,
-      Density_Cyl, Density_CylND, Pressure_CylND, ModVel_Cyl, ModVel_CylND, Energy_CylND,
-      T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
-      const su2double *Coord, *SubsonicEngine_Cyl, *SubsonicEngine_Values;
-
-      SubsonicEngine_Values = config->GetSubsonicEngine_Values();
-      su2double Mach_Cyl        = SubsonicEngine_Values[0];
-      su2double Alpha_Cyl       = SubsonicEngine_Values[1];
-      su2double Beta_Cyl        = SubsonicEngine_Values[2];
-      su2double Pressure_Cyl    = SubsonicEngine_Values[3];
-      su2double Temperature_Cyl = SubsonicEngine_Values[4];
-
-      su2double Alpha = Alpha_Cyl*PI_NUMBER/180.0;
-      su2double Beta  = Beta_Cyl*PI_NUMBER/180.0;
-
-      su2double Gamma_Minus_One = Gamma - 1.0;
-      su2double Gas_Constant = config->GetGas_Constant();
-
-      su2double Mach2Vel_Cyl = sqrt(Gamma*Gas_Constant*Temperature_Cyl);
-
-      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-        SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-
-          Velocity_Cyl[0] = cos(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
-          Velocity_Cyl[1] = sin(Beta)*Mach_Cyl*Mach2Vel_Cyl;
-          Velocity_Cyl[2] = sin(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
-
-          ModVel_Cyl = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ModVel_Cyl += Velocity_Cyl[iDim]*Velocity_Cyl[iDim];
+        if (config->GetViscous()) {
+          if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
+          if (config->GetSystemMeasurements() == US) {
+            T_ref = (273.15 - 273.15) * 1.8 + 491.67;
+            S = (110.4 - 273.15) * 1.8 + 491.67;
+            Mu_ref = 1.716E-5/47.88025898;
           }
-          ModVel_Cyl = sqrt(ModVel_Cyl);
-
-          if (config->GetViscous()) {
-            if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
-            if (config->GetSystemMeasurements() == US) {
-              T_ref = (273.15 - 273.15) * 1.8 + 491.67;
-              S = (110.4 - 273.15) * 1.8 + 491.67;
-              Mu_ref = 1.716E-5/47.88025898;
-            }
-            Viscosity_Cyl = Mu_ref*(pow(Temperature_Cyl/T_ref, 1.5) * (T_ref+S)/(Temperature_Cyl+S));
-            Density_Cyl   = config->GetReynolds()*Viscosity_Cyl/(ModVel_Cyl*config->GetLength_Reynolds());
-            Pressure_Cyl  = Density_Cyl*Gas_Constant*Temperature_Cyl;
-          }
-          else {
-            Density_Cyl = Pressure_Cyl/(Gas_Constant*Temperature_Cyl);
-          }
-
-          Density_CylND  = Density_Cyl/config->GetDensity_Ref();
-          Pressure_CylND = Pressure_Cyl/config->GetPressure_Ref();
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity_CylND[iDim] = Velocity_Cyl[iDim]/config->GetVelocity_Ref();
-          }
-
-          ModVel_CylND = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ModVel_CylND += Velocity_CylND[iDim]*Velocity_CylND[iDim];
-          }
-          ModVel_CylND = sqrt(ModVel_CylND);
-
-          Energy_CylND = Pressure_CylND/(Density_CylND*Gamma_Minus_One)+0.5*ModVel_CylND*ModVel_CylND;
-
-          Coord = geometry[iMesh]->nodes->GetCoord(iPoint);
-
-          SubsonicEngine_Cyl = config->GetSubsonicEngine_Cyl();
-
-          X0[0] = Coord[0];               X0[1] = Coord[1];               X0[2] = Coord[2];
-          X1[0] = SubsonicEngine_Cyl[0];  X1[1] = SubsonicEngine_Cyl[1];  X1[2] = SubsonicEngine_Cyl[2];
-          X2[0] = SubsonicEngine_Cyl[3];  X2[1] = SubsonicEngine_Cyl[4];  X2[2] = SubsonicEngine_Cyl[5];
-          Radius = SubsonicEngine_Cyl[6];
-
-          for (iDim = 0; iDim < nDim; iDim++) {
-            X2_X1[iDim]= X1[iDim] - X2[iDim];
-            X1_X0[iDim]= X0[iDim] - X1[iDim];
-            X2_X0[iDim]= X0[iDim] - X2[iDim];
-          }
-
-          CP[0] = (X2_X1[1]*X1_X0[2] - X2_X1[2]*X1_X0[1]);
-          CP[1] = (X2_X1[2]*X1_X0[0] - X2_X1[0]*X1_X0[2]);
-          CP[2] = (X2_X1[0]*X1_X0[1] - X2_X1[1]*X1_X0[0]);
-
-          Distance = sqrt((CP[0]*CP[0]+CP[1]*CP[1]+CP[2]*CP[2])/(X2_X1[0]*X2_X1[0]+X2_X1[1]*X2_X1[1]+X2_X1[2]*X2_X1[2]));
-
-          DotCheck = -(X1_X0[0]*X2_X1[0]+X1_X0[1]*X2_X1[1]+X1_X0[2]*X2_X1[2]);
-          if (DotCheck < 0.0) Distance = sqrt(X1_X0[0]*X1_X0[0]+X1_X0[1]*X1_X0[1]+X1_X0[2]*X1_X0[2]);
-
-          DotCheck = (X2_X0[0]*X2_X1[0]+X2_X0[1]*X2_X1[1]+X2_X0[2]*X2_X1[2]);
-          if (DotCheck < 0.0) Distance = sqrt(X2_X0[0]*X2_X0[0]+X2_X0[1]*X2_X0[1]+X2_X0[2]*X2_X0[2]);
-
-          if (Distance < Radius) {
-
-            solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint, 0, Density_CylND);
-            for (iDim = 0; iDim < nDim; iDim++)
-              solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint, iDim+1, Density_CylND*Velocity_CylND[iDim]);
-            solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint, nVar-1, Density_CylND*Energy_CylND);
-
-            solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution_Old(iPoint, 0, Density_CylND);
-            for (iDim = 0; iDim < nDim; iDim++)
-              solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution_Old(iPoint, iDim+1, Density_CylND*Velocity_CylND[iDim]);
-            solver_container[iMesh][FLOW_SOL]->GetNodes()->SetSolution_Old(iPoint, nVar-1, Density_CylND*Energy_CylND);
-
-          }
-
+          Viscosity_Cyl = Mu_ref*(pow(Temperature_Cyl/T_ref, 1.5) * (T_ref+S)/(Temperature_Cyl+S));
+          Density_Cyl   = config->GetReynolds()*Viscosity_Cyl/(ModVel_Cyl*config->GetLength_Reynolds());
+          Pressure_Cyl  = Density_Cyl*Gas_Constant*Temperature_Cyl;
+        }
+        else {
+          Density_Cyl = Pressure_Cyl/(Gas_Constant*Temperature_Cyl);
         }
 
-        /*--- Set the MPI communication ---*/
+        Density_CylND  = Density_Cyl/config->GetDensity_Ref();
+        Pressure_CylND = Pressure_Cyl/config->GetPressure_Ref();
 
-        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity_CylND[iDim] = Velocity_Cyl[iDim]/config->GetVelocity_Ref();
+        }
 
-        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_OLD);
-        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_OLD);
+        ModVel_CylND = GeometryToolbox::Norm(nDim, Velocity_CylND);
+
+        Energy_CylND = Pressure_CylND/(Density_CylND*Gamma_Minus_One)+0.5*ModVel_CylND*ModVel_CylND;
+
+        Coord = geometry[iMesh]->nodes->GetCoord(iPoint);
+
+        SubsonicEngine_Cyl = config->GetSubsonicEngine_Cyl();
+
+        X0[0] = Coord[0];               X0[1] = Coord[1];               if (nDim==3) X0[2] = Coord[2];
+        X1[0] = SubsonicEngine_Cyl[0];  X1[1] = SubsonicEngine_Cyl[1];  X1[2] = SubsonicEngine_Cyl[2];
+        X2[0] = SubsonicEngine_Cyl[3];  X2[1] = SubsonicEngine_Cyl[4];  X2[2] = SubsonicEngine_Cyl[5];
+        Radius = SubsonicEngine_Cyl[6];
+
+        GeometryToolbox::Distance(3, X1, X2, X2_X1);
+        GeometryToolbox::Distance(3, X0, X1, X1_X0);
+        GeometryToolbox::Distance(3, X0, X2, X2_X0);
+
+        GeometryToolbox::CrossProduct(X2_X1, X1_X0, CP);
+
+        Distance = sqrt(GeometryToolbox::SquaredNorm(3,CP) / GeometryToolbox::SquaredNorm(3,X2_X1));
+
+        DotCheck = -GeometryToolbox::DotProduct(3, X1_X0, X2_X1);
+        if (DotCheck < 0.0) Distance = GeometryToolbox::Norm(3, X1_X0);
+
+        DotCheck = GeometryToolbox::DotProduct(3, X2_X0, X2_X1);
+        if (DotCheck < 0.0) Distance = GeometryToolbox::Norm(3, X2_X0);
+
+        if (Distance < Radius) {
+          FlowNodes->SetSolution(iPoint, 0, Density_CylND);
+          for (iDim = 0; iDim < nDim; iDim++)
+            FlowNodes->SetSolution(iPoint, iDim+1, Density_CylND*Velocity_CylND[iDim]);
+          FlowNodes->SetSolution(iPoint, nVar-1, Density_CylND*Energy_CylND);
+        }
 
       }
 
+      FlowNodes->Set_OldSolution();
+
     }
-
-  }
-
-  /*--- Make sure that the solution is well initialized for unsteady
-   calculations with dual time-stepping (load additional restarts for 2nd-order). ---*/
-
-  if (dual_time && ((TimeIter == 0) || (restart && (TimeIter == config->GetRestart_Iter()))) ) {
-    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
-  }
 
   } // end SU2_OMP_PARALLEL
 

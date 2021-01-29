@@ -116,15 +116,6 @@ public:
                     CConfig *config, unsigned short iMesh, unsigned long Iteration) final;
 
   /*!
-   * \brief Set the initial condition for the Euler Equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
-   */
-  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) final;
-
-  /*!
    * \brief Compute the spatial integration using a centered scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
