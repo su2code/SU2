@@ -2235,9 +2235,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       SU2_OMP_MASTER
       { /* MPI reduction. */
         myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
-        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
       }
       SU2_OMP_BARRIER
@@ -2283,8 +2283,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   if (config->GetComm_Level() == COMM_FULL) {
 
     unsigned long Local_nPointDomain = geometry->GetnPointDomain();
-    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   }
   else {
@@ -2329,9 +2329,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
         sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
     }
 
-    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -2386,8 +2386,8 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
   Local_nPointDomain = geometry->GetnPointDomain();
 
 
-  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2422,9 +2422,9 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
       sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
   }
 
-  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -3150,7 +3150,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- Error check opening the file. ---*/
 
@@ -3166,7 +3166,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(&magic_number, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3335,7 +3335,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- All ranks open the file using MPI. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(SU2_MPI::GetComm(), fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- Error check opening the file. ---*/
 
@@ -3352,7 +3352,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3382,7 +3382,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Broadcast the string names of the variables. ---*/
 
   SU2_MPI::Bcast(mpi_str_buf, nFields*CGNS_STRING_SIZE, MPI_CHAR,
-                 MASTER_NODE, MPI_COMM_WORLD);
+                 MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
@@ -3948,7 +3948,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   } // end iMarker loop
 
-  SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 
   if (global_failure > 0) {
     SU2_MPI::Error("Prescribed inlet data does not match markers within tolerance.", CURRENT_FUNCTION);

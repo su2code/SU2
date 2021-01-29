@@ -264,7 +264,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 #endif
 
   /*--- Run a predictor step ---*/

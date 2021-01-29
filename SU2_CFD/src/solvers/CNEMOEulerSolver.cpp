@@ -254,7 +254,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
 
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
@@ -351,7 +351,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
 
       unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
 
   }
@@ -614,10 +614,10 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   SU2_OMP_MASTER
   if (config->GetComm_Level() == COMM_FULL) {
     su2double rbuf_time;
-    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Min_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
     Min_Delta_Time = rbuf_time;
 
-    SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     Max_Delta_Time = rbuf_time;
   }
   SU2_OMP_BARRIER
@@ -666,7 +666,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
     SU2_OMP_MASTER
     {
-      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&Global_Delta_UnstTimeND, &glbDtND, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
       Global_Delta_UnstTimeND = glbDtND;
 
       config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
@@ -991,7 +991,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     SU2_OMP_MASTER
     {
       counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
     SU2_OMP_BARRIER
@@ -3087,7 +3087,7 @@ void CNEMOEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCon
 #ifndef HAVE_MPI
   rbuf_NotMatching = sbuf_NotMatching;
 #else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +

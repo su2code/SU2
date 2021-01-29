@@ -985,7 +985,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
@@ -1151,13 +1151,13 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Min_Delta_Time = rbuf_time;
 
     sbuf_time = Max_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Max_Delta_Time = rbuf_time;
 #endif
   }
@@ -1168,8 +1168,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Global_Delta_Time = rbuf_time;
 #endif
     /*--- If the unsteady CFL is set to zero, it uses the defined
@@ -1205,8 +1205,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_UnstTimeND;
-    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
     Global_Delta_UnstTimeND = rbuf_time;
 #endif
     config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
@@ -1431,7 +1431,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   if (config->GetComm_Level() == COMM_FULL) {
     if (iMesh == MESH_0) {
-      SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(counter_global);
     }
   }
@@ -2216,7 +2216,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 #ifdef HAVE_MPI
     su2double myMaxVel2 = maxVel2; maxVel2 = 0.0;
-    SU2_MPI::Allreduce(&myMaxVel2, &maxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&myMaxVel2, &maxVel2, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 #endif
 
     Beta = max(1e-10,maxVel2);
@@ -3374,9 +3374,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
 #ifdef HAVE_MPI
 
-    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
 #else
 
