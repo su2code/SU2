@@ -2590,26 +2590,28 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
       case 1: {
         const su2double* solDisp = nodes->GetSolution(iPoint);
         const su2double* solVel = nodes->GetSolution_Vel(iPoint);
-        su2double* valPred = nodes->GetSolution_Pred(iPoint);
+        su2double valPred[MAXNVAR] = {0.0};
 
-        for (iDim=0; iDim < nDim; iDim++) {
+        for (iDim=0; iDim < nDim; iDim++)
           valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
-        }
+
+        nodes->SetSolution_Pred(iPoint, valPred);
       } break;
 
       case 2: {
         const su2double* solDisp = nodes->GetSolution(iPoint);
         const su2double* solVel = nodes->GetSolution_Vel(iPoint);
         const su2double* solVel_tn = nodes->GetSolution_Vel_time_n(iPoint);
-        su2double* valPred = nodes->GetSolution_Pred(iPoint);
+        su2double valPred[MAXNVAR] = {0.0};
 
-        for (iDim=0; iDim < nDim; iDim++) {
+        for (iDim=0; iDim < nDim; iDim++)
           valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
-        }
+
+        nodes->SetSolution_Pred(iPoint, valPred);
       } break;
 
       default: {
-        nodes->SetSolution_Pred(iPoint);
+        nodes->SetSolution_Pred(iPoint, nodes->GetSolution(iPoint));
       } break;
     }
 
@@ -2717,19 +2719,21 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
   for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
 
     /*--- Retrieve pointers to the predicted and calculated solutions ---*/
-    su2double* dispPred = nodes->GetSolution_Pred(iPoint);
+    const su2double* dispPred = nodes->GetSolution_Pred(iPoint);
     const su2double* dispCalc = nodes->GetSolution(iPoint);
 
     /*--- Set predicted solution as the old predicted solution ---*/
-    nodes->SetSolution_Pred_Old(iPoint);
+    nodes->SetSolution_Pred_Old(iPoint, dispPred);
 
     /*--- Set calculated solution as the old solution (needed for dynamic Aitken relaxation) ---*/
     nodes->SetSolution_Old(iPoint, dispCalc);
 
     /*--- Apply the Aitken relaxation ---*/
-    for (unsigned short iDim=0; iDim < nDim; iDim++) {
-      dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
-    }
+    su2double newDispPred[MAXNVAR] = {0.0};
+    for (unsigned short iDim=0; iDim < nDim; iDim++)
+      newDispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
+
+    nodes->SetSolution_Pred(iPoint, newDispPred);
   }
 
 }
