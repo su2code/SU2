@@ -51,6 +51,22 @@ private:
                           CGeometry *geometry,
                           CConfig *config);
 
+  /*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetNuTilde_WF(CGeometry *geometry,
+                     CSolver **solver_container,
+                     CNumerics *conv_numerics,
+                     CNumerics *visc_numerics,
+                     const CConfig *config,
+                     unsigned short val_marker);
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -353,8 +369,10 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  inline void SetFreeStream_Solution(CConfig *config) override {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
+  inline void SetFreeStream_Solution(const CConfig *config) override {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+      nodes->SetSolution(iPoint, 0, nu_tilde_Inf);
   }
 
   /*!
@@ -400,19 +418,4 @@ public:
    */
   inline su2double GetNuTilde_Inf(void) const override { return nu_tilde_Inf; }
 
-  /*!
-   * \brief Compute nu tilde from the wall functions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void SetNuTilde_WF(CGeometry *geometry,
-                     CSolver **solver_container,
-                     CNumerics *conv_numerics,
-                     CNumerics *visc_numerics,
-                     CConfig *config,
-                     unsigned short val_marker) override;
 };

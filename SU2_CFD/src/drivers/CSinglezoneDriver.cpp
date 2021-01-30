@@ -131,9 +131,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                             config_container[ZONE_0], TimeIter);
   }
 
-#ifdef HAVE_MPI
   SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
 
   /*--- Run a predictor step ---*/
   if (config_container[ZONE_0]->GetPredictor())

@@ -36,6 +36,35 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
+
+  /*!
+   * \brief Generic implementation of the isothermal and heatflux walls.
+   */
+  void BC_Wall_Generic(const CGeometry *geometry,
+                       const CConfig *config,
+                       unsigned short val_marker,
+                       unsigned short kind_boundary);
+
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       const CConfig *config) override;
+
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                        CNumerics *numerics, CConfig *config) override;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -48,20 +77,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-
-  /*!
-   * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] Iteration - Index of the current iteration.
-   */
-  void SetTime_Step(CGeometry *geometry,
-                    CSolver **solver_container,
-                    CConfig *config,
-                    unsigned short iMesh,
-                    unsigned long Iteration) override;
 
   /*!
    * \brief Restart residual and compute gradients.
@@ -79,17 +94,6 @@ public:
                     unsigned short iRKStep,
                     unsigned short RunTime_EqSystem,
                     bool Output) override;
-
-  /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config,
-                                       bool Output);
 
   /*!
    * \brief Impose a no-slip condition.
@@ -136,21 +140,5 @@ public:
                                   CNumerics *numerics,
                                   CConfig *config,
                                   unsigned short val_marker) override;
-
-  /*!
-   * \brief Compute the viscous residuals.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry,
-                        CSolver **solver_container,
-                        CNumerics **numerics_container,
-                        CConfig *config,
-                        unsigned short iMesh,
-                        unsigned short iRKStep) override;
 
 };
