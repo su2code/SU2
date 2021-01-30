@@ -40,13 +40,16 @@ public:
   static constexpr size_t MAXNVAR = 12;
 
 protected:
-  VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
-  MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
+  VectorType Velocity2;                     /*!< \brief Square of the velocity vector. */
+  MatrixType Primitive;                     /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
   CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
   CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-  MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-  VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
+  MatrixType Limiter_Primitive;             /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
 
 public:
   /*!
@@ -290,12 +293,6 @@ public:
   inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint,nDim+2); }
 
   /*!
-   * \brief Get the density of the flow from the previous iteration.
-   * \return Old value of the density of the flow.
-   */
-  inline su2double GetDensity_Old(unsigned long iPoint) const final { return Density_Old(iPoint); }
-
-  /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
@@ -355,5 +352,18 @@ public:
    * \return Value of the specific heat at constant V of the flow.
    */
   inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, nDim+8); }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
 
 };

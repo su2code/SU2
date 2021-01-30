@@ -92,6 +92,7 @@ protected:
   AllBound_CEff_Inv;  /*!< \brief Total efficiency (Cl/Cd) (inviscid contribution) for all the boundaries. */
 
   su2double
+  AeroCoeffForceRef,   /*!< \brief Reference force for coefficients */
   Total_CL,      /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CD,        /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CSF,       /*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -1126,6 +1127,11 @@ public:
    * \param[in] val_Total_CL - Value of the total lift coefficient.
    */
   inline void SetTotal_CL(su2double val_Total_CL) final { Total_CL = val_Total_CL; }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline su2double GetAeroCoeffsReferenceForce() const final { return AeroCoeffForceRef; }
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional lift coefficient.

@@ -1577,7 +1577,7 @@ void CTurbSASolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_
 }
 
 void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+                                  CNumerics *visc_numerics, const CConfig *config, unsigned short val_marker) {
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
