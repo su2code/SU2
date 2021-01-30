@@ -233,18 +233,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
   PenaltyValue = 0.0;
 
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
-
-  /*--- If dynamic, we also need to communicate the old solution ---*/
-
-  if (dynamic) {
-    InitiateComms(geometry, config, SOLUTION_FEA_OLD);
-    CompleteComms(geometry, config, SOLUTION_FEA_OLD);
-  }
-
   if (size != SINGLE_NODE) {
     vector<unsigned short> essentialMarkers;
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -2289,7 +2277,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
     /*--- Update solution. ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
       /*--- Displacement component of the solution. ---*/
       for (iVar = 0; iVar < nVar; iVar++)
         nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
@@ -2297,7 +2285,7 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
 
     if (dynamic) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
 
           /*--- Acceleration component of the solution. ---*/
@@ -2321,12 +2309,6 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CConfig *config) {
         }
       }
     }
-
-    /*--- Perform the MPI communication of the solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION_FEA);
-    CompleteComms(geometry, config, SOLUTION_FEA);
-
   } // end SU2_OMP_PARALLEL
 }
 
@@ -2341,13 +2323,14 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
 
     /*--- Update solution and set it to be the solution after applying relaxation. ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint=0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint=0; iPoint < nPoint; iPoint++) {
       nodes->SetSolution(iPoint, nodes->GetSolution_Pred(iPoint));
+      nodes->SetSolution_Pred_Old(iPoint, nodes->GetSolution(iPoint));
     }
 
     if (dynamic) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
 
           /*--- Acceleration component of the solution ---*/
@@ -2369,20 +2352,6 @@ void CFEASolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CConfig *config
 
           nodes->SetSolution_Vel(iPoint, iVar, sol);
         }
-      }
-    }
-
-    /*--- Perform the MPI communication of the solution ---*/
-
-    InitiateComms(geometry, config, SOLUTION_FEA);
-    CompleteComms(geometry, config, SOLUTION_FEA);
-
-    /*--- After the solution has been communicated, set the 'old' predicted solution as the solution. ---*/
-    /*--- Loop over n points (as we have already communicated everything. ---*/
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        nodes->SetSolution_Pred_Old(iPoint,iVar,nodes->GetSolution(iPoint,iVar));
       }
     }
 
@@ -2504,14 +2473,9 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CConfig *confi
   /*--- Update displacement components of the solution. ---*/
 
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       nodes->Add_DeltaSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
-
-  /*--- Perform the MPI communication of the solution, displacements only. ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
 
 }
 
@@ -2523,7 +2487,7 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *c
   /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
 
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     unsigned short iVar;
 
@@ -2566,11 +2530,6 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CConfig *c
     }
 
   }
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION_FEA);
-  CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 
@@ -2623,7 +2582,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
 
   /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
 
     unsigned short iDim;
 
@@ -2655,9 +2614,6 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
     }
 
   }
-
-  InitiateComms(geometry, config, SOLUTION_PRED);
-  CompleteComms(geometry, config, SOLUTION_PRED);
 
 }
 
@@ -2758,7 +2714,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
 
   // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-  for (unsigned long iPoint=0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
 
     /*--- Retrieve pointers to the predicted and calculated solutions ---*/
     su2double* dispPred = nodes->GetSolution_Pred(iPoint);
@@ -2775,9 +2731,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
       dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
     }
   }
-
-  InitiateComms(geometry, config, SOLUTION_PRED_OLD);
-  CompleteComms(geometry, config, SOLUTION_PRED_OLD);
 
 }
 
@@ -3166,15 +3119,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         nodes->SetSolution(iPoint_Local, iVar, Sol[iVar]);
         if (dynamic) {
-          nodes->Set_Solution_time_n(iPoint_Local, iVar, Sol[iVar]);
           nodes->SetSolution_Vel(iPoint_Local, iVar, Sol[iVar+nVar]);
-          nodes->SetSolution_Vel_time_n(iPoint_Local, iVar, Sol[iVar+nVar]);
           nodes->SetSolution_Accel(iPoint_Local, iVar, Sol[iVar+2*nVar]);
-          nodes->SetSolution_Accel_time_n(iPoint_Local, iVar, Sol[iVar+2*nVar]);
-        }
-        if (fluid_structure && !dynamic) {
-          nodes->SetSolution_Pred(iPoint_Local, iVar, Sol[iVar]);
-          nodes->SetSolution_Pred_Old(iPoint_Local, iVar, Sol[iVar]);
         }
         if (fluid_structure && discrete_adjoint){
           nodes->SetSolution_Old(iPoint_Local, iVar, Sol[iVar]);
@@ -3196,19 +3142,25 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
 
-  solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
-  solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
+  CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
 
   if (dynamic) {
-    solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
-    solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_FEA_OLD);
+    nodes->Set_Solution_time_n();
+    nodes->SetSolution_Vel_time_n();
+    nodes->SetSolution_Accel_time_n();
   }
-  if (fluid_structure && !dynamic) {
-    solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED);
-    solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED);
 
-    solver[MESH_0][FEA_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
-    solver[MESH_0][FEA_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_PRED_OLD);
+  if (fluid_structure && !dynamic) {
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      nodes->SetSolution_Pred(iPoint, nodes->GetSolution(iPoint));
+      nodes->SetSolution_Pred_Old(iPoint, nodes->GetSolution(iPoint));
+    }
+  }
+
+  if (fluid_structure && discrete_adjoint) {
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
+      nodes->SetSolution_Old(iPoint, nodes->GetSolution(iPoint));
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
