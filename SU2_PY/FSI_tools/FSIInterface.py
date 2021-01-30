@@ -1924,10 +1924,6 @@ class Interface:
           #If restart
           if FSI_config['RESTART_SOL'] == 'YES':
             TimeIterTreshold = -1
-            self.MPIPrint("Reading the modal amplitudes at time n-1")
-            if myid in self.solidSolverProcessors:
-              SolidSolver.setRestart('nM1')
-              SolidSolver.setRestart('n')
             self.getSolidInterfaceDisplacement(SolidSolver)
             self.displacementPredictor(FSI_config, SolidSolver, deltaT)
             # We need now to update the solution because both restarter functions (solid and fluid)
@@ -1956,7 +1952,8 @@ class Interface:
 
                 if TimeIter > TimeIterTreshold:
                   NbFSIIter = NbFSIIterMax
-                  self.MPIPrint('\n*************** Enter Block Gauss Seidel (BGS) method for strong coupling FSI on time iteration {} ***************'.format(TimeIter))
+                  self.MPIPrint("\n")
+                  self.MPIPrint(" Enter Block Gauss Seidel (BGS) method for strong coupling FSI on time iteration {} ".format(TimeIter).center(80,"*"))
                 else:
                   NbFSIIter = 1
 
@@ -2069,7 +2066,8 @@ class Interface:
           self.MPIPrint('\n********************************')
           self.MPIPrint('* Begin steady FSI computation *')
           self.MPIPrint('********************************\n')
-          self.MPIPrint('\n*************** Enter Block Gauss Seidel (BGS) method for strong coupling FSI ***************')
+          self.MPIPrint("\n")
+          self.MPIPrint(" Enter Block Gauss Seidel (BGS) method for strong coupling FSI ".center(80,"*"))
 
           self.MPIPrint('Setting initial deformed mesh')
           if myid in self.solidSolverProcessors:

@@ -1144,7 +1144,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
     channel_2D.test_iter = 2
-    channel_2D.test_vals = [2.000000, 0.000000, 0.397985, 0.352786, 0.405475] #last 4 columns
+    channel_2D.test_vals = [2.000000, 0.000000, 0.398017, 0.352786, 0.405475] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -1510,6 +1510,19 @@ def main():
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
+
+    # intersection prevention
+    intersect_def            = TestCase('intersectionprevention')
+    intersect_def.cfg_dir   = "deformation/intersection_prevention"
+    intersect_def.cfg_file  = "def_intersect.cfg"
+    intersect_def.test_iter = 10
+    intersect_def.test_vals = [0.000112] #residual
+    intersect_def.su2_exec  = "SU2_DEF"
+    intersect_def.timeout   = 1600
+    intersect_def.tol       = 1e-04
+
+    pass_list.append(intersect_def.run_def())
+    test_list.append(intersect_def)
 
     # Inviscid NACA0012 (triangles)
     naca0012_def            = TestCase('naca0012_def')

@@ -105,17 +105,6 @@ public:
   inline const MatrixType& GetPrimitive_Aux(void) const { return Primitive_Aux; }
 
   /*!
-   * \brief Set the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  /* Works as a dummy function for consistency since no reconstruction is needed for primitive variables*/
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override { }
-
-
-  /*!
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;

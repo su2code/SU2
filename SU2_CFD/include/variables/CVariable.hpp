@@ -2338,7 +2338,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetReference_Geometry(unsigned long iPoint) {return nullptr; }
+  inline virtual const su2double* GetReference_Geometry(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2354,11 +2354,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double GetPrestretch(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual su2double GetReference_Geometry(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Get the value of the undeformed coordinates.

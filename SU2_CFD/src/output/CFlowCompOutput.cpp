@@ -35,7 +35,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
 
   turb_model = config->GetKind_Turb_Model();
   lastInnerIter = curInnerIter;
-  gridMovement = (config->GetGrid_Movement() || config->GetDynamic_Grid());
+  gridMovement = config->GetDynamic_Grid();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
