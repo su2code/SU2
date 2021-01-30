@@ -32,16 +32,13 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 
-CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
+CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void)
+  : CFEM_DG_SolverBase() {}
 
-  /*--- Basic array initialization ---*/
-  FluidModel = nullptr;
-}
-
-CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
-
-  /*--- Basic array initialization ---*/
-  FluidModel = nullptr;
+CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig        *config,
+                                         unsigned short val_nDim,
+                                         unsigned short iMesh)
+  : CFEM_DG_SolverBase() {
 
   /*--- Store the multigrid level. ---*/
   MGLevel = iMesh;
@@ -56,29 +53,39 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   SetNondimensionalization(config, iMesh, false);
 }
 
-CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
+                                         CConfig        *config,
+                                         unsigned short iMesh)
+  : CFEM_DG_SolverBase(geometry, config, iMesh) {
 
+  /*--- Set the gamma value ---*/
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
-
 }
 
 void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
                                                    unsigned short iMesh,
                                                    const bool     writeOutput) {
-  su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
-  Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
-  Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
-  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
-  Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
-  Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
-  Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
-  Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
-  Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
-  Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
-  Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
+
+  su2double Temperature_FreeStream   = 0.0, Mach2Vel_FreeStream   = 0.0, ModVel_FreeStream      = 0.0,
+            Energy_FreeStream        = 0.0, ModVel_FreeStreamND   = 0.0, Velocity_Reynolds      = 0.0,
+            Omega_FreeStream         = 0.0, Omega_FreeStreamND    = 0.0, Viscosity_FreeStream   = 0.0,
+            Density_FreeStream       = 0.0, Pressure_FreeStream   = 0.0, Tke_FreeStream         = 0.0,
+            Length_Ref               = 0.0, Density_Ref           = 0.0, Pressure_Ref           = 0.0,
+            Velocity_Ref             = 0.0, Temperature_Ref       = 0.0, Time_Ref               = 0.0,
+            Omega_Ref                = 0.0, Force_Ref             = 0.0, Gas_Constant_Ref       = 0.0,
+            Viscosity_Ref            = 0.0, Conductivity_Ref      = 0.0, Energy_Ref             = 0.0,
+            Froude                   = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND   = 0.0,
+            Temperature_FreeStreamND = 0.0, Gas_ConstantND        = 0.0, Viscosity_FreeStreamND = 0.0,
+            Tke_FreeStreamND         = 0.0, Energy_FreeStreamND   = 0.0, Total_UnstTimeND       = 0.0,
+            Delta_UnstTimeND         = 0.0;
+
+  su2double Velocity_FreeStreamND[MAXNDIM] = {0.0};
 
   unsigned short iDim;
 
@@ -583,50 +590,60 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM_DG *FEMGeometry,
                                              CConfig           *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM_DG *FEMGeometry,
                                                       const vector<int> &colorLocalDOFs) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM_DG *FEMGeometry,
                                                     CConfig           *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel,
                                                      const bool commMustBeCompleted) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
   return false;
 }
 
 void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel,
                                                             const bool commMustBeCompleted) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
   return false;
 }
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -636,19 +653,23 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
                                                  CNumerics **numerics, CConfig *config,
                                                  unsigned short iMesh, unsigned short RunTime_EqSystem) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Set_OldSolution() {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution() {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
@@ -656,20 +677,24 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
                                                    su2double       &timeEvolved,
                                                    bool            &syncTimeReached) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
                                              CNumerics **numerics, CConfig *config,
                                              unsigned short iMesh) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
@@ -677,6 +702,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                                                 const unsigned long elemEnd,
                                                 su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
@@ -687,6 +713,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
                                                               su2double            *res,
                                                               su2double            *work) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -697,6 +724,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
                                                               su2double            *res,
                                                               su2double            *work) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -707,6 +735,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
                                                                  su2double            *res,
                                                                  su2double            *work) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -717,6 +746,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
                                                                  su2double            *res,
                                                                  su2double            *work) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig             *config,
@@ -728,6 +758,7 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig           
                                                               const bool           secondPartTimeInt,
                                                               su2double            *solTimeLevel) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
@@ -735,6 +766,7 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
                                              const unsigned long elemEnd,
                                              su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
@@ -742,6 +774,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                                           const unsigned long elemEnd,
                                           su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
@@ -750,6 +783,7 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
                                               const bool           haloInfoNeededForBC,
                                               su2double            *workArray){
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
@@ -759,6 +793,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
                                         CNumerics           *numerics,
                                         su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
@@ -771,6 +806,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                                               su2double            *fluxes,
                                               CNumerics            *numerics) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
@@ -778,6 +814,7 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
                                                      const unsigned short timeLevel,
                                                      const unsigned short intPoint) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
@@ -785,11 +822,13 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
                                                      const unsigned short timeLevel,
                                                      const unsigned short intPoint) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
                                               const bool ownedElements) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
@@ -799,35 +838,42 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
                                               const unsigned long elemEnd,
                                               su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry *geometry, const CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                  CConfig *config, unsigned short iRKStep) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
                                                    CConfig   *config) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
                                             const unsigned long elemEnd) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *config,
@@ -837,6 +883,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *co
                                                     const su2double          *solIntL,
                                                     su2double                *solIntR) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
@@ -847,6 +894,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
                                                const su2double          *solIntL,
                                                su2double                *solIntR) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config,
@@ -857,6 +905,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config
                                                 const su2double          *solIntL,
                                                 su2double                *solIntR) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *config,
@@ -867,6 +916,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
                                                  const su2double          *solIntL,
                                                  su2double                *solIntR) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
@@ -877,6 +927,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
                                         CNumerics                *conv_numerics,
                                         su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
@@ -887,6 +938,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
                                        CNumerics                *conv_numerics,
                                        su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
@@ -897,6 +949,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
                                        CNumerics                *conv_numerics,
                                        su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
@@ -907,6 +960,7 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
                                                CNumerics                *conv_numerics,
                                                su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
@@ -918,6 +972,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
                                    unsigned short           val_marker,
                                    su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
@@ -929,6 +984,7 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
                                     unsigned short           val_marker,
                                     su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
@@ -940,6 +996,7 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
                                      unsigned short           val_marker,
                                      su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
@@ -950,6 +1007,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
@@ -964,6 +1022,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
@@ -974,6 +1033,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
                                              su2double                *solFace,
                                              su2double                *solIntL) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config,
@@ -987,8 +1047,14 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
                                                     su2double            *fluxes,
                                                     CNumerics            *numerics) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
-void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
+                                      CSolver   ***solver,
+                                      CConfig   *config,
+                                      int       val_iter,
+                                      bool      val_update_geo) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

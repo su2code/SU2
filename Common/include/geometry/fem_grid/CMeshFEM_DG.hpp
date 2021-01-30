@@ -91,6 +91,11 @@ protected:
                                                                                     the time integration points for ADER-DG. */
 
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Constructor of the class.
    */
@@ -109,6 +114,87 @@ public:
    */
   ~CMeshFEM_DG(void);
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which makes available the vector of vectors containing the owned element
+            IDs adjacent to elements of a lower time level. Note that a copy is made.
+   * \return Copy of ownedElemAdjLowTimeLevel.
+   */
+  inline vector<vector<unsigned long> > GetOwnedElemAdjLowTimeLevel(void) {return ownedElemAdjLowTimeLevel;}
+
+  /*!
+   * \brief Function, which makes available the vector of vectors containing the halo element
+            IDs adjacent to elements of a lower time level. Note that a copy is made.
+   * \return Copy of haloElemAdjLowTimeLevel.
+   */
+  inline vector<vector<unsigned long> > GetHaloElemAdjLowTimeLevel(void) {return haloElemAdjLowTimeLevel;}
+
+  /*!
+  * \brief Function, which makes available the number of matching internal faces
+           between an owned element and a halo element per time level.
+  * \return  The number of matching internal faces between these elements per time level.
+  */
+  inline unsigned long *GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
+
+ /*!
+  * \brief Function, which makes available the number of matching internal faces
+           between two owned elements per time level.
+  * \return  The number of matching internal faces per time level.
+  */
+  inline unsigned long *GetNMatchingFacesInternal(void) {return nMatchingFacesInternal.data();}
+
+ /*!
+  * \brief Function, which makes available the matching internal faces.
+  * \return  Pointer to the matching internal faces.
+  */
+  inline CInternalFaceFEM_DG *GetMatchingFaces(void) {return matchingFaces.data();}
+
+  /*!
+   * \brief Function, which makes available the total number of volume elements in the local FEM mesh.
+   * \return  Total number of volume elements of the local FEM mesh.
+   */
+  inline unsigned long GetNVolElemTot(void) const {return nVolElemTot;}
+
+  /*!
+   * \brief Function, which makes available the volume elements in the local FEM mesh.
+   * \return  Pointer to the volume elements of the local FEM mesh.
+   */
+  inline CVolumeElementFEM_DG *GetVolElem(void) {return volElem.data();}
+
+  /*!
+  * \brief Function, which makes available the time coefficients in the iteration matrix
+  *        of the ADER-DG predictor step. Note that a copy is made.
+  * \return Copy of the time coefficients in the iteration matrix of ADER-DG.
+  */
+  inline CSquareMatrixCM GetTimeCoefADER_DG(void) {return timeCoefADER_DG;}
+
+  /*!
+   * \brief Function, which makes available the time interpolation matrix between
+   *        the time DOFs and time integration points for ADER-DG. Note that a
+   *        copy is made.
+   * \return Copy of the time interpolation matrix for ADER-DG.
+   */
+  inline ColMajorMatrix<passivedouble> GetTimeInterpolDOFToIntegrationADER_DG(void) {
+    return timeInterpolDOFToIntegrationADER_DG;
+  }
+
+  /*!
+   * \brief Function, which makes available the time interpolation matrix between the
+   *        adjacent time DOFs of the next time level and the time integration points
+   *        for ADER-DG. Note that a copy is made.
+   * \return Copy of the time interpolation matrix of adjacent time DOFs for ADER-DG.
+   */
+  inline ColMajorMatrix<passivedouble> GetTimeInterpolAdjDOFToIntegrationADER_DG(void) {
+    return timeInterpolAdjDOFToIntegrationADER_DG;
+  }
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                      Public member functions.                               ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Function to create the faces used in the DG formulation.
    * \param[in] config - Definition of the particular problem.
@@ -120,6 +206,20 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void CreateStandardVolumeElements(CConfig *config);
+
+  /*!
+   * \brief Function, which determines the maximum number of DOFs
+   *        used in the locally stored grid.
+   * \return The maximum number of DOFs.
+   */
+  unsigned short DetermineMaxNDOFs(void);
+
+  /*!
+   * \brief Function, which determines the maximum number of integration
+   *        points used in the locally stored grid.
+   * \return The maximum number of integration points.
+   */
+  unsigned short DetermineMaxNIntegration(void);
 
   /*!
    * \brief Function to compute the grid velocities for static problems.
@@ -163,6 +263,10 @@ public:
   void WallFunctionPreprocessing(CConfig *config);
 
 private:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                      Private member functions.                              ---*/
+  /*-----------------------------------------------------------------------------------*/
 
   /*!
    * \brief Function, which creates the standard elements for the faces.

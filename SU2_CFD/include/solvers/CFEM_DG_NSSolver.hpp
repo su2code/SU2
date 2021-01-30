@@ -50,6 +50,7 @@ public:
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 

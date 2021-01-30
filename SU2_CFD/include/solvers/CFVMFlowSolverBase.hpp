@@ -61,55 +61,6 @@ class CFVMFlowSolverBase : public CSolver {
 
   unsigned long ErrorCounter = 0;    /*!< \brief Counter for number of un-physical states. */
 
-  /*!
-   * \brief Auxilary types to store common aero coefficients (avoids repeating oneself so much).
-   */
-  struct AeroCoeffsArray {
-    su2double* CD = nullptr;     /*!< \brief Drag coefficient. */
-    su2double* CL = nullptr;     /*!< \brief Lift coefficient. */
-    su2double* CSF = nullptr;    /*!< \brief Sideforce coefficient. */
-    su2double* CEff = nullptr;   /*!< \brief Efficiency (Cl/Cd). */
-    su2double* CFx = nullptr;    /*!< \brief x Force coefficient. */
-    su2double* CFy = nullptr;    /*!< \brief y Force coefficient. */
-    su2double* CFz = nullptr;    /*!< \brief z Force coefficient. */
-    su2double* CMx = nullptr;    /*!< \brief x Moment coefficient. */
-    su2double* CMy = nullptr;    /*!< \brief y Moment coefficient. */
-    su2double* CMz = nullptr;    /*!< \brief z Moment coefficient. */
-    su2double* CoPx = nullptr;   /*!< \brief x Moment coefficient. */
-    su2double* CoPy = nullptr;   /*!< \brief y Moment coefficient. */
-    su2double* CoPz = nullptr;   /*!< \brief z Moment coefficient. */
-    su2double* CT = nullptr;     /*!< \brief Thrust coefficient. */
-    su2double* CQ = nullptr;     /*!< \brief Torque coefficient. */
-    su2double* CMerit = nullptr; /*!< \brief Rotor Figure of Merit. */
-    int _size = 0;               /*!< \brief Array size. */
-
-    void allocate(int size); /*!< \brief Allocates arrays. */
-
-    void setZero(int i); /*!< \brief Sets all values to zero at a particular index. */
-    void setZero() {     /*!< \brief Sets all values to zero for all indices. */
-      for (int i = 0; i < _size; ++i) setZero(i);
-    }
-
-    AeroCoeffsArray(int size = 0) : _size(size) {
-      if (size) allocate(size);
-    }
-
-    ~AeroCoeffsArray();
-  };
-
-  /*!
-   * \brief Scalar version of the coefficients type.
-   */
-  struct AeroCoeffs {
-    su2double CD, CL, CSF, CEff, CFx, CFy, CFz, CMx, CMy, CMz, CoPx, CoPy, CoPz, CT, CQ, CMerit;
-
-    void setZero() {
-      CD = CL = CSF = CEff = CFx = CFy = CFz = CMx = CMy = CMz = CoPx = CoPy = CoPz = CT = CQ = CMerit = 0.0;
-    }
-
-    AeroCoeffs() { setZero(); }
-  };
-
   AeroCoeffsArray InvCoeff;        /*!< \brief Inviscid pressure contributions for each boundary. */
   AeroCoeffsArray SurfaceInvCoeff; /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
   AeroCoeffs AllBoundInvCoeff;     /*!< \brief Total pressure contribution for all the boundaries. */

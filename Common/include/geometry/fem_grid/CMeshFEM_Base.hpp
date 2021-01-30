@@ -77,6 +77,11 @@ protected:
                                                           the halo elements for which a rotationally periodic
                                                           correction must be applied. */
 public:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Constructors and destructors.                           ---*/
+  /*-----------------------------------------------------------------------------------*/
+
   /*!
    * \brief Constructor of the class.
    */
@@ -95,7 +100,39 @@ public:
    */
   virtual ~CMeshFEM_Base(void);
 
+  /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function, which makes available the boundaries of the local FEM mesh.
+   * \return  Pointer to the boundaries of the local FEM mesh.
+   */
+  inline CBoundaryFEM *GetBoundaries(void) {return boundaries.data();}
+
+  /*!
+   * \brief Function, which makes available the mesh points of the local FEM mesh.
+   * \return  Pointer to the mesh points of the local FEM mesh.
+   */
+  inline CPointFEM *GetMeshPoints(void) {return meshPoints.data();}
+
+  /*!
+   * \brief Function, which makes available the number of mesh points of the local FEM mesh.
+   * \return  Number of mesh points of the local FEM mesh.
+   */
+  inline unsigned long GetNMeshPoints(void) {return meshPoints.size();}
+
+  /*!
+   * \brief Function, which makes available the number of owned volume elements in the local FEM mesh.
+   * \return  Number of owned volume elements of the local FEM mesh.
+   */
+  inline unsigned long GetNVolElemOwned(void) const {return nVolElemOwned;}
+
 protected:
+
+  /*-----------------------------------------------------------------------------------*/
+  /*---                     Proteced member functions.                              ---*/
+  /*-----------------------------------------------------------------------------------*/
 
   /*!
    * \brief Function, which creates the standard elements for the grid.

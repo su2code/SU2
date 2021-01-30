@@ -30,25 +30,27 @@
 
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
-CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
+CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry      *geometry,
+                                   CConfig        *config,
+                                   unsigned short iMesh)
  : CFEM_DG_EulerSolver(geometry, config, iMesh) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
-
 }
 
 void CFEM_DG_NSSolver::Friction_Forces(const CGeometry *geometry, const CConfig *config) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
-
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              *config,
@@ -58,6 +60,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
                                                            const unsigned short NPad,
                                                            su2double            *res,
                                                            su2double            *work) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -67,6 +70,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
                                                            const unsigned short NPad,
                                                            su2double            *res,
                                                            su2double            *work) {
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -77,6 +81,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
                                                               su2double            *res,
                                                               su2double            *work) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -87,6 +92,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
                                                               su2double            *res,
                                                               su2double            *work) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
@@ -94,11 +100,13 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
                                           const unsigned long elemEnd,
                                           su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
                                                   const unsigned long elemEnd,
                                                   su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
@@ -106,6 +114,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                                        const unsigned long elemEnd,
                                        su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
@@ -115,6 +124,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                                      CNumerics           *numerics,
                                      su2double           *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM_DG *adjVolElem,
@@ -132,6 +142,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM_DG *adjVolE
                                                    su2double            *viscosityInt,
                                                    su2double            *kOverCvInt) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol,
@@ -145,6 +156,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
                                                                   su2double &kOverCv,
                                                                   su2double *normalFlux) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol,
@@ -158,6 +170,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
                                                                   su2double &kOverCv,
                                                                   su2double *normalFlux) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
@@ -175,6 +188,7 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
                                             const su2double      *metricNormalsFace,
                                                   su2double      *penaltyFluxes) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short indFaceChunk,
@@ -189,6 +203,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short indFaceChunk,
                                               const su2double      *metricNormalsFace,
                                                     su2double      *symmFluxes) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceChunk,
@@ -200,6 +215,7 @@ void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceC
                                                    const su2double      *metricCoorFace,
                                                          su2double      *paramFluxes) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
@@ -210,6 +226,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
                                      CNumerics                *conv_numerics,
                                      su2double                *workArray){
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
@@ -220,6 +237,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
@@ -230,6 +248,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
@@ -240,6 +259,7 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
                                             CNumerics                *conv_numerics,
                                             su2double                *workArray){
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
@@ -251,6 +271,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
                                 unsigned short           val_marker,
                                 su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
@@ -262,6 +283,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
                                  unsigned short           val_marker,
                                  su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
@@ -273,6 +295,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
                                         unsigned short           val_marker,
                                         su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
@@ -284,6 +307,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
                                           unsigned short           val_marker,
                                           su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
@@ -295,6 +319,7 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
                                   unsigned short           val_marker,
                                   su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
@@ -305,6 +330,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
                                  CNumerics                *conv_numerics,
                                  su2double                *workArray) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
@@ -324,6 +350,7 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
                                              unsigned long      &indResFaces,
                                              CWallModel         *wallModel) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
@@ -343,6 +370,7 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
                                              su2double          *viscosityInt,
                                              su2double          *kOverCvInt) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
@@ -362,6 +390,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                         su2double          *kOverCvInt,
                                         CWallModel         *wallModel) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 
 void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
@@ -380,4 +409,5 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
+  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

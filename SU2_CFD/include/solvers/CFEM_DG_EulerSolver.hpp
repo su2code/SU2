@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "CSolver.hpp"
+#include "CFEM_DG_SolverBase.hpp"
 
 /*!
  * \class CFEM_DG_EulerSolver
@@ -37,26 +37,26 @@
  * \author E. van der Weide, T. Economon, J. Alonso
  * \version 7.1.0 "Blackbird"
  */
-class CFEM_DG_EulerSolver : public CSolver {
+class CFEM_DG_EulerSolver : public CFEM_DG_SolverBase {
 protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
-  CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
+  vector<unsigned long> nDOFsPerRank;                    /*!< \brief Number of DOFs per rank in
+                                                                     cumulative storage format. */
+  vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
+                                                                     non-zero entries of the Jacobian
+                                                                     for the locally owned DOFs. */
 
-  su2double
-  Mach_Inf,         /*!< \brief Mach number at infinity. */
-  Density_Inf,      /*!< \brief Density at infinity. */
-  Energy_Inf,     /*!< \brief Energy at infinity. */
-  Temperature_Inf,  /*!< \brief Energy at infinity. */
-  Pressure_Inf,     /*!< \brief Pressure at infinity. */
-  *Velocity_Inf;    /*!< \brief Flow velocity vector at infinity. */
+  int nGlobalColors;              /*!< \brief Number of global colors for the Jacobian computation. */
 
-
-private:
-
-  CVariable* GetBaseClassPointerToNodes() final {return nullptr;}
-
+  vector<vector<unsigned long> > localDOFsPerColor;   /*!< \brief Double vector, which contains for every
+                                                                  color the local DOFs. */
+  vector<vector<int> > colorToIndEntriesJacobian;     /*!< \brief Double vector, which contains for every
+                                                                  local DOF the mapping from the color to the
+                                                                  entry in the Jacobian. A -1 indicates that
+                                                                  the color does not contribute to the Jacobian
+                                                                  of the DOF. */
 public:
 
   /*!

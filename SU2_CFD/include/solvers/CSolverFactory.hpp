@@ -2,7 +2,7 @@
  * \file CSolverFactory.hpp
  * \brief Headers of the CSolverFactory class
  * \author T. Albring
- * \version 7.0.1 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,6 +53,8 @@ enum class SUB_SOLVER_TYPE {
   FEA,                     /*!< \brief Structural Finite-Element solver */
   DG_EULER,                /*!< \brief Higher-order DG Euler solver*/
   DG_NAVIER_STOKES,        /*!< \brief Higher-order DG Navier-Stokes solver*/
+  DG_INC_EULER,            /*!< \brief Higher-order incompressible DG Euler solver*/
+  DG_INC_NAVIER_STOKES,    /*!< \brief Higher-order incompressible DG Navier-Stokes solver*/
   HEAT,                    /*!< \brief Heat solver */
   TRANSITION,              /*!< \brief Transition model solver*/
   TURB_SA,                 /*!< \brief SA turbulence model solver */

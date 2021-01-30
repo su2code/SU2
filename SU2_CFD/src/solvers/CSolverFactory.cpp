@@ -46,6 +46,8 @@
 #include "../../include/solvers/CDiscAdjFEASolver.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
+#include "../../include/solvers/CFEM_DG_IncEulerSolver.hpp"
+#include "../../include/solvers/CFEM_DG_IncNSSolver.hpp"
 #include "../../include/solvers/CMeshSolver.hpp"
 #include "../../include/solvers/CDiscAdjMeshSolver.hpp"
 #include "../../include/solvers/CBaselineSolver.hpp"
@@ -170,6 +172,15 @@ CSolver** CSolverFactory::CreateSolverContainer(ENUM_MAIN_SOLVER kindMainSolver,
     case FEM_RANS:
       SU2_MPI::Error("FEM RANS not available", CURRENT_FUNCTION);
       break;
+    case FEM_INC_EULER:
+      solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_INC_EULER, solver, geometry, config, iMGLevel);
+      break;
+    case FEM_INC_NAVIER_STOKES: FEM_INC_LES:
+       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
+      break;
+    case FEM_INC_RANS:
+      SU2_MPI::Error("FEM INCOMPRESSIBLE RANS not available", CURRENT_FUNCTION);
+      break;
     case DISC_ADJ_FEM_EULER:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
@@ -277,6 +288,14 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       break;
     case SUB_SOLVER_TYPE::DG_NAVIER_STOKES:
       genericSolver = CreateDGSolver(SUB_SOLVER_TYPE::DG_NAVIER_STOKES, geometry, config, iMGLevel);
+      metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
+      break;
+    case SUB_SOLVER_TYPE::DG_INC_EULER:
+      genericSolver = CreateDGSolver(SUB_SOLVER_TYPE::DG_INC_EULER, geometry, config, iMGLevel);
+      metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
+      break;
+    case SUB_SOLVER_TYPE::DG_INC_NAVIER_STOKES:
+      genericSolver = CreateDGSolver(SUB_SOLVER_TYPE::DG_INC_NAVIER_STOKES, geometry, config, iMGLevel);
       metaData.integrationType = INTEGRATION_TYPE::FEM_DG;
       break;
     case SUB_SOLVER_TYPE::HEAT:
@@ -413,6 +432,12 @@ CSolver* CSolverFactory::CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry 
       break;
     case SUB_SOLVER_TYPE::DG_NAVIER_STOKES:
       DGSolver = new CFEM_DG_NSSolver(geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER_TYPE::DG_INC_EULER:
+      DGSolver = new CFEM_DG_IncEulerSolver(geometry, config, iMGLevel);
+      break;
+    case SUB_SOLVER_TYPE::DG_INC_NAVIER_STOKES:
+      DGSolver = new CFEM_DG_IncNSSolver(geometry, config, iMGLevel);
       break;
     default:
       SU2_MPI::Error("Requested DG solver not found", CURRENT_FUNCTION);

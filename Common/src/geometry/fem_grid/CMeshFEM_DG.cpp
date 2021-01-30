@@ -2249,6 +2249,35 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
   }
 }
 
+unsigned short CMeshFEM_DG::DetermineMaxNDOFs(void) {
+
+  /*--- Loop over the standard volume elements for the solution and determine
+        the maximum number of DOFs that are present. ---*/
+  unsigned short nDOFsMax = 0;
+  for(unsigned short l=0; l<standardVolumeElementsSolution.size(); ++l)
+    nDOFsMax = max(nDOFsMax, standardVolumeElementsSolution[l]->GetNDOFsPad());
+
+  /*--- Return the value of nDOFsMax. ---*/
+  return nDOFsMax;
+}
+
+unsigned short CMeshFEM_DG::DetermineMaxNIntegration(void) {
+
+  /*--- Loop over the standard volume elements for the solution and determine
+        the maximum number of integration points that are present. ---*/
+  unsigned short nIntMax = 0;
+  for(unsigned short l=0; l<standardVolumeElementsSolution.size(); ++l)
+    nIntMax = max(nIntMax, standardVolumeElementsSolution[l]->GetNIntegrationPad());
+
+  /*--- Take the surface elements into account as well, although the number of
+        integration points for the surfaces should be less than for the volume. ---*/
+  for(unsigned short l=0; l<standardSurfaceElementsSolution.size(); ++l)
+    nIntMax = max(nIntMax, standardSurfaceElementsSolution[l]->GetNIntegrationPad());
+
+  /*--- Return the value of nIntMax. ---*/
+  return nIntMax;
+}
+
 void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {
