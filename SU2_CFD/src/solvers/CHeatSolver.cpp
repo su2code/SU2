@@ -438,59 +438,6 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 }
 
-
-void CHeatSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
-
-  unsigned long iPoint, jPoint, iEdge;
-  su2double *Diff;
-  unsigned short iVar;
-  bool boundary_i, boundary_j;
-
-  Diff = new su2double[nVar];
-
-  nodes->SetUnd_LaplZero();
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    /*--- Solution differences ---*/
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
-
-    boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-    boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-    /*--- Both points inside the domain, or both in the boundary ---*/
-
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint,Diff);
-      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint,Diff);
-    }
-
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-    if (!boundary_i && boundary_j)
-      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint,Diff);
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-
-    if (boundary_i && !boundary_j)
-      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint,Diff);
-
-  }
-
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-
-  delete [] Diff;
-
-}
-
 void CHeatSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 

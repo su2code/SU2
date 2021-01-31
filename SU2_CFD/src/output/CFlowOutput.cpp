@@ -1022,7 +1022,7 @@ void CFlowOutput::WriteMetaData(CConfig *config){
 
 void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
-  unsigned short iDim, iMarker_Monitoring;
+  unsigned short iMarker_Monitoring;
 
   const bool compressible    = (config->GetKind_Regime() == COMPRESSIBLE);
   const bool incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -2144,26 +2144,8 @@ void CFlowOutput::WriteForcesBreakdown(CConfig *config, CGeometry *geometry, CSo
 
     /*--- Reference area and force factors. ---*/
 
-    su2double RefDensity, RefArea, RefVel, Factor, Ref;
-    RefArea     = config->GetRefArea();
-    if (compressible) {
-      RefDensity  = solver_container[FLOW_SOL]->GetDensity_Inf();
-      RefVel = solver_container[FLOW_SOL]->GetModVelocity_Inf();
-    } else {
-      if ((config->GetRef_Inc_NonDim() == DIMENSIONAL) ||
-          (config->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-        RefDensity  = solver_container[FLOW_SOL]->GetDensity_Inf();
-        RefVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          RefVel  += solver_container[FLOW_SOL]->GetVelocity_Inf(iDim)*solver_container[FLOW_SOL]->GetVelocity_Inf(iDim);
-        RefVel = sqrt(RefVel);
-      } else {
-        RefDensity = config->GetInc_Density_Ref();
-        RefVel    = config->GetInc_Velocity_Ref();
-      }
-    }
-    Factor = (0.5*RefDensity*RefArea*RefVel*RefVel);
-    Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
+    const su2double Factor = solver_container[FLOW_SOL]->GetAeroCoeffsReferenceForce();
+    const su2double Ref = config->GetDensity_Ref() * pow(config->GetVelocity_Ref(),2);
 
     Breakdown_file << "NOTE: Multiply forces by the non-dimensional factor: " << Factor << ", and the reference factor: " << Ref  << "\n";
     Breakdown_file << "to obtain the dimensional force."  << "\n" << "\n";

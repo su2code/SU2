@@ -106,7 +106,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
-  Density_Old.resize(nPoint) = su2double(0.0);
   Velocity2.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);
   Delta_Time.resize(nPoint) = su2double(0.0);
@@ -127,10 +126,6 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   unsigned long iVar;
   bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-
-  Density_Old(iPoint) = GetDensity(iPoint);
 
   /*--- Set the value of the pressure ---*/
 
