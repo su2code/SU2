@@ -91,7 +91,8 @@ public:
                                           su2double       &tauWall,
                                           su2double       &qWall,
                                           su2double       &ViscosityWall,
-                                          su2double       &kOverCvWall);
+                                          su2double       &kOverCvWall,
+                                          bool            &converged);
   /*!
    * \brief Virtual function, which updates the wall model exchange location.
    * \param[in]  h_wm_new              - Updated exchanged location
@@ -166,7 +167,8 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+                                  su2double       &kOverCvWall,
+                                  bool            &converged) override;
 
  /*!
   * \brief Updates the wall model exchange location.
@@ -239,7 +241,8 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+                                  su2double       &kOverCvWall,
+                                  bool            &converged) override;
 
  /*!
   * \brief Updates the wall model exchange location.
@@ -308,7 +311,8 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+                                  su2double       &kOverCvWall,
+                                  bool            &converged) override;
 
  /*!
   * \brief Updates the wall model exchange location.
@@ -377,7 +381,8 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+                                  su2double       &kOverCvWall,
+                                  bool            &converged) override;
 
  /*!
   * \brief Updates the wall model exchange location.
@@ -446,7 +451,8 @@ public:
                                   su2double       &tauWall,
                                   su2double       &qWall,
                                   su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+                                  su2double       &kOverCvWall,
+                                  bool            &converged) override;
 
  /*!
   * \brief Updates the wall model exchange location.

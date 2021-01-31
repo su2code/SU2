@@ -2915,17 +2915,19 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        /* Compute the wall shear stress and heat flux vector using
         the wall model. */
        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+       bool converged;
        WallModel->UpdateExchangeLocation(WallDistMod);
        WallModel->WallShearStressAndHeatFlux(T_Normal, VelTangMod, mu_Normal, P_Normal, GradP_TangMod,
                                              Wall_HeatFlux, HeatFlux_Prescribed,
                                              Wall_Temperature, Temperature_Prescribed,
                                              GetFluidModel(), tauWall, qWall, ViscosityWall,
-                                             kOverCvWall);
+                                             kOverCvWall, converged);
 
-       if (std::isnan(tauWall)){
+       if (!converged || std::isnan(tauWall)){
          nodes->SetTauWall_Flag(iPoint,false);
          continue;
        }
+       
        su2double rho    = nodes->GetDensity(iPoint) * config->GetDensity_Ref();
        su2double u_tau  = sqrt(tauWall/rho);
        su2double y_plus = rho * u_tau * WallDistMod / ViscosityWall; 
