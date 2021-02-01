@@ -57,6 +57,10 @@ protected:
 
   MatrixType Solution_New;     /*!< \brief New solution container for Classical RK4. */
 
+  /*--- NS Variables declared here to make it easier to re-use code between compressible and incompressible solvers. ---*/
+  MatrixType Vorticity;       /*!< \brief Vorticity of the fluid. */
+  VectorType StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -469,5 +473,18 @@ public:
     for (unsigned long iDim = 0; iDim < nDim+1; iDim++)
       WindGustDer(iPoint,iDim) = val_WindGustDer[iDim];
   }
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \return Value of the vorticity.
+   */
+  inline su2double *GetVorticity(unsigned long iPoint) final { return Vorticity[iPoint]; }
+
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2activevector& GetStrainMag() { return StrainMag; }
 
 };

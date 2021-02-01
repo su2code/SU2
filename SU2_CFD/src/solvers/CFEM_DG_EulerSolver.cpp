@@ -6752,7 +6752,8 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConf
       RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
 
-  const su2double factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
+  AeroCoeffForceRef = 0.5 * RefDensity * RefArea * RefVel2;
+  const su2double factor = 1.0 / AeroCoeffForceRef;
 
   /*-- Variables initialization ---*/
   Total_CD = 0.0; Total_CL = 0.0; Total_CSF = 0.0; Total_CEff = 0.0;

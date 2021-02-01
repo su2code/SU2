@@ -289,6 +289,88 @@ def main():
     hb_rans_preconditioning.new_output = False
     test_list.append(hb_rans_preconditioning)
 
+    #############################
+    ### Incompressible Euler  ###
+    #############################
+
+    # NACA0012 Hydrofoil
+    inc_euler_naca0012           = TestCase('inc_euler_naca0012')
+    inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
+    inc_euler_naca0012.test_iter = 20
+    inc_euler_naca0012.test_vals = [-4.858287, -3.810487, 0.491850, 0.007002]
+    inc_euler_naca0012.new_output = True
+    test_list.append(inc_euler_naca0012)
+
+    # C-D nozzle with pressure inlet and mass flow outlet
+    inc_nozzle           = TestCase('inc_nozzle')
+    inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
+    inc_nozzle.cfg_file  = "inv_nozzle.cfg"
+    inc_nozzle.test_iter = 20
+    inc_nozzle.test_vals = [-5.973103, -4.911802, -0.000195, 0.121643]
+    inc_nozzle.new_output = True
+    test_list.append(inc_nozzle)
+
+    #############################
+    ### Incompressible N-S    ###
+    #############################
+
+    # Laminar cylinder
+    inc_lam_cylinder          = TestCase('inc_lam_cylinder')
+    inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
+    inc_lam_cylinder.test_iter = 10
+    inc_lam_cylinder.test_vals = [-4.004277, -3.227956, 0.003852, 7.626578]
+    inc_lam_cylinder.new_output  = True
+    test_list.append(inc_lam_cylinder)
+
+    # Buoyancy-driven cavity
+    inc_buoyancy          = TestCase('inc_buoyancy')
+    inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
+    inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
+    inc_buoyancy.test_iter = 20
+    inc_buoyancy.test_vals = [-4.432484, 0.507522, 0.000000, 0.000000]
+    inc_buoyancy.new_output  = True
+    test_list.append(inc_buoyancy)
+
+    # Laminar heated cylinder with polynomial fluid model
+    inc_poly_cylinder          = TestCase('inc_poly_cylinder')
+    inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
+    inc_poly_cylinder.test_iter = 20
+    inc_poly_cylinder.test_vals = [-7.852778, -2.091519, 0.029298, 1.922006]
+    inc_poly_cylinder.new_output  = True
+    test_list.append(inc_poly_cylinder)
+
+    # X-coarse laminar bend as a mixed element CGNS test
+    inc_lam_bend          = TestCase('inc_lam_bend')
+    inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
+    inc_lam_bend.cfg_file  = "lam_bend.cfg"
+    inc_lam_bend.test_iter = 10
+    inc_lam_bend.test_vals = [-3.438863, -3.102176, -0.017532, -0.193429]
+    test_list.append(inc_lam_bend)
+
+    ############################
+    ### Incompressible RANS  ###
+    ############################
+
+    # NACA0012, SA
+    inc_turb_naca0012           = TestCase('inc_turb_naca0012')
+    inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012.cfg_file  = "naca0012.cfg"
+    inc_turb_naca0012.test_iter = 20
+    inc_turb_naca0012.test_vals = [-4.788495, -11.040511, 0.000023, 0.309503]
+    inc_turb_naca0012.new_output  = True
+    test_list.append(inc_turb_naca0012)
+
+    # NACA0012, SST_SUST
+    inc_turb_naca0012_sst_sust           = TestCase('inc_turb_naca0012_sst_sust')
+    inc_turb_naca0012_sst_sust.cfg_dir   = "incomp_rans/naca0012"
+    inc_turb_naca0012_sst_sust.cfg_file  = "naca0012_SST_SUST.cfg"
+    inc_turb_naca0012_sst_sust.test_iter = 20
+    inc_turb_naca0012_sst_sust.test_vals = [-7.276424, 0.145861, 0.000003, 0.312011]
+    test_list.append(inc_turb_naca0012_sst_sust)
+
     ######################################
     ### Moving Wall                    ###
     ######################################
@@ -348,6 +430,24 @@ def main():
     ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
+
+    # unsteady pitching NACA0015, SA
+    unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
+    unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
+    unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
+    unst_inc_turb_naca0015_sa.test_iter = 1
+    unst_inc_turb_naca0015_sa.test_vals = [-3.008629, -6.888974, 1.435193, 0.433537]
+    unst_inc_turb_naca0015_sa.unsteady  = True
+    test_list.append(unst_inc_turb_naca0015_sa)
+
+    # unsteady pitching NACA0012, Euler, Deforming
+    unst_deforming_naca0012           = TestCase('unst_deforming_naca0012')
+    unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
+    unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
+    unst_deforming_naca0012.test_iter = 5
+    unst_deforming_naca0012.test_vals = [-3.665128, -3.793593, -3.716506, -3.148308]
+    unst_deforming_naca0012.unsteady  = True
+    test_list.append(unst_deforming_naca0012)
 
     ######################################
     ### NICFD                          ###
@@ -491,6 +591,15 @@ def main():
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
+    # Sliding mesh with incompressible flows (steady)
+    slinc_steady           = TestCase('slinc_steady')
+    slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
+    slinc_steady.cfg_file  = "config.cfg"
+    slinc_steady.test_iter = 19
+    slinc_steady.test_vals = [19.000000, -1.762730, -2.263278] #last 3 columns
+    slinc_steady.multizone = True
+    test_list.append(slinc_steady)
+
     ##########################
     ### FEA - FSI          ###
     ##########################
@@ -562,6 +671,22 @@ def main():
     mms_fvm_ns.test_vals = [-2.851428, 2.192348, 0.000000, 0.000000]
     test_list.append(mms_fvm_ns)
 
+    # FVM, incompressible, euler
+    mms_fvm_inc_euler           = TestCase('mms_fvm_inc_euler')
+    mms_fvm_inc_euler.cfg_dir   = "mms/fvm_incomp_euler"
+    mms_fvm_inc_euler.cfg_file  = "inv_mms_jst.cfg"
+    mms_fvm_inc_euler.test_iter = 20
+    mms_fvm_inc_euler.test_vals = [-9.128033, -9.441406, 0.000000, 0.000000]
+    test_list.append(mms_fvm_inc_euler)
+
+    # FVM, incompressible, laminar N-S
+    mms_fvm_inc_ns           = TestCase('mms_fvm_inc_ns')
+    mms_fvm_inc_ns.cfg_dir   = "mms/fvm_incomp_navierstokes"
+    mms_fvm_inc_ns.cfg_file  = "lam_mms_fds.cfg"
+    mms_fvm_inc_ns.test_iter = 20
+    mms_fvm_inc_ns.test_vals = [-7.414944, -7.631546, 0.000000, 0.000000]
+    test_list.append(mms_fvm_inc_ns)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -576,7 +701,7 @@ def main():
 
     # Tests summary
     print('==================================================================')
-    print('Summary of the parallel tests')
+    print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
     for i, test in enumerate(test_list):
         if (pass_list[i]):
