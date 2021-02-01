@@ -1109,7 +1109,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Target Massflow [kg/s], Delta P will be adapted until m_dot is met.  */
   addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_Periodic_TargetMassFlow, 0.0);
   
-  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
