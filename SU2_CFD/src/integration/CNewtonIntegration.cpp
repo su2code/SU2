@@ -67,6 +67,7 @@ public:
 CNewtonIntegration::CNewtonIntegration() {
   KindSol2EqSys[FLOW_SOL] = RUNTIME_FLOW_SYS;
   KindSol2EqSys[TURB_SOL] = RUNTIME_TURB_SYS;
+/// TODO: These solvers need Prepare/CompleteImplicitIteration methods.
 //  KindSol2EqSys[HEAT_SOL] = RUNTIME_HEAT_SYS;
 //  KindSol2EqSys[RAD_SOL] = RUNTIME_RADIATION_SYS;
 }
@@ -145,11 +146,14 @@ void CNewtonIntegration::Setup() {
 
 void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
-  /*--- Run all the pre and post processings first, this captures e.g. the
-   * dependency of the flow residuals on the eddy viscosity. If not done
-   * this way we get a triangular Jacobian instead of the true one. ---*/
+  /*--- Running all the pre and post processings first captures e.g. the
+   * dependency of the flow residuals on the eddy viscosity. Sounds good
+   * but the linear solver does not like it. If not done that way we get
+   * a more triangular Jacobian, i.e. better conditioned. ---*/
 
-  for (int step=0; step<1; ++step) {
+  constexpr bool reallyCoupled = false;
+
+  for (int step=0; step<1+reallyCoupled; ++step) {
     for (auto pos : kindSol) {
       /*--- Set global config parameters for the solver. ---*/
       const auto eqSys = KindSol2EqSys[pos];
@@ -167,8 +171,9 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
       if (step==0) {
         solvers[pos]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, eqSys, false);
-//        solvers[pos]->Postprocessing(geometry, solvers, config, MESH_0);
-//      } else {
+        if (reallyCoupled) solvers[pos]->Postprocessing(geometry, solvers, config, MESH_0);
+      }
+      if (step>0 || !reallyCoupled) {
         Space_Integration(geometry, solvers, numerics[pos], config, MESH_0, NO_RK_ITER, eqSys);
       }
 
@@ -239,7 +244,8 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   SU2_OMP_MASTER {
     SU2_MPI::Allreduce(&rmsSol, &finDiffStep, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    /// TODO: Customize the step.
+    /// TODO: Customize the step size (1e-4).
+    /// TODO: Can we have one step size per variable? Probably not...
     finDiffStep = 1e-4 * max(1.0, sqrt(finDiffStep / geometry->GetGlobal_nPointDomain()));
   }
   SU2_OMP_BARRIER
@@ -280,13 +286,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     solvers[pos]->CompleteImplicitIteration(geometry, solvers, config);
 
     /*--- Call the various post processings to replicate what happens in Single and MG iterations,
-     * it should not be necessary to run the flow solver preprocessing in output-mode,
-     * since flow, turbulence, and all scalars are coupled here. ---*/
-
-    if (pos == FLOW_SOL) {
-      solvers[pos]->Preprocessing(geometry, solvers, config, MESH_0,
-                                  NO_RK_ITER, KindSol2EqSys[pos], true);
-    }
+     * it does not seem be important to run the flow solver preprocessing in output-mode. ---*/
 
     solvers[pos]->Postprocessing(geometry, solvers, config, MESH_0);
 
@@ -333,7 +333,7 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
   ComputeResiduals(EXPLICIT);
 
 
-  /*--- Finalize product and restore the solution. ---*/
+  /*--- Finalize product and restore the old solution. ---*/
   factor = 1.0 / factor;
 
   for (unsigned long iSol = 0, offset = 0; iSol < kindSol.size(); ++iSol) {

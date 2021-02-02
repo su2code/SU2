@@ -92,6 +92,7 @@ CTurbSolver::~CTurbSolver(void) {
 void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL_Turb();
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
 
@@ -221,12 +222,12 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
     if (ReducerStrategy) {
       EdgeFluxes.SetBlock(iEdge, residual);
-      Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
+      if (implicit) Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
     }
     else {
       LinSysRes.AddBlock(iPoint, residual);
       LinSysRes.SubtractBlock(jPoint, residual);
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
     /*--- Viscous contribution. ---*/
@@ -238,13 +239,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
   if (ReducerStrategy) {
     SumEdgeFluxes(geometry);
-    Jacobian.SetDiagonalAsColumnSum();
+    if (implicit) Jacobian.SetDiagonalAsColumnSum();
   }
 }
 
 void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                    CNumerics *numerics, CConfig *config) {
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   /*--- Points in edge ---*/
@@ -286,12 +288,12 @@ void CTurbSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSo
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+    if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
 }
 
@@ -533,11 +535,11 @@ void CTurbSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver** solver
   SU2_OMP(for schedule(static,omp_chunk_size) nowait)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
-
+    /// TODO: This could be the SetTime_Step of this solver.
     su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
-
     nodes->SetDelta_Time(iPoint, dt);
+
+    /*--- Modify matrix diagonal to improve diagonal dominance. ---*/
 
     if (dt != 0.0) {
       su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
