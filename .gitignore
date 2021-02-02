@@ -70,6 +70,9 @@ bin/
 # ignore project settings from eclipse
 .project
 
+# ignore project settings from visual studio code
+.vscode
+
 # ignore swap files
 *.swp
 
