@@ -102,35 +102,41 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
-  if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
-       config[val_iZone]->GetKind_Solver() == INC_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) &&
-      !frozen_visc) {
-    /*--- Solve the turbulence model ---*/
+  if (!integration[val_iZone][val_iInst][FLOW_SOL]->IsFullyCoupled()) {
 
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS);
-    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);
+    /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
-    /*--- Solve transition model ---*/
+    if ((config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS ||
+         config[val_iZone]->GetKind_Solver() == INC_RANS || config[val_iZone]->GetKind_Solver() == DISC_ADJ_INC_RANS) &&
+        !frozen_visc) {
+      /*--- Solve the turbulence model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == LM) {
-      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS);
-      integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                         RUNTIME_TRANS_SYS, val_iZone, val_iInst);
+      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS);
+      integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                        RUNTIME_TURB_SYS, val_iZone, val_iInst);
+
+      /*--- Solve transition model ---*/
+
+      if (config[val_iZone]->GetKind_Trans_Model() == LM) {
+        config[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS);
+        integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                           RUNTIME_TRANS_SYS, val_iZone, val_iInst);
+      }
     }
-  }
 
-  if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
-    integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_HEAT_SYS, val_iZone, val_iInst);
-  }
+    if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS);
+      integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                        RUNTIME_HEAT_SYS, val_iZone, val_iInst);
+    }
 
-  /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
-  if (config[val_iZone]->AddRadiation()) {
-    config[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS);
-    integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                     RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
+    /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
+    if (config[val_iZone]->AddRadiation()) {
+      config[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS);
+      integration[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                       RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
+    }
+
   }
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/

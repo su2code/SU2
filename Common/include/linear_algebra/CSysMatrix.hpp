@@ -922,4 +922,8 @@ public:
 #ifdef CODI_REVERSE_TYPE
 template<> template<>
 FORCEINLINE su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
+#ifdef USE_MIXED_PRECISION
+template<> template<>
+FORCEINLINE passivedouble CSysMatrix<passivedouble>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
+#endif
 #endif

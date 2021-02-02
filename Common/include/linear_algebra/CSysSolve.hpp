@@ -312,10 +312,12 @@ public:
    * \param[out] residual - final normalized residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] xIsZero - If true assume x = 0.
    */
   unsigned long FGMRES_LinSolver(const VectorType & b, VectorType & x, const ProductType & mat_vec,
                                  const PrecondType & precond, ScalarType tol, unsigned long m,
-                                 ScalarType & residual, bool monitoring, const CConfig *config) const;
+                                 ScalarType & residual, bool monitoring, const CConfig *config,
+                                 bool xIsZero = false) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)

@@ -1618,7 +1618,7 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
-void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
   struct IncPrec {
     const CIncEulerSolver* solver;
@@ -1634,8 +1634,12 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   } precond(this, nVar);
 
-  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, false);
+  PrepareImplicitIteration_impl(precond, geometry, config);
+}
 
+void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  CompleteImplicitIteration_impl<false>(geometry, config);
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,

@@ -1413,9 +1413,18 @@ template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixed
 template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
 template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
 template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+#ifdef USE_MIXED_PRECISION
+template class CSysMatrix<passivedouble>;
+template void CSysMatrix<passivedouble>::InitiateComms(const CSysVector<passivedouble>&, CGeometry*, const CConfig*, unsigned short) const;
+template void CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, const CConfig*, unsigned short) const;
+template void CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
+template void CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
 /*--- In reverse AD (or mixed precision) the passive matrix is also used to communicate active (or double) vectors resp.. ---*/
 template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
 template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+#endif
+#ifdef CODI_REVERSE_TYPE
+template void CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+template void CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
 #endif
 #endif // CODI_FORWARD_TYPE

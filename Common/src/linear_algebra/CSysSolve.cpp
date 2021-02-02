@@ -338,7 +338,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType> &
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarType> & b, CSysVector<ScalarType> & x,
                                                       const CMatrixVectorProduct<ScalarType> & mat_vec, const CPreconditioner<ScalarType> & precond,
-                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring, const CConfig *config) const {
+                                                      ScalarType tol, unsigned long m, ScalarType & residual, bool monitoring,
+                                                      const CConfig *config, bool xIsZero) const {
 
   const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
 
@@ -388,8 +389,13 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   /*--- Calculate the initial residual (actually the negative residual) and compute its norm. ---*/
 
-  mat_vec(x, W[0]);
-  W[0] -= b;
+  if (!xIsZero) {
+    mat_vec(x, W[0]);
+    W[0] -= b;
+  }
+  else {
+    W[0] = -b;
+  }
 
   ScalarType beta = W[0].norm();
 
@@ -1050,4 +1056,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
 template class CSysSolve<su2double>;
 #else
 template class CSysSolve<su2mixedfloat>;
+#ifdef USE_MIXED_PRECISION
+template class CSysSolve<passivedouble>;
+#endif
 #endif

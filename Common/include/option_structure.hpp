@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-const unsigned int MAX_SOLS = 12;             /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 12};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
@@ -441,7 +441,6 @@ static const MapType<string, ENUM_MEASUREMENTS> Measurements_Map = {
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,       /*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,       /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_ADJPOT_SYS = 5,     /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,    /*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,    /*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_MULTIGRID_SYS = 14, /*!< \brief Full Approximation Storage Multigrid system of equations. */

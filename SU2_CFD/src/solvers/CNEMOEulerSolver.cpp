@@ -1022,14 +1022,19 @@ void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
-void CNEMOEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
   struct DummyPrec {
     const bool active = false;
     FORCEINLINE su2double** operator() (const CConfig*, unsigned long, su2double) const { return nullptr; }
   } precond;
 
-  ImplicitEuler_Iteration_impl(precond, geometry, solver_container, config, false);
+  PrepareImplicitIteration_impl(precond, geometry, config);
+}
+
+void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  CompleteImplicitIteration_impl<false>(geometry, config);
 }
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {

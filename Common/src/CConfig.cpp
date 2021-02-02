@@ -1572,6 +1572,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
+  /* DESCRIPTION: Use a coupled Newton method. */
+  addBoolOption("COUPLED_NEWTON_METHOD", CoupledNewton, false);
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
@@ -7922,7 +7924,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;

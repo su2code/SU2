@@ -658,7 +658,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {
+void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -691,6 +691,30 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(CSolver** solver_con
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
+  PrepareImplicitIteration(geometry, nullptr, config);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP(for schedule(static,OMP_MIN_SIZE) nowait)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
+  }
+
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  SU2_OMP_MASTER {
+    SetIterLinSolver(iter);
+    SetResLinSolver(System.GetResidual());
+  }
+  SU2_OMP_BARRIER
+
+  CompleteImplicitIteration(geometry, nullptr, config);
 }
 
 template <class V, ENUM_REGIME R>
