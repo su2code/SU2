@@ -1612,7 +1612,7 @@ void CFEASolver::BC_Clamped(CGeometry *geometry, CNumerics *numerics, const CCon
     nodes->SetBound_Disp(iPoint, zeros);
 
     LinSysSol.SetBlock(iPoint, zeros);
-    LinSysReact.SetBlock(iPoint, zeros);
+    if (LinSysReact.GetLocSize() > 0) LinSysReact.SetBlock(iPoint, zeros);
     Jacobian.EnforceSolutionAtNode(iPoint, zeros, LinSysRes);
 
   }
@@ -1692,9 +1692,7 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, CNumerics *numerics, const CC
     /*--- Set and enforce 0 solution for mesh deformation ---*/
     nodes->SetBound_Disp(iPoint, axis, 0.0);
     LinSysSol(iPoint, axis) = 0.0;
-    if (LinSysReact.GetLocSize() > 0){
-      LinSysReact(iPoint, axis) = 0.0;
-    }
+    if (LinSysReact.GetLocSize() > 0) LinSysReact(iPoint, axis) = 0.0;
     Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
 
   }
