@@ -428,32 +428,17 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
       flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
       break;
+    case SUB_SOLVER_TYPE::NEMO_EULER:
+      flowSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);
+      flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      break;
+    case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
+      flowSolver = new CNEMONSSolver(geometry, config, iMGLevel);
+      break;
     default:
       SU2_MPI::Error("Flow solver not found", CURRENT_FUNCTION);
       break;
   }
 
   return flowSolver;
-
-}
-
-CSolver* CSolverFactory::CreateNEMOSolver(SUB_SOLVER_TYPE kindNEMO_Solver, CSolver **solver,  CGeometry *geometry, CConfig *config, int iMGLevel){
-
-  CSolver *NEMOSolver = nullptr;
-
-  switch (kindNEMO_Solver) {
-    case SUB_SOLVER_TYPE::NEMO_EULER:
-      NEMOSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);
-      NEMOSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      break;
-    case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
-      NEMOSolver = new CNEMONSSolver(geometry, config, iMGLevel);
-      break;
-    default:
-      SU2_MPI::Error("NEMO flow solver not found", CURRENT_FUNCTION);
-      break;
-  }
-
-  return NEMOSolver;
-
 }
