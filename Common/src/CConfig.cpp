@@ -2721,6 +2721,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
   addBoolOption("SA_QCR", QCR, false);
 
+/* DESCRIPTION: Activate WMLES Monitoring */
+  addBoolOption("WMLES_MONITORING", WMLES_Monitoring, false);  
+
   /* DESCRIPTION: Compute Average for unsteady simulations */
   addBoolOption("COMPUTE_AVERAGE", Compute_Average, false);
 

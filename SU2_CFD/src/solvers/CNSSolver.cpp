@@ -2932,6 +2932,13 @@ void CNSSolver::SetTauWallHeatFlux_WMLES1stPoint(CGeometry *geometry, CSolver **
        su2double u_tau  = sqrt(tauWall/rho);
        su2double y_plus = rho * u_tau * WallDistMod / ViscosityWall; 
 
+       if (config->GetWMLES_Monitoring()){
+        if(y_plus < 0.1){
+         nodes->SetTauWall_Flag(iPoint,false);
+         continue;          
+        }
+       }
+       
        Yplus_Max_Local = max(Yplus_Max_Local, y_plus);
        Yplus_Min_Local = min(Yplus_Min_Local, y_plus);
 
