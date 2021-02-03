@@ -241,7 +241,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
    many cells it will receive from each other processor. ---*/
 
   SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-                    &(nElem_Cum[1]), 1, MPI_INT, MPI_COMM_WORLD);
+                    &(nElem_Cum[1]), 1, MPI_INT, SU2_MPI::GetComm());
 
   /*--- Prepare to send connectivities. First check how many
    messages we will be sending and receiving. Here we also put
@@ -377,7 +377,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage]));
       iMessage++;
     }
   }
@@ -393,7 +393,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int dest = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage]));
       iMessage++;
     }
   }
@@ -409,7 +409,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int source = ii;
       int tag    = ii + 1;
       SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+                     SU2_MPI::GetComm(), &(recv_req[iMessage+nRecvs]));
       iMessage++;
     }
   }
@@ -425,7 +425,7 @@ void CFVMDataSorter::SortVolumetricConnectivity(CConfig *config,
       int dest   = ii;
       int tag    = rank + 1;
       SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+                     SU2_MPI::GetComm(), &(send_req[iMessage+nSends]));
       iMessage++;
     }
   }
