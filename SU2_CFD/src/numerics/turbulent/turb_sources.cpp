@@ -918,8 +918,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     }
     else if (pk_positive) {
       Jacobian_i[0][0] += (StrainMag2/zeta-TWO3*diverg)*Volume;
-      if (!stress_limited)
-        Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume;
+      Jacobian_i[0][1] -= StrainMag2*TurbVar_i[0]/pow(TurbVar_i[1],2.)*Volume*(!stress_limited);
     }
      
     /*--- omega production Jacobian ---*/
@@ -928,8 +927,8 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
       Jacobian_i[1][1] -= TWO3*alfa_blended*diverg*Volume;
     }
 
-    // Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*cdkw_positive;
-    Jacobian_i[1][1] -= (1. - F1_i)*max(CDkw_i, CDKW_MIN)/(Density_i*TurbVar_i[1])*Volume;
+    Jacobian_i[1][1] -= (1. - F1_i)*CDkw_i/(Density_i*TurbVar_i[1])*Volume*cdkw_positive;
+    // Jacobian_i[1][1] -= (1. - F1_i)*max(CDkw_i, CDKW_MIN)/(Density_i*TurbVar_i[1])*Volume;
     // Jacobian_i[1][1] -= (1. - F1_i)*CrossDiff/(Density_i*TurbVar_i[1])*Volume*(!stress_limited)*cdkw_positive;
 
     if (Residual[1] > 1e10) {
