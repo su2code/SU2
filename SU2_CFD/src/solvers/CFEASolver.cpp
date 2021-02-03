@@ -2578,7 +2578,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, CConfig *config
   if(predOrder > 2 && rank == MASTER_NODE)
     cout << "Higher order predictor not implemented. Solving with order 0." << endl;
 
-  /*--- To nPointDomain: we need to communicate the predicted solution after setting it. ---*/
+  /*--- To nPoint to avoid communication. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
 
@@ -2660,7 +2660,6 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, CConfig *config,
 
     }
     else {
-      // To nPointDomain; we need to communicate the values
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         dispPred     = nodes->GetSolution_Pred(iPoint);
@@ -2712,7 +2711,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, CConfig *config) {
 
   const su2double WAitken = GetWAitken_Dyn();
 
-  // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine
+  /*--- To nPoint to avoid communication. ---*/
   SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
   for (unsigned long iPoint=0; iPoint < nPoint; iPoint++) {
 
@@ -2812,10 +2811,12 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
   unsigned long TimeIter = config->GetTimeIter();
 
   su2double objective_function = 0.0;
+  unsigned long nSurfPoints = 0;
 
   SU2_OMP_PARALLEL
   {
   su2double obj_fun_local = 0.0;
+  unsigned long nSurf_local = 0;
 
   if (!config->GetRefGeomSurf()) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -2832,6 +2833,8 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
         for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); ++iVertex) {
           auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
+          nSurf_local += geometry->nodes->GetDomain(iPoint);
+
           if (geometry->nodes->GetDomain(iPoint))
             obj_fun_local += SquaredDistance(nVar, nodes->GetReference_Geometry(iPoint), nodes->GetSolution(iPoint));
         }
@@ -2839,12 +2842,16 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
     }
   }
   atomicAdd(obj_fun_local, objective_function);
+  atomicAdd(nSurf_local, nSurfPoints);
   }
-
   SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  Total_OFRefGeom *= config->GetRefGeom_Penalty() / geometry->GetGlobal_nPointDomain();
-  Total_OFRefGeom += PenaltyValue;
 
+  unsigned long nPointsOF = geometry->GetGlobal_nPointDomain();
+  if (config->GetRefGeomSurf()) {
+    SU2_MPI::Allreduce(&nSurfPoints, &nPointsOF, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  }
+  Total_OFRefGeom *= config->GetRefGeom_Penalty() / nPointsOF;
+  Total_OFRefGeom += PenaltyValue;
   Global_OFRefGeom += Total_OFRefGeom;
 
   /// TODO: Temporary output files for the direct mode.
