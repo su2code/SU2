@@ -2848,7 +2848,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, const CConfig *config){
   }
   SU2_MPI::Allreduce(&objective_function, &Total_OFRefGeom, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  unsigned long nPointsOF = geometry->GetGlobal_nPointDomain()
+  unsigned long nPointsOF = geometry->GetGlobal_nPointDomain();
   if (config->GetRefGeomSurf()) {
     SU2_MPI::Allreduce(&nSurfPoints, &nPointsOF, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   }
