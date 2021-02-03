@@ -549,7 +549,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
           /*--- Only sort if there is at least one processor that has this marker ---*/
 
           int globalMarkerSize = 0, localMarkerSize = marker.size();
-          SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+          SU2_MPI::Allreduce(&localMarkerSize, &globalMarkerSize, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
           if (globalMarkerSize > 0){
 
@@ -921,7 +921,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
   /*--- Convergence criteria ---*/
 
   sbuf_conv[0] = convergence;
-  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
   /*-- Compute global convergence criteria in the master node --*/
 
@@ -931,7 +931,7 @@ bool COutput::Convergence_Monitoring(CConfig *config, unsigned long Iteration) {
     else sbuf_conv[0] = 0;
   }
 
-  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, SU2_MPI::GetComm());
 
   if (sbuf_conv[0] == 1) { convergence = true; }
   else { convergence = false;  }

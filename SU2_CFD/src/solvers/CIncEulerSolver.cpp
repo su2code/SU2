@@ -837,7 +837,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
     SU2_OMP_MASTER
     {
       unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
     }
     SU2_OMP_BARRIER
@@ -1248,7 +1248,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Add counter results for all ranks. ---*/
     SU2_OMP_MASTER {
       counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
     SU2_OMP_BARRIER
@@ -1752,7 +1752,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
     SU2_OMP_MASTER {
       maxVel2 = MaxVel2;
-      SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
       config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
@@ -2790,9 +2790,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
     /*--- All the ranks to compute the total value ---*/
 
-    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {

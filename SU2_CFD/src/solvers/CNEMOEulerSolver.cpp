@@ -254,7 +254,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Warning message about non-physical points ---*/
   if (config->GetComm_Level() == COMM_FULL) {
 
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
@@ -299,7 +299,7 @@ void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
 
       unsigned long tmp = ErrorCounter;
-      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&tmp, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       config->SetNonphysical_Points(ErrorCounter);
 
   }
@@ -696,7 +696,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
     SU2_OMP_MASTER
     {
       counter_local = ErrorCounter;
-      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Reduce(&counter_local, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
       config->SetNonphysical_Reconstr(ErrorCounter);
     }
     SU2_OMP_BARRIER
