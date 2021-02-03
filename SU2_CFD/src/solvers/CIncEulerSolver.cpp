@@ -2927,10 +2927,10 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
 
   // MPI Communication: Sum Area, Sum rho*A and divide by AreaGlobbal, sum massflow
   su2double Area_Global(0), Average_Density_Global(0), MassFlow_Global(0), Temperature_Global(0);
-  SU2_MPI::Allreduce(&Area_Local,            &Area_Global,            1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Average_Density_Local, &Average_Density_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MassFlow_Local,        &MassFlow_Global,        1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Temperature_Local,     &Temperature_Global,     1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Area_Local,            &Area_Global,            1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Average_Density_Local, &Average_Density_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MassFlow_Local,        &MassFlow_Global,        1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Temperature_Local,     &Temperature_Global,     1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
 
   // Set quantity by stringtag
@@ -3030,7 +3030,7 @@ void CIncEulerSolver::GetStreamwise_Periodic_Properties(CGeometry      *geometry
     } // loop AllMarker
 
     // Mpi Communication sum up integrated Heatflux from all processes
-    SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&HeatFlow_Local, &HeatFlow_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Set the Integrated Heatflux ---*/
     if (iMesh == MESH_0)
