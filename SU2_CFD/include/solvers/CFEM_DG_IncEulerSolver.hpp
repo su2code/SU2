@@ -40,6 +40,8 @@
 class CFEM_DG_IncEulerSolver : public CFEM_DG_SolverBase {
 protected:
 
+  unsigned long nPDOFsLocOwned = 0;    /*!< \brief Number of owned local pressure DOFs. */
+  unsigned long nPDOFsGlobal   = 0;    /*!< \brief Number of global pressure DOFs. */
 public:
 
   /*!

@@ -128,6 +128,34 @@ public:
    */
   inline unsigned long GetNVolElemOwned(void) const {return nVolElemOwned;}
 
+  /*!
+   * \brief Function, which makes available the vector of receive ranks as
+   *        a const reference.
+   * \return  Const reference to the vector of ranks.
+   */
+  inline const vector<int>& GetRanksRecv(void) const {return ranksRecv;}
+
+  /*!
+   * \brief Function, which makes available the vector of send ranks as
+   *        a const reference.
+   * \return  Const reference to the vector of ranks.
+   */
+  inline const vector<int>& GetRanksSend(void) const {return ranksSend;}
+
+  /*!
+   * \brief Function, which makes available the vector of vectors containing the receive
+   *        entities as a const reference.
+   * \return  Const reference to the vector of vectors of receive entities.
+   */
+  inline const vector<vector<unsigned long> >& GetEntitiesRecv(void) const {return entitiesRecv;}
+
+  /*!
+   * \brief Function, which makes available the vector of vectors containing the send
+   *        entities as a const reference.
+   * \return  Const reference to the vector of vectors of send entities.
+   */
+  inline const vector<vector<unsigned long> >& GetEntitiesSend(void) const {return entitiesSend;}
+
 protected:
 
   /*-----------------------------------------------------------------------------------*/

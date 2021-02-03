@@ -769,6 +769,8 @@ private:
    */
   void DetermineDonorElementsWallFunctions(CConfig *config);
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
   /*!
    * \brief Function, which converts the input the format for ParMETIS and calls
    *        ParMETIS to determine the actual colors of the elements.
@@ -779,6 +781,8 @@ private:
   void DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> > &adjacency,
                                      vector<passivedouble>          &vwgt,
                                      vector<vector<passivedouble> > &adjwgt);
+#endif
+#endif
 
   /*!
    * \brief Determine whether or not the Jacobians of the elements and faces

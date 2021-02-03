@@ -850,6 +850,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
 }
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
 void CPhysicalGeometry::DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> > &adjacency,
                                                       vector<passivedouble>          &vwgt,
                                                       vector<vector<passivedouble> > &adjwgt) {
@@ -927,6 +929,8 @@ void CPhysicalGeometry::DetermineFEMColorsViaParMETIS(vector<vector<unsigned lon
       elem[i]->SetColor(part[i]);
   }
 }
+#endif
+#endif
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
 

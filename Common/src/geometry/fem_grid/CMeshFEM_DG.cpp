@@ -2069,10 +2069,13 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*--- Allocate the memory for the matching faces. ---*/
   matchingFaces.resize(nMatchingFacesWithHaloElem[nTimeLevels]);
 
+  /*--- Initialize the boolean that an element is adjacent to a
+        lower time level to false. ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i)
+    volElem[i].elemAdjLowerTimeLevel = false;
+
   /*--- Initialize the matching faces and flag the elements that share
         one or more faces with elements from a lower time level. ---*/
-  vector<bool> elemAdjLowTimeLevel(nVolElemTot, false);
-
   unsigned long ii = 0;
   for(unsigned long i=0; i<localFaces.size(); ++i) {
 
@@ -2089,9 +2092,9 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       ++ii;
 
       /*--- Compare the time levels of the adjacent elements and set
-            elemAdjLowTimeLevel accordingly. ---*/
-      if(volElem[e0].timeLevel > volElem[e1].timeLevel) elemAdjLowTimeLevel[e0] = true;
-      if(volElem[e1].timeLevel > volElem[e0].timeLevel) elemAdjLowTimeLevel[e1] = true;
+            elemAdjLowerTimeLevel accordingly. ---*/
+      if(volElem[e0].timeLevel > volElem[e1].timeLevel) volElem[e0].elemAdjLowerTimeLevel = true;
+      if(volElem[e1].timeLevel > volElem[e0].timeLevel) volElem[e1].elemAdjLowerTimeLevel = true;
     }
   }
 
@@ -2102,12 +2105,12 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   haloElemAdjLowTimeLevel.resize(nTimeLevels);
 
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
-    if( elemAdjLowTimeLevel[i] )
+    if( volElem[i].elemAdjLowerTimeLevel )
       ownedElemAdjLowTimeLevel[volElem[i].timeLevel].push_back(i);
   }
 
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
-    if( elemAdjLowTimeLevel[i] )
+    if( volElem[i].elemAdjLowerTimeLevel )
       haloElemAdjLowTimeLevel[volElem[i].timeLevel].push_back(i);
   }
 

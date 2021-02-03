@@ -41,6 +41,10 @@ using namespace std;
 class CVolumeElementFEM_DG final: public CVolumeElementFEM_Base {
 public:
 
+  bool elemAdjLowerTimeLevel;  /*!< \brief Whether or not the element is adjacent to a lower
+                                           time level when time accurate local time stepping
+                                           is employed. */
+
   short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
                                            element. Only for halo elements. A -1 indicates no
                                            periodic transformation. */
@@ -59,8 +63,37 @@ public:
                                                            with non-aliased predictor for the
                                                            Navier-Stokes equations). */
 
+  ColMajorMatrix<su2double> solDOFs;                        /*!< \brief The solution in the DOFs. */
+  ColMajorMatrix<su2double> solDOFsWork;                    /*!< \brief The working variables in the DOFs. */
+  ColMajorMatrix<su2double> solDOFsAux;                     /*!< \brief Auxiliary solution in the DOFs. For the
+                                                                        classical RK4 scheme is this the new solution
+                                                                        while for ADER it may contain the solution
+                                                                        of a previous time level. */
+  vector<ColMajorMatrix<su2double> > solDOFsADERPredictor;  /*!< \brief The vector containing the predictor solution
+                                                                        in the DOFs (space and time) for ADER. */
+  
+  ColMajorMatrix<su2double> resDOFs;         /*!< \brief The residual in the solution DOFs. */
+  ColMajorMatrix<su2double> resTotDOFsADER;  /*!< \brief The total residuals in the solution DOFs for ADER. */
+
   CFEMStandardElementBase *standardElemFlow = nullptr; /*!< \brief Pointer to the standard element for the
                                                                    standard flow solution variables. */
   CFEMStandardElementBase *standardElemP    = nullptr; /*!< \brief Pointer to the standard element for the
                                                                    pressure for an incompressible flow. */
+
+  /*!
+   * \brief Function, which allocate the memory for the compressible
+   *        flow variables.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar   - Number of flow variables.
+   */
+  void AllocateCompressibleFlowVar(CConfig        *config,
+                                   unsigned short nVar);
+
+  /*!
+   * \brief Function, which allocate the memory for the residuals.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar   - Number of flow variables.
+   */
+  void AllocateResiduals(CConfig        *config,
+                         unsigned short nVar);
 };

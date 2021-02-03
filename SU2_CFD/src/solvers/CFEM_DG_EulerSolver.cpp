@@ -58,9 +58,57 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
                                          unsigned short iMesh)
   : CFEM_DG_SolverBase(geometry, config, iMesh) {
 
-  /*--- Set the gamma value ---*/
+  /*--- Set the gamma value and the number of variables. ---*/
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
+  nVar = nDim + 2;
+
+  /*--- Define some auxiliary vectors related to the residual ---*/
+  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
+  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 1.e-35;
+  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
+
+  Point_Max_Coord = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+
+  /*--- Perform the non-dimensionalization for the flow equations using the
+        specified reference values. ---*/
+  SetNondimensionalization(config, iMesh, true);
+
+  /*--- Check if we are executing a verification case. If so, the
+        VerificationSolution object will be instantiated for a particular
+        option from the available library of verification solutions. Note
+        that this is done after SetNondim(), as problem-specific initial
+        parameters are needed by the solution constructors. ---*/
+  SetVerificationSolution(nDim, nVar, config);
+
+  /*--- Read farfield conditions ---*/
+  Density_Inf     = config->GetDensity_FreeStreamND();
+  Pressure_Inf    = config->GetPressure_FreeStreamND();
+  Velocity_Inf    = config->GetVelocity_FreeStreamND();
+  Energy_Inf      = config->GetEnergy_FreeStreamND();
+  Temperature_Inf = config->GetTemperature_FreeStreamND();
+  Mach_Inf        = config->GetMach();
+
+  /*--- Set the conservative variables of the free-stream. ---*/
+  ConsVarFreeStream.resize(nVar);
+
+  ConsVarFreeStream[0]      = Density_Inf;
+  ConsVarFreeStream[nVar-1] = Density_Inf*Energy_Inf;
+
+  for(unsigned short iDim=0; iDim<nDim; ++iDim)
+    ConsVarFreeStream[iDim+1] = Density_Inf*Velocity_Inf[iDim];
+
+  /*--- Loop over the volume elements and allocate the
+        memory to store the volume solution(s) and
+        the residuals. ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    volElem[i].AllocateCompressibleFlowVar(config, nVar);
+    volElem[i].AllocateResiduals(config, nVar);
+  }
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

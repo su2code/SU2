@@ -56,6 +56,9 @@ protected:
   su2double StrainMag_Max; /*!< \brief Maximum Strain Rate magnitude. */
   su2double Omega_Max;     /*!< \brief Maximum Omega. */
 
+  vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
+                                                   conservative variables. */
+
   AeroCoeffsArray InvCoeff;        /*!< \brief Inviscid pressure contributions for each boundary. */
   AeroCoeffsArray SurfaceInvCoeff; /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
   AeroCoeffs AllBoundInvCoeff;     /*!< \brief Total pressure contribution for all the boundaries. */
@@ -69,6 +72,10 @@ protected:
 
   unsigned long nVolElemTot   = 0;    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned = 0;    /*!< \brief Number of owned local volume elements. */
+
+  unsigned long nDOFsLocOwned = 0;    /*!< \brief Number of owned local DOFs. */
+  unsigned long nDOFsLocTot   = 0;    /*!< \brief Total number of local DOFs, including halos. */
+  unsigned long nDOFsGlobal   = 0;    /*!< \brief Number of global DOFs. */
 
   unsigned int sizeWorkArray = 0;     /*!< \brief The size of the work array needed. */
 
@@ -86,6 +93,12 @@ protected:
                                                                        adjacent to elements of the lower time level. */
   vector<vector<unsigned long> > haloElemAdjLowTimeLevel;  /*!< \brief List of halo elements per time level that are
                                                                        adjacent to elements of the lower time level. */
+  
+  vector<vector<unsigned long> > adjMatchingFacesOfVolElem; /*!< \brief The ID's of the adjacent matching faces
+                                                                        for all volume elements. */
+  
+  vector<vector<vector<unsigned long> > > adjSurfacesOfVolElem; /*!< \brief The ID's of the adjacent surfaces of the
+                                                                            physical boundaries for all volume elements. */
 
   unsigned long nMeshPoints = 0;    /*!< \brief Number of mesh points in the local part of the grid. */
   CPointFEM *meshPoints = nullptr;  /*!< \brief Array of the points of the FEM mesh. */
@@ -111,6 +124,11 @@ protected:
 
   bool symmetrizingTermsPresent = true;  /*!< \brief Whether or not symmetrizing terms are present in the
                                                      discretization. */
+
+  vector<unsigned long> nDOFsPerRank;    /*!< \brief Number of DOFs per rank in cumulative storage format. */
+
+  vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
+                                                                     non-zero entries of the Jacobian. */
 
 #ifdef HAVE_MPI
   vector<vector<SU2_MPI::Request> > commRequests;  /*!< \brief Communication requests in the communication of the solution for all
@@ -174,4 +192,12 @@ protected:
 
 private:
 
+  /*!
+   * \brief Function, which computes the graph of the spatial discretization
+            for the locally owned DOFs.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  void DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
+                          CConfig           *config);
 };

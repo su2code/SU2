@@ -33,6 +33,32 @@ CFEM_DG_IncEulerSolver::CFEM_DG_IncEulerSolver(CGeometry      *geometry,
                                                unsigned short iMesh)
   : CFEM_DG_SolverBase(geometry, config, iMesh) {
 
+  /*--- Set the number of variables. ---*/
+  nVar = nDim + 1;
+
+  /*--- Define some auxiliary vectors related to the residual ---*/
+  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 1.e-35;
+  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 1.e-35;
+  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
+
+  Point_Max_Coord = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+
+  /*--- Determine the local and total number of pressure DOFs in the simulation. ---*/
+  nPDOFsLocOwned = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i)
+    nPDOFsLocOwned += volElem[i].standardElemP->GetNDOFs();
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nPDOFsLocOwned, &nPDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nPDOFsGlobal = nPDOFsLocOwned;
+#endif
+
+
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }
 

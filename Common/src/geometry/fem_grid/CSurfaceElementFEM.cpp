@@ -100,8 +100,10 @@ void CSurfaceElementFEM::MetricTermsIntegrationPoints(const unsigned short      
   metricNormalsFace.resize(nIntPad, nDim);
 
   metricCoorDerivFace.resize(nDim);
-  for(unsigned short k=0; k<nDim; ++k)
+  for(unsigned short k=0; k<nDim; ++k) {
     metricCoorDerivFace[k].resize(nIntPad, nDim);
+    metricCoorDerivFace[k].setConstant(0.0);      // To avoid uninitialized data
+  }                                               // for the padded points.
 
   /*--- Compute the metric terms in the surface integration points. ---*/
   standardElemGrid->MetricTermsSurfaceIntPoints(volElem[volElemID].coorGridDOFs,
