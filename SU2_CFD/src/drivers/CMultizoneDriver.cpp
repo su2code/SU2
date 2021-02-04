@@ -263,7 +263,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     }
   }
 
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++) {

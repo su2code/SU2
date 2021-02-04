@@ -136,8 +136,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     su2double MyOmega_Max = Omega_Max;
     //su2double MyStrainMag_Max = StrainMag_Max;
-    //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    //SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
   }
 }
