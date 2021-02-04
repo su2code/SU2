@@ -103,19 +103,15 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
     if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
-    // Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-    Jacobian.Initialize(nPoint, nPoint, nVar, nVar, true, geometry, config, ReducerStrategy);
-
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
 
-    // LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    // LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysSol.Initialize(nPoint, nPoint, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPoint, nVar, 0.0);
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
     if (ReducerStrategy)
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);

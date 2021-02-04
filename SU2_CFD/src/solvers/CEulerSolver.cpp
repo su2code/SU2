@@ -207,10 +207,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
 
-  // LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  // LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysSol.Initialize(nPoint, nPoint, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPoint, nVar, 0.0);
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
@@ -277,8 +275,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    // Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-    Jacobian.Initialize(nPoint, nPoint, nVar, nVar, true, geometry, config, ReducerStrategy);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -5491,11 +5488,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   {
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      // LinSysRes.SetBlock_Zero(iPoint);
-      for (auto iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = - LinSysRes[total_index];
-      }
+      LinSysRes.SetBlock_Zero(iPoint);
 
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
