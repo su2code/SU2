@@ -88,11 +88,6 @@ public:
   virtual ~CIntegration(void) = default;
 
   /*!
-   * \brief Return true if the integration already considers all solvers.
-   */
-  inline virtual bool IsFullyCoupled(void) const { return false; }
-
-  /*!
    * \brief Get the indicator of the convergence for the direct, adjoint and linearized problem.
    * \return <code>TRUE</code> means that the convergence criteria is satisfied;
    *         otherwise <code>FALSE</code>.

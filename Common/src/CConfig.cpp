@@ -1572,8 +1572,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
-  /* DESCRIPTION: Use a coupled Newton method. */
-  addBoolOption("COUPLED_NEWTON_METHOD", CoupledNewton, false);
+  /* DESCRIPTION: Use a Newton-Krylov method. */
+  addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
@@ -4358,7 +4358,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Fixed_CM_Mode) Update_HTPIncidence = false;
 
   if (DirectDiff != NO_DERIVATIVE) {
-#if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
+#ifndef CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
         SU2_MPI::Error(string("SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!\n") +
                        string("Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)."),

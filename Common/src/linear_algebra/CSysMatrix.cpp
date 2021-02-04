@@ -443,7 +443,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
           /*--- Store the data correctly depending on the quantity. ---*/
 
           for (iVar = 0; iVar < nVar; iVar++)
-            x(iPoint,iVar) = ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
+            x(iPoint,iVar) = ActiveAssign<OtherType>(bufDRecv[buf_offset+iVar]);
         }
         break;
 
@@ -482,7 +482,7 @@ void CSysMatrix<ScalarType>::CompleteComms(CSysVector<OtherType> & x,
           /*--- Update receiving point. ---*/
 
           for (iVar = 0; iVar < nEqn; iVar++)
-            x(iPoint,iVar) += ActiveAssign<OtherType,su2double>(bufDRecv[buf_offset+iVar]);
+            x(iPoint,iVar) += ActiveAssign<OtherType>(bufDRecv[buf_offset+iVar]);
         }
         break;
 
@@ -1398,33 +1398,33 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #endif
 }
 
+#define INSTANTIATE_COMMS(TYPE_1,TYPE_2)\
+template void CSysMatrix<TYPE_1>::InitiateComms(const CSysVector<TYPE_2>&, CGeometry*, const CConfig*, unsigned short) const;\
+template void CSysMatrix<TYPE_1>::CompleteComms(CSysVector<TYPE_2>&, CGeometry*, const CConfig*, unsigned short) const;
+
+#define INSTANTIATE_MATRIX(TYPE)\
+template class CSysMatrix<TYPE>;\
+INSTANTIATE_COMMS(TYPE, TYPE)\
+template void CSysMatrix<TYPE>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);\
+template void CSysMatrix<TYPE>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+
 /*--- Explicit instantiations ---*/
 #ifdef CODI_FORWARD_TYPE
 /*--- In forward AD only the active type is used. ---*/
-template class CSysMatrix<su2double>;
-template void CSysMatrix<su2double>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2double>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2double>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void CSysMatrix<su2double>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+INSTANTIATE_MATRIX(su2double)
 #else
-/*--- Base and reverse AD, matrix is passive (either float or double). ---*/
-template class CSysMatrix<su2mixedfloat>;
-template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2mixedfloat>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void CSysMatrix<su2mixedfloat>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
+/*--- Base and reverse AD, matrix is passive. ---*/
+INSTANTIATE_MATRIX(su2mixedfloat)
+/*--- If using mixed precision (float) instantiate also a version for doubles, and allow cross communication. ---*/
 #ifdef USE_MIXED_PRECISION
-template class CSysMatrix<passivedouble>;
-template void CSysMatrix<passivedouble>::InitiateComms(const CSysVector<passivedouble>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<passivedouble>::CompleteComms(CSysVector<passivedouble>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<passivedouble>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&);
-template void CSysMatrix<passivedouble>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double, CSysVector<su2double>&);
-/*--- In reverse AD (or mixed precision) the passive matrix is also used to communicate active (or double) vectors resp.. ---*/
-template void CSysMatrix<su2mixedfloat>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<su2mixedfloat>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+INSTANTIATE_MATRIX(passivedouble)
+INSTANTIATE_COMMS(su2mixedfloat,passivedouble)
 #endif
+/*--- Allow more cross-comms for reverse AD. ---*/
 #ifdef CODI_REVERSE_TYPE
-template void CSysMatrix<passivedouble>::InitiateComms(const CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
-template void CSysMatrix<passivedouble>::CompleteComms(CSysVector<su2double>&, CGeometry*, const CConfig*, unsigned short) const;
+INSTANTIATE_COMMS(su2mixedfloat,su2double)
+#ifdef USE_MIXED_PRECISION
+INSTANTIATE_COMMS(passivedouble,su2double)
+#endif
 #endif
 #endif // CODI_FORWARD_TYPE

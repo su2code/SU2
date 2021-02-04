@@ -163,9 +163,11 @@ private:
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
-   * \note See specialization for discrete adjoint right outside this class's declaration.
    */
-  template<class DstType, class SrcType>
+  template<class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
+
+  template<class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
   FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return val; }
 
   /*!
@@ -918,12 +920,3 @@ public:
                                    CGeometry *geometry, const CConfig *config) const;
 
 };
-
-#ifdef CODI_REVERSE_TYPE
-template<> template<>
-FORCEINLINE su2mixedfloat CSysMatrix<su2mixedfloat>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
-#ifdef USE_MIXED_PRECISION
-template<> template<>
-FORCEINLINE passivedouble CSysMatrix<passivedouble>::ActiveAssign(const su2double& val) { return SU2_TYPE::GetValue(val); }
-#endif
-#endif

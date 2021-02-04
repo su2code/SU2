@@ -416,7 +416,7 @@ private:
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
-  bool CoupledNewton;          /*!< \brief Use a coupled Newton method to solve the equations. */
+  bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the equations. */
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -3972,9 +3972,9 @@ public:
   bool GetUseVectorization(void) const { return UseVectorization; }
 
   /*!
-   * \brief Get whether to use a coupled Newton method.
+   * \brief Get whether to use a Newton-Krylov method.
    */
-  bool GetCoupledNewton(void) const { return CoupledNewton; }
+  bool GetNewtonKrylov(void) const { return NewtonKrylov; }
 
   /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.

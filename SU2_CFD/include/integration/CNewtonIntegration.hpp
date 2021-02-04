@@ -1,6 +1,6 @@
 /*!
  * \file CNewtonIntegration.hpp
- * \brief Coupled Newton integration.
+ * \brief Newton-Krylov integration.
  * \author P. Gomes
  * \version 7.1.0 "Blackbird"
  *
@@ -26,11 +26,13 @@
  */
 
 #include "CIntegration.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 /*!
  * \class CNewtonIntegration
- * \brief Class for time integration using a coupled Newton method, based
+ * \brief Class for time integration using a Newton-Krylov method, based
  * on matrix-free products with the true Jacobian via finite differences.
  */
 class CNewtonIntegration final : public CIntegration {
@@ -49,54 +51,73 @@ private:
   /*--- Residual evaluation modes, explicit for products, default to allow preconditioners to be built. ---*/
   enum ResEvalType {EXPLICIT, DEFAULT};
 
-  bool thread_safe;             /*!< \brief If all target solvers support OpenMP. */
+  bool setup = false;
+  Scalar finDiffStep = 0.0; /*!< \brief Based on RMS(solution), used in matrix-free products. */
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
-
-  unsigned short KindFlowSol = 0;
-  unsigned short KindSol2EqSys[MAX_SOLS] = {0}; /*!< \brief Deduce runtime equations from solver position. */
-
-  Scalar finDiffStep = 0.0;     /*!< \brief Based on RMS(solution), used in matrix-free products. */
 
   CConfig* config = nullptr;
   CSolver** solvers = nullptr;
   CGeometry* geometry = nullptr;
   CNumerics*** numerics = nullptr;
 
-  std::vector<unsigned> kindSol; /*!< \brief Positions of the target solvers. */
-  std::vector<unsigned> nVars;   /*!< \brief Number of variables for each target solver. */
-
-  /*--- Residual, solution, and linear solver for the coupled problem. ---*/
+  /*--- Residual and linear solver. ---*/
   CSysVector<Scalar> LinSysRes;
-  CSysVector<Scalar> LinSysSol;
   CSysSolve<Scalar> LinSolver;
 
+  /*--- If possible the solution vector of the solver is re-used, otherwise this temporary is used. ---*/
+  CSysVector<Scalar> LinSysSol;
+
+  template<class T, su2enable_if<std::is_same<T,Scalar>::value> = 0>
+  inline CSysVector<Scalar>& GetSolutionVec(CSysVector<T>& x) { return x; }
+
+  template<class T, su2enable_if<std::is_same<T,Scalar>::value> = 0>
+  inline void SetSolutionResult(CSysVector<T>&) const { }
+
+  template<class T, su2enable_if<!std::is_same<T,Scalar>::value> = 0>
+  inline CSysVector<Scalar>& GetSolutionVec(CSysVector<T>& x) {
+    LinSysSol = Scalar(0.0);
+    return LinSysSol;
+  }
+
+  template<class T, su2enable_if<!std::is_same<T,Scalar>::value> = 0>
+  inline void SetSolutionResult(CSysVector<T>& x) const {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto i = 0ul; i < x.GetLocSize(); ++i) x[i] = LinSysSol[i];
+  }
+
   /*--- Preconditioner objects for each active solver. ---*/
-  std::vector<CPreconditioner<MixedScalar>*> preconditioners;
+  CPreconditioner<MixedScalar>* preconditioner = nullptr;
 
-  /*--- If mixed precision is used these temporaries are
-   *    used to interface with the preconditioners. ---*/
-  mutable std::vector<CSysVector<MixedScalar> > precondIn, precondOut;
-
-  template<class T, su2enable_if<!std::is_same<T,MixedScalar>::value> = 0>
-  inline CSysVector<MixedScalar>& GetPrecVecIn(size_t i) const { return precondIn[i]; }
+  /*--- If mixed precision is used, these temporaries are used to interface with the preconditioner. ---*/
+  mutable CSysVector<MixedScalar> precondIn, precondOut;
 
   template<class T, su2enable_if<!std::is_same<T,MixedScalar>::value> = 0>
-  inline CSysVector<MixedScalar>& GetPrecVecOut(size_t i) const { return precondOut[i]; }
+  inline void Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v) const {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto i = 0ul; i < u.GetLocSize(); ++i) precondIn[i] = u[i];
 
-  /*--- Otherwise we borrow the memory of the solvers. ---*/
-  template<class T, su2enable_if<std::is_same<T,MixedScalar>::value> = 0>
-  inline CSysVector<MixedScalar>& GetPrecVecIn(size_t i) const { return solvers[kindSol[i]]->LinSysRes; }
+    (*preconditioner)(precondIn, precondOut);
 
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto i = 0ul; i < u.GetLocSize(); ++i) v[i] = precondOut[i];
+  }
+
+  /*--- Otherwise they are not needed. ---*/
   template<class T, su2enable_if<std::is_same<T,MixedScalar>::value> = 0>
-  inline CSysVector<MixedScalar>& GetPrecVecOut(size_t i) const { return solvers[kindSol[i]]->LinSysSol; }
+  inline void Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v) const { (*preconditioner)(u, v); }
 
   /*!
-   * \brief List target solvers, gather their info, etc..
+   * \brief Gather solver info, etc..
    */
   void Setup();
 
   /*!
-   * \brief Evaluate the nonlinear residual of target solvers, which should be capable of alternating
+   * \brief Increment the solution, x := x+mag*dir.
+   */
+  void PerturbSolution(const CSysVector<Scalar>& direction, Scalar magnitude);
+
+  /*!
+   * \brief Evaluate the nonlinear residual of the solver, which should be capable of alternating
    * between implicit and explicit iterations to save time during matrix-free products.
    */
   void ComputeResiduals(ResEvalType type);
@@ -105,17 +126,12 @@ public:
   /*!
    * \brief Constructor.
    */
-  CNewtonIntegration();
+  CNewtonIntegration() = default;
 
   /*!
    * \brief Destructor.
    */
   ~CNewtonIntegration();
-
-  /*!
-   * \brief Return true if the integration already considers all solvers.
-   */
-  inline bool IsFullyCoupled(void) const override { return true; }
 
   /*!
    * \brief This class overrides this method to make it a drop-in replacement for CMultigridIntegration.
@@ -137,8 +153,8 @@ public:
   void MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
 
   /*!
-   * \brief Implementation of the block-Jacobi preconditioner.
+   * \brief Wrapper for the preconditioner.
    */
-  void BlockJacobiPrecond(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const;
+  void Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const;
 
 };

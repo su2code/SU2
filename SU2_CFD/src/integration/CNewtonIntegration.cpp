@@ -1,6 +1,6 @@
 /*!
  * \file CNewtonIntegration.cpp
- * \brief Coupled Newton integration.
+ * \brief Newton-Krylov integration.
  * \author P. Gomes
  * \version 7.1.0 "Blackbird"
  *
@@ -26,12 +26,7 @@
  */
 
 #include "../../include/integration/CNewtonIntegration.hpp"
-#include "../../../Common/include/parallelization/omp_structure.hpp"
-#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
-#include "../../../Common/include/linear_algebra/CSysSolve.hpp"
-
-#define PARALLEL_FOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
 
 using Scalar = CNewtonIntegration::Scalar;
 
@@ -50,141 +45,98 @@ public:
   }
 };
 
-class CBlockJacobiPrecondWrapper final : public CPreconditioner<Scalar> {
+class CPreconditionerWrapper final : public CPreconditioner<Scalar> {
   const CNewtonIntegration* integration;
 public:
-  CBlockJacobiPrecondWrapper(const CNewtonIntegration* i) : integration(i) {}
+  CPreconditionerWrapper(const CNewtonIntegration* i) : integration(i) {}
 
   /*!
    * \brief Operator for the preconditioning operation.
    */
   inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override {
-    integration->BlockJacobiPrecond(u, v);
+    integration->Preconditioner(u, v);
   }
 };
 }
 
-CNewtonIntegration::CNewtonIntegration() {
-  KindSol2EqSys[FLOW_SOL] = RUNTIME_FLOW_SYS;
-  KindSol2EqSys[TURB_SOL] = RUNTIME_TURB_SYS;
-/// TODO: These solvers need Prepare/CompleteImplicitIteration methods.
-//  KindSol2EqSys[HEAT_SOL] = RUNTIME_HEAT_SYS;
-//  KindSol2EqSys[RAD_SOL] = RUNTIME_RADIATION_SYS;
-}
-
-CNewtonIntegration::~CNewtonIntegration() {
-  for (auto p : preconditioners) delete p;
-}
+CNewtonIntegration::~CNewtonIntegration() { delete preconditioner; }
 
 void CNewtonIntegration::Setup() {
 
-  if (!kindSol.empty()) return;
-
-  KindFlowSol = EULER;
-  if (config->GetViscous()) KindFlowSol = NAVIER_STOKES;
-  if (solvers[TURB_SOL]) KindFlowSol = RANS;
-
+  const auto nVar = solvers[FLOW_SOL]->GetnVar();
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
-  unsigned long nVarTot = 0;
 
-  thread_safe = true;
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), 512);
 
-  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    if (solvers[iSol] && iSol != MESH_SOL && iSol != ADJMESH_SOL) {
+  /*--- Check if the solver is able to provide a linear preconditioner. ---*/
+  if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
 
-      if (KindSol2EqSys[iSol] == 0)
-        SU2_MPI::Error("Some of the solvers do not support the coupled Newton method.", CURRENT_FUNCTION);
+    auto& p = preconditioner;
 
-      auto nVar = solvers[iSol]->GetnVar();
-      kindSol.push_back(iSol);
-      nVars.push_back(nVar);
-      nVarTot += nVar;
+    switch (config->GetKind_Linear_Solver_Prec()) {
+      case JACOBI:
+        p = new CJacobiPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
+        break;
+      case LINELET:
+        p = new CLineletPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
+        break;
+      case LU_SGS:
+        p = new CLU_SGSPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
+        break;
+      case ILU:
+        p = new CILUPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
+        break;
+      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+        p = new CPastixPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config,
+                                                   config->GetKind_Linear_Solver_Prec(), false);
+        break;
+    }
 
-      thread_safe &= solvers[iSol]->GetHasHybridParallel();
-
-      preconditioners.push_back(nullptr);
-      precondIn.push_back(CSysVector<MixedScalar>());
-      precondOut.push_back(CSysVector<MixedScalar>());
-
-      /*--- Check if the solver is able to provide a linear preconditioner. ---*/
-      if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) continue;
-
-      auto& p = preconditioners.back();
-
-      switch (config->GetKind_Linear_Solver_Prec()) {
-        case JACOBI:
-          p = new CJacobiPreconditioner<MixedScalar>(solvers[iSol]->Jacobian, geometry, config, false);
-          break;
-        case LINELET:
-          p = new CLineletPreconditioner<MixedScalar>(solvers[iSol]->Jacobian, geometry, config);
-          break;
-        case LU_SGS:
-          p = new CLU_SGSPreconditioner<MixedScalar>(solvers[iSol]->Jacobian, geometry, config);
-          break;
-        case ILU:
-          p = new CILUPreconditioner<MixedScalar>(solvers[iSol]->Jacobian, geometry, config, false);
-          break;
-        case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-          p = new CPastixPreconditioner<MixedScalar>(solvers[iSol]->Jacobian, geometry, config,
-                                                     config->GetKind_Linear_Solver_Prec(), false);
-          break;
-      }
-
-      if (!std::is_same<Scalar,MixedScalar>::value) {
-        precondIn.back().Initialize(nPoint, nPointDomain, nVar, nullptr);
-        precondOut.back().Initialize(nPoint, nPointDomain, nVar, nullptr);
-      }
+    if (!std::is_same<Scalar,MixedScalar>::value) {
+      precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);
+      precondOut.Initialize(nPoint, nPointDomain, nVar, nullptr);
     }
   }
 
-  LinSysRes.Initialize(nPoint, nPointDomain, nVarTot, nullptr);
-  LinSysSol.Initialize(nPoint, nPointDomain, nVarTot, nullptr);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  if (!std::is_same<Scalar,su2double>::value) {
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+  }
+}
+
+void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar mag) {
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < solvers[FLOW_SOL]->GetnVar(); ++iVar)
+      solvers[FLOW_SOL]->GetNodes()->AddSolution(iPoint,iVar, mag*dir(iPoint,iVar));
+  }
 }
 
 void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
-  /*--- Running all the pre and post processings first captures e.g. the
-   * dependency of the flow residuals on the eddy viscosity. Sounds good
-   * but the linear solver does not like it. If not done that way we get
-   * a more triangular Jacobian, i.e. better conditioned. ---*/
-
-  constexpr bool reallyCoupled = false;
-
-  for (int step=0; step<1+reallyCoupled; ++step) {
-    for (auto pos : kindSol) {
-      /*--- Set global config parameters for the solver. ---*/
-      const auto eqSys = KindSol2EqSys[pos];
-      SU2_OMP_MASTER
-      config->SetGlobalParam(KindFlowSol, eqSys);
-      SU2_OMP_BARRIER
-
-      /*--- Save the default integration scheme, and force to explicit if required. ---*/
-      auto TimeIntScheme = config->GetKind_TimeIntScheme();
-      if (type == EXPLICIT) {
-        SU2_OMP_MASTER
-        config->SetKind_TimeIntScheme(EULER_EXPLICIT);
-        SU2_OMP_BARRIER
-      }
-
-      if (step==0) {
-        solvers[pos]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, eqSys, false);
-        if (reallyCoupled) solvers[pos]->Postprocessing(geometry, solvers, config, MESH_0);
-      }
-      if (step>0 || !reallyCoupled) {
-        Space_Integration(geometry, solvers, numerics[pos], config, MESH_0, NO_RK_ITER, eqSys);
-      }
-
-      /*--- Restore default. ---*/
-      if (type == EXPLICIT) {
-        SU2_OMP_MASTER
-        config->SetKind_TimeIntScheme(TimeIntScheme);
-        SU2_OMP_BARRIER
-      }
-    }
+  /*--- Save the default integration scheme, and force to explicit if required. ---*/
+  auto TimeIntScheme = config->GetKind_TimeIntScheme();
+  if (type == EXPLICIT) {
+    SU2_OMP_MASTER
+    config->SetKind_TimeIntScheme(EULER_EXPLICIT);
+    SU2_OMP_BARRIER
   }
+
+  solvers[FLOW_SOL]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  Space_Integration(geometry, solvers, numerics[FLOW_SOL], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS);
+
+  /*--- Restore default. ---*/
+  if (type == EXPLICIT) {
+    SU2_OMP_MASTER
+    config->SetKind_TimeIntScheme(TimeIntScheme);
+    SU2_OMP_BARRIER
+  }
+
 }
 
 void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
@@ -195,115 +147,85 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   geometry = geometry_[iZone][iInst][MESH_0];
   numerics = numerics_[iZone][iInst][MESH_0];
 
-  Setup();
+  if (!setup) { Setup(); setup = true; }
 
   /*--- The step for finite-difference-based matrix-free product depends on the RMS of the solution. ---*/
   su2double rmsSol = 0.0;
 
-  SU2_OMP_PARALLEL_(if(thread_safe)) {
+  SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
 
-  /*--- Compute the current residual and the approximate Jacobians for preconditioning. ---*/
+  /*--- Compute the current residual and the approximate Jacobian for preconditioning. ---*/
 
   ComputeResiduals(DEFAULT);
 
-  for (unsigned long iSol = 0, offset = 0; iSol < kindSol.size(); ++iSol) {
-    const auto pos = kindSol[iSol];
-    const auto nVar = nVars[iSol];
+  solvers[FLOW_SOL]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
 
-    const auto eqSys = KindSol2EqSys[pos];
-    SU2_OMP_MASTER
-    config->SetGlobalParam(KindFlowSol, eqSys);
-    SU2_OMP_BARRIER
+  solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
 
-    solvers[pos]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
+  if (preconditioner) preconditioner->Build();
 
-    solvers[pos]->PrepareImplicitIteration(geometry, solvers, config);
+  /*--- Save current residuals and the solution to be able to perturb it. ---*/
 
-    /*--- Save current solution to be able to perturb it. ---*/
-    solvers[pos]->GetNodes()->Set_OldSolution();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i = 0ul; i < LinSysRes.GetNElmDomain(); ++i)
+    LinSysRes[i] = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
 
-    /*--- Aggregate residuals. ---*/
-    su2double rmsSol_loc = 0.0;
+  solvers[FLOW_SOL]->Set_OldSolution();
 
-    PARALLEL_FOR
-    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
-      for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-        rmsSol_loc += pow(solvers[pos]->GetNodes()->GetSolution(iPoint,iVar), 2);
-        LinSysRes(iPoint, offset+iVar) = SU2_TYPE::GetValue(solvers[pos]->LinSysRes(iPoint, iVar));
-      }
-    }
-    atomicAdd(rmsSol_loc, rmsSol);
+  /*--- Compute RMS(solution). ---*/
 
-    offset += nVar;
+  su2double rmsSol_loc = 0.0;
 
-    /*--- Build preconditioner. ---*/
-    if (preconditioners[iSol]) preconditioners[iSol]->Build();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint)
+    for (auto iVar = 0ul; iVar < solvers[FLOW_SOL]->GetnVar(); ++iVar)
+      rmsSol_loc += pow(solvers[FLOW_SOL]->GetNodes()->GetSolution(iPoint,iVar), 2);
 
-  }
+  atomicAdd(rmsSol_loc, rmsSol);
+
   SU2_OMP_BARRIER
-
   SU2_OMP_MASTER {
-    SU2_MPI::Allreduce(&rmsSol, &finDiffStep, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    su2double t = rmsSol;
+    SU2_MPI::Allreduce(&t, &rmsSol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     /// TODO: Customize the step size (1e-4).
-    /// TODO: Can we have one step size per variable? Probably not...
-    finDiffStep = 1e-4 * max(1.0, sqrt(finDiffStep / geometry->GetGlobal_nPointDomain()));
+    finDiffStep = 1e-4 * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
   }
   SU2_OMP_BARRIER
 
-  /*--- Solve for the search direction. ---*/
+  /*--- Solve for the solution update. ---*/
 
   CMatrixFreeProductWrapper product(this);
-  CBlockJacobiPrecondWrapper precond(this);
+  CPreconditionerWrapper precond(this);
+  auto& linSysSol = GetSolutionVec(solvers[FLOW_SOL]->LinSysSol);
 
-  LinSysSol = Scalar(0.0);
-
-  auto iter = config->GetLinear_Solver_Iter();
-  Scalar tol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
   Scalar eps = 0.0;
-  auto nIter = LinSolver.FGMRES_LinSolver(LinSysRes, LinSysSol, product, precond,
+  Scalar tol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+  auto iter = config->GetLinear_Solver_Iter();
+
+  auto nIter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, product, precond,
                                           tol, iter, eps, false, config, true);
-  SU2_OMP_MASTER
-  for (auto pos : kindSol) {
-    solvers[pos]->SetIterLinSolver(nIter);
-    solvers[pos]->SetResLinSolver(eps);
+  SU2_OMP_MASTER {
+    solvers[FLOW_SOL]->SetIterLinSolver(nIter);
+    solvers[FLOW_SOL]->SetResLinSolver(eps);
   }
-  SU2_OMP_BARRIER
+  SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
+
+  /// TODO: Clever back-tracking and CFL adaptation based on residual reduction.
 
   /*--- Update solution. ---*/
-  /* For now we let each solver handle the search direction, using its own form of under-relaxation
-   * to then adapt the CFL. However we should also check global descent, and use a back-tracking
-   * strategy that informs the CFL adaptation to increase/decrease/freeze. */
 
-  for (unsigned long iSol = 0, offset = 0; iSol < kindSol.size(); ++iSol) {
-    const auto pos = kindSol[iSol];
-    const auto nVar = nVars[iSol];
+  solvers[FLOW_SOL]->CompleteImplicitIteration(geometry, solvers, config);
 
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint)
-      for (auto iVar = 0ul; iVar < nVar; ++iVar)
-        solvers[pos]->LinSysSol(iPoint,iVar) = LinSysSol(iPoint,offset+iVar);
+  /*--- Call the various post processings. ---*/
 
-    solvers[pos]->CompleteImplicitIteration(geometry, solvers, config);
+  solvers[FLOW_SOL]->Preprocessing(geometry, solvers, config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
-    /*--- Call the various post processings to replicate what happens in Single and MG iterations,
-     * it does not seem be important to run the flow solver preprocessing in output-mode. ---*/
+  solvers[FLOW_SOL]->Postprocessing(geometry, solvers, config, MESH_0);
 
-    solvers[pos]->Postprocessing(geometry, solvers, config, MESH_0);
-
-    SU2_OMP_MASTER
-    switch (KindSol2EqSys[pos]) {
-      case RUNTIME_FLOW_SYS:
-        solvers[pos]->Pressure_Forces(geometry, config);
-        solvers[pos]->Momentum_Forces(geometry, config);
-        solvers[pos]->Friction_Forces(geometry, config);
-        break;
-      case RUNTIME_HEAT_SYS:
-        solvers[pos]->Heat_Fluxes(geometry, solvers, config);
-        break;
-    }
-    SU2_OMP_BARRIER
-
-    offset += nVar;
+  SU2_OMP_MASTER {
+    solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
+    solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
+    solvers[FLOW_SOL]->Friction_Forces(geometry, config);
   }
 
   } // end SU2_OMP_PARALLEL
@@ -311,92 +233,53 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
 void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
 
-  /*--- Perturb the solution. ---*/
   Scalar factor = finDiffStep / u.norm();
 
-  for (unsigned long iSol = 0, offset = 0; iSol < kindSol.size(); ++iSol) {
-    const auto pos = kindSol[iSol];
-    const auto nVar = nVars[iSol];
-
-    PARALLEL_FOR
-    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint)
-      for (auto iVar = 0ul; iVar < nVar; ++iVar)
-        solvers[pos]->GetNodes()->Add_DeltaSolution(iPoint,iVar, u(iPoint,offset+iVar)*factor);
-
-    offset += nVar;
-  }
-  SU2_OMP_BARRIER
-
-
-  /*--- Compute residuals after perturbation. ---*/
+  PerturbSolution(u, factor);
 
   ComputeResiduals(EXPLICIT);
 
-
-  /*--- Finalize product and restore the old solution. ---*/
+  /*--- Finalize product. ---*/
   factor = 1.0 / factor;
 
-  for (unsigned long iSol = 0, offset = 0; iSol < kindSol.size(); ++iSol) {
-    const auto pos = kindSol[iSol];
-    const auto nVar = nVars[iSol];
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+    su2double delta = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint)) /
+                      max(EPS, solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
 
-    solvers[pos]->GetNodes()->Set_Solution();
+    for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar) {
+      Scalar perturbRes = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes(iPoint,iVar));
 
-    PARALLEL_FOR
-    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
-      su2double delta = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint)) /
-                        max(EPS, solvers[pos]->GetNodes()->GetDelta_Time(iPoint));
+      /*--- The global residual had its sign flipped, so we add to get the difference. ---*/
+      v(iPoint,iVar) = (perturbRes + LinSysRes(iPoint,iVar)) * factor;
 
-      for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-        Scalar perturbRes = SU2_TYPE::GetValue(solvers[pos]->LinSysRes(iPoint,iVar));
-
-        /*--- The global residual had its sign flipped, so we add to get the difference. ---*/
-        v(iPoint,offset+iVar) = (perturbRes + LinSysRes(iPoint,offset+iVar)) * factor;
-
-        /*--- Pseudotime term of the true Jacobian. ---*/
-        v(iPoint,offset+iVar) += SU2_TYPE::GetValue(delta) * u(iPoint,offset+iVar);
-      }
+      /*--- Pseudotime term of the true Jacobian. ---*/
+      v(iPoint,iVar) += SU2_TYPE::GetValue(delta) * u(iPoint,iVar);
     }
-    offset += nVar;
   }
-  SU2_OMP_BARRIER
+
+  solvers[FLOW_SOL]->Jacobian.InitiateComms(v, geometry, config, SOLUTION_MATRIX);
+  solvers[FLOW_SOL]->Jacobian.CompleteComms(v, geometry, config, SOLUTION_MATRIX);
 }
 
-void CNewtonIntegration::BlockJacobiPrecond(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
+void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
 
-  for (unsigned long iSol = 0, offset = 0; iSol < kindSol.size(); ++iSol) {
-
-    const auto nVar = nVars[iSol];
-    const auto nPoint = geometry->GetnPoint();
-
-    if (preconditioners[iSol]) {
-      /*--- Get work vectors with nVar compatible with the preconditioner. ---*/
-      auto& uLoc = GetPrecVecIn<su2double>(iSol);
-      auto& vLoc = GetPrecVecOut<su2double>(iSol);
-
-      PARALLEL_FOR
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < nVar; ++iVar)
-          uLoc(iPoint, iVar) = u(iPoint, offset+iVar);
-
-      /*--- Apply the preconditioner of this solver. ---*/
-      (*preconditioners[iSol])(uLoc, vLoc);
-
-      PARALLEL_FOR
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < nVar; ++iVar)
-          v(iPoint, offset+iVar) = vLoc(iPoint, iVar);
-    }
-    else {
-      /*--- Identity. ---*/
-      /// TODO: Probably even some type of volume/timestep scaling would be better?
-      PARALLEL_FOR
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
-        for (auto iVar = 0ul; iVar < nVar; ++iVar)
-          v(iPoint, offset+iVar) = u(iPoint, offset+iVar);
-    }
-
-    offset += nVar;
+  if (preconditioner) {
+    Preconditioner_impl(u, v);
   }
-  SU2_OMP_BARRIER
+  else {
+    /*--- Approximate diagonal preconditioner. ---*/
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+      su2double delta = solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) /
+                        (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
+
+      for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)
+        v(iPoint,iVar) = u(iPoint,iVar) * delta;
+    }
+
+    solvers[FLOW_SOL]->Jacobian.InitiateComms(v, geometry, config, SOLUTION_MATRIX);
+    solvers[FLOW_SOL]->Jacobian.CompleteComms(v, geometry, config, SOLUTION_MATRIX);
+  }
 }

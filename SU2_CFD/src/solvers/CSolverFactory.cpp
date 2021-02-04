@@ -246,10 +246,10 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
     case SUB_SOLVER_TYPE::NEMO_NAVIER_STOKES:
       genericSolver = CreateFlowSolver(kindSolver, solver, geometry, config, iMGLevel);
-      if (!config->GetCoupledNewton() || config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint())
+      if (!config->GetNewtonKrylov() || config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint())
         metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       else
-        metaData.integrationType = INTEGRATION_TYPE::COUPLED;
+        metaData.integrationType = INTEGRATION_TYPE::NEWTON;
       break;
     case SUB_SOLVER_TYPE::FEA:
       genericSolver = new CFEASolver(geometry, config);

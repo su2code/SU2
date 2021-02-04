@@ -2034,7 +2034,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     { /* Only the master thread updates the shared variables. */
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
-    resetCFL = linRes > 1.0;
+    resetCFL = linRes > 0.99;
     reduceCFL = linRes > 1.2*linTol;
     canIncrease = linRes < linTol;
 
@@ -2080,7 +2080,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           signChanges += (prev > 0) ^ (val > 0);
           prev = val;
         }
-        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5) && !config->GetNewtonKrylov();
 
         if (totalChange > 2.0) { // orders of magnitude
           resetCFL = true;

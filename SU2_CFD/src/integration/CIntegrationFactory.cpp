@@ -61,7 +61,7 @@ CIntegration* CIntegrationFactory::CreateIntegration(INTEGRATION_TYPE integratio
     case INTEGRATION_TYPE::MULTIGRID:
       integration = new CMultiGridIntegration();
       break;
-    case INTEGRATION_TYPE::COUPLED:
+    case INTEGRATION_TYPE::NEWTON:
       integration = new CNewtonIntegration();
       break;
     case INTEGRATION_TYPE::STRUCTURAL:
