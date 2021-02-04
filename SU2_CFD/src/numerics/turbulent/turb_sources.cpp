@@ -761,6 +761,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
+  axisymmetric = (config->GetAxisymmetric() == YES);
 
   /*--- Closure constants ---*/
   beta_star     = constants[6];
@@ -898,6 +899,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
    Jacobian_i[1][0] = 0.0;
    Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
+  
+  /*--- Contribution due to 2D axisymmetric formulation ---*/
+  
+  if (axisymmetric) ResidualAxisymmetric();
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
@@ -920,5 +925,11 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
     }
   }
   PerturbedStrainMag = sqrt(2.0*PerturbedStrainMag);
+
+}
+
+void CSourcePieceWise_TurbSST::ResidualAxisymmetric(){
+
+	//TODO Axisym source terms 
 
 }

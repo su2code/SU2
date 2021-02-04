@@ -320,12 +320,18 @@ private:
 
   bool incompressible;
   bool sustaining_terms;
+  bool axisymmetric;
 
   /*!
    * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
    * \param[in] turb_ke: turbulent kinetic energy of the node
    */
   void SetPerturbedStrainMag(su2double turb_ke);
+  
+  /*!
+   * \brief Add contribution due to axisymmetric formulation to 2D residual
+   */
+  void ResidualAxisymmetric();
 
 public:
   /*!
