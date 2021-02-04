@@ -53,7 +53,7 @@ CFEM_DG_IncEulerSolver::CFEM_DG_IncEulerSolver(CGeometry      *geometry,
     nPDOFsLocOwned += volElem[i].standardElemP->GetNDOFs();
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nPDOFsLocOwned, &nPDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nPDOFsLocOwned, &nPDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nPDOFsGlobal = nPDOFsLocOwned;
 #endif

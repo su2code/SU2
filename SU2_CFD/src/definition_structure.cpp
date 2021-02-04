@@ -46,8 +46,8 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-  SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
 #endif
 
   nPointTotal = geometry->GetnPoint();
@@ -119,7 +119,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
     Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", \"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
     Profile_File.close();
   }
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Loop through the map and write the results to the file ---*/
 
@@ -129,7 +129,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
       Profile_File << rank << ", " << nNeighbors << ", " << nPointTotal << ", " << nEdge << "," << nPointGhost << ", " << nSendTotal << ", " << nRecvTotal << ", " << nElemTotal << "," << nElemBound << ", " << nElemHalo << ", " << nnz << endl;
       Profile_File.close();
     }
-    SU2_MPI::Barrier(MPI_COMM_WORLD);
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   }
 
   delete [] isHalo;
@@ -138,5 +138,99 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
 
 void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
 
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  /*--- This routine does a quick and dirty output of the total
+   vertices, ghost vertices, total elements, ghost elements, etc.,
+   so that we can analyze the partition quality. ---*/
+
+  unsigned long nNeighSend = 0, nNeighRecv     = 0;
+  unsigned long nElemOwned = 0, nElemSendTotal = 0, nElemRecvTotal = 0;
+  unsigned long nDOFOwned  = 0, nDOFSendTotal  = 0, nDOFRecvTotal  = 0;
+
+  int iRank;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+  SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
+#endif
+
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM_DG *volElem = DGGeometry->GetVolElem();
+
+  /*--- Determine the number of owned elements and DOFs. ---*/
+  nElemOwned = nVolElemOwned;
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    nDOFOwned += volElem[l].standardElemFlow->GetNDOFs();
+  }
+
+  /*--- Get the communication information from DG_Geometry. Note that for a
+   FEM DG discretization the communication entities of FEMGeometry contain
+   the volume elements. ---*/
+  const vector<int>                    &ranksSend    = DGGeometry->GetRanksSend();
+  const vector<int>                    &ranksRecv    = DGGeometry->GetRanksRecv();
+  const vector<vector<unsigned long> > &elementsSend = DGGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = DGGeometry->GetEntitiesRecv();
+
+  nNeighSend = ranksSend.size();
+  nNeighRecv = ranksRecv.size();
+
+  /*--- Determine the total number of elements and DOFS to be send. ---*/
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+
+    const unsigned int nElemSend = (unsigned int)elementsSend[i].size();
+
+    nElemSendTotal += nElemSend;
+
+    for(unsigned int j=0; j<nElemSend; ++j) {
+      const unsigned long jj = elementsSend[i][j];
+      nDOFSendTotal += volElem[jj].standardElemFlow->GetNDOFs();
+    }
+  }
+
+  /*--- Determine the total number of elements and DOFS to be received. ---*/
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+
+    const unsigned int nElemRecv = (unsigned int)elementsRecv[i].size();
+
+    nElemRecvTotal += nElemRecv;
+
+    for(unsigned int j=0; j<nElemRecv; ++j) {
+      const unsigned long jj = elementsRecv[i][j];
+      nDOFRecvTotal += volElem[jj].standardElemFlow->GetNDOFs();
+    }
+
+  }
+
+  /*--- Now put this info into a CSV file for processing ---*/
+
+  ofstream Profile_File;
+  Profile_File.precision(15);
+
+  if (rank == MASTER_NODE) {
+    /*--- Prepare and open the file ---*/
+    Profile_File.open("partitioning.csv");
+    /*--- Create the CSV header ---*/
+    Profile_File << "\"Rank\", \"nNeighSend\",  \"nNeighRecv\", \"nElemOwned\", \"nElemSendTotal\", \"nElemRecvTotal\", \"nDOFOwned\", \"nDOFSendTotal\", \"nDOFRecvTotal\"" << endl;
+    Profile_File.close();
+  }
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
+
+  /*--- Loop through the map and write the results to the file ---*/
+
+  for (iRank = 0; iRank < size; iRank++) {
+    if (rank == iRank) {
+      Profile_File.open("partitioning.csv", ios::out | ios::app);
+      Profile_File << rank << ", " << nNeighSend << ", " << nNeighRecv << ", " << nElemOwned << ", "
+                   << nElemSendTotal << ", " << nElemRecvTotal << ", " << nDOFOwned << ", "
+                   << nDOFSendTotal << ", " << nDOFRecvTotal << endl;
+      Profile_File.close();
+    }
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+  }
+
 }

@@ -83,7 +83,7 @@ CFEM_DG_SolverBase::CFEM_DG_SolverBase(CGeometry      *geometry,
 
   /*--- Determine the global number of DOFs in the simulation. ---*/
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #else
   nDOFsGlobal = nDOFsLocOwned;
 #endif
@@ -200,7 +200,7 @@ void CFEM_DG_SolverBase::DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
 
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(&nDOFsLocOwned, 1, MPI_UNSIGNED_LONG, &nDOFsPerRank[1], 1,
-                     MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 #else
   nDOFsPerRank[1] = nDOFsLocOwned;
 #endif
@@ -249,7 +249,7 @@ void CFEM_DG_SolverBase::DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
     /*--- Send the data using non-blocking sends to avoid deadlock. ---*/
     int dest = ranksSend[i];
     SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_LONG,
-                   dest, dest, MPI_COMM_WORLD, &sendReqs[i]);
+                   dest, dest, SU2_MPI::GetComm(), &sendReqs[i]);
   }
 
   /*--- Create a map of the receive rank to the index in ranksRecv. ---*/
@@ -263,7 +263,7 @@ void CFEM_DG_SolverBase::DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
     /*--- Block until a message arrives and determine the source
           and size of the message. ---*/
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -272,7 +272,7 @@ void CFEM_DG_SolverBase::DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
     /*--- Allocate the memory for the receive buffer and receive the data. ---*/
     vector<unsigned long> recvBuf(sizeMess);
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     /*--- Determine the actual index of this rank in ranksRecv. ---*/
     map<int,int>::const_iterator MI = rankToIndRecvBuf.find(source);
@@ -289,7 +289,7 @@ void CFEM_DG_SolverBase::DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
 
   /*--- Wild cards have been used in the communication,
         so synchronize the ranks to avoid problems. ---*/
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #else
 

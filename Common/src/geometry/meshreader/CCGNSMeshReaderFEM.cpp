@@ -449,7 +449,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
   int nRankRecv;
   vector<int> sizeRecv(size, 1);
   SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Send out the messages with the global point numbers. Use nonblocking
         sends to avoid deadlock. ---*/
@@ -458,7 +458,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
   for(int i=0; i<size; ++i) {
     if( pointBuf[i].size() ) {
       SU2_MPI::Isend(pointBuf[i].data(), pointBuf[i].size(), MPI_UNSIGNED_LONG,
-                     i, i, MPI_COMM_WORLD, &sendReqs[nRankSend]);
+                     i, i, SU2_MPI::GetComm(), &sendReqs[nRankSend]);
       ++nRankSend;
     }
   }
@@ -480,7 +480,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
     /* Block until a message arrives. Determine the source and size
        of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     int sizeMess;
@@ -493,7 +493,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
     /* Receive the message using a blocking receive. */
     SU2_MPI::Recv(pointRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, MPI_COMM_WORLD, &status);
+                  source, rank, SU2_MPI::GetComm(), &status);
 
     /*--- Loop over the nodes just received and fill the return communication
           buffer with the coordinates of the requested nodes. ---*/
@@ -510,7 +510,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
     /* Send the buffer just filled back to the requesting rank.
        Use a non-blocking send to avoid deadlock. */
     SU2_MPI::Isend(coorReturnBuf[i].data(), coorReturnBuf[i].size(), MPI_DOUBLE,
-                   source, source+1, MPI_COMM_WORLD, &returnReqs[i]);
+                   source, source+1, SU2_MPI::GetComm(), &returnReqs[i]);
   }
 
   /*--- Resize the second indices of localPointCoordinates. ---*/
@@ -522,7 +522,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
     /* Block until a message arrives. Determine the source of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     /* Allocate the memory for the coordinate receive buffer. */
@@ -530,7 +530,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
     /* Receive the message using a blocking receive. */
     SU2_MPI::Recv(coorRecvBuf.data(), coorRecvBuf.size(), MPI_DOUBLE,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  source, rank+1, SU2_MPI::GetComm(), &status);
 
     /*--- Loop over the points just received. ---*/
     for(unsigned long j=0; j<pointBuf[source].size(); ++j) {
@@ -550,7 +550,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
   /*--- Wild cards have been used in the communication,
         so synchronize the ranks to avoid problems. ---*/
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
   
 #endif
 }
