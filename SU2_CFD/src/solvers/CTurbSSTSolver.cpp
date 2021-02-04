@@ -112,8 +112,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
 
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    // LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    // LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysSol.Initialize(nPoint, nPoint, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPoint, nVar, 0.0);
 
     if (ReducerStrategy)
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);

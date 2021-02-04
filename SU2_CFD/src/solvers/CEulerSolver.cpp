@@ -207,8 +207,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    the residuals and updating the solution (always needed even for
    explicit schemes). ---*/
 
-  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  // LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  // LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysSol.Initialize(nPoint, nPoint, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPoint, nVar, 0.0);
 
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
