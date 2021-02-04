@@ -140,6 +140,8 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   Non_Physical_Counter.resize(nPoint) = 0;
 
   /* Under-relaxation parameter. */
+    /* Under-relaxation parameter. */
+  UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
 
   /* Vector to count number of symmetry planes at each node. */
