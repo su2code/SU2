@@ -860,8 +860,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
   int iProc, iSend, iRecv, myStart, myFinal;
 
-  const bool GetSecondNeighbors = (config->GetUse_Accurate_Visc_Jacobians() || 
-                                   config->GetUse_Accurate_Turb_Jacobians() ||
+  const bool GetSecondNeighbors = (config->GetUse_Accurate_Visc_Jacobians() ||
                                    config->GetUse_Accurate_Kappa_Jacobians());
 
   /*--- Get a linear partitioner to track the partition counts. ---*/
