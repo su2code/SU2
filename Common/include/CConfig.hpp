@@ -4048,7 +4048,7 @@ public:
    * \return Fill in level of the linear solver.
    */
   unsigned short GetLinear_Solver_Turb_Fill_In(void) const { 
-    if (Use_Accurate_Turb_Jacobians || Use_Accurate_Kappa_Jacobians)
+    if (Use_Accurate_Vis_Jacobians || Use_Accurate_Kappa_Jacobians)
       return 1; 
     else
       return 0;
