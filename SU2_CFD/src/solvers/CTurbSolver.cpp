@@ -780,7 +780,10 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver,
   {
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysRes.SetBlock_Zero(iPoint);
+      // LinSysRes.SetBlock_Zero(iPoint);
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+          LinSysRes[total_index] = - LinSysRes[total_index];
 
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)

@@ -275,7 +275,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+    // Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+    Jacobian.Initialize(nPoint, nPoint, nVar, nVar, true, geometry, config, ReducerStrategy);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -5488,7 +5489,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   {
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      LinSysRes.SetBlock_Zero(iPoint);
+      // LinSysRes.SetBlock_Zero(iPoint);
+      for (auto iVar = 0; iVar < nVar; iVar++) {
+        unsigned long total_index = iPoint*nVar + iVar;
+          LinSysRes[total_index] = - LinSysRes[total_index];
 
     SU2_OMP(section)
     for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++)
