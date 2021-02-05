@@ -677,6 +677,10 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   Area, *Normal, UnitNormal[3], *Coord_i, *Coord_j, C;
   su2double *V;
   bool ionization = config->GetIonization();
+  vector<su2double> rhos;
+  vector<su2double> energies;
+
+  rhos.resize(nSpecies,0.0);
 
   if (ionization) {
     cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
@@ -775,15 +779,10 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 
      // LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
-      vector<su2double> rhos;
-
-      rhos.resize(nSpecies,0.0);
 
       for (unsigned short i = 0; i < nSpecies; i++) {
         rhos[i]=nodes->GetDensity(iPoint,i);
       }
-
-      vector<su2double> energies;
 
       FluidModel->SetTDStateRhosTTv(rhos, Twall, Twall);
       energies = FluidModel->ComputeMixtureEnergies();
