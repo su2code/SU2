@@ -5556,8 +5556,6 @@ void CEulerSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *confi
 
   const su2double allowableRatio = 0.2;
   const su2double eps = numeric_limits<passivedouble>::epsilon();
-  const su2double CFLInc = config->GetCFL_AdaptParam(1);
-  const su2double CFLMin = config->GetCFL_AdaptParam(2);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
