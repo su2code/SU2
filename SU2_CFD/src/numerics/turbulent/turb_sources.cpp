@@ -761,10 +761,13 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
-  axisymmetric = (config->GetAxisymmetric() == YES);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  axisymmetric = config->GetAxisymmetric();
 
   /*--- Closure constants ---*/
   beta_star     = constants[6];
+  sigma_k_1     = constants[0];
+  sigma_k_1     = constants[1];
   sigma_omega_1 = constants[2];
   sigma_omega_2 = constants[3];
   beta_1        = constants[4];
@@ -777,9 +780,11 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
   kAmb     = val_kine_Inf;
   omegaAmb = val_omega_Inf;
 
-  /*--- "Allocate" the Jacobian using the static buffer. ---*/
-  Jacobian_i[0] = Jacobian_Buffer;
-  Jacobian_i[1] = Jacobian_Buffer+2;
+  if (implicit) {
+    /*--- "Allocate" the Jacobian using the static buffer. ---*/
+    Jacobian_i[0] = Jacobian_Buffer;
+    Jacobian_i[1] = Jacobian_Buffer+2;
+  }
 
 }
 
@@ -817,92 +822,96 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   }
 
   Residual[0] = 0.0;       Residual[1] = 0.0;
-  Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
-  Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
-
+  
+  if (implicit) {
+    Jacobian_i[0][0] = 0.0;  Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;  Jacobian_i[1][1] = 0.0;
+  }
+  
   /*--- Computation of blended constants for the source terms---*/
 
   alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
   beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
 
   if (dist_i > 1e-10) {
-
-   /*--- Production ---*/
-
-   diverg = 0.0;
-   for (iDim = 0; iDim < nDim; iDim++)
-     diverg += PrimVar_Grad_i[iDim+1][iDim];
-
-   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
-
-   if (using_uq){
-     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
-                         PrimVar_Grad_i+1, Density_i, Eddy_Viscosity_i,
-                         TurbVar_i[0], MeanPerturbedRSM);
-     SetPerturbedStrainMag(TurbVar_i[0]);
-     pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-          - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-   }
-   else {
-     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-   }
-
-
-   pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-   pk = max(pk,0.0);
-
-   zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
-
-   /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
-
-   if (using_uq){
-     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
-   }
-   else {
-     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-   }
-   pw = alfa_blended*Density_i*max(pw,0.0);
-
-   /*--- Sustaining terms, if desired. Note that if the production terms are
-         larger equal than the sustaining terms, the original formulation is
-         obtained again. This is in contrast to the version in literature
-         where the sustaining terms are simply added. This latter approach could
-         lead to problems for very big values of the free-stream turbulence
-         intensity. ---*/
-
-   if ( sustaining_terms ) {
-     const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
-     const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
-
-     pk = max(pk, sust_k);
-     pw = max(pw, sust_w);
-   }
-
-   /*--- Add the production terms to the residuals. ---*/
-
-   Residual[0] += pk*Volume;
-   Residual[1] += pw*Volume;
-
-   /*--- Dissipation ---*/
-
-   Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
-   Residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
-
-   /*--- Cross diffusion ---*/
-
-   Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-
-   /*--- Implicit part ---*/
-
-   Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
-   Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
-   Jacobian_i[1][0] = 0.0;
-   Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+    
+    /*--- Production ---*/
+    
+    diverg = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      diverg += PrimVar_Grad_i[iDim+1][iDim];
+    
+    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
+    
+    if (using_uq){
+      ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
+                          PrimVar_Grad_i+1, Density_i, Eddy_Viscosity_i,
+                          TurbVar_i[0], MeanPerturbedRSM);
+      SetPerturbedStrainMag(TurbVar_i[0]);
+      pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
+           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+    }
+    else {
+      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+    }
+    
+    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
+    pk = max(pk,0.0);
+    
+    zeta = max(TurbVar_i[1], VorticityMag*F2_i/a1);
+    
+    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
+    
+    if (using_uq){
+      pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+    }
+    else {
+      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+    }
+    pw = alfa_blended*Density_i*max(pw,0.0);
+    
+    /*--- Sustaining terms, if desired. Note that if the production terms are
+          larger equal than the sustaining terms, the original formulation is
+          obtained again. This is in contrast to the version in literature
+          where the sustaining terms are simply added. This latter approach could
+          lead to problems for very big values of the free-stream turbulence
+          intensity. ---*/
+    
+    if ( sustaining_terms ) {
+      const su2double sust_k = beta_star*Density_i*kAmb*omegaAmb;
+      const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
+    
+      pk = max(pk, sust_k);
+      pw = max(pw, sust_w);
+    }
+    
+    /*--- Add the production terms to the residuals. ---*/
+    
+    Residual[0] += pk*Volume;
+    Residual[1] += pw*Volume;
+    
+    /*--- Dissipation ---*/
+    
+    Residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+    Residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
+    
+    /*--- Cross diffusion ---*/
+    
+    Residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
+    
+    /*--- Implicit part ---*/
+    
+    if (implicit) {
+     Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
+     Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
+     Jacobian_i[1][0] = 0.0;
+     Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+    }
   }
   
   /*--- Contribution due to 2D axisymmetric formulation ---*/
   
-  if (axisymmetric) ResidualAxisymmetric();
+  if (axisymmetric) ResidualAxisymmetric(beta_blended);
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
@@ -928,8 +937,29 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
 
 }
 
-void CSourcePieceWise_TurbSST::ResidualAxisymmetric(){
+void CSourcePieceWise_TurbSST::ResidualAxisymmetric(su2double beta_blended){
 
-	//TODO Axisym source terms 
+  if (Coord_i[1] > EPS) {
+    
+    su2double yinv = 1.0/Coord_i[1];
+    
+    /*--- Residual Convection ---*/
+    Residual[0] -= yinv*Volume*beta_star*V_i[1]*Density_i*TurbVar_i[0];
+    Residual[1] -= yinv*Volume*beta_blended*V_i[1]*Density_i*TurbVar_i[1];
+
+    if (implicit) {
+     Jacobian_i[0][0] -= yinv*Volume*V_i[1];
+     Jacobian_i[1][1] -= yinv*Volume*V_i[1];
+    }
+    
+    /*--- Compute the blended constant for the viscous terms ---*/
+    su2double sigma_k_i = F1_i*sigma_k_1 + (1.0 - F1_i)*sigma_k_2;
+    su2double sigma_omega_i = F1_i*sigma_omega_1 + (1.0 - F1_i)*sigma_omega_2;
+    
+    /*--- Residual Diffusion ---*/
+    Residual[0] += yinv*Volume*(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
+    Residual[1] += yinv*Volume*(Laminar_Viscosity_i+sigma_omega_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
+    
+  }
 
 }

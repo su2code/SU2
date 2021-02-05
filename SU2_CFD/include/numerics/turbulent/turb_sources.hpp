@@ -305,6 +305,8 @@ private:
   alfa_2,
   beta_1,
   beta_2,
+  sigma_k_1,
+  sigma_k_2,
   sigma_omega_1,
   sigma_omega_2,
   beta_star,
@@ -320,6 +322,7 @@ private:
 
   bool incompressible;
   bool sustaining_terms;
+  bool implicit;
   bool axisymmetric;
 
   /*!
@@ -331,7 +334,7 @@ private:
   /*!
    * \brief Add contribution due to axisymmetric formulation to 2D residual
    */
-  void ResidualAxisymmetric();
+  void ResidualAxisymmetric(su2double beta_blended);
 
 public:
   /*!
