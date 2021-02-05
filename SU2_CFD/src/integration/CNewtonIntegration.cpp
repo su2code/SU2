@@ -275,7 +275,7 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
                         (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
       SU2_OMP_SIMD
       for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)
-        v(iPoint,iVar) = u(iPoint,iVar) * delta;
+        v(iPoint,iVar) = SU2_TYPE::GetValue(delta) * u(iPoint,iVar);
     }
 
     solvers[FLOW_SOL]->Jacobian.InitiateComms(v, geometry, config, SOLUTION_MATRIX);
