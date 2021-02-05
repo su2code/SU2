@@ -30,6 +30,16 @@
 #include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
+#ifdef HAVE_OMP
+#ifdef HAVE_OMP_SIMD
+#define CNEWTON_PARFOR SU2_OMP(for simd schedule(static,omp_chunk_size) nowait)
+#else
+#define CNEWTON_PARFOR SU2_OMP(for schedule(static,omp_chunk_size) nowait)
+#endif
+#else
+#define CNEWTON_PARFOR SU2_OMP_SIMD
+#endif
+
 /*!
  * \class CNewtonIntegration
  * \brief Class for time integration using a Newton-Krylov method, based
@@ -74,14 +84,14 @@ private:
   inline void SetSolutionResult(CSysVector<T>&) const { }
 
   template<class T, su2enable_if<!std::is_same<T,Scalar>::value> = 0>
-  inline CSysVector<Scalar>& GetSolutionVec(CSysVector<T>& x) {
+  inline CSysVector<Scalar>& GetSolutionVec(CSysVector<T>&) {
     LinSysSol = Scalar(0.0);
     return LinSysSol;
   }
 
   template<class T, su2enable_if<!std::is_same<T,Scalar>::value> = 0>
   inline void SetSolutionResult(CSysVector<T>& x) const {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    CNEWTON_PARFOR
     for (auto i = 0ul; i < x.GetLocSize(); ++i) x[i] = LinSysSol[i];
   }
 
@@ -93,13 +103,14 @@ private:
 
   template<class T, su2enable_if<!std::is_same<T,MixedScalar>::value> = 0>
   inline void Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v) const {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) precondIn[i] = u[i];
 
     (*preconditioner)(precondIn, precondOut);
 
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) v[i] = precondOut[i];
+    SU2_OMP_BARRIER
   }
 
   /*--- Otherwise they are not needed. ---*/
@@ -158,3 +169,5 @@ public:
   void Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const;
 
 };
+
+#undef CNEWTON_PARFOR

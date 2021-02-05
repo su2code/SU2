@@ -67,42 +67,39 @@ void CNewtonIntegration::Setup() {
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
 
-  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), 512);
-
-  /*--- Check if the solver is able to provide a linear preconditioner. ---*/
-  if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
-
-    auto& p = preconditioner;
-
-    switch (config->GetKind_Linear_Solver_Prec()) {
-      case JACOBI:
-        p = new CJacobiPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
-        break;
-      case LINELET:
-        p = new CLineletPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
-        break;
-      case LU_SGS:
-        p = new CLU_SGSPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
-        break;
-      case ILU:
-        p = new CILUPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
-        break;
-      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
-        p = new CPastixPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config,
-                                                   config->GetKind_Linear_Solver_Prec(), false);
-        break;
-    }
-
-    if (!std::is_same<Scalar,MixedScalar>::value) {
-      precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);
-      precondOut.Initialize(nPoint, nPointDomain, nVar, nullptr);
-    }
-  }
+  omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), 1024);
 
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   if (!std::is_same<Scalar,su2double>::value) {
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
+  }
+
+  /*--- Check if the solver is able to provide a linear preconditioner. ---*/
+  if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) return;
+
+  switch (config->GetKind_Linear_Solver_Prec()) {
+    case JACOBI:
+      preconditioner = new CJacobiPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
+      break;
+    case LINELET:
+      preconditioner = new CLineletPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
+      break;
+    case LU_SGS:
+      preconditioner = new CLU_SGSPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
+      break;
+    case ILU:
+      preconditioner = new CILUPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config, false);
+      break;
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+      preconditioner = new CPastixPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config,
+                                                              config->GetKind_Linear_Solver_Prec(), false);
+      break;
+  }
+
+  if (!std::is_same<Scalar,MixedScalar>::value) {
+    precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);
+    precondOut.Initialize(nPoint, nPointDomain, nVar, nullptr);
   }
 }
 
@@ -204,11 +201,13 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   auto nIter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, product, precond,
                                           tol, iter, eps, false, config, true);
+  SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
+
   SU2_OMP_MASTER {
     solvers[FLOW_SOL]->SetIterLinSolver(nIter);
     solvers[FLOW_SOL]->SetResLinSolver(eps);
   }
-  SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
+  SU2_OMP_BARRIER
 
   /// TODO: Clever back-tracking and CFL adaptation based on residual reduction.
 
@@ -246,7 +245,7 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
     su2double delta = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint)) /
                       max(EPS, solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
-
+    SU2_OMP_SIMD
     for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar) {
       Scalar perturbRes = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes(iPoint,iVar));
 
@@ -274,7 +273,7 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
     for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
       su2double delta = solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint) /
                         (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
-
+      SU2_OMP_SIMD
       for (auto iVar = 0ul; iVar < u.GetNVar(); ++iVar)
         v(iPoint,iVar) = u(iPoint,iVar) * delta;
     }
