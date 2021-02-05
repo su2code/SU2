@@ -29,9 +29,9 @@
 
 #pragma once
 
-#include "./parallelization/mpi_structure.hpp"
-#include "option_structure.hpp"
-#include "CConfig.hpp"
+#include "../parallelization/mpi_structure.hpp"
+#include "../option_structure.hpp"
+#include "../CConfig.hpp"
 #include <cstring>
 
 using namespace std;
@@ -47,12 +47,12 @@ public:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  CGraphColoringStructure(void);
+  CGraphColoringStructure(void) = default;
 
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  ~CGraphColoringStructure(void);
+  ~CGraphColoringStructure(void) = default;
 
   /*!
    * \brief Function, which determines the colors for the vertices of the given graph.

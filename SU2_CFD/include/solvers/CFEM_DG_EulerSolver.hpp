@@ -42,6 +42,9 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
 
+  vector<su2double> EntropyVarFreeStream; /*!< \brief Vector, which contains the free stream
+                                                      entropy variables. */
+
   vector<unsigned long> nDOFsPerRank;                    /*!< \brief Number of DOFs per rank in
                                                                      cumulative storage format. */
   vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
@@ -949,38 +952,11 @@ private:
                                                       su2double            *work);
 
   /*!
-   * \brief Function, which computes the graph of the spatial discretization
-            for the locally owned DOFs.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
-   * \param[in] config     - Definition of the particular problem.
-   */
-  void DetermineGraphDOFs(const CMeshFEM_DG *FEMGeometry,
-                          CConfig           *config);
-
-  /*!
-   * \brief Function, which determines the meta data needed for the computation
-            of the Jacobian of the spatial residual.
-   * \param[in] DGGeometry     - Geometrical definition of the DG problem.
-   * \param[in] colorLocalDOFs - Color of the locally stored DOFs.
-   */
-  void MetaDataJacobianComputation(const CMeshFEM_DG    *FEMGeometry,
-                                   const vector<int> &colorLocalDOFs);
-
-  /*!
    * \brief Function, which sets up the list of tasks to be carried out in the
             computationally expensive part of the solver.
    * \param[in] config - Definition of the particular problem.
    */
   void SetUpTaskList(CConfig *config);
-
-  /*!
-   * \brief Function, which sets up the persistent communication of the flow
-            variables in the DOFs.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
-   * \param[in] config     - Definition of the particular problem.
-   */
-  void Prepare_MPI_Communication(const CMeshFEM_DG *FEMGeometry,
-                                 CConfig *config);
 
   /*!
    * \brief Function, which creates the final residual by summing up

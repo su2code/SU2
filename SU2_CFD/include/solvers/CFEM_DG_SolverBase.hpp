@@ -50,11 +50,13 @@ protected:
   su2double Pressure_Inf    = 0.0;      /*!< \brief Pressure at the infinity. */
   su2double *Velocity_Inf   = nullptr;  /*!< \brief Flow Velocity vector at the infinity. */
 
-  su2double Viscosity_Inf; /*!< \brief Viscosity at the infinity. */
-  su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
+  su2double Viscosity_Inf = 0; /*!< \brief Viscosity at the infinity. */
+  su2double Tke_Inf = 0;       /*!< \brief Turbulent kinetic energy at the infinity. */
+  su2double Prandtl_Lam = 0;   /*!< \brief Laminar Prandtl number. */
+  su2double Prandtl_Turb = 0;  /*!< \brief Turbulent Prandtl number. */
 
-  su2double StrainMag_Max; /*!< \brief Maximum Strain Rate magnitude. */
-  su2double Omega_Max;     /*!< \brief Maximum Omega. */
+  su2double StrainMag_Max = 0; /*!< \brief Maximum Strain Rate magnitude. */
+  su2double Omega_Max = 0;     /*!< \brief Maximum Omega. */
 
   vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
                                                    conservative variables. */
@@ -122,13 +124,23 @@ protected:
   vector<su2double> TolSolADER;   /*!< \brief Vector, which stores the tolerances for the
                                               variables in the ADER predictor step. */
 
-  bool symmetrizingTermsPresent = true;  /*!< \brief Whether or not symmetrizing terms are present in the
+  bool symmetrizingTermsPresent = false;  /*!< \brief Whether or not symmetrizing terms are present in the
                                                      discretization. */
 
   vector<unsigned long> nDOFsPerRank;    /*!< \brief Number of DOFs per rank in cumulative storage format. */
 
   vector<vector<unsigned long> > nonZeroEntriesJacobian; /*!< \brief The ID's of the DOFs for the
                                                                      non-zero entries of the Jacobian. */
+
+  int nGlobalColors = 0;          /*!< \brief Number of global colors for the Jacobian computation. */
+
+  vector<vector<unsigned long> > localDOFsPerColor;   /*!< \brief Double vector, which contains for every
+                                                                  color the local DOFs. */
+  vector<vector<int> > colorToIndEntriesJacobian;     /*!< \brief Double vector, which contains for every
+                                                                  local DOF the mapping from the color to the
+                                                                  entry in the Jacobian. A -1 indicates that
+                                                                  the color does not contribute to the Jacobian
+                                                                  of the DOF. */
 
 #ifdef HAVE_MPI
   vector<vector<SU2_MPI::Request> > commRequests;  /*!< \brief Communication requests in the communication of the solution for all
@@ -162,6 +174,9 @@ protected:
                                                                                   transformation must be applied for all
                                                                                   time levels. */
 
+  vector<CTaskDefinition> tasksList; /*!< \brief List of tasks to be carried out in the computationally
+                                                 intensive part of the solver. */
+
 private:
 
   CVariable* GetBaseClassPointerToNodes() final {return nullptr;}
@@ -190,6 +205,15 @@ public:
 
 protected:
 
+  /*!
+   * \brief Function, which determines the communication pattern of the flow
+   *        variables and the reverse pattern for the residuals.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  void Prepare_MPI_Communication(const CMeshFEM_DG *DGGeometry,
+                                 CConfig           *config);
+
 private:
 
   /*!
@@ -200,4 +224,13 @@ private:
    */
   void DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
                           CConfig           *config);
+
+  /*!
+   * \brief Function, which determines the meta data needed for the computation
+   *        of the Jacobian of the spatial residual.
+   * \param[in] DGGeometry     - Geometrical definition of the DG problem.
+   * \param[in] colorLocalDOFs - Color of the locally stored DOFs.
+   */
+  void MetaDataJacobianComputation(const CMeshFEM_DG *DGGeometry,
+                                   const vector<int> &colorLocalDOFs);
 };

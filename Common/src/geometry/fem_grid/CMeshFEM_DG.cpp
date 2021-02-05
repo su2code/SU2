@@ -2586,6 +2586,12 @@ void CMeshFEM_DG::SetSendReceive(const CConfig *config) {
     }
   }
 
+  /*--- Store the rotationally periodic indices in rotPerMarkers. ---*/
+  rotPerMarkers.reserve(mapRotationalPeriodicToInd.size());
+  for(map<short,unsigned short>::iterator SMI =mapRotationalPeriodicToInd.begin();
+                                          SMI!=mapRotationalPeriodicToInd.end(); ++SMI)
+    rotPerMarkers.push_back(SMI->first);
+
   /*--- Resize the first index of rotPerHalos to the correct size. ---*/
   rotPerHalos.resize(mapRotationalPeriodicToInd.size());
 

@@ -58,6 +58,11 @@ CFEM_DG_IncEulerSolver::CFEM_DG_IncEulerSolver(CGeometry      *geometry,
   nPDOFsGlobal = nPDOFsLocOwned;
 #endif
 
+  /*--- Determine the communication pattern. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  if( !DGGeometry) SU2_MPI::Error(string("Dynamic cast failed"), CURRENT_FUNCTION);
+  Prepare_MPI_Communication(DGGeometry, config);
+
 
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
 }

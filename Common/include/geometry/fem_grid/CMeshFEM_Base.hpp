@@ -111,6 +111,20 @@ public:
   inline CBoundaryFEM *GetBoundaries(void) {return boundaries.data();}
 
   /*!
+   * \brief Function, which makes available the vector of rotational periodic markers
+   *        as a const reference.
+   * \return  Const reference to the vector with rotational periodic markers.
+   */
+  inline const vector<unsigned short>& GetRotPerMarkers(void) const {return rotPerMarkers;}
+
+  /*!
+   * \brief Function, which makes available the vector of vectors containing the rotational
+   *        periodic halos as a const reference.
+   * \return  Const reference to the vector of vectors with rotational periodic halos.
+   */
+  inline const vector<vector<unsigned long> >& GetRotPerHalos(void) const {return rotPerHalos;}
+
+  /*!
    * \brief Function, which makes available the mesh points of the local FEM mesh.
    * \return  Pointer to the mesh points of the local FEM mesh.
    */

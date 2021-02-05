@@ -25,21 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/graph_coloring_structure.hpp"
+#include "../../include/toolboxes/CGraphColoringStructure.hpp"
 
-/* Constructor. Nothing to be done. */
-CGraphColoringStructure::CGraphColoringStructure(void) {}
-
-/* Destructor. Nothing to be done. */
-CGraphColoringStructure::~CGraphColoringStructure(void) {}
-
-/* Function, which determines the colors for the vertices of the given graph. */
 void CGraphColoringStructure::GraphVertexColoring(
-                         CConfig                              *config,
-                         const vector<unsigned long>          &nVerticesPerRank,
-                         const vector<vector<unsigned long> > &entriesVertices,
-                         int                                  &nGlobalColors,
-                         vector<int>                          &colorLocalVertices) {
+                              CConfig                              *config,
+                              const vector<unsigned long>          &nVerticesPerRank,
+                              const vector<vector<unsigned long> > &entriesVertices,
+                              int                                  &nGlobalColors,
+                              vector<int>                          &colorLocalVertices) {
 
   /* Determine the number of ranks and the current rank. */
   int nRank  = 1;

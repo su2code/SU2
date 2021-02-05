@@ -38,13 +38,15 @@
  * \version 7.1.0 "Blackbird"
  */
 class CFEM_DG_NSSolver final : public CFEM_DG_EulerSolver {
-
+private:
+  CSGSModel *SGSModel = nullptr; /*!< \brief LES Subgrid Scale model. */
+  bool SGSModelUsed = false;     /*!< \brief Whether or not an LES Subgrid Scale model is used. */
 public:
 
   /*!
    * \brief Constructor of the class.
    */
-  CFEM_DG_NSSolver(void);
+  CFEM_DG_NSSolver(void) = default;
 
   /*!
    * \overload

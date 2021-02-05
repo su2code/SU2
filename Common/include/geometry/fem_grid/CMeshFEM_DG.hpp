@@ -119,29 +119,47 @@ public:
   /*-----------------------------------------------------------------------------------*/
 
   /*!
+   * \brief Function, which makes available the number of owned volume elements per time level.
+   * \return  The pointer to the data of nVolElemOwnedPerTimeLevel.
+   */
+  inline unsigned long* GetNVolElemOwnedPerTimeLevel(void) {return nVolElemOwnedPerTimeLevel.data();}
+
+  /*!
+   * \brief Function, which makes available the number of internal volume elements per time level.
+   * \return  The pointer to the data of nVolElemInternalPerTimeLevel.
+   */
+  inline unsigned long* GetNVolElemInternalPerTimeLevel(void) {return nVolElemInternalPerTimeLevel.data();}
+
+  /*!
+   * \brief Function, which makes available the number of halo volume elements per time level.
+   * \return  The pointer to the data of nVolElemHaloPerTimeLevel.
+   */
+  inline unsigned long* GetNVolElemHaloPerTimeLevel(void) {return nVolElemHaloPerTimeLevel.data();}
+
+  /*!
    * \brief Function, which makes available the vector of vectors containing the owned element
-            IDs adjacent to elements of a lower time level. Note that a copy is made.
+   *        IDs adjacent to elements of a lower time level. Note that a copy is made.
    * \return Copy of ownedElemAdjLowTimeLevel.
    */
   inline vector<vector<unsigned long> > GetOwnedElemAdjLowTimeLevel(void) {return ownedElemAdjLowTimeLevel;}
 
   /*!
    * \brief Function, which makes available the vector of vectors containing the halo element
-            IDs adjacent to elements of a lower time level. Note that a copy is made.
+   *        IDs adjacent to elements of a lower time level. Note that a copy is made.
    * \return Copy of haloElemAdjLowTimeLevel.
    */
   inline vector<vector<unsigned long> > GetHaloElemAdjLowTimeLevel(void) {return haloElemAdjLowTimeLevel;}
 
   /*!
   * \brief Function, which makes available the number of matching internal faces
-           between an owned element and a halo element per time level.
+  *        between an owned element and a halo element per time level.
   * \return  The number of matching internal faces between these elements per time level.
   */
   inline unsigned long *GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
 
  /*!
   * \brief Function, which makes available the number of matching internal faces
-           between two owned elements per time level.
+  *        between two owned elements per time level.
   * \return  The number of matching internal faces per time level.
   */
   inline unsigned long *GetNMatchingFacesInternal(void) {return nMatchingFacesInternal.data();}

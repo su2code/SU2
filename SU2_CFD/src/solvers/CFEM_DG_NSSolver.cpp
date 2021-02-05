@@ -28,20 +28,58 @@
 
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
 
-
-CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
-}
-
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry      *geometry,
                                    CConfig        *config,
                                    unsigned short iMesh)
  : CFEM_DG_EulerSolver(geometry, config, iMesh) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Check if the symmetrizing terms are present. ---*/
+  if(fabs(config->GetTheta_Interior_Penalty_DGFEM()) > 1.e-8)
+    symmetrizingTermsPresent = true;
+
+  /*--- Get the viscous data at the farfield from config. ---*/
+  Viscosity_Inf = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam   = config->GetPrandtl_Lam();
+  Prandtl_Turb  = config->GetPrandtl_Turb();
+  Tke_Inf       = config->GetTke_FreeStreamND();
+
+  /*--- Set the SGS model in case an LES simulation is carried out ---*/
+  if(config->GetKind_Solver() == FEM_LES) {
+
+    /*--- Make a distinction between the SGS models used and set SGSModel and
+          SGSModelUsed accordingly. ---*/
+    switch( config->GetKind_SGS_Model() ) {
+
+      case IMPLICIT_LES:
+        SGSModel     = nullptr;
+        SGSModelUsed = false;
+        break;
+
+      case SMAGORINSKY:
+        SGSModel     = new CSmagorinskyModel;
+        SGSModelUsed = true;
+        break;
+
+      case WALE:
+        SGSModel     = new CWALEModel;
+        SGSModelUsed = true;
+        break;
+
+      case VREMAN:
+        SGSModel     = new CVremanModel;
+        SGSModelUsed = true;
+        break;
+
+      default:
+        SU2_MPI::Error(string("Unknown SGS model encountered"),
+                       CURRENT_FUNCTION);
+    }
+  }
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
+
+  delete SGSModel;
 }
 
 void CFEM_DG_NSSolver::Friction_Forces(const CGeometry *geometry, const CConfig *config) {

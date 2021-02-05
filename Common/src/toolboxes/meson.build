@@ -1,4 +1,5 @@
 common_src += files(['CLinearPartitioner.cpp',
+                     'CGraphColoringStructure.cpp',
                      'printing_toolbox.cpp',
                      'C1DInterpolation.cpp',
                      'CSquareMatrixCM.cpp',
