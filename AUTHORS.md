@@ -134,7 +134,6 @@ garcgutierrez
 jtneedels
 juliendm
 jvanoostrom
-koodlyakshay
 mcolonno
 minkwankim
 padronas
