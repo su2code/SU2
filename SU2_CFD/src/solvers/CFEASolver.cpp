@@ -1192,7 +1192,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   const bool prestretch_fem = config->GetPrestretch();
 
   const bool topology_mode = config->GetTopology_Optimization();
-  const auto simp_exponent = config->GetSIMP_Exponent();
+  const su2double simp_exponent = config->GetSIMP_Exponent();
+  const su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   const auto stressParam = config->GetStressPenaltyParam();
   const su2double stress_scale = 1.0 / stressParam[0];
@@ -1269,7 +1270,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
         /*--- In topology mode determine the penalty to apply to the stiffness ---*/
         su2double simp_penalty = 1.0;
         if (topology_mode) {
-          simp_penalty = pow(element_properties[iElem]->GetPhysicalDensity(), simp_exponent);
+          su2double density = element_properties[iElem]->GetPhysicalDensity();
+          simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(density,simp_exponent);
         }
 
         /*--- Set the properties of the element. ---*/
