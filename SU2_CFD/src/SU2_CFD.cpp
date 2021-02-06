@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v7.0.8 \"Blackbird\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v7.1.0 \"Blackbird\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -60,21 +60,14 @@ int main(int argc, char *argv[]) {
 
   /*--- MPI initialization, and buffer setting ---*/
 
-#ifdef HAVE_MPI
-  int  buffsize;
-  char *buffptr;
-#ifdef HAVE_OMP
+#if defined(HAVE_OMP) && defined(HAVE_MPI)
   int required = use_thread_mult? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED;
   int provided;
   SU2_MPI::Init_thread(&argc, &argv, required, &provided);
 #else
   SU2_MPI::Init(&argc, &argv);
 #endif
-  SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
-#endif
+  SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW);
@@ -178,11 +171,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   /*--- Finalize MPI parallelization. ---*/
-#ifdef HAVE_MPI
-  SU2_MPI::Buffer_detach(&buffptr, &buffsize);
-  free(buffptr);
   SU2_MPI::Finalize();
-#endif
 
   return EXIT_SUCCESS;
 

@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,13 +51,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Buffet sensor in all the markers and coefficients ---*/
 
-  if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-
-    Alloc2D(nMarker, nVertex, Buffet_Sensor);
-    Buffet_Metric = new su2double[nMarker];
-    Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
-
-  }
+  Alloc2D(nMarker, nVertex, Buffet_Sensor);
+  Buffet_Metric = new su2double[nMarker];
+  Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
 
   /*--- Read farfield conditions from config ---*/
 
@@ -98,21 +94,29 @@ CNSSolver::~CNSSolver(void) {
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-  const unsigned long InnerIter = config->GetInnerIter();
-  const bool cont_adjoint       = config->GetContinuous_Adjoint();
-  const bool limiter_flow       = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool limiter_turb       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool limiter_adjflow    = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()));
-  const bool edge_limiter       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Flow() == PIPERNO);
-  const bool wall_functions     = config->GetWall_Functions();
+  const auto InnerIter = config->GetInnerIter();
+  const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool edge_limiter = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE) || (config->GetKind_SlopeLimit_Flow() == PIPERNO);
+  const bool wall_functions = config->GetWall_Functions();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
-  /*--- Compute gradient for MUSCL reconstruction. ---*/
+  /*--- Compute gradient for MUSCL reconstruction, for output (i.e. the
+   turbulence solver, and post) only temperature and velocity are needed ---*/
 
-  if (config->GetReconstructionGradientRequired() && (iMesh == MESH_0)) {
+  const auto nPrimVarGrad_bak = nPrimVarGrad;
+  if (Output) {
+    SU2_OMP_BARRIER
+    SU2_OMP_MASTER
+    nPrimVarGrad = 1+nDim;
+    SU2_OMP_BARRIER
+  }
+
+  if (config->GetReconstructionGradientRequired() && muscl && !center) {
     switch (config->GetKind_Gradient_Method_Recon()) {
       case GREEN_GAUSS:
         SetPrimitive_Gradient_GG(geometry, config, true); break;
@@ -132,55 +136,19 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
   }
 
-  /*--- Compute the limiter in case we need it in the turbulence model or to limit the
-   *    viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  if (Output) {
+    SU2_OMP_MASTER
+    nPrimVarGrad = nPrimVarGrad_bak;
+    SU2_OMP_BARRIER
+  }
 
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output && !edge_limiter) {
+  /*--- Compute the limiters ---*/
+
+  if (muscl && !center && limiter && !edge_limiter && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
 
-  /*--- Evaluate the vorticity and strain rate magnitude ---*/
-
-  SU2_OMP_MASTER
-  {
-    StrainMag_Max = 0.0;
-    Omega_Max = 0.0;
-  }
-  SU2_OMP_BARRIER
-
-  nodes->SetVorticity_StrainMag();
-
-  su2double strainMax = 0.0, omegaMax = 0.0;
-
-  SU2_OMP(for schedule(static,omp_chunk_size) nowait)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    su2double StrainMag = nodes->GetStrainMag(iPoint);
-    const su2double* Vorticity = nodes->GetVorticity(iPoint);
-    su2double Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
-
-    strainMax = max(strainMax, StrainMag);
-    omegaMax = max(omegaMax, Omega);
-
-  }
-  SU2_OMP_CRITICAL
-  {
-    StrainMag_Max = max(StrainMag_Max, strainMax);
-    Omega_Max = max(Omega_Max, omegaMax);
-  }
-
-  if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_BARRIER
-    SU2_OMP_MASTER
-    {
-      su2double MyOmega_Max = Omega_Max;
-      su2double MyStrainMag_Max = StrainMag_Max;
-
-      SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    }
-    SU2_OMP_BARRIER
-  }
+  ComputeVorticityAndStrainMag<1>(*config, iMesh);
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -190,7 +158,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
-unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -233,74 +201,16 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config) {
 
-  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == SST) ||
-                         (config->GetKind_Turb_Model() == SST_SUST);
-
-  CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
-
-  /*--- Points, coordinates and normal vector in edge ---*/
-
-  auto iPoint = geometry->edges->GetNode(iEdge,0);
-  auto jPoint = geometry->edges->GetNode(iEdge,1);
-
-  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                     geometry->nodes->GetCoord(jPoint));
-
-  numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
-  /*--- Primitive and secondary variables. ---*/
-
-  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
-                         nodes->GetPrimitive(jPoint));
-
-  numerics->SetSecondary(nodes->GetSecondary(iPoint),
-                         nodes->GetSecondary(jPoint));
-
-  /*--- Gradients. ---*/
-
-  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                               nodes->GetGradient_Primitive(jPoint));
-
-  /*--- Turbulent kinetic energy. ---*/
-
-  if (tkeNeeded)
-    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
-                                   turbNodes->GetSolution(jPoint,0));
-
-  /*--- Wall shear stress values (wall functions) ---*/
-
-  numerics->SetTauWall(nodes->GetTauWall(iPoint),
-                       nodes->GetTauWall(iPoint));
-
-  /*--- Compute and update residual ---*/
-
-  auto residual = numerics->ComputeResidual(config);
-
-  if (ReducerStrategy) {
-    EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
-  }
-  else {
-    LinSysRes.SubtractBlock(iPoint, residual);
-    LinSysRes.AddBlock(jPoint, residual);
-
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
-  }
-
+  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
-void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
+void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
 
   unsigned long iVertex;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
-  su2double *Vel_FS = config->GetVelocity_FreeStream();
+  const su2double* Vel_FS = Velocity_Inf;
   su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
-  su2double k   = config->GetBuffet_k(),
-             lam = config->GetBuffet_lambda();
+  su2double k = config->GetBuffet_k(), lam = config->GetBuffet_lambda();
   string Marker_Tag, Monitoring_Tag;
 
   for (iDim = 0; iDim < nDim; iDim++){
@@ -336,7 +246,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
         SkinFrictionMag = 0.0;
         SkinFrictionDot = 0.0;
         for(iDim = 0; iDim < nDim; iDim++){
-          SkinFrictionMag += CSkinFriction[iMarker][iDim][iVertex]*CSkinFriction[iMarker][iDim][iVertex];
+          SkinFrictionMag += pow(CSkinFriction[iMarker][iDim][iVertex], 2);
           SkinFrictionDot += CSkinFriction[iMarker][iDim][iVertex]*Vel_FS[iDim];
         }
         SkinFrictionMag = sqrt(SkinFrictionMag);
@@ -354,9 +264,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
         if(Monitoring == YES){
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
 
@@ -387,7 +295,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
   /*--- Add buffet metric information using all the nodes ---*/
 
   su2double MyTotal_Buffet_Metric = Total_Buffet_Metric;
-  SU2_MPI::Allreduce(&MyTotal_Buffet_Metric, &Total_Buffet_Metric, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Buffet_Metric, &Total_Buffet_Metric, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Add the buffet metric on the surfaces using all the nodes ---*/
 
@@ -397,7 +305,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     MySurface_Buffet_Metric[iMarker_Monitoring] = Surface_Buffet_Metric[iMarker_Monitoring];
   }
 
-  SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   delete [] MySurface_Buffet_Metric;
 
@@ -405,7 +313,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
+void CNSSolver::Evaluate_ObjFunc(const CConfig *config) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -873,7 +781,7 @@ void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
-void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;

@@ -3,7 +3,7 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -225,10 +225,10 @@ struct CLimiterDetails<VENKATAKRISHNAN_WANG>
     SU2_OMP_MASTER
     {
       localMin = sharedMin;
-      SU2_MPI::Allreduce(localMin.data(), sharedMin.data(), varEnd, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(localMin.data(), sharedMin.data(), varEnd, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
       localMax = sharedMax;
-      SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(localMax.data(), sharedMax.data(), varEnd, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     }
     SU2_OMP_BARRIER
 

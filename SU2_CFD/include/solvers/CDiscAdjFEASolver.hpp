@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.hpp
  * \brief Headers of the CDiscAdjFEASolver class
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,7 +48,6 @@ private:
   su2double *Solution_Vel = nullptr,    /*!< \brief Velocity componenent of the solution. */
   *Solution_Accel = nullptr;            /*!< \brief Acceleration componenent of the solution. */
 
-  su2double ObjFunc_Value = 0.0;        /*!< \brief Value of the objective function. */
   su2double *normalLoads = nullptr;     /*!< \brief Values of the normal loads for each marker iMarker_nL. */
 
   unsigned short nMPROP = 0;            /*!< \brief Number of material properties */
@@ -161,12 +160,6 @@ public:
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) override;
 
   /*!
-   * \brief Register the objective function as output.
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  void RegisterObj_Func(CConfig *config) override;
-
-  /*!
    * \brief Set the surface sensitivity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -179,13 +172,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) override;
-
-  /*!
-   * \brief Set the objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config) override;
 
   /*!
    * \brief Provide the total Young's modulus sensitivity

@@ -2,7 +2,7 @@
  * \file CNEMONSVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Navier-Stokes solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Main class for defining the variables of the NEMO Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 7.0.6
+ * \version 7.0.8
  */
 class CNEMONSVariable final : public CNEMOEulerVariable {
 private:
@@ -103,17 +103,6 @@ public:
    * \return Reference to primitives.
    */
   inline const MatrixType& GetPrimitive_Aux(void) const { return Primitive_Aux; }
-
-  /*!
-   * \brief Set the value of the reconstruction variables gradient at a node.
-   * \param[in] iPoint - Index of the current node.
-   * \param[in] iVar   - Index of the variable.
-   * \param[in] iDim   - Index of the dimension.
-   * \param[in] value  - Value of the reconstruction gradient component.
-   */
-  /* Works as a dummy function for consistency since no reconstruction is needed for primitive variables*/
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) override { }
-
 
   /*!
    * \brief Set all the primitive variables for compressible flows.

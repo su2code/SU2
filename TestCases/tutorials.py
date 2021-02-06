@@ -3,11 +3,11 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.0.8 "Blackbird"
+#  \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
 # Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -16,7 +16,7 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -29,33 +29,33 @@
 from __future__ import print_function
 
 import sys
-from TestCase import TestCase    
+from TestCase import TestCase
 
 def main():
-    '''This program runs SU2 and ensures that the output matches specified values. 
-       This will be used to do checks when code is pushed to github 
+    '''This program runs SU2 and ensures that the output matches specified values.
+       This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
     test_list = []
-    
+
     ######################################
     ### RUN TUTORIAL CASES             ###
     ######################################
-     
+
     ### Compressible Flow
-     
+
     # Inviscid Bump
     tutorial_inv_bump            = TestCase('inviscid_bump_tutorial')
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.005477, 0.012933]
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.005439, 0.012998]
     tutorial_inv_bump.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_bump.timeout    = 1600
     tutorial_inv_bump.tol        = 0.00001
     tutorial_inv_bump.no_restart = True
     test_list.append(tutorial_inv_bump)
-    
+
     # Inviscid Wedge
     tutorial_inv_wedge            = TestCase('inviscid_wedge_tutorial')
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
@@ -67,19 +67,19 @@ def main():
     tutorial_inv_wedge.tol        = 0.00001
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
-    
+
     # Inviscid ONERA M6
     tutorial_inv_onera            = TestCase('inviscid_onera_tutorial')
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.247505, 0.085573]
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.247451, 0.085770]
     tutorial_inv_onera.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_inv_onera.timeout    = 1600
     tutorial_inv_onera.tol        = 0.00001
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
-    
+
     # Laminar Cylinder
     tutorial_lam_cylinder            = TestCase('laminar_cylinder_tutorial')
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
@@ -103,7 +103,7 @@ def main():
     tutorial_lam_flatplate.tol        = 0.00001
     tutorial_lam_flatplate.no_restart = True
     test_list.append(tutorial_lam_flatplate)
-    
+
     # Turbulent Flat Plate
     tutorial_turb_flatplate            = TestCase('turbulent_flatplate_tutorial')
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_Flat_Plate"
@@ -115,13 +115,13 @@ def main():
     tutorial_turb_flatplate.tol        = 0.00001
     tutorial_turb_flatplate.no_restart = True
     test_list.append(tutorial_turb_flatplate)
-    
+
     # Transitional FlatPlate
     tutorial_trans_flatplate            = TestCase('transitional_flatplate_tutorial')
     tutorial_trans_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate"
     tutorial_trans_flatplate.cfg_file   = "transitional_BC_model_ConfigFile.cfg"
     tutorial_trans_flatplate.test_iter  = 0
-    tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330906, 0.000000, 0.023952] #last 4 columns
+    tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_trans_flatplate.timeout    = 1600
     tutorial_trans_flatplate.tol        = 0.00001
@@ -133,7 +133,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.523120, 0.333773, 0.098351]
+    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524277, 0.327954, 0.097349]
     tutorial_turb_oneram6.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_turb_oneram6.timeout    = 1600
     tutorial_turb_oneram6.tol        = 0.00001
@@ -144,13 +144,13 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.339712, -6.750056, 4.260703, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.187400, -9.409241, 3.477513, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.su2_exec  = "mpirun -np 2 SU2_CFD"
     tutorial_nicfd_nozzle.timeout   = 1600
     tutorial_nicfd_nozzle.tol       = 0.00001
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
-    
+
 
     # Unsteady NACA0012
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')
@@ -163,26 +163,26 @@ def main():
     tutorial_unst_naca0012.tol           = 0.00001
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
-    
+
     # PROPELLER VARIBLE LOAD
     propeller_var_load           = TestCase('propeller_variable_load')
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.837780, -4.535082, -0.000315, 0.171887]
+    propeller_var_load.test_vals = [-1.830252, -4.535038, -0.000323, 0.171648]
     propeller_var_load.su2_exec  = "mpirun -np 2 SU2_CFD"
     propeller_var_load.timeout   = 3200
     propeller_var_load.tol       = 0.00001
     test_list.append(propeller_var_load)
 
     ### Design
-    
+
     # Inviscid NACA 0012 Design
     tutorial_design_inv_naca0012            = TestCase('design_inv_naca0012')
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.135675, 0.209070]
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.135070, 0.208565]
     tutorial_design_inv_naca0012.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_inv_naca0012.timeout    = 1600
     tutorial_design_inv_naca0012.tol        = 0.00001
@@ -194,7 +194,7 @@ def main():
     tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/design/Turbulent_2D_Constrained_RAE2822"
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
-    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.941261, 0.218432, 0.190639] #last 4 columns
+    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.941305, 0.218348, 0.190357]
     tutorial_design_turb_rae2822.su2_exec   = "mpirun -np 2 SU2_CFD"
     tutorial_design_turb_rae2822.timeout    = 1600
     tutorial_design_turb_rae2822.tol        = 0.00001
@@ -216,7 +216,7 @@ def main():
     ######################################
     ### RUN TESTS                      ###
     ######################################
-    
+
     pass_list = [ test.run_test() for test in test_list ]
 
     # Tests summary

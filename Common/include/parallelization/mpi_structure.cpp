@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,9 +27,17 @@
 
 #include "mpi_structure.hpp"
 
+
+/* Initialise the MPI Communicator Rank and Size */
 int CBaseMPIWrapper::Rank = 0;
 int CBaseMPIWrapper::Size = 1;
+
+/* Set the default MPI Communicator */
+#ifdef HAVE_MPI
 CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
+#else
+CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = 0;  // dummy value
+#endif
 
 #ifdef HAVE_MPI
 int  CBaseMPIWrapper::MinRankError;

@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -462,67 +462,6 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
 }
 
-void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
-
-  /*--- Here we can add new (scalar) objective functions ---*/
-
-  switch (config->GetKind_ObjFunc()){
-  case REFERENCE_GEOMETRY:
-      ObjFunc_Value = direct_solver->GetTotal_OFRefGeom();
-      break;
-  case REFERENCE_NODE:
-      ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
-      break;
-  case VOLUME_FRACTION:
-  case TOPOL_DISCRETENESS:
-      ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
-      break;
-  case TOPOL_COMPLIANCE:
-      ObjFunc_Value = direct_solver->GetTotal_OFCompliance();
-      break;
-  default:
-      ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
-      break;
- /*--- Template for new objective functions where TemplateObjFunction()
-  *  is the routine that returns the obj. function value. The computation
-  * must be done while the tape is active, i.e. between AD::StartRecording() and
-  * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
-  * inside MeanFlowIteration::Iterate().
-  *
-  * case TEMPLATE_OBJECTIVE:
-  *    ObjFunc_Value = TemplateObjFunction();
-  *    break;
-  * ---*/
-  }
-  if (rank == MASTER_NODE){
-    AD::RegisterOutput(ObjFunc_Value);
-  }
-}
-
-
-void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
-
-  bool dynamic = (config->GetTime_Domain());
-  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long TimeIter = config->GetTimeIter();
-  su2double seeding = 1.0;
-
-  if (dynamic){
-    if (TimeIter < IterAvg_Obj){
-      seeding = 1.0/((su2double)IterAvg_Obj);
-    }
-    else{
-      seeding = 0.0;
-    }
-  }
-
-  if (rank == MASTER_NODE){
-    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
-  } else {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
-  }
-}
-
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
   bool dynamic = config->GetTime_Domain();
@@ -700,10 +639,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
       }
     }
 
-    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_E, Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     /*--- Extract the adjoint values of the electric field in the case that it is a parameter of the problem. ---*/
 
@@ -712,7 +651,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
         if (local_index) Local_Sens_EField[iVar] = AD::GetDerivative(AD_Idx_EField[iVar]);
         else             Local_Sens_EField[iVar] = SU2_TYPE::GetDerivative(EField[iVar]);
       }
-      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_EField, Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
 
     if (fea_dv) {
@@ -720,7 +659,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
         if (local_index) Local_Sens_DV[iVar] = AD::GetDerivative(AD_Idx_DV_Val[iVar]);
         else             Local_Sens_DV[iVar] = SU2_TYPE::GetDerivative(DV_Val[iVar]);
       }
-      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_DV, Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     }
 
     /*--- Extract the flow traction sensitivities ---*/

@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #include "../../include/geometry/CMultiGridGeometry.hpp"
 #include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
-
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_container, unsigned short iMesh) : CGeometry() {
 
@@ -513,9 +513,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
 #ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_Children, nBufferS_Vector, MPI_UNSIGNED_LONG, send_to,0,
-                   Buffer_Receive_Children, nBufferR_Vector, MPI_UNSIGNED_LONG, receive_from,0, MPI_COMM_WORLD, &status);
+                   Buffer_Receive_Children, nBufferR_Vector, MPI_UNSIGNED_LONG, receive_from,0, SU2_MPI::GetComm(), &status);
       SU2_MPI::Sendrecv(Buffer_Send_Parent, nBufferS_Vector, MPI_UNSIGNED_LONG, send_to,1,
-                   Buffer_Receive_Parent, nBufferR_Vector, MPI_UNSIGNED_LONG, receive_from,1, MPI_COMM_WORLD, &status);
+                   Buffer_Receive_Parent, nBufferR_Vector, MPI_UNSIGNED_LONG, receive_from,1, SU2_MPI::GetComm(), &status);
 #else
       /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
@@ -612,8 +612,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry **geometry, CConfig *config_con
   Local_nPointCoarse = nPoint;
   Local_nPointFine = fine_grid->GetnPoint();
 
-  SU2_MPI::Allreduce(&Local_nPointCoarse, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nPointCoarse, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&Local_nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   su2double Coeff = 1.0, CFL = 0.0, factor = 1.5;
 
@@ -1084,7 +1084,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   unsigned long iFinePoint, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
-  unsigned short iChildren, iDim;
+  unsigned short iChildren;
   bool change_face_orientation;
   su2double Coarse_Volume, Area;
 
@@ -1135,8 +1135,7 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
 
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     const auto NormalFace = edges->GetNormal(iEdge);
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-    Area = sqrt(Area);
+    Area = GeometryToolbox::Norm(nDim, NormalFace);
     if (Area == 0.0) {
       su2double DefaultNormal[3] = {EPS*EPS};
       edges->SetNormal(iEdge, DefaultNormal);
@@ -1181,8 +1180,7 @@ void CMultiGridGeometry::SetBoundControlVolume(CConfig *config, CGeometry *fine_
   for (iMarker = 0; iMarker < nMarker; iMarker ++)
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
 

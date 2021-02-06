@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,8 +27,8 @@
  */
 
 #include "../../../include/interfaces/cfd/CSlidingInterface.hpp"
-#include "../../../Common/include/CConfig.hpp"
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../../../../Common/include/CConfig.hpp"
+#include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst) : CInterface() {

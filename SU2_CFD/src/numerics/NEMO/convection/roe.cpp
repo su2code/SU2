@@ -2,7 +2,7 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes in NEMO.
  * \author S. R. Copeland, W. Maier, C. Garbacz
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include "../../../../include/numerics/NEMO/convection/roe.hpp"
+#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                            unsigned short val_nPrimVar,
@@ -87,17 +88,14 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
 
   /*--- Face area (norm or the normal vector) ---*/
-  Area = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    Area += Normal[iDim]*Normal[iDim];
-  Area = sqrt(Area);
+  Area = GeometryToolbox::Norm(nDim, Normal);
 
   /*--- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 
-  /*--- Calculate Roe variables ---*/
-  R    = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
+  /*--- Calculate Roe averaged variables ---*/
+  R = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
 
   for (iVar = 0; iVar < nVar; iVar++)
     RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
@@ -105,7 +103,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   for (iVar = 0; iVar < nPrimVar; iVar++)
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
-  vector<su2double> roe_eves = fluidmodel->GetSpeciesEve(RoeV[TVE_INDEX]);
+  auto& roe_eves = fluidmodel->ComputeSpeciesEve(RoeV[TVE_INDEX]);
 
   /*--- Calculate derivatives of pressure ---*/
   fluidmodel->ComputedPdU(RoeV, roe_eves, RoedPdU);
@@ -118,7 +116,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   GetInviscidProjFlux(U_j, V_j, Normal, ProjFlux_j);
 
   /*--- Compute projected P, invP, and Lambda ---*/
-  GetPMatrix(RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
+  GetPMatrix    (RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(RoeU, RoeV, RoedPdU, UnitNormal, l, m, invP_Tensor);
 
   /*--- Compute projected velocities ---*/
@@ -130,7 +128,7 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
   }
 
   RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
-      RoeV[P_INDEX]/RoeV[RHO_INDEX]);
+                            RoeV[P_INDEX]/RoeV[RHO_INDEX]);
 
   /*--- Calculate eigenvalues ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

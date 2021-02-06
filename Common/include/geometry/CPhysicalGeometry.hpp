@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,8 +42,6 @@ class CPhysicalGeometry final : public CGeometry {
   unordered_map<unsigned long, unsigned long>
   Global_to_Local_Point;                           /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point{nullptr};            /*!< \brief Local-global indexation for the points. */
-  unsigned short *Local_to_Global_Marker{nullptr}; /*!< \brief Local to Global marker. */
-  unsigned short *Global_to_Local_Marker{nullptr}; /*!< \brief Global to Local marker. */
   unsigned long *adj_counter{nullptr};             /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem{nullptr};          /*!< \brief Adjacency element list. */
   su2activematrix Sensitivity;                     /*!< \brief Matrix holding the sensitivities at each point. */
@@ -304,15 +302,6 @@ public:
   }
 
   /*!
-   * \brief Get the local marker that correspond with the global marker.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const override {
-    return Global_to_Local_Marker[val_imarker];
-  }
-
-  /*!
    * \brief Reads the geometry of the grid and adjust the boundary
    *        conditions with the configuration file in parallel (for parmetis).
    * \param[in] config - Definition of the particular problem.
@@ -445,11 +434,6 @@ public:
   void GatherInOutAverageValues(CConfig *config, bool allocate) override;
 
   /*!
-   * \brief Set the center of gravity of the face, elements and edges.
-   */
-  void SetCoord_CG(void) override;
-
-  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
@@ -459,9 +443,8 @@ public:
   /*!
    * \brief Visualize the structure of the control volume(s).
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  void VisualizeControlVolume(CConfig *config, unsigned short action) override;
+  void VisualizeControlVolume(const CConfig *config) const override;
 
   /*!
    * \brief Mach the near field boundary condition.
@@ -487,7 +470,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(CConfig *config, unsigned short action) override;
+  void SetBoundControlVolume(const CConfig *config, unsigned short action) override;
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.
@@ -598,7 +581,7 @@ public:
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeMeshQualityStatistics(CConfig *config) override;
+  void ComputeMeshQualityStatistics(const CConfig *config) override;
 
   /*!
    * \brief Find and store the closest neighbor to a vertex.

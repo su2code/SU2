@@ -2,7 +2,7 @@
  * \file output_flow_comp.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,7 +58,7 @@ CFlowCompOutput::CFlowCompOutput(CConfig *config, unsigned short nDim) : CFlowOu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("PRIMITIVE");
-    if (config->GetGrid_Movement()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
+    if (config->GetDynamic_Grid()) requestedVolumeFields.emplace_back("GRID_VELOCITY");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -215,27 +215,25 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
   /// DESCRIPTION: Merit
-  AddHistoryOutput("MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("FIGURE_OF_MERIT", "CMerit", ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "Merit", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: CT
-  AddHistoryOutput("CT",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("THRUST",    "CT",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CT", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: CQ
-  AddHistoryOutput("CQ",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TORQUE",    "CQ",     ScreenOutputFormat::SCIENTIFIC, "ROTATING_FRAME", "CQ", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.
   /// DESCRIPTION: Equivalent area
   AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Equivalent area", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Nearfield obj. function
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function ", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", ScreenOutputFormat::SCIENTIFIC, "EQUIVALENT_AREA", "Nearfield obj. function", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   ///   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
   /// DESCRIPTION: Total heatflux
   AddHistoryOutput("TOTAL_HEATFLUX", "HF",      ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// DESCRIPTION: Maximal heatflux
-  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
-  /// DESCRIPTION: Temperature
-  AddHistoryOutput("TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT",  "Total avg. temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MAXIMUM_HEATFLUX", "maxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total maximum heatflux on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
@@ -272,6 +270,10 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   /*--- Add aerodynamic coefficients fields --- */
 
   AddAerodynamicCoefficients(config);
+
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    AddHistoryOutput("BUFFET", "Buffet", ScreenOutputFormat::SCIENTIFIC, "AERO_COEFF", "Buffet sensor", HistoryFieldType::COEFFICIENT);
+  }
 
   /*--- Add Cp diff fields ---*/
 
@@ -313,7 +315,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Grid velocity
-  if (config->GetGrid_Movement()){
+  if (config->GetDynamic_Grid()){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -467,7 +469,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     break;
   }
 
-  if (config->GetGrid_Movement()){
+  if (config->GetDynamic_Grid()){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
     SetVolumeOutputValue("GRID_VELOCITY-Y", iPoint, Node_Geo->GetGridVel(iPoint)[1]);
     if (nDim == 3)
@@ -662,9 +664,8 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
     }
   }
 
-  SetHistoryOutputValue("TOTAL_HEATFLUX",     flow_solver->GetTotal_HeatFlux());
-  SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
-  SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
+  SetHistoryOutputValue("TOTAL_HEATFLUX",   flow_solver->GetTotal_HeatFlux());
+  SetHistoryOutputValue("MAXIMUM_HEATFLUX", flow_solver->GetTotal_MaxHeatFlux());
 
   SetHistoryOutputValue("MIN_DELTA_TIME", flow_solver->GetMin_Delta_Time());
   SetHistoryOutputValue("MAX_DELTA_TIME", flow_solver->GetMax_Delta_Time());
@@ -698,6 +699,10 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set aeroydnamic coefficients --- */
 
   SetAerodynamicCoefficients(config, flow_solver);
+
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    SetHistoryOutputValue("BUFFET", flow_solver->GetTotal_Buffet_Metric());
+  }
 
   /*--- Set rotating frame coefficients --- */
 

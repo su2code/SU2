@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 
 #include "../../include/solvers/CAdjEulerSolver.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 
@@ -55,7 +56,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double myArea_Monitored, Area, *Normal;
+  su2double myArea_Monitored, *Normal;
 
   adjoint = true;
 
@@ -304,10 +305,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             if (geometry->nodes->GetDomain(iPoint)) {
               Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-              Area = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++)
-                Area += Normal[iDim]*Normal[iDim];
-              myArea_Monitored += sqrt (Area);
+              myArea_Monitored += GeometryToolbox::Norm(nDim, Normal);
             }
           }
           break;
@@ -318,7 +316,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 #ifdef HAVE_MPI
   Area_Monitored = 0.0;
-  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 #else
   Area_Monitored = myArea_Monitored;
 #endif
@@ -405,14 +403,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
 
-#ifdef HAVE_MPI
-
   /*--- MPI status and request arrays for non-blocking communications ---*/
 
-  SU2_MPI::Status status, status_;
-
-
-#endif
+  SU2_MPI::Status status;
+  SU2_MPI::Request req;
 
   /*--- Define buffer vector interior domain ---*/
 
@@ -482,13 +476,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
     if (rank != iDomain) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
 
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
-
-#endif
+      SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &req);
+      SU2_MPI::Request_free(&req);
 
     } else {
 
@@ -510,14 +501,10 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
         if (rank != jDomain) {
 
-#ifdef HAVE_MPI
-
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
 
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
-
-#endif
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
 
         }
       }
@@ -527,11 +514,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
 
@@ -580,17 +563,13 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
     if (iDomain != rank) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the coordinates, global index, colors, and element
        date to iDomain with non-blocking sends. ---*/
 
-      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+      SU2_MPI::Isend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
-
-#endif
-
+                     iDomain,  SU2_MPI::GetComm(), &req);
+      SU2_MPI::Request_free(&req);
     }
 
     else {
@@ -633,11 +612,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- The next section begins the recv of all data for the interior
    points/elements in the mesh. First, create the domain structures for
@@ -657,7 +632,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
       /*--- Receive the buffers with the coords, global index, and colors ---*/
 
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, SU2_MPI::GetComm(), &status);
 
       /*--- Loop over all of the points that we have recv'd and store the
        coords, global index vertex and markers ---*/
@@ -689,11 +664,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Free all of the memory used for communicating points and elements ---*/
 
@@ -714,14 +685,10 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, jMarker;
   long nDomain = 0, iDomain, jDomain;
 
-#ifdef HAVE_MPI
-
   /*--- MPI status and request arrays for non-blocking communications ---*/
 
-  SU2_MPI::Status status, status_;
-
-
-#endif
+  SU2_MPI::Status status;
+  SU2_MPI::Request req;
 
   /*--- Define buffer vector interior domain ---*/
 
@@ -744,11 +711,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   nDomain = size;
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- This loop gets the array sizes of points for each
    rank to send to each other rank. ---*/
@@ -798,13 +761,10 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     if (rank != iDomain) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the counts to iDomain with non-blocking sends ---*/
 
-      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
-
-#endif
+      SU2_MPI::Isend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, SU2_MPI::GetComm(), &req);
+      SU2_MPI::Request_free(&req);
 
     } else {
 
@@ -826,14 +786,10 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
         if (rank != jDomain) {
 
-#ifdef HAVE_MPI
-
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
 
-          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
-
-#endif
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, SU2_MPI::GetComm(), &status);
 
         }
       }
@@ -843,11 +799,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
 
@@ -895,17 +847,13 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
     if (iDomain != rank) {
 
-#ifdef HAVE_MPI
-
       /*--- Communicate the coordinates, global index, colors, and element
        date to iDomain with non-blocking sends. ---*/
 
-      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+      SU2_MPI::Isend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
                      nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
-                     iDomain,  MPI_COMM_WORLD);
-
-#endif
-
+                     iDomain,  SU2_MPI::GetComm(), &req);
+      SU2_MPI::Request_free(&req);
     }
 
     else {
@@ -948,11 +896,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- The next section begins the recv of all data for the interior
    points/elements in the mesh. First, create the domain structures for
@@ -972,7 +916,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
       /*--- Receive the buffers with the coords, global index, and colors ---*/
 
       SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
-                    iDomain, rank, MPI_COMM_WORLD, &status_);
+                    iDomain, rank, SU2_MPI::GetComm(), &status);
 
 
       /*--- Loop over all of the points that we have recv'd and store the
@@ -1005,11 +949,7 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
 
   /*--- Wait for the non-blocking sends to complete. ---*/
 
-#ifdef HAVE_MPI
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Free all of the memory used for communicating points and elements ---*/
 
@@ -1337,9 +1277,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt (Area);
+        Area = GeometryToolbox::Norm(nDim, Normal);
 
         for (iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = Normal[iDim]/Area;
@@ -1682,7 +1620,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = nonPhysicalPoints; nonPhysicalPoints = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &nonPhysicalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyErrorCounter, &nonPhysicalPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Points(nonPhysicalPoints);
   }
@@ -1894,7 +1832,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
   if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
 #else
     counter_global = counter_local;
 #endif
@@ -2010,102 +1948,6 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CAdjEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                       CConfig *config, unsigned short iMesh) {
-}
-
-void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {
-  unsigned long iPoint, jPoint, iEdge;
-  unsigned short iVar;
-  su2double *Diff;
-
-  Diff = new su2double[nVar];
-
-  nodes->SetUnd_LaplZero();
-
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edges->GetNode(iEdge,0);
-    jPoint = geometry->edges->GetNode(iEdge,1);
-
-    for (iVar = 0; iVar < nVar; iVar++)
-      Diff[iVar] = nodes->GetSolution(iPoint,iVar) - nodes->GetSolution(jPoint,iVar);
-
-#ifdef STRUCTURED_GRID
-
-    if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint, Diff);
-    if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint, Diff);
-
-#else
-
-    bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-    bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-    /*--- Both points inside the domain, or both in the boundary ---*/
-    if ((!boundary_i && !boundary_j) || (boundary_i && boundary_j)) {
-      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint, Diff);
-      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint, Diff);
-    }
-
-    /*--- iPoint inside the domain, jPoint on the boundary ---*/
-    if (!boundary_i && boundary_j)
-      if (geometry->nodes->GetDomain(iPoint)) nodes->SubtractUnd_Lapl(iPoint, Diff);
-
-    /*--- jPoint inside the domain, iPoint on the boundary ---*/
-    if (boundary_i && !boundary_j)
-      if (geometry->nodes->GetDomain(jPoint)) nodes->AddUnd_Lapl(jPoint, Diff);
-
-#endif
-
-  }
-
-#ifdef STRUCTURED_GRID
-
-  unsigned long Point_Normal = 0, iVertex;
-  unsigned short iMarker;
-  su2double *Psi_mirror;
-
-  Psi_mirror = new su2double[nVar];
-
-  /*--- Loop over all boundaries and include an extra contribution
-   from a halo node. Find the nearest normal, interior point
-   for a boundary node and make a linear approximation. ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) {
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        if (geometry->nodes->GetDomain(iPoint)) {
-
-          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-
-          /*--- Interpolate & compute difference in the conserved variables ---*/
-
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Psi_mirror[iVar] = 2.0*nodes->GetSolution(iPoint, iVar) - nodes->GetSolution(Point_Normal, iVar);
-            Diff[iVar]   = nodes->GetSolution(iPoint,iVar) - Psi_mirror[iVar];
-          }
-
-          /*--- Subtract contribution at the boundary node only ---*/
-
-          nodes->SubtractUnd_Lapl(iPoint,Diff);
-        }
-      }
-    }
-  }
-
-  delete [] Psi_mirror;
-
-#endif
-
-  delete [] Diff;
-
-  /*--- MPI parallelization ---*/
-
-  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
-
 }
 
 void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
@@ -2417,10 +2259,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
           d = nodes->GetForceProj_Vector(iPoint);
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           PrimVar_Grad = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
           ConsPsi_Grad = nodes->GetAuxVarGradient(iPoint)[0];
@@ -2491,8 +2330,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           Mach_Inf   = config->GetMach();
           if (grid_movement) Mach_Inf = config->GetMach_Motion();
 
-          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
 
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
 
@@ -2543,8 +2381,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           else { rw = U[3]; rE = U[4]; }
           p = Gamma_Minus_One*(rE-(ru*ru + rv*rv + rw*rw)/(2*r));
 
-          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
 
           H = (rE + p)/r;
@@ -2690,8 +2527,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           if (grid_movement) Mach_Inf = config->GetMach_Motion();
 
           d = nodes->GetForceProj_Vector(iPoint);
-          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
+          Area = GeometryToolbox::Norm(nDim, Normal);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
 
           /*--- Mach number sensitivity ---*/
@@ -2764,12 +2600,12 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   su2double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
   su2double MyTotal_Sens_BPress  = Total_Sens_BPress;    Total_Sens_BPress = 0.0;
 
-  SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
 #endif
 
@@ -3051,8 +2887,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
       d = nodes->GetForceProj_Vector(iPoint);
 
       /*--- Normal vector computation ---*/
-      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
 
       for (iDim = 0; iDim < nDim; iDim++)
@@ -3185,9 +3020,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
-      Area = 0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt(Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim]   = -Normal[iDim]/Area;
@@ -3848,10 +3681,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -4039,10 +3869,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -4308,10 +4135,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -4407,7 +4231,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
 void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
+  su2double *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
   unsigned short iVar, iDim;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -4430,11 +4254,6 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
 
       /*--- Index of the closest interior node ---*/
 
@@ -4532,11 +4351,9 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
       }
 
 #ifdef CHECK
-      su2double UnitNormal[3], Area=0.0;
+      su2double UnitNormal[3];
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = GeometryToolbox::Norm(nDim, Normal);
 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
@@ -4839,7 +4656,7 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 #ifndef HAVE_MPI
   rbuf_NotMatching = sbuf_NotMatching;
 #else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, SU2_MPI::GetComm());
 #endif
   if (rbuf_NotMatching != 0) {
     SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +

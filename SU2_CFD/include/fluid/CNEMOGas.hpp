@@ -2,7 +2,7 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,7 @@ protected:
   bool frozen,                           /*!< \brief Indicates if mixture is frozen. */
   ionization;                            /*!< \brief Presence of charged species in gas mixture. */
 
-  string Kind_GasModel;                  /*!< \brief String gas model. */
+  string gas_model;                      /*!< \brief String gas model. */
               
   unsigned short nSpecies,               /*!< \brief Number of species in the gas mixture. */
   nHeavy,                                /*!< \brief Number of heavy particles in gas */
@@ -101,7 +101,6 @@ public:
   /*!
    * \brief Set mixture thermodynamic state.
    * \param[in] P    - Pressure.
-   * \param[in] Ms   - Mass fraction of the gas.
    * \param[in] T    - Translational/Rotational temperature.
    * \param[in] Tve  - Vibrational/Electronic temperature.
    */
@@ -113,34 +112,34 @@ public:
   virtual const vector<su2double>& GetSpeciesCvTraRot() = 0;
   
   /*!
-   * \brief Get species V-E specific heats at constant volume.
+   * \brief Compute species V-E specific heats at constant volume.
    */
-  virtual vector<su2double>& GetSpeciesCvVibEle() = 0;
+  virtual vector<su2double>& ComputeSpeciesCvVibEle() = 0;
   
   /*!
-   * \brief Get mixture energies (total internal energy and vibrational energy).
+   * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
-  virtual vector<su2double>& GetMixtureEnergies() = 0;
+  virtual vector<su2double>& ComputeMixtureEnergies() = 0;
   
   /*!
-   * \brief Get species net production rates.
+   * \brief Compute species net production rates.
    */
-  virtual vector<su2double>& GetNetProductionRates() = 0;
+  virtual vector<su2double>& ComputeNetProductionRates() = 0;
   
   /*!
-   * \brief Get vibrational energy source term.
+   * \brief Compute vibrational energy source term.
    */
-  virtual su2double GetEveSourceTerm() { return 0; }
+  virtual su2double ComputeEveSourceTerm() { return 0; }
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute vector of species V-E energy.
    */
-  virtual vector<su2double>& GetSpeciesEve(su2double val_T) = 0;
+  virtual vector<su2double>& ComputeSpeciesEve(su2double val_T) = 0;
   
   /*!
-   * \brief Get species enthalpies.
+   * \brief Compute species enthalpies.
    */
-  virtual vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) = 0;
+  virtual vector<su2double>& ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) = 0;
   
   /*!
    * \brief Get species diffusion coefficients.
@@ -158,37 +157,42 @@ public:
   virtual vector<su2double>& GetThermalConductivities() = 0;
   
   /*!
-   * \brief Get translational and vibrational temperatures vector.
+   * \brief Compute translational and vibrational temperatures vector.
    */
-  virtual vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
+  virtual vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) = 0;
   
   /*!
-   * \brief Get speed of sound.
+   * \brief Compute speed of sound.
    */
   su2double ComputeSoundSpeed();
 
   /*!
-   * \brief Get pressure.
+   * \brief Compute pressure.
    */
   su2double ComputePressure();
 
   /*!
-   * \brief Get gas constant.
+   * \brief Compute gas constant.
    */
   su2double ComputeGasConstant();
 
   /*!
-   * \brief Get derivative of pressure w.r.t. conservative variables.
+   * \brief Compute ratio of specific heats (Gamma).
+   */
+  su2double ComputeGamma();
+
+  /*!
+   * \brief Compute derivative of pressure w.r.t. conservative variables.
    */
   void ComputedPdU(su2double *V, vector<su2double>& val_eves, su2double *val_dPdU);
   
   /*!
-   * \brief Get derivative of temperature w.r.t. conservative variables.
+   * \brief Compute derivative of temperature w.r.t. conservative variables.
    */
   void ComputedTdU(su2double *V, su2double *val_dTdU);
   
   /*!
-   * \brief Get derivative of vibrational temperature w.r.t. conservative variables.
+   * \brief Compute derivative of vibrational temperature w.r.t. conservative variables.
    */
   void ComputedTvedU(su2double *V, vector<su2double>& val_eves, su2double *val_dTvedU);
 
@@ -208,9 +212,9 @@ public:
   inline void SetEves(vector<su2double>& val_eves) { eves = val_eves; }
 
   /*!
-   * \brief Get rhoCvtr.
+   * \brief Compute rhoCvtr.
    */
-  inline su2double GetrhoCvtr() {
+  inline su2double ComputerhoCvtr() {
     rhoCvtr = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
       rhoCvtr += rhos[iSpecies]*Cvtrs[iSpecies];
@@ -218,9 +222,9 @@ public:
   }
 
   /*!
-   * \brief Get rhoCvtr.
+   * \brief Compute rhoCvve.
    */
-  su2double GetrhoCvve();
+  su2double ComputerhoCvve();
 
   /*!
    * \brief Get species molar mass.

@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.hpp
  * \brief Headers of the CAdjEulerSolver class
  * \author F. Palacios
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -229,13 +229,6 @@ public:
                        CNumerics *numerics,
                        CConfig *config,
                        unsigned short iMesh) final;
-
-  /*!
-   * \brief Compute the undivided laplacian for the adjoint solution.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Value of the characteristic variables at the boundaries.
