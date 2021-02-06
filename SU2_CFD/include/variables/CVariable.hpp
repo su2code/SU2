@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -447,7 +447,7 @@ public:
    * \brief Get the entire solution of the problem.
    * \return Reference to the solution matrix.
    */
-  inline const MatrixType& GetSolution(void) { return Solution; }
+  inline const MatrixType& GetSolution(void) const { return Solution; }
 
   /*!
    * \brief Get the solution of the problem.
@@ -1052,26 +1052,6 @@ public:
   inline virtual su2double GetSensor(unsigned long iPoint, unsigned long iSpecies) const { return 0.0; }
 
   /*!
-   * \brief Add the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_und_lapl - Value of the undivided solution.
-   */
-  inline void AddUnd_Lapl(unsigned long iPoint, const su2double *val_und_lapl) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Undivided_Laplacian(iPoint, iVar) += val_und_lapl[iVar];
-  }
-
-  /*!
-   * \brief Subtract the value of the undivided laplacian of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_und_lapl - Value of the undivided solution.
-   */
-  inline void SubtractUnd_Lapl(unsigned long iPoint, const su2double *val_und_lapl) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Undivided_Laplacian(iPoint, iVar) -= val_und_lapl[iVar];
-  }
-
-  /*!
    * \brief Increment the value of the undivided laplacian of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable of the undivided laplacian.
@@ -1080,11 +1060,6 @@ public:
   inline void AddUnd_Lapl(unsigned long iPoint, unsigned long iVar, su2double val_und_lapl) {
     Undivided_Laplacian(iPoint, iVar) += val_und_lapl;
   }
-
-  /*!
-   * \brief Set the undivided laplacian of the solution to zero.
-   */
-  void SetUnd_LaplZero();
 
   /*!
    * \brief Set a value to the undivided laplacian.
@@ -1118,13 +1093,6 @@ public:
    * \return Value of the flow density.
    */
   inline virtual su2double GetDensity(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Old value of the flow density.
-   */
-  inline virtual su2double GetDensity_Old(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1824,11 +1792,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetVorticity_StrainMag() { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void SetVelSolutionDVector(unsigned long iPoint) {}
 
   /*!
@@ -2241,39 +2204,16 @@ public:
   inline virtual void Set_OldSolution_Accel() {}
 
   /*!
-   * \brief  A virtual member. Set the value of the solution predictor.
-   */
-  inline virtual void SetSolution_Pred(unsigned long iPoint) {}
-
-  /*!
    * \brief  A virtual member. Set the value of the old solution.
    * \param[in] solution_pred - Pointer to the residual vector.
    */
   inline virtual void SetSolution_Pred(unsigned long iPoint, const su2double *solution_pred) {}
 
   /*!
-   * \brief  A virtual member. Set the value of the solution predicted.
-   * \param[in] solution_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Pred(unsigned long iPoint, unsigned long iVar, su2double solution_pred) {}
-
-  /*!
-   * \brief  A virtual member. Get the value of the solution predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline virtual su2double GetSolution_Pred(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
    * \brief  A virtual member. Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline virtual su2double *GetSolution_Pred(unsigned long iPoint) {return nullptr; }
-
-  /*!
-   * \brief  A virtual member. Set the value of the solution predictor.
-   */
-  inline virtual void SetSolution_Pred_Old(unsigned long iPoint) {}
+  inline virtual const su2double *GetSolution_Pred(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief  A virtual member. Set the value of the old solution.
@@ -2282,23 +2222,10 @@ public:
   inline virtual void SetSolution_Pred_Old(unsigned long iPoint, const su2double *solution_pred_Old) {}
 
   /*!
-   * \brief  A virtual member. Set the value of the old solution predicted.
-   * \param[in] solution_pred_old - Pointer to the residual vector.
-   */
-  inline virtual void SetSolution_Pred_Old(unsigned long iPoint, unsigned long iVar, su2double solution_pred_old) {}
-
-  /*!
-   * \brief  A virtual member. Get the value of the solution predictor.
-   * \param[in] iVar - Index of the variable.
-   * \return Pointer to the old solution vector.
-   */
-  inline virtual su2double GetSolution_Pred_Old(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
    * \brief  A virtual member. Get the solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline virtual su2double *GetSolution_Pred_Old(unsigned long iPoint) { return nullptr; }
+  inline virtual const su2double *GetSolution_Pred_Old(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2308,7 +2235,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double *GetReference_Geometry(unsigned long iPoint) {return nullptr; }
+  inline virtual const su2double* GetReference_Geometry(unsigned long iPoint) const { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2324,11 +2251,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double GetPrestretch(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual su2double GetReference_Geometry(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
    * \brief A virtual member. Get the value of the undeformed coordinates.

@@ -1,8 +1,8 @@
 /*!
- * \file CUserDefinedTCLib.cpp
+ * \file CSU2TCLib.cpp
  * \brief Source of user defined 2T nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,10 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/fluid/CUserDefinedTCLib.hpp"
+#include "../../include/fluid/CSU2TCLib.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
-CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, val_nDim){
+CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscous): CNEMOGas(config, val_nDim){
 
   unsigned short maxEl = 0;
   su2double mf = 0.0;
@@ -56,7 +56,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     mus.resize(nSpecies,0.0);
   }
 
-  if (Kind_GasModel =="ARGON"){
+  if (gas_model =="ARGON"){
     if (nSpecies != 1) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
     }
@@ -108,7 +108,7 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     ElDegeneracy(0,5) = 5;
     ElDegeneracy(0,6) = 15;
 
-  } else if (Kind_GasModel == "N2"){
+  } else if (gas_model == "N2"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 2) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -252,8 +252,9 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
     Omega11(0,1,0) = -8.3493693E-03;  Omega11(0,1,1) = 1.7808911E-01;   Omega11(0,1,2) = -1.4466155E+00;  Omega11(0,1,3) = 1.9324210E+03;
     Omega11(1,0,0) = -8.3493693E-03;  Omega11(1,0,1) = 1.7808911E-01;   Omega11(1,0,2) = -1.4466155E+00;  Omega11(1,0,3) = 1.9324210E+03;
     Omega11(1,1,0) = -7.7439615E-03;  Omega11(1,1,1) = 1.7129007E-01;   Omega11(1,1,2) = -1.4809088E+00;  Omega11(1,1,3) = 2.1284951E+03;
+ 
+  } else if (gas_model == "AIR-5"){
 
-  } else if (Kind_GasModel == "AIR-5"){
     /*--- Check for errors in the initialization ---*/
     if (nSpecies != 5) {
       cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
@@ -612,9 +613,9 @@ CUserDefinedTCLib::CUserDefinedTCLib(const CConfig* config, unsigned short val_n
   else            { nHeavy = nSpecies;   nEl = 0; }
 }
 
-CUserDefinedTCLib::~CUserDefinedTCLib(){}
+CSU2TCLib::~CSU2TCLib(){}
 
-void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
+void CSU2TCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double val_temperature, su2double val_temperature_ve){
 
   rhos = val_rhos;
   T    = val_temperature;
@@ -628,7 +629,7 @@ void CUserDefinedTCLib::SetTDStateRhosTTv(vector<su2double>& val_rhos, su2double
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
+vector<su2double>& CSU2TCLib::GetSpeciesCvTraRot(){
 
   // NOTE: This will be non-const with future models.
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
@@ -637,7 +638,7 @@ vector<su2double>& CUserDefinedTCLib::GetSpeciesCvTraRot(){
   return Cvtrs;
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeSpeciesCvVibEle(){
+vector<su2double>& CSU2TCLib::ComputeSpeciesCvVibEle(){
 
   su2double thoTve, exptv, num, num2, num3, denom, Cvvs, Cves;
   unsigned short iElectron = nSpecies-1;
@@ -689,7 +690,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesCvVibEle(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeMixtureEnergies(){
+vector<su2double>& CSU2TCLib::ComputeMixtureEnergies(){
 
   su2double rhoEmix, rhoEve, Ef, Ev, Ee, num, denom;
 
@@ -741,7 +742,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeMixtureEnergies(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEve(su2double val_T){
+vector<su2double>& CSU2TCLib::ComputeSpeciesEve(su2double val_T){
 
   su2double Ev, Eel, Ef, num, denom;
   unsigned short iElectron = nSpecies-1;
@@ -778,10 +779,9 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEve(su2double val_T){
   }
 
   return eves;
-
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(){
+vector<su2double>& CSU2TCLib::ComputeNetProductionRates(){
 
   /*--- Nonequilibrium chemistry ---*/
   unsigned short ii, iReaction;
@@ -861,7 +861,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeNetProductionRates(){
   return ws;
 }
 
-void CUserDefinedTCLib::ComputeKeqConstants(unsigned short val_Reaction) {
+void CSU2TCLib::ComputeKeqConstants(unsigned short val_Reaction) {
 
   unsigned short ii, iIndex, tbl_offset, pwr;
   su2double N, tmp1, tmp2;
@@ -911,7 +911,7 @@ void CUserDefinedTCLib::ComputeKeqConstants(unsigned short val_Reaction) {
   }
 }
 
-su2double CUserDefinedTCLib::ComputeEveSourceTerm(){
+su2double CSU2TCLib::ComputeEveSourceTerm(){
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
@@ -985,7 +985,7 @@ su2double CUserDefinedTCLib::ComputeEveSourceTerm(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
+vector<su2double>& CSU2TCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
 
   vector<su2double> cvtrs;
 
@@ -1000,7 +1000,7 @@ vector<su2double>& CUserDefinedTCLib::ComputeSpeciesEnthalpy(su2double val_T, su
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetDiffusionCoeff(){
+vector<su2double>& CSU2TCLib::GetDiffusionCoeff(){
 
   if(Kind_TransCoeffModel == WILKE)
    DiffusionCoeffWBE();
@@ -1011,7 +1011,7 @@ vector<su2double>& CUserDefinedTCLib::GetDiffusionCoeff(){
 
 }
 
-su2double CUserDefinedTCLib::GetViscosity(){
+su2double CSU2TCLib::GetViscosity(){
 
   if(Kind_TransCoeffModel == WILKE)
     ViscosityWBE();
@@ -1022,7 +1022,7 @@ su2double CUserDefinedTCLib::GetViscosity(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::GetThermalConductivities(){
+vector<su2double>& CSU2TCLib::GetThermalConductivities(){
 
   if(Kind_TransCoeffModel == WILKE)
     ThermalConductivitiesWBE();
@@ -1033,7 +1033,7 @@ vector<su2double>& CUserDefinedTCLib::GetThermalConductivities(){
 
 }
 
-void CUserDefinedTCLib::DiffusionCoeffWBE(){
+void CSU2TCLib::DiffusionCoeffWBE(){
 
   su2double conc, Mi, Mj, M, Omega_ij, denom;
   su2activematrix Dij;
@@ -1088,7 +1088,7 @@ void CUserDefinedTCLib::DiffusionCoeffWBE(){
   }    
 }
 
-void CUserDefinedTCLib::ViscosityWBE(){
+void CSU2TCLib::ViscosityWBE(){
 
   su2double tmp1, tmp2, conc;
 
@@ -1123,7 +1123,7 @@ void CUserDefinedTCLib::ViscosityWBE(){
   }
 }
 
-void CUserDefinedTCLib::ThermalConductivitiesWBE(){
+void CSU2TCLib::ThermalConductivitiesWBE(){
 
   vector<su2double> ks, kves;
 
@@ -1149,7 +1149,7 @@ void CUserDefinedTCLib::ThermalConductivitiesWBE(){
   ThermalConductivities[1] = ThermalCond_ve;
 }
 
-void CUserDefinedTCLib::DiffusionCoeffGY(){
+void CSU2TCLib::DiffusionCoeffGY(){
 
   su2double Mi, Mj, pi, kb, gam_i, gam_j, gam_t, denom, d1_ij, D_ij, Omega_ij;
 
@@ -1236,7 +1236,7 @@ void CUserDefinedTCLib::DiffusionCoeffGY(){
   }
 }
 
-void CUserDefinedTCLib::ViscosityGY(){
+void CSU2TCLib::ViscosityGY(){
 
   su2double Mi, Mj, pi, Na, gam_i, gam_j, denom, Omega_ij, d2_ij;
 
@@ -1298,7 +1298,7 @@ void CUserDefinedTCLib::ViscosityGY(){
   }
 }
 
-void CUserDefinedTCLib::ThermalConductivitiesGY(){
+void CSU2TCLib::ThermalConductivitiesGY(){
 
   su2double Cvve, Mi, Mj, mi, mj, pi, R, Na, kb, gam_i, gam_j, denom_t, denom_r, d1_ij, d2_ij, a_ij, Omega_ij, rhoCvve;
 
@@ -1369,7 +1369,7 @@ void CUserDefinedTCLib::ThermalConductivitiesGY(){
 
 }
 
-vector<su2double>& CUserDefinedTCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
+vector<su2double>& CSU2TCLib::ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoE, su2double rhoEve, su2double rhoEvel){
 
   vector<su2double> val_eves;
   su2double rhoCvtr, rhoE_f, rhoE_ref, rhoEve_t, Tve2, Tve_o, Btol, Tmin, Tmax;
@@ -1432,9 +1432,9 @@ vector<su2double>& CUserDefinedTCLib::ComputeTemperatures(vector<su2double>& val
 
 }
 
-void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
+void CSU2TCLib::GetChemistryEquilConstants(unsigned short iReaction){
 
-  if (Kind_GasModel == "O2"){
+  if (gas_model == "O2"){
 
     //O2 + M -> 2O + M
     RxnConstantTable(0,0) = 1.8103;  RxnConstantTable(0,1) = 1.9607;  RxnConstantTable(0,2) = 3.5716;  RxnConstantTable(0,3) = -7.3623;   RxnConstantTable(0,4) = 0.083861;
@@ -1444,7 +1444,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 0.52455; RxnConstantTable(4,1) = 2.4715;  RxnConstantTable(4,2) = 1.7342;  RxnConstantTable(4,3) = -6.55534;  RxnConstantTable(4,4) = 0.030209;
     RxnConstantTable(5,0) = 0.50989; RxnConstantTable(5,1) = 2.4773;  RxnConstantTable(5,2) = 1.7132;  RxnConstantTable(5,3) = -6.5441;   RxnConstantTable(5,4) = 0.029591;
 
-  } else if (Kind_GasModel == "N2"){
+  } else if (gas_model == "N2"){ 
 
     //N2 + M -> 2N + M
     RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14
@@ -1454,7 +1454,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 1.4766;  RxnConstantTable(4,1) = 1.62910; RxnConstantTable(4,2) = 1.2153;  RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.00944;  //n = 1E18
     RxnConstantTable(5,0) = 1.4766;  RxnConstantTable(5,1) = 1.62910; RxnConstantTable(5,2) = 1.2153;  RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.00944;  //n = 1E19
 
-  } else if (Kind_GasModel == "ARGON_SID"){
+  } else if (gas_model == "ARGON_SID"){
 
     //N2 + M -> 2N + M
     RxnConstantTable(0,0) = 3.4907;  RxnConstantTable(0,1) = 0.83133; RxnConstantTable(0,2) = 4.0978;  RxnConstantTable(0,3) = -12.728; RxnConstantTable(0,4) = 0.07487;   //n = 1E14
@@ -1464,7 +1464,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
     RxnConstantTable(4,0) = 1.4766;  RxnConstantTable(4,1) = 1.62910; RxnConstantTable(4,2) = 1.2153;  RxnConstantTable(4,3) = -11.457; RxnConstantTable(4,4) = -0.00944;  //n = 1E18
     RxnConstantTable(5,0) = 1.4766;  RxnConstantTable(5,1) = 1.62910; RxnConstantTable(5,2) = 1.2153;  RxnConstantTable(5,3) = -11.457; RxnConstantTable(5,4) = -0.00944;  //n = 1E19
 
-  } else if (Kind_GasModel == "AIR-5"){
+  } else if (gas_model == "AIR-5"){
 
     if (iReaction <= 4) {
 
@@ -1517,7 +1517,7 @@ void CUserDefinedTCLib::GetChemistryEquilConstants(unsigned short iReaction){
       RxnConstantTable(5,0) = -0.002428; RxnConstantTable(5,1) = -1.7415; RxnConstantTable(5,2) = -1.2331;   RxnConstantTable(5,3) = -0.95365;  RxnConstantTable(5,4) = -0.04585;
     }
 
-  } else if (Kind_GasModel == "AIR-7"){
+  } else if (gas_model == "AIR-7"){  
 
     if (iReaction <= 6) {
 

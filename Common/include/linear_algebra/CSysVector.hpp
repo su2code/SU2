@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,8 +67,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nElm = 0;          /*!< \brief Total number of elements (or number elements on this processor). */
   unsigned long nElmDomain = 0;    /*!< \brief Total number of elements without Ghost cells. */
   unsigned long nVar = 0;          /*!< \brief Number of elements in a block. */
-  mutable ScalarType dotRes = 0.0; /*!< \brief Result of dot product. to perform a reduction with OpenMP the
-                                               variable needs to be declared outside the parallel region. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -101,7 +99,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Default constructor of the class.
    */
-  CSysVector() {}
+  CSysVector() = default;
 
   /*!
    * \brief Destructor
@@ -291,8 +289,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class T>
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
+    static ScalarType dotRes;
     /*--- All threads get the same "view" of the vectors and shared variable. ---*/
     SU2_OMP_BARRIER
+    SU2_OMP_MASTER
     dotRes = 0.0;
     SU2_OMP_BARRIER
 
@@ -315,7 +315,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       SU2_OMP_MASTER {
         sum = dotRes;
         const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
-        SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, MPI_COMM_WORLD);
+        SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
       }
     }
 #endif

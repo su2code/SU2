@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -492,9 +492,21 @@ public:
    * \brief Get the edge index from using the nodes of the edge.
    * \param[in] first_point - First point of the edge.
    * \param[in] second_point - Second point of the edge.
+   * \param[in] error - Throw error if edge does not exist.
    * \return Index of the edge.
    */
-  long FindEdge(unsigned long first_point, unsigned long second_point) const;
+  inline long FindEdge(unsigned long first_point, unsigned long second_point, bool error = true) const {
+    for (unsigned short iNode = 0; iNode < nodes->GetnPoint(first_point); iNode++) {
+      auto iPoint = nodes->GetPoint(first_point, iNode);
+      if (iPoint == second_point) return nodes->GetEdge(first_point, iNode);
+    }
+    if (error) {
+      char buf[100];
+      SPRINTF(buf, "Can't find the edge that connects %lu and %lu.", first_point, second_point);
+      SU2_MPI::Error(buf, CURRENT_FUNCTION);
+    }
+    return -1;
+  }
 
   /*!
    * \brief Get the edge index from using the nodes of the edge.
@@ -502,7 +514,9 @@ public:
    * \param[in] second_point - Second point of the edge.
    * \return Index of the edge.
    */
-  bool CheckEdge(unsigned long first_point, unsigned long second_point) const;
+  inline bool CheckEdge(unsigned long first_point, unsigned long second_point) const {
+    return FindEdge(first_point, second_point, false) >= 0;
+  }
 
   /*!
    * \brief Get the distance between a plane (defined by three point) and a point.
@@ -685,11 +699,6 @@ public:
   inline virtual void GatherInOutAverageValues(CConfig *config, bool allocate) {}
 
   /*!
-   * \brief Sets CG coordinates.
-   */
-  inline virtual void SetCoord_CG(void) {}
-
-  /*!
    * \brief Set max length.
    * \param[in] config - Definition of the particular problem.
    */
@@ -705,9 +714,8 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void VisualizeControlVolume(CConfig *config, unsigned short action) {}
+  inline virtual void VisualizeControlVolume(const CConfig *config) const {}
 
   /*!
    * \brief A virtual member.
@@ -732,7 +740,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(CConfig *config, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CConfig *config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -1063,13 +1071,6 @@ public:
    * \return Local index that correspond with the global index.
    */
   inline virtual long GetGlobal_to_Local_Point(unsigned long val_ipoint) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_ipoint - Global marker.
-   * \return Local marker that correspond with the global index.
-   */
-  inline virtual unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker) const { return 0; }
 
   /*!
    * \brief Retrieve total number of elements in a simulation across all processors.
@@ -1589,10 +1590,9 @@ public:
                               const su2double *cg_elem, vector<long> &neighbours, vector<bool> &is_neighbor) const;
 
   /*!
-   * \brief Compute and store the volume of the elements.
-   * \param[in] config - Problem configuration.
+   * \brief Compute and store the volume of the primal elements.
    */
-  void SetElemVolume(CConfig *config);
+  void SetElemVolume();
 
   /*!
    * \brief Set the multigrid index for the current geometry object.
@@ -1610,7 +1610,7 @@ public:
    * \brief A virtual member.
    * \param config - Config
    */
-  inline virtual void ComputeMeshQualityStatistics(CConfig *config) {}
+  inline virtual void ComputeMeshQualityStatistics(const CConfig *config) {}
 
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.

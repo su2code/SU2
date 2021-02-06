@@ -2,7 +2,7 @@
  * \file flow_diffusion.hpp
  * \brief Delarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -161,20 +161,6 @@ protected:
                        const su2double* val_edge_vector,
                        su2double val_dist_ij_2,
                        const unsigned short val_nPrimVar);
-
-  /*!
-   * \brief Initialize the Reynolds Stress Matrix
-   * \param[in] turb_ke turbulent kinetic energy of node
-   */
-  void SetReynoldsStressMatrix(su2double turb_ke);
-
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
-   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
-   */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
 
 public:
 

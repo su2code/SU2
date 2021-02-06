@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 7.0.8 "Blackbird"
+# \version 7.1.0 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
 # 
@@ -54,7 +54,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/fluid/CPengRobinson.cpp \
   ../src/fluid/CVanDerWaalsGas.cpp \
   ../src/fluid/CNEMOGas.cpp \
-  ../src/fluid/CUserDefinedTCLib.cpp \
+  ../src/fluid/CSU2TCLib.cpp \
   ../src/fluid/CMutationTCLib.cpp \
   ../src/integration/CIntegration.cpp \
   ../src/integration/CSingleGridIntegration.cpp \

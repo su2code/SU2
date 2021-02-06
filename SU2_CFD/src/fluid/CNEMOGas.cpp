@@ -2,7 +2,7 @@
  * \file CNEMOGas.cpp
  * \brief Source of the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,7 +49,7 @@ CNEMOGas::CNEMOGas(const CConfig* config, unsigned short val_nDim): CFluidModel(
   energies.resize(nEnergyEq,0.0);  
   ThermalConductivities.resize(nEnergyEq,0.0);
 
-  Kind_GasModel        = config->GetGasModel();
+  gas_model            = config->GetGasModel();
   Kind_TransCoeffModel = config->GetKind_TransCoeffModel();
 
   frozen               = config->GetFrozen();

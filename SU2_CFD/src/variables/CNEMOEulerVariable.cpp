@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -75,11 +75,16 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   }
 
   /*--- Allocate & initialize residual vectors ---*/
-
   Res_TruncError.resize(nPoint,nVar) = su2double(0.0);
 
-  /*--- Only for residual smoothing (multigrid) ---*/
+  /*--- Size Grad_AuxVar for axiysmmetric ---*/
+  if (config->GetAxisymmetric()){
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint,nAuxVar,nDim,0.0);
+    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
+  }
 
+  /*--- Only for residual smoothing (multigrid) ---*/
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (config->GetMG_CorrecSmooth(iMesh) > 0) {
       Residual_Sum.resize(nPoint,nVar);
@@ -136,16 +141,16 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
   /* Under-relaxation parameter. */
   LocalCFL.resize(nPoint) = su2double(0.0);
-
+  
   /*--- Loop over all points --*/
   for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
 
-      /*--- Reset velocity^2 [m2/s2] to zero ---*/
+    /*--- Reset velocity^2 [m2/s2] to zero ---*/
     sqvel = 0.0;
-
+  
     /*--- Set mixture state ---*/
     fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
-
+  
     /*--- Compute necessary quantities ---*/
     rho = fluidmodel->GetDensity();
     soundspeed = fluidmodel->ComputeSoundSpeed();
@@ -153,7 +158,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
       sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
     }
     energies = fluidmodel->ComputeMixtureEnergies();      
-
+  
     /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) 
       Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies];
@@ -162,14 +167,14 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
     Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
-
+  
     Solution_Old = Solution;
-
+  
     /*--- Assign primitive variables ---*/
     Primitive(iPoint,T_INDEX)   = val_temperature;
     Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
     Primitive(iPoint,P_INDEX)   = val_pressure;
-  }
+  } 
 }
 
 void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
@@ -265,8 +270,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   /*--- Assign temperatures ---*/
   const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel);
 
-  /*--- Translational-Rotational Temperature ---*/
-  V[T_INDEX] = T[0];
+  /*--- Temperatures ---*/
+  V[T_INDEX]   = T[0];
+  V[TVE_INDEX] = T[1];
   
   // Determine if the temperature lies within the acceptable range
   //TODO: fIX THIS
@@ -298,8 +304,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
       nonPhys      = true;
       V[TVE_INDEX] = Tvemax;
       U[nSpecies+nDim+1] = rhoEve_max;
-    } else {
-      V[TVE_INDEX]   = T[1];
     }
   } else {
     //TODO: can e-modes/vibe modes be active?

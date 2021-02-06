@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.cpp
  * \brief Space and time integration for structural problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,10 +62,8 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ****geometry, CSolve
                        RunTime_EqSystem);
 
   solver->Postprocessing(geometry[iZone][iInst][MESH_0],
-                         solver_container[iZone][iInst][MESH_0],
                          config[iZone],
-                         numerics_container[iZone][iInst][MESH_0][SolContainer_Position],
-                         MESH_0);
+                         numerics_container[iZone][iInst][MESH_0][SolContainer_Position]);
 }
 
 void CStructuralIntegration::Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container,

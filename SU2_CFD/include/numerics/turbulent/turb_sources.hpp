@@ -3,7 +3,7 @@
  * \brief Delarations of numerics classes for integration of source
  *        terms in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -158,7 +158,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CSourcePieceWise_TurbSA_COMP final : public CSourceBase_TurbSA {
 private:
@@ -193,7 +193,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CSourcePieceWise_TurbSA_E final : public CSourceBase_TurbSA {
 private:
@@ -226,7 +226,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  */
 class CSourcePieceWise_TurbSA_E_COMP : public CSourceBase_TurbSA {
 private:
@@ -322,21 +322,9 @@ private:
   bool sustaining_terms;
 
   /*!
-   * \brief Initialize the Reynolds Stress Matrix
-   * \param[in] turb_ke turbulent kinetic energy of node
+   * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+   * \param[in] turb_ke: turbulent kinetic energy of the node
    */
-  void SetReynoldsStressMatrix(su2double turb_ke);
-
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] config: config file
-   */
-  void SetPerturbedRSM(su2double turb_ke, const CConfig* config);
-  /*!
-     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
-     * \param[in] turb_ke: turbulent kinetic energy of the node
-     */
   void SetPerturbedStrainMag(su2double turb_ke);
 
 public:
