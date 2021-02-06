@@ -134,3 +134,14 @@ void CFEMStandardPrismVolumeSol::BasisFunctionsInPoints(const vector<vector<pass
         parametric coordinates. ---*/
   VandermondePrism(nPoly, parCoor[0], parCoor[1], parCoor[2], matBasis);
 }
+
+passivedouble CFEMStandardPrismVolumeSol::ValBasis0(void) {
+
+  /*--- Determine the value of the 3D constant basis function. ---*/
+  ColMajorMatrix<passivedouble> leg(1,1);
+  vector<passivedouble> parCoor(1, 0.0);
+  VandermondePrism(0, parCoor, parCoor, parCoor, leg);
+
+  /*--- Return the value of the 3D basis function. ---*/
+  return leg(0,0);
+}

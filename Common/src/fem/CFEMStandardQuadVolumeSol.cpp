@@ -95,3 +95,14 @@ void CFEMStandardQuadVolumeSol::BasisFunctionsInPoints(const vector<vector<passi
       for(unsigned short l=0; l<nCoor; ++l)
         matBasis(l,ii) = legR(l,i)*legS(l,j);
 }
+
+passivedouble CFEMStandardQuadVolumeSol::ValBasis0(void) {
+
+  /*--- Determine the value of the 1D constant basis function. ---*/
+  ColMajorMatrix<passivedouble> leg1D(1,1);
+  vector<passivedouble> parCoor(1, 0.0);
+  Vandermonde1D(0, parCoor, leg1D);
+
+  /*--- Return the value of the 2D basis function. ---*/
+  return leg1D(0,0)*leg1D(0,0);
+}

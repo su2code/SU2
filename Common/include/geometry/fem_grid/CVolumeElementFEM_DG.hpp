@@ -96,4 +96,15 @@ public:
    */
   void AllocateResiduals(CConfig        *config,
                          unsigned short nVar);
+
+  /*!
+   * \brief Function, which sets the solution in this element
+   *        to a constant solution.
+   * \param[in] sol      - Solution to be set for this element.
+   * \param[in] nVar     - Number of variables to be set.
+   * \param[in] startInd - Start index in the solution variable.
+   */
+  void SetConstantSolution(const su2double *sol,
+                           unsigned short  nVar,
+                           unsigned short  startInd);
 };

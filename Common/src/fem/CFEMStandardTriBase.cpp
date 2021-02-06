@@ -483,8 +483,8 @@ void CFEMStandardTriBase::VandermondeTriangle(const unsigned short          mPol
         by a combination of a Jacobi polynomial and a Legendre polynomial. This
         is the result of the orthonormalization of the monomial basis. ---*/
   unsigned short ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j, ++ii) {
+  for(unsigned short i=0; i<=mPoly; ++i) {
+    for(unsigned short j=0; j<=(mPoly-i); ++j, ++ii) {
       for(unsigned short k=0; k<r.size(); ++k) {
 
         /*--- Determine the coefficients a and b. ---*/

@@ -122,3 +122,14 @@ void CFEMStandardTetVolumeSol::BasisFunctionsInPoints(const vector<vector<passiv
         parametric coordinates. ---*/
   VandermondeTetrahedron(nPoly, parCoor[0], parCoor[1], parCoor[2], matBasis);
 }
+
+passivedouble CFEMStandardTetVolumeSol::ValBasis0(void) {
+
+  /*--- Determine the value of the 3D constant basis function. ---*/
+  ColMajorMatrix<passivedouble> leg(1,1);
+  vector<passivedouble> parCoor(1, -1.0);
+  VandermondeTetrahedron(0, parCoor, parCoor, parCoor, leg);
+
+  /*--- Return the value of the 3D basis function. ---*/
+  return leg(0,0);
+}

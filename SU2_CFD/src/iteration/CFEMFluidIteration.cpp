@@ -59,6 +59,18 @@ void CFEMFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
 
   if (config[val_iZone]->GetKind_Solver() == FEM_LES) config[val_iZone]->SetGlobalParam(FEM_LES, RUNTIME_FLOW_SYS);
 
+  if (config[val_iZone]->GetKind_Solver() == FEM_INC_EULER)
+    config[val_iZone]->SetGlobalParam(FEM_INC_EULER, RUNTIME_FLOW_SYS);
+
+  if (config[val_iZone]->GetKind_Solver() == FEM_INC_NAVIER_STOKES)
+    config[val_iZone]->SetGlobalParam(FEM_INC_NAVIER_STOKES, RUNTIME_FLOW_SYS);
+
+  if (config[val_iZone]->GetKind_Solver() == FEM_INC_RANS)
+    config[val_iZone]->SetGlobalParam(FEM_INC_RANS, RUNTIME_FLOW_SYS);
+
+  if (config[val_iZone]->GetKind_Solver() == FEM_INC_LES)
+    config[val_iZone]->SetGlobalParam(FEM_INC_LES, RUNTIME_FLOW_SYS);
+
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
 
   integration[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,

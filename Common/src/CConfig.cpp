@@ -7644,8 +7644,9 @@ CConfig::~CConfig(void) {
   delete[] Periodic_Translate;
 
   delete[] MG_CorrecSmooth;
-         delete[] PlaneTag;
-              delete[] CFL;
+  delete[] PlaneTag;
+  delete[] CFL;
+  delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 

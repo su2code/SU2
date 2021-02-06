@@ -41,7 +41,7 @@ class CFEM_DG_SolverBase : public CSolver {
 protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
-  CFluidModel *FluidModel = nullptr; /*!< \brief fluid model used in the solver */
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   su2double Mach_Inf        = 0.0;      /*!< \brief Mach number at the infinity. */
   su2double Density_Inf     = 0.0;      /*!< \brief Density at the infinity. */
@@ -204,6 +204,12 @@ public:
   ~CFEM_DG_SolverBase(void) override;
 
 protected:
+
+  /*!
+   * \brief Function, which returns the fluid model for this thread.
+   * \return Pointer to the fluid model to be used.
+   */
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
 
   /*!
    * \brief Function, which determines the communication pattern of the flow

@@ -65,7 +65,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
     case RUNGE_KUTTA_EXPLICIT: iLimit = config[iZone]->GetnRKStep(); break;
     case CLASSICAL_RK4_EXPLICIT: iLimit = 4; break;
     case ADER_DG: iLimit = 1; useADER = true; break;
-    case EULER_EXPLICIT: case EULER_IMPLICIT: iLimit = 1; break; }
+    case EULER_EXPLICIT: case EULER_IMPLICIT: iLimit = 1; break;
+  }
 
   /*--- In case an unsteady simulation is carried out, it is possible that a
         synchronization time step is specified. If so, set the boolean
@@ -74,8 +75,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
   bool TimeSyncSpecified   = false;
   const su2double TimeSync = config[iZone]->GetTime_Step()/config[iZone]->GetTime_Ref();
   if(config[iZone]->GetTime_Marching() == TIME_STEPPING &&
-     config[iZone]->GetUnst_CFL()            != 0.0           &&
-     TimeSync                                != 0.0) TimeSyncSpecified = true;
+     config[iZone]->GetUnst_CFL() != 0.0 &&
+     TimeSync                     != 0.0) TimeSyncSpecified = true;
 
   /*--- Outer loop, which is only active when a synchronization time has been
         specified for an unsteady simulation. ---*/

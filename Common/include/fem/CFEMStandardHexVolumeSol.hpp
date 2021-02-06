@@ -83,6 +83,13 @@ public:
   void BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
                               ColMajorMatrix<passivedouble>        &matBasis) override;
 
+  /*!
+   * \brief Function that makes available the value of the first (constant)
+   *        basis function of this element.
+   * \return - The value of the first (constant) basis function.
+   */
+  passivedouble ValBasis0(void) override;
+
 private:
 
   vector<passivedouble> rLineSolDOFs; /*!< \brief 1D parametric coordinates of the nodal solution DOFs. */

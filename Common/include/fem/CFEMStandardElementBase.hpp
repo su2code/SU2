@@ -312,6 +312,17 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \return - The value of the first (constant) basis function.
+   */
+  virtual passivedouble ValBasis0(void) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+    return -1.0; // To avoid a compiler warning.
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \param[in] config   - Object, which contains the input parameters.
    * \param[in] elemType - Type of the volume element adjacent to this boundary face.
    * \return The work estimate for a boundary face of this type.

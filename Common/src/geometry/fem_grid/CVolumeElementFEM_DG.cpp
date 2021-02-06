@@ -75,3 +75,29 @@ void CVolumeElementFEM_DG::AllocateResiduals(CConfig        *config,
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
     resTotDOFsADER.resize(nDOFsPad,nVar);
 }
+
+void CVolumeElementFEM_DG::SetConstantSolution(const su2double *sol,
+                                               unsigned short  nVar,
+                                               unsigned short  startInd) {
+
+  /*--- Easier storage of the number of DOFs. ---*/
+  const unsigned short nDOFs = solDOFs.rows();
+
+  /*--- Determine the inverse value of the first basis function
+        for this element. ---*/
+  const passivedouble invBasis0 = 1.0/standardElemFlow->ValBasis0();
+
+  /*--- Loop over the number of variables to set. ---*/
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+    const unsigned short ii = iVar+startInd;
+
+    /*--- Initialize the solution to zero. ---*/
+    SU2_OMP_SIMD
+    for(unsigned short i=0; i<nDOFs; ++i)
+      solDOFs(i,ii) = 0.0;
+
+    /*--- Set the first entry of solDOFs to the constant solution. ---*/
+    solDOFs(0,ii) = sol[iVar]*invBasis0;
+  }
+  
+}

@@ -79,6 +79,13 @@ public:
   void BasisFunctionsInPoints(const vector<vector<passivedouble> > &parCoor,
                               ColMajorMatrix<passivedouble>        &matBasis) override;
 
+  /*!
+   * \brief Function that makes available the value of the first (constant)
+   *        basis function of this element.
+   * \return - The value of the first (constant) basis function.
+   */
+  passivedouble ValBasis0(void) override;
+
 private:
   vector<passivedouble> rPyraSolDOFs; /*!< \brief Parametric r-coordinates of the pyramid solution DOFs. */
   vector<passivedouble> sPyraSolDOFs; /*!< \brief Parametric s-coordinates of the pyramid solution DOFs. */

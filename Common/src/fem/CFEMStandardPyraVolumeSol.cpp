@@ -126,3 +126,14 @@ void CFEMStandardPyraVolumeSol::BasisFunctionsInPoints(const vector<vector<passi
         parametric coordinates. ---*/
   VandermondePyramid(nPoly, parCoor[0], parCoor[1], parCoor[2], matBasis);
 }
+
+passivedouble CFEMStandardPyraVolumeSol::ValBasis0(void) {
+
+  /*--- Determine the value of the 3D constant basis function. ---*/
+  ColMajorMatrix<passivedouble> leg(1,1);
+  vector<passivedouble> parCoor(1, 0.0);
+  VandermondePyramid(0, parCoor, parCoor, parCoor, leg);
+
+  /*--- Return the value of the 3D basis function. ---*/
+  return leg(0,0);
+}

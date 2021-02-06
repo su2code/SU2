@@ -199,7 +199,7 @@ CFEM_DG_SolverBase::CFEM_DG_SolverBase(CGeometry      *geometry,
 
 CFEM_DG_SolverBase::~CFEM_DG_SolverBase(void) {
 
-  delete FluidModel;
+  for(auto& model : FluidModel) delete model;
 }
 
 void CFEM_DG_SolverBase::DetermineGraphDOFs(const CMeshFEM_DG *DGGeometry,
