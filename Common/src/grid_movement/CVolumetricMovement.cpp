@@ -168,11 +168,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
 
-    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
-    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Initiate(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Complete(LinSysSol, geometry, config, SOLUTION_MATRIX);
 
-    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
-    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Initiate(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Complete(LinSysRes, geometry, config, SOLUTION_MATRIX);
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 

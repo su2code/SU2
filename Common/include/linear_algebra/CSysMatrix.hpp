@@ -78,6 +78,30 @@ struct mkl_jit_wrapper<float> {
 class CConfig;
 class CGeometry;
 
+struct CSysMatrixComms {
+  /*!
+   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
+   *        communication and to launch non-blocking sends and recvs.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  template<class T>
+  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config, unsigned short commType);
+
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by
+   *        Initiate() and unpacking of the data in the vector.
+   * \param[in] x        - CSysVector holding the array of data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  template<class T>
+  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config, unsigned short commType);
+};
+
 /*!
  * \class CSysMatrix
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
@@ -85,6 +109,8 @@ class CGeometry;
 template<class ScalarType>
 class CSysMatrix {
 private:
+  friend class CSysMatrixComms;
+
   const int rank;     /*!< \brief MPI Rank. */
   const int size;     /*!< \brief MPI Size. */
 
@@ -379,34 +405,6 @@ public:
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
   void SetValDiagonalZero(void);
-
-  /*!
-   * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
-   *        communication and to launch non-blocking sends and recvs.
-   * \param[in] x        - CSysVector holding the array of data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be communicated.
-   */
-  template<class OtherType>
-  static void InitiateComms(const CSysVector<OtherType> & x,
-                            CGeometry *geometry,
-                            const CConfig *config,
-                            unsigned short commType);
-
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched by
-   *        InitiateComms() and unpacking of the data in the vector.
-   * \param[in] x        - CSysVector holding the array of data.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be unpacked.
-   */
-  template<class OtherType>
-  static void CompleteComms(CSysVector<OtherType> & x,
-                            CGeometry *geometry,
-                            const CConfig *config,
-                            unsigned short commType);
 
   /*!
    * \brief Get a pointer to the start of block "ij"

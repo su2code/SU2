@@ -256,8 +256,8 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
     }
   }
 
-  solvers[FLOW_SOL]->Jacobian.InitiateComms(v, geometry, config, SOLUTION_MATRIX);
-  solvers[FLOW_SOL]->Jacobian.CompleteComms(v, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Initiate(v, geometry, config, SOLUTION_MATRIX);
+  CSysMatrixComms::Complete(v, geometry, config, SOLUTION_MATRIX);
 }
 
 void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
@@ -277,7 +277,7 @@ void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<
         v(iPoint,iVar) = SU2_TYPE::GetValue(delta) * u(iPoint,iVar);
     }
 
-    solvers[FLOW_SOL]->Jacobian.InitiateComms(v, geometry, config, SOLUTION_MATRIX);
-    solvers[FLOW_SOL]->Jacobian.CompleteComms(v, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Initiate(v, geometry, config, SOLUTION_MATRIX);
+    CSysMatrixComms::Complete(v, geometry, config, SOLUTION_MATRIX);
   }
 }
