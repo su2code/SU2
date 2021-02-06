@@ -54,7 +54,6 @@ CSysSolve<ScalarType>::CSysSolve(const bool mesh_deform_mode) :
   mesh_deform(mesh_deform_mode),
   cg_ready(false),
   bcg_ready(false),
-  gmres_ready(false),
   smooth_ready(false),
   LinSysSol_ptr(nullptr),
   LinSysRes_ptr(nullptr) {
@@ -355,18 +354,15 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     SU2_MPI::Error("FGMRES subspace is too large.", CURRENT_FUNCTION);
   }
 
-  /*--- Allocate if not allocated yet
-   Note: elements in w and z are initialized to x to avoid creating
-   a temporary CSysVector object for the copy constructor ---*/
+  /*--- Allocate if not allocated yet ---*/
 
-  if (!gmres_ready) {
+  if (W.size() <= m) {
     SU2_OMP_BARRIER
     SU2_OMP_MASTER {
       W.resize(m+1);
       Z.resize(m+1);
       for (auto& w : W) w.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
       for (auto& z : Z) z.Initialize(x.GetNBlk(), x.GetNBlkDomain(), x.GetNVar(), nullptr);
-      gmres_ready = true;
     }
     SU2_OMP_BARRIER
   }

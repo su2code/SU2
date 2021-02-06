@@ -389,10 +389,10 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
   template<class OtherType>
-  void InitiateComms(const CSysVector<OtherType> & x,
-                     CGeometry *geometry,
-                     const CConfig *config,
-                     unsigned short commType) const;
+  static void InitiateComms(const CSysVector<OtherType> & x,
+                            CGeometry *geometry,
+                            const CConfig *config,
+                            unsigned short commType);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by
@@ -403,10 +403,10 @@ public:
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
   template<class OtherType>
-  void CompleteComms(CSysVector<OtherType> & x,
-                     CGeometry *geometry,
-                     const CConfig *config,
-                     unsigned short commType) const;
+  static void CompleteComms(CSysVector<OtherType> & x,
+                            CGeometry *geometry,
+                            const CConfig *config,
+                            unsigned short commType);
 
   /*!
    * \brief Get a pointer to the start of block "ij"

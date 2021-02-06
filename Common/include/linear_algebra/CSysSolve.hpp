@@ -81,7 +81,6 @@ private:
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
-  mutable bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
   mutable bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
   mutable VectorType r;      /*!< \brief Residual in CG and BCGSTAB. */
