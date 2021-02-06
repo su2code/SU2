@@ -28,6 +28,7 @@
 #include "CIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 #ifdef HAVE_OMP
@@ -106,8 +107,15 @@ private:
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) precondIn[i] = u[i];
 
-    (*preconditioner)(precondIn, precondOut);
+//    (*preconditioner)(precondIn, precondOut);
 
+    MixedScalar eps = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+    auto iter = config->GetLinear_Solver_Iter();
+    auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
+
+    precondOut = MixedScalar(0.0);
+    solvers[FLOW_SOL]->System.FGMRES_LinSolver(precondIn, precondOut, product, *preconditioner,
+                                               eps, iter, eps, false, config, true);
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) v[i] = precondOut[i];
     SU2_OMP_BARRIER

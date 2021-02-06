@@ -195,16 +195,15 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   CPreconditionerWrapper precond(this);
   auto& linSysSol = GetSolutionVec(solvers[FLOW_SOL]->LinSysSol);
 
-  Scalar eps = 0.0;
-  Scalar tol = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+  Scalar eps = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
   auto iter = config->GetLinear_Solver_Iter();
 
-  auto nIter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, product, precond,
-                                          tol, iter, eps, false, config, true);
+  iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, product, precond, eps, iter, eps, false, config, true);
+
   SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
 
   SU2_OMP_MASTER {
-    solvers[FLOW_SOL]->SetIterLinSolver(nIter);
+    solvers[FLOW_SOL]->SetIterLinSolver(iter);
     solvers[FLOW_SOL]->SetResLinSolver(eps);
   }
   SU2_OMP_BARRIER
