@@ -2156,8 +2156,6 @@ enum MPI_QUANTITIES {
   SOLUTION_OLD         =  1,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    =  2,  /*!< \brief Conservative solution gradient communication. */
   SOLUTION_LIMITER     =  3,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_PRED        =  5,  /*!< \brief Solution predicted communication. */
-  SOLUTION_PRED_OLD    =  6,  /*!< \brief Solution predicted old communication. */
   SOLUTION_GEOMETRY    =  7,  /*!< \brief Geometry solution communication. */
   PRIMITIVE_GRADIENT   =  8,  /*!< \brief Primitive gradient communication. */
   PRIMITIVE_LIMITER    =  9,  /*!< \brief Primitive limiter communication. */
@@ -2177,7 +2175,6 @@ enum MPI_QUANTITIES {
   SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
   SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
-  SOLUTION_FEA_OLD     = 26,  /*!< \brief FEA solution old communication. */
   MESH_DISPLACEMENTS   = 27,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      = 28,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     = 29,  /*!< \brief Solution at time n-1. */

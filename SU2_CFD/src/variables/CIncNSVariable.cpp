@@ -44,67 +44,10 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   }
 }
 
-bool CIncNSVariable::SetVorticity_StrainMag() {
-
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-    /*--- Vorticity ---*/
-
-    Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
-
-    Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
-
-    if (nDim == 3) {
-      Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
-      Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
-    }
-
-    /*--- Strain Magnitude ---*/
-
-    AD::StartPreacc();
-    AD::SetPreaccIn(Gradient_Primitive[iPoint], nDim+1, nDim);
-
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += Gradient_Primitive(iPoint,iDim+1,iDim);
-
-    StrainMag(iPoint) = 0.0;
-
-    /*--- Add diagonal part ---*/
-
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
-    }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
-    }
-
-    /*--- Add off diagonals ---*/
-
-    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,1) + Gradient_Primitive(iPoint,2,0)), 2);
-
-    if (nDim == 3) {
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,2) + Gradient_Primitive(iPoint,3,0)), 2);
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,2,2) + Gradient_Primitive(iPoint,3,1)), 2);
-    }
-
-    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-
-    AD::SetPreaccOut(StrainMag(iPoint));
-    AD::EndPreacc();
-  }
-  return false;
-}
-
-
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
 
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
-
-  /*--- Store the density from the previous iteration. ---*/
-
-  Density_Old(iPoint) = GetDensity(iPoint);
 
   /*--- Set the value of the pressure ---*/
 

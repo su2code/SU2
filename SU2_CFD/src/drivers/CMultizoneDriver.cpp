@@ -81,7 +81,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
       break;
     case NEMO_EULER: case NEMO_NAVIER_STOKES:
       fluid_zone = true;
-      break;  
+      break;
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
@@ -263,9 +263,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
     }
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
