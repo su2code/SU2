@@ -43,6 +43,7 @@ Copyright holders might be the individual person or their respective employer. I
 ```
 Akshay.K.R
 Alejandro
+Alessandro Gastaldi
 Aman uz zaman Baig
 Amit Sachdeva
 Ana Lourenco
@@ -53,8 +54,10 @@ Antonio Rubino
 Arne Bachmann
 Beckett Y. Zhou
 Benjamin S. Kirk
-Brandon Tracey
+Brendan Tracey
 Carsten Othmer
+Brian Munguía
+Catarina Garbacz
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
@@ -65,6 +68,7 @@ Francisco D. Palacios
 Gaurav Bansal
 Giulio Gori
 Guillaume Bâty
+HL Kline
 Harichand M V
 IndianaStokes
 J. Sinsay
@@ -74,14 +78,20 @@ Jason Howison
 Jayant Mukhopadhaya
 Jeffrey van Oostrom
 Jessie Lauzon
+Johannes Blühdorn
+JonathanSmith1936
 João Loureiro
 Kedar Naik
 LaSerpe
+Lennaert Tol
 Matteo Pini
+Max Aehle
 Max Le
 Max Sagebaum
 Michele Gaffuri
 Mickael Philit
+Mladen Banovic
+Nicola Fonzi
 Ole Burghardt
 Patrick Mischke
 Paul Urbanczyk
@@ -91,6 +101,7 @@ Pete Bachant
 RaulFeijo55
 Ruben Sanchez
 Ryan Barrett
+SaettaE
 Salvatore Vitale
 Samet Cakmakcioglu
 Scott Imlay
@@ -104,7 +115,10 @@ Trent Lukaczyk
 VivaanKhatri
 Wally Maier
 aaronyicongfu
+aeroamit
 anilvar
+band-a-prend
+bigfootedrockmidget
 bmunguia
 chamsolli
 costat
@@ -115,14 +129,15 @@ demanosalvas
 dmudiger
 erangit
 flo
-hlkline
+fmpmorgado
+garcgutierrez
+jtneedels
 juliendm
 jvanoostrom
 koodlyakshay
 mcolonno
 minkwankim
 padronas
-sametcaka
 sravya91
 srcopela
 tobadavid
