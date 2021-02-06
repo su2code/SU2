@@ -303,7 +303,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                       CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short Boundary, iMarker, iChildren, iVar;
+  unsigned short iMarker, iChildren, iVar;
   su2double Area_Parent, Area_Children;
   const su2double *Solution_Fine = nullptr, *Solution_Coarse = nullptr;
 
@@ -340,10 +340,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   /*--- Remove any contributions from no-slip walls. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    if ((Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) ||
-        (Boundary == CHT_WALL_INTERFACE)) {
+    if (config->GetViscous_Wall(iMarker)) {
 
       SU2_OMP_FOR_STAT(32)
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
@@ -363,8 +360,6 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
   sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
-
-  /// TODO: Need to check for possible race condition here (multiple coarse points setting the same fine).
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -453,7 +448,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const su2double factor = config->GetDamp_Correc_Prolong(); //pow(config->GetDamp_Correc_Prolong(), iMesh+1);
+  const su2double factor = config->GetDamp_Correc_Prolong();
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Fine = 0; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
@@ -479,8 +474,6 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iChildren;
 
-  /// TODO: Need to check for possible race condition here (multiple coarse points setting the same fine).
-
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
@@ -498,7 +491,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const su2double *Residual_Fine;
 
   const unsigned short nVar = sol_coarse->GetnVar();
-  su2double factor = config->GetDamp_Res_Restric(); //pow(config->GetDamp_Res_Restric(), iMesh);
+  su2double factor = config->GetDamp_Res_Restric();
 
   su2double *Residual = new su2double[nVar];
 
@@ -521,10 +514,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   delete [] Residual;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
-
+    if (config->GetViscous_Wall(iMarker)) {
       SU2_OMP_FOR_STAT(32)
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
@@ -591,9 +581,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   /*--- Update the solution at the no-slip walls ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+    if (config->GetViscous_Wall(iMarker)) {
 
       SU2_OMP_FOR_STAT(32)
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
