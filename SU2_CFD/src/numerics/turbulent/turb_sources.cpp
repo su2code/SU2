@@ -767,7 +767,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim,
   /*--- Closure constants ---*/
   beta_star     = constants[6];
   sigma_k_1     = constants[0];
-  sigma_k_1     = constants[1];
+  sigma_k_2     = constants[1];
   sigma_omega_1 = constants[2];
   sigma_omega_2 = constants[3];
   beta_1        = constants[4];
