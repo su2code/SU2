@@ -7640,6 +7640,7 @@ CConfig::~CConfig(void) {
   delete[] MG_CorrecSmooth;
          delete[] PlaneTag;
               delete[] CFL;
+   delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 
