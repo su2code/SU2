@@ -911,7 +911,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   
   /*--- Contribution due to 2D axisymmetric formulation ---*/
   
-  if (axisymmetric) ResidualAxisymmetric(beta_blended);
+  if (axisymmetric) ResidualAxisymmetric();
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
@@ -937,15 +937,15 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
 
 }
 
-void CSourcePieceWise_TurbSST::ResidualAxisymmetric(su2double beta_blended){
+void CSourcePieceWise_TurbSST::ResidualAxisymmetric(){
 
   if (Coord_i[1] > EPS) {
     
     su2double yinv = 1.0/Coord_i[1];
     
     /*--- Residual Convection ---*/
-    Residual[0] -= yinv*Volume*beta_star*V_i[1]*Density_i*TurbVar_i[0];
-    Residual[1] -= yinv*Volume*beta_blended*V_i[1]*Density_i*TurbVar_i[1];
+    Residual[0] -= yinv*Volume*V_i[1]*Density_i*TurbVar_i[0];
+    Residual[1] -= yinv*Volume*V_i[1]*Density_i*TurbVar_i[1];
 
     if (implicit) {
      Jacobian_i[0][0] -= yinv*Volume*V_i[1];
