@@ -334,7 +334,7 @@ class Solver:
 
         #integer values
         if (this_param == "NMODES") or \
-           (this_param == "RESTART_ITER":
+           (this_param == "RESTART_ITER"):
           self.Config[this_param] = int(this_value)
 
 
