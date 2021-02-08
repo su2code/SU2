@@ -63,6 +63,17 @@ CNewtonIntegration::~CNewtonIntegration() { delete preconditioner; }
 
 void CNewtonIntegration::Setup() {
 
+  auto iparam = config->GetNewtonKrylovIntParam();
+  auto dparam = config->GetNewtonKrylovDblParam();
+
+  startupIters = iparam[0];
+  startupResidual = dparam[0];
+  precondIters = iparam[1];
+  precondTol = dparam[1];
+  tolRelaxFactor = iparam[2];
+  fullTolResidual = dparam[2];
+  finDiffStepND = SU2_TYPE::GetValue(dparam[3]);
+
   const auto nVar = solvers[FLOW_SOL]->GetnVar();
   const auto nPoint = geometry->GetnPoint();
   const auto nPointDomain = geometry->GetnPointDomain();
@@ -95,12 +106,19 @@ void CNewtonIntegration::Setup() {
       preconditioner = new CPastixPreconditioner<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config,
                                                               config->GetKind_Linear_Solver_Prec(), false);
       break;
+    default:
+      SU2_MPI::Error("Unrecognized preconditioner for Newton-Krylov iterations.", CURRENT_FUNCTION);
+      break;
   }
 
   if (!std::is_same<Scalar,MixedScalar>::value) {
     precondIn.Initialize(nPoint, nPointDomain, nVar, nullptr);
     precondOut.Initialize(nPoint, nPointDomain, nVar, nullptr);
   }
+
+  /*--- Only possible with a preconditioner. ---*/
+  startupPeriod = (startupIters > 0) || (startupResidual < 0.0);
+
 }
 
 void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar mag) {
@@ -136,42 +154,13 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 
 }
 
-void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
-                                             CConfig **config_, unsigned short EqSystem, unsigned short iZone,
-                                             unsigned short iInst) {
-  config = config_[iZone];
-  solvers = solvers_[iZone][iInst][MESH_0];
-  geometry = geometry_[iZone][iInst][MESH_0];
-  numerics = numerics_[iZone][iInst][MESH_0];
+void CNewtonIntegration::ComputeFinDiffStep() {
 
-  if (!setup) { Setup(); setup = true; }
-
-  /*--- The step for finite-difference-based matrix-free product depends on the RMS of the solution. ---*/
-  su2double rmsSol = 0.0;
-
-  SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
-
-  /*--- Compute the current residual and the approximate Jacobian for preconditioning. ---*/
-
-  ComputeResiduals(DEFAULT);
-
-  solvers[FLOW_SOL]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
-
-  solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
-
-  if (preconditioner) preconditioner->Build();
-
-  /*--- Save current residuals and the solution to be able to perturb it. ---*/
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto i = 0ul; i < LinSysRes.GetNElmDomain(); ++i)
-    LinSysRes[i] = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
-
-  solvers[FLOW_SOL]->Set_OldSolution();
-
-  /*--- Compute RMS(solution). ---*/
-
+  static su2double rmsSol;
   su2double rmsSol_loc = 0.0;
+
+  SU2_OMP_MASTER
+  rmsSol = 0.0;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint)
@@ -184,22 +173,91 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   SU2_OMP_MASTER {
     su2double t = rmsSol;
     SU2_MPI::Allreduce(&t, &rmsSol, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    /// TODO: Customize the step size (1e-4).
-    finDiffStep = 1e-4 * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
+    finDiffStep = finDiffStepND * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
   }
   SU2_OMP_BARRIER
 
+}
+
+void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
+                                             CConfig **config_, unsigned short EqSystem, unsigned short iZone,
+                                             unsigned short iInst) {
+  config = config_[iZone];
+  solvers = solvers_[iZone][iInst][MESH_0];
+  geometry = geometry_[iZone][iInst][MESH_0];
+  numerics = numerics_[iZone][iInst][MESH_0];
+
+  if (!setup) { Setup(); setup = true; }
+
+  SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
+
+  /*--- Save the current solution to be able to perturb it. ---*/
+
+  solvers[FLOW_SOL]->Set_OldSolution();
+
+  /*--- Current residual. ---*/
+
+  ComputeResiduals(DEFAULT);
+
+  /*--- Compute the approximate Jacobian for preconditioning. ---*/
+
+  solvers[FLOW_SOL]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
+
+  solvers[FLOW_SOL]->PrepareImplicitIteration(geometry, solvers, config);
+
+  if (preconditioner) preconditioner->Build();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto i = 0ul; i < LinSysRes.GetNElmDomain(); ++i)
+    LinSysRes[i] = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
+
+  su2double residual = 0.0;
+  for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar)
+    residual += log10(solvers[FLOW_SOL]->GetRes_RMS(iVar)) / LinSysRes.GetNVar();
+
+  /*--- Check if startup period should end after this iteration. ---*/
+
+  bool endStartup = false;
+
+  if (startupPeriod) {
+    SU2_OMP_MASTER
+    firstResidual = max(firstResidual, residual);
+    SU2_OMP_BARRIER
+    if (startupIters) startupIters -= 1;
+    endStartup = (startupIters == 0) && (residual - firstResidual < startupResidual);
+  }
+
+  /*--- The NK solves are expensive, the tolerance is relaxed while the residuals are high. ---*/
+
+  Scalar toleranceFactor = 1.0;
+
+  if (!startupPeriod && tolRelaxFactor > 1 && fullTolResidual < 0.0) {
+    SU2_OMP_MASTER
+    firstResidual = max(firstResidual, residual);
+    SU2_OMP_BARRIER
+    su2double x = (residual - firstResidual) / fullTolResidual;
+    toleranceFactor = 1.0 + (tolRelaxFactor-1)*max(0.0, 1.0-SU2_TYPE::GetValue(x));
+  }
+
   /*--- Solve for the solution update. ---*/
 
-  CMatrixFreeProductWrapper product(this);
-  CPreconditionerWrapper precond(this);
+  auto iter = config->GetLinear_Solver_Iter();
+  Scalar eps = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
+
   auto& linSysSol = GetSolutionVec(solvers[FLOW_SOL]->LinSysSol);
 
-  Scalar eps = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-  auto iter = config->GetLinear_Solver_Iter();
+  if (startupPeriod) {
+    iter = Preconditioner_impl(LinSysRes, linSysSol, iter, eps);
+  }
+  else {
+    ComputeFinDiffStep();
 
-  iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, product, precond, eps, iter, eps, false, config, true);
-
+    eps *= toleranceFactor;
+    iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
+                                      CPreconditionerWrapper(this), eps, iter, eps, false, config, true);
+    /*--- Scale back the residual to trick the CFL adaptation. ---*/
+    eps /= toleranceFactor;
+  }
   SetSolutionResult(solvers[FLOW_SOL]->LinSysSol);
 
   SU2_OMP_MASTER {
@@ -224,6 +282,18 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     solvers[FLOW_SOL]->Pressure_Forces(geometry, config);
     solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
     solvers[FLOW_SOL]->Friction_Forces(geometry, config);
+  }
+
+  /*--- At the end of the startup period the CFL is reset to the initial value. ---*/
+
+  if (endStartup) {
+    SU2_OMP_MASTER {
+      startupPeriod = false;
+      firstResidual = residual;
+    }
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint)
+      solvers[FLOW_SOL]->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(MESH_0));
   }
 
   } // end SU2_OMP_PARALLEL
@@ -263,7 +333,8 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
 void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
 
   if (preconditioner) {
-    Preconditioner_impl(u, v);
+    Scalar eps = SU2_TYPE::GetValue(precondTol);
+    Preconditioner_impl(u, v, precondIters, eps);
   }
   else {
     /*--- Approximate diagonal preconditioner. ---*/

@@ -63,8 +63,28 @@ private:
   enum ResEvalType {EXPLICIT, DEFAULT};
 
   bool setup = false;
+  Scalar finDiffStepND = 0.0;
   Scalar finDiffStep = 0.0; /*!< \brief Based on RMS(solution), used in matrix-free products. */
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  /*--- Number of iterations and tolerance for the linear preconditioner,
+   * 0 iterations forces "weak" preconditioning, i.e. not iterative. ---*/
+  unsigned short precondIters = 0;
+  su2double precondTol = 0.0;
+
+  /*--- For a number of iterations, or before a certain residual drop,
+   * use the quasi-Newton approach instead of Newton-Krylov. If both
+   * criteria are zero, or the solver does not provide a linear
+   * preconditioner, there is no startup phase. ---*/
+  bool startupPeriod = false;
+  unsigned short startupIters = 0;
+  su2double startupResidual = 0.0;
+  su2double firstResidual = -20.0;
+
+  /*--- Relax (increase) the tolerance for NK solves by a factor, until a
+   * certain drop in residuals, to reduce the cost of early iterations. ---*/
+  unsigned short tolRelaxFactor = 0;
+  su2double fullTolResidual = 0.0;
 
   CConfig* config = nullptr;
   CSolver** solvers = nullptr;
@@ -103,28 +123,35 @@ private:
   mutable CSysVector<MixedScalar> precondIn, precondOut;
 
   template<class T, su2enable_if<!std::is_same<T,MixedScalar>::value> = 0>
-  inline void Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v) const {
+  inline unsigned long Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v,
+                                           unsigned long iters, Scalar& eps) const {
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) precondIn[i] = u[i];
 
-    Preconditioner_impl(precondIn, precondOut);
+    iters = Preconditioner_impl(precondIn, precondOut, iters, eps);
 
     CNEWTON_PARFOR
     for (auto i = 0ul; i < u.GetLocSize(); ++i) v[i] = precondOut[i];
     SU2_OMP_BARRIER
+
+    return iters;
   }
 
   /*--- Otherwise they are not needed. ---*/
   template<class T, su2enable_if<std::is_same<T,MixedScalar>::value> = 0>
-  inline void Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v) const {
-
-//    (*preconditioner)(u, v);
-
-    MixedScalar eps = SU2_TYPE::GetValue(config->GetLinear_Solver_Error());
-    auto iter = config->GetLinear_Solver_Iter();
+  inline unsigned long Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v,
+                                           unsigned long iters, Scalar& eps) const {
+    if (iters == 0) {
+      (*preconditioner)(u, v);
+      return 0;
+    }
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
-    solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iter, eps, false, config, true);
+    MixedScalar eps_t = eps;
+    iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner,
+                                                       eps, iters, eps_t, false, config, true);
+    eps = eps_t;
+    return iters;
   }
 
   /*!
@@ -142,6 +169,11 @@ private:
    * between implicit and explicit iterations to save time during matrix-free products.
    */
   void ComputeResiduals(ResEvalType type);
+
+  /*!
+   * \brief Compute the step size for finite differences.
+   */
+  void ComputeFinDiffStep();
 
 public:
   /*!

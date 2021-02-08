@@ -2080,7 +2080,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           signChanges += (prev > 0) ^ (val > 0);
           prev = val;
         }
-        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5) && !config->GetNewtonKrylov();
+        reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
 
         if (totalChange > 2.0) { // orders of magnitude
           resetCFL = true;

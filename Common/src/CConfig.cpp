@@ -368,7 +368,14 @@ void CConfig::addEnumListOption(const string name, unsigned short & input_size, 
 void CConfig::addDoubleArrayOption(const string name, const int size, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionDoubleArray(name, size, option_field);
+  COptionBase* val = new COptionArray<su2double>(name, size, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addUShortArrayOption(const string name, const int size, unsigned short* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned short>(name, size, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1574,6 +1581,11 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Use a Newton-Krylov method. */
   addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
+  /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
+  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), NK_IntParam.data());
+  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
+  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
+
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
   /* DESCRIPTION: Whether to use vectorized numerical schemes, less robust against transients. */
