@@ -89,29 +89,29 @@ class FSIConfig:
             this_value = line[1].strip()
 
 	        #integer values
-            if (this_param == "NDIM")	|| \
-               (this_param == "RESTART_ITER")	|| \
-               (this_param == "TIME_TRESHOLD") || \
+            if (this_param == "NDIM")	or \
+               (this_param == "RESTART_ITER")	or \
+               (this_param == "TIME_TRESHOLD") or \
                (this_param == "NB_FSI_ITER") :
                 self._ConfigContent[this_param] = int(this_value)
 
             #float values
-            elif (this_param == "RBF_RADIUS") || \
-                 (this_param == "AITKEN_PARAM") || \
-                 (this_param == "UNST_TIMESTEP") || \
-                 (this_param == "UNST_TIME") || \
+            elif (this_param == "RBF_RADIUS") or \
+                 (this_param == "AITKEN_PARAM") or \
+                 (this_param == "UNST_TIMESTEP") or \
+                 (this_param == "UNST_TIME") or \
                  (this_param == "FSI_TOLERANCE") :
                 self._ConfigContent[this_param] = float(this_value)
 
             #string values
-            elif (this_param == "CFD_CONFIG_FILE_NAME") || \
-                 (this_param == "CSD_SOLVER") || \
-                 (this_param == "CSD_CONFIG_FILE_NAME") || \
-                 (this_param == "RESTART_SOL") || \
-                 (this_param == "MATCHING_MESH") || \
-                 (this_param == "MESH_INTERP_METHOD") || \
-                 (this_param == "DISP_PRED") || \
-                 (this_param == "AITKEN_RELAX") || \
+            elif (this_param == "CFD_CONFIG_FILE_NAME") or \
+                 (this_param == "CSD_SOLVER") or \
+                 (this_param == "CSD_CONFIG_FILE_NAME") or \
+                 (this_param == "RESTART_SOL") or \
+                 (this_param == "MATCHING_MESH") or \
+                 (this_param == "MESH_INTERP_METHOD") or \
+                 (this_param == "DISP_PRED") or \
+                 (this_param == "AITKEN_RELAX") or \
                  (this_param == "TIME_MARCHING") :
                 self._ConfigContent[this_param] = this_value
 

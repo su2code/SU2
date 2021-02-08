@@ -333,30 +333,30 @@ class Solver:
         this_value = line[1].strip()
 
         #integer values
-        if (this_param == "NMODES") || \
+        if (this_param == "NMODES") or \
            (this_param == "RESTART_ITER":
           self.Config[this_param] = int(this_value)
 
 
         #float values
-        elif (this_param == "DELTA_T") || \
-             (this_param == "MODAL_DAMPING") || \
+        elif (this_param == "DELTA_T") or \
+             (this_param == "MODAL_DAMPING") or \
              (this_param == "RHO"):
           self.Config[this_param] = float(this_value)
 
 
         #string values
-        elif (this_param == "TIME_MARCHING") || \
-             (this_param == "MESH_FILE") || \
-             (this_param == "PUNCH_FILE") || \
-             (this_param == "RESTART_SOL") || \
+        elif (this_param == "TIME_MARCHING") or \
+             (this_param == "MESH_FILE") or \
+             (this_param == "PUNCH_FILE") or \
+             (this_param == "RESTART_SOL") or \
              (this_param == "MOVING_MARKER"):
           self.Config[this_param] = this_value
 
 
         #lists values
-        elif (this_param == "INITIAL_MODES") || \
-             (this_param == "IMPOSED_MODES") || \
+        elif (this_param == "INITIAL_MODES") or \
+             (this_param == "IMPOSED_MODES") or \
              (this_param == "IMPOSED_PARAMETERS"):
           self.Config[this_param] = eval(this_value)
 
