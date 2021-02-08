@@ -43,59 +43,58 @@ from math import *
 
 class ImposedMotionFunction:
 
-    def __init__(self,time0,tipo,parameters):
-        self.time0 = time0
-        self.tipo = tipo
-        if self.tipo == "SINUSOIDAL":
-            self.bias = parameters[0]
-            self.amplitude = parameters[1]
-            self.frequency = parameters[2]
+  def __init__(self,time0,tipo,parameters):
+    self.time0 = time0
+    self.tipo = tipo
+    if self.tipo == "SINUSOIDAL":
+      self.bias = parameters[0]
+      self.amplitude = parameters[1]
+      self.frequency = parameters[2]
 
-        elif self.tipo == "BLENDED_STEP":
-            self.kmax = parameters[0]
-            self.vinf = parameters[1]
-            self.lref = parameters[2]
-            self.amplitude = parameters[3]
-            self.tmax = 2*pi/self.kmax*self.lref/self.vinf
-            self.omega0 = 1/2*self.kmax
+    elif self.tipo == "BLENDED_STEP":
+      self.kmax = parameters[0]
+      self.vinf = parameters[1]
+      self.lref = parameters[2]
+      self.amplitude = parameters[3]
+      self.tmax = 2*pi/self.kmax*self.lref/self.vinf
+      self.omega0 = 1/2*self.kmax
 
-        else:
-            raise Exception('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
-
-
-
-    def GetDispl(self,time):
-        time = time - self.time0
-        if self.tipo == "SINUSOIDAL":
-            return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
-
-        if self.tipo == "BLENDED_STEP":
-            if time < self.tmax:
-                return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
-            return self.amplitude
+    else:
+      raise Exception('Imposed function {} not found, please implement it in pysu2_nastran.py'.format(self.tipo))
 
 
-    def GetVel(self,time):
-        time = time - self.time0
+  def GetDispl(self,time):
+    time = time - self.time0
+    if self.tipo == "SINUSOIDAL":
+      return self.bias+self.amplitude*sin(2*pi*self.frequency*time)
 
-        if self.tipo == "SINUSOIDAL":
-            return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
+    if self.tipo == "BLENDED_STEP":
+      if time < self.tmax:
+        return self.amplitude/2.0*(1.0-cos(self.omega0*time*self.vinf/self.lref))
+      return self.amplitude
 
-        if self.tipo == "BLENDED_STEP":
-            if time < self.tmax:
-                return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
-            return 0.0
 
-    def GetAcc(self,time):
-        time = time - self.time0
+  def GetVel(self,time):
+    time = time - self.time0
 
-        if self.tipo == "SINUSOIDAL":
-            return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
+    if self.tipo == "SINUSOIDAL":
+      return self.amplitude*cos(2*pi*self.frequency*time)*2*pi*self.frequency
 
-        if self.tipo == "BLENDED_STEP":
-            if time < self.tmax:
-                return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
-            return 0.0
+    if self.tipo == "BLENDED_STEP":
+      if time < self.tmax:
+        return self.amplitude/2.0*sin(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)
+      return 0.0
+
+  def GetAcc(self,time):
+    time = time - self.time0
+
+    if self.tipo == "SINUSOIDAL":
+      return -self.amplitude*sin(2*pi*self.frequency*time)*(2*pi*self.frequency)**2
+
+    if self.tipo == "BLENDED_STEP":
+      if time < self.tmax:
+        return self.amplitude/2.0*cos(self.omega0*time*self.vinf/self.lref)*(self.omega0*self.vinf/self.lref)**2
+      return 0.0
 
 
 class RefSystem:
