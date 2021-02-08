@@ -80,13 +80,9 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, 
   Solution_Min.resize(nPoint,nPrimVarGrad) = su2double(0.0);
 
   /*--- Solution initialization ---*/
-
-  su2double val_solution[3] = {velocity[0], velocity[1], 0.0};
-  if(nDim==3) val_solution[2] = velocity[2];
-
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = val_solution[iVar];
+      Solution(iPoint,iVar) = density*velocity[iVar];
 
   Solution_Old = Solution;
 
@@ -117,9 +113,6 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, 
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
   
   if (axisymmetric && viscous) Grad_AuxVar.resize(nPoint,nDim);
-
-  if (config->GetMultizone_Problem())
-    Set_BGSSolution_k();
 
   Velocity2.resize(nPoint) = su2double(0.0);
   Max_Lambda_Inv.resize(nPoint) = su2double(0.0);

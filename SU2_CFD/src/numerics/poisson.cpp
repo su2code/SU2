@@ -249,7 +249,7 @@ CAvgGrad_Poisson::~CAvgGrad_Poisson(void) {
 CNumerics::ResidualType<> CAvgGrad_Poisson::ComputeResidual(const CConfig *config) {
 
 
-  su2double Coeff_Mean;
+  su2double Coeff_Mean, Num, Den;
   su2double *MomCoeffxNormal = new su2double[nDim];
   su2double  Mean_GradPoissonVar_Edge[MAXNDIM], GradPoisson[MAXNDIM];
   su2double  Mean_GradPoissonVar_Face[MAXNDIM][MAXNDIM];
@@ -266,15 +266,39 @@ CNumerics::ResidualType<> CAvgGrad_Poisson::ComputeResidual(const CConfig *confi
    }
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-
-  dist_ij_2 = 0; proj_vector_ij = 0;
+  /*--- Minimum correction approach. ---*/
+  /*dist_ij_2 = 0; proj_vector_ij = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-  else proj_vector_ij = proj_vector_ij/dist_ij_2;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;*/
+
+  /*--- Over relaxed approach. ---*/
+  dist_ij_2 = 0; proj_vector_ij = 0;
+  Num = 0.0; Den = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    Num += MomCoeffxNormal[iDim]*MomCoeffxNormal[iDim];
+    Den += Edge_Vector[iDim]*MomCoeffxNormal[iDim];
+  }
+  if (Den == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = Num/Den;
+  
+  /*--- Orthogonal correction approach. ---*/
+  /*dist_ij_2 = 0; proj_vector_ij = 0;
+  Num = 0.0; Den = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+    Num += MomCoeffxNormal[iDim]*MomCoeffxNormal[iDim];
+  }
+  Den = dist_ij_2;
+  if (Den == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = sqrt(Num/Den);*/
   
   /*--- Correct the face gradient for odd-even decoupling ---*/
   /*--- Steps are 

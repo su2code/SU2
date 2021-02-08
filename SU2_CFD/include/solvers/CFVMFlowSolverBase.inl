@@ -923,8 +923,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       if (dynamic_grid) {
         ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
       }
-      /*if ((config->GetMarker_All_TagBound(val_marker)=="Outer_cylinder")||(config->GetMarker_All_TagBound(val_marker)=="Inner_cylinder"))
-        cout<<GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal)<<endl;*/
 
       for (iDim = 0; iDim < nDim; iDim++)
         V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];

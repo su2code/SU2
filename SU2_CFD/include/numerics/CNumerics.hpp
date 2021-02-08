@@ -963,7 +963,7 @@ public:
    */
   
                                  
-  void GetInviscidPBProjJac(const su2double *val_density, const su2double *val_velocity,
+  void GetInviscidPBProjJac(const su2double val_density, const su2double *val_velocity,
                             const su2double *val_normal, const su2double val_scale,
                                  su2double **val_Proj_Jac_tensor); 
   

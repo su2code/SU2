@@ -314,7 +314,7 @@ public:
    */
   inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Solution_Old(iPoint,iDim) = val_velocity[iDim];
+      Solution_Old(iPoint,iDim) = Primitive(iPoint,nDim+1)*val_velocity[iDim];
   }
 
   /*!

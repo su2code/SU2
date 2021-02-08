@@ -141,9 +141,9 @@ CNumerics::ResidualType<> CUpwPB_Flow::ComputeResidual(const CConfig *config) {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_upw[iVar][jVar] = 0.0;
 	    }
-	  
-	GetInviscidPBProjJac(&DensityInc_i, Velocity_upw,  Normal, 0.5, Jacobian_upw);
-		
+
+	GetInviscidPBProjJac(MeanDensity, Velocity_upw,  Normal, 0.5, Jacobian_upw);
+
 	 for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++) {
         Jacobian_i[iVar][jVar] = Upw_i*Jacobian_upw[iVar][jVar];
@@ -297,7 +297,7 @@ CNumerics::ResidualType<> CCentPB_Flow::ComputeResidual(const CConfig *config) {
         Jacobian_upw[iVar][jVar] = 0.0;
 	}
 
-	GetInviscidPBProjJac(&DensityInc_i, MeanVelocity,  Normal, 0.5, Jacobian_upw);
+	GetInviscidPBProjJac(MeanDensity, MeanVelocity,  Normal, 0.5, Jacobian_upw);
 	//GetInviscidPBProjJac(&DensityInc_i, Velocity_upw,  Normal, 0.5, val_Jacobian_upw);
 	/*GetInviscidPBProjJac(&DensityInc_i, Velocity_i,  Normal, 0.5, Jacobian_i);
 	GetInviscidPBProjJac(&DensityInc_i, Velocity_j,  Normal, 0.5, Jacobian_j);*/

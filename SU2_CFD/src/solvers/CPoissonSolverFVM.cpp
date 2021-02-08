@@ -200,14 +200,13 @@ void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_c
         Mom_Coeff_i[iDim] = 1.0;
         Mom_Coeff_j[iDim] = 1.0;
       }
-      numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
 	} else {	
       for (iDim = 0; iDim < nDim; iDim++) {
-        Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(iPoint, iDim) ;
-        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(jPoint, iDim) ;
+        Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint)*solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(iPoint, iDim) ;
+        Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint)*solver_container[FLOW_SOL]->GetNodes()->Get_Mom_Coeff(jPoint, iDim) ;
       }
-      numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
     }
+    numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
 
     /*--- Compute and update residual ---*/
     auto residual = numerics->ComputeResidual(config);
@@ -351,11 +350,8 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh, unsigned long Iteration){
 
-  /*--- Set a value for periodic communication routines. Is not used during any computations. ---*/
-  /*for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    nodes->SetDelta_Time(iPoint, 0.0);
-  }*/
-   
+  /*--- Set a value for periodic communication routines. Is not used during any computations. 
+   *    Done in the constructor---*/   
 }
 
 void CPoissonSolverFVM::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -393,7 +389,7 @@ void CPoissonSolverFVM::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
                                 
 void CPoissonSolverFVM::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-unsigned long iVertex, iPoint;
+unsigned long iVertex, iPoint, Point_Normal;
 unsigned short iVar;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

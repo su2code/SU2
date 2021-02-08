@@ -298,7 +298,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
     Mean_ProjVel = 0.0;
     for (iVar = 0; iVar < nVar; iVar++) {
         Mean_Vel = 0.5*(nodes->GetVelocity(iPoint, iVar) + nodes->GetVelocity(jPoint,iVar));
-        Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
+        Mean_ProjVel += Mean_Vel*Normal[iVar];
     }
     RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
     MinRefProjFlux = max(RefProjFlux, MinRefProjFlux);
@@ -356,7 +356,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       Mean_ProjVel = 0.0;
       for (iVar = 0; iVar < nVar; iVar++) {
           Mean_Vel = nodes->GetVelocity(iPoint,iVar);
-          Mean_ProjVel += Mean_Density*Mean_Vel*Normal[iVar];
+          Mean_ProjVel += Mean_Vel*Normal[iVar];
       }
       RefProjFlux = fabs(config->GetInc_Velocity_Ref()*Area);
 

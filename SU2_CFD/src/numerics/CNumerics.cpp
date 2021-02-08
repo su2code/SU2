@@ -557,7 +557,7 @@ void CNumerics::GetPreconditionedProjJac(const su2double *val_density, const su2
   val_invPrecon_A[nDim+1][nDim+1] = val_lambda[nDim-1];
 }
 
-void CNumerics::GetInviscidPBProjJac(const su2double *val_density, const su2double *val_velocity, const su2double *val_normal,
+void CNumerics::GetInviscidPBProjJac(const su2double val_density, const su2double *val_velocity, const su2double *val_normal,
     const su2double val_scale, su2double **val_Proj_Jac_Tensor) {
 
   unsigned short iDim;
@@ -568,24 +568,24 @@ void CNumerics::GetInviscidPBProjJac(const su2double *val_density, const su2doub
     proj_vel += val_velocity[iDim]*val_normal[iDim];
 
   if (nDim == 2) {
-    val_Proj_Jac_Tensor[0][0] = val_scale*(val_velocity[0]*val_normal[0] + proj_vel);
-    val_Proj_Jac_Tensor[0][1] = val_scale*val_velocity[0]*val_normal[1];
+    val_Proj_Jac_Tensor[0][0] = val_scale*val_density*(val_velocity[0]*val_normal[0] + proj_vel);
+    val_Proj_Jac_Tensor[0][1] = val_scale*val_density*val_velocity[0]*val_normal[1];
 
-    val_Proj_Jac_Tensor[1][0] = val_scale*val_velocity[1]*val_normal[0];
-    val_Proj_Jac_Tensor[1][1] = val_scale*(val_velocity[1]*val_normal[1] + proj_vel);
+    val_Proj_Jac_Tensor[1][0] = val_scale*val_density*val_velocity[1]*val_normal[0];
+    val_Proj_Jac_Tensor[1][1] = val_scale*val_density*(val_velocity[1]*val_normal[1] + proj_vel);
   }
   else {
-    val_Proj_Jac_Tensor[0][0] = val_scale*(proj_vel+val_velocity[0]*val_normal[0]);
-    val_Proj_Jac_Tensor[0][1] = val_scale*(val_velocity[0]*val_normal[1]);
-    val_Proj_Jac_Tensor[0][2] = val_scale*(val_velocity[0]*val_normal[2]);
+    val_Proj_Jac_Tensor[0][0] = val_scale*val_density*(proj_vel+val_velocity[0]*val_normal[0]);
+    val_Proj_Jac_Tensor[0][1] = val_scale*val_density*(val_velocity[0]*val_normal[1]);
+    val_Proj_Jac_Tensor[0][2] = val_scale*val_density*(val_velocity[0]*val_normal[2]);
 
-    val_Proj_Jac_Tensor[1][0] = val_scale*(val_velocity[1]*val_normal[0]);
-    val_Proj_Jac_Tensor[1][1] = val_scale*(proj_vel+val_velocity[1]*val_normal[1]);
-    val_Proj_Jac_Tensor[1][2] = val_scale*(val_velocity[1]*val_normal[2]);
+    val_Proj_Jac_Tensor[1][0] = val_scale*val_density*(val_velocity[1]*val_normal[0]);
+    val_Proj_Jac_Tensor[1][1] = val_scale*val_density*(proj_vel+val_velocity[1]*val_normal[1]);
+    val_Proj_Jac_Tensor[1][2] = val_scale*val_density*(val_velocity[1]*val_normal[2]);
 
-    val_Proj_Jac_Tensor[2][0] = val_scale*(val_velocity[2]*val_normal[0]);
-    val_Proj_Jac_Tensor[2][1] = val_scale*(val_velocity[2]*val_normal[1]);
-    val_Proj_Jac_Tensor[2][2] = val_scale*(proj_vel+val_velocity[2]*val_normal[2]);
+    val_Proj_Jac_Tensor[2][0] = val_scale*val_density*(val_velocity[2]*val_normal[0]);
+    val_Proj_Jac_Tensor[2][1] = val_scale*val_density*(val_velocity[2]*val_normal[1]);
+    val_Proj_Jac_Tensor[2][2] = val_scale*val_density*(proj_vel+val_velocity[2]*val_normal[2]);
 
   }
 }
