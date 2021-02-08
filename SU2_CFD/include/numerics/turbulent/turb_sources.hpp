@@ -334,7 +334,7 @@ private:
   /*!
    * \brief Add contribution due to axisymmetric formulation to 2D residual
    */
-  void ResidualAxisymmetric();
+  void ResidualAxisymmetric(su2double alfa_blended);
 
 public:
   /*!

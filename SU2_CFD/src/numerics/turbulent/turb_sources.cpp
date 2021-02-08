@@ -911,7 +911,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   
   /*--- Contribution due to 2D axisymmetric formulation ---*/
   
-  if (axisymmetric) ResidualAxisymmetric();
+  if (axisymmetric) ResidualAxisymmetric(alfa_blended);
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
@@ -937,29 +937,35 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
 
 }
 
-void CSourcePieceWise_TurbSST::ResidualAxisymmetric(){
+void CSourcePieceWise_TurbSST::ResidualAxisymmetric(su2double alfa_blended){
 
   if (Coord_i[1] > EPS) {
     
     su2double yinv = 1.0/Coord_i[1];
     
-    /*--- Residual Convection ---*/
+    /*--- Convection ---*/
     Residual[0] -= yinv*Volume*V_i[1]*Density_i*TurbVar_i[0];
     Residual[1] -= yinv*Volume*V_i[1]*Density_i*TurbVar_i[1];
 
-    if (implicit) {
-     Jacobian_i[0][0] -= yinv*Volume*V_i[1];
-     Jacobian_i[1][1] -= yinv*Volume*V_i[1];
-    }
+    /*--- Production ---*/
+    su2double p_axi = yinv*Volume*TWO3*V_i[1]*(2*Eddy_Viscosity_i*(yinv*V_i[1]-PrimVar_Grad_i[2][1]
+                                                                   -PrimVar_Grad_i[1][0])
+                                               -Density_i*TurbVar_i[0]);
+    Residual[0] += p_axi;
+    Residual[1] += p_axi*alfa_blended*Density_i/Eddy_Viscosity_i;
     
-    /*--- Compute the blended constant for the viscous terms ---*/
+    /*--- Compute blended constants ---*/
     su2double sigma_k_i = F1_i*sigma_k_1 + (1.0 - F1_i)*sigma_k_2;
     su2double sigma_omega_i = F1_i*sigma_omega_1 + (1.0 - F1_i)*sigma_omega_2;
     
-    /*--- Residual Diffusion ---*/
+    /*--- Diffusion ---*/
     Residual[0] += yinv*Volume*(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
     Residual[1] += yinv*Volume*(Laminar_Viscosity_i+sigma_omega_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
-    
+  
+    if (implicit) {
+     Jacobian_i[0][0] += yinv*Volume*ONE3*V_i[1];
+     Jacobian_i[1][1] -= yinv*Volume*V_i[1];
+    } 
+ 
   }
-
 }
