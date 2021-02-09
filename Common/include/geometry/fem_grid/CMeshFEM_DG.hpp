@@ -240,6 +240,13 @@ public:
   unsigned short DetermineMaxNIntegration(void);
 
   /*!
+   * \brief Get the local index that correspond with the global numbering index.
+   * \param[in] val_ipoint - Global point.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank.
+   */
+  long GetGlobal_to_Local_Point(unsigned long val_ipoint) const override;
+
+  /*!
    * \brief Function to compute the grid velocities for static problems.
    * \param[in] config             - Definition of the particular problem.
    * \param[in] Kind_Grid_Movement - The type of prescribed grid motion.

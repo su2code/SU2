@@ -2281,6 +2281,15 @@ unsigned short CMeshFEM_DG::DetermineMaxNIntegration(void) {
   return nIntMax;
 }
 
+long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) const {
+
+  /*--- Try to locate the give ID in the map Global_to_Local_Point.
+        Return the local index if successfull and -1 otherwise. ---*/
+  auto it = Global_to_Local_Point.find(val_ipoint);
+  if(it != Global_to_Local_Point.cend()) return it->second;
+  return -1;
+}
+
 void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
                                          const unsigned short Kind_Grid_Movement,
                                          const unsigned short iZone) {

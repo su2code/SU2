@@ -122,9 +122,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry      *geometry,
   SU2_OMP_PARALLEL
   {
 #ifdef HAVE_OMP
-    const size_t omp_chunk_size_face = computeStaticChunkSize(nVolElemTot, omp_get_num_threads(), 64);
+    const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemTot, omp_get_num_threads(), 64);
 #endif
-    SU2_OMP_FOR_STAT(omp_chunk_size_face)
+    SU2_OMP_FOR_STAT(omp_chunk_size_vol)
     for(unsigned long i=0; i<nVolElemTot; ++i) {
 
       /*--- Allocate the memory to store the volume solution(s)
@@ -1323,6 +1323,71 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
   }
 }
 
+void CFEM_DG_EulerSolver::ConservativeToEntropyVariables(ColMajorMatrix<su2double> &sol) {
+
+  /*--- Easier storage of the number of items to be converted and
+        the inverse of gamma-1. ---*/
+  const unsigned short nItems = sol.rows();
+  const su2double ovgm1       = 1.0/Gamma_Minus_One;
+
+  /*--- Make a distinction between two and three space dimensions
+        in order to have the most efficient code. ---*/
+  switch( nDim ) {
+
+    case 2: {
+
+      /*--- Two dimensional simulation. Loop over the number of entities
+            and carry out the conversion. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nItems; ++i) {
+        const su2double rho    = sol(i,0);
+        const su2double rhoInv = 1.0/rho;
+        const su2double u      = rhoInv*sol(i,1);
+        const su2double v      = rhoInv*sol(i,2);
+        const su2double kin    = 0.5*(u*u + v*v);
+        const su2double p      = Gamma_Minus_One*(sol(i,3) - rho*kin);
+        const su2double pInv   = 1.0/p;
+        const su2double s      = log(p*pow(rhoInv,Gamma));
+        const su2double abv    = pInv*rho;
+
+        sol(i,0) =  (Gamma-s)*ovgm1 - abv*kin;
+        sol(i,1) =  abv*u;
+        sol(i,2) =  abv*v;
+        sol(i,3) = -abv;
+      }
+
+      break;
+    }
+
+    case 3: {
+
+      /*--- Two dimensional simulation. Loop over the number of entities
+            and carry out the conversion. ---*/
+      SU2_OMP_SIMD_IF_NOT_AD
+      for(unsigned short i=0; i<nItems; ++i) {
+        const su2double rho    = sol(i,0);
+        const su2double rhoInv = 1.0/rho;
+        const su2double u      = rhoInv*sol(i,1);
+        const su2double v      = rhoInv*sol(i,2);
+        const su2double w      = rhoInv*sol(i,3);
+        const su2double kin    = 0.5*(u*u + v*v + w*w);
+        const su2double p      = Gamma_Minus_One*(sol(i,4) - rho*kin);
+        const su2double pInv   = 1.0/p;
+        const su2double s      = log(p*pow(rhoInv,Gamma));
+        const su2double abv    = pInv*rho;
+
+        sol(i,0) =  (Gamma-s)*ovgm1 - pInv*rho*kin;
+        sol(i,1) =  abv*u;
+        sol(i,2) =  abv*v;
+        sol(i,3) =  abv*w;
+        sol(i,4) = -abv;
+      }
+
+      break;
+    }
+  }
+}
+
 void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel) {
   SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
@@ -1351,7 +1416,50 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ((VerificationSolution)  && (TimeIter == 0)) {
+
+    /*--- Start OpenMP parallel region. ---*/
+    SU2_OMP_PARALLEL {
+
+      /*--- Loop over the owned elements. ---*/
+#ifdef HAVE_OMP
+      const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+      SU2_OMP_FOR_STAT(omp_chunk_size_vol)
+      for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+        /*--- Define the help variables to store the coordinates
+              and the solution in the nodal DOFs. ---*/
+        su2double coor[3] = {0.0}, solDOF[5] = {0.0};
+
+        /*--- Loop over the DOFs of this element. ---*/
+        const unsigned short nDOFs = volElem[i].standardElemFlow->GetNDOFs();
+        for(unsigned short j=0; j<nDOFs; ++j) {
+
+          /*--- Store the coordinates of the DOFs in coor. ---*/
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            coor[iDim] = volElem[i].coorSolDOFs(j,iDim);
+
+          /*--- Compute the initial condition provided by the verification solution
+                class. This can be the exact solution, but this is not necessary.
+                Note that the conservative variables are computed. ---*/
+          VerificationSolution->GetInitialCondition(coor, solDOF);
+
+          /*--- Store the conservative variables in the DOFs for the element
+                for the time being. ---*/
+          for(unsigned short iVar=0; iVar<nVar; ++iVar)
+            volElem[i].solDOFs(j,iVar) = solDOF[iVar];
+        }
+
+        /*--- Convert the conservative variables to entropy variables. ---*/
+        ConservativeToEntropyVariables(volElem[i].solDOFs);
+
+        /*--- Convert the nodal solution to the modal solution. ---*/
+        volElem[i].NodalToModalFlow();
+      }
+    } // end SU2_OMP_PARALLEL
+  }
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1769,5 +1877,130 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry,
                                       int       val_iter,
                                       bool      val_update_geo) {
 
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+  string restart_filename = config->GetSolution_FileName();
+  restart_filename = config->GetFilename(restart_filename, "", val_iter);
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Determine a map from the ID of the global DOF to the local
+        element and DOF of the element. ---*/
+  map<unsigned long, CUnsignedLong2T>  mapGlobalDOFToLocal;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+      unsigned long GlobalDOF = volElem[i].offsetDOFsSolGlobal+j;
+      mapGlobalDOFToLocal[GlobalDOF] = CUnsignedLong2T(i,j);
+    }
+  }
+
+  /*--- Skip coordinates ---*/
+  unsigned short skipVars = nDim;
+
+  /*--- Loop over the global DOFs and determine whether they are
+        stored locally. ---*/
+  unsigned long counter = 0;
+  for (unsigned long iPoint_Global=0; iPoint_Global<geometry[MESH_0]->GetGlobal_nPointDomain(); ++iPoint_Global) {
+
+    /*--- Check if the DOF is stored on this rank. ---*/
+    auto it = mapGlobalDOFToLocal.find(iPoint_Global);
+    if(it != mapGlobalDOFToLocal.cend()) {
+
+      /*--- Retrieve the element and DOF inside the element. ---*/
+      const unsigned long i = it->second.long0;
+      const unsigned long j = it->second.long1;
+
+      /*--- Determine the start index in the read buffer and
+            update the counter afterwards. ---*/
+      const unsigned long index = counter*Restart_Vars[1] + skipVars;
+      ++counter;
+
+      /*--- Store the conservative variables in the local data structures. ---*/
+      for(unsigned short iVar=0; iVar<nVar; ++iVar)
+        volElem[i].solDOFs(j,iVar) = Restart_Data[index+iVar];
+    }
+  }
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+  delete[] Restart_Vars;
+  delete[] Restart_Data;
+  Restart_Vars = nullptr; Restart_Data = nullptr;
+
+  /*--- Detect a wrong solution file ---*/
+  unsigned short rbuf_NotMatching = 0;
+  if(counter < nDOFsLocOwned) rbuf_NotMatching = 1;
+
+#ifdef HAVE_MPI
+  unsigned short sbuf_NotMatching = rbuf_NotMatching;
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+#endif
+
+  if (rbuf_NotMatching != 0)
+    SU2_MPI::Error(string("The solution file ") + restart_filename.data() +
+                   string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
+
+  /*--- Start of the parallel region. ---*/
+  unsigned long nBadDOFs = 0;
+  SU2_OMP_PARALLEL
+  {
+    /*--- Loop over the owned elements. ---*/
+#ifdef HAVE_OMP
+    const size_t omp_chunk_size_vol = computeStaticChunkSize(nVolElemOwned, omp_get_num_threads(), 64);
+#endif
+    SU2_OMP_FOR_STAT_(omp_chunk_size_vol, reduction(+: nBadDOFs))
+    for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+      /*--- Loop over the DOFs of this element, which currently
+            stores the conservative variables. ---*/
+      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+
+        /*--- Compute the primitive variables. ---*/
+        const su2double rho    = volElem[i].solDOFs(j,0);
+        const su2double rhoInv = 1.0/rho;
+
+        su2double Velocity2 = 0.0;
+        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+          const su2double vel = volElem[i].solDOFs(j,iDim)*rhoInv;
+          Velocity2 += vel*vel;
+        }
+
+        const su2double StaticEnergy = volElem[i].solDOFs(j,nDim+1)*rhoInv - 0.5*Velocity2;
+
+        GetFluidModel()->SetTDState_rhoe(rho, StaticEnergy);
+        const su2double Pressure = GetFluidModel()->GetPressure();
+        const su2double Temperature = GetFluidModel()->GetTemperature();
+
+        /*--- Check for negative pressure, density or temperature. ---*/
+        if((Pressure < 0.0) || (rho < 0.0) || (Temperature < 0.0)) {
+
+          /*--- Reset the state to the infinity state and update nBadDOFs. ---*/
+          for(unsigned short k=0; k<nVar; ++k)
+            volElem[i].solDOFs(j,k) = ConsVarFreeStream[k];
+          ++nBadDOFs;
+        }
+      }
+
+      /*--- Convert the conservative variables to entropy variables. ---*/
+      ConservativeToEntropyVariables(volElem[i].solDOFs);
+
+      /*--- Convert the nodal solution to the modal solution. ---*/
+      volElem[i].NodalToModalFlow();
+    }
+  } // end SU2_OMP_PARALLEL
+
+  /*--- Warning message about non-physical points ---*/
+  if (config->GetComm_Level() == COMM_FULL) {
+#ifdef HAVE_MPI
+    unsigned long nBadDOFsLoc = nBadDOFs;
+    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+#endif
+
+    if((rank == MASTER_NODE) && (nBadDOFs != 0))
+      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
+  }
 }

@@ -312,6 +312,28 @@ public:
 
   /*!
    * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in,out] solDOFs - On entry it contains the modal solution in the DOFs,
+   *                          on exit it contains the nodal solution.
+   */
+  virtual void ModalToNodal(ColMajorMatrix<su2double> &solDOFs) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
+   * \param[in,out] solDOFs - On entry it contains the nodal solution in the DOFs,
+   *                          on exit it contains the modal solution.
+   */
+  virtual void NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
+
+    SU2_MPI::Error(string("This function must be overwritten by the derived class"),
+                   CURRENT_FUNCTION);
+  }
+
+  /*!
+   * \brief Virtual function, that, if used, must be overwritten by the derived class.
    * \return - The value of the first (constant) basis function.
    */
   virtual passivedouble ValBasis0(void) {

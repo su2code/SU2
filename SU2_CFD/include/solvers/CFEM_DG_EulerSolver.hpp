@@ -952,6 +952,14 @@ private:
                                                       su2double            *work);
 
   /*!
+   * \brief Function, which converts the conservative variables to the
+   *        entropy variables for the given entities.
+   * \param[in,out] sol  - Matrix, which contains the conservative variables
+   *                       on entry and the entropy variables on exit.
+   */
+  void ConservativeToEntropyVariables(ColMajorMatrix<su2double> &sol);
+
+  /*!
    * \brief Function, which sets up the list of tasks to be carried out in the
             computationally expensive part of the solver.
    * \param[in] config - Definition of the particular problem.
