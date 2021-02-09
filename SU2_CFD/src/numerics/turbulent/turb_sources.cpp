@@ -849,10 +849,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
                           TurbVar_i[0], MeanPerturbedRSM);
       SetPerturbedStrainMag(TurbVar_i[0]);
       pk = Eddy_Viscosity_i*PerturbedStrainMag*PerturbedStrainMag
-           - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+           - TWO3*Density_i*TurbVar_i[0]*diverg;
     }
     else {
-      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+      pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - TWO3*Density_i*TurbVar_i[0]*diverg;
     }
     
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
@@ -863,10 +863,10 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
     /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
     
     if (using_uq){
-      pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
+      pw = PerturbedStrainMag * PerturbedStrainMag - TWO3*zeta*diverg;
     }
     else {
-      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
+      pw = StrainMag_i*StrainMag_i - TWO3*zeta*diverg;
     }
     pw = alfa_blended*Density_i*max(pw,0.0);
     
@@ -911,7 +911,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   
   /*--- Contribution due to 2D axisymmetric formulation ---*/
   
-  if (axisymmetric) ResidualAxisymmetric(alfa_blended);
+  if (axisymmetric) ResidualAxisymmetric(alfa_blended,zeta);
 
   AD::SetPreaccOut(Residual, nVar);
   AD::EndPreacc();
@@ -937,35 +937,37 @@ void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
 
 }
 
-void CSourcePieceWise_TurbSST::ResidualAxisymmetric(su2double alfa_blended){
+void CSourcePieceWise_TurbSST::ResidualAxisymmetric(su2double alfa_blended, su2double zeta){
 
   if (Coord_i[1] > EPS) {
     
     su2double yinv = 1.0/Coord_i[1];
-    
-    /*--- Convection ---*/
-    Residual[0] -= yinv*Volume*V_i[1]*Density_i*TurbVar_i[0];
-    Residual[1] -= yinv*Volume*V_i[1]*Density_i*TurbVar_i[1];
-
-    /*--- Production ---*/
-    su2double p_axi = yinv*Volume*TWO3*V_i[1]*(2*Eddy_Viscosity_i*(yinv*V_i[1]-PrimVar_Grad_i[2][1]
-                                                                   -PrimVar_Grad_i[1][0])
-                                               -Density_i*TurbVar_i[0]);
-    Residual[0] += p_axi;
-    Residual[1] += p_axi*alfa_blended*Density_i/Eddy_Viscosity_i;
+    su2double rhov = Density_i*V_i[2];
     
     /*--- Compute blended constants ---*/
     su2double sigma_k_i = F1_i*sigma_k_1 + (1.0 - F1_i)*sigma_k_2;
     su2double sigma_omega_i = F1_i*sigma_omega_1 + (1.0 - F1_i)*sigma_omega_2;
+
+    /*--- Production ---*/
+    su2double pk_axi = max(0.0,TWO3*rhov*TurbVar_i[0]*(2.0/zeta*(yinv*V_i[2]-PrimVar_Grad_i[2][1]
+                                                                 -PrimVar_Grad_i[1][0]) -1.0));
+    su2double pw_axi = alfa_blended*zeta/TurbVar_i[0]*pk_axi;
+    
+    /*--- Convection ---*/
+    su2double ck_axi = rhov*TurbVar_i[0];
+    su2double cw_axi = rhov*TurbVar_i[1];
     
     /*--- Diffusion ---*/
-    Residual[0] += yinv*Volume*(Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
-    Residual[1] += yinv*Volume*(Laminar_Viscosity_i+sigma_omega_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
+    su2double dk_axi = (Laminar_Viscosity_i+sigma_k_i*Eddy_Viscosity_i)*TurbVar_Grad_i[0][1];
+    su2double dw_axi = (Laminar_Viscosity_i+sigma_omega_i*Eddy_Viscosity_i)*TurbVar_Grad_i[1][1];
+    
+    Residual[0] += yinv*Volume*(pk_axi-ck_axi+dk_axi);
+    Residual[1] += yinv*Volume*(pw_axi-cw_axi+dw_axi);
   
     if (implicit) {
-     Jacobian_i[0][0] += yinv*Volume*ONE3*V_i[1];
-     Jacobian_i[1][1] -= yinv*Volume*V_i[1];
+     Jacobian_i[0][0] -= yinv*Volume*V_i[2];
+     Jacobian_i[1][1] -= yinv*Volume*V_i[2];
     } 
- 
+    
   }
 }
