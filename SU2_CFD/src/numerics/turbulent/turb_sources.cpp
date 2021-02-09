@@ -965,8 +965,12 @@ void CSourcePieceWise_TurbSST::ResidualAxisymmetric(su2double alfa_blended, su2d
     Residual[1] += yinv*Volume*(pw_axi-cw_axi+dw_axi);
   
     if (implicit) {
-     Jacobian_i[0][0] -= yinv*Volume*V_i[2];
-     Jacobian_i[1][1] -= yinv*Volume*V_i[2];
+     Jacobian_i[0][0] += yinv*Volume*(sigma_k_i/zeta*TurbVar_Grad_i[0][1]-V_i[2]);
+     Jacobian_i[0][1] += -yinv*Volume*sigma_k_i*TurbVar_i[0]*TurbVar_Grad_i[0][1]
+                                                            /(TurbVar_i[1]*TurbVar_i[1]);
+     Jacobian_i[1][0] += yinv*Volume*sigma_k_i/zeta*TurbVar_Grad_i[1][1];
+     Jacobian_i[1][1] += yinv*Volume*(-sigma_k_i*TurbVar_i[0]*TurbVar_Grad_i[1][1]
+                                                            /(TurbVar_i[1]*TurbVar_i[1])-V_i[2]);
     } 
     
   }
