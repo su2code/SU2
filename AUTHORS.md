@@ -55,9 +55,10 @@ Arne Bachmann
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brendan Tracey
-Carsten Othmer
 Brian Munguía
+Carsten Othmer
 Catarina Garbacz
+Charanya Venkatesan-Crome
 Clark Pederson
 Daumantas Kavolis
 Dave Taflin
@@ -68,8 +69,8 @@ Francisco D. Palacios
 Gaurav Bansal
 Giulio Gori
 Guillaume Bâty
-HL Kline
 Harichand M V
+HL Kline
 IndianaStokes
 J. Sinsay
 JSmith36
@@ -78,9 +79,9 @@ Jason Howison
 Jayant Mukhopadhaya
 Jeffrey van Oostrom
 Jessie Lauzon
+João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
-João Loureiro
 Kedar Naik
 LaSerpe
 Lennaert Tol
@@ -122,8 +123,6 @@ bigfootedrockmidget
 bmunguia
 chamsolli
 costat
-cr109
-cvencro
 daniel-linton
 demanosalvas
 dmudiger
