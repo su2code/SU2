@@ -374,11 +374,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const su2double sign_grad_i = -1.0 + 2.0*(gg);
 
   su2double dFl_dVl[MAXNVAR][MAXNVAR] = {0.0},
-            dFr_dVr[MAXNVAR][MAXNVAR] = {0.0},
-            dUl_dVl[MAXNVAR][MAXNVAR] = {0.0},
-            dUr_dVr[MAXNVAR][MAXNVAR] = {0.0},
-            dVi_dUi[MAXNVAR][MAXNVAR] = {0.0},
-            dVk_dUk[MAXNVAR][MAXNVAR] = {0.0};
+            dFr_dVr[MAXNVAR][MAXNVAR] = {0.0};
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
@@ -401,19 +397,15 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--- dU/d{k,o,r,v}, evaluated at face ---*/
 
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    dUl_dVl[iVar][iVar] = primvar_l[nDim+2];
-    dUr_dVr[iVar][iVar] = primvar_r[nDim+2];
-  }
+  const su2double dUl_dVl = primvar_l[nDim+2];
+  const su2double dUr_dVr = primvar_r[nDim+2];
 
   /*--- dF/d{k,o,r,v}, evaluated at face ---*/
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      for (auto kVar = 0; kVar < nVar; kVar++) {
-        dFl_dVl[iVar][jVar] += dFl_dUl[iVar][kVar]*dUl_dVl[kVar][jVar];
-        dFr_dVr[iVar][jVar] += dFr_dUr[iVar][kVar]*dUr_dVr[kVar][jVar];
-      }
+      dFl_dVl[iVar][jVar] = dFl_dUl[iVar][jVar]*dUl_dVl;
+      dFr_dVr[iVar][jVar] = dFr_dUr[iVar][jVar]*dUr_dVr;
     }
   }
 
@@ -422,18 +414,12 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   const auto primvar_i = flowNodes->GetPrimitive(iPoint);
   const auto turbvar_i = nodes->GetPrimitive(iPoint);
 
-  su2double inv_rho_i = 1.0/primvar_i[nDim+2];
-  for (auto iVar = 0; iVar < nVar; iVar++) {
-    dVi_dUi[iVar][iVar] = inv_rho_i;
-  }
+  const su2double dVi_dUi = 1.0/primvar_i[nDim+2];
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
     for (auto jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] = 0.0;
-      for (auto kVar = 0; kVar < nVar; kVar++) {
-        Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][kVar]*dVl_dVi[kVar]
-                                 + dFr_dVr[iVar][kVar]*dVr_dVi[kVar])*dVi_dUi[kVar][jVar];
-      }
+      Jacobian_i[iVar][jVar] = (dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
+                             +  dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi;
     }
   }
 
@@ -473,8 +459,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
-        for (auto kVar = 0; kVar < nVar; kVar++)
-          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar];
+        Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
   }
 
   /*--- Neighbor node terms ---*/
@@ -487,10 +472,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     const auto primvar_k = flowNodes->GetPrimitive(kPoint);
     const auto turbvar_k = nodes->GetPrimitive(kPoint);
 
-    su2double inv_rho_k = 1.0/primvar_k[nDim+2];
-    for (auto iVar = 0; iVar < nVar; iVar++) {
-      dVk_dUk[iVar][iVar] = inv_rho_k;
-    }
+    const su2double dVk_dUk = 1.0/primvar_k[nDim+2];
 
     SetGradWeights(gradWeight, solver[TURB_SOL], geometry, config, iPoint, kPoint, reconRequired);
 
@@ -503,11 +485,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_j[iVar][jVar] = 0.0;
-        for (auto kVar = 0; kVar < nVar; kVar++) {
-          Jacobian_i[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVi_dUi[kVar][jVar]*sign_grad_i;
-          Jacobian_j[iVar][jVar] += dFl_dVl[iVar][kVar]*dVl_dVi[kVar]*dVk_dUk[kVar][jVar];
-        }
+        Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
+        Jacobian_j[iVar][jVar]  = dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
       }
     }
 
