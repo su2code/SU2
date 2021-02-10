@@ -1727,17 +1727,11 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
           if (geometry->nodes->GetDomain(iPoint)) {
 
             geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            
-            if (dynamic_grid)
-              GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
+            /*--- This is treated as a strong boundary and the velocity set at this node is V - V_{grid}. ---*/
             MassFlux_Part = 0.0;
-            if (dynamic_grid)
-              for (iDim = 0; iDim < nDim; iDim++)
-                MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
-            else
-              for (iDim = 0; iDim < nDim; iDim++)
-                MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+              MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
 
              if (geometry->nodes->GetDomain(iPoint))
                nodes->AddMassFlux(iPoint, MassFlux_Part);
