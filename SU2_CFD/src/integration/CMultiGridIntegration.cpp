@@ -543,7 +543,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iVar, iChildren, iDim;
-  su2double Area_Parent, Area_Children, Vector[3] = {0.0};
+  su2double Area_Parent, Area_Children;
   const su2double *Solution_Fine = nullptr, *Grid_Vel = nullptr;
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
@@ -594,9 +594,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
           if (grid_movement) {
             Grid_Vel = geo_coarse->nodes->GetGridVel(Point_Coarse);
-            for (iDim = 0; iDim < nDim; iDim++)
-              Vector[iDim] = sol_coarse->GetNodes()->GetSolution(Point_Coarse,0)*Grid_Vel[iDim];
-            sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Vector);
+            sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Grid_Vel);
           }
           else {
             /*--- For stationary no-slip walls, set the velocity to zero. ---*/
