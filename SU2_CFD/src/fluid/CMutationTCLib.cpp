@@ -154,7 +154,7 @@ vector<su2double>& CMutationTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2do
 
   mix->speciesHOverRT(val_T, val_Tve, val_T, val_Tve, val_Tve, h_RT.data(), NULL, NULL, NULL, NULL, NULL);
 
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) hs[iSpecies] = h_RT[iSpecies]*(RuSI*val_T*Ru/MolarMass[iSpecies]);
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) hs[iSpecies] = h_RT[iSpecies]*(RuSI*val_T*1000.0/MolarMass[iSpecies]);
 
   return hs;
 }
