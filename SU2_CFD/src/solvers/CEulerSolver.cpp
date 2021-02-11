@@ -3707,7 +3707,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   if (tkeNeeded) {
     if (limiterTurb) {
       Psi_l[nVar] =  sign*(turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
-      Psi_r[nVar] = -sign* turbNodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
+      Psi_r[nVar] = -sign* turbNodes->GetLimiterDerivativeGrad(jPoint,0)*good_j;
     }
     else
       Psi_l[nVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
