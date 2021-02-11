@@ -423,7 +423,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Compute the Jacobian terms corresponding to the nodal      ---*/
-  /*---         gradient projection (0.5*Psi_i*gradV_i*dist_ij).           ---*/
+  /*---         gradient projection (0.5*Psi*gradV_i*dist_ij).           ---*/
   /*--------------------------------------------------------------------------*/
 
   const auto node_i = geometry->node[iPoint], node_j = geometry->node[jPoint];
@@ -432,14 +432,16 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iDim = 0; iDim < nDim; iDim++)
     dist_ij[iDim] = node_j->GetCoord(iDim) - node_i->GetCoord(iDim);
 
-   /*--- Store Psi_i since it's the same for the Jacobian  of all neighbors ---*/
+   /*--- Store Psi since it's the same for the Jacobian  of all neighbors ---*/
 
-  su2double Psi_i[MAXNVAR] = {0.0};
+  su2double Psi_l[MAXNVAR] = {0.0}, Psi_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
-    if (limiter)
-      Psi_i[iVar] = sign*(nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+    if (limiter) {
+      Psi_l[iVar] =  sign*(nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+      Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
+    }
     else
-      Psi_i[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
+      Psi_l[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
   }
 
   /*--- Green-Gauss surface terms ---*/
@@ -452,12 +454,15 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      dVl_dVi[iVar] = gradWeightDotDist*Psi_i[iVar];
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
+      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+    }
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
-        Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi;
+        Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
+                                +  dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi;
   }
 
   /*--- Neighbor node terms ---*/
@@ -482,7 +487,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] += dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVi_dUi*sign_grad_i;
+        Jacobian_i[iVar][jVar] += (dFl_dVl[iVar][jVar]*dVl_dVi[jVar]
+                                +  dFr_dVr[iVar][jVar]*dVr_dVi[jVar])*dVi_dUi*sign_grad_i;
         Jacobian_j[iVar][jVar]  = dFl_dVl[iVar][jVar]*dVl_dVi[jVar]*dVk_dUk;
       }
     }
