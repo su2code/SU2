@@ -378,8 +378,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   /*--- Get the freestream energy. Only useful if energy equation is active. ---*/
 
   Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
   config->SetEnergy_FreeStream(Energy_FreeStream);
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
 
   /*--- Compute Mach number ---*/
 
@@ -392,17 +392,17 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
 
-  Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref(); config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
+  Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();       config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
   Pressure_ThermodynamicND = Pressure_Thermodynamic/config->GetPressure_Ref(); config->SetPressure_ThermodynamicND(Pressure_ThermodynamicND);
-  Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();   config->SetDensity_FreeStreamND(Density_FreeStreamND);
+  Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();         config->SetDensity_FreeStreamND(Density_FreeStreamND);
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
   }
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
-  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
+  Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;               config->SetGas_ConstantND(Gas_ConstantND);
+  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref;           config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
 
   /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
   Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
