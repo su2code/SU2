@@ -100,7 +100,7 @@ namespace LimiterHelpers
     const su2double eps = sign*epsilon();
     const su2double R = delta / (proj + eps);
     const su2double b = (1.0 + kappa)/(1.0 - kappa);
-    const su2souble y = proj+eps;
+    const su2double y = proj+eps;
 
     const su2double dpsi = (b * y * (b * pow(y,2.) + delta * (2. * y - delta)))
                          / pow(pow(delta,2.) + b * pow(y,2.),2.);
@@ -115,7 +115,7 @@ namespace LimiterHelpers
     const su2double R = delta / (proj + eps);
     const su2double beta = (1.0 + kappa)/(1.0 - kappa);
     const su2double b = (1.0 + kappa)/(1.0 - kappa);
-    const su2souble y = proj+eps;
+    const su2double y = proj+eps;
 
     const su2double dpsi = -(b * delta * (b * pow(y,2.) + delta * (2. * y - delta)))
                          / pow(pow(delta,2.) + b * pow(y,2.),2.);
