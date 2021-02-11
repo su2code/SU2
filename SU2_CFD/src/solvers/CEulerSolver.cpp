@@ -3375,8 +3375,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, V_ij, Kappa_Flow);
             const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, V_ij, Kappa_Flow);
 
-            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i);
-            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j);
+            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i-0.5*dProj_i);
+            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j-0.5*dProj_j);
             flowNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
             flowNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
           }
