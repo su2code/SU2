@@ -84,6 +84,20 @@ public:
                               ColMajorMatrix<passivedouble>        &matBasis) override;
 
   /*!
+   * \brief Function, that converts the modal form of the DOFs to the nodal form.
+   * \param[in,out] solDOFs - On entry it contains the modal solution in the DOFs,
+   *                          on exit it contains the nodal solution.
+   */
+  void ModalToNodal(ColMajorMatrix<su2double> &solDOFs) override;
+
+  /*!
+   * \brief Function, that converts the nodal form of the DOFs to the modal form.
+   * \param[in,out] solDOFs - On entry it contains the nodal solution in the DOFs,
+   *                          on exit it contains the modal solution.
+   */
+  void NodalToModal(ColMajorMatrix<su2double> &solDOFs) override;
+
+  /*!
    * \brief Function that makes available the value of the first (constant)
    *        basis function of this element.
    * \return - The value of the first (constant) basis function.
@@ -103,6 +117,7 @@ private:
 
   ColMajorMatrix<passivedouble> legBasisLineSolDOFs;    /*!< \brief The values of the 1D Legendre basis functions
                                                                     in the solution DOFs. */
+  ColMajorMatrix<passivedouble> legBasisLineSolDOFsInv; /*!< \brief The inverse of legBasisLineSolDOFs. */
 
   ColMajorMatrix<passivedouble> derLegBasisLineSolDOFs; /*!< \brief The values of the derivatives of the 1D Legendre
                                                                     basis functions in the solution DOFs. */

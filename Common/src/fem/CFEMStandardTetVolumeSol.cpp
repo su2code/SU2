@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardTetVolumeSol.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*             Public member functions of CFEMStandardTetVolumeSol.                 */
@@ -69,18 +70,33 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
                             hesLegBasisInt[1], hesLegBasisInt[2], hesLegBasisInt[3],
                             hesLegBasisInt[4], hesLegBasisInt[5]);
 
-  /*--- Allocate the memory for the Legendre basis functions and its
-        1st derivatives in the solution DOFs. ---*/
-  legBasisSolDOFs.resize(nDOFsPad, nDOFs); legBasisSolDOFs.setConstant(0.0);
+  /*--- Compute the Legendre basis functions in the solution DOFs.
+        Store it in a square matrix as also the inverse is needed. ---*/
+  CSquareMatrixCM Vtmp(nDOFs);
+  VandermondeTetrahedron(nPoly, rTetSolDOFs, sTetSolDOFs, tTetSolDOFs, Vtmp.GetMat());
 
+  /*--- Store the contents of Vtmp in legBasisLineSolDOFs. ---*/
+  legBasisSolDOFs.resize(nDOFs, nDOFs);
+
+  for(unsigned short j=0; j<nDOFs; ++j)
+    for(unsigned short i=0; i<nDOFs; ++i)
+      legBasisSolDOFs(i,j) = Vtmp(i,j);
+
+  /*--- Compute the inverse of Vtmp and store the contents in legBasisLineSolDOFsInv. ---*/
+  Vtmp.Invert();
+  legBasisSolDOFsInv.resize(nDOFs, nDOFs);
+
+  for(unsigned short j=0; j<nDOFs; ++j)
+    for(unsigned short i=0; i<nDOFs; ++i)
+      legBasisSolDOFsInv(i,j) = Vtmp(i,j);
+
+  /*--- Compute the first derivatives of the basis
+        functions in the solution DOFs. ---*/
   derLegBasisSolDOFs.resize(3);
-  derLegBasisSolDOFs[0].resize(nDOFsPad, nDOFs); derLegBasisSolDOFs[0].setConstant(0.0);
-  derLegBasisSolDOFs[1].resize(nDOFsPad, nDOFs); derLegBasisSolDOFs[1].setConstant(0.0);
-  derLegBasisSolDOFs[2].resize(nDOFsPad, nDOFs); derLegBasisSolDOFs[2].setConstant(0.0);
+  derLegBasisSolDOFs[0].resize(nDOFs, nDOFs);
+  derLegBasisSolDOFs[1].resize(nDOFs, nDOFs);
+  derLegBasisSolDOFs[2].resize(nDOFs, nDOFs);
 
-  /*--- Compute the Legendre basis functions and its first
-        derivatives in the solution DOFs. ---*/
-  VandermondeTetrahedron(nPoly, rTetSolDOFs, sTetSolDOFs, tTetSolDOFs, legBasisSolDOFs);
   GradVandermondeTetrahedron(nPoly, rTetSolDOFs, sTetSolDOFs, tTetSolDOFs,
                              derLegBasisSolDOFs[0], derLegBasisSolDOFs[1],
                              derLegBasisSolDOFs[2]);
@@ -92,8 +108,8 @@ CFEMStandardTetVolumeSol::CFEMStandardTetVolumeSol(const unsigned short val_nPol
   /*--- Set up the jitted gemm calls, if supported. ---*/
   SetUpJittedGEMM(nIntegrationPad, val_nVar, nDOFs, nIntegrationPad,
                   nDOFs, nIntegrationPad, jitterDOFs2Int, gemmDOFs2Int);
-  SetUpJittedGEMM(nDOFsPad, val_nVar, nDOFs, nDOFsPad, nDOFs,
-                  nDOFsPad, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
+  SetUpJittedGEMM(nDOFs, val_nVar, nDOFs, nDOFs, nDOFs,
+                  nDOFs, jitterDOFs2SolDOFs, gemmDOFs2SolDOFs);
 }
 
 CFEMStandardTetVolumeSol::~CFEMStandardTetVolumeSol() {
@@ -123,13 +139,22 @@ void CFEMStandardTetVolumeSol::BasisFunctionsInPoints(const vector<vector<passiv
   VandermondeTetrahedron(nPoly, parCoor[0], parCoor[1], parCoor[2], matBasis);
 }
 
-passivedouble CFEMStandardTetVolumeSol::ValBasis0(void) {
+void CFEMStandardTetVolumeSol::ModalToNodal(ColMajorMatrix<su2double> &solDOFs) {
 
-  /*--- Determine the value of the 3D constant basis function. ---*/
-  ColMajorMatrix<passivedouble> leg(1,1);
-  vector<passivedouble> parCoor(1, -1.0);
-  VandermondeTetrahedron(0, parCoor, parCoor, parCoor, leg);
+  /*--- Copy solDOFs into tmp and carry out the GEMM call for
+        the conversion to the nodal formulation. ---*/
+  ColMajorMatrix<su2double> tmp = solDOFs;
 
-  /*--- Return the value of the 3D basis function. ---*/
-  return leg(0,0);
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nDOFs, tmp.cols(), nDOFs,
+          nDOFs, nDOFs, nDOFs, legBasisSolDOFs, tmp, solDOFs, nullptr);
+}
+
+void CFEMStandardTetVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
+
+  /*--- Copy solDOFs into tmp and carry out the GEMM call for
+        the conversion to the modal formulation. ---*/
+  ColMajorMatrix<su2double> tmp = solDOFs;
+
+  OwnGemm(gemmDOFs2SolDOFs, jitterDOFs2SolDOFs, nDOFs, tmp.cols(), nDOFs,
+          nDOFs, nDOFs, nDOFs, legBasisSolDOFsInv, tmp, solDOFs, nullptr);
 }

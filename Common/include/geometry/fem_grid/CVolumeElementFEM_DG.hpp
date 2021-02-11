@@ -81,6 +81,12 @@ public:
                                                                    pressure for an incompressible flow. */
 
   /*!
+   * \brief Function, which converts the modal solution to a nodal solution
+   *        for the flow variables.
+   */
+  inline void ModalToNodalFlow(void) {standardElemFlow->ModalToNodal(solDOFs);}
+
+  /*!
    * \brief Function, which converts the nodal solution to a modal solution
    *        for the flow variables.
    */

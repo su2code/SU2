@@ -26,6 +26,7 @@
  */
 
 #include "../../include/fem/CFEMStandardHexVolumeSol.hpp"
+#include "../../include/toolboxes/CSquareMatrixCM.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*             Public member functions of CFEMStandardHexVolumeSol.                 */
@@ -54,13 +55,37 @@ CFEMStandardHexVolumeSol::CFEMStandardHexVolumeSol(const unsigned short val_nPol
   GradVandermonde1D(nPoly, rLineInt, derLegBasisLineInt);
   HesVandermonde1D(nPoly, rLineInt, hesLegBasisLineInt);
 
-  /*--- Compute the 1D Legendre basis functions and its first
-        derivatives in the solution DOFs. ---*/
-  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
-  legBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);    legBasisLineSolDOFs.setConstant(0.0);
-  derLegBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D); derLegBasisLineSolDOFs.setConstant(0.0);
+  /*--- Compute the 1D Legendre basis functions in the solution DOFs.
+        Store it in a square matrix as also the inverse is needed. ---*/
+  CSquareMatrixCM Vtmp(nDOFs1D);
+  Vandermonde1D(nPoly, rLineSolDOFs, Vtmp.GetMat());
 
-  Vandermonde1D(nPoly, rLineSolDOFs, legBasisLineSolDOFs);
+  /*--- Store the contents of Vtmp in legBasisLineSolDOFs. Note that
+        the first dimension of legBasisLineSolDOFs is padded. ---*/
+  const unsigned short nDOFs1DPad = PaddedValue(nDOFs1D);
+  legBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);
+  legBasisLineSolDOFs.setConstant(0.0);
+
+  for(unsigned short j=0; j<nDOFs1D; ++j)
+    for(unsigned short i=0; i<nDOFs1D; ++i)
+      legBasisLineSolDOFs(i,j) = Vtmp(i,j);
+
+  /*--- Compute the inverse of Vtmp and store the contents in legBasisLineSolDOFsInv.
+        Note that the first dimension of legBasisLineSolDOFsInv is padded. ---*/
+  Vtmp.Invert();
+
+  legBasisLineSolDOFsInv.resize(nDOFs1DPad, nDOFs1D); 
+  legBasisLineSolDOFsInv.setConstant(0.0);
+
+  for(unsigned short j=0; j<nDOFs1D; ++j)
+    for(unsigned short i=0; i<nDOFs1D; ++i)
+      legBasisLineSolDOFsInv(i,j) = Vtmp(i,j);
+
+  /*--- Compute the first derivatives of the 1D Legendre basis
+        functions in the solution DOFs. ---*/
+  derLegBasisLineSolDOFs.resize(nDOFs1DPad, nDOFs1D);
+  derLegBasisLineSolDOFs.setConstant(0.0);
+
   GradVandermonde1D(nPoly, rLineSolDOFs, derLegBasisLineSolDOFs);
 
   /*--- Determine the local subconnectivity of this standard element when split
@@ -98,13 +123,32 @@ void CFEMStandardHexVolumeSol::BasisFunctionsInPoints(const vector<vector<passiv
           matBasis(l,ii) = legR(l,i)*legS(l,j)*legT(l,k);
 }
 
+void CFEMStandardHexVolumeSol::ModalToNodal(ColMajorMatrix<su2double> &solDOFs) {
+
+  /*--- Copy solDOFs into tmp and carry out the tensor product for
+        the conversion to the nodal formulation. ---*/
+  const ColMajorMatrix<su2double> tmp = solDOFs;
+
+  TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D, nDOFs1D,
+                             legBasisLineSolDOFs, legBasisLineSolDOFs, legBasisLineSolDOFs,
+                             tmp, solDOFs, nullptr);
+}
+
+void CFEMStandardHexVolumeSol::NodalToModal(ColMajorMatrix<su2double> &solDOFs) {
+
+  /*--- Copy solDOFs into tmp and carry out the tensor product for
+        the conversion to the modal formulation. ---*/
+  const ColMajorMatrix<su2double> tmp = solDOFs;
+
+  TensorProductVolumeDataHex(TensorProductDataVolSolDOFs, solDOFs.cols(), nDOFs1D, nDOFs1D,
+                             legBasisLineSolDOFsInv, legBasisLineSolDOFsInv,
+                             legBasisLineSolDOFsInv, tmp, solDOFs, nullptr);
+}
+
 passivedouble CFEMStandardHexVolumeSol::ValBasis0(void) {
 
-  /*--- Determine the value of the 1D constant basis function. ---*/
-  ColMajorMatrix<passivedouble> leg1D(1,1);
-  vector<passivedouble> parCoor(1, 0.0);
-  Vandermonde1D(0, parCoor, leg1D);
-
-  /*--- Return the value of the 3D basis function. ---*/
-  return leg1D(0,0)*leg1D(0,0)*leg1D(0,0);
+  /*--- Easier storage of the 1D Legendre basis function
+        and return the value of the 3D basis function.  ---*/
+  const passivedouble leg1D = legBasisLineSolDOFs(0,0);
+  return leg1D*leg1D*leg1D;
 }

@@ -65,6 +65,17 @@ public:
   ~CFEMStandardPrismVolumeSol();
 
   /*-----------------------------------------------------------------------------------*/
+  /*---                  Inline public member functions.                            ---*/
+  /*-----------------------------------------------------------------------------------*/
+
+  /*!
+   * \brief Function that makes available the value of the first (constant)
+   *        basis function of this element.
+   * \return - The value of the first (constant) basis function.
+   */
+  inline passivedouble ValBasis0(void) override {return legBasisSolDOFs(0,0);}
+
+  /*-----------------------------------------------------------------------------------*/
   /*---                     Public member functions.                                ---*/
   /*-----------------------------------------------------------------------------------*/
 
@@ -80,11 +91,18 @@ public:
                               ColMajorMatrix<passivedouble>        &matBasis) override;
 
   /*!
-   * \brief Function that makes available the value of the first (constant)
-   *        basis function of this element.
-   * \return - The value of the first (constant) basis function.
+   * \brief Function, that converts the modal form of the DOFs to the nodal form.
+   * \param[in,out] solDOFs - On entry it contains the modal solution in the DOFs,
+   *                          on exit it contains the nodal solution.
    */
-  passivedouble ValBasis0(void) override;
+  void ModalToNodal(ColMajorMatrix<su2double> &solDOFs) override;
+
+  /*!
+   * \brief Function, that converts the nodal form of the DOFs to the modal form.
+   * \param[in,out] solDOFs - On entry it contains the nodal solution in the DOFs,
+   *                          on exit it contains the modal solution.
+   */
+  void NodalToModal(ColMajorMatrix<su2double> &solDOFs) override;
 
 private:
 
@@ -105,6 +123,8 @@ private:
 
   ColMajorMatrix<passivedouble> legBasisSolDOFs;             /*!< \brief The values of the Legendre basis functions
                                                                          in the solution DOFs. */
+  ColMajorMatrix<passivedouble> legBasisSolDOFsInv;          /*!< \brief The inverse of legBasisLineSolDOFs. */
+  
   vector<ColMajorMatrix<passivedouble> > derLegBasisSolDOFs; /*!< \brief The values of the derivatives of the
                                                                          Legendre basis functions in the solution
                                                                          DOFs. It is a vector, because there
