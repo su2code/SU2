@@ -103,6 +103,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Get the value of the force projection vector.
    * \return Pointer to the force projection vector.
    */
