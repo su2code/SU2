@@ -429,6 +429,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Set the harmonic balance source term.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>iVar</i>.

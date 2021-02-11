@@ -327,6 +327,14 @@ public:
   }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
