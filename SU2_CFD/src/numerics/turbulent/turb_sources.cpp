@@ -912,7 +912,7 @@ CNumerics::ResidualType<> CSourcePieceWise_TurbSST::ComputeResidual(const CConfi
   return ResidualType<>(Residual, Jacobian_i, nullptr);
 
 }
-  
+
 void CSourcePieceWise_TurbSST::SetPerturbedStrainMag(su2double turb_ke){
 
   /*--- Compute norm of perturbed strain rate tensor. ---*/
