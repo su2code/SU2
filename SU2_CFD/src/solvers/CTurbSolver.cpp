@@ -386,8 +386,8 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
-      dVl_dVi[iVar] = sign*(1.0 + 0.5*nodes->GetLimiter(iPoint,iVar)*good_i);
-      dVr_dVi[iVar] = sign*(    - 0.5*nodes->GetLimiter(jPoint,iVar)*good_j);
+      dVl_dVi[iVar] = sign*(1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i);
+      dVr_dVi[iVar] = sign*(    - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j);
     }
     else {
       dVl_dVi[iVar] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
@@ -412,8 +412,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   /*--- d{k,o,r,v}/dU, evaluated at node ---*/
 
   const auto primvar_i = flowNodes->GetPrimitive(iPoint);
-  const auto turbvar_i = nodes->GetPrimitive(iPoint);
-
   const su2double dVi_dUi = 1.0/primvar_i[nDim+2];
 
   for (auto iVar = 0; iVar < nVar; iVar++) {
@@ -439,7 +437,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double Psi_i[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter)
-      Psi_i[iVar] = sign*nodes->GetLimiter(iPoint,iVar)*good_i;
+      Psi_i[iVar] = sign*(nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
     else
       Psi_i[iVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
   }
@@ -470,7 +468,6 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
     const auto kPoint = node_i->GetPoint(iNeigh);
     const auto primvar_k = flowNodes->GetPrimitive(kPoint);
-    const auto turbvar_k = nodes->GetPrimitive(kPoint);
 
     const su2double dVk_dUk = 1.0/primvar_k[nDim+2];
 

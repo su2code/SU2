@@ -59,6 +59,10 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
    variables (check the logic - JST with 2nd order Turb model) ---*/
 
   Limiter.resize(nPoint,nVar) = su2double(1.0);
+  if (config->GetUse_Accurate_Kappa_Jacobians()) {
+    LimiterDerivativeDelta.resize(nPoint,nVar) = su2double(1.0);
+    LimiterDerivativeGrad.resize(nPoint,nVar) = su2double(1.0);
+  }
   Solution_Max.resize(nPoint,nVar) = su2double(0.0);
   Solution_Min.resize(nPoint,nVar) = su2double(0.0);
 

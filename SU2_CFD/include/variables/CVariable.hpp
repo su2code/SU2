@@ -99,7 +99,9 @@ protected:
   VectorOfMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
   VectorOfMatrix Smatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
 
-  MatrixType Limiter;        /*!< \brief Limiter of the solution of the problem. */
+  MatrixType Limiter;                 /*!< \brief Limiter of the solution of the problem. */
+  MatrixType LimiterDerivativeDelta;  /*!< \brief Derivative of the limiter wrt the difference. */
+  MatrixType LimiterDerivativeGrad;   /*!< \brief Derivative of the limiter wrt the gradient. */
   MatrixType Solution_Max;   /*!< \brief Max solution for limiter computation. */
   MatrixType Solution_Min;   /*!< \brief Min solution for limiter computation. */
 
@@ -1060,6 +1062,38 @@ public:
    * \return Value of the limiter vector for the variable <i>iVar</i>.
    */
   inline su2double GetLimiter(unsigned long iPoint, unsigned long iVar) const { return Limiter(iPoint,iVar); }
+
+  /*!
+   * \brief Set the value of the limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
+   */
+  inline void SetLimiterDerivativeDelta(unsigned long iPoint, unsigned long iVar, su2double val_limiter) { LimiterDerivativeDelta(iPoint,iVar) = val_limiter; }
+
+  /*!
+   * \brief Set the value of the limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
+   */
+  inline void SetLimiterDerivativeGrad(unsigned long iPoint, unsigned long iVar, su2double val_limiter) { LimiterDerivativeGrad(iPoint,iVar) = val_limiter; }
+
+  /*!
+   * \brief Get the value of the slope limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the limiter vector for the variable <i>iVar</i>.
+   */
+  inline su2double GetLimiterDerivativeDelta(unsigned long iPoint, unsigned long iVar) const { return LimiterDerivativeDelta(iPoint,iVar); }
+
+  /*!
+   * \brief Get the value of the slope limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \return Value of the limiter vector for the variable <i>iVar</i>.
+   */
+  inline su2double GetLimiterDerivativeGrad(unsigned long iPoint, unsigned long iVar) const { return LimiterDerivativeGrad(iPoint,iVar); }
 
   /*!
    * \brief Get the value of the min solution.

@@ -3368,6 +3368,18 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         case VAN_ALBADA_EDGE:
           Lim_Flow_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij, Kappa_Flow);
           Lim_Flow_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij, Kappa_Flow);
+
+          if (config->GetUse_Accurate_Kappa_Jacobians()) {
+            const su2double dDelta_i = LimiterHelpers::vanAlbadaDerivativeDelta(Project_Grad_i, V_ij, Kappa_Flow);
+            const su2double dDelta_j = LimiterHelpers::vanAlbadaDerivativeDelta(Project_Grad_j, V_ij, Kappa_Flow);
+            const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, V_ij, Kappa_Flow);
+            const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, V_ij, Kappa_Flow);
+
+            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i);
+            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j);
+            flowNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
+            flowNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
+          }
           break;
         case PIPERNO:
           Lim_Flow_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
@@ -3421,6 +3433,18 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
           case VAN_ALBADA_EDGE:
             Lim_Turb_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, T_ij, Kappa_Turb);
             Lim_Turb_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, T_ij, Kappa_Turb);
+
+            if (config->GetUse_Accurate_Kappa_Jacobians()) {
+              const su2double dDelta_i = LimiterHelpers::vanAlbadaDerivativeDelta(Project_Grad_i, T_ij, Kappa_Turb);
+              const su2double dDelta_j = LimiterHelpers::vanAlbadaDerivativeDelta(Project_Grad_j, T_ij, Kappa_Turb);
+              const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, T_ij, Kappa_Turb);
+              const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, T_ij, Kappa_Turb);
+
+              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, dDelta_i-0.5*dProj_i);
+              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, dDelta_j-0.5*dProj_j);
+              turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
+              turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
+            }
             break;
           case PIPERNO:
             Lim_Turb_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, T_ij);
@@ -3568,8 +3592,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
     if (limiter) {  
-      dVl_dVi[ind] = sign*(1.0 + 0.5*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i);
-      dVr_dVi[ind] = sign*(    - 0.5*nodes->GetLimiter_Primitive(jPoint,iVar)*good_j);
+      dVl_dVi[ind] = sign*(1.0 + (0.5*nodes->GetLimiter_Primitive(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i);
+      dVr_dVi[ind] = sign*(    - (0.5*nodes->GetLimiter_Primitive(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j);
     }
     else {
       dVl_dVi[ind] = sign*(1.0 - 0.5*Kappa_Flow*good_i);
@@ -3578,8 +3602,8 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   }
   if (tkeNeeded) {
     if (limiterTurb) {
-      dVl_dVi[nVar] = sign*(1.0 + 0.5*turbNodes->GetLimiter(iPoint,0)*good_i);
-      dVr_dVi[nVar] = sign*(    - 0.5*turbNodes->GetLimiter(jPoint,0)*good_j);
+      dVl_dVi[nVar] = sign*(1.0 + (0.5*turbNodes->GetLimiter(iPoint,0) + turbNodes->GetLimiterDerivativeDelta(iPoint,0))*good_i);
+      dVr_dVi[nVar] = sign*(    - (0.5*turbNodes->GetLimiter(jPoint,0) + turbNodes->GetLimiterDerivativeDelta(jPoint,0))*good_j);
     }
     else {
       dVl_dVi[nVar] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
@@ -3674,13 +3698,13 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
   for (auto iVar = 1; iVar <= nVar; iVar++) {
     const auto ind = iVar%(nDim+2);
     if (limiter)
-      Psi_i[ind] = sign*nodes->GetLimiter_Primitive(iPoint,iVar)*good_i;
+      Psi_i[ind] = sign*(nodes->GetLimiter_Primitive(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
     else
       Psi_i[ind] = sign*0.5*(1.0-Kappa_Flow)*good_i;
   }
   if (tkeNeeded) {
     if (limiterTurb)
-      Psi_i[nVar] = sign*turbNodes->GetLimiter(iPoint,0)*good_i;
+      Psi_i[nVar] = sign*(turbNodes->GetLimiter(iPoint,0)+turbNodes->GetLimiterDerivativeGrad(iPoint,0))*good_i;
     else
       Psi_i[nVar] = sign*0.5*(1.0-Kappa_Turb)*good_i;
   }
