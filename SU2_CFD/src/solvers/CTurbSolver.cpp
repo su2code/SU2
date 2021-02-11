@@ -378,7 +378,7 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
-  /*---         term and the difference (0.5*Psi_i*(V_i-V_j)).             ---*/
+  /*---         term and the difference (0.5*Psi*(V_i-V_j)).             ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Store reconstruction weights ---*/
@@ -482,8 +482,10 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    for (auto iVar = 0; iVar < nVar; iVar++)
-      dVl_dVi[iVar] = gradWeightDotDist*Psi_i[iVar];
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
+      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {

@@ -3583,7 +3583,7 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1. Compute the Jacobian terms corresponding to the constant   ---*/
-  /*---         term and the difference (0.5*Psi_l*(V_i-V_j)).             ---*/
+  /*---         term and the difference (0.5*Psi*(V_i-V_j)).             ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Store limiters in single vector in {r,v,p,k} order (move r from nDim+2 to 0) ---*/
@@ -3723,8 +3723,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
       dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
+      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+    }
 
     for (auto iVar = 0; iVar < nVar; iVar++)
       for (auto jVar = 0; jVar < nVar; jVar++)
@@ -3766,8 +3768,10 @@ void CEulerSolver::SetExtrapolationJacobian(CSolver             **solver,
     for (auto iDim = 0; iDim < nDim; iDim++)
       gradWeightDotDist += gradWeight[iDim]*dist_ij[iDim];
 
-    for (auto iVar = 0; iVar < nPrimVarTot; iVar++)
+    for (auto iVar = 0; iVar < nPrimVarTot; iVar++) {
       dVl_dVi[iVar] = gradWeightDotDist*Psi_l[iVar];
+      dVr_dVi[iVar] = gradWeightDotDist*Psi_r[iVar];
+    }
 
     for (auto iVar = 0; iVar < nVar; iVar++) {
       for (auto jVar = 0; jVar < nVar; jVar++) {
