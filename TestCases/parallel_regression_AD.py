@@ -125,7 +125,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.195519, -2.126967, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.195614, -2.162059, 0.000000]
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
