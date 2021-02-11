@@ -296,13 +296,12 @@ public:
   }
 
   /*!
-   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \brief Virtual Member. Specify a vector to set the velocity components of the solution.
+   *        Multiplied by density for compressible cases.
    * \param[in] iPoint - Point index.
    * \param[in] val_vector - Pointer to the vector.
    */
-  inline virtual void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = Solution(iPoint, 0) * val_vector[iDim];
-  }
+  inline virtual void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) { }
 
   /*!
    * \brief Set to zero velocity components of the solution.

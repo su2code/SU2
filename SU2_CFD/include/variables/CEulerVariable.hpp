@@ -487,4 +487,13 @@ public:
   inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
   inline su2activevector& GetStrainMag() { return StrainMag; }
 
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = GetDensity(iPoint) * val_vector[iDim];
+  }
+
 };

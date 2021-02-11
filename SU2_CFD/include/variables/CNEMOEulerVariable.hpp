@@ -576,4 +576,14 @@ public:
    */
   inline unsigned short GetRhoCvveIndex(void) { return RHOCVVE_INDEX; }
 
+  /*!
+   * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline virtual void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    SU2_MPI::Error("Please add the correct <Density> for `multigrid` + `moving grid` and Solution-Position for momentum below!", CURRENT_FUNCTION);
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, nSpecies+iDim) = GetDensity(iPoint) * val_vector[iDim];
+  }
+
 };
