@@ -836,7 +836,7 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver, CConfig *config
 
   const su2double eps = numeric_limits<passivedouble>::epsilon();
 
-  const su2double allowableRatio = 0.99;
+  const su2double allowableRatio = sa_model? 0.99 : 0.5;
 
   if (sa_model || sst_model) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
