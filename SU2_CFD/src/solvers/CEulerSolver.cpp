@@ -3350,8 +3350,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
     const su2double V_ij = 0.5*(V_j[iVar] - V_i[iVar]);
 
-    su2double Project_Grad_i = -V_ij;
-    su2double Project_Grad_j = -V_ij;
+    // su2double Project_Grad_i = -V_ij;
+    // su2double Project_Grad_j = -V_ij;
+    su2double Project_Grad_i = 0.0;
+    su2double Project_Grad_j = 0.0;
 
     for (auto iDim = 0; iDim < nDim; iDim++) {
       Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
@@ -3375,8 +3377,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
             const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, V_ij, Kappa_Flow);
             const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, V_ij, Kappa_Flow);
 
-            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
-            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+            // flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
+            // flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+            flowNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*dDelta_i);
+            flowNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*dDelta_j);
             flowNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
             flowNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
           }
@@ -3415,8 +3419,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
 
       const su2double T_ij = 0.5*(T_j[iVar] - T_i[iVar]);
 
-      su2double Project_Grad_i = -T_ij;
-      su2double Project_Grad_j = -T_ij;
+      // su2double Project_Grad_i = -T_ij;
+      // su2double Project_Grad_j = -T_ij;
+      su2double Project_Grad_i = 0.0;
+      su2double Project_Grad_j = 0.0;
 
       for (auto iDim = 0; iDim < nDim; iDim++) {
         Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
@@ -3440,8 +3446,10 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
               const su2double dProj_i  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_i, T_ij, Kappa_Turb);
               const su2double dProj_j  = LimiterHelpers::vanAlbadaDerivativeProj(Project_Grad_j, T_ij, Kappa_Turb);
 
-              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
-              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+              // turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*(dDelta_i-dProj_i));
+              // turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*(dDelta_j-dProj_j));
+              turbNodes->SetLimiterDerivativeDelta(iPoint, iVar, 0.5*dDelta_i);
+              turbNodes->SetLimiterDerivativeDelta(jPoint, iVar, 0.5*dDelta_j);
               turbNodes->SetLimiterDerivativeGrad(iPoint, iVar, dProj_i);
               turbNodes->SetLimiterDerivativeGrad(jPoint, iVar, dProj_j);
             }
