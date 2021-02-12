@@ -3359,8 +3359,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
       Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
       Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
     }
-    Projet_Grad_i *= 0.5;
-    Projet_Grad_j *= 0.5;
+    Project_Grad_i *= 0.5;
+    Project_Grad_j *= 0.5;
 
     // good_i = good_i && (Project_Grad_i*V_ij >= 0);
     // good_j = good_j && (Project_Grad_j*V_ij >= 0);
@@ -3432,8 +3432,8 @@ void CEulerSolver::ExtrapolateState(CSolver             **solver,
         Project_Grad_i += Vector_ij[iDim]*Gradient_i[iDim];
         Project_Grad_j += Vector_ij[iDim]*Gradient_j[iDim];
       }
-      Projet_Grad_i *= 0.5;
-      Projet_Grad_j *= 0.5;
+      Project_Grad_i *= 0.5;
+      Project_Grad_j *= 0.5;
 
       // good_i = good_i && (Project_Grad_i*T_ij >= 0);
       // good_j = good_j && (Project_Grad_j*T_ij >= 0);
