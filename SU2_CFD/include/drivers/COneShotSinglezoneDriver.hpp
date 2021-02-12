@@ -52,8 +52,12 @@ protected:
 
   unsigned long nPiggyIter;           /*!< \brief The number of coupled primal and adjoint iterations that are run on the PiggyBack solver.*/
   unsigned short nDV_Total;           /*!< \brief Total number of design variables used in optimization.*/
+  bool StopNext;                      /*!< \brief Flag to indicate if the run should stop after the next iteration.*/
 
   COutput* flowoutput;                /*!< \brief Additional instance of an output class to write flow solution/restart files.*/
+
+  vector<su2double> ConstrFunc;       /*!< \brief Constraint function values.*/
+  vector<su2double> multiplier;        /*!< \brief Lagrange multipliers for constraint functions.*/
 
 public:
 
@@ -109,6 +113,16 @@ public:
    * \param[in] kind_recording - Type of recording (either CONS_VARS, MESH_COORDS, COMBINED or NONE)
    */
   void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Set the constraint functions.
+   */
+  void SetConstrFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the constraint functions.
+   */
+  void SetAdj_ConstrFunction(vector<su2double> seeding);
 
   /*!
    * \brief Projection of the surface sensitivity using algorithmic differentiation (AD) (see also SU2_DOT).

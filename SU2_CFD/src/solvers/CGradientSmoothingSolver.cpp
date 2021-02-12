@@ -300,7 +300,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry *geometry, CSo
   unsigned nDVtotal=config->GetnDV_Total();
   unsigned column;
   vector<su2double> seedvector(nDVtotal, 0.0);
-  MatrixType hessian = MatrixType::Zero(nDVtotal, nDVtotal);
+  hessian = MatrixType::Zero(nDVtotal, nDVtotal);
 
   /// get matrix vector product for this
   auto mat_vec = GetStiffnessMatrixVectorProduct(geometry, numerics, config);

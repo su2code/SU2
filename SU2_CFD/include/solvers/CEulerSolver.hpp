@@ -662,6 +662,14 @@ public:
   void Evaluate_ObjFunc(CConfig *config) override;
 
   /*!
+   * \author T. Dick
+   * \brief Compute single constraint function from list
+   * \param[in] config - Definition of the particular problem.
+   * \param iConstr - Number of constraint from the list.
+   */
+  su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) override;
+
+  /*!
    * \author: T. Kattmann
    *
    * \brief Impose via the residual the Euler wall boundary condition.

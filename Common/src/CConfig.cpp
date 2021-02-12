@@ -944,6 +944,8 @@ void CConfig::SetPointersNull(void) {
 
   Weight_ObjFunc = nullptr;
 
+  Kind_ConstrFunc = nullptr;
+
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -2829,6 +2831,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: number of Piggyback steps between 2 design updates */
   addUnsignedLongOption("PIGGYBACK_ITER", PiggybackSteps, 999999);
+
+  /*!\brief CONSTRAINT_FUNCTION \n DESCRIPTION: List of constraint functions \ingroup Config*/
+  addEnumListOption("CONSTRAINT_FUNCTION", nConstr, Kind_ConstrFunc, Objective_Map);
 
   /* END_CONFIG_OPTIONS */
 
@@ -7467,6 +7472,8 @@ CConfig::~CConfig(void) {
 
        delete[] Kind_ObjFunc;
        delete[] Weight_ObjFunc;
+
+  delete [] Kind_ConstrFunc;
 
   if (DV_Value != nullptr) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];

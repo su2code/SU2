@@ -71,6 +71,8 @@ public:
 
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
+  MatrixType hessian;                        /*!< \brief The approximated Hessian with respect to the design variables. */
+
   /*--- Extra vertices for row/column elimination, see Set_VertexEliminationSchedule. ---*/
   vector<unsigned long> ExtraVerticesToEliminate;
 

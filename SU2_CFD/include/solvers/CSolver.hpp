@@ -863,6 +863,13 @@ public:
   inline virtual void Evaluate_ObjFunc(CConfig *config) {};
 
   /*!
+   * \brief A virtual member
+   * \param[in] config - Definition of the particular problem.
+   * \param iConstr - Number of constraint from the list.
+   */
+  inline virtual su2double Evaluate_ConstrFunc(CConfig *config, unsigned short iConstr) { return 0.0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

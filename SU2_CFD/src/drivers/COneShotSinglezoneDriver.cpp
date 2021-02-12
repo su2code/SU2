@@ -41,10 +41,8 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 
-COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile,
-                                         unsigned short val_nZone,
-                                         SU2_Comm MPICommunicator) : CDiscAdjSinglezoneDriver(confFile, val_nZone, MPICommunicator) {
-  unsigned short iDV;
+COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
+    CDiscAdjSinglezoneDriver(confFile, val_nZone, MPICommunicator), StopNext(false) {
 
   /*--- Store the pointers ---*/
   /* Since this class inherits from CDiscAdjSinglezoneDriver relevant pointers to
@@ -58,6 +56,11 @@ COneShotSinglezoneDriver::COneShotSinglezoneDriver(char* confFile,
   flowoutput = COutputFactory::CreateOutput(EULER, config, nDim);
   flowoutput->PreprocessHistoryOutput(config, false);
   flowoutput->PreprocessVolumeOutput(config);
+
+  for (auto iConstr=0; iConstr<config->GetnConstr(); iConstr++) {
+    ConstrFunc.push_back(0.0);
+    multiplier.push_back(0.0);
+  }
 
 }
 
@@ -105,6 +108,16 @@ void COneShotSinglezoneDriver::Postprocess() {
 
 void COneShotSinglezoneDriver::RunOneShot(){
 
+  // intialization
+
+  // call to Piggyback
+
+  // get the function value, gradient, hessian
+
+  // do a linesearch and design update
+
+  // check for stop
+
 }
 
 void COneShotSinglezoneDriver::PiggyBack() {
@@ -138,7 +151,7 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   /*--- In the last Piggyback step we need to calculate the mesh sensitivities as well ---*/
 
   unsigned short kind_recording;
-  if (iPiggyIter == nPiggyIter-1) {
+  if (iPiggyIter == nPiggyIter-1 || StopNext) {
     kind_recording = SOLUTION_AND_MESH;
   } else {
     kind_recording = SOLUTION_VARIABLES;
@@ -157,7 +170,7 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
   SetAdj_ObjFunction();
-  // SetAdj_ConstrFunction(Multiplier);
+  SetAdj_ConstrFunction(multiplier);
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -176,11 +189,13 @@ void COneShotSinglezoneDriver::PrimalDualStep(unsigned long iPiggyIter){
   }
 
   /*--- Monitor the pseudo-time ---*/
+  /* if we are converged we need one more step to record and tape everything correct before we stop!
+   * so we use an intermediate flag to do one more iteration */
 
-  StopCalc = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
+  StopCalc = StopNext;
+  StopNext = iteration->Monitor(output_container[ZONE_0], integration_container, geometry_container,
                                 solver_container, numerics_container, config_container,
                                 surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
-
 
   /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
@@ -232,14 +247,45 @@ void COneShotSinglezoneDriver::SetRecording(unsigned short kind_recording){
 
   iteration->RegisterOutput(solver_container, geometry_container, config_container, output_container[ZONE_0], ZONE_0, INST_0);
 
-  /*--- Extract the objective function and store it --- */
+  /*--- Evaluate the objective function and store it --- */
 
   SetObjFunction();
-
-  // Enable this option later
-  //SetConstrFunction();
+  // evaluate constraints as well if there are some.
+  SetConstrFunction();
 
   AD::StopRecording();
+
+}
+
+void COneShotSinglezoneDriver::SetConstrFunction(){
+
+  unsigned short Kind_ConstrFunc, nConstr=config->GetnConstr();
+  su2double FunctionValue = 0.0;
+
+  if (nConstr != 0) { std::cout << "Constraint Function Value: "; }
+
+  for (auto iConstr=0; iConstr < nConstr; iConstr++){
+
+    ConstrFunc[iConstr] = 0.0;
+    Kind_ConstrFunc = config->GetKind_ConstrFunc(iConstr);
+    FunctionValue = solver[FLOW_SOL]->Evaluate_ConstrFunc(config, iConstr);
+    // ConstrFunc[iConstr] = config->GetConstraintScale(iConstr)*(config->GetConstraintTarget(iConstr) - FunctionValue);
+    std::cout<<FunctionValue<<" ";
+    if (rank == MASTER_NODE){
+      AD::RegisterOutput(ConstrFunc[iConstr]);
+    }
+  }
+
+  if (nConstr != 0) { std::cout<<std::endl; }
+}
+
+void COneShotSinglezoneDriver::SetAdj_ConstrFunction(vector<su2double> seeding){
+
+  for (auto iConstr=0; iConstr < config->GetnConstr(); iConstr++){
+    if (rank == MASTER_NODE){
+      SU2_TYPE::SetDerivative(ConstrFunc[iConstr], SU2_TYPE::GetValue(seeding[iConstr]));
+    }
+  }
 
 }
 
@@ -264,7 +310,11 @@ void COneShotSinglezoneDriver::UpdateDesignVariable(){
 }
 
 void COneShotSinglezoneDriver::ComputePreconditioner(){
-  // here we will use the Sobolev Hessian approximation
+
+  // call the derivative treatment routine from the dicrete adjoint driver. This should recompute the Hessian approximation
+  DerivativeTreatment();
+
+
 }
 
 void COneShotSinglezoneDriver::ProjectMeshSensitivities(){

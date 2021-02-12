@@ -1160,6 +1160,8 @@ private:
 
   unsigned short OneShotMode;   /*!< \brief Kind of One-Shot mode specified */
   unsigned long PiggybackSteps;  /*!< \brief The number of Piggyback steps in between 2 linesearches */
+  unsigned short nConstr;    /*!< \brief Number of constraint function. */
+  unsigned short *Kind_ConstrFunc;      /*!< \brief Kind of constraint function. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -9544,5 +9546,20 @@ public:
    * \return number of steps
    */
   unsigned long GetPiggybackSteps(void) { return PiggybackSteps; }
+
+  /*!
+   * \brief Get the number of constraints.
+   * \return number of constraints
+   */
+  unsigned short GetnConstr(void) { return nConstr; }
+
+  /*!
+   * \author T. Dick
+   * \brief Get the kind of constraint function.
+   * \param[in] val_obj - The number of the marker monitoring
+   * \param[in] iConstr - The number of the constraint.
+   * \return Kind of objective function.
+   */
+  unsigned short GetKind_ConstrFunc(unsigned int iConstr) const { return Kind_ConstrFunc[iConstr]; }
 
 };
