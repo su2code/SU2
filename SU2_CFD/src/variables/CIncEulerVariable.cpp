@@ -61,8 +61,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
 
   /*--- Allocate the slope limiter (MUSCL upwind) ---*/
 
-  if (config->GetMUSCL_Flow() &&
-      config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
       config->GetKind_SlopeLimit_Flow() != VAN_ALBADA_EDGE) {
     Limiter_Primitive.resize(nPoint,nPrimVarGrad) = su2double(0.0);
     Solution_Max.resize(nPoint,nPrimVarGrad) = su2double(0.0);
@@ -97,7 +96,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     Gradient_Primitive.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
 
-  if (config->GetMUSCL_Flow() && config->GetReconstructionGradientRequired()) {
+  if (config->GetReconstructionGradientRequired() &&
+      config->GetKind_ConvNumScheme_Flow() != SPACE_CENTERED) {
     Gradient_Aux.resize(nPoint,nPrimVarGrad,nDim,0.0);
   }
 

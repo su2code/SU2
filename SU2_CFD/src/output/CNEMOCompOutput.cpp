@@ -391,17 +391,19 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER", "Limiter value of the z-momentum");
   AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER", "Limiter value of the energy");
 
-  switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
-    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
-    AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
-    break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
-    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
-    break;
-  case NONE:
-    break;
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) {
+    switch(config->GetKind_Turb_Model()){
+    case SST: case SST_SUST:
+      AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "LIMITER", "Limiter value of turb. kinetic energy");
+      AddVolumeOutput("LIMITER_DISSIPATION", "Limiter_Omega", "LIMITER", "Limiter value of dissipation rate");
+      break;
+    case SA: case SA_COMP: case SA_E:
+    case SA_E_COMP: case SA_NEG:
+      AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "LIMITER", "Limiter value of the Spalart-Allmaras variable");
+      break;
+    case NONE:
+      break;
+    }
   }
 
   // Roe Low Dissipation
@@ -535,17 +537,19 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
   }
 
-  switch(config->GetKind_Turb_Model()){
-  case SST: case SST_SUST:
-    SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter_Primitive(iPoint, 0));
-    SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter_Primitive(iPoint, 1));
-    break;
-  case SA: case SA_COMP: case SA_E:
-  case SA_E_COMP: case SA_NEG:
-    SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter_Primitive(iPoint, 0));
-    break;
-  case NONE:
-    break;
+  if (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) {
+    switch(config->GetKind_Turb_Model()){
+    case SST: case SST_SUST:
+      SetVolumeOutputValue("LIMITER_TKE",         iPoint, Node_Turb->GetLimiter(iPoint, 0));
+      SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
+      break;
+    case SA: case SA_COMP: case SA_E:
+    case SA_E_COMP: case SA_NEG:
+      SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
+      break;
+    case NONE:
+      break;
+    }
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){

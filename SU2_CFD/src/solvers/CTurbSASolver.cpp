@@ -257,7 +257,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Upwind second order reconstruction and gradients ---*/
 
-  if (config->GetReconstructionGradientRequired() && muscl) {
+  if (config->GetReconstructionGradientRequired()) {
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
       SetSolution_Gradient_GG(geometry, config, true);
     if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
