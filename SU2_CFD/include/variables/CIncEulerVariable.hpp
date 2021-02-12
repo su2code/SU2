@@ -412,14 +412,15 @@ public:
    */
   inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const final {
     return Streamwise_Periodic_RecoveredTemperature(iPoint);
+  }
 
+  /*!
    * \brief Specify a vector to set the velocity components of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] val_vector - Pointer to the vector.
    */
   inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
-
   }
 
 };
