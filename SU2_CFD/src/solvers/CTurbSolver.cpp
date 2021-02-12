@@ -386,8 +386,10 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double dVl_dVi[MAXNVAR] = {0.0}, dVr_dVi[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
-      dVl_dVi[iVar] = sign*(1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i);
-      dVr_dVi[iVar] = sign*(    - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j);
+      // dVl_dVi[iVar] = sign*(1.0 + (0.5*nodes->GetLimiter(iPoint,iVar) + nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i);
+      // dVr_dVi[iVar] = sign*(    - (0.5*nodes->GetLimiter(jPoint,iVar) + nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j);
+      dVl_dVi[iVar] = sign*(1.0 + (nodes->GetLimiterDerivativeDelta(iPoint,iVar))*good_i);
+      dVr_dVi[iVar] = sign*(    - (nodes->GetLimiterDerivativeDelta(jPoint,iVar))*good_j);
     }
     else {
       dVl_dVi[iVar] = sign*(1.0 - 0.5*Kappa_Turb*good_i);
@@ -437,7 +439,9 @@ void CTurbSolver::SetExtrapolationJacobian(CSolver             **solver,
   su2double Psi_l[MAXNVAR] = {0.0}, Psi_r[MAXNVAR] = {0.0};
   for (auto iVar = 0; iVar < nVar; iVar++) {
     if (limiter) {
-      Psi_l[iVar] =  sign*(nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+      // Psi_l[iVar] =  sign*(nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
+      // Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
+      Psi_l[iVar] =  sign*(0.5*nodes->GetLimiter(iPoint,iVar)+nodes->GetLimiterDerivativeGrad(iPoint,iVar))*good_i;
       Psi_r[iVar] = -sign* nodes->GetLimiterDerivativeGrad(jPoint,iVar)*good_j;
     }
     else
