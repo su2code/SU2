@@ -948,11 +948,11 @@ class Solver:
 
     return self.markers[markerID][iVertex]
 
-  def getInterfaceNodePos(self, markerID, iVertex):
+  def getInterfaceNodePosInit(self, markerID, iVertex):
 
     iPoint = self.markers[markerID][iVertex]
-    Coord = self.node[iPoint].GetCoord()
-    return Coord
+    Coord0 = self.node[iPoint].GetCoord0()
+    return Coord0
 
   def getInterfaceNodeDisp(self, markerID, iVertex):
 
