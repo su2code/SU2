@@ -1,8 +1,8 @@
 /*!
- * \file CUserDefinedTCLib.hpp
+ * \file CSU2TCLib.hpp
  * \brief Defines the classes for different user defined ThermoChemistry libraries.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,11 +30,11 @@
 #include "CNEMOGas.hpp"
 
 /*!
- * \derived class CUserDefinedTCLib
+ * \derived class CSU2TCLib
  * \brief Child class for user defined nonequilibrium gas model.
  * \author: C. Garbacz, W. Maier, S. R. Copeland
  */
-class CUserDefinedTCLib : public CNEMOGas {
+class CSU2TCLib : public CNEMOGas {
 
 private:
 
@@ -77,12 +77,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CUserDefinedTCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous);
+  CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool val_viscous);
 
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUserDefinedTCLib(void);
+  virtual ~CSU2TCLib(void);
 
   /*!
    * \brief Set mixture thermodynamic state.
@@ -103,34 +103,34 @@ public:
   vector<su2double>& GetSpeciesCvTraRot() final;
 
   /*!
-   * \brief Get species V-E specific heats at constant volume.
+   * \brief Compute species V-E specific heats at constant volume.
    */
-  vector<su2double>& GetSpeciesCvVibEle() final;
+  vector<su2double>& ComputeSpeciesCvVibEle() final;
 
   /*!
-   * \brief Get mixture energies (total internal energy and vibrational energy).
+   * \brief Compute mixture energies (total internal energy and vibrational energy).
    */
-  vector<su2double>& GetMixtureEnergies() final;
+  vector<su2double>& ComputeMixtureEnergies() final;
 
   /*!
-   * \brief Get vector of species V-E energy.
+   * \brief Compute species V-E energy.
    */
-  vector<su2double>& GetSpeciesEve(su2double val_T) final;
+  vector<su2double>& ComputeSpeciesEve(su2double val_T) final;
 
   /*!
-   * \brief Get species net production rates.
+   * \brief Compute species net production rates.
    */
-  vector<su2double>& GetNetProductionRates() final;
+  vector<su2double>& ComputeNetProductionRates() final;
 
   /*!
-   * \brief Get vibrational energy source term.
+   * \brief Compute vibrational energy source term.
    */
-  su2double GetEveSourceTerm() final;
+  su2double ComputeEveSourceTerm() final;
 
   /*!
-   * \brief Get species enthalpies.
+   * \brief Compute species enthalpies.
    */
-  vector<su2double>& GetSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
+  vector<su2double>& ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves) final;
 
   /*!
    * \brief Get species diffusion coefficients.
@@ -148,9 +148,9 @@ public:
   vector<su2double>& GetThermalConductivities() final;
 
   /*!
-   * \brief Get translational and vibrational temperatures vector.
+   * \brief Compute translational and vibrational temperatures vector.
    */
-  vector<su2double>& GetTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
+  vector<su2double>& ComputeTemperatures(vector<su2double>& val_rhos, su2double rhoEmix, su2double rhoEve, su2double rhoEvel) final;
 
   private:
 
@@ -164,7 +164,7 @@ public:
    * \param[out] A - Reference to coefficient array.
    * \param[in] val_reaction - Reaction number indicator.
    */
-  void GetKeqConstants(unsigned short val_Reaction);
+  void ComputeKeqConstants(unsigned short val_Reaction);
 
   /*!
    * \brief Get species diffusion coefficients with Wilke/Blottner/Eucken transport model.

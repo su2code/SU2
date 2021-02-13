@@ -2,7 +2,7 @@
  * \file CNSSolver.hpp
  * \brief Headers of the CNSSolver class
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,11 +64,10 @@ private:
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] Output - boolean to determine whether to print output.
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container,
-                                       CConfig *config, bool Output) override;
+                                       const CConfig *config) override;
 
   /*!
    * \brief Common code for wall boundaries, add the residual and Jacobian
@@ -106,6 +105,25 @@ private:
                                   CConfig *config,
                                   unsigned short val_marker,
                                   bool cht_mode = false);
+
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                        CNumerics *numerics, CConfig *config) override;
+
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
 
 public:
   /*!
@@ -159,7 +177,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  void Evaluate_ObjFunc(CConfig *config) override;
+  void Evaluate_ObjFunc(const CConfig *config) override;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -229,18 +247,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Buffet_Monitoring(CGeometry *geometry, CConfig *config) override;
-
-  /*!
-   * \brief Compute the viscous contribution for a particular edge.
-   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                        CNumerics *numerics, CConfig *config) override;
+  void Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) override;
 
   /*!
    * \brief Get the value of the buffet sensor
@@ -295,16 +302,6 @@ public:
   }
 
   /*!
-   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetTauWall_WF(CGeometry *geometry,
-                     CSolver** solver_container,
-                     CConfig* config) override;
-
-  /*!
   * \brief Computes the eddy viscosity at the 1st point off wall for SA/SST model when wall functions is used.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
@@ -336,5 +333,4 @@ public:
                                         CSolver **solver_container,
                                         CConfig *config,
                                         unsigned short iRKStep) override;
-
 };

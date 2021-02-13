@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subrotuines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,8 @@
  */
 
 #include "../../include/solvers/CTurbSolver.hpp"
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 CTurbSolver::CTurbSolver(void) : CSolver() { }
@@ -478,7 +479,10 @@ void CTurbSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_conta
       /*--- Set the normal vector and the coordinates ---*/
 
       visc_numerics->SetNormal(Normal);
-      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(Point_Normal));
+      su2double Coord_Reflected[MAXNDIM];
+      GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                               geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+      visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
       /*--- Primitive variables ---*/
 
@@ -683,10 +687,6 @@ void CTurbSolver::ComputeUnderRelaxationFactor(CSolver **solver_container, const
 
       }
     }
-
-    /* Choose the minimum factor between mean flow and turbulence. */
-
-    localUnderRelaxation = min(localUnderRelaxation, solver_container[FLOW_SOL]->GetNodes()->GetUnderRelaxation(iPoint));
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due

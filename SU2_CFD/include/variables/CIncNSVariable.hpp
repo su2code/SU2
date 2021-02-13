@@ -3,11 +3,11 @@
  * \brief Class for defining the variables of the incompressible
           Navier-Stokes solver.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
- * The SU2 Project is maintained by the SU2 Foundation 
+ * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
  * Copyright 2012-2020, SU2 Contributors (cf. AUTHORS.md)
@@ -38,9 +38,6 @@
  */
 class CIncNSVariable final : public CIncEulerVariable {
 private:
-  MatrixType Vorticity;    /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;    /*!< \brief Magnitude of rate of strain tensor. */
-
   VectorType DES_LengthScale;
 
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
@@ -74,11 +71,6 @@ public:
   }
 
   /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity_StrainMag() override;
-
-  /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
@@ -110,18 +102,6 @@ public:
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity(unsigned long iPoint) const override { return Primitive(iPoint,nDim+6); }
-
-  /*!
-   * \brief Get the value of the vorticity.
-   * \return Value of the vorticity.
-   */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
-
-  /*!
-   * \brief Get the value of the magnitude of rate of strain.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set all the primitive variables for incompressible flows

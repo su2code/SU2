@@ -3,7 +3,7 @@
  * \brief Headers of the CSolver class which is inherited by all of the other
  *        solvers
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../../Common/include/mpi_structure.hpp"
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
 #include <string>
@@ -52,7 +52,7 @@
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
 #include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
-#include "../../../Common/include/blas_structure.hpp"
+#include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
@@ -69,8 +69,6 @@ protected:
   unsigned short MGLevel;        /*!< \brief Multigrid level of this solver object. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   su2double ResLinSolver;        /*!< \brief Final linear solver residual. */
-  su2double NonLinRes_Value,     /*!< \brief Summed value of the nonlinear residual indicator. */
-  NonLinRes_Func;                /*!< \brief Current value of the nonlinear residual indicator at one iteration. */
   unsigned short NonLinRes_Counter;   /*!< \brief Number of elements of the nonlinear residual indicator series. */
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
@@ -153,6 +151,13 @@ protected:
    */
   inline void SetBaseClassPointerToNodes() { base_nodes = GetBaseClassPointerToNodes(); }
 
+  /*!
+   * \brief Compute the undivided laplacian for the solution variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
+
 private:
 
   /*--- Private to prevent use by derived solvers, each solver MUST have its own "nodes" member of the
@@ -194,6 +199,10 @@ public:
    * \return Nodes of the solver.
    */
   inline CVariable* GetNodes() {
+    assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
+    return base_nodes;
+  }
+  inline const CVariable* GetNodes() const {
     assert(base_nodes!=nullptr && "CSolver::base_nodes was not set properly, see brief for CSolver::SetBaseClassPointerToNodes()");
     return base_nodes;
   }
@@ -304,13 +313,6 @@ public:
    * \brief Move the mesh in time
    */
   inline virtual void SetDualTime_Mesh(void){ }
-
-  /*!
-   * \brief Set the solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  inline virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
   /*!
    * \brief Get information whether the initialization is an adjoint solver or not.
@@ -740,16 +742,15 @@ public:
   /*!
    * \brief A virtual member, overloaded.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   *
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] numerics - Implementation of numerical method.
+   * \param[in] of_comp_mode - Mode to compute just the objective function.
    */
   inline virtual void Postprocessing(CGeometry *geometry,
-                                     CSolver **solver_container,
                                      CConfig *config,
                                      CNumerics **numerics,
-                                     unsigned short iMesh) { }
+                                     bool of_comp_mode = false) { }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -845,7 +846,7 @@ public:
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Evaluate_ObjFunc(CConfig *config) {};
+  inline virtual void Evaluate_ObjFunc(const CConfig *config) {};
 
   /*!
    * \brief A virtual member.
@@ -1655,13 +1656,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Buffet_Monitoring(CGeometry *geometry, CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1688,13 +1682,6 @@ public:
   inline virtual void SetPrimitive_Gradient_LS(CGeometry *geometry,
                                                const CConfig *config,
                                                bool reconstruction = false) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Index of the grid point.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetPreconditioner(CConfig *config, unsigned long iPoint) { }
 
   /*!
    * \brief A virtual member.
@@ -2259,18 +2246,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  inline virtual void GetOutlet_Properties(CGeometry *geometry,
-                                           CConfig *config,
-                                           unsigned short iMesh,
-                                           bool Output) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] convergence - boolean for whether the solution is converged
    * \return boolean for whether the Fixed C_L mode is converged to target C_L
@@ -2487,10 +2462,21 @@ public:
   inline virtual su2double GetTotal_OFVolFrac() const { return 0; }
 
   /*!
+   * \brief Retrieve the value of the discreteness objective function.
+   */
+  inline virtual su2double GetTotal_OFDiscreteness() const { return 0; }
+
+  /*!
    * \brief A virtual member.
-   * \return Value of the objective function for the structural compliance.
+   * \return Value of the compliance objective function.
    */
   inline virtual su2double GetTotal_OFCompliance() const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the stress penalty objective function.
+   */
+  inline virtual su2double GetTotal_OFStressPenalty() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -2545,6 +2531,11 @@ public:
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
    */
   inline virtual void SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
+
+  /*!
+   * \brief Get the reference force used to compute CL, CD, etc.
+   */
+  inline virtual su2double GetAeroCoeffsReferenceForce() const { return 0; }
 
   /*!
    * \brief A virtual member.
@@ -3648,78 +3639,11 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFRefGeom(CGeometry *geometry,
-                                        const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFRefNode(CGeometry *geometry,
-                                        const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFVolFrac(CGeometry *geometry,
-                                        const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Compute_OFCompliance(CGeometry *geometry,
-                                           const CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
    */
   inline virtual void LoadRestart_FSI(CGeometry *geometry,
                                       CConfig *config,
                                       int val_iter) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void RefGeom_Sensitivity(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CConfig *config){ }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void DE_Sensitivity(CGeometry *geometry,
-                                     CSolver **solver_container,
-                                     CNumerics **numerics_container,
-                                     CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void Stiffness_Sensitivity(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics **numerics_container,
-                                            CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -3834,12 +3758,6 @@ public:
   inline virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
 
   /*!
-   * \brief A virtual member
-   * \param[in] geometry - The geometrical definition of the problem.
-   */
-  inline virtual void RegisterObj_Func(CConfig *config){}
-
-  /*!
    * \brief  A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -3853,13 +3771,6 @@ public:
    * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
    */
   inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
-
-  /*!
-   * \brief A virtual member. Extract and set the derivative of objective function.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4057,7 +3968,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetFreeStream_Solution(CConfig *config) { }
+  inline virtual void SetFreeStream_Solution(const CConfig *config) { }
 
   /*!
    * \brief A virtual member.
@@ -4068,16 +3979,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual unsigned long GetnDOFsGlobal(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetTauWall_WF(CGeometry *geometry,
-                                    CSolver** solver_container,
-                                    CConfig* config) { }
 
   /*!
    * \brief A virtual member.
@@ -4111,20 +4012,7 @@ public:
                                          CSolver **solver_container,
                                          CConfig *config,
                                          unsigned short iRKStep) { }
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetNuTilde_WF(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics,
-                                    CConfig *config,
-                                    unsigned short val_marker) { }
-
+ 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4478,18 +4366,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetFreeStream_TurboSolution(CConfig *config) { }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   */
-  inline virtual void SetBeta_Parameter(CGeometry *geometry,
-                                        CSolver **solver_container,
-                                        CConfig *config,
-                                        unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.

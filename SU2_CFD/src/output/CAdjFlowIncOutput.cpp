@@ -2,7 +2,7 @@
  * \file output_adj_flow_inc.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -372,7 +372,7 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   /// END_GROUP
 
   // Grid velocity
-  if (config->GetGrid_Movement()){
+  if (config->GetDynamic_Grid()){
     AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY", "x-component of the grid velocity vector");
     AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY", "y-component of the grid velocity vector");
     if (nDim == 3 )
@@ -537,4 +537,3 @@ bool CAdjFlowIncOutput::SetUpdate_Averages(CConfig *config){
 //  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
 
 }
-

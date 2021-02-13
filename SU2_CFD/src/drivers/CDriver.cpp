@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -87,7 +87,7 @@
 
 #include "../../include/iteration/CIterationFactory.hpp"
 
-#include "../../../Common/include/omp_structure.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 #include <cassert>
 
@@ -804,24 +804,19 @@ void CDriver::Geometrical_Preprocessing_FVM(CConfig *config, CGeometry **&geomet
   geometry[MESH_0]->SetEdges();
   geometry[MESH_0]->SetVertex(config);
 
-  /*--- Compute cell center of gravity ---*/
-
-  if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
-  SU2_OMP_PARALLEL {
-    geometry[MESH_0]->SetCoord_CG();
-  }
-
   /*--- Create the control volume structures ---*/
 
   if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
-  geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
-  geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  SU2_OMP_PARALLEL {
+    geometry[MESH_0]->SetControlVolume(config, ALLOCATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, ALLOCATE);
+  }
 
   /*--- Visualize a dual control volume if requested ---*/
 
   if ((config->GetVisualize_CV() >= 0) &&
-      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetnPointDomain()))
-    geometry[MESH_0]->VisualizeControlVolume(config, UPDATE);
+      (config->GetVisualize_CV() < (long)geometry[MESH_0]->GetGlobal_nPointDomain()))
+    geometry[MESH_0]->VisualizeControlVolume(config);
 
   /*--- Identify closest normal neighbor ---*/
 
@@ -1547,7 +1542,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
   //if (fem_turbulent)    nVar_Turb = solver_container[MESH_0][FEM_TURB_SOL]->GetnVar();
 
   if (fem)          nVar_FEM = solver[MESH_0][FEA_SOL]->GetnVar();
-  if (heat)     nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
+  if (heat)         nVar_Heat = solver[MESH_0][HEAT_SOL]->GetnVar();
 
   if (config->AddRadiation())    nVar_Rad = solver[MESH_0][RAD_SOL]->GetnVar();
 
@@ -1629,24 +1624,7 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
 
       case SPACE_CENTERED :
         if (compressible) {
-          /*--- Compressible flow ---*/
-          switch (config->GetKind_Centered_Flow()) {
-            case LAX : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config); break;
-            case JST : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_Flow(nDim, nVar_Flow, config); break;
-            case JST_KE : numerics[MESH_0][FLOW_SOL][conv_term] = new CCentJST_KE_Flow(nDim, nVar_Flow, config); break;
-            case JST_MAT :
-              if (!config->GetUseVectorization()) {
-                SU2_MPI::Error("JST with matrix dissipation requires USE_VECTORIZATION=YES.", CURRENT_FUNCTION);
-              }
-              break;
-            default:
-              SU2_OMP_MASTER
-              SU2_MPI::Error("Invalid centered scheme or not implemented.", CURRENT_FUNCTION);
-              break;
-          }
-
-          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLax_Flow(nDim, nVar_Flow, config);
+          /*--- "conv_term" is not instantiated as all compressible centered schemes are vectorized. ---*/
 
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1991,7 +1969,6 @@ void CDriver::Numerics_Preprocessing(CConfig *config, CGeometry **geometry, CSol
       numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_NEMO, config);
     }
   }
-
 
   /*--- Riemann solver definition for the Euler, Navier-Stokes problems for the FEM discretization. ---*/
   if ((fem_euler) || (fem_ns)) {
@@ -2979,9 +2956,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
       config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
     else
       config_container[iZone]->SetPhysicalTime(0.0);
-
   }
-
 
 //  /*--- Read the target pressure ---*/
 
@@ -2999,14 +2974,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
   if(!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  NEMO_EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  NEMO_NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  RANS) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_EULER) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_NAVIER_STOKES) ||
-          (config_container[iZone]->GetKind_Solver() ==  INC_RANS)) {
+      if (config_container[iZone]->GetFluidProblem()) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++)
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], Iter);
       }
@@ -3400,9 +3368,8 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
   case EULER: case NAVIER_STOKES: case RANS:
   case INC_EULER: case INC_NAVIER_STOKES: case INC_RANS:
-    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case NEMO_EULER: case NEMO_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
   case DISC_ADJ_INC_EULER: case DISC_ADJ_INC_NAVIER_STOKES: case DISC_ADJ_INC_RANS:
   case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:

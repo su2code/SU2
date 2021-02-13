@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DOT.
  *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,8 +33,8 @@
 #include "../../Common/include/CConfig.hpp"
 #undef ENABLE_MAPS
 
-#include "../../Common/include/mpi_structure.hpp"
-#include "../../Common/include/omp_structure.hpp"
+#include "../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../Common/include/parallelization/omp_structure.hpp"
 
 #include <cstdlib>
 #include <iostream>

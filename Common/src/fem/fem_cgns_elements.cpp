@@ -2,7 +2,7 @@
  * \file fem_cgns_elements.cpp
  * \brief CGNS element definitions and conversions to the SU2 standard.
  * \author E. van der Weide
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 #ifdef HAVE_CGNS
 #include "../../include/fem/fem_cgns_elements.hpp"
 #include "../../include/fem/geometry_structure_fem_part.hpp"
-#include "../../include/mpi_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
 
 #include <cmath>
 #include <climits>

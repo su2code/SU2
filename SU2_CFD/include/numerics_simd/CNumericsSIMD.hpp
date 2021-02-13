@@ -2,7 +2,7 @@
  * \file CNumericsSIMD.hpp
  * \brief Vectorized (SIMD) numerics classes.
  * \author P. Gomes
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,7 +93,8 @@ public:
    * \param[in] config - Problem definitions.
    * \param[in] nDim - 2D or 3D.
    * \param[in] iMesh - Grid index.
+   * \param[in] turbVars - Turbulence variables.
    */
-  static CNumericsSIMD* CreateNumerics(const CConfig& config, int nDim, int iMesh);
+  static CNumericsSIMD* CreateNumerics(const CConfig& config, int nDim, int iMesh, const CVariable* turbVars = nullptr);
 
 };

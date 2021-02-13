@@ -1,7 +1,7 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,6 +48,13 @@ inline T Distance(Int nDim, const T* a, const T* b) {
 template<class T, typename Int>
 inline void Distance(Int nDim, const T* a, const T* b, T* d) {
   for(Int i = 0; i < nDim; i++) d[i] = a[i] - b[i];
+}
+
+/*! \brief Reflect a at b: c = 2*b - a
+ */
+template<class T, typename Int>
+inline void PointPointReflect(Int nDim, const T* a, const T* b, T* d){
+  for(Int i = 0; i < nDim; i++) d[i] = 2 * b[i] - a[i];
 }
 
 /*! \return a.b */

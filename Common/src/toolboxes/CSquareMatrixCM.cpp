@@ -2,7 +2,7 @@
  * \file CSquareMatrixCM.cpp
  * \brief Implementation of dense matrix helper class in Column Major order (see hpp).
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,8 +26,8 @@
  */
 
 #include "../../include/toolboxes/CSquareMatrixCM.hpp"
-#include "../../include/mpi_structure.hpp"
-#include "../../include/blas_structure.hpp"
+#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../include/linear_algebra/blas_structure.hpp"
 
 using namespace std;
 
@@ -87,7 +87,7 @@ void CSquareMatrixCM::MatMatMult(const char                          side,
     /*--- Left side: mat_out = this * mat_in. Set some sizes
           and allocate the memory for mat_out. ---*/
     const int M = Size(), N = mat_in.cols();
-    assert(M == mat_in.rows());
+    assert(M == static_cast<int>(mat_in.rows()));
 
     mat_out.resize(M,N);
 
@@ -117,7 +117,7 @@ void CSquareMatrixCM::MatMatMult(const char                          side,
     /*--- Right_side: mat_out = mat_in * this. Set some sizes
           and allocate the memory for mat_out. ---*/
     const int M = mat_in.rows(), N = Size();
-    assert(N == mat_in.cols());
+    assert(N == static_cast<int>(mat_in.cols()));
 
     mat_out.resize(M,N);
 

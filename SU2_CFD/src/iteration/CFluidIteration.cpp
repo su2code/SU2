@@ -2,7 +2,7 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.0.8 "Blackbird"
+ * \version 7.1.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,10 +58,11 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned long InnerIter, TimeIter;
 
-  bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
-                  (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
-  bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
-                     (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  const bool unsteady = (config[val_iZone]->GetTime_Marching() == DT_STEPPING_1ST) ||
+                        (config[val_iZone]->GetTime_Marching() == DT_STEPPING_2ND);
+  const bool frozen_visc = (config[val_iZone]->GetContinuous_Adjoint() && config[val_iZone]->GetFrozen_Visc_Cont()) ||
+                           (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
+  const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   TimeIter = config[val_iZone]->GetTimeIter();
 
   /* --- Setting up iteration values depending on if this is a
@@ -134,7 +135,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
-  if (config[val_iZone]->GetCFL_Adapt() == YES) {
+  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
     SU2_OMP_PARALLEL
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
