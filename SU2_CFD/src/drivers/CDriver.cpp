@@ -1334,7 +1334,7 @@ void CDriver::Solver_Restart(CSolver ***solver, CGeometry **geometry,
   if ((restart || restart_flow) && config->GetDeform_Mesh() && update_geo){
     /*--- Always restart with the last state ---*/
     val_iter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-    solver[MESH_0][MESH_SOL]->LoadRestart(geometry, solver, config, val_iter);
+    solver[MESH_0][MESH_SOL]->LoadRestart(geometry, solver, config, val_iter, update_geo);
   }
 
   /*--- Exit if a restart was requested for a solver that is not available. ---*/

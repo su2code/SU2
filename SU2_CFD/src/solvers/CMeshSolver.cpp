@@ -713,7 +713,7 @@ void CMeshSolver::SetDualTime_Mesh(void){
   nodes->Set_Solution_time_n();
 }
 
-void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
