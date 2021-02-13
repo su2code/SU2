@@ -148,11 +148,13 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry,
                    CSolver ***solver,
                    CConfig *config,
-                   int val_iter) override;
+                   int val_iter,
+                   bool val_update_geo) override;
 
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
