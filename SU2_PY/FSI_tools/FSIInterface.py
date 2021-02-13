@@ -1682,11 +1682,11 @@ class Interface:
               deltaResx_array_Y.setType('seq')
               deltaResx_array_Z = PETSc.Vec().create()
               deltaResx_array_Z.setType('seq')
-            deltaResx_array_X.setSizes(self.nSolidInterfacePhysicalNodes) #TODO I think here we should add self.d_RBF, check the sizes
+            deltaResx_array_X.setSizes(self.nSolidInterfacePhysicalNodes + self.d_RBF)
             deltaResx_array_X.set(0.0)
-            deltaResx_array_Y.setSizes(self.nSolidInterfacePhysicalNodes)
+            deltaResx_array_Y.setSizes(self.nSolidInterfacePhysicalNodes + self.d_RBF)
             deltaResx_array_Y.set(0.0)
-            deltaResx_array_Z.setSizes(self.nSolidInterfacePhysicalNodes)
+            deltaResx_array_Z.setSizes(self.nSolidInterfacePhysicalNodes + self.d_RBF)
             deltaResx_array_Z.set(0.0)
 
             # --- Compute the dynamic Aitken coefficient ---
