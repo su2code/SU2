@@ -258,14 +258,21 @@ passivedouble CDriver::GetUnsteady_TimeStep(){
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
-vector<su2double> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) {
+vector<passivedouble> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) {
 
-  su2double coord[3] = {0.0};
+  vector<su2double> coord(3,0.0);
+  vector<passivedouble> coord_passive(3, 0.0);
 
   auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
   for (auto iDim = 0 ; iDim < nDim ; iDim++){
    coord[iDim] = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint,iDim);
   }
+
+  coord_passive[0] = SU2_TYPE::GetValue(coord[0]);
+  coord_passive[1] = SU2_TYPE::GetValue(coord[1]);
+  coord_passive[2] = SU2_TYPE::GetValue(coord[2]);
+
+  return coord_passive;
 }
 
 passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned long iVertex) {
@@ -1017,7 +1024,7 @@ vector<passivedouble> CDriver::GetFlowLoad(unsigned short iMarker, unsigned long
   CSolver *solver = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
   CGeometry *geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
-  if (config_container[ZONE_0]->GetMarker_All_Fluid_Load(iMarker) == YES) {
+  if (config_container[ZONE_0]->GetSolid_Wall(iMarker)) {
     FlowLoad[0] = solver->GetVertexTractions(iMarker, iVertex, 0);
     FlowLoad[1] = solver->GetVertexTractions(iMarker, iVertex, 1);
     if (geometry->GetnDim() == 3)

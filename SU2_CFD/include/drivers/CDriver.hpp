@@ -472,7 +472,7 @@ public:
    * \param[in] iVertex - Vertex identifier.
    * \return x,y,z coordinates of the vertex.
    */
-  vector<su2double> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex);
+  vector<passivedouble> GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex);
 
   /*!
    * \brief Get the x coordinate of a vertex on a specified marker.
