@@ -377,8 +377,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   /*--- Get the freestream energy. Only useful if energy equation is active. ---*/
 
   Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
   config->SetEnergy_FreeStream(Energy_FreeStream);
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
 
   /*--- Compute Mach number ---*/
 
@@ -391,17 +391,17 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
 
-  Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref(); config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
+  Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();       config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
   Pressure_ThermodynamicND = Pressure_Thermodynamic/config->GetPressure_Ref(); config->SetPressure_ThermodynamicND(Pressure_ThermodynamicND);
-  Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();   config->SetDensity_FreeStreamND(Density_FreeStreamND);
+  Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();         config->SetDensity_FreeStreamND(Density_FreeStreamND);
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
   }
 
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
-  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
+  Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;               config->SetGas_ConstantND(Gas_ConstantND);
+  Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref;           config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
 
   /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
   Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
@@ -1076,12 +1076,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   SU2_OMP_MASTER
   ErrorCounter = 0;
 
-  const unsigned long InnerIter = config->GetInnerIter();
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
-  const bool van_albada = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-  const bool piperno    = config->GetKind_SlopeLimit_Flow() == PIPERNO;
+  const bool limiter    = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring)
@@ -1124,13 +1121,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      su2double *Limiter_i = nullptr, *Limiter_j = nullptr;
-
-      if (limiter) {
-        Limiter_i = nodes->GetLimiter_Primitive(iPoint);
-        Limiter_j = nodes->GetLimiter_Primitive(jPoint);
-      }
-
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 
         /*--- Compute centered and upwind differences ---*/
@@ -1153,21 +1143,28 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         /*--- Edge-based limiters ---*/
 
         if (limiter) {
+          su2double lim_i = 1.0;
+          su2double lim_j = 1.0;
+
           switch(config->GetKind_SlopeLimit_Flow()) {
             case VAN_ALBADA_EDGE:
-              Limiter_i[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
-              Limiter_j[iVar] = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
+              lim_i = LimiterHelpers::vanAlbadaFunction(Project_Grad_i, V_ij);
+              lim_j = LimiterHelpers::vanAlbadaFunction(Project_Grad_j, V_ij);
               break;
             case PIPERNO:
-              Limiter_i[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
-              Limiter_j[iVar] = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+              lim_i = LimiterHelpers::pipernoFunction(Project_Grad_i, V_ij);
+              lim_j = LimiterHelpers::pipernoFunction(Project_Grad_j, V_ij);
+              break;
+            default:
+              lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
+              lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
               break;
           }
 
           /*--- Limit projection ---*/
 
-          Project_Grad_i *= Limiter_i[iVar];
-          Project_Grad_j *= Limiter_j[iVar];
+          Project_Grad_i *= lim_i;
+          Project_Grad_j *= lim_j;
         }
         
         Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
@@ -1196,8 +1193,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         nodes->SetNon_Physical(iPoint, neg_density_i || neg_temperature_i);
         nodes->SetNon_Physical(jPoint, neg_density_j || neg_temperature_j);
 
-        /* Lastly, check for existing first-order points still active
-         from previous iterations. */
+        /* Lastly, check for existing first-order points still active from previous iterations. */
 
         if (nodes->GetNon_Physical(iPoint)) {
           counter_local++;
@@ -1905,8 +1901,10 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
     /*--- Set the normal vector and the coordinates ---*/
 
     visc_numerics->SetNormal(Normal);
-    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                            geometry->nodes->GetCoord(Point_Normal));
+    su2double Coord_Reflected[MAXNDIM];
+    GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                             geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
     /*--- Primitive variables, and gradient ---*/
 
@@ -2144,8 +2142,10 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Set the normal vector and the coordinates ---*/
 
     visc_numerics->SetNormal(Normal);
-    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                            geometry->nodes->GetCoord(Point_Normal));
+    su2double Coord_Reflected[MAXNDIM];
+    GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                             geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
     /*--- Primitive variables, and gradient ---*/
 
@@ -2339,8 +2339,10 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Set the normal vector and the coordinates ---*/
 
     visc_numerics->SetNormal(Normal);
-    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
-                            geometry->nodes->GetCoord(Point_Normal));
+    su2double Coord_Reflected[MAXNDIM];
+    GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
+                                             geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+    visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
     /*--- Primitive variables, and gradient ---*/
 

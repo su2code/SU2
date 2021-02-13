@@ -7261,21 +7261,18 @@ unsigned short CConfig::GetMarker_ZoneInterface(string val_marker) const {
   return Marker_CfgFile_ZoneInterface[iMarker_CfgFile];
 }
 
-bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
-
-  return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
-          Marker_All_KindBC[iMarker] == ISOTHERMAL ||
-          Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
-          Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE ||
-          Marker_All_KindBC[iMarker] == EULER_WALL);
-}
-
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
+}
+
+bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
+
+  return GetViscous_Wall(iMarker) ||
+         Marker_All_KindBC[iMarker] == EULER_WALL;
 }
 
 void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {
@@ -7663,6 +7660,7 @@ CConfig::~CConfig(void) {
   delete[] MG_CorrecSmooth;
          delete[] PlaneTag;
               delete[] CFL;
+   delete[] CFL_AdaptParam;
 
   /*--- String markers ---*/
 
