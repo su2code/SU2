@@ -258,6 +258,16 @@ passivedouble CDriver::GetUnsteady_TimeStep(){
   return SU2_TYPE::GetValue(config_container[ZONE_0]->GetTime_Step());
 }
 
+vector<su2double> CDriver::GetInitialMeshCoord(unsigned short iMarker, unsigned long iVertex) {
+
+  su2double coord[3] = {0.0};
+
+  auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  for (auto iDim = 0 ; iDim < nDim ; iDim++){
+   coord[iDim] = solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord(iPoint,iDim);
+  }
+}
+
 passivedouble CDriver::GetVertexCoordX(unsigned short iMarker, unsigned long iVertex) {
 
   auto iPoint = geometry_container[ZONE_0][INST_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
