@@ -326,17 +326,17 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
 
-  unsigned long InnerIter = config->GetInnerIter();
-  bool muscl              = config->GetMUSCL_Flow();
-  bool limiter            = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter()) && !(config->GetFrozen_Limiter_Disc()));
-  bool center             = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  bool van_albada         = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  const unsigned long InnerIter = config->GetInnerIter();
+  const bool muscl       = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool limiter     = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (InnerIter <= config->GetLimiterIter());
+  const bool center      = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const bool van_albada  = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
   /*--- Common preprocessing steps ---*/
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
 
   /*--- Upwind second order reconstruction ---*/
-  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+  if (muscl && !center && !Output) {
 
     /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -347,7 +347,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
     }
 
     /*--- Limiter computation ---*/
-    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
+    if (limiter && !van_albada) {
       SetPrimitive_Limiter(geometry, config);
     }
   }
@@ -516,11 +516,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
                                        CConfig *config, unsigned short iMesh) {
 
   /*--- Set booleans based on config settings ---*/
-  const auto InnerIter        = config->GetInnerIter();
   //const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER) &&
-                                (InnerIter <= config->GetLimiterIter());
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != NO_LIMITER);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE);
 
   /*--- Non-physical counter. ---*/

@@ -51,7 +51,7 @@ protected:
   su2double cw1;
   su2double cr1;
 
-  su2double gamma_BC;
+  su2double Gamma_BC = 0.0;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;
 
@@ -105,7 +105,7 @@ public:
    * \brief  Get the intermittency for the BC trans. model.
    * \return Value of the intermittency.
    */
-  inline su2double GetGammaBC(void) const final { return gamma_BC; }
+  inline su2double GetGammaBC(void) const final { return Gamma_BC; }
 
   /*!
    * \brief  ______________.
